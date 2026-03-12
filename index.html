@@ -12,24 +12,22 @@
   --bg:#0f0f0f; --card:#1a1a1a; --card2:#242424;
   --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
   --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
-  --green:#3C643C;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:90px}
 .header{background:transparent;padding:16px 16px 0;position:sticky;top:0;z-index:100;border-bottom:none}
-.header::before{content:'';position:absolute;top:0;left:0;right:0;height:48px;background:linear-gradient(to bottom,rgba(0,0,0,0.7) 0%,rgba(0,0,0,0) 100%);pointer-events:none;z-index:-1}
 .app-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff}
 .stats-pill{background:rgba(36,36,36,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
 .day-tabs{display:flex;gap:12px;padding-bottom:10px;background:transparent;justify-content:center}
-.day-tab{flex:1;padding:10px 8px;border-radius:25px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.09);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:var(--muted);font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;line-height:1.4}
-.day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1}
-.day-tab.active{background:var(--accent);border-color:var(--accent);color:#000}
-.progress-wrap{padding:8px 12px 10px;margin:6px 0 4px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px}
-.progress-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10px;color:var(--muted)}
-.progress-row b{color:var(--accent)}
-.progress-bg{background:var(--card2);border-radius:4px;height:3px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease}
+.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:1.5px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.05);backdrop-filter:blur(20px) saturate(200%) brightness(105%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(105%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center}
+.day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
+.day-tab.active{background:rgba(40,40,40,0.9);border-color:rgba(255,255,255,0.1);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%)}.day-tab.active .dn{color:var(--accent)}
+.progress-wrap{padding:0 14px;margin:6px 0 4px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
+.progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease}
+.progress-count{font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;flex-shrink:0}
 .content{padding:16px 12px 0}
 .muscle-group{margin-bottom:24px}
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
@@ -67,9 +65,8 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .done-banner .db-emoji{font-size:32px;margin-bottom:6px}
 .done-banner .db-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
 .done-banner .db-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.finish-btn{display:none;margin:0 12px 16px;width:calc(100% - 24px);padding:15px;border-radius:25px;background:var(--accent);border:none;color:#000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s}
-.finish-btn.show{display:block}
-.finish-btn:active{opacity:.8}
+.finish-btn{display:block;width:100%;padding:14px 16px;border-radius:25px;background:rgba(200,60,60,0.85);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,120,120,0.25);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s;text-align:center}
+.finish-btn:active{opacity:.7}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 .modal{background:rgba(26,26,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-width:480px;border-top:1px solid rgba(255,255,255,0.08)}
@@ -93,12 +90,12 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .hist-pill .hw{color:var(--accent);font-weight:800;font-family:'Bebas Neue',sans-serif;font-size:14px;line-height:1}
 .hist-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
 .bottom-nav{position:fixed;bottom:12px;left:0;right:0;background:transparent;border:none;display:flex;z-index:200;padding:0 12px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;padding:14px 8px;background:rgba(255,255,255,0.09);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;color:var(--muted);cursor:pointer;font-family:'Manrope',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s}
+.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.09);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(--muted);cursor:pointer;font-family:'Manrope',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
 .nav-btn.active{color:var(--accent)}
 .nav-btn svg{width:20px;height:20px;stroke-width:2}
 .view{display:none}
 .view.active{display:block}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--green);color:#000;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:800;opacity:0;transition:all .3s;z-index:900;pointer-events:none;white-space:nowrap;font-family:'Manrope',sans-serif}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:#3C643C;color:#000;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:800;opacity:0;transition:all .3s;z-index:900;pointer-events:none;white-space:nowrap;font-family:'Manrope',sans-serif}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -148,22 +145,17 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
   <div class="header">
     <div class="day-tabs" id="dayTabs"></div>
     <div class="progress-wrap">
-      <div class="progress-row"><span>Прогресс дня</span><b id="progLabel">0 / 0</b></div>
+      <span class="progress-label">Прогресс</span>
       <div class="progress-bg"><div class="progress-fill" id="progBar" style="width:0%"></div></div>
+      <span class="progress-count" id="progLabel">0/0</span>
     </div>
   </div>
-  <div class="done-banner" id="doneBanner">
-    <div class="db-emoji">&#128293;</div>
-    <div class="db-text">Тренировка завершена!</div>
-    <div class="db-sub">Все упражнения выполнены</div>
-  </div>
-  <button class="finish-btn" id="finishBtn" onclick="finishWorkout()">&#10003; ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
   <div class="content" id="workoutContent"></div>
 </div>
 
 <div class="view" id="view-history">
   <div class="header">
-    <div class="header-top">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px">
       <div class="app-title">&#128202; ИСТОРИЯ</div>
       <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--muted);font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
     </div>
@@ -297,7 +289,7 @@ function renderDayTabs() {
     var b = document.createElement('button');
     b.className = 'day-tab' + (i === S.currentDay ? ' active' : '');
     b.innerHTML = '<span class="dn">' + day.day + '</span>';
-    b.onclick = (function(idx){ return function(){ S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); }; })(i);
+    b.onclick = (function(idx){ return function(){ S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); window.scrollTo({top:0, behavior:'instant'}); }; })(i);
     c.appendChild(b);
   });
 }
@@ -309,12 +301,10 @@ function renderWorkout() {
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
   var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
   var total = allIds.length;
-  document.getElementById('progLabel').textContent = doneCount + ' / ' + total;
+  document.getElementById('progLabel').textContent = doneCount + '/' + total;
   document.getElementById('progBar').style.width = (total ? Math.round(doneCount/total*100) : 0) + '%';
   var sc = document.getElementById('sessionCount'); if(sc) sc.textContent = S.history.length;
   var allDone = doneCount === total && total > 0;
-  document.getElementById('doneBanner').classList.toggle('show', allDone);
-  document.getElementById('finishBtn').classList.toggle('show', allDone);
 
   var container = document.getElementById('workoutContent');
   container.innerHTML = '';
@@ -381,6 +371,26 @@ function renderWorkout() {
     });
     container.appendChild(gDiv);
   });
+
+  // Bottom cards: done banner + finish button
+  var bottomDiv = document.createElement('div');
+  bottomDiv.id = 'bottomCards';
+  bottomDiv.style.padding = '8px 0 110px';
+
+  // Done banner - only shown when all done
+  var banner = document.createElement('div');
+  banner.className = 'done-banner' + (allDone ? ' show' : '');
+  banner.innerHTML = '<div class="db-emoji">&#128293;</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
+  bottomDiv.appendChild(banner);
+
+  // Finish button - always visible
+  var finBtn = document.createElement('button');
+  finBtn.className = 'finish-btn';
+  finBtn.innerHTML = '&#10003; ЗАВЕРШИТЬ ТРЕНИРОВКУ';
+  finBtn.onclick = finishWorkout;
+  bottomDiv.appendChild(finBtn);
+
+  container.appendChild(bottomDiv);
 }
 
 var _touchStartY = 0, _touchStartX = 0, _touchHandled = false;
@@ -538,20 +548,75 @@ function finishWorkout() {
   var snap = {};
   allIds.forEach(function(id){ snap[id] = (S.weights[id] !== undefined) ? S.weights[id] : 0; });
   S.history.push({ date: Date.now(), dayIdx: S.currentDay, weights: snap });
+  // Clear all done checkmarks regardless of completion
   allIds.forEach(function(id){ delete S.done[id]; });
-  save(); showToast('Тренировка сохранена!'); renderWorkout();
+  save();
+  showToast('Тренировка дня ' + (S.currentDay + 1) + ' сохранена!');
+  window.scrollTo({top: 0, behavior: 'instant'});
+  renderWorkout();
 }
 
 function renderHistory() {
   var container = document.getElementById('histContent');
+
+  // Mini calendar logic:
+  // Find last "cycle" - last time all 3 days were completed resets the cycle
+  // Count which days done since last full cycle reset
+  var trainedDays = [false, false, false];
+  var tempDone = [false, false, false];
+  // Go through history in order, reset when all 3 done
+  S.history.forEach(function(h) {
+    if (h.dayIdx >= 0 && h.dayIdx < 3) {
+      tempDone[h.dayIdx] = true;
+      // If all 3 done, reset cycle
+      if (tempDone[0] && tempDone[1] && tempDone[2]) {
+        tempDone = [false, false, false];
+      }
+    }
+  });
+  trainedDays = tempDone;
+
+  // Next day to train = first false in trainedDays
+  var nextDay = -1;
+  for (var nd = 0; nd < 3; nd++) {
+    if (!trainedDays[nd]) { nextDay = nd; break; }
+  }
+
+  var calHtml = '<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
+  for (var d = 0; d < 3; d++) {
+    var isDone = trainedDays[d];
+    var style;
+    if (isDone) {
+      // Green - like active day tab on main screen
+      style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
+        'align-items:center;justify-content:center;gap:2px;' +
+        'background:#4DC864;border:1.5px solid #4DC864;';
+    } else {
+      // Same glass as inactive day tabs on main screen
+      style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
+        'align-items:center;justify-content:center;gap:2px;' +
+        'background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);' +
+        'backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
+    }
+    var numColor = isDone ? '#000' : '#5a5a5a';
+    var labelColor = isDone ? '#000' : '#3a3a3a';
+    var label = isDone ? 'DONE' : 'DAY';
+    calHtml += '<div style="' + style + '">' +
+      '<span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:' + numColor + '">' + (d+1) + '</span>' +
+      '<span style="font-size:8px;font-weight:700;letter-spacing:1px;color:' + labelColor + '">' + label + '</span>' +
+      '</div>';
+  }
+  calHtml += '</div>';
+
   if (!S.history.length) {
-    container.innerHTML = '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
+    container.innerHTML = calHtml + '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
     return;
   }
+
   var byDay = [[], [], []];
   var rev = S.history.slice().reverse();
   rev.forEach(function(h){ if(byDay[h.dayIdx]) byDay[h.dayIdx].push(h); });
-  var html = '';
+  var html = calHtml;
   S.program.forEach(function(day, di) {
     var entries = byDay[di];
     if (!entries.length) return;
@@ -596,6 +661,40 @@ document.addEventListener('DOMContentLoaded', function() {
     var wcol = document.getElementById('wcol_' + S.openPanel);
     if (bar && !bar.contains(e.target) && wcol && !wcol.contains(e.target)) closeWib();
   });
+
+  // Swipe left/right to switch days
+  var swipeStartX = 0, swipeStartY = 0, swipeMoved = false;
+  var workoutView = document.getElementById('view-workout');
+
+  workoutView.addEventListener('touchstart', function(e) {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeMoved = false;
+  }, { passive: true });
+
+  workoutView.addEventListener('touchmove', function(e) {
+    swipeMoved = true;
+  }, { passive: true });
+
+  workoutView.addEventListener('touchend', function(e) {
+    if (!swipeMoved) return;
+    var dx = e.changedTouches[0].clientX - swipeStartX;
+    var dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
+    // Only horizontal swipes (dx > 60px, more horizontal than vertical)
+    if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
+    // Don't trigger if weight panel is open
+    if (S.openPanel) return;
+    var total = S.program.length;
+    if (dx < 0) {
+      S.currentDay = (S.currentDay + 1) % total;
+    } else {
+      S.currentDay = (S.currentDay - 1 + total) % total;
+    }
+    S.openPanel = null;
+    save();
+    renderWorkout();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, { passive: true });
 });
 </script>
 
