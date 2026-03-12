@@ -10,9 +10,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root {
   --bg:#0f0f0f; --card:#1a1a1a; --card2:#242424;
-  --accent:#c8ff47; --accent-dim:rgba(200,255,71,0.1);
+  --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
   --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
-  --green:#4ade80;
+  --green:#3C643C;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:90px}
@@ -33,13 +33,13 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .content{padding:16px 12px 0}
 .muscle-group{margin-bottom:24px}
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
-.muscle-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.muscle-label span{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:var(--accent);text-transform:uppercase}
+.muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#ffffff;flex-shrink:0}
+.muscle-label span{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:#ffffff;text-transform:uppercase}
 .exercise-card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;overflow:hidden;transition:border-color .25s,opacity .25s}
-.exercise-card.done{border-color:rgba(74,222,128,.35);opacity:.65}
+.exercise-card.done{border-color:#3a3a3a;opacity:.65}
 .ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
 .ex-info{flex:1;min-width:0}
-.ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:var(--text);cursor:pointer}
+.ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:#b0b0b0;cursor:pointer}
 .exercise-card.done .ex-name{text-decoration:line-through;color:var(--muted)}
 .ex-sets{font-size:10px;color:var(--muted);margin-top:3px}
 .ex-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -47,8 +47,8 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .weight-col.editing{border-color:var(--accent);background:var(--accent-dim)}
 .weight-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);line-height:1;text-align:center}
 .weight-unit{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600}
-.ex-check{width:36px;height:36px;border-radius:10px;border:2px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:16px;color:transparent;font-weight:900}
-.exercise-card.done .ex-check{background:var(--green);border-color:var(--green);color:#000}
+.ex-check{width:36px;height:36px;border-radius:10px;border:2px solid #3a3a3a;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;color:transparent;font-weight:400;font-family:Arial,sans-serif}
+.exercise-card.done .ex-check{background:var(--accent);border-color:#5a5a5a;color:#000}
 .ex-img{width:120px;height:120px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ex-img img{width:120px;height:120px;object-fit:contain;border-radius:10px;display:block}
 .ex-img svg{width:36px;height:36px;stroke:var(--muted);stroke-width:1.5;fill:none}
@@ -62,7 +62,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .img-expand-overlay.open{display:flex}
 .img-expand-inner{width:88vw;max-width:380px;border-radius:18px;overflow:hidden;background:var(--card);padding:10px;box-shadow:0 24px 64px rgba(0,0,0,.9)}
 .img-expand-inner img{width:100%;height:auto;display:block;border-radius:12px}
-.done-banner{display:none;background:linear-gradient(135deg,rgba(200,255,71,.08),rgba(200,255,71,.02));border:1px solid rgba(200,255,71,.25);border-radius:14px;padding:16px;margin:0 12px 16px;text-align:center}
+.done-banner{display:none;background:linear-gradient(135deg,rgba(157,196,74,.08),rgba(157,196,74,.02));border:1px solid rgba(157,196,74,.25);border-radius:14px;padding:16px;margin:0 12px 16px;text-align:center}
 .done-banner.show{display:block}
 .done-banner .db-emoji{font-size:32px;margin-bottom:6px}
 .done-banner .db-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
@@ -358,7 +358,7 @@ function renderWorkout() {
               '<div class="weight-val" data-id="' + exId + '">' + w + '</div>' +
               '<div class="weight-unit">кг</div>' +
             '</div>' +
-            '<div class="ex-check">' + (isDone ? '&#10003;' : '') + '</div>' +
+            '<div class="ex-check">' + (isDone ? '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</div>' +
           '</div>' +
         '</div>';
 
