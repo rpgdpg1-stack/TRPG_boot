@@ -51,7 +51,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ex-img img{width:120px;height:120px;object-fit:contain;border-radius:17px;display:block}
 .ex-img svg{width:36px;height:36px;stroke:var(--muted);stroke-width:1.5;fill:none}
-.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:300;background:rgba(255,255,255,0.09);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,.3)}
+.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:300;background:rgba(30,30,30,0.97);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s}
 .weight-input-bar.open{display:flex}
 .wib-label{font-size:11px;color:var(--muted);flex:1;line-height:1.4;font-weight:600}
 .wib-label b{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
@@ -445,9 +445,7 @@ function togglePanel(id) {
   _weightFresh = true;
   save();
 
-  // Hide bottom nav
   document.querySelector('.bottom-nav').style.display = 'none';
-
   var wcol = document.getElementById('wcol_' + id);
   if (wcol) wcol.classList.add('editing');
 
@@ -459,47 +457,50 @@ function togglePanel(id) {
   document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
   var wibInp = document.getElementById('wibInput');
   wibInp.value = w;
-  wibInp.setAttribute('readonly', true);
-  document.getElementById('weightInputBar').classList.add('open');
 
-  var savedScroll = window.scrollY;
+  var bar = document.getElementById('weightInputBar');
+  bar.style.bottom = '18px';
+  bar.classList.add('open');
+
+  // Stick bar just above keyboard using visualViewport
+  function onVPChange() {
+    var vv = window.visualViewport;
+    var keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+    bar.style.bottom = Math.max(18, keyboardHeight + 8) + 'px';
+    bar.style.transition = 'bottom 0.1s ease';
+  }
 
   if (window.visualViewport) {
-    var onVPChange = function() {
-      var bar = document.getElementById('weightInputBar');
-      var vv = window.visualViewport;
-      bar.style.bottom = (window.innerHeight - vv.height) + 'px';
-    };
     window.visualViewport.addEventListener('resize', onVPChange);
     window.visualViewport.addEventListener('scroll', onVPChange);
     window._wibVVCleanup = onVPChange;
-    window._wibSavedScroll = savedScroll;
   }
 
-  setTimeout(function() {
-    wibInp.removeAttribute('readonly');
-    wibInp.focus();
-    try { wibInp.setSelectionRange(wibInp.value.length, wibInp.value.length); } catch(e) {}
-    window.scrollTo({ top: savedScroll, behavior: 'instant' });
-  }, 50);
+  // Focus immediately - no delay, no scroll jump
+  wibInp.focus();
+  try { wibInp.setSelectionRange(wibInp.value.length, wibInp.value.length); } catch(e) {}
 }
 
 function closeWib() {
   S.openPanel = null;
   _weightFresh = false;
   save();
-  var wibInp = document.getElementById('wibInput');
-  wibInp.blur();
-  var bar = document.getElementById('weightInputBar');
-  bar.classList.remove('open');
-  bar.style.bottom = '';
+
   if (window._wibVVCleanup && window.visualViewport) {
     window.visualViewport.removeEventListener('resize', window._wibVVCleanup);
     window.visualViewport.removeEventListener('scroll', window._wibVVCleanup);
     window._wibVVCleanup = null;
   }
+
+  var wibInp = document.getElementById('wibInput');
+  wibInp.blur();
+
+  var bar = document.getElementById('weightInputBar');
+  bar.classList.remove('open');
+  bar.style.bottom = '18px';
+  bar.style.transition = '';
+
   document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
-  // Show bottom nav again
   document.querySelector('.bottom-nav').style.display = 'flex';
 }
 
