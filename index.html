@@ -22,8 +22,9 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .stats-pill{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
 .day-tabs{display:flex;gap:6px;padding-bottom:10px}
-.day-tab{flex:1;padding:10px 4px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;line-height:1.3}
+.day-tab{flex:1;padding:8px 4px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;line-height:1.3}
 .day-tab .dn{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:1px;line-height:1}
+.day-tab .day-img{width:100%;height:48px;object-fit:contain;display:block;padding:2px 6px;border-radius:8px}
 .day-tab.active{background:var(--accent);border-color:var(--accent);color:#000}
 .progress-wrap{padding:8px 16px 10px}
 .progress-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10px;color:var(--muted)}
@@ -300,8 +301,15 @@ function renderDayTabs() {
   S.program.forEach(function(day, i) {
     var b = document.createElement('button');
     b.className = 'day-tab' + (i === S.currentDay ? ' active' : '');
-    var lines = day.label.split('\n');
-    b.innerHTML = '<span class="dn">' + day.day + '</span>' + lines[0];
+    var dayImgs = {
+      1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5897.png",
+      2: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5899.png",
+      3: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5898.png"
+    };
+    var img = dayImgs[day.day];
+    b.innerHTML = img
+      ? '<img class="day-img" src="' + img + '" alt="День ' + day.day + '">'
+      : '<span class="dn">' + day.day + '</span>';
     b.onclick = (function(idx){ return function(){ S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); }; })(i);
     c.appendChild(b);
   });
