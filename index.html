@@ -7,7 +7,7 @@
 <title>💪 Тренировки</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
 :root {
   --bg:#0f0f0f; --card:#1a1a1a; --card2:#242424;
   --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
@@ -22,9 +22,8 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .stats-pill{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
 .day-tabs{display:flex;gap:6px;padding-bottom:10px}
-.day-tab{flex:1;padding:8px 4px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Manrope',sans-serif;font-size:10px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;line-height:1.3}
-.day-tab .dn{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:1px;line-height:1}
-.day-tab .day-img{width:100%;height:48px;object-fit:contain;display:block;padding:2px 6px;border-radius:8px}
+.day-tab{flex:1;padding:8px 4px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;line-height:1.4}
+.day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1}
 .day-tab.active{background:var(--accent);border-color:var(--accent);color:#000}
 .progress-wrap{padding:8px 16px 10px}
 .progress-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10px;color:var(--muted)}
@@ -203,7 +202,7 @@ var IMGS_ANIM = {
 };
 
 var DEFAULT_PROGRAM = [
-  { day:1, label:"СПИНА\nБИЦ\nНОГИ", groups:[
+  { day:1, label:"DAY\n1", groups:[
     { name:"СПИНА", exercises:[
       { id:"d1_1", name:"Вертикальная тяга широким прямым хватом к груди", sets:4, reps:10 },
       { id:"d1_2", name:"Горизонтальная тяга блока сидя параллельным хватом (в идеале тяга Т-грифа с упором)", sets:4, reps:10 }
@@ -224,7 +223,7 @@ var DEFAULT_PROGRAM = [
       { id:"d1_9", name:"Скручивание пресса на наклонной скамье", sets:3, reps:15 }
     ]}
   ]},
-  { day:2, label:"ГРУДЬ\nТРИЦ\nНОГИ", groups:[
+  { day:2, label:"DAY\n2", groups:[
     { name:"ГРУДЬ", exercises:[
       { id:"d2_1", name:"Жим гантелей лежа на наклонной скамье 30°-45°", sets:4, reps:10 },
       { id:"d2_2", name:"Сведение рук в тренажере бабочка", sets:3, reps:12 }
@@ -245,7 +244,7 @@ var DEFAULT_PROGRAM = [
       { id:"d2_9", name:"Подъем ног в висе на турнике", sets:3, reps:12 }
     ]}
   ]},
-  { day:3, label:"СПИНА\nПЛЕЧИ\nНОГИ", groups:[
+  { day:3, label:"DAY\n3", groups:[
     { name:"СПИНА + ГРУДЬ", exercises:[
       { id:"d3_1", name:"Подтягивания (прямым, параллельным, обратным, прямым)", sets:4, reps:10 },
       { id:"d3_2", name:"Жим штанги лежа (высота 11, 2 страховки)", sets:4, reps:8 }
@@ -301,15 +300,7 @@ function renderDayTabs() {
   S.program.forEach(function(day, i) {
     var b = document.createElement('button');
     b.className = 'day-tab' + (i === S.currentDay ? ' active' : '');
-    var dayImgs = {
-      1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5897.png",
-      2: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5899.png",
-      3: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_5898.png"
-    };
-    var img = dayImgs[day.day];
-    b.innerHTML = img
-      ? '<img class="day-img" src="' + img + '" alt="День ' + day.day + '">'
-      : '<span class="dn">' + day.day + '</span>';
+    b.innerHTML = '<span class="dn">' + day.day + '</span>';
     b.onclick = (function(idx){ return function(){ S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); }; })(i);
     c.appendChild(b);
   });
