@@ -517,7 +517,9 @@ function closeWib() {
 }
 
 function onWibBlur() {
-  // Small delay to allow our own buttons (✓) to fire first
+  if (window.Telegram && window.Telegram.WebApp) {
+    try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
+  }
   setTimeout(function() {
     if (S.openPanel) closeWib();
   }, 150);
@@ -563,6 +565,9 @@ function saveEdit() {
 }
 
 function finishWorkout() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+  }
   var day = S.program[S.currentDay];
   var allIds = [];
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
@@ -671,10 +676,14 @@ function showToast(msg) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Disable swipe-to-close in Telegram WebApp
+  // Telegram WebApp setup
   if (window.Telegram && window.Telegram.WebApp) {
-    try { window.Telegram.WebApp.disableVerticalSwipes(); } catch(e) {}
-    try { window.Telegram.WebApp.expand(); } catch(e) {}
+    var tg = window.Telegram.WebApp;
+    try { tg.ready(); } catch(e) {}
+    try { tg.expand(); } catch(e) {}
+    try { tg.disableVerticalSwipes(); } catch(e) {}
+    try { tg.setHeaderColor('#1a1a1a'); } catch(e) {}
+    try { tg.setBackgroundColor('#1a1a1a'); } catch(e) {}
   }
 
   if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
