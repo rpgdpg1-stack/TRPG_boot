@@ -23,7 +23,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .day-tabs{display:flex;gap:8px;padding:0 18px 8px;background:transparent}
 .day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center}
 .day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
-.day-tab.active{background:rgba(20,20,20,0.97);border-color:rgba(255,255,255,0.08);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(90%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(90%)}.day-tab.active .dn{color:var(--accent)}
+.day-tab.active{background:rgba(20,20,20,0.97);border-color:rgba(255,255,255,0.08);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(90%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(90%)}.day-tab.active .dn{color:var(--accent);font-size:59px}
 .progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
 .progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
@@ -290,7 +290,7 @@ function renderDayTabs() {
     var b = document.createElement('button');
     b.className = 'day-tab' + (i === S.currentDay ? ' active' : '');
     b.innerHTML = '<span class="dn">' + day.day + '</span>';
-    b.onclick = (function(idx){ return function(){ S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); window.scrollTo({top:0, behavior:'instant'}); }; })(i);
+    b.onclick = (function(idx){ return function(){ if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}} S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); window.scrollTo({top:0, behavior:'instant'}); }; })(i);
     c.appendChild(b);
   });
 }
@@ -684,6 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
     try { tg.disableVerticalSwipes(); } catch(e) {}
     try { tg.setHeaderColor('#1a1a1a'); } catch(e) {}
     try { tg.setBackgroundColor('#1a1a1a'); } catch(e) {}
+    try { tg.setBottomBarColor('#1a1a1a'); } catch(e) {}
+    try { tg.lockOrientation(); } catch(e) {}
   }
 
   if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
