@@ -21,9 +21,9 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .stats-pill{background:rgba(36,36,36,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
 .day-tabs{display:flex;gap:8px;padding:0 18px 8px;background:transparent}
-.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:1.5px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.05);backdrop-filter:blur(20px) saturate(200%) brightness(105%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(105%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center}
+.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center}
 .day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
-.day-tab.active{background:rgba(40,40,40,0.9);border-color:rgba(255,255,255,0.1);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%)}.day-tab.active .dn{color:var(--accent)}
+.day-tab.active{background:rgba(20,20,20,0.97);border-color:rgba(255,255,255,0.08);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(90%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(90%)}.day-tab.active .dn{color:var(--accent)}
 .progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
 .progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
@@ -51,10 +51,10 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ex-img img{width:120px;height:120px;object-fit:contain;border-radius:17px;display:block}
 .ex-img svg{width:36px;height:36px;stroke:var(--muted);stroke-width:1.5;fill:none}
-.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:300;background:rgba(30,30,30,0.97);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s}
+.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s}
 .weight-input-bar.open{display:flex}
 .wib-label{font-size:11px;color:var(--muted);flex:1;line-height:1.4;font-weight:600}
-.wib-label b{display:block;color:var(--text);font-size:12px;margin-bottom:1px}
+.wib-label b{display:block;color:var(--text);font-size:12px;margin-bottom:1px}.wib-kg{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
 .wib-input{background:var(--card2);border:2px solid var(--accent);border-radius:17px;color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;padding:8px 12px;outline:none;width:110px;flex-shrink:0}
 .wib-done{width:40px;height:40px;border-radius:17px;background:var(--accent);border:none;color:#000;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .img-expand-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.85);align-items:center;justify-content:center}
@@ -91,7 +91,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .hist-pill .hw{color:var(--accent);font-weight:800;font-family:'Bebas Neue',sans-serif;font-size:14px;line-height:1}
 .hist-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
 .bottom-nav{position:fixed;bottom:18px;left:0;right:0;background:transparent;border:none;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.09);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(--muted);cursor:pointer;font-family:'Manrope',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
+.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(--muted);cursor:pointer;font-family:'Manrope',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
 .nav-btn.active{color:var(--accent)}
 .nav-btn svg{width:20px;height:20px;stroke-width:2}
 .view{display:none}
@@ -105,12 +105,12 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 <div class="toast" id="toast"></div>
 
 <div class="weight-input-bar" id="weightInputBar">
-  <div class="wib-label"><b id="wibExName"></b>кг</div>
+  <div class="wib-label"><b id="wibExName"></b><span class="wib-kg">кг</span></div>
   <input class="wib-input" type="text" id="wibInput" inputmode="decimal"
     onkeydown="onWibKeydown(event)"
     oninput="onWibInput(this.value)"
-    onchange="onWibInput(this.value)">
-  <button class="wib-done" onclick="closeWib()">&#10003;</button>
+    onchange="onWibInput(this.value)"
+    onblur="onWibBlur()">
 </div>
 
 <div class="img-expand-overlay" id="imgOverlay" onclick="closeImgOverlay()">
@@ -439,7 +439,22 @@ var _weightFresh = false;
 
 function togglePanel(id) {
   if (S.openPanel === id) { closeWib(); return; }
-  if (S.openPanel) closeWib();
+  if (S.openPanel) {
+    // Switch exercise without closing keyboard
+    document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
+    S.openPanel = id;
+    _weightFresh = true;
+    save();
+    var wcol = document.getElementById('wcol_' + id);
+    if (wcol) wcol.classList.add('editing');
+    var day = S.program[S.currentDay];
+    var exName = '';
+    day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
+    var w = (S.weights[id] !== undefined) ? S.weights[id] : 0;
+    document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
+    document.getElementById('wibInput').value = w;
+    return;
+  }
 
   S.openPanel = id;
   _weightFresh = true;
@@ -462,21 +477,18 @@ function togglePanel(id) {
   bar.style.bottom = '18px';
   bar.classList.add('open');
 
-  // Stick bar just above keyboard using visualViewport
-  function onVPChange() {
+  function onVPResize() {
     var vv = window.visualViewport;
-    var keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-    bar.style.bottom = Math.max(18, keyboardHeight + 8) + 'px';
-    bar.style.transition = 'bottom 0.1s ease';
+    var kbHeight = window.innerHeight - vv.height;
+    bar.style.bottom = (kbHeight > 50 ? kbHeight + 4 : 18) + 'px';
   }
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onVPChange);
-    window.visualViewport.addEventListener('scroll', onVPChange);
-    window._wibVVCleanup = onVPChange;
+    window.visualViewport.addEventListener('resize', onVPResize);
+    window._wibVVCleanup = onVPResize;
+    onVPResize();
   }
 
-  // Focus immediately - no delay, no scroll jump
   wibInp.focus();
   try { wibInp.setSelectionRange(wibInp.value.length, wibInp.value.length); } catch(e) {}
 }
@@ -488,7 +500,6 @@ function closeWib() {
 
   if (window._wibVVCleanup && window.visualViewport) {
     window.visualViewport.removeEventListener('resize', window._wibVVCleanup);
-    window.visualViewport.removeEventListener('scroll', window._wibVVCleanup);
     window._wibVVCleanup = null;
   }
 
@@ -498,10 +509,18 @@ function closeWib() {
   var bar = document.getElementById('weightInputBar');
   bar.classList.remove('open');
   bar.style.bottom = '18px';
+  bar.style.top = '';
   bar.style.transition = '';
 
   document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
   document.querySelector('.bottom-nav').style.display = 'flex';
+}
+
+function onWibBlur() {
+  // Small delay to allow our own buttons (✓) to fire first
+  setTimeout(function() {
+    if (S.openPanel) closeWib();
+  }, 150);
 }
 
 function onWibKeydown(e) {
@@ -652,6 +671,12 @@ function showToast(msg) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Disable swipe-to-close in Telegram WebApp
+  if (window.Telegram && window.Telegram.WebApp) {
+    try { window.Telegram.WebApp.disableVerticalSwipes(); } catch(e) {}
+    try { window.Telegram.WebApp.expand(); } catch(e) {}
+  }
+
   if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
   load();
   S.openPanel = null;
@@ -660,8 +685,13 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('click', function(e) {
     if (!S.openPanel) return;
     var bar = document.getElementById('weightInputBar');
-    var wcol = document.getElementById('wcol_' + S.openPanel);
-    if (bar && !bar.contains(e.target) && wcol && !wcol.contains(e.target)) closeWib();
+    if (bar && bar.contains(e.target)) return;
+    // If tapped on another weight col - switch to it, don't close
+    var allWcols = document.querySelectorAll('.weight-col');
+    for (var i = 0; i < allWcols.length; i++) {
+      if (allWcols[i].contains(e.target)) return;
+    }
+    closeWib();
   });
 
   // Swipe left/right to switch days
@@ -675,16 +705,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }, { passive: true });
 
   workoutView.addEventListener('touchmove', function(e) {
-    swipeMoved = true;
+    var dx = Math.abs(e.touches[0].clientX - swipeStartX);
+    var dy = Math.abs(e.touches[0].clientY - swipeStartY);
+    // Only mark as moved for horizontal swipes
+    if (dx > dy) swipeMoved = true;
   }, { passive: true });
 
   workoutView.addEventListener('touchend', function(e) {
     if (!swipeMoved) return;
     var dx = e.changedTouches[0].clientX - swipeStartX;
     var dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
-    // Only horizontal swipes (dx > 60px, more horizontal than vertical)
     if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
-    // Don't trigger if weight panel is open
     if (S.openPanel) return;
     var total = S.program.length;
     if (dx < 0) {
@@ -697,6 +728,8 @@ document.addEventListener('DOMContentLoaded', function() {
     renderWorkout();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, { passive: true });
+
+
 });
 </script>
 
