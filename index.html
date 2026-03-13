@@ -734,6 +734,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     S.openPanel = null;
     save();
+    if (window.Telegram && window.Telegram.WebApp) {
+      try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
+    }
     renderWorkout();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, { passive: true });
