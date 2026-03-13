@@ -20,11 +20,14 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .app-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff}
 .stats-pill{background:rgba(36,36,36,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
-.day-tabs{display:flex;gap:8px;padding:0 18px 8px;background:transparent}
-.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center}
+.day-tabs{display:flex;gap:8px;padding:0 18px 0;background:transparent;align-items:flex-end}
+.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:none;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
-.day-tab.active{background:rgba(20,20,20,0.97);border-color:rgba(255,255,255,0.08);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(90%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(90%)}.day-tab.active .dn{color:var(--accent);font-size:59px}
-.progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
+.day-tab.active{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);position:relative;z-index:2;margin-bottom:0;height:78px;overflow:visible}.day-tab.active .dn{color:var(--accent);font-size:59px}
+.day-tab.active::before,.day-tab.active::after{content:'';position:absolute;bottom:0px;width:34px;height:34px;pointer-events:none;z-index:3}
+.day-tab.active.corner-left::before{left:-34px;background:radial-gradient(circle at 0% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
+.day-tab.active.corner-right::after{right:-34px;background:radial-gradient(circle at 100% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
+.progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%)}
 .progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease}
@@ -145,7 +148,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 <div class="view active" id="view-workout">
   <div class="header">
     <div class="day-tabs" id="dayTabs"></div>
-    <div class="progress-wrap">
+    <div class="progress-wrap" id="progressWrap">
       <span class="progress-label">Прогресс</span>
       <div class="progress-bg"><div class="progress-fill" id="progBar" style="width:0%"></div></div>
       <span class="progress-count" id="progLabel">0/0</span>
@@ -293,6 +296,46 @@ function renderDayTabs() {
     b.onclick = (function(idx){ return function(){ if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}} S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); window.scrollTo({top:0, behavior:'instant'}); }; })(i);
     c.appendChild(b);
   });
+  updateProgressCorners();
+}
+
+function updateProgressCorners() {
+  var prog = document.getElementById('progressWrap');
+  var activeTab = document.querySelector('.day-tab.active');
+  if (!prog || !activeTab) return;
+
+  var idx = S.currentDay;
+  var r = 25;
+
+  // Reset corner classes
+  activeTab.classList.remove('corner-left', 'corner-right');
+
+  if (idx === 0) {
+    // Day 1: left side goes down flush, right side has concave corner
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-right');
+    prog.style.borderTopLeftRadius = '0';
+    prog.style.borderTopRightRadius = r + 'px';
+  } else if (idx === S.program.length - 1) {
+    // Day 3: right side flush, left has concave corner
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-left');
+    prog.style.borderTopLeftRadius = r + 'px';
+    prog.style.borderTopRightRadius = '0';
+  } else {
+    // Day 2: both sides concave
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-left', 'corner-right');
+    prog.style.borderTopLeftRadius = r + 'px';
+    prog.style.borderTopRightRadius = r + 'px';
+  }
+  prog.style.borderBottomLeftRadius = r + 'px';
+  prog.style.borderBottomRightRadius = r + 'px';
+  // Remove top border of progress where it meets active tab
+  prog.style.borderTopColor = 'transparent';
 }
 
 function renderWorkout() {
