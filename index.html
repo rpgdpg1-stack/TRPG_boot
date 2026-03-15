@@ -56,17 +56,7 @@ pointer-events:all;
 cursor:pointer;
 }
 
-/* Числа внутри SVG — позиционируем через foreignObject или text */
-/* Метки дней: абсолютный текст поверх SVG */
-.day-label{
-position:absolute;
-top:0; left:0;
-width:100%; height:100%;
-pointer-events:none;
-display:flex;
-align-items:flex-start;
-justify-content:flex-start;
-}
+/* мусор убран */
 
 /* progress-wrap удалён — прогресс встроен в SVG */
 
@@ -147,8 +137,8 @@ CONTENT
 
 /* nav */
 .bottom-nav{position:fixed;bottom:18px;left:0;right:0;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:var(–glass-bg);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid var(–glass-border);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
-.nav-btn.active{color:var(–accent)}
+.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(28,28,30,0.72);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,0.14);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:color .2s,background .2s}
+.nav-btn.active{color:var(–accent);background:rgba(28,28,30,0.85);border-color:rgba(157,196,74,0.25);}
 .nav-btn svg{width:20px;height:20px;stroke-width:2}
 
 .view{display:none}
@@ -235,30 +225,31 @@ CONTENT
     <path
       id="d1-tab2"
       d="M220.333 18H169.667C152.178 18 138 32.3269 138 50C138 67.6731 152.178 82 169.667 82H220.333C237.822 82 252 67.6731 252 50C252 32.3269 237.822 18 220.333 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 3 (неактивный) -->
     <path
       id="d1-tab3"
       d="M340.333 18H289.667C272.178 18 258 32.3269 258 50C258 67.6731 272.178 82 289.667 82H340.333C357.822 82 372 67.6731 372 50C372 32.3269 357.822 18 340.333 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 1 активный + прогресс-полоса (подкова) -->
     <path
       id="d1-tab1"
       d="M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
 
+    <rect id="d1-tab1-hit" x="18" y="18" width="113" height="90" fill="transparent" style="cursor:pointer;"/>
     <!-- Число 1 в активном табе -->
     <text
       id="d1-num1"
@@ -269,6 +260,7 @@ CONTENT
       font-size="52"
       fill="#9DC44A"
     >1</text>
+    <rect id="d1-tab2-hit" x="138" y="18" width="114" height="64" fill="transparent" style="cursor:pointer;"/>
     <!-- Число 2 в неактивном табе -->
     <text
       id="d1-num2"
@@ -279,6 +271,7 @@ CONTENT
       font-size="44"
       fill="#555"
     >2</text>
+    <rect id="d1-tab3-hit" x="258" y="18" width="114" height="64" fill="transparent" style="cursor:pointer;"/>
     <!-- Число 3 в неактивном табе -->
     <text
       id="d1-num3"
@@ -312,30 +305,33 @@ CONTENT
     <path
       id="d2-tab1"
       d="M100.33 18H49.67C32.178 18 18 32.103 18 49.5C18 66.897 32.178 81 49.67 81H100.33C117.822 81 132 66.897 132 49.5C132 32.103 117.822 18 100.33 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 3 (неактивный, правая капсула) -->
     <path
       id="d2-tab3"
       d="M340.33 18H289.67C272.178 18 258 32.103 258 49.5C258 66.897 272.178 81 289.67 81H340.33C357.822 81 372 66.897 372 49.5C372 32.103 357.822 18 340.33 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 2 активный — центральная подкова -->
     <path
       id="d2-tab2"
       d="M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.55 88.3279H352.23C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.23 128H37.77C26.85 128 18 119.119 18 108.164C18 97.2087 26.85 88.3279 37.77 88.3279H105.45C123.65 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.34 18H218.66C236.85 18 251.6 32.8015 251.6 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
 
+    <rect id="d2-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
+    <rect id="d2-tab3-hit" x="258" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
+    <rect id="d2-tab2-hit" x="138" y="18" width="116" height="110" fill="transparent" style="cursor:pointer;"/>
     <!-- Числа -->
     <text id="d2-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">1</text>
     <text id="d2-num3" x="315" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">3</text>
@@ -361,30 +357,33 @@ CONTENT
     <path
       id="d3-tab1"
       d="M49.667 18H100.333C117.822 18 132 32.3269 132 50C132 67.6731 117.822 82 100.333 82H49.667C32.178 82 18 67.6731 18 50C18 32.3269 32.178 18 49.667 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 2 (неактивный, средняя капсула) -->
     <path
       id="d3-tab2"
       d="M169.67 18H220.33C237.82 18 252 32.3269 252 50C252 67.6731 237.82 82 220.33 82H169.67C152.178 82 138 67.6731 138 50C138 32.3269 152.178 18 169.67 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
     <!-- Таб 3 активный — правосторонняя подкова -->
     <path
       id="d3-tab3"
       d="M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.85 88.3279H37.766C26.85 88.3279 18 97.2087 18 108.164C18 119.119 26.85 128 37.766 128H339.06C357.25 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.25 18 339.06 18H291.74C273.54 18 258.79 32.8016 258.79 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="1"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(255,255,255,0.22)"
+      stroke-width="0.75"
       style="cursor:pointer;"
     />
 
+    <rect id="d3-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
+    <rect id="d3-tab2-hit" x="138" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
+    <rect id="d3-tab3-hit" x="258" y="18" width="114" height="110" fill="transparent" style="cursor:pointer;"/>
     <!-- Числа -->
     <text id="d3-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">1</text>
     <text id="d3-num2" x="195" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">2</text>
@@ -558,48 +557,35 @@ function switchDay(dayIdx){
 
 /* клики по тапам каждого SVG-дня */
 function bindSvgClicks(){
+  // id элемента → номер дня (0/1/2)
   var map = {
-    // day1 paths
     'd1-tab1':0,'d1-tab2':1,'d1-tab3':2,
-    // day1 числа
     'd1-num1':0,'d1-num2':1,'d1-num3':2,
-    // day2 paths
     'd2-tab1':0,'d2-tab2':1,'d2-tab3':2,
-    // day2 числа (num3 = правая капсула = день 3, num2 = активная = день 1)
     'd2-num1':0,'d2-num2':1,'d2-num3':2,
-    // day3 paths
     'd3-tab1':0,'d3-tab2':1,'d3-tab3':2,
-    // day3 числа
-    'd3-num1':0,'d3-num2':1,'d3-num3':2
+    'd3-num1':0,'d3-num2':1,'d3-num3':2,
+    'd1-tab1-hit':0,'d1-tab2-hit':1,'d1-tab3-hit':2,
+    'd2-tab1-hit':0,'d2-tab2-hit':1,'d2-tab3-hit':2,
+    'd3-tab1-hit':0,'d3-tab2-hit':1,'d3-tab3-hit':2
   };
-  var area = document.getElementById('headerSvgArea');
-  var _tapX=0, _tapY=0;
 
-  area.addEventListener('touchstart',function(e){
-    _tapX=e.touches[0].clientX; _tapY=e.touches[0].clientY;
-  },{passive:true});
-
-  area.addEventListener('touchend',function(e){
-    if(Math.abs(e.changedTouches[0].clientX-_tapX)>10||Math.abs(e.changedTouches[0].clientY-_tapY)>10) return;
-    var el=e.target, id=null;
-    for(var i=0;i<5;i++){
-      if(!el) break;
-      if(el.id&&map[el.id]!==undefined){id=el.id;break;}
-      el=el.parentElement;
-    }
-    if(id===null) return;
-    e.preventDefault();
-    switchDay(map[id]);
-  },{passive:false});
-
-  area.addEventListener('click',function(e){
-    var el=e.target, id=null;
-    for(var i=0;i<5;i++){
-      if(!el) break;
-      if(el.id&&map[el.id]!==undefined){id=el.id;break;}
-      el=el.parentElement;
-    }
-    if(id!==null) switchDay(map[id]);
+  // Вешаем click на каждый элемент напрямую — надёжнее делегирования
+  Object.keys(map).forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var day = map[id];
+    // touchend для мобилы (быстрее чем click, нет 300ms задержки)
+    el.addEventListener('touchend', function(e){
+      e.stopPropagation(); // не пускаем к swipe-обработчику
+      e.preventDefault();
+      switchDay(day);
+    }, {passive:false});
+    // click для десктоп/preview
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      switchDay(day);
+    });
   });
 }
 
