@@ -3,148 +3,362 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>💪 Тренировки</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
+
+/* ── ПЕРЕМЕННЫЕ ── */
 :root {
-  --bg:#101010; --card:#232323; --card2:#2a2a2a;
-  --accent:#AAD066; --accent-dim:rgba(170,208,102,0.12);
-  --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
-  --glass-bg: rgba(255,255,255,0.07);
-  --glass-border: rgba(255,255,255,0.18);
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:90px}
-
-/* ═══════════════════════════════
-HEADER
-═══════════════════════════════ */
-.header{
-position:sticky;top:0;z-index:100;
-padding:10px 0 0;
-background:none;
-}
-.header::before{
-content:’’;position:fixed;top:0;left:0;right:0;height:36px;
-background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0) 100%);
-pointer-events:none;z-index:-1;
+–bg: #101010;
+–card: #232323;
+–card2: #2a2a2a;
+–accent: #AAD066;
+–text: #efefef;
+–muted: #5a5a5a;
+–border: #2a2a2a;
+–glass-bg: rgba(255,255,255,0.07);
+–glass-border: rgba(255,255,255,0.18);
+–glass-blur: blur(20px) saturate(200%) brightness(115%);
 }
 
-/* Контейнер SVG-хедера */
-.header-svg-area{
-position:relative;
-width:100%;
-height:145px;
-margin-bottom:10px;
-padding:0;
-background:transparent;
-box-sizing:border-box;
+/* ── СБРОС — важно для Safari/iOS ── */
+*, *::before, *::after {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+-webkit-tap-highlight-color: transparent;
 }
-.header-svg-area svg.day-svg{
-display:block;
-width:100%;
-height:145px;
-cursor:pointer;
-background:transparent;
--webkit-tap-highlight-color:transparent;
+
+/* Полный сброс кнопок — убирает синий iOS стиль */
+button {
+-webkit-appearance: none !important;
+-moz-appearance: none !important;
+appearance: none !important;
+outline: none;
+border: none;
+background: transparent;
+color: inherit;
+font: inherit;
+cursor: pointer;
 }
+
+input, textarea {
+-webkit-appearance: none;
+appearance: none;
+outline: none;
+border: none;
+}
+
+/* ── ТЕЛО ── */
+html, body {
+width: 100%;
+min-height: 100%;
+background: var(–bg);
+color: var(–text);
+font-family: ‘Manrope’, sans-serif;
+-webkit-text-size-adjust: 100%;
+overflow-x: hidden;
+}
+body {
+padding-bottom: 100px;
+-webkit-overflow-scrolling: touch;
+}
+
+/* ── ХЕДЕР — fixed, как нижние кнопки ── */
+.header {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+z-index: 100;
+padding: 10px 0 0;
+}
+
+/* Контент начинается ниже фиксированного хедера:
+10px padding-top + 145px SVG + 10px margin-bottom = 165px */
+#view-workout .content {
+padding-top: 165px;
+}
+
+/* SVG-контейнер хедера */
+.header-svg-area {
+width: 100%;
+height: 145px;
+margin-bottom: 10px;
+background: transparent;
+}
+.header-svg-area svg.day-svg {
+display: block;
+width: 100%;
+height: 145px;
+background: transparent;
+-webkit-tap-highlight-color: transparent;
+touch-action: manipulation;
+}
+/* Все path и text в SVG — кликабельны */
 .header-svg-area svg.day-svg path,
-.header-svg-area svg.day-svg text{
-pointer-events:all;
-cursor:pointer;
+.header-svg-area svg.day-svg rect,
+.header-svg-area svg.day-svg text {
+pointer-events: all;
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
 }
 
-/* ═══════════════════════════════
-CONTENT
-═══════════════════════════════ */
-.content{padding:16px 12px 0}
-.muscle-group{margin-bottom:24px}
-.muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
-.muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#fff;flex-shrink:0}
-.muscle-label span{font-family:‘Bebas Neue’,sans-serif;font-size:15px;letter-spacing:3px;color:#fff;text-transform:uppercase}
-.exercise-card{background:rgba(35,35,35,0.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.07);border-radius:25px;margin-bottom:8px;overflow:hidden;transition:border-color .25s,opacity .25s}
-.exercise-card.done{border-color:#3a3a3a;opacity:.65}
-.ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
-.ex-info{flex:1;min-width:0}
-.ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:#b0b0b0;cursor:pointer}
-.exercise-card.done .ex-name{text-decoration:line-through;color:var(–muted)}
-.ex-sets{font-size:10px;color:var(–muted);margin-top:3px}
-.ex-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.weight-col{display:flex;flex-direction:row;align-items:center;justify-content:center;flex-shrink:0;gap:0;cursor:pointer;padding:6px;border-radius:15px;transition:background .15s}
-.weight-col.editing .weight-val{border-color:var(–accent);background:rgba(170,208,102,0.1)}
-.weight-val{font-family:‘Bebas Neue’,sans-serif;font-size:24px;color:var(–accent);line-height:1;text-align:center;padding:6px;display:inline-flex;align-items:center;justify-content:center;border:2px solid transparent;border-radius:12px;transition:border-color .2s}
-.weight-unit{font-size:9px;color:var(–muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:3px}
-.ex-check{width:36px;height:36px;border-radius:15px;border:2px solid #3a3a3a;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;color:transparent}
-.exercise-card.done .ex-check{background:var(–accent);border-color:#5a5a5a;color:#000}
-.ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(–card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.ex-img img{width:120px;height:120px;object-fit:contain;border-radius:17px;display:block}
-.ex-img svg{width:36px;height:36px;stroke:var(–muted);stroke-width:1.5;fill:none}
+/* ── КОНТЕНТ ── */
+.content { padding: 16px 12px 0; }
+.muscle-group { margin-bottom: 24px; }
+.muscle-label {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+margin-bottom: 14px;
+padding: 0 4px;
+text-align: center;
+}
+.muscle-label .dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: #fff;
+flex-shrink: 0;
+}
+.muscle-label span {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 15px;
+letter-spacing: 3px;
+color: #fff;
+text-transform: uppercase;
+}
 
-/* weight input bar */
-.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:var(–glass-bg);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid var(–glass-border);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6)}
-.weight-input-bar.open{display:flex}
-.wib-label{font-size:11px;color:var(–muted);flex:1;line-height:1.4;font-weight:600}
-.wib-label b{display:block;color:var(–text);font-size:12px;margin-bottom:1px}
-.wib-kg{font-size:10px;color:var(–muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.wib-input{background:var(–card2);border:2px solid var(–accent);border-radius:17px;color:var(–accent);font-family:‘Bebas Neue’,sans-serif;font-size:28px;text-align:center;padding:8px 12px;outline:none;width:110px;flex-shrink:0}
+/* ── КАРТОЧКИ УПРАЖНЕНИЙ ── */
+.exercise-card {
+background: var(–card);
+border: 1px solid rgba(255,255,255,0.06);
+border-radius: 25px;
+margin-bottom: 8px;
+overflow: hidden;
+transition: border-color .25s, opacity .25s;
+}
+.exercise-card.done { border-color: #333; opacity: .6; }
+.ex-main { display: flex; align-items: center; padding: 8px 10px; gap: 12px; }
+.ex-info { flex: 1; min-width: 0; }
+.ex-name { font-size: 12.5px; font-weight: 700; line-height: 1.4; color: #b0b0b0; cursor: pointer; }
+.exercise-card.done .ex-name { text-decoration: line-through; color: var(–muted); }
+.ex-sets { font-size: 10px; color: var(–muted); margin-top: 3px; }
+.ex-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-/* image overlay */
-.img-expand-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.85);align-items:center;justify-content:center}
-.img-expand-overlay.open{display:flex}
-.img-expand-inner{width:88vw;max-width:380px;border-radius:25px;overflow:hidden;background:var(–card);padding:10px;box-shadow:0 24px 64px rgba(0,0,0,.9)}
-.img-expand-inner img{width:100%;height:auto;display:block;border-radius:15px}
+.weight-col {
+display: flex; flex-direction: row; align-items: center; justify-content: center;
+flex-shrink: 0; gap: 0; cursor: pointer; padding: 6px; border-radius: 15px;
+transition: background .15s;
+}
+.weight-col.editing .weight-val {
+border-color: var(–accent);
+background: rgba(170,208,102,0.1);
+}
+.weight-val {
+font-family: ‘Bebas Neue’, sans-serif;
+font-size: 24px; color: var(–accent); line-height: 1; text-align: center;
+padding: 6px; display: inline-flex; align-items: center; justify-content: center;
+border: 2px solid transparent; border-radius: 12px; transition: border-color .2s;
+}
+.weight-unit {
+font-size: 9px; color: var(–muted); text-transform: uppercase;
+letter-spacing: 1px; font-weight: 600; margin-left: 3px;
+}
+.ex-check {
+width: 36px; height: 36px; border-radius: 15px;
+border: 2px solid #3a3a3a; background: transparent; cursor: pointer;
+flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+transition: all .2s; color: transparent;
+}
+.exercise-card.done .ex-check { background: var(–accent); border-color: #5a5a5a; color: #000; }
+.ex-img {
+width: 120px; height: 120px; border-radius: 17px; overflow: hidden;
+flex-shrink: 0; background: var(–card2); display: flex; align-items: center;
+justify-content: center; cursor: pointer;
+}
+.ex-img img { width: 120px; height: 120px; object-fit: contain; border-radius: 17px; display: block; }
+.ex-img svg { width: 36px; height: 36px; stroke: var(–muted); stroke-width: 1.5; fill: none; }
 
-/* done banner / finish */
-.done-banner{display:none;background:linear-gradient(135deg,rgba(170,208,102,0.08),rgba(170,208,102,0.02));border:1px solid rgba(170,208,102,0.25);border-radius:25px;padding:16px;margin:0 12px 16px;text-align:center}
-.done-banner.show{display:block}
-.done-banner .db-emoji{font-size:32px;margin-bottom:6px}
-.done-banner .db-text{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:2px;color:var(–accent)}
-.done-banner .db-sub{font-size:11px;color:var(–muted);margin-top:4px}
-.finish-btn{display:block;width:100%;padding:14px 16px;border-radius:25px;background:rgba(200,60,60,0.85);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,120,120,0.25);color:#fff;font-family:‘Bebas Neue’,sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s;text-align:center}
-.finish-btn:active{opacity:.7}
+/* ── ВВОД ВЕСА ── */
+.weight-input-bar {
+display: none;
+position: fixed; left: 18px; right: 18px; bottom: 18px; z-index: 1000;
+background: var(–glass-bg);
+-webkit-backdrop-filter: var(–glass-blur);
+backdrop-filter: var(–glass-blur);
+border: 1px solid var(–glass-border);
+border-radius: 25px; padding: 10px 16px;
+align-items: center; gap: 12px;
+box-shadow: 0 4px 32px rgba(0,0,0,.6);
+}
+.weight-input-bar.open { display: flex; }
+.wib-label { font-size: 11px; color: var(–muted); flex: 1; line-height: 1.4; font-weight: 600; }
+.wib-label b { display: block; color: var(–text); font-size: 12px; margin-bottom: 1px; }
+.wib-kg { font-size: 10px; color: var(–muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+.wib-input {
+-webkit-appearance: none; appearance: none;
+background: var(–card2); border: 2px solid var(–accent) !important;
+border-radius: 17px; color: var(–accent);
+font-family: ‘Bebas Neue’, sans-serif; font-size: 28px;
+text-align: center; padding: 8px 12px; width: 110px; flex-shrink: 0;
+}
 
-/* edit modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
-.overlay.open{display:flex}
-.modal{background:rgba(26,26,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-width:480px;border-top:1px solid rgba(255,255,255,0.08)}
-.modal-handle{width:36px;height:4px;background:var(–border);border-radius:2px;margin:0 auto 18px}
-.modal-title{font-family:‘Bebas Neue’,sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:14px;color:var(–accent)}
-.modal-label{font-size:10px;color:var(–muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:700}
-.modal-input{width:100%;background:var(–card2);border:1.5px solid var(–border);border-radius:10px;color:var(–text);font-family:‘Manrope’,sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;line-height:1.5;transition:border-color .2s;margin-bottom:12px}
-.modal-input:focus{border-color:var(–accent)}
-.modal-row{display:flex;gap:8px;margin-bottom:16px}
-.modal-row>div{flex:1}
-.modal-btns{display:flex;gap:8px}
-.btn-save{flex:1;padding:13px;border-radius:10px;background:var(–accent);border:none;color:#000;font-family:‘Manrope’,sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:opacity .2s}
-.btn-save:active{opacity:.8}
-.btn-cancel{padding:13px 18px;border-radius:10px;background:var(–card2);border:1px solid var(–border);color:var(–muted);font-family:‘Manrope’,sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+/* ── ОВЕРЛЕИ ── */
+.img-expand-overlay {
+display: none; position: fixed; inset: 0; z-index: 400;
+background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+}
+.img-expand-overlay.open { display: flex; }
+.img-expand-inner {
+width: 88vw; max-width: 380px; border-radius: 25px;
+overflow: hidden; background: var(–card); padding: 10px;
+box-shadow: 0 24px 64px rgba(0,0,0,.9);
+}
+.img-expand-inner img { width: 100%; height: auto; display: block; border-radius: 15px; }
 
-/* history */
-.hist-content{padding:16px 12px}
-.hist-day-header{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:1px;color:var(–accent);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
-.hist-entry{background:var(–card);border:1px solid var(–border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.hist-date{font-size:10px;color:var(–muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-.hist-pills{display:flex;flex-wrap:wrap;gap:5px}
-.hist-pill{background:var(–card2);border-radius:8px;padding:4px 9px;font-size:11px;color:var(–text);display:flex;gap:5px;align-items:center;font-weight:500}
-.hist-pill .hw{color:var(–accent);font-weight:800;font-family:‘Bebas Neue’,sans-serif;font-size:14px;line-height:1}
-.hist-empty{color:var(–muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
+.overlay {
+display: none; position: fixed; inset: 0;
+background: rgba(0,0,0,.8); z-index: 500;
+align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+background: rgba(22,22,22,0.95);
+-webkit-backdrop-filter: blur(20px);
+backdrop-filter: blur(20px);
+border-radius: 20px 20px 0 0;
+padding: 20px 18px 40px; width: 100%; max-width: 480px;
+border-top: 1px solid rgba(255,255,255,0.08);
+}
+.modal-handle { width: 36px; height: 4px; background: var(–border); border-radius: 2px; margin: 0 auto 18px; }
+.modal-title { font-family: ‘Bebas Neue’, sans-serif; font-size: 20px; letter-spacing: 1px; margin-bottom: 14px; color: var(–accent); }
+.modal-label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: 700; }
+.modal-input {
+-webkit-appearance: none; appearance: none;
+width: 100%; background: var(–card2); border: 1.5px solid var(–border) !important;
+border-radius: 10px; color: var(–text); font-family: ‘Manrope’, sans-serif;
+font-size: 13px; padding: 10px 12px; resize: none; line-height: 1.5;
+transition: border-color .2s; margin-bottom: 12px;
+}
+.modal-input:focus { border-color: var(–accent) !important; }
+.modal-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.modal-row > div { flex: 1; }
+.modal-btns { display: flex; gap: 8px; }
+.btn-save {
+flex: 1; padding: 13px; border-radius: 10px;
+background: var(–accent); color: #000;
+font-family: ‘Manrope’, sans-serif; font-weight: 800; font-size: 13px;
+transition: opacity .2s;
+}
+.btn-save:active { opacity: .8; }
+.btn-cancel {
+padding: 13px 18px; border-radius: 10px;
+background: var(–card2); border: 1px solid var(–border) !important;
+color: var(–muted); font-family: ‘Manrope’, sans-serif; font-weight: 600; font-size: 13px;
+}
 
-/* nav */
-.bottom-nav{position:fixed;bottom:18px;left:0;right:0;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:color .2s,background .2s}
-.nav-btn.active{color:var(–accent);background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);}
-.nav-btn svg{width:20px;height:20px;stroke-width:2}
+/* ── BANNER / FINISH ── */
+.done-banner {
+display: none;
+background: linear-gradient(135deg, rgba(170,208,102,0.08), rgba(170,208,102,0.02));
+border: 1px solid rgba(170,208,102,0.25);
+border-radius: 25px; padding: 16px; margin: 0 12px 16px; text-align: center;
+}
+.done-banner.show { display: block; }
+.done-banner .db-emoji { font-size: 32px; margin-bottom: 6px; }
+.done-banner .db-text { font-family: ‘Bebas Neue’, sans-serif; font-size: 18px; letter-spacing: 2px; color: var(–accent); }
+.done-banner .db-sub { font-size: 11px; color: var(–muted); margin-top: 4px; }
 
-.view{display:none}
-.view.active{display:block}
+.finish-btn {
+display: block; width: 100%; padding: 14px 16px; border-radius: 25px;
+background: rgba(200,60,60,0.85);
+-webkit-backdrop-filter: var(–glass-blur);
+backdrop-filter: var(–glass-blur);
+border: 1px solid rgba(255,120,120,0.25) !important;
+color: #fff; font-family: ‘Bebas Neue’, sans-serif;
+font-size: 20px; letter-spacing: 2px; text-align: center;
+transition: opacity .2s;
+}
+.finish-btn:active { opacity: .7; }
 
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:#4a6e2a;color:#000;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:800;opacity:0;transition:all .3s;z-index:900;pointer-events:none;white-space:nowrap;font-family:‘Manrope’,sans-serif}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── ИСТОРИЯ ── */
+.hist-content { padding: 16px 12px; }
+.hist-day-header {
+font-family: ‘Bebas Neue’, sans-serif; font-size: 18px; letter-spacing: 1px;
+color: var(–accent); margin: 16px 0 8px; display: flex; align-items: center; gap: 8px;
+}
+.hist-entry {
+background: var(–card); border: 1px solid var(–border);
+border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+}
+.hist-date { font-size: 10px; color: var(–muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.hist-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.hist-pill {
+background: var(–card2); border-radius: 8px; padding: 4px 9px;
+font-size: 11px; color: var(–text); display: flex; gap: 5px; align-items: center; font-weight: 500;
+}
+.hist-pill .hw { color: var(–accent); font-weight: 800; font-family: ‘Bebas Neue’, sans-serif; font-size: 14px; line-height: 1; }
+.hist-empty { color: var(–muted); font-size: 13px; text-align: center; padding: 40px 20px; line-height: 1.8; }
 
-/* app-title for history */
-.app-title{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:3px;color:#fff}
+/* ── НИЖНЯЯ НАВИГАЦИЯ ── */
+.bottom-nav {
+position: fixed; bottom: 18px; left: 0; right: 0;
+display: flex; z-index: 200; padding: 0 18px; gap: 12px;
+justify-content: space-between;
+/* isolation нужен для backdrop-filter в Safari */
+isolation: isolate;
+pointer-events: none;
+}
+.nav-btn {
+-webkit-appearance: none !important;
+appearance: none !important;
+pointer-events: all;
+flex: 1; max-width: 120px; height: 70px; padding: 0 8px;
+background: var(–glass-bg) !important;
+-webkit-backdrop-filter: var(–glass-blur) !important;
+backdrop-filter: var(–glass-blur) !important;
+border: 1px solid var(–glass-border) !important;
+border-radius: 35px;
+color: var(–muted) !important;
+font-family: ‘Manrope’, sans-serif; font-size: 9px;
+text-transform: uppercase; letter-spacing: .5px; font-weight: 700;
+display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+transition: color .2s;
+/* Убираем любые системные стили */
+-webkit-text-fill-color: initial;
+text-decoration: none;
+}
+.nav-btn.active {
+color: var(–accent) !important;
+-webkit-text-fill-color: initial;
+}
+.nav-btn svg {
+width: 20px; height: 20px; stroke-width: 2;
+/* stroke берётся из currentColor — важно для Safari */
+stroke: currentColor;
+fill: none;
+}
+
+/* ── ВСПОМОГАТЕЛЬНЫЕ ── */
+.view { display: none; }
+.view.active { display: block; }
+
+.toast {
+position: fixed; bottom: 100px; left: 50%;
+transform: translateX(-50%) translateY(16px);
+background: #4a6e2a; color: #fff;
+padding: 9px 18px; border-radius: 20px;
+font-size: 12px; font-weight: 800; opacity: 0;
+transition: all .3s; z-index: 900; pointer-events: none;
+white-space: nowrap; font-family: ‘Manrope’, sans-serif;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.app-title { font-family: ‘Bebas Neue’, sans-serif; font-size: 18px; letter-spacing: 3px; color: #fff; }
 </style>
 
 </head>
@@ -170,7 +384,7 @@ CONTENT
 <div class="overlay" id="editOverlay">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">✏️ Изменить упражнение</div>
+    <div class="modal-title">&#9999;&#65039; Изменить упражнение</div>
     <div class="modal-label">Название</div>
     <textarea class="modal-input" id="editName" rows="2"></textarea>
     <div class="modal-row">
@@ -190,223 +404,78 @@ CONTENT
   </div>
 </div>
 
-<!-- ═══════════ WORKOUT VIEW ═══════════ -->
+<!-- ═══ WORKOUT VIEW ═══ -->
 
 <div class="view active" id="view-workout">
   <div class="header" id="workoutHeader">
+    <div class="header-svg-area" id="headerSvgArea">
 
 ```
-<!-- SVG-хедер: 3 кликабельные фигуры -->
-<div class="header-svg-area" id="headerSvgArea">
-
-  <!--
-    viewBox 0 0 390 128 — оригинальные координаты Фигмы
-    Каждый день — отдельный SVG, переключение через JS
-  -->
-
-  <!-- ДЕНЬ 1 (активный по умолчанию) -->
-  <svg
-    id="svgDay1"
-    class="day-svg"
-    viewBox="23 0 344 128"
-    preserveAspectRatio="xMidYMid meet"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <!--
-      День 1: большая «подкова» (таб 1 + полоса прогресса) + капсулы 2 и 3
-      Активный таб — с акцентной обводкой, неактивные — glass
-    -->
-
-    <!-- Таб 2 (неактивный) -->
-    <path
-      id="d1-tab2"
-      d="M220.333 18H169.667C152.178 18 138 32.3269 138 50C138 67.6731 152.178 82 169.667 82H220.333C237.822 82 252 67.6731 252 50C252 32.3269 237.822 18 220.333 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 3 (неактивный) -->
-    <path
-      id="d1-tab3"
-      d="M340.333 18H289.667C272.178 18 258 32.3269 258 50C258 67.6731 272.178 82 289.667 82H340.333C357.822 82 372 67.6731 372 50C372 32.3269 357.822 18 340.333 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 1 активный + прогресс-полоса (подкова) -->
-    <path
-      id="d1-tab1"
-      d="M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-
-    <rect id="d1-tab1-hit" x="18" y="18" width="113" height="90" fill="transparent" style="cursor:pointer;"/>
-    <!-- Число 1 в активном табе -->
-    <text
-      id="d1-num1"
-      x="65" y="63"
-      text-anchor="middle"
-      dominant-baseline="middle"
-      font-family="Tiny5, sans-serif"
-      font-size="52"
-      fill="#AAD066"
-    >1</text>
-    <rect id="d1-tab2-hit" x="138" y="18" width="114" height="64" fill="transparent" style="cursor:pointer;"/>
-    <!-- Число 2 в неактивном табе -->
-    <text
-      id="d1-num2"
-      x="195" y="50"
-      text-anchor="middle"
-      dominant-baseline="middle"
-      font-family="Tiny5, sans-serif"
-      font-size="44"
-      fill="#555"
-    >2</text>
-    <rect id="d1-tab3-hit" x="258" y="18" width="114" height="64" fill="transparent" style="cursor:pointer;"/>
-    <!-- Число 3 в неактивном табе -->
-    <text
-      id="d1-num3"
-      x="315" y="50"
-      text-anchor="middle"
-      dominant-baseline="middle"
-      font-family="Tiny5, sans-serif"
-      font-size="44"
-      fill="#555"
-    >3</text>
-
-    <!-- Прогресс-бар внутри подковы -->
-    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
-    <!-- bg трек -->
+  <!-- ДЕНЬ 1 -->
+  <svg id="svgDay1" class="day-svg" viewBox="23 0 344 128" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <path id="d1-tab2" d="M220.333 18H169.667C152.178 18 138 32.3269 138 50C138 67.6731 152.178 82 169.667 82H220.333C237.822 82 252 67.6731 252 50C252 32.3269 237.822 18 220.333 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d1-tab3" d="M340.333 18H289.667C272.178 18 258 32.3269 258 50C258 67.6731 272.178 82 289.667 82H340.333C357.822 82 372 67.6731 372 50C372 32.3269 357.822 18 340.333 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d1-tab1" d="M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <rect id="d1-tab1-hit" x="18" y="18" width="113" height="90" fill="transparent"/>
+    <rect id="d1-tab2-hit" x="138" y="18" width="114" height="64" fill="transparent"/>
+    <rect id="d1-tab3-hit" x="258" y="18" width="114" height="64" fill="transparent"/>
+    <text id="d1-num1" x="65" y="63" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="52" fill="#AAD066">1</text>
+    <text id="d1-num2" x="195" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">2</text>
+    <text id="d1-num3" x="315" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">3</text>
+    <text x="86" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
     <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
-    <!-- fill трек -->
     <rect id="progFill1" x="95" y="106" width="0" height="5" rx="2.5" fill="#AAD066"/>
-    <text id="progLabel1" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
+    <text id="progLabel1" x="324" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
   </svg>
 
-  <!-- ДЕНЬ 2 (скрыт) — фигура: центральная подкова (Фигма x=1620, нормализовано) -->
-  <svg
-    id="svgDay2"
-    class="day-svg"
-    viewBox="23 0 344 128"
-    preserveAspectRatio="xMidYMid meet"
-    xmlns="http://www.w3.org/2000/svg"
-    style="display:none;"
-  >
-    <!-- Таб 1 (неактивный, левая капсула) -->
-    <path
-      id="d2-tab1"
-      d="M100.33 18H49.67C32.178 18 18 32.103 18 49.5C18 66.897 32.178 81 49.67 81H100.33C117.822 81 132 66.897 132 49.5C132 32.103 117.822 18 100.33 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 3 (неактивный, правая капсула) -->
-    <path
-      id="d2-tab3"
-      d="M340.33 18H289.67C272.178 18 258 32.103 258 49.5C258 66.897 272.178 81 289.67 81H340.33C357.822 81 372 66.897 372 49.5C372 32.103 357.822 18 340.33 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 2 активный — центральная подкова -->
-    <path
-      id="d2-tab2"
-      d="M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.55 88.3279H352.23C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.23 128H37.77C26.85 128 18 119.119 18 108.164C18 97.2087 26.85 88.3279 37.77 88.3279H105.45C123.65 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.34 18H218.66C236.85 18 251.6 32.8015 251.6 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-
-    <rect id="d2-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
-    <rect id="d2-tab3-hit" x="258" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
-    <rect id="d2-tab2-hit" x="138" y="18" width="116" height="110" fill="transparent" style="cursor:pointer;"/>
-    <!-- Числа -->
-    <text id="d2-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="44" fill="#555">1</text>
-    <text id="d2-num3" x="315" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="44" fill="#555">3</text>
-    <text id="d2-num2" x="195" y="63" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="52" fill="#AAD066">2</text>
-
-    <!-- Прогресс-бар -->
-    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
+  <!-- ДЕНЬ 2 -->
+  <svg id="svgDay2" class="day-svg" viewBox="23 0 344 128" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <path id="d2-tab1" d="M100.33 18H49.67C32.178 18 18 32.103 18 49.5C18 66.897 32.178 81 49.67 81H100.33C117.822 81 132 66.897 132 49.5C132 32.103 117.822 18 100.33 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d2-tab3" d="M340.33 18H289.67C272.178 18 258 32.103 258 49.5C258 66.897 272.178 81 289.67 81H340.33C357.822 81 372 66.897 372 49.5C372 32.103 357.822 18 340.33 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d2-tab2" d="M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.55 88.3279H352.23C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.23 128H37.77C26.85 128 18 119.119 18 108.164C18 97.2087 26.85 88.3279 37.77 88.3279H105.45C123.65 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.34 18H218.66C236.85 18 251.6 32.8015 251.6 51.0601V55.2678Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <rect id="d2-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent"/>
+    <rect id="d2-tab3-hit" x="258" y="18" width="114" height="63" fill="transparent"/>
+    <rect id="d2-tab2-hit" x="138" y="18" width="116" height="110" fill="transparent"/>
+    <text id="d2-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">1</text>
+    <text id="d2-num3" x="315" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">3</text>
+    <text id="d2-num2" x="195" y="63" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="52" fill="#AAD066">2</text>
+    <text x="86" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
     <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
     <rect id="progFill2" x="95" y="106" width="0" height="5" rx="2.5" fill="#AAD066"/>
-    <text id="progLabel2" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
+    <text id="progLabel2" x="324" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
   </svg>
 
-  <!-- ДЕНЬ 3 (скрыт) — фигура: правосторонняя зеркальная подкова (Фигма clip1, x=841 нормализовано) -->
-  <svg
-    id="svgDay3"
-    class="day-svg"
-    viewBox="23 0 344 128"
-    preserveAspectRatio="xMidYMid meet"
-    xmlns="http://www.w3.org/2000/svg"
-    style="display:none;"
-  >
-    <!-- Таб 1 (неактивный, левая капсула) -->
-    <path
-      id="d3-tab1"
-      d="M49.667 18H100.333C117.822 18 132 32.3269 132 50C132 67.6731 117.822 82 100.333 82H49.667C32.178 82 18 67.6731 18 50C18 32.3269 32.178 18 49.667 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 2 (неактивный, средняя капсула) -->
-    <path
-      id="d3-tab2"
-      d="M169.67 18H220.33C237.82 18 252 32.3269 252 50C252 67.6731 237.82 82 220.33 82H169.67C152.178 82 138 67.6731 138 50C138 32.3269 152.178 18 169.67 18Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-    <!-- Таб 3 активный — правосторонняя подкова -->
-    <path
-      id="d3-tab3"
-      d="M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.85 88.3279H37.766C26.85 88.3279 18 97.2087 18 108.164C18 119.119 26.85 128 37.766 128H339.06C357.25 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.25 18 339.06 18H291.74C273.54 18 258.79 32.8016 258.79 51.0601V55.2678Z"
-      fill="rgba(255,255,255,0.07)"
-      stroke="rgba(255,255,255,0.18)"
-      stroke-width="0.75"
-      style="cursor:pointer;"
-    />
-
-    <rect id="d3-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
-    <rect id="d3-tab2-hit" x="138" y="18" width="114" height="63" fill="transparent" style="cursor:pointer;"/>
-    <rect id="d3-tab3-hit" x="258" y="18" width="114" height="110" fill="transparent" style="cursor:pointer;"/>
-    <!-- Числа -->
-    <text id="d3-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="44" fill="#555">1</text>
-    <text id="d3-num2" x="195" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="44" fill="#555">2</text>
-    <text id="d3-num3" x="326" y="63" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5, sans-serif" font-size="52" fill="#AAD066">3</text>
-
-    <!-- Прогресс-бар -->
-    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
+  <!-- ДЕНЬ 3 -->
+  <svg id="svgDay3" class="day-svg" viewBox="23 0 344 128" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <path id="d3-tab1" d="M49.667 18H100.333C117.822 18 132 32.3269 132 50C132 67.6731 117.822 82 100.333 82H49.667C32.178 82 18 67.6731 18 50C18 32.3269 32.178 18 49.667 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d3-tab2" d="M169.67 18H220.33C237.82 18 252 32.3269 252 50C252 67.6731 237.82 82 220.33 82H169.67C152.178 82 138 67.6731 138 50C138 32.3269 152.178 18 169.67 18Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <path id="d3-tab3" d="M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.85 88.3279H37.766C26.85 88.3279 18 97.2087 18 108.164C18 119.119 26.85 128 37.766 128H339.06C357.25 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.25 18 339.06 18H291.74C273.54 18 258.79 32.8016 258.79 51.0601V55.2678Z" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"/>
+    <rect id="d3-tab1-hit" x="18" y="18" width="114" height="63" fill="transparent"/>
+    <rect id="d3-tab2-hit" x="138" y="18" width="114" height="63" fill="transparent"/>
+    <rect id="d3-tab3-hit" x="258" y="18" width="114" height="110" fill="transparent"/>
+    <text id="d3-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">1</text>
+    <text id="d3-num2" x="195" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="44" fill="#555555">2</text>
+    <text id="d3-num3" x="326" y="63" text-anchor="middle" dominant-baseline="middle" font-family="Tiny5,sans-serif" font-size="52" fill="#AAD066">3</text>
+    <text x="86" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
     <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
     <rect id="progFill3" x="95" y="106" width="0" height="5" rx="2.5" fill="#AAD066"/>
-    <text id="progLabel3" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
+    <text id="progLabel3" x="324" y="110" font-family="Manrope,sans-serif" font-size="9" font-weight="700" fill="#AAD066">0/0</text>
   </svg>
 
 </div>
-<!-- /header-svg-area -->
 ```
 
   </div>
   <div class="content" id="workoutContent"></div>
 </div>
 
-<!-- HISTORY VIEW -->
+<!-- ═══ HISTORY VIEW ═══ -->
 
 <div class="view" id="view-history">
   <div class="header">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px">
-      <div class="app-title">📊 ИСТОРИЯ</div>
-      <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--muted);font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
+      <div class="app-title">&#128202; ИСТОРИЯ</div>
+      <button onclick="clearHistory()" style="-webkit-appearance:none;appearance:none;background:transparent;border:1px solid #2a2a2a;border-radius:8px;padding:5px 10px;color:#5a5a5a;font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
     </div>
   </div>
   <div class="hist-content" id="histContent"></div>
@@ -414,11 +483,11 @@ CONTENT
 
 <nav class="bottom-nav">
   <button class="nav-btn active" id="nav-workout" onclick="switchView('workout')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M6 12h12M3 8h3M18 8h3M3 16h3M18 16h3"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12M3 8h3M18 8h3M3 16h3M18 16h3"/></svg>
     Тренировка
   </button>
   <button class="nav-btn" id="nav-history" onclick="switchView('history')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     История
   </button>
 </nav>
@@ -438,67 +507,67 @@ var IMGS_ANIM = {
 };
 
 var DEFAULT_PROGRAM = [
-  { day:1, groups:[
-    { name:"СПИНА", exercises:[
-      { id:"d1_1", name:"Вертикальная тяга широким прямым хватом к груди", sets:4, reps:10 },
-      { id:"d1_2", name:"Горизонтальная тяга блока сидя параллельным хватом (в идеале тяга Т-грифа с упором)", sets:4, reps:10 }
+  {day:1,groups:[
+    {name:"СПИНА",exercises:[
+      {id:"d1_1",name:"Вертикальная тяга широким прямым хватом к груди",sets:4,reps:10},
+      {id:"d1_2",name:"Горизонтальная тяга блока сидя параллельным хватом (в идеале тяга Т-грифа с упором)",sets:4,reps:10}
     ]},
-    { name:"БИЦЕПС", exercises:[
-      { id:"d1_3", name:"Поочередное сгибание рук с гантелями сидя на наклонной скамье 45°", sets:3, reps:12 },
-      { id:"d1_4", name:"Сгибание рук с гантелями хватом молот стоя", sets:3, reps:12 }
+    {name:"БИЦЕПС",exercises:[
+      {id:"d1_3",name:"Поочередное сгибание рук с гантелями сидя на наклонной скамье 45°",sets:3,reps:12},
+      {id:"d1_4",name:"Сгибание рук с гантелями хватом молот стоя",sets:3,reps:12}
     ]},
-    { name:"НОГИ", exercises:[
-      { id:"d1_5", name:"Разведение ног в тренажере", sets:3, reps:15 },
-      { id:"d1_6", name:"Сгибание ног в тренажере сидя", sets:3, reps:12 }
+    {name:"НОГИ",exercises:[
+      {id:"d1_5",name:"Разведение ног в тренажере",sets:3,reps:15},
+      {id:"d1_6",name:"Сгибание ног в тренажере сидя",sets:3,reps:12}
     ]},
-    { name:"ПРЕДПЛЕЧЬЯ", exercises:[
-      { id:"d1_7", name:"Сгибание кисти", sets:3, reps:15 },
-      { id:"d1_8", name:"Разгибание кисти", sets:3, reps:15 }
+    {name:"ПРЕДПЛЕЧЬЯ",exercises:[
+      {id:"d1_7",name:"Сгибание кисти",sets:3,reps:15},
+      {id:"d1_8",name:"Разгибание кисти",sets:3,reps:15}
     ]},
-    { name:"ПРЕСС", exercises:[
-      { id:"d1_9", name:"Скручивание пресса на наклонной скамье", sets:3, reps:15 }
+    {name:"ПРЕСС",exercises:[
+      {id:"d1_9",name:"Скручивание пресса на наклонной скамье",sets:3,reps:15}
     ]}
   ]},
-  { day:2, groups:[
-    { name:"ГРУДЬ", exercises:[
-      { id:"d2_1", name:"Жим гантелей лежа на наклонной скамье 30°-45°", sets:4, reps:10 },
-      { id:"d2_2", name:"Сведение рук в тренажере бабочка", sets:3, reps:12 }
+  {day:2,groups:[
+    {name:"ГРУДЬ",exercises:[
+      {id:"d2_1",name:"Жим гантелей лежа на наклонной скамье 30°-45°",sets:4,reps:10},
+      {id:"d2_2",name:"Сведение рук в тренажере бабочка",sets:3,reps:12}
     ]},
-    { name:"ТРИЦЕПС", exercises:[
-      { id:"d2_3", name:"Разгибание рук с нижнего блока с канатом стоя", sets:3, reps:12 },
-      { id:"d2_4", name:"Разгибание рук с верхнего блока с канатом стоя", sets:3, reps:12 }
+    {name:"ТРИЦЕПС",exercises:[
+      {id:"d2_3",name:"Разгибание рук с нижнего блока с канатом стоя",sets:3,reps:12},
+      {id:"d2_4",name:"Разгибание рук с верхнего блока с канатом стоя",sets:3,reps:12}
     ]},
-    { name:"НОГИ", exercises:[
-      { id:"d2_5", name:"Сведение ног в тренажере", sets:3, reps:15 },
-      { id:"d2_6", name:"Разгибания ног в тренажере сидя", sets:3, reps:12 }
+    {name:"НОГИ",exercises:[
+      {id:"d2_5",name:"Сведение ног в тренажере",sets:3,reps:15},
+      {id:"d2_6",name:"Разгибания ног в тренажере сидя",sets:3,reps:12}
     ]},
-    { name:"ШЕЯ", exercises:[
-      { id:"d2_7", name:"Подъем блина шеей лежа на спине", sets:3, reps:15 },
-      { id:"d2_8", name:"Подъем блина шеей лежа на животе", sets:3, reps:15 }
+    {name:"ШЕЯ",exercises:[
+      {id:"d2_7",name:"Подъем блина шеей лежа на спине",sets:3,reps:15},
+      {id:"d2_8",name:"Подъем блина шеей лежа на животе",sets:3,reps:15}
     ]},
-    { name:"ПРЕСС", exercises:[
-      { id:"d2_9", name:"Подъем ног в висе на турнике", sets:3, reps:12 }
+    {name:"ПРЕСС",exercises:[
+      {id:"d2_9",name:"Подъем ног в висе на турнике",sets:3,reps:12}
     ]}
   ]},
-  { day:3, groups:[
-    { name:"СПИНА + ГРУДЬ", exercises:[
-      { id:"d3_1", name:"Подтягивания (прямым, параллельным, обратным, прямым)", sets:4, reps:10 },
-      { id:"d3_2", name:"Жим штанги лежа (высота 11, 2 страховки)", sets:4, reps:8 }
+  {day:3,groups:[
+    {name:"СПИНА + ГРУДЬ",exercises:[
+      {id:"d3_1",name:"Подтягивания (прямым, параллельным, обратным, прямым)",sets:4,reps:10},
+      {id:"d3_2",name:"Жим штанги лежа (высота 11, 2 страховки)",sets:4,reps:8}
     ]},
-    { name:"ПЛЕЧИ", exercises:[
-      { id:"d3_3", name:"Махи гантелями в стороны стоя", sets:4, reps:15 },
-      { id:"d3_4", name:"Тяга к лицу Face pull (высота тросса 27)", sets:3, reps:15 }
+    {name:"ПЛЕЧИ",exercises:[
+      {id:"d3_3",name:"Махи гантелями в стороны стоя",sets:4,reps:15},
+      {id:"d3_4",name:"Тяга к лицу Face pull (высота тросса 27)",sets:3,reps:15}
     ]},
-    { name:"НОГИ", exercises:[
-      { id:"d3_5", name:"Приседания с штангой в Смите", sets:4, reps:10 },
-      { id:"d3_6", name:"Жим ногами платформы", sets:3, reps:12 }
+    {name:"НОГИ",exercises:[
+      {id:"d3_5",name:"Приседания с штангой в Смите",sets:4,reps:10},
+      {id:"d3_6",name:"Жим ногами платформы",sets:3,reps:12}
     ]},
-    { name:"ИКРЫ + ПЛЕЧИ", exercises:[
-      { id:"d3_7", name:"Подъем на носки стоя в тренажере", sets:4, reps:15 },
-      { id:"d3_8", name:"Армейский жим гантелями на скамье с наклоном 75°-85°", sets:3, reps:12 }
+    {name:"ИКРЫ + ПЛЕЧИ",exercises:[
+      {id:"d3_7",name:"Подъем на носки стоя в тренажере",sets:4,reps:15},
+      {id:"d3_8",name:"Армейский жим гантелями на скамье с наклоном 75°-85°",sets:3,reps:12}
     ]},
-    { name:"ГИПЕРЭКСТЕНЗИЯ", exercises:[
-      { id:"d3_9", name:"Гиперэкстензия у стены с гантелями", sets:3, reps:15 }
+    {name:"ГИПЕРЭКСТЕНЗИЯ",exercises:[
+      {id:"d3_9",name:"Гиперэкстензия у стены с гантелями",sets:3,reps:15}
     ]}
   ]}
 ];
@@ -509,102 +578,87 @@ var DEFAULT_WEIGHTS = {
   d3_1:0,d3_2:0,d3_3:0,d3_4:0,d3_5:0,d3_6:0,d3_7:0,d3_8:0,d3_9:0
 };
 
-var S = { currentDay:0, step:2.5, program:null, weights:{}, done:{}, history:[], openPanel:null, editTarget:null };
+var S = {currentDay:0,step:2.5,program:null,weights:{},done:{},history:[],openPanel:null,editTarget:null};
 
 function load(){
-  try{ var r=localStorage.getItem('gym_v4'); if(r) S=Object.assign({},S,JSON.parse(r)); }catch(e){}
-  if(!S.program) S.program=JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
-  if(!S.weights||!Object.keys(S.weights).length) S.weights=Object.assign({},DEFAULT_WEIGHTS);
-  if(!S.history) S.history=[];
-  if(!S.done) S.done={};
-  if(!S.step) S.step=2.5;
+  try{var r=localStorage.getItem('gym_v4');if(r)S=Object.assign({},S,JSON.parse(r));}catch(e){}
+  if(!S.program)S.program=JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+  if(!S.weights||!Object.keys(S.weights).length)S.weights=Object.assign({},DEFAULT_WEIGHTS);
+  if(!S.history)S.history=[];
+  if(!S.done)S.done={};
+  if(!S.step)S.step=2.5;
 }
-function save(){ try{ localStorage.setItem('gym_v4',JSON.stringify(S)); }catch(e){} }
+function save(){try{localStorage.setItem('gym_v4',JSON.stringify(S));}catch(e){}}
 
 function switchView(v){
-  document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('active'); });
-  document.querySelectorAll('.nav-btn').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(el){el.classList.remove('active');});
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('nav-'+v).classList.add('active');
-  if(v==='history') renderHistory();
+  if(v==='history')renderHistory();
 }
 
-/* ════════════════════════════════════
-   SVG DAY SWITCHING
-════════════════════════════════════ */
-function showDaySvg(dayIdx){
+/* ── SVG DAYS ── */
+function showDaySvg(idx){
   ['svgDay1','svgDay2','svgDay3'].forEach(function(id,i){
-    document.getElementById(id).style.display = (i===dayIdx) ? 'block' : 'none';
+    document.getElementById(id).style.display=(i===idx)?'block':'none';
   });
 }
 
-function switchDay(dayIdx){
+function switchDay(idx){
   if(window.Telegram&&window.Telegram.WebApp){
-    try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){}
+    try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}
   }
-  S.currentDay = dayIdx;
-  S.openPanel = null;
-  save();
-  showDaySvg(dayIdx);
+  S.currentDay=idx; S.openPanel=null; save();
+  showDaySvg(idx);
   renderWorkoutContent();
   updateProgress();
   window.scrollTo({top:0,behavior:'instant'});
 }
 
-/* клики по тапам каждого SVG-дня */
 function bindSvgClicks(){
-  // id элемента → номер дня (0/1/2)
-  var map = {
+  var map={
     'd1-tab1':0,'d1-tab2':1,'d1-tab3':2,
     'd1-num1':0,'d1-num2':1,'d1-num3':2,
+    'd1-tab1-hit':0,'d1-tab2-hit':1,'d1-tab3-hit':2,
     'd2-tab1':0,'d2-tab2':1,'d2-tab3':2,
     'd2-num1':0,'d2-num2':1,'d2-num3':2,
+    'd2-tab1-hit':0,'d2-tab2-hit':1,'d2-tab3-hit':2,
     'd3-tab1':0,'d3-tab2':1,'d3-tab3':2,
     'd3-num1':0,'d3-num2':1,'d3-num3':2,
-    'd1-tab1-hit':0,'d1-tab2-hit':1,'d1-tab3-hit':2,
-    'd2-tab1-hit':0,'d2-tab2-hit':1,'d2-tab3-hit':2,
     'd3-tab1-hit':0,'d3-tab2-hit':1,'d3-tab3-hit':2
   };
-
-  // Вешаем click на каждый элемент напрямую — надёжнее делегирования
   Object.keys(map).forEach(function(id){
-    var el = document.getElementById(id);
-    if(!el) return;
-    var day = map[id];
-    // touchend для мобилы (быстрее чем click, нет 300ms задержки)
-    el.addEventListener('touchend', function(e){
-      e.stopPropagation(); // не пускаем к swipe-обработчику
+    var el=document.getElementById(id);
+    if(!el)return;
+    var day=map[id];
+    el.addEventListener('touchend',function(e){
+      e.stopPropagation();
       e.preventDefault();
       switchDay(day);
-    }, {passive:false});
-    // click для десктоп/preview
-    el.addEventListener('click', function(e){
+    },{passive:false});
+    el.addEventListener('click',function(e){
       e.stopPropagation();
       switchDay(day);
     });
   });
 }
 
-/* ════════════════════════════════════
-   PROGRESS
-════════════════════════════════════ */
+/* ── PROGRESS ── */
 function updateProgress(){
-  var day = S.program[S.currentDay];
-  var allIds=[];
-  day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
-  var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
-  var total = allIds.length;
-  var pct = total ? doneCount/total : 0;
-  var svgIdx = S.currentDay+1;
-  var fillEl = document.getElementById('progFill'+svgIdx);
-  var labelEl = document.getElementById('progLabel'+svgIdx);
-  if(fillEl) fillEl.setAttribute('width', Math.round(220*pct));
-  if(labelEl) labelEl.textContent = doneCount+'/'+total;
+  var day=S.program[S.currentDay]; var allIds=[];
+  day.groups.forEach(function(g){g.exercises.forEach(function(e){allIds.push(e.id);});});
+  var done=allIds.filter(function(id){return S.done[id];}).length;
+  var total=allIds.length;
+  var pct=total?done/total:0;
+  var i=S.currentDay+1;
+  var f=document.getElementById('progFill'+i);
+  var l=document.getElementById('progLabel'+i);
+  if(f)f.setAttribute('width',Math.round(220*pct));
+  if(l)l.textContent=done+'/'+total;
 }
 
-/* ════════════════════════════════════
-   WORKOUT CONTENT
-════════════════════════════════════ */
+/* ── WORKOUT CONTENT ── */
 function renderWorkout(){
   showDaySvg(S.currentDay);
   renderWorkoutContent();
@@ -612,33 +666,31 @@ function renderWorkout(){
 }
 
 function renderWorkoutContent(){
-  var day = S.program[S.currentDay];
-  var allIds=[];
-  day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
-  var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
-  var total = allIds.length;
-  var allDone = doneCount===total && total>0;
+  var day=S.program[S.currentDay]; var allIds=[];
+  day.groups.forEach(function(g){g.exercises.forEach(function(e){allIds.push(e.id);});});
+  var doneCount=allIds.filter(function(id){return S.done[id];}).length;
+  var allDone=doneCount===allIds.length&&allIds.length>0;
 
-  var container = document.getElementById('workoutContent');
+  var container=document.getElementById('workoutContent');
   container.innerHTML='';
 
   day.groups.forEach(function(group,gi){
-    var gDiv = document.createElement('div');
+    var gDiv=document.createElement('div');
     gDiv.className='muscle-group';
     gDiv.innerHTML='<div class="muscle-label"><div class="dot"></div><span>'+group.name+'</span></div>';
 
     group.exercises.forEach(function(ex,ei){
-      var isDone = !!S.done[ex.id];
-      var w = (S.weights[ex.id]!==undefined)?S.weights[ex.id]:0;
-      var isOpen = S.openPanel===ex.id;
-      var imgSrc = IMGS[ex.id]||null;
-      var imgAnimSrc = IMGS_ANIM[ex.id]||imgSrc;
+      var isDone=!!S.done[ex.id];
+      var w=(S.weights[ex.id]!==undefined)?S.weights[ex.id]:0;
+      var isOpen=S.openPanel===ex.id;
+      var imgSrc=IMGS[ex.id]||null;
+      var imgAnimSrc=IMGS_ANIM[ex.id]||imgSrc;
 
-      var imgInner = imgSrc
-        ? '<img src="'+imgSrc+'" alt="">'
-        : '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>';
+      var imgInner=imgSrc
+        ?'<img src="'+imgSrc+'" alt="">'
+        :'<svg viewBox="0 0 24 24" fill="none" stroke="#5a5a5a" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>';
 
-      var card = document.createElement('div');
+      var card=document.createElement('div');
       card.className='exercise-card'+(isDone?' done':'');
       var exId=ex.id; var curDay=S.currentDay;
 
@@ -660,14 +712,14 @@ function renderWorkoutContent(){
         '</div>';
 
       if(imgSrc){
-        card.querySelector('.ex-img').addEventListener('click',(function(id,anim){ return function(){ tapImg(id,anim); }; })(exId,imgAnimSrc));
+        card.querySelector('.ex-img').addEventListener('click',(function(id,anim){return function(){tapImg(id,anim);};})(exId,imgAnimSrc));
       }
       var wcolDiv=card.querySelector('.weight-col');
-      wcolDiv.addEventListener('touchstart',(function(id){ return function(e){ touchStartWeight(e,id); }; })(exId),{passive:true});
-      wcolDiv.addEventListener('touchend',(function(id){ return function(e){ touchEndWeight(e,id); }; })(exId));
-      wcolDiv.addEventListener('click',(function(id){ return function(){ onWeightClick(id); }; })(exId));
-      card.querySelector('.ex-check').addEventListener('click',(function(id){ return function(){ toggleDone(id); }; })(exId));
-      card.querySelector('.ex-name').addEventListener('contextmenu',(function(d,g,e){ return function(ev){ ev.preventDefault(); openEdit(d,g,e); }; })(curDay,gi,ei));
+      wcolDiv.addEventListener('touchstart',(function(id){return function(e){touchStartWeight(e,id);};})(exId),{passive:true});
+      wcolDiv.addEventListener('touchend',(function(id){return function(e){touchEndWeight(e,id);};})(exId));
+      wcolDiv.addEventListener('click',(function(id){return function(){onWeightClick(id);};})(exId));
+      card.querySelector('.ex-check').addEventListener('click',(function(id){return function(){toggleDone(id);};})(exId));
+      card.querySelector('.ex-name').addEventListener('contextmenu',(function(d,g,e){return function(ev){ev.preventDefault();openEdit(d,g,e);};})(curDay,gi,ei));
 
       gDiv.appendChild(card);
     });
@@ -678,108 +730,102 @@ function renderWorkoutContent(){
   bottomDiv.style.padding='8px 0 110px';
   var banner=document.createElement('div');
   banner.className='done-banner'+(allDone?' show':'');
-  banner.innerHTML='<div class="db-emoji">🔥</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
+  banner.innerHTML='<div class="db-emoji">&#128293;</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
   bottomDiv.appendChild(banner);
   var finBtn=document.createElement('button');
   finBtn.className='finish-btn';
-  finBtn.innerHTML='✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ';
+  finBtn.textContent='✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ';
   finBtn.onclick=finishWorkout;
   bottomDiv.appendChild(finBtn);
   container.appendChild(bottomDiv);
 }
 
-/* ════════════════════════════════════
-   TOUCH / WEIGHT PANEL
-════════════════════════════════════ */
-var _touchStartY=0,_touchStartX=0,_touchHandled=false;
-function touchStartWeight(e,id){ _touchStartY=e.touches[0].clientY; _touchStartX=e.touches[0].clientX; _touchHandled=false; }
+/* ── TOUCH WEIGHT ── */
+var _tsY=0,_tsX=0,_tsDone=false;
+function touchStartWeight(e,id){_tsY=e.touches[0].clientY;_tsX=e.touches[0].clientX;_tsDone=false;}
 function touchEndWeight(e,id){
-  var dy=Math.abs(e.changedTouches[0].clientY-_touchStartY);
-  var dx=Math.abs(e.changedTouches[0].clientX-_touchStartX);
-  if(dy>8||dx>8) return;
-  e.preventDefault(); _touchHandled=true; togglePanel(id);
+  if(Math.abs(e.changedTouches[0].clientY-_tsY)>8||Math.abs(e.changedTouches[0].clientX-_tsX)>8)return;
+  e.preventDefault();_tsDone=true;togglePanel(id);
 }
-function onWeightClick(id){ if(_touchHandled){ _touchHandled=false; return; } togglePanel(id); }
+function onWeightClick(id){if(_tsDone){_tsDone=false;return;}togglePanel(id);}
 
 function tapImg(id,animSrc){
-  if(!animSrc) return;
+  if(!animSrc)return;
   document.getElementById('imgOverlayImg').src=animSrc+'?t='+Date.now();
   document.getElementById('imgOverlay').classList.add('open');
 }
 function closeImgOverlay(){
   document.getElementById('imgOverlay').classList.remove('open');
-  setTimeout(function(){ document.getElementById('imgOverlayImg').src=''; },300);
+  setTimeout(function(){document.getElementById('imgOverlayImg').src='';},300);
 }
 function toggleDone(id){
-  if(S.openPanel) closeWib();
-  S.done[id]=!S.done[id]; save(); renderWorkoutContent(); updateProgress();
+  if(S.openPanel)closeWib();
+  S.done[id]=!S.done[id];save();renderWorkoutContent();updateProgress();
 }
 
-var _weightFresh=false;
+var _wFresh=false;
 function togglePanel(id){
-  if(S.openPanel===id){ closeWib(); return; }
+  if(S.openPanel===id){closeWib();return;}
   if(S.openPanel){
-    document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
-    S.openPanel=id; _weightFresh=true; save();
-    var wcol=document.getElementById('wcol_'+id); if(wcol) wcol.classList.add('editing');
-    var day=S.program[S.currentDay]; var exName='';
-    day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
+    document.querySelectorAll('.weight-col.editing').forEach(function(el){el.classList.remove('editing');});
+    S.openPanel=id;_wFresh=true;save();
+    var wcol=document.getElementById('wcol_'+id);if(wcol)wcol.classList.add('editing');
+    var day=S.program[S.currentDay];var exName='';
+    day.groups.forEach(function(g){g.exercises.forEach(function(e){if(e.id===id)exName=e.name;});});
     document.getElementById('wibExName').textContent=exName.length>30?exName.slice(0,30)+'...':exName;
     document.getElementById('wibInput').value=(S.weights[id]!==undefined)?S.weights[id]:0;
     return;
   }
-  S.openPanel=id; _weightFresh=true; save();
+  S.openPanel=id;_wFresh=true;save();
   document.querySelector('.bottom-nav').style.display='none';
-  var wcol=document.getElementById('wcol_'+id); if(wcol) wcol.classList.add('editing');
-  var day=S.program[S.currentDay]; var exName='';
-  day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
+  var wcol=document.getElementById('wcol_'+id);if(wcol)wcol.classList.add('editing');
+  var day=S.program[S.currentDay];var exName='';
+  day.groups.forEach(function(g){g.exercises.forEach(function(e){if(e.id===id)exName=e.name;});});
   document.getElementById('wibExName').textContent=exName.length>30?exName.slice(0,30)+'...':exName;
   var wibInp=document.getElementById('wibInput');
   wibInp.value=(S.weights[id]!==undefined)?S.weights[id]:0;
   var bar=document.getElementById('weightInputBar');
-  bar.style.bottom='18px'; bar.classList.add('open');
-  function onVPResize(){
+  bar.style.bottom='18px';bar.classList.add('open');
+  function onVPR(){
     var vv=window.visualViewport;
-    var kbHeight=window.innerHeight-vv.height;
-    bar.style.bottom=(kbHeight>50?kbHeight+4:18)+'px';
+    if(!vv)return;
+    var kb=window.innerHeight-vv.height;
+    bar.style.bottom=(kb>50?kb+4:18)+'px';
   }
-  if(window.visualViewport){ window.visualViewport.addEventListener('resize',onVPResize); window._wibVVCleanup=onVPResize; onVPResize(); }
+  if(window.visualViewport){window.visualViewport.addEventListener('resize',onVPR);window._wibVV=onVPR;onVPR();}
   wibInp.focus();
-  try{ wibInp.setSelectionRange(wibInp.value.length,wibInp.value.length); }catch(e){}
+  try{wibInp.setSelectionRange(wibInp.value.length,wibInp.value.length);}catch(e){}
 }
 
 function closeWib(){
-  S.openPanel=null; _weightFresh=false; save();
-  if(window._wibVVCleanup&&window.visualViewport){ window.visualViewport.removeEventListener('resize',window._wibVVCleanup); window._wibVVCleanup=null; }
+  S.openPanel=null;_wFresh=false;save();
+  if(window._wibVV&&window.visualViewport){window.visualViewport.removeEventListener('resize',window._wibVV);window._wibVV=null;}
   document.getElementById('wibInput').blur();
   var bar=document.getElementById('weightInputBar');
-  bar.classList.remove('open'); bar.style.bottom='18px';
-  document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
+  bar.classList.remove('open');bar.style.bottom='18px';
+  document.querySelectorAll('.weight-col.editing').forEach(function(el){el.classList.remove('editing');});
   document.querySelector('.bottom-nav').style.display='flex';
 }
 function onWibBlur(){
-  if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){} }
-  setTimeout(function(){ if(S.openPanel) closeWib(); },150);
+  if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}}
+  setTimeout(function(){if(S.openPanel)closeWib();},150);
 }
 function onWibKeydown(e){
-  if(e.key==='Enter'){ closeWib(); return; }
-  if(e.key==='Backspace'||e.key==='Delete'){ _weightFresh=false; return; }
-  if(e.key===','||e.key==='.'){ if(_weightFresh){ document.getElementById('wibInput').value=''; _weightFresh=false; } return; }
-  if(_weightFresh&&e.key>='0'&&e.key<='9'){ document.getElementById('wibInput').value=''; _weightFresh=false; }
+  if(e.key==='Enter'){closeWib();return;}
+  if(e.key==='Backspace'||e.key==='Delete'){_wFresh=false;return;}
+  if(e.key===','||e.key==='.'){if(_wFresh){document.getElementById('wibInput').value='';_wFresh=false;}return;}
+  if(_wFresh&&e.key>='0'&&e.key<='9'){document.getElementById('wibInput').value='';_wFresh=false;}
 }
 function onWibInput(val){
-  if(!S.openPanel) return;
+  if(!S.openPanel)return;
   var id=S.openPanel;
   var cleaned=String(val).replace(',','.');
   var valEl=document.querySelector('.weight-val[data-id="'+id+'"]');
-  if(valEl) valEl.textContent=cleaned.endsWith('.')? cleaned:(parseFloat(cleaned)||0);
-  S.weights[id]=Math.max(0,parseFloat(cleaned)||0);
-  save();
+  if(valEl)valEl.textContent=cleaned.endsWith('.')?cleaned:(parseFloat(cleaned)||0);
+  S.weights[id]=Math.max(0,parseFloat(cleaned)||0);save();
 }
 
-/* ════════════════════════════════════
-   EDIT MODAL
-════════════════════════════════════ */
+/* ── EDIT MODAL ── */
 function openEdit(di,gi,ei){
   S.editTarget={di:di,gi:gi,ei:ei};
   var ex=S.program[di].groups[gi].exercises[ei];
@@ -788,42 +834,38 @@ function openEdit(di,gi,ei){
   document.getElementById('editReps').value=ex.reps;
   document.getElementById('editOverlay').classList.add('open');
 }
-function closeModal(){ document.getElementById('editOverlay').classList.remove('open'); S.editTarget=null; }
+function closeModal(){document.getElementById('editOverlay').classList.remove('open');S.editTarget=null;}
 function saveEdit(){
-  if(!S.editTarget) return;
+  if(!S.editTarget)return;
   var ex=S.program[S.editTarget.di].groups[S.editTarget.gi].exercises[S.editTarget.ei];
   var n=document.getElementById('editName').value.trim();
-  if(n) ex.name=n;
+  if(n)ex.name=n;
   ex.sets=parseInt(document.getElementById('editSets').value)||ex.sets;
   ex.reps=parseInt(document.getElementById('editReps').value)||ex.reps;
-  save(); closeModal(); showToast('Сохранено'); renderWorkoutContent();
+  save();closeModal();showToast('Сохранено');renderWorkoutContent();
 }
 
-/* ════════════════════════════════════
-   FINISH
-════════════════════════════════════ */
+/* ── FINISH ── */
 function finishWorkout(){
-  if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){} }
-  var day=S.program[S.currentDay]; var allIds=[];
-  day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
+  if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');}catch(e){}}
+  var day=S.program[S.currentDay];var allIds=[];
+  day.groups.forEach(function(g){g.exercises.forEach(function(e){allIds.push(e.id);});});
   var snap={};
-  allIds.forEach(function(id){ snap[id]=(S.weights[id]!==undefined)?S.weights[id]:0; });
+  allIds.forEach(function(id){snap[id]=(S.weights[id]!==undefined)?S.weights[id]:0;});
   S.history.push({date:Date.now(),dayIdx:S.currentDay,weights:snap});
-  allIds.forEach(function(id){ delete S.done[id]; });
-  save(); showToast('Тренировка дня '+(S.currentDay+1)+' сохранена!');
-  window.scrollTo({top:0,behavior:'instant'}); renderWorkoutContent(); updateProgress();
+  allIds.forEach(function(id){delete S.done[id];});
+  save();showToast('Тренировка дня '+(S.currentDay+1)+' сохранена!');
+  window.scrollTo({top:0,behavior:'instant'});renderWorkoutContent();updateProgress();
 }
 
-/* ════════════════════════════════════
-   HISTORY
-════════════════════════════════════ */
+/* ── HISTORY ── */
 function renderHistory(){
   var container=document.getElementById('histContent');
   var tempDone=[false,false,false];
   S.history.forEach(function(h){
     if(h.dayIdx>=0&&h.dayIdx<3){
       tempDone[h.dayIdx]=true;
-      if(tempDone[0]&&tempDone[1]&&tempDone[2]) tempDone=[false,false,false];
+      if(tempDone[0]&&tempDone[1]&&tempDone[2])tempDone=[false,false,false];
     }
   });
   var calHtml='<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
@@ -831,8 +873,8 @@ function renderHistory(){
     var isDone=tempDone[d];
     var st=isDone
       ?'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#4DC864;border:1.5px solid #4DC864;'
-      :'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
-    var nc=isDone?'#000':'#5a5a5a'; var lc=isDone?'#000':'#3a3a3a';
+      :'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.18);';
+    var nc=isDone?'#000':'#5a5a5a';var lc=isDone?'#000':'#3a3a3a';
     calHtml+='<div style="'+st+'"><span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:'+nc+'">'+(d+1)+'</span><span style="font-size:8px;font-weight:700;letter-spacing:1px;color:'+lc+'">'+(isDone?'DONE':'DAY')+'</span></div>';
   }
   calHtml+='</div>';
@@ -841,19 +883,19 @@ function renderHistory(){
     return;
   }
   var byDay=[[],[],[]];
-  S.history.slice().reverse().forEach(function(h){ if(byDay[h.dayIdx]) byDay[h.dayIdx].push(h); });
+  S.history.slice().reverse().forEach(function(h){if(byDay[h.dayIdx])byDay[h.dayIdx].push(h);});
   var html=calHtml;
   S.program.forEach(function(day,di){
-    if(!byDay[di].length) return;
+    if(!byDay[di].length)return;
     html+='<div class="hist-day-header">День '+day.day+'</div>';
     byDay[di].forEach(function(h){
       var d=new Date(h.date);
       var ds=d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-      var exList=[]; day.groups.forEach(function(g){ g.exercises.forEach(function(ex){ exList.push(ex); }); });
+      var exList=[];day.groups.forEach(function(g){g.exercises.forEach(function(ex){exList.push(ex);});});
       var pills=exList.map(function(ex){
-        var w=h.weights[ex.id]; if(w===undefined) return '';
+        var w=h.weights[ex.id];if(w===undefined)return'';
         var short=ex.name.split(' ').slice(0,3).join(' ');
-        return '<div class="hist-pill"><span style="color:var(--muted);font-size:10px">'+short+'</span><span class="hw">'+w+'</span></div>';
+        return'<div class="hist-pill"><span style="color:#5a5a5a;font-size:10px">'+short+'</span><span class="hw">'+w+'</span></div>';
       }).join('');
       html+='<div class="hist-entry"><div class="hist-date">'+ds+'</div><div class="hist-pills">'+pills+'</div></div>';
     });
@@ -861,62 +903,60 @@ function renderHistory(){
   container.innerHTML=html;
 }
 function clearHistory(){
-  if(!confirm('Очистить всю историю?')) return;
-  S.history=[]; save(); renderHistory(); showToast('История очищена');
+  if(!confirm('Очистить всю историю?'))return;
+  S.history=[];save();renderHistory();showToast('История очищена');
 }
 
 function showToast(msg){
   var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); },2200);
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2200);
 }
 
-/* ════════════════════════════════════
-   INIT
-════════════════════════════════════ */
+/* ── INIT ── */
 document.addEventListener('DOMContentLoaded',function(){
   if(window.Telegram&&window.Telegram.WebApp){
     var tg=window.Telegram.WebApp;
-    try{ tg.ready(); }catch(e){}
-    try{ tg.expand(); }catch(e){}
-    try{ tg.disableVerticalSwipes(); }catch(e){}
-    try{ tg.setHeaderColor('#101010'); }catch(e){}
-    try{ tg.setBackgroundColor('#101010'); }catch(e){}
-    try{ tg.setBottomBarColor('#101010'); }catch(e){}
-    try{ tg.lockOrientation(); }catch(e){}
+    try{tg.ready();}catch(e){}
+    try{tg.expand();}catch(e){}
+    try{tg.disableVerticalSwipes();}catch(e){}
+    try{tg.setHeaderColor('#101010');}catch(e){}
+    try{tg.setBackgroundColor('#101010');}catch(e){}
+    try{tg.setBottomBarColor('#101010');}catch(e){}
+    try{tg.lockOrientation();}catch(e){}
   }
+
   load();
   S.openPanel=null;
   bindSvgClicks();
   renderWorkout();
 
+  /* Закрыть панель веса при клике вне */
   document.addEventListener('click',function(e){
-    if(!S.openPanel) return;
+    if(!S.openPanel)return;
     var bar=document.getElementById('weightInputBar');
-    if(bar&&bar.contains(e.target)) return;
-    var allWcols=document.querySelectorAll('.weight-col');
-    for(var i=0;i<allWcols.length;i++){ if(allWcols[i].contains(e.target)) return; }
+    if(bar&&bar.contains(e.target))return;
+    var cols=document.querySelectorAll('.weight-col');
+    for(var i=0;i<cols.length;i++){if(cols[i].contains(e.target))return;}
     closeWib();
   });
 
-  /* свайп для переключения дней */
-  var swipeStartX=0,swipeStartY=0,swipeMoved=false;
-  var workoutView=document.getElementById('view-workout');
-  workoutView.addEventListener('touchstart',function(e){ swipeStartX=e.touches[0].clientX; swipeStartY=e.touches[0].clientY; swipeMoved=false; },{passive:true});
-  workoutView.addEventListener('touchmove',function(e){ var dx=Math.abs(e.touches[0].clientX-swipeStartX); var dy=Math.abs(e.touches[0].clientY-swipeStartY); if(dx>dy) swipeMoved=true; },{passive:true});
-  workoutView.addEventListener('touchend',function(e){
-    if(!swipeMoved) return;
-    var dx=e.changedTouches[0].clientX-swipeStartX;
-    var dy=Math.abs(e.changedTouches[0].clientY-swipeStartY);
-    if(Math.abs(dx)<60||dy>Math.abs(dx)) return;
-    if(S.openPanel) return;
+  /* Свайп между днями */
+  var sx=0,sy=0,sm=false;
+  var wv=document.getElementById('view-workout');
+  wv.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;sm=false;},{passive:true});
+  wv.addEventListener('touchmove',function(e){var dx=Math.abs(e.touches[0].clientX-sx);var dy=Math.abs(e.touches[0].clientY-sy);if(dx>dy)sm=true;},{passive:true});
+  wv.addEventListener('touchend',function(e){
+    if(!sm)return;
+    var dx=e.changedTouches[0].clientX-sx;
+    var dy=Math.abs(e.changedTouches[0].clientY-sy);
+    if(Math.abs(dx)<60||dy>Math.abs(dx))return;
+    if(S.openPanel)return;
     var total=S.program.length;
     S.currentDay=dx<0?(S.currentDay+1)%total:(S.currentDay-1+total)%total;
-    S.openPanel=null; save();
-    if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){} }
-    showDaySvg(S.currentDay);
-    renderWorkoutContent();
-    updateProgress();
+    S.openPanel=null;save();
+    if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}}
+    showDaySvg(S.currentDay);renderWorkoutContent();updateProgress();
     window.scrollTo({top:0,behavior:'instant'});
   },{passive:true});
 });
