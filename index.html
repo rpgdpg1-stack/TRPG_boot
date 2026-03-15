@@ -10,98 +10,157 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
 :root {
   --bg:#0C0C0C; --card:#242424; --card2:#2e2e2e;
-  --accent:#AAD066; --accent-dim:rgba(157,196,74,0.1);
+  --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
   --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
+  --glass-bg: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.18);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:90px}
-.header{background:transparent;padding:18px 0 0;position:sticky;top:0;z-index:100;border-bottom:none}
-.header::before{content:'';position:fixed;top:0;left:0;right:0;height:36px;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0) 100%);pointer-events:none;z-index:-1}
-.app-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff}
-.stats-pill{background:rgba(36,36,36,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
-.stats-pill b{color:var(--accent);font-size:13px}
-.day-tabs{display:flex;gap:8px;padding:0 18px 0;background:transparent;align-items:flex-end}
-.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:none;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
-.day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
-.day-tab.active{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);position:relative;z-index:2;margin-bottom:0;height:78px;overflow:visible}.day-tab.active .dn{color:var(--accent);font-size:59px}
-.day-tab.active::before,.day-tab.active::after{content:'';display:none}
-.day-tab.active.corner-left::before{left:-34px;background:radial-gradient(circle at 0% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
-.day-tab.active.corner-right::after{right:-34px;background:radial-gradient(circle at 100% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
-.progress-wrap{padding:0 14px;margin:0 18px 8px;background:transparent;border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
-.progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
-.progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease}
-.progress-count{font-size:10px;font-weight:700;color:var(--accent);white-space:nowrap;flex-shrink:0}
+
+/* ═══════════════════════════════
+HEADER
+═══════════════════════════════ */
+.header{
+position:sticky;top:0;z-index:100;
+padding:10px 0 0;
+background:none;
+}
+.header::before{
+content:’’;position:fixed;top:0;left:0;right:0;height:36px;
+background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0) 100%);
+pointer-events:none;z-index:-1;
+}
+
+/* Контейнер SVG-хедера */
+.header-svg-area{
+position:relative;
+width:100%;
+height:145px;
+margin-bottom:10px;
+padding:0;
+background:transparent;
+box-sizing:border-box;
+}
+.header-svg-area svg.day-svg{
+display:block;
+width:100%;
+height:145px;
+cursor:pointer;
+background:transparent;
+-webkit-tap-highlight-color:transparent;
+}
+.header-svg-area svg.day-svg path,
+.header-svg-area svg.day-svg text{
+pointer-events:all;
+cursor:pointer;
+}
+
+/* Числа внутри SVG — позиционируем через foreignObject или text */
+/* Метки дней: абсолютный текст поверх SVG */
+.day-label{
+position:absolute;
+top:0; left:0;
+width:100%; height:100%;
+pointer-events:none;
+display:flex;
+align-items:flex-start;
+justify-content:flex-start;
+}
+
+/* progress-wrap удалён — прогресс встроен в SVG */
+
+/* ═══════════════════════════════
+CONTENT
+═══════════════════════════════ */
 .content{padding:16px 12px 0}
 .muscle-group{margin-bottom:24px}
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
-.muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#ffffff;flex-shrink:0}
-.muscle-label span{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:#ffffff;text-transform:uppercase}
-.exercise-card{background:rgba(36,36,36,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:none;border-radius:25px;margin-bottom:8px;overflow:hidden;transition:opacity .25s}
-.exercise-card.done{opacity:.65}
+.muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#fff;flex-shrink:0}
+.muscle-label span{font-family:‘Bebas Neue’,sans-serif;font-size:15px;letter-spacing:3px;color:#fff;text-transform:uppercase}
+.exercise-card{background:rgba(36,36,36,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.07);border-radius:25px;margin-bottom:8px;overflow:hidden;transition:border-color .25s,opacity .25s}
+.exercise-card.done{border-color:#3a3a3a;opacity:.65}
 .ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
 .ex-info{flex:1;min-width:0}
 .ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:#b0b0b0;cursor:pointer}
-.exercise-card.done .ex-name{text-decoration:line-through;color:var(--muted)}
-.ex-sets{font-size:10px;color:var(--muted);margin-top:3px}
+.exercise-card.done .ex-name{text-decoration:line-through;color:var(–muted)}
+.ex-sets{font-size:10px;color:var(–muted);margin-top:3px}
 .ex-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.weight-col{display:flex;flex-direction:row;align-items:center;justify-content:center;flex-shrink:0;gap:0;cursor:pointer;padding:6px 6px;border-radius:15px;transition:background .15s}
-.weight-col.editing .weight-val{border-color:var(--accent);background:rgba(77,200,100,0.08)}
-.weight-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);line-height:1;text-align:center;padding:6px;display:inline-flex;align-items:center;justify-content:center;border:2px solid transparent;border-radius:12px;transition:border-color .2s}
-.weight-unit{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:3px}
-.ex-check{width:36px;height:36px;border-radius:15px;border:2px solid #3a3a3a;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;color:transparent;font-weight:400;font-family:Arial,sans-serif}
-.exercise-card.done .ex-check{background:var(--accent);border-color:#5a5a5a;color:#000}
-.ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(--card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.weight-col{display:flex;flex-direction:row;align-items:center;justify-content:center;flex-shrink:0;gap:0;cursor:pointer;padding:6px;border-radius:15px;transition:background .15s}
+.weight-col.editing .weight-val{border-color:var(–accent);background:rgba(77,200,100,0.08)}
+.weight-val{font-family:‘Bebas Neue’,sans-serif;font-size:24px;color:var(–accent);line-height:1;text-align:center;padding:6px;display:inline-flex;align-items:center;justify-content:center;border:2px solid transparent;border-radius:12px;transition:border-color .2s}
+.weight-unit{font-size:9px;color:var(–muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:3px}
+.ex-check{width:36px;height:36px;border-radius:15px;border:2px solid #3a3a3a;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;color:transparent}
+.exercise-card.done .ex-check{background:var(–accent);border-color:#5a5a5a;color:#000}
+.ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(–card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ex-img img{width:120px;height:120px;object-fit:contain;border-radius:17px;display:block}
-.ex-img svg{width:36px;height:36px;stroke:var(--muted);stroke-width:1.5;fill:none}
-.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s}
+.ex-img svg{width:36px;height:36px;stroke:var(–muted);stroke-width:1.5;fill:none}
+
+/* weight input bar */
+.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:var(–glass-bg);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid var(–glass-border);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6)}
 .weight-input-bar.open{display:flex}
-.wib-label{font-size:11px;color:var(--muted);flex:1;line-height:1.4;font-weight:600}
-.wib-label b{display:block;color:var(--text);font-size:12px;margin-bottom:1px}.wib-kg{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.wib-input{background:var(--card2);border:2px solid var(--accent);border-radius:17px;color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:28px;text-align:center;padding:8px 12px;outline:none;width:110px;flex-shrink:0}
-.wib-done{width:40px;height:40px;border-radius:17px;background:var(--accent);border:none;color:#000;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wib-label{font-size:11px;color:var(–muted);flex:1;line-height:1.4;font-weight:600}
+.wib-label b{display:block;color:var(–text);font-size:12px;margin-bottom:1px}
+.wib-kg{font-size:10px;color:var(–muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.wib-input{background:var(–card2);border:2px solid var(–accent);border-radius:17px;color:var(–accent);font-family:‘Bebas Neue’,sans-serif;font-size:28px;text-align:center;padding:8px 12px;outline:none;width:110px;flex-shrink:0}
+
+/* image overlay */
 .img-expand-overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.85);align-items:center;justify-content:center}
 .img-expand-overlay.open{display:flex}
-.img-expand-inner{width:88vw;max-width:380px;border-radius:25px;overflow:hidden;background:var(--card);padding:10px;box-shadow:0 24px 64px rgba(0,0,0,.9)}
+.img-expand-inner{width:88vw;max-width:380px;border-radius:25px;overflow:hidden;background:var(–card);padding:10px;box-shadow:0 24px 64px rgba(0,0,0,.9)}
 .img-expand-inner img{width:100%;height:auto;display:block;border-radius:15px}
+
+/* done banner / finish */
 .done-banner{display:none;background:linear-gradient(135deg,rgba(157,196,74,.08),rgba(157,196,74,.02));border:1px solid rgba(157,196,74,.25);border-radius:25px;padding:16px;margin:0 12px 16px;text-align:center}
 .done-banner.show{display:block}
 .done-banner .db-emoji{font-size:32px;margin-bottom:6px}
-.done-banner .db-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
-.done-banner .db-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.finish-btn{display:block;width:100%;padding:14px 16px;border-radius:25px;background:rgba(200,60,60,0.85);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,120,120,0.25);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s;text-align:center}
+.done-banner .db-text{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:2px;color:var(–accent)}
+.done-banner .db-sub{font-size:11px;color:var(–muted);margin-top:4px}
+.finish-btn{display:block;width:100%;padding:14px 16px;border-radius:25px;background:rgba(200,60,60,0.85);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,120,120,0.25);color:#fff;font-family:‘Bebas Neue’,sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s;text-align:center}
 .finish-btn:active{opacity:.7}
+
+/* edit modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
 .overlay.open{display:flex}
 .modal{background:rgba(26,26,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px 20px 0 0;padding:20px 18px 40px;width:100%;max-width:480px;border-top:1px solid rgba(255,255,255,0.08)}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:14px;color:var(--accent)}
-.modal-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:700}
-.modal-input{width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Manrope',sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;line-height:1.5;transition:border-color .2s;margin-bottom:12px}
-.modal-input:focus{border-color:var(--accent)}
+.modal-handle{width:36px;height:4px;background:var(–border);border-radius:2px;margin:0 auto 18px}
+.modal-title{font-family:‘Bebas Neue’,sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:14px;color:var(–accent)}
+.modal-label{font-size:10px;color:var(–muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:700}
+.modal-input{width:100%;background:var(–card2);border:1.5px solid var(–border);border-radius:10px;color:var(–text);font-family:‘Manrope’,sans-serif;font-size:13px;padding:10px 12px;outline:none;resize:none;line-height:1.5;transition:border-color .2s;margin-bottom:12px}
+.modal-input:focus{border-color:var(–accent)}
 .modal-row{display:flex;gap:8px;margin-bottom:16px}
 .modal-row>div{flex:1}
 .modal-btns{display:flex;gap:8px}
-.btn-save{flex:1;padding:13px;border-radius:10px;background:var(--accent);border:none;color:#000;font-family:'Manrope',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:opacity .2s}
+.btn-save{flex:1;padding:13px;border-radius:10px;background:var(–accent);border:none;color:#000;font-family:‘Manrope’,sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:opacity .2s}
 .btn-save:active{opacity:.8}
-.btn-cancel{padding:13px 18px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--muted);font-family:'Manrope',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+.btn-cancel{padding:13px 18px;border-radius:10px;background:var(–card2);border:1px solid var(–border);color:var(–muted);font-family:‘Manrope’,sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+
+/* history */
 .hist-content{padding:16px 12px}
-.hist-day-header{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:var(--accent);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
-.hist-entry{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.hist-date{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.hist-day-header{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:1px;color:var(–accent);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.hist-entry{background:var(–card);border:1px solid var(–border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.hist-date{font-size:10px;color:var(–muted);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 .hist-pills{display:flex;flex-wrap:wrap;gap:5px}
-.hist-pill{background:var(--card2);border-radius:8px;padding:4px 9px;font-size:11px;color:var(--text);display:flex;gap:5px;align-items:center;font-weight:500}
-.hist-pill .hw{color:var(--accent);font-weight:800;font-family:'Bebas Neue',sans-serif;font-size:14px;line-height:1}
-.hist-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
-.bottom-nav{position:fixed;bottom:18px;left:0;right:0;background:transparent;border:none;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(--muted);cursor:pointer;font-family:'Manrope',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
-.nav-btn.active{color:var(--accent)}
+.hist-pill{background:var(–card2);border-radius:8px;padding:4px 9px;font-size:11px;color:var(–text);display:flex;gap:5px;align-items:center;font-weight:500}
+.hist-pill .hw{color:var(–accent);font-weight:800;font-family:‘Bebas Neue’,sans-serif;font-size:14px;line-height:1}
+.hist-empty{color:var(–muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
+
+/* nav */
+.bottom-nav{position:fixed;bottom:18px;left:0;right:0;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
+.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:var(–glass-bg);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid var(–glass-border);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
+.nav-btn.active{color:var(–accent)}
 .nav-btn svg{width:20px;height:20px;stroke-width:2}
+
 .view{display:none}
 .view.active{display:block}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:#3C643C;color:#000;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:800;opacity:0;transition:all .3s;z-index:900;pointer-events:none;white-space:nowrap;font-family:'Manrope',sans-serif}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:#3C643C;color:#000;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:800;opacity:0;transition:all .3s;z-index:900;pointer-events:none;white-space:nowrap;font-family:‘Manrope’,sans-serif}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* app-title for history */
+.app-title{font-family:‘Bebas Neue’,sans-serif;font-size:18px;letter-spacing:3px;color:#fff}
 </style>
+
 </head>
 <body>
 
@@ -125,7 +184,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 <div class="overlay" id="editOverlay">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">&#9999;&#65039; Изменить упражнение</div>
+    <div class="modal-title">✏️ Изменить упражнение</div>
     <div class="modal-label">Название</div>
     <textarea class="modal-input" id="editName" rows="2"></textarea>
     <div class="modal-row">
@@ -145,23 +204,213 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
   </div>
 </div>
 
+<!-- ═══════════ WORKOUT VIEW ═══════════ -->
+
 <div class="view active" id="view-workout">
-  <div class="header" id="headerWrap" style="position:relative">
-    <svg id="unionSVG" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0"></svg>
-    <div class="day-tabs" id="dayTabs" style="position:relative;z-index:1"></div>
-    <div class="progress-wrap" id="progressWrap" style="position:relative;z-index:1">
-      <span class="progress-label">Прогресс</span>
-      <div class="progress-bg"><div class="progress-fill" id="progBar" style="width:0%"></div></div>
-      <span class="progress-count" id="progLabel">0/0</span>
-    </div>
+  <div class="header" id="workoutHeader">
+
+```
+<!-- SVG-хедер: 3 кликабельные фигуры -->
+<div class="header-svg-area" id="headerSvgArea">
+
+  <!--
+    viewBox 0 0 390 128 — оригинальные координаты Фигмы
+    Каждый день — отдельный SVG, переключение через JS
+  -->
+
+  <!-- ДЕНЬ 1 (активный по умолчанию) -->
+  <svg
+    id="svgDay1"
+    class="day-svg"
+    viewBox="23 0 344 128"
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <!--
+      День 1: большая «подкова» (таб 1 + полоса прогресса) + капсулы 2 и 3
+      Активный таб — с акцентной обводкой, неактивные — glass
+    -->
+
+    <!-- Таб 2 (неактивный) -->
+    <path
+      id="d1-tab2"
+      d="M220.333 18H169.667C152.178 18 138 32.3269 138 50C138 67.6731 152.178 82 169.667 82H220.333C237.822 82 252 67.6731 252 50C252 32.3269 237.822 18 220.333 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 3 (неактивный) -->
+    <path
+      id="d1-tab3"
+      d="M340.333 18H289.667C272.178 18 258 32.3269 258 50C258 67.6731 272.178 82 289.667 82H340.333C357.822 82 372 67.6731 372 50C372 32.3269 357.822 18 340.333 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 1 активный + прогресс-полоса (подкова) -->
+    <path
+      id="d1-tab1"
+      d="M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+
+    <!-- Число 1 в активном табе -->
+    <text
+      id="d1-num1"
+      x="65" y="63"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      font-family="'Tiny5', sans-serif"
+      font-size="52"
+      fill="#9DC44A"
+    >1</text>
+    <!-- Число 2 в неактивном табе -->
+    <text
+      id="d1-num2"
+      x="195" y="50"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      font-family="'Tiny5', sans-serif"
+      font-size="44"
+      fill="#555"
+    >2</text>
+    <!-- Число 3 в неактивном табе -->
+    <text
+      id="d1-num3"
+      x="315" y="50"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      font-family="'Tiny5', sans-serif"
+      font-size="44"
+      fill="#555"
+    >3</text>
+
+    <!-- Прогресс-бар внутри подковы -->
+    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
+    <!-- bg трек -->
+    <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
+    <!-- fill трек -->
+    <rect id="progFill1" x="95" y="106" width="0" height="5" rx="2.5" fill="#9DC44A"/>
+    <text id="progLabel1" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#9DC44A">0/0</text>
+  </svg>
+
+  <!-- ДЕНЬ 2 (скрыт) — фигура: центральная подкова (Фигма x=1620, нормализовано) -->
+  <svg
+    id="svgDay2"
+    class="day-svg"
+    viewBox="23 0 344 128"
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+    style="display:none;"
+  >
+    <!-- Таб 1 (неактивный, левая капсула) -->
+    <path
+      id="d2-tab1"
+      d="M100.33 18H49.67C32.178 18 18 32.103 18 49.5C18 66.897 32.178 81 49.67 81H100.33C117.822 81 132 66.897 132 49.5C132 32.103 117.822 18 100.33 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 3 (неактивный, правая капсула) -->
+    <path
+      id="d2-tab3"
+      d="M340.33 18H289.67C272.178 18 258 32.103 258 49.5C258 66.897 272.178 81 289.67 81H340.33C357.822 81 372 66.897 372 49.5C372 32.103 357.822 18 340.33 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 2 активный — центральная подкова -->
+    <path
+      id="d2-tab2"
+      d="M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.55 88.3279H352.23C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.23 128H37.77C26.85 128 18 119.119 18 108.164C18 97.2087 26.85 88.3279 37.77 88.3279H105.45C123.65 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.34 18H218.66C236.85 18 251.6 32.8015 251.6 51.0601V55.2678Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+
+    <!-- Числа -->
+    <text id="d2-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">1</text>
+    <text id="d2-num3" x="315" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">3</text>
+    <text id="d2-num2" x="195" y="63" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="52" fill="#9DC44A">2</text>
+
+    <!-- Прогресс-бар -->
+    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
+    <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
+    <rect id="progFill2" x="95" y="106" width="0" height="5" rx="2.5" fill="#9DC44A"/>
+    <text id="progLabel2" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#9DC44A">0/0</text>
+  </svg>
+
+  <!-- ДЕНЬ 3 (скрыт) — фигура: правосторонняя зеркальная подкова (Фигма clip1, x=841 нормализовано) -->
+  <svg
+    id="svgDay3"
+    class="day-svg"
+    viewBox="23 0 344 128"
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+    style="display:none;"
+  >
+    <!-- Таб 1 (неактивный, левая капсула) -->
+    <path
+      id="d3-tab1"
+      d="M49.667 18H100.333C117.822 18 132 32.3269 132 50C132 67.6731 117.822 82 100.333 82H49.667C32.178 82 18 67.6731 18 50C18 32.3269 32.178 18 49.667 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 2 (неактивный, средняя капсула) -->
+    <path
+      id="d3-tab2"
+      d="M169.67 18H220.33C237.82 18 252 32.3269 252 50C252 67.6731 237.82 82 220.33 82H169.67C152.178 82 138 67.6731 138 50C138 32.3269 152.178 18 169.67 18Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+    <!-- Таб 3 активный — правосторонняя подкова -->
+    <path
+      id="d3-tab3"
+      d="M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.85 88.3279H37.766C26.85 88.3279 18 97.2087 18 108.164C18 119.119 26.85 128 37.766 128H339.06C357.25 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.25 18 339.06 18H291.74C273.54 18 258.79 32.8016 258.79 51.0601V55.2678Z"
+      fill="rgba(255,255,255,0.07)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="1"
+      style="cursor:pointer;"
+    />
+
+    <!-- Числа -->
+    <text id="d3-num1" x="75" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">1</text>
+    <text id="d3-num2" x="195" y="50" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="44" fill="#555">2</text>
+    <text id="d3-num3" x="326" y="63" text-anchor="middle" dominant-baseline="middle" font-family="'Tiny5',sans-serif" font-size="52" fill="#9DC44A">3</text>
+
+    <!-- Прогресс-бар -->
+    <text x="86" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#5a5a5a" text-anchor="end">ПРОГРЕСС</text>
+    <rect x="95" y="106" width="220" height="5" rx="2.5" fill="rgba(255,255,255,0.1)"/>
+    <rect id="progFill3" x="95" y="106" width="0" height="5" rx="2.5" fill="#9DC44A"/>
+    <text id="progLabel3" x="324" y="110" font-family="'Manrope',sans-serif" font-size="9" font-weight="700" fill="#9DC44A">0/0</text>
+  </svg>
+
+</div>
+<!-- /header-svg-area -->
+```
+
   </div>
   <div class="content" id="workoutContent"></div>
 </div>
 
+<!-- HISTORY VIEW -->
+
 <div class="view" id="view-history">
   <div class="header">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px">
-      <div class="app-title">&#128202; ИСТОРИЯ</div>
+      <div class="app-title">📊 ИСТОРИЯ</div>
       <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--muted);font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
     </div>
   </div>
@@ -181,21 +430,20 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 
 <script>
 var IMGS = {
-  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1453.png",
-  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
-  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
-  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
+  d1_1:"https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1453.png",
+  d1_2:null,d1_3:null,d1_4:null,d1_5:null,d1_6:null,d1_7:null,d1_8:null,d1_9:null,
+  d2_1:null,d2_2:null,d2_3:null,d2_4:null,d2_5:null,d2_6:null,d2_7:null,d2_8:null,d2_9:null,
+  d3_1:null,d3_2:null,d3_3:null,d3_4:null,d3_5:null,d3_6:null,d3_7:null,d3_8:null,d3_9:null
 };
-
 var IMGS_ANIM = {
-  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1423.gif",
-  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
-  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
-  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
+  d1_1:"https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1423.gif",
+  d1_2:null,d1_3:null,d1_4:null,d1_5:null,d1_6:null,d1_7:null,d1_8:null,d1_9:null,
+  d2_1:null,d2_2:null,d2_3:null,d2_4:null,d2_5:null,d2_6:null,d2_7:null,d2_8:null,d2_9:null,
+  d3_1:null,d3_2:null,d3_3:null,d3_4:null,d3_5:null,d3_6:null,d3_7:null,d3_8:null,d3_9:null
 };
 
 var DEFAULT_PROGRAM = [
-  { day:1, label:"DAY\n1", groups:[
+  { day:1, groups:[
     { name:"СПИНА", exercises:[
       { id:"d1_1", name:"Вертикальная тяга широким прямым хватом к груди", sets:4, reps:10 },
       { id:"d1_2", name:"Горизонтальная тяга блока сидя параллельным хватом (в идеале тяга Т-грифа с упором)", sets:4, reps:10 }
@@ -216,7 +464,7 @@ var DEFAULT_PROGRAM = [
       { id:"d1_9", name:"Скручивание пресса на наклонной скамье", sets:3, reps:15 }
     ]}
   ]},
-  { day:2, label:"DAY\n2", groups:[
+  { day:2, groups:[
     { name:"ГРУДЬ", exercises:[
       { id:"d2_1", name:"Жим гантелей лежа на наклонной скамье 30°-45°", sets:4, reps:10 },
       { id:"d2_2", name:"Сведение рук в тренажере бабочка", sets:3, reps:12 }
@@ -237,7 +485,7 @@ var DEFAULT_PROGRAM = [
       { id:"d2_9", name:"Подъем ног в висе на турнике", sets:3, reps:12 }
     ]}
   ]},
-  { day:3, label:"DAY\n3", groups:[
+  { day:3, groups:[
     { name:"СПИНА + ГРУДЬ", exercises:[
       { id:"d3_1", name:"Подтягивания (прямым, параллельным, обратным, прямым)", sets:4, reps:10 },
       { id:"d3_2", name:"Жим штанги лежа (высота 11, 2 страховки)", sets:4, reps:8 }
@@ -261,656 +509,434 @@ var DEFAULT_PROGRAM = [
 ];
 
 var DEFAULT_WEIGHTS = {
-  d1_1:0, d1_2:0, d1_3:0, d1_4:0, d1_5:0, d1_6:0, d1_7:0, d1_8:0, d1_9:0,
-  d2_1:0, d2_2:0, d2_3:0, d2_4:0, d2_5:0, d2_6:0, d2_7:0, d2_8:0, d2_9:0,
-  d3_1:0, d3_2:0, d3_3:0, d3_4:0, d3_5:0, d3_6:0, d3_7:0, d3_8:0, d3_9:0
+  d1_1:0,d1_2:0,d1_3:0,d1_4:0,d1_5:0,d1_6:0,d1_7:0,d1_8:0,d1_9:0,
+  d2_1:0,d2_2:0,d2_3:0,d2_4:0,d2_5:0,d2_6:0,d2_7:0,d2_8:0,d2_9:0,
+  d3_1:0,d3_2:0,d3_3:0,d3_4:0,d3_5:0,d3_6:0,d3_7:0,d3_8:0,d3_9:0
 };
 
 var S = { currentDay:0, step:2.5, program:null, weights:{}, done:{}, history:[], openPanel:null, editTarget:null };
 
-function load() {
-  try { var r = localStorage.getItem('gym_v4'); if(r) S = Object.assign({}, S, JSON.parse(r)); } catch(e){}
-  if (!S.program) S.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
-  if (!S.weights || !Object.keys(S.weights).length) S.weights = Object.assign({}, DEFAULT_WEIGHTS);
-  if (!S.history) S.history = [];
-  if (!S.done) S.done = {};
-  if (!S.step) S.step = 2.5;
+function load(){
+  try{ var r=localStorage.getItem('gym_v4'); if(r) S=Object.assign({},S,JSON.parse(r)); }catch(e){}
+  if(!S.program) S.program=JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
+  if(!S.weights||!Object.keys(S.weights).length) S.weights=Object.assign({},DEFAULT_WEIGHTS);
+  if(!S.history) S.history=[];
+  if(!S.done) S.done={};
+  if(!S.step) S.step=2.5;
 }
+function save(){ try{ localStorage.setItem('gym_v4',JSON.stringify(S)); }catch(e){} }
 
-function save() { try { localStorage.setItem('gym_v4', JSON.stringify(S)); } catch(e){} }
-
-function switchView(v) {
+function switchView(v){
   document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('active'); });
   document.querySelectorAll('.nav-btn').forEach(function(el){ el.classList.remove('active'); });
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('nav-'+v).classList.add('active');
-  if (v === 'history') renderHistory();
+  if(v==='history') renderHistory();
 }
 
-function renderDayTabs() {
-  var c = document.getElementById('dayTabs');
-  c.innerHTML = '';
-  S.program.forEach(function(day, i) {
-    var b = document.createElement('button');
-    b.className = 'day-tab' + (i === S.currentDay ? ' active' : '');
-    b.innerHTML = '<span class="dn">' + day.day + '</span>';
-    b.onclick = (function(idx){ return function(){ if(window.Telegram&&window.Telegram.WebApp){try{window.Telegram.WebApp.HapticFeedback.impactOccurred('light');}catch(e){}} S.currentDay=idx; S.openPanel=null; save(); renderWorkout(); window.scrollTo({top:0, behavior:'instant'}); }; })(i);
-    c.appendChild(b);
-  });
-  updateProgressCorners();
-}
-
-function drawUnionShape() {
-  var svg = document.getElementById('unionSVG');
-  var header = document.getElementById('headerWrap');
-  if (!svg || !header) return;
-
-  // Figma paths - viewBox 18 18 354 110 maps content area exactly
-  // x:18-372 = 354px wide (matches our 18px margin on each side)
-  // y:18-128 = 110px tall (tab + gap + progress)
-  var paths = {
-    0: "M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z",
-    1: "M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.545 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H37.766C26.8497 128 18 119.119 18 108.164C18 97.2087 26.8497 88.3279 37.766 88.3279H105.455C123.645 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.345 18H218.655C236.845 18 251.6 32.8015 251.6 51.0601V55.2678Z",
-    2: "M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.848 88.3279H37.766C26.8497 88.3279 18 97.2087 18 108.164C18 119.119 26.8497 128 37.766 128H339.056C357.251 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.251 18 339.056 18H291.736C273.542 18 258.79 32.8016 258.79 51.0601V55.2678Z"
-  };
-
-  var idx = S.currentDay;
-  var hRect = header.getBoundingClientRect();
-  var W = hRect.width;
-
-  // viewBox: x=0, y=0, w=390, h=146 (full figma frame)
-  // The shape uses x:18-372, y:18-128
-  // We want it to fill W px wide
-  svg.setAttribute('viewBox', '0 0 390 146');
-  svg.setAttribute('width', W);
-  svg.setAttribute('height', Math.round(W * 146 / 390));
-  svg.style.width = W + 'px';
-  svg.style.height = Math.round(W * 146 / 390) + 'px';
-
-  svg.innerHTML = '<path d="' + paths[idx] + '" fill="rgba(255,255,255,0.07)"/>';
-}
-
-function drawUnionShape() {
-  var svg = document.getElementById('unionSVG');
-  var header = document.getElementById('headerWrap');
-  var prog = document.getElementById('progressWrap');
-  var allTabs = document.querySelectorAll('.day-tab');
-  if (!svg || !header || !prog || allTabs.length < 3) return;
-
-  requestAnimationFrame(function() {
-    var hRect = header.getBoundingClientRect();
-    var pRect = prog.getBoundingClientRect();
-
-    // Figma content area: x 18-372 = 354px, y 18-128 = 110px
-    // Real content area: progress left to right, header top to progress bottom
-    var figW = 354; // Figma content width
-    var figH = 110; // Figma content height (18 to 128)
-    var figOX = 18; // Figma content origin x
-    var figOY = 18; // Figma content origin y
-
-    // Real dimensions
-    var realX = pRect.left - hRect.left; // = 18px (margin)
-    var realW = pRect.width;             // real progress width
-    var realY = hRect.top - hRect.top;   // = 0
-    var realH = (pRect.bottom - hRect.top); // header content height
-
-    var sx = realW / figW; // scale x
-    var sy = realH / figH; // scale y
-
-    function tx(x) { return realX + (x - figOX) * sx; }
-    function ty(y) { return (y - figOY) * sy; }
-
-    var idx = S.currentDay;
-    var path;
-
-    if (idx === 0) {
-      // Day 1 active - exact Figma path scaled
-      path =
-        'M' + tx(131.208) + ' ' + ty(55.268) +
-        'C' + tx(131.208) + ' ' + ty(73.526) + ' ' + tx(145.958) + ' ' + ty(88.328) + ' ' + tx(164.152) + ' ' + ty(88.328) +
-        'H' + tx(352.234) +
-        'C' + tx(363.15) + ' ' + ty(88.328) + ' ' + tx(372) + ' ' + ty(97.209) + ' ' + tx(372) + ' ' + ty(108.164) +
-        'C' + tx(372) + ' ' + ty(119.119) + ' ' + tx(363.15) + ' ' + ty(128) + ' ' + tx(352.234) + ' ' + ty(128) +
-        'H' + tx(50.944) +
-        'C' + tx(32.75) + ' ' + ty(128) + ' ' + tx(18) + ' ' + ty(113.198) + ' ' + tx(18) + ' ' + ty(94.94) +
-        'V' + ty(51.06) +
-        'C' + tx(18) + ' ' + ty(32.802) + ' ' + tx(32.75) + ' ' + ty(18) + ' ' + tx(50.944) + ' ' + ty(18) +
-        'H' + tx(98.264) +
-        'C' + tx(116.458) + ' ' + ty(18) + ' ' + tx(131.208) + ' ' + ty(32.802) + ' ' + tx(131.208) + ' ' + ty(51.06) +
-        'Z';
-    } else if (idx === 2) {
-      // Day 3 active - Figma frame 2 (offset 841), adjusted to same 18-372 space
-      path =
-        'M' + tx(258.792) + ' ' + ty(55.268) +
-        'C' + tx(258.792) + ' ' + ty(73.526) + ' ' + tx(244.042) + ' ' + ty(88.328) + ' ' + tx(225.848) + ' ' + ty(88.328) +
-        'H' + tx(37.766) +
-        'C' + tx(26.85) + ' ' + ty(88.328) + ' ' + tx(18) + ' ' + ty(97.209) + ' ' + tx(18) + ' ' + ty(108.164) +
-        'C' + tx(18) + ' ' + ty(119.119) + ' ' + tx(26.85) + ' ' + ty(128) + ' ' + tx(37.766) + ' ' + ty(128) +
-        'H' + tx(339.056) +
-        'C' + tx(357.25) + ' ' + ty(128) + ' ' + tx(372) + ' ' + ty(113.198) + ' ' + tx(372) + ' ' + ty(94.94) +
-        'V' + ty(51.06) +
-        'C' + tx(372) + ' ' + ty(32.802) + ' ' + tx(357.25) + ' ' + ty(18) + ' ' + tx(339.056) + ' ' + ty(18) +
-        'H' + tx(291.736) +
-        'C' + tx(273.542) + ' ' + ty(18) + ' ' + tx(258.792) + ' ' + ty(32.802) + ' ' + tx(258.792) + ' ' + ty(51.06) +
-        'Z';
-    } else {
-      // Day 2 active - Figma frame 3 (offset 1620), adjusted
-      // Active tab center: figma x 138-252 -> normalized 138-252
-      path =
-        'M' + tx(251.6) + ' ' + ty(55.268) +
-        'C' + tx(251.6) + ' ' + ty(73.526) + ' ' + tx(266.35) + ' ' + ty(88.328) + ' ' + tx(284.55) + ' ' + ty(88.328) +
-        'H' + tx(352.23) +
-        'C' + tx(363.15) + ' ' + ty(88.328) + ' ' + tx(372) + ' ' + ty(97.209) + ' ' + tx(372) + ' ' + ty(108.164) +
-        'C' + tx(372) + ' ' + ty(119.119) + ' ' + tx(363.15) + ' ' + ty(128) + ' ' + tx(352.23) + ' ' + ty(128) +
-        'H' + tx(37.77) +
-        'C' + tx(26.85) + ' ' + ty(128) + ' ' + tx(18) + ' ' + ty(119.119) + ' ' + tx(18) + ' ' + ty(108.164) +
-        'C' + tx(18) + ' ' + ty(97.209) + ' ' + tx(26.85) + ' ' + ty(88.328) + ' ' + tx(37.77) + ' ' + ty(88.328) +
-        'H' + tx(105.45) +
-        'C' + tx(123.65) + ' ' + ty(88.328) + ' ' + tx(138.4) + ' ' + ty(73.526) + ' ' + tx(138.4) + ' ' + ty(55.268) +
-        'V' + ty(51.06) +
-        'C' + tx(138.4) + ' ' + ty(32.802) + ' ' + tx(153.15) + ' ' + ty(18) + ' ' + tx(171.34) + ' ' + ty(18) +
-        'H' + tx(218.66) +
-        'C' + tx(236.85) + ' ' + ty(18) + ' ' + tx(251.6) + ' ' + ty(32.802) + ' ' + tx(251.6) + ' ' + ty(51.06) +
-        'Z';
-    }
-
-    var W = hRect.width;
-    var H = realH + 4;
-    svg.style.width = W + 'px';
-    svg.style.height = H + 'px';
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.innerHTML = '<path d="' + path + '" fill="rgba(255,255,255,0.07)"/>';
+/* ════════════════════════════════════
+   SVG DAY SWITCHING
+════════════════════════════════════ */
+function showDaySvg(dayIdx){
+  ['svgDay1','svgDay2','svgDay3'].forEach(function(id,i){
+    document.getElementById(id).style.display = (i===dayIdx) ? 'block' : 'none';
   });
 }
 
-function updateProgressCorners() {
-  var prog = document.getElementById('progressWrap');
-  var activeTab = document.querySelector('.day-tab.active');
-  if (!prog || !activeTab) return;
-
-  var idx = S.currentDay;
-  var r = 25;
-
-  // Reset corner classes
-  activeTab.classList.remove('corner-left', 'corner-right');
-
-  if (idx === 0) {
-    // Day 1: left side goes down flush, right side has concave corner
-    activeTab.style.borderBottomLeftRadius = '0';
-    activeTab.style.borderBottomRightRadius = '0';
-    activeTab.classList.add('corner-right');
-    prog.style.borderTopLeftRadius = '0';
-    prog.style.borderTopRightRadius = r + 'px';
-  } else if (idx === S.program.length - 1) {
-    // Day 3: right side flush, left has concave corner
-    activeTab.style.borderBottomLeftRadius = '0';
-    activeTab.style.borderBottomRightRadius = '0';
-    activeTab.classList.add('corner-left');
-    prog.style.borderTopLeftRadius = r + 'px';
-    prog.style.borderTopRightRadius = '0';
-  } else {
-    // Day 2: both sides concave
-    activeTab.style.borderBottomLeftRadius = '0';
-    activeTab.style.borderBottomRightRadius = '0';
-    activeTab.classList.add('corner-left', 'corner-right');
-    prog.style.borderTopLeftRadius = r + 'px';
-    prog.style.borderTopRightRadius = r + 'px';
+function switchDay(dayIdx){
+  if(window.Telegram&&window.Telegram.WebApp){
+    try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){}
   }
-  prog.style.borderBottomLeftRadius = r + 'px';
-  prog.style.borderBottomRightRadius = r + 'px';
-  // Remove top border of progress where it meets active tab
-  prog.style.borderTopColor = 'transparent';
+  S.currentDay = dayIdx;
+  S.openPanel = null;
+  save();
+  showDaySvg(dayIdx);
+  renderWorkoutContent();
+  updateProgress();
+  window.scrollTo({top:0,behavior:'instant'});
 }
 
-function renderWorkout() {
-  renderDayTabs();
+/* клики по тапам каждого SVG-дня */
+function bindSvgClicks(){
+  var map = {
+    // day1 paths
+    'd1-tab1':0,'d1-tab2':1,'d1-tab3':2,
+    // day1 числа
+    'd1-num1':0,'d1-num2':1,'d1-num3':2,
+    // day2 paths
+    'd2-tab1':0,'d2-tab2':1,'d2-tab3':2,
+    // day2 числа (num3 = правая капсула = день 3, num2 = активная = день 1)
+    'd2-num1':0,'d2-num2':1,'d2-num3':2,
+    // day3 paths
+    'd3-tab1':0,'d3-tab2':1,'d3-tab3':2,
+    // day3 числа
+    'd3-num1':0,'d3-num2':1,'d3-num3':2
+  };
+  var area = document.getElementById('headerSvgArea');
+  var _tapX=0, _tapY=0;
+
+  area.addEventListener('touchstart',function(e){
+    _tapX=e.touches[0].clientX; _tapY=e.touches[0].clientY;
+  },{passive:true});
+
+  area.addEventListener('touchend',function(e){
+    if(Math.abs(e.changedTouches[0].clientX-_tapX)>10||Math.abs(e.changedTouches[0].clientY-_tapY)>10) return;
+    var el=e.target, id=null;
+    for(var i=0;i<5;i++){
+      if(!el) break;
+      if(el.id&&map[el.id]!==undefined){id=el.id;break;}
+      el=el.parentElement;
+    }
+    if(id===null) return;
+    e.preventDefault();
+    switchDay(map[id]);
+  },{passive:false});
+
+  area.addEventListener('click',function(e){
+    var el=e.target, id=null;
+    for(var i=0;i<5;i++){
+      if(!el) break;
+      if(el.id&&map[el.id]!==undefined){id=el.id;break;}
+      el=el.parentElement;
+    }
+    if(id!==null) switchDay(map[id]);
+  });
+}
+
+/* ════════════════════════════════════
+   PROGRESS
+════════════════════════════════════ */
+function updateProgress(){
   var day = S.program[S.currentDay];
-  var allIds = [];
+  var allIds=[];
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
   var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
   var total = allIds.length;
-  document.getElementById('progLabel').textContent = doneCount + '/' + total;
-  document.getElementById('progBar').style.width = (total ? Math.round(doneCount/total*100) : 0) + '%';
-  var sc = document.getElementById('sessionCount'); if(sc) sc.textContent = S.history.length;
-  var allDone = doneCount === total && total > 0;
+  var pct = total ? doneCount/total : 0;
+  var svgIdx = S.currentDay+1;
+  var fillEl = document.getElementById('progFill'+svgIdx);
+  var labelEl = document.getElementById('progLabel'+svgIdx);
+  if(fillEl) fillEl.setAttribute('width', Math.round(220*pct));
+  if(labelEl) labelEl.textContent = doneCount+'/'+total;
+}
+
+/* ════════════════════════════════════
+   WORKOUT CONTENT
+════════════════════════════════════ */
+function renderWorkout(){
+  showDaySvg(S.currentDay);
+  renderWorkoutContent();
+  updateProgress();
+}
+
+function renderWorkoutContent(){
+  var day = S.program[S.currentDay];
+  var allIds=[];
+  day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
+  var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
+  var total = allIds.length;
+  var allDone = doneCount===total && total>0;
 
   var container = document.getElementById('workoutContent');
-  container.innerHTML = '';
+  container.innerHTML='';
 
-  day.groups.forEach(function(group, gi) {
+  day.groups.forEach(function(group,gi){
     var gDiv = document.createElement('div');
-    gDiv.className = 'muscle-group';
-    gDiv.innerHTML = '<div class="muscle-label"><div class="dot"></div><span>' + group.name + '</span></div>';
+    gDiv.className='muscle-group';
+    gDiv.innerHTML='<div class="muscle-label"><div class="dot"></div><span>'+group.name+'</span></div>';
 
-    group.exercises.forEach(function(ex, ei) {
+    group.exercises.forEach(function(ex,ei){
       var isDone = !!S.done[ex.id];
-      var w = (S.weights[ex.id] !== undefined) ? S.weights[ex.id] : 0;
-      var isOpen = S.openPanel === ex.id;
-      var imgSrc = IMGS[ex.id] || null;
-      var imgAnimSrc = IMGS_ANIM[ex.id] || imgSrc;
+      var w = (S.weights[ex.id]!==undefined)?S.weights[ex.id]:0;
+      var isOpen = S.openPanel===ex.id;
+      var imgSrc = IMGS[ex.id]||null;
+      var imgAnimSrc = IMGS_ANIM[ex.id]||imgSrc;
 
       var imgInner = imgSrc
-        ? '<img src="' + imgSrc + '" alt="">'
+        ? '<img src="'+imgSrc+'" alt="">'
         : '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>';
 
       var card = document.createElement('div');
-      card.className = 'exercise-card' + (isDone ? ' done' : '');
+      card.className='exercise-card'+(isDone?' done':'');
+      var exId=ex.id; var curDay=S.currentDay;
 
-      var exId = ex.id;
-      var curDay = S.currentDay;
-
-      card.innerHTML =
-        '<div class="ex-main">' +
-          '<div class="ex-img" id="img_' + exId + '">' + imgInner + '</div>' +
-          '<div class="ex-info">' +
-            '<div class="ex-name">' + ex.name + '</div>' +
-            '<div class="ex-sets">' + ex.sets + 'x' + ex.reps + '</div>' +
-          '</div>' +
-          '<div class="ex-right">' +
-            '<div class="weight-col' + (isOpen ? ' editing' : '') + '" id="wcol_' + exId + '">' +
-              '<div class="weight-val" data-id="' + exId + '">' + w + '</div>' +
-              '<div class="weight-unit">кг</div>' +
-            '</div>' +
-            '<div class="ex-check">' + (isDone ? '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>' : '') + '</div>' +
-          '</div>' +
+      card.innerHTML=
+        '<div class="ex-main">'+
+          '<div class="ex-img" id="img_'+exId+'">'+imgInner+'</div>'+
+          '<div class="ex-info">'+
+            '<div class="ex-name">'+ex.name+'</div>'+
+            '<div class="ex-sets">'+ex.sets+'x'+ex.reps+'</div>'+
+          '</div>'+
+          '<div class="ex-right">'+
+            '<div class="weight-col'+(isOpen?' editing':'')+'" id="wcol_'+exId+'">'+
+              '<div class="weight-val" data-id="'+exId+'">'+w+'</div>'+
+              '<div class="weight-unit">кг</div>'+
+            '</div>'+
+            '<div class="ex-check">'+(isDone?'<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>':'')+
+            '</div>'+
+          '</div>'+
         '</div>';
 
-      // Картинка — открыть оверлей
-      var imgDiv = card.querySelector('.ex-img');
-      if (imgSrc) {
-        imgDiv.addEventListener('click', (function(id, anim){ return function(){ tapImg(id, anim); }; })(exId, imgAnimSrc));
+      if(imgSrc){
+        card.querySelector('.ex-img').addEventListener('click',(function(id,anim){ return function(){ tapImg(id,anim); }; })(exId,imgAnimSrc));
       }
-
-      // Вес — открыть панель
-      var wcolDiv = card.querySelector('.weight-col');
-      wcolDiv.addEventListener('touchstart', (function(id){ return function(e){ touchStartWeight(e, id); }; })(exId), {passive:true});
-      wcolDiv.addEventListener('touchend', (function(id){ return function(e){ touchEndWeight(e, id); }; })(exId));
-      wcolDiv.addEventListener('click', (function(id){ return function(){ onWeightClick(id); }; })(exId));
-
-      // Галочка
-      var checkDiv = card.querySelector('.ex-check');
-      checkDiv.addEventListener('click', (function(id){ return function(){ toggleDone(id); }; })(exId));
-
-      // Редактирование названия — долгое нажатие
-      var nameDiv = card.querySelector('.ex-name');
-      nameDiv.addEventListener('contextmenu', (function(d,g,e){ return function(ev){ ev.preventDefault(); openEdit(d,g,e); }; })(curDay, gi, ei));
+      var wcolDiv=card.querySelector('.weight-col');
+      wcolDiv.addEventListener('touchstart',(function(id){ return function(e){ touchStartWeight(e,id); }; })(exId),{passive:true});
+      wcolDiv.addEventListener('touchend',(function(id){ return function(e){ touchEndWeight(e,id); }; })(exId));
+      wcolDiv.addEventListener('click',(function(id){ return function(){ onWeightClick(id); }; })(exId));
+      card.querySelector('.ex-check').addEventListener('click',(function(id){ return function(){ toggleDone(id); }; })(exId));
+      card.querySelector('.ex-name').addEventListener('contextmenu',(function(d,g,e){ return function(ev){ ev.preventDefault(); openEdit(d,g,e); }; })(curDay,gi,ei));
 
       gDiv.appendChild(card);
     });
     container.appendChild(gDiv);
   });
 
-  // Bottom cards: done banner + finish button
-  var bottomDiv = document.createElement('div');
-  bottomDiv.id = 'bottomCards';
-  bottomDiv.style.padding = '8px 0 110px';
-
-  // Done banner - only shown when all done
-  var banner = document.createElement('div');
-  banner.className = 'done-banner' + (allDone ? ' show' : '');
-  banner.innerHTML = '<div class="db-emoji">&#128293;</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
+  var bottomDiv=document.createElement('div');
+  bottomDiv.style.padding='8px 0 110px';
+  var banner=document.createElement('div');
+  banner.className='done-banner'+(allDone?' show':'');
+  banner.innerHTML='<div class="db-emoji">🔥</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
   bottomDiv.appendChild(banner);
-
-  // Finish button - always visible
-  var finBtn = document.createElement('button');
-  finBtn.className = 'finish-btn';
-  finBtn.innerHTML = '&#10003; ЗАВЕРШИТЬ ТРЕНИРОВКУ';
-  finBtn.onclick = finishWorkout;
+  var finBtn=document.createElement('button');
+  finBtn.className='finish-btn';
+  finBtn.innerHTML='✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ';
+  finBtn.onclick=finishWorkout;
   bottomDiv.appendChild(finBtn);
-
   container.appendChild(bottomDiv);
 }
 
-var _touchStartY = 0, _touchStartX = 0, _touchHandled = false;
-
-function touchStartWeight(e, id) {
-  _touchStartY = e.touches[0].clientY;
-  _touchStartX = e.touches[0].clientX;
-  _touchHandled = false;
+/* ════════════════════════════════════
+   TOUCH / WEIGHT PANEL
+════════════════════════════════════ */
+var _touchStartY=0,_touchStartX=0,_touchHandled=false;
+function touchStartWeight(e,id){ _touchStartY=e.touches[0].clientY; _touchStartX=e.touches[0].clientX; _touchHandled=false; }
+function touchEndWeight(e,id){
+  var dy=Math.abs(e.changedTouches[0].clientY-_touchStartY);
+  var dx=Math.abs(e.changedTouches[0].clientX-_touchStartX);
+  if(dy>8||dx>8) return;
+  e.preventDefault(); _touchHandled=true; togglePanel(id);
 }
+function onWeightClick(id){ if(_touchHandled){ _touchHandled=false; return; } togglePanel(id); }
 
-function touchEndWeight(e, id) {
-  var dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
-  var dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
-  if (dy > 8 || dx > 8) return;
-  e.preventDefault();
-  _touchHandled = true;
-  togglePanel(id);
-}
-
-function onWeightClick(id) {
-  if (_touchHandled) { _touchHandled = false; return; }
-  togglePanel(id);
-}
-
-function tapImg(id, animSrc) {
-  if (!animSrc) return;
-  var img = document.getElementById('imgOverlayImg');
-  img.src = animSrc + '?t=' + Date.now();
+function tapImg(id,animSrc){
+  if(!animSrc) return;
+  document.getElementById('imgOverlayImg').src=animSrc+'?t='+Date.now();
   document.getElementById('imgOverlay').classList.add('open');
 }
-
-function closeImgOverlay() {
+function closeImgOverlay(){
   document.getElementById('imgOverlay').classList.remove('open');
-  setTimeout(function(){ document.getElementById('imgOverlayImg').src = ''; }, 300);
+  setTimeout(function(){ document.getElementById('imgOverlayImg').src=''; },300);
+}
+function toggleDone(id){
+  if(S.openPanel) closeWib();
+  S.done[id]=!S.done[id]; save(); renderWorkoutContent(); updateProgress();
 }
 
-function toggleDone(id) {
-  if (S.openPanel) closeWib();
-  S.done[id] = !S.done[id];
-  save();
-  renderWorkout();
-}
-
-var _weightFresh = false;
-
-function togglePanel(id) {
-  if (S.openPanel === id) { closeWib(); return; }
-  if (S.openPanel) {
-    // Switch exercise without closing keyboard
+var _weightFresh=false;
+function togglePanel(id){
+  if(S.openPanel===id){ closeWib(); return; }
+  if(S.openPanel){
     document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
-    S.openPanel = id;
-    _weightFresh = true;
-    save();
-    var wcol = document.getElementById('wcol_' + id);
-    if (wcol) wcol.classList.add('editing');
-    var day = S.program[S.currentDay];
-    var exName = '';
+    S.openPanel=id; _weightFresh=true; save();
+    var wcol=document.getElementById('wcol_'+id); if(wcol) wcol.classList.add('editing');
+    var day=S.program[S.currentDay]; var exName='';
     day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
-    var w = (S.weights[id] !== undefined) ? S.weights[id] : 0;
-    document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
-    document.getElementById('wibInput').value = w;
+    document.getElementById('wibExName').textContent=exName.length>30?exName.slice(0,30)+'...':exName;
+    document.getElementById('wibInput').value=(S.weights[id]!==undefined)?S.weights[id]:0;
     return;
   }
-
-  S.openPanel = id;
-  _weightFresh = true;
-  save();
-
-  document.querySelector('.bottom-nav').style.display = 'none';
-  var wcol = document.getElementById('wcol_' + id);
-  if (wcol) wcol.classList.add('editing');
-
-  var day = S.program[S.currentDay];
-  var exName = '';
+  S.openPanel=id; _weightFresh=true; save();
+  document.querySelector('.bottom-nav').style.display='none';
+  var wcol=document.getElementById('wcol_'+id); if(wcol) wcol.classList.add('editing');
+  var day=S.program[S.currentDay]; var exName='';
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
-  var w = (S.weights[id] !== undefined) ? S.weights[id] : 0;
-
-  document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
-  var wibInp = document.getElementById('wibInput');
-  wibInp.value = w;
-
-  var bar = document.getElementById('weightInputBar');
-  bar.style.bottom = '18px';
-  bar.classList.add('open');
-
-  function onVPResize() {
-    var vv = window.visualViewport;
-    var kbHeight = window.innerHeight - vv.height;
-    bar.style.bottom = (kbHeight > 50 ? kbHeight + 4 : 18) + 'px';
+  document.getElementById('wibExName').textContent=exName.length>30?exName.slice(0,30)+'...':exName;
+  var wibInp=document.getElementById('wibInput');
+  wibInp.value=(S.weights[id]!==undefined)?S.weights[id]:0;
+  var bar=document.getElementById('weightInputBar');
+  bar.style.bottom='18px'; bar.classList.add('open');
+  function onVPResize(){
+    var vv=window.visualViewport;
+    var kbHeight=window.innerHeight-vv.height;
+    bar.style.bottom=(kbHeight>50?kbHeight+4:18)+'px';
   }
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onVPResize);
-    window._wibVVCleanup = onVPResize;
-    onVPResize();
-  }
-
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize',onVPResize); window._wibVVCleanup=onVPResize; onVPResize(); }
   wibInp.focus();
-  try { wibInp.setSelectionRange(wibInp.value.length, wibInp.value.length); } catch(e) {}
+  try{ wibInp.setSelectionRange(wibInp.value.length,wibInp.value.length); }catch(e){}
 }
 
-function closeWib() {
-  S.openPanel = null;
-  _weightFresh = false;
-  save();
-
-  if (window._wibVVCleanup && window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', window._wibVVCleanup);
-    window._wibVVCleanup = null;
-  }
-
-  var wibInp = document.getElementById('wibInput');
-  wibInp.blur();
-
-  var bar = document.getElementById('weightInputBar');
-  bar.classList.remove('open');
-  bar.style.bottom = '18px';
-  bar.style.top = '';
-  bar.style.transition = '';
-
+function closeWib(){
+  S.openPanel=null; _weightFresh=false; save();
+  if(window._wibVVCleanup&&window.visualViewport){ window.visualViewport.removeEventListener('resize',window._wibVVCleanup); window._wibVVCleanup=null; }
+  document.getElementById('wibInput').blur();
+  var bar=document.getElementById('weightInputBar');
+  bar.classList.remove('open'); bar.style.bottom='18px';
   document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
-  document.querySelector('.bottom-nav').style.display = 'flex';
+  document.querySelector('.bottom-nav').style.display='flex';
 }
-
-function onWibBlur() {
-  if (window.Telegram && window.Telegram.WebApp) {
-    try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
-  }
-  setTimeout(function() {
-    if (S.openPanel) closeWib();
-  }, 150);
+function onWibBlur(){
+  if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){} }
+  setTimeout(function(){ if(S.openPanel) closeWib(); },150);
 }
-
-function onWibKeydown(e) {
-  if (e.key === 'Enter') { closeWib(); return; }
-  if (e.key === 'Backspace' || e.key === 'Delete') { _weightFresh = false; return; }
-  if (e.key === ',' || e.key === '.') { if (_weightFresh) { document.getElementById('wibInput').value = ''; _weightFresh = false; } return; }
-  if (_weightFresh && e.key >= '0' && e.key <= '9') { document.getElementById('wibInput').value = ''; _weightFresh = false; }
+function onWibKeydown(e){
+  if(e.key==='Enter'){ closeWib(); return; }
+  if(e.key==='Backspace'||e.key==='Delete'){ _weightFresh=false; return; }
+  if(e.key===','||e.key==='.'){ if(_weightFresh){ document.getElementById('wibInput').value=''; _weightFresh=false; } return; }
+  if(_weightFresh&&e.key>='0'&&e.key<='9'){ document.getElementById('wibInput').value=''; _weightFresh=false; }
 }
-
-function onWibInput(val) {
-  if (!S.openPanel) return;
-  var id = S.openPanel;
-  var cleaned = String(val).replace(',', '.');
-  var valEl = document.querySelector('.weight-val[data-id="' + id + '"]');
-  if (valEl) valEl.textContent = cleaned.endsWith('.') ? cleaned : (parseFloat(cleaned) || 0);
-  S.weights[id] = Math.max(0, parseFloat(cleaned) || 0);
+function onWibInput(val){
+  if(!S.openPanel) return;
+  var id=S.openPanel;
+  var cleaned=String(val).replace(',','.');
+  var valEl=document.querySelector('.weight-val[data-id="'+id+'"]');
+  if(valEl) valEl.textContent=cleaned.endsWith('.')? cleaned:(parseFloat(cleaned)||0);
+  S.weights[id]=Math.max(0,parseFloat(cleaned)||0);
   save();
 }
 
-function openEdit(di, gi, ei) {
-  S.editTarget = { di:di, gi:gi, ei:ei };
-  var ex = S.program[di].groups[gi].exercises[ei];
-  document.getElementById('editName').value = ex.name;
-  document.getElementById('editSets').value = ex.sets;
-  document.getElementById('editReps').value = ex.reps;
+/* ════════════════════════════════════
+   EDIT MODAL
+════════════════════════════════════ */
+function openEdit(di,gi,ei){
+  S.editTarget={di:di,gi:gi,ei:ei};
+  var ex=S.program[di].groups[gi].exercises[ei];
+  document.getElementById('editName').value=ex.name;
+  document.getElementById('editSets').value=ex.sets;
+  document.getElementById('editReps').value=ex.reps;
   document.getElementById('editOverlay').classList.add('open');
 }
-
-function closeModal() { document.getElementById('editOverlay').classList.remove('open'); S.editTarget = null; }
-
-function saveEdit() {
-  if (!S.editTarget) return;
-  var di = S.editTarget.di, gi = S.editTarget.gi, ei = S.editTarget.ei;
-  var ex = S.program[di].groups[gi].exercises[ei];
-  var n = document.getElementById('editName').value.trim();
-  if (n) ex.name = n;
-  ex.sets = parseInt(document.getElementById('editSets').value) || ex.sets;
-  ex.reps = parseInt(document.getElementById('editReps').value) || ex.reps;
-  save(); closeModal(); showToast('Сохранено'); renderWorkout();
+function closeModal(){ document.getElementById('editOverlay').classList.remove('open'); S.editTarget=null; }
+function saveEdit(){
+  if(!S.editTarget) return;
+  var ex=S.program[S.editTarget.di].groups[S.editTarget.gi].exercises[S.editTarget.ei];
+  var n=document.getElementById('editName').value.trim();
+  if(n) ex.name=n;
+  ex.sets=parseInt(document.getElementById('editSets').value)||ex.sets;
+  ex.reps=parseInt(document.getElementById('editReps').value)||ex.reps;
+  save(); closeModal(); showToast('Сохранено'); renderWorkoutContent();
 }
 
-function finishWorkout() {
-  if (window.Telegram && window.Telegram.WebApp) {
-    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-  }
-  var day = S.program[S.currentDay];
-  var allIds = [];
+/* ════════════════════════════════════
+   FINISH
+════════════════════════════════════ */
+function finishWorkout(){
+  if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){} }
+  var day=S.program[S.currentDay]; var allIds=[];
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
-  var snap = {};
-  allIds.forEach(function(id){ snap[id] = (S.weights[id] !== undefined) ? S.weights[id] : 0; });
-  S.history.push({ date: Date.now(), dayIdx: S.currentDay, weights: snap });
-  // Clear all done checkmarks regardless of completion
+  var snap={};
+  allIds.forEach(function(id){ snap[id]=(S.weights[id]!==undefined)?S.weights[id]:0; });
+  S.history.push({date:Date.now(),dayIdx:S.currentDay,weights:snap});
   allIds.forEach(function(id){ delete S.done[id]; });
-  save();
-  showToast('Тренировка дня ' + (S.currentDay + 1) + ' сохранена!');
-  window.scrollTo({top: 0, behavior: 'instant'});
-  renderWorkout();
+  save(); showToast('Тренировка дня '+(S.currentDay+1)+' сохранена!');
+  window.scrollTo({top:0,behavior:'instant'}); renderWorkoutContent(); updateProgress();
 }
 
-function renderHistory() {
-  var container = document.getElementById('histContent');
-
-  // Mini calendar logic:
-  // Find last "cycle" - last time all 3 days were completed resets the cycle
-  // Count which days done since last full cycle reset
-  var trainedDays = [false, false, false];
-  var tempDone = [false, false, false];
-  // Go through history in order, reset when all 3 done
-  S.history.forEach(function(h) {
-    if (h.dayIdx >= 0 && h.dayIdx < 3) {
-      tempDone[h.dayIdx] = true;
-      // If all 3 done, reset cycle
-      if (tempDone[0] && tempDone[1] && tempDone[2]) {
-        tempDone = [false, false, false];
-      }
+/* ════════════════════════════════════
+   HISTORY
+════════════════════════════════════ */
+function renderHistory(){
+  var container=document.getElementById('histContent');
+  var tempDone=[false,false,false];
+  S.history.forEach(function(h){
+    if(h.dayIdx>=0&&h.dayIdx<3){
+      tempDone[h.dayIdx]=true;
+      if(tempDone[0]&&tempDone[1]&&tempDone[2]) tempDone=[false,false,false];
     }
   });
-  trainedDays = tempDone;
-
-  // Next day to train = first false in trainedDays
-  var nextDay = -1;
-  for (var nd = 0; nd < 3; nd++) {
-    if (!trainedDays[nd]) { nextDay = nd; break; }
+  var calHtml='<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
+  for(var d=0;d<3;d++){
+    var isDone=tempDone[d];
+    var st=isDone
+      ?'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#4DC864;border:1.5px solid #4DC864;'
+      :'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
+    var nc=isDone?'#000':'#5a5a5a'; var lc=isDone?'#000':'#3a3a3a';
+    calHtml+='<div style="'+st+'"><span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:'+nc+'">'+(d+1)+'</span><span style="font-size:8px;font-weight:700;letter-spacing:1px;color:'+lc+'">'+(isDone?'DONE':'DAY')+'</span></div>';
   }
-
-  var calHtml = '<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
-  for (var d = 0; d < 3; d++) {
-    var isDone = trainedDays[d];
-    var style;
-    if (isDone) {
-      // Green - like active day tab on main screen
-      style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
-        'align-items:center;justify-content:center;gap:2px;' +
-        'background:#4DC864;border:1.5px solid #4DC864;';
-    } else {
-      // Same glass as inactive day tabs on main screen
-      style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
-        'align-items:center;justify-content:center;gap:2px;' +
-        'background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);' +
-        'backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
-    }
-    var numColor = isDone ? '#000' : '#5a5a5a';
-    var labelColor = isDone ? '#000' : '#3a3a3a';
-    var label = isDone ? 'DONE' : 'DAY';
-    calHtml += '<div style="' + style + '">' +
-      '<span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:' + numColor + '">' + (d+1) + '</span>' +
-      '<span style="font-size:8px;font-weight:700;letter-spacing:1px;color:' + labelColor + '">' + label + '</span>' +
-      '</div>';
-  }
-  calHtml += '</div>';
-
-  if (!S.history.length) {
-    container.innerHTML = calHtml + '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
+  calHtml+='</div>';
+  if(!S.history.length){
+    container.innerHTML=calHtml+'<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
     return;
   }
-
-  var byDay = [[], [], []];
-  var rev = S.history.slice().reverse();
-  rev.forEach(function(h){ if(byDay[h.dayIdx]) byDay[h.dayIdx].push(h); });
-  var html = calHtml;
-  S.program.forEach(function(day, di) {
-    var entries = byDay[di];
-    if (!entries.length) return;
-    html += '<div class="hist-day-header">День ' + day.day + '</div>';
-    entries.forEach(function(h) {
-      var d = new Date(h.date);
-      var ds = d.getDate() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-      var exList = [];
-      day.groups.forEach(function(g){ g.exercises.forEach(function(ex){ exList.push(ex); }); });
-      var pills = exList.map(function(ex) {
-        var w = h.weights[ex.id];
-        if (w === undefined) return '';
-        var short = ex.name.split(' ').slice(0,3).join(' ');
-        return '<div class="hist-pill"><span style="color:var(--muted);font-size:10px">' + short + '</span><span class="hw">' + w + '</span></div>';
+  var byDay=[[],[],[]];
+  S.history.slice().reverse().forEach(function(h){ if(byDay[h.dayIdx]) byDay[h.dayIdx].push(h); });
+  var html=calHtml;
+  S.program.forEach(function(day,di){
+    if(!byDay[di].length) return;
+    html+='<div class="hist-day-header">День '+day.day+'</div>';
+    byDay[di].forEach(function(h){
+      var d=new Date(h.date);
+      var ds=d.getDate()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      var exList=[]; day.groups.forEach(function(g){ g.exercises.forEach(function(ex){ exList.push(ex); }); });
+      var pills=exList.map(function(ex){
+        var w=h.weights[ex.id]; if(w===undefined) return '';
+        var short=ex.name.split(' ').slice(0,3).join(' ');
+        return '<div class="hist-pill"><span style="color:var(--muted);font-size:10px">'+short+'</span><span class="hw">'+w+'</span></div>';
       }).join('');
-      html += '<div class="hist-entry"><div class="hist-date">' + ds + '</div><div class="hist-pills">' + pills + '</div></div>';
+      html+='<div class="hist-entry"><div class="hist-date">'+ds+'</div><div class="hist-pills">'+pills+'</div></div>';
     });
   });
-  container.innerHTML = html;
+  container.innerHTML=html;
+}
+function clearHistory(){
+  if(!confirm('Очистить всю историю?')) return;
+  S.history=[]; save(); renderHistory(); showToast('История очищена');
 }
 
-function clearHistory() {
-  if (!confirm('Очистить всю историю?')) return;
-  S.history = []; save(); renderHistory(); showToast('История очищена');
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); },2200);
 }
 
-function showToast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2200);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Telegram WebApp setup
-  if (window.Telegram && window.Telegram.WebApp) {
-    var tg = window.Telegram.WebApp;
-    try { tg.ready(); } catch(e) {}
-    try { tg.expand(); } catch(e) {}
-    try { tg.disableVerticalSwipes(); } catch(e) {}
-    try { tg.setHeaderColor('#1a1a1a'); } catch(e) {}
-    try { tg.setBackgroundColor('#1a1a1a'); } catch(e) {}
-    try { tg.setBottomBarColor('#1a1a1a'); } catch(e) {}
-    try { tg.lockOrientation(); } catch(e) {}
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',function(){
+  if(window.Telegram&&window.Telegram.WebApp){
+    var tg=window.Telegram.WebApp;
+    try{ tg.ready(); }catch(e){}
+    try{ tg.expand(); }catch(e){}
+    try{ tg.disableVerticalSwipes(); }catch(e){}
+    try{ tg.setHeaderColor('#0C0C0C'); }catch(e){}
+    try{ tg.setBackgroundColor('#0C0C0C'); }catch(e){}
+    try{ tg.setBottomBarColor('#0C0C0C'); }catch(e){}
+    try{ tg.lockOrientation(); }catch(e){}
   }
-
-  if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
   load();
-  S.openPanel = null;
+  S.openPanel=null;
+  bindSvgClicks();
   renderWorkout();
 
-  document.addEventListener('click', function(e) {
-    if (!S.openPanel) return;
-    var bar = document.getElementById('weightInputBar');
-    if (bar && bar.contains(e.target)) return;
-    // If tapped on another weight col - switch to it, don't close
-    var allWcols = document.querySelectorAll('.weight-col');
-    for (var i = 0; i < allWcols.length; i++) {
-      if (allWcols[i].contains(e.target)) return;
-    }
+  document.addEventListener('click',function(e){
+    if(!S.openPanel) return;
+    var bar=document.getElementById('weightInputBar');
+    if(bar&&bar.contains(e.target)) return;
+    var allWcols=document.querySelectorAll('.weight-col');
+    for(var i=0;i<allWcols.length;i++){ if(allWcols[i].contains(e.target)) return; }
     closeWib();
   });
 
-  // Swipe left/right to switch days
-  var swipeStartX = 0, swipeStartY = 0, swipeMoved = false;
-  var workoutView = document.getElementById('view-workout');
-
-  workoutView.addEventListener('touchstart', function(e) {
-    swipeStartX = e.touches[0].clientX;
-    swipeStartY = e.touches[0].clientY;
-    swipeMoved = false;
-  }, { passive: true });
-
-  workoutView.addEventListener('touchmove', function(e) {
-    var dx = Math.abs(e.touches[0].clientX - swipeStartX);
-    var dy = Math.abs(e.touches[0].clientY - swipeStartY);
-    // Only mark as moved for horizontal swipes
-    if (dx > dy) swipeMoved = true;
-  }, { passive: true });
-
-  workoutView.addEventListener('touchend', function(e) {
-    if (!swipeMoved) return;
-    var dx = e.changedTouches[0].clientX - swipeStartX;
-    var dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
-    if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
-    if (S.openPanel) return;
-    var total = S.program.length;
-    if (dx < 0) {
-      S.currentDay = (S.currentDay + 1) % total;
-    } else {
-      S.currentDay = (S.currentDay - 1 + total) % total;
-    }
-    S.openPanel = null;
-    save();
-    if (window.Telegram && window.Telegram.WebApp) {
-      try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
-    }
-    renderWorkout();
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, { passive: true });
-
-
+  /* свайп для переключения дней */
+  var swipeStartX=0,swipeStartY=0,swipeMoved=false;
+  var workoutView=document.getElementById('view-workout');
+  workoutView.addEventListener('touchstart',function(e){ swipeStartX=e.touches[0].clientX; swipeStartY=e.touches[0].clientY; swipeMoved=false; },{passive:true});
+  workoutView.addEventListener('touchmove',function(e){ var dx=Math.abs(e.touches[0].clientX-swipeStartX); var dy=Math.abs(e.touches[0].clientY-swipeStartY); if(dx>dy) swipeMoved=true; },{passive:true});
+  workoutView.addEventListener('touchend',function(e){
+    if(!swipeMoved) return;
+    var dx=e.changedTouches[0].clientX-swipeStartX;
+    var dy=Math.abs(e.changedTouches[0].clientY-swipeStartY);
+    if(Math.abs(dx)<60||dy>Math.abs(dx)) return;
+    if(S.openPanel) return;
+    var total=S.program.length;
+    S.currentDay=dx<0?(S.currentDay+1)%total:(S.currentDay-1+total)%total;
+    S.openPanel=null; save();
+    if(window.Telegram&&window.Telegram.WebApp){ try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){} }
+    showDaySvg(S.currentDay);
+    renderWorkoutContent();
+    updateProgress();
+    window.scrollTo({top:0,behavior:'instant'});
+  },{passive:true});
 });
 </script>
 
