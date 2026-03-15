@@ -10,7 +10,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
 :root {
   --bg:#0C0C0C; --card:#242424; --card2:#2e2e2e;
-  --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
+  --accent:#AAD066; --accent-dim:rgba(157,196,74,0.1);
   --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -24,10 +24,10 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:none;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
 .day-tab.active{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);position:relative;z-index:2;margin-bottom:0;height:78px;overflow:visible}.day-tab.active .dn{color:var(--accent);font-size:59px}
-.day-tab.active::before,.day-tab.active::after{content:'';position:absolute;bottom:0px;width:34px;height:34px;pointer-events:none;z-index:3}
+.day-tab.active::before,.day-tab.active::after{content:'';display:none}
 .day-tab.active.corner-left::before{left:-34px;background:radial-gradient(circle at 0% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
 .day-tab.active.corner-right::after{right:-34px;background:radial-gradient(circle at 100% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
-.progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%)}
+.progress-wrap{padding:0 14px;margin:0 18px 8px;background:transparent;border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
 .progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease}
@@ -37,8 +37,8 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
 .muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#ffffff;flex-shrink:0}
 .muscle-label span{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:#ffffff;text-transform:uppercase}
-.exercise-card{background:rgba(36,36,36,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.07);border-radius:25px;margin-bottom:8px;overflow:hidden;transition:border-color .25s,opacity .25s}
-.exercise-card.done{border-color:#3a3a3a;opacity:.65}
+.exercise-card{background:rgba(36,36,36,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:none;border-radius:25px;margin-bottom:8px;overflow:hidden;transition:opacity .25s}
+.exercise-card.done{opacity:.65}
 .ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
 .ex-info{flex:1;min-width:0}
 .ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:#b0b0b0;cursor:pointer}
@@ -146,9 +146,10 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 </div>
 
 <div class="view active" id="view-workout">
-  <div class="header">
-    <div class="day-tabs" id="dayTabs"></div>
-    <div class="progress-wrap" id="progressWrap">
+  <div class="header" id="headerWrap" style="position:relative">
+    <svg id="unionSVG" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0"></svg>
+    <div class="day-tabs" id="dayTabs" style="position:relative;z-index:1"></div>
+    <div class="progress-wrap" id="progressWrap" style="position:relative;z-index:1">
       <span class="progress-label">Прогресс</span>
       <div class="progress-bg"><div class="progress-fill" id="progBar" style="width:0%"></div></div>
       <span class="progress-count" id="progLabel">0/0</span>
@@ -297,6 +298,129 @@ function renderDayTabs() {
     c.appendChild(b);
   });
   updateProgressCorners();
+}
+
+function drawUnionShape() {
+  var svg = document.getElementById('unionSVG');
+  var header = document.getElementById('headerWrap');
+  if (!svg || !header) return;
+
+  // Figma paths - viewBox 18 18 354 110 maps content area exactly
+  // x:18-372 = 354px wide (matches our 18px margin on each side)
+  // y:18-128 = 110px tall (tab + gap + progress)
+  var paths = {
+    0: "M131.208 55.2678C131.208 73.5263 145.958 88.3279 164.152 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H50.9442C32.7497 128 18 113.198 18 94.9399V51.0601C18 32.8016 32.7497 18 50.9442 18H98.264C116.458 18 131.208 32.8016 131.208 51.0601V55.2678Z",
+    1: "M251.6 55.2678C251.6 73.5263 266.35 88.3279 284.545 88.3279H352.234C363.15 88.3279 372 97.2087 372 108.164C372 119.119 363.15 128 352.234 128H37.766C26.8497 128 18 119.119 18 108.164C18 97.2087 26.8497 88.3279 37.766 88.3279H105.455C123.645 88.3279 138.4 73.5263 138.4 55.2678V51.0601C138.4 32.8015 153.15 18 171.345 18H218.655C236.845 18 251.6 32.8015 251.6 51.0601V55.2678Z",
+    2: "M258.79 55.2678C258.79 73.5263 244.04 88.3279 225.848 88.3279H37.766C26.8497 88.3279 18 97.2087 18 108.164C18 119.119 26.8497 128 37.766 128H339.056C357.251 128 372 113.198 372 94.9399V51.0601C372 32.8016 357.251 18 339.056 18H291.736C273.542 18 258.79 32.8016 258.79 51.0601V55.2678Z"
+  };
+
+  var idx = S.currentDay;
+  var hRect = header.getBoundingClientRect();
+  var W = hRect.width;
+
+  // viewBox: x=0, y=0, w=390, h=146 (full figma frame)
+  // The shape uses x:18-372, y:18-128
+  // We want it to fill W px wide
+  svg.setAttribute('viewBox', '0 0 390 146');
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', Math.round(W * 146 / 390));
+  svg.style.width = W + 'px';
+  svg.style.height = Math.round(W * 146 / 390) + 'px';
+
+  svg.innerHTML = '<path d="' + paths[idx] + '" fill="rgba(255,255,255,0.07)"/>';
+}
+
+function drawUnionShape() {
+  var svg = document.getElementById('unionSVG');
+  var header = document.getElementById('headerWrap');
+  var prog = document.getElementById('progressWrap');
+  var allTabs = document.querySelectorAll('.day-tab');
+  if (!svg || !header || !prog || allTabs.length < 3) return;
+
+  requestAnimationFrame(function() {
+    var hRect = header.getBoundingClientRect();
+    var pRect = prog.getBoundingClientRect();
+
+    // Figma content area: x 18-372 = 354px, y 18-128 = 110px
+    // Real content area: progress left to right, header top to progress bottom
+    var figW = 354; // Figma content width
+    var figH = 110; // Figma content height (18 to 128)
+    var figOX = 18; // Figma content origin x
+    var figOY = 18; // Figma content origin y
+
+    // Real dimensions
+    var realX = pRect.left - hRect.left; // = 18px (margin)
+    var realW = pRect.width;             // real progress width
+    var realY = hRect.top - hRect.top;   // = 0
+    var realH = (pRect.bottom - hRect.top); // header content height
+
+    var sx = realW / figW; // scale x
+    var sy = realH / figH; // scale y
+
+    function tx(x) { return realX + (x - figOX) * sx; }
+    function ty(y) { return (y - figOY) * sy; }
+
+    var idx = S.currentDay;
+    var path;
+
+    if (idx === 0) {
+      // Day 1 active - exact Figma path scaled
+      path =
+        'M' + tx(131.208) + ' ' + ty(55.268) +
+        'C' + tx(131.208) + ' ' + ty(73.526) + ' ' + tx(145.958) + ' ' + ty(88.328) + ' ' + tx(164.152) + ' ' + ty(88.328) +
+        'H' + tx(352.234) +
+        'C' + tx(363.15) + ' ' + ty(88.328) + ' ' + tx(372) + ' ' + ty(97.209) + ' ' + tx(372) + ' ' + ty(108.164) +
+        'C' + tx(372) + ' ' + ty(119.119) + ' ' + tx(363.15) + ' ' + ty(128) + ' ' + tx(352.234) + ' ' + ty(128) +
+        'H' + tx(50.944) +
+        'C' + tx(32.75) + ' ' + ty(128) + ' ' + tx(18) + ' ' + ty(113.198) + ' ' + tx(18) + ' ' + ty(94.94) +
+        'V' + ty(51.06) +
+        'C' + tx(18) + ' ' + ty(32.802) + ' ' + tx(32.75) + ' ' + ty(18) + ' ' + tx(50.944) + ' ' + ty(18) +
+        'H' + tx(98.264) +
+        'C' + tx(116.458) + ' ' + ty(18) + ' ' + tx(131.208) + ' ' + ty(32.802) + ' ' + tx(131.208) + ' ' + ty(51.06) +
+        'Z';
+    } else if (idx === 2) {
+      // Day 3 active - Figma frame 2 (offset 841), adjusted to same 18-372 space
+      path =
+        'M' + tx(258.792) + ' ' + ty(55.268) +
+        'C' + tx(258.792) + ' ' + ty(73.526) + ' ' + tx(244.042) + ' ' + ty(88.328) + ' ' + tx(225.848) + ' ' + ty(88.328) +
+        'H' + tx(37.766) +
+        'C' + tx(26.85) + ' ' + ty(88.328) + ' ' + tx(18) + ' ' + ty(97.209) + ' ' + tx(18) + ' ' + ty(108.164) +
+        'C' + tx(18) + ' ' + ty(119.119) + ' ' + tx(26.85) + ' ' + ty(128) + ' ' + tx(37.766) + ' ' + ty(128) +
+        'H' + tx(339.056) +
+        'C' + tx(357.25) + ' ' + ty(128) + ' ' + tx(372) + ' ' + ty(113.198) + ' ' + tx(372) + ' ' + ty(94.94) +
+        'V' + ty(51.06) +
+        'C' + tx(372) + ' ' + ty(32.802) + ' ' + tx(357.25) + ' ' + ty(18) + ' ' + tx(339.056) + ' ' + ty(18) +
+        'H' + tx(291.736) +
+        'C' + tx(273.542) + ' ' + ty(18) + ' ' + tx(258.792) + ' ' + ty(32.802) + ' ' + tx(258.792) + ' ' + ty(51.06) +
+        'Z';
+    } else {
+      // Day 2 active - Figma frame 3 (offset 1620), adjusted
+      // Active tab center: figma x 138-252 -> normalized 138-252
+      path =
+        'M' + tx(251.6) + ' ' + ty(55.268) +
+        'C' + tx(251.6) + ' ' + ty(73.526) + ' ' + tx(266.35) + ' ' + ty(88.328) + ' ' + tx(284.55) + ' ' + ty(88.328) +
+        'H' + tx(352.23) +
+        'C' + tx(363.15) + ' ' + ty(88.328) + ' ' + tx(372) + ' ' + ty(97.209) + ' ' + tx(372) + ' ' + ty(108.164) +
+        'C' + tx(372) + ' ' + ty(119.119) + ' ' + tx(363.15) + ' ' + ty(128) + ' ' + tx(352.23) + ' ' + ty(128) +
+        'H' + tx(37.77) +
+        'C' + tx(26.85) + ' ' + ty(128) + ' ' + tx(18) + ' ' + ty(119.119) + ' ' + tx(18) + ' ' + ty(108.164) +
+        'C' + tx(18) + ' ' + ty(97.209) + ' ' + tx(26.85) + ' ' + ty(88.328) + ' ' + tx(37.77) + ' ' + ty(88.328) +
+        'H' + tx(105.45) +
+        'C' + tx(123.65) + ' ' + ty(88.328) + ' ' + tx(138.4) + ' ' + ty(73.526) + ' ' + tx(138.4) + ' ' + ty(55.268) +
+        'V' + ty(51.06) +
+        'C' + tx(138.4) + ' ' + ty(32.802) + ' ' + tx(153.15) + ' ' + ty(18) + ' ' + tx(171.34) + ' ' + ty(18) +
+        'H' + tx(218.66) +
+        'C' + tx(236.85) + ' ' + ty(18) + ' ' + tx(251.6) + ' ' + ty(32.802) + ' ' + tx(251.6) + ' ' + ty(51.06) +
+        'Z';
+    }
+
+    var W = hRect.width;
+    var H = realH + 4;
+    svg.style.width = W + 'px';
+    svg.style.height = H + 'px';
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.innerHTML = '<path d="' + path + '" fill="rgba(255,255,255,0.07)"/>';
+  });
 }
 
 function updateProgressCorners() {
