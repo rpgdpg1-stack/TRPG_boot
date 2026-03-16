@@ -10,18 +10,13 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-/* Reset ALL Telegram theme overrides */
+/* Telegram theme override */
 :root {
-  --tg-theme-bg-color: #0C0C0C !important;
-  --tg-theme-text-color: #efefef !important;
-  --tg-theme-hint-color: #5a5a5a !important;
-  --tg-theme-link-color: #AAD066 !important;
-  --tg-theme-button-color: #AAD066 !important;
-  --tg-theme-button-text-color: #000000 !important;
-  --tg-theme-secondary-bg-color: #1a1a1a !important;
-  --tg-color-scheme: dark !important;
+  --tg-theme-bg-color: #0C0C0C;
+  --tg-theme-text-color: #efefef;
+  --tg-theme-button-color: #AAD066;
+  --tg-color-scheme: dark;
 }
-/* fonts loaded via <link> tags */
 
 :root {
 –bg: #0C0C0C;
@@ -46,13 +41,9 @@
   -webkit-tap-highlight-color: transparent;
   }
 
-/* Hard reset — Telegram overrides button color/font to system blue */
+/* Telegram overrides button color — reset appearance only */
 button, input, textarea, select {
-color: inherit !important;
-font-family: inherit !important;
-background: none;
-border: none;
-outline: none;
+font-family: inherit;
 -webkit-appearance: none;
 appearance: none;
 }
@@ -220,21 +211,28 @@ text-transform: uppercase;
 
 /* Exercise Card */
 .exercise-card {
-background: var(–surface-variant);
+background: #222222;
 border-radius: 25px;
 margin-bottom: 8px;
 overflow: hidden;
-transition: opacity 0.25s;
+transition: opacity 0.2s, background 0.2s;
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+}
+
+.exercise-card:active {
+background: #1a1a1a;
 }
 
 .exercise-card.done {
-opacity: 0.65;
+opacity: 0.5;
+background: #1c1c1c;
 }
 
 .ex-main {
 display: flex;
 align-items: center;
-padding: 8px 12px 8px 8px;
+padding: 8px 14px 8px 8px;
 gap: 12px;
 }
 
@@ -310,31 +308,6 @@ text-transform: uppercase;
 letter-spacing: 1px;
 font-weight: 600;
 margin-left: 3px;
-}
-
-/* Checkbox */
-.ex-check {
-width: 36px;
-height: 36px;
-border-radius: 15px;
-border: 2px solid #3a3a3a;
-background: transparent;
-cursor: pointer;
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: all 0.2s;
-font-size: 14px;
-color: transparent;
-font-weight: 400;
-font-family: Arial, sans-serif;
-}
-
-.exercise-card.done .ex-check {
-background: #AAD066;
-border-color: #5a5a5a;
-color: #000;
 }
 
 /* Exercise Image */
@@ -1053,10 +1026,7 @@ function renderDayTabs() {
     const isActive = i === State.currentDay;
     const tab = document.createElement('button');
     tab.className = `day-tab${isActive ? ' active' : ''}`;
-    tab.innerHTML = `<span class="dn" style="font-family:'Tiny5',monospace;color:${isActive ? '#AAD066' : '#5a5a5a'};display:block;font-size:44px;letter-spacing:1px;line-height:1;">${day.day}</span>`;
-    // Force inline styles — Telegram can't override these
-    tab.style.cssText = `color:${isActive ? '#AAD066' : '#5a5a5a'} !important;`;
-    tab.setAttribute('style', `color:${isActive ? '#AAD066' : '#5a5a5a'}`);
+    tab.innerHTML = `<span class="dn">${day.day}</span>`;
     tab.onclick = () => {
       hapticLight();
       State.currentDay = i;
@@ -1119,14 +1089,9 @@ function renderWorkout() {
             <div class="ex-name">${ex.name}</div>
             <div class="ex-sets">${ex.sets}x${ex.reps}</div>
           </div>
-          <div class="ex-right">
-            <div class="weight-col${isOpen ? ' editing' : ''}" data-id="${ex.id}">
-              <div class="weight-val" data-id="${ex.id}">${weight}</div>
-              <div class="weight-unit">кг</div>
-            </div>
-            <div class="ex-check" data-id="${ex.id}">
-              ${isDone ? '<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-            </div>
+          <div class="weight-col${isOpen ? ' editing' : ''}" data-id="${ex.id}">
+            <div class="weight-val" data-id="${ex.id}">${weight}</div>
+            <div class="weight-unit">кг</div>
           </div>
         </div>
       `;
@@ -1531,10 +1496,11 @@ function setupEventDelegation() {
       onWeightClick(weightCol.dataset.id);
       return;
     }
-    
-    const check = e.target.closest('.ex-check');
-    if (check && check.dataset.id) {
-      toggleDone(check.dataset.id);
+
+    // Tap anywhere on card = toggle done
+    const card = e.target.closest('.exercise-card');
+    if (card && card.dataset.id) {
+      toggleDone(card.dataset.id);
       return;
     }
   });
@@ -1627,22 +1593,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTelegram();
   loadState();
   setupEventDelegation();
-
-  // Inject override stylesheet last — after Telegram's own styles
-  const overrideStyle = document.createElement('style');
-  overrideStyle.textContent = `
-    html, body { background: #0C0C0C !important; color: #efefef !important; }
-    button.day-tab { color: #5a5a5a !important; background: rgba(255,255,255,0.07) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-    button.day-tab span.dn { color: #5a5a5a !important; }
-    button.day-tab.active { color: #AAD066 !important; background: rgba(255,255,255,0.07) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-    button.day-tab.active span.dn { color: #AAD066 !important; }
-    .weight-val { color: #AAD066 !important; }
-    .progress-count { color: #AAD066 !important; }
-    .nav-btn.active { color: #AAD066 !important; }
-    .ex-name { color: #b0b0b0 !important; }
-    .muscle-label span { color: #ffffff !important; }
-  `;
-  document.head.appendChild(overrideStyle);
 
   cloudLoad(() => {
     renderWorkout();
