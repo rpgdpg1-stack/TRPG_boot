@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
 .muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#ffffff;flex-shrink:0}
 .muscle-label span{font-family:‘Bebas Neue’,sans-serif;font-size:15px;letter-spacing:3px;color:#ffffff;text-transform:uppercase}
-.exercise-card{background:#222222;border:none;border-radius:25px;margin-bottom:8px;overflow:hidden;transition:opacity .25s}
+.exercise-card{background:#222222;border:none;border-radius:25px;margin-bottom:8px;overflow:hidden;transition:opacity .25s;transform:translateZ(0);will-change:transform,opacity}
 .exercise-card.done{opacity:.65}
 .ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
 .ex-info{flex:1;min-width:0}
@@ -55,7 +55,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .ex-img{width:120px;height:120px;border-radius:17px;overflow:hidden;flex-shrink:0;background:var(–card2);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ex-img img{width:120px;height:120px;object-fit:contain;border-radius:17px;display:block}
 .ex-img svg{width:36px;height:36px;stroke:var(–muted);stroke-width:1.5;fill:none}
-.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s}
+.weight-input-bar{display:none;position:fixed;left:18px;right:18px;bottom:18px;z-index:1000;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:25px;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 4px 32px rgba(0,0,0,.6);transition:bottom 0s;transform:translateZ(0);will-change:backdrop-filter}
 .weight-input-bar.open{display:flex}
 .wib-label{font-size:11px;color:var(–muted);flex:1;line-height:1.4;font-weight:600}
 .wib-label b{display:block;color:var(–text);font-size:12px;margin-bottom:1px}.wib-kg{font-size:10px;color:var(–muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
@@ -95,7 +95,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .hist-pill .hw{color:var(–accent);font-weight:800;font-family:‘Bebas Neue’,sans-serif;font-size:14px;line-height:1}
 .hist-empty{color:var(–muted);font-size:13px;text-align:center;padding:40px 20px;line-height:1.8}
 .bottom-nav{position:fixed;bottom:18px;left:0;right:0;background:transparent;border:none;display:flex;z-index:200;padding:0 18px;gap:12px;justify-content:space-between}
-.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
+.nav-btn{flex:1;max-width:120px;height:70px;padding:0 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:1px solid rgba(255,255,255,0.18);border-radius:35px;color:var(–muted);cursor:pointer;font-family:‘Manrope’,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s;transform:translateZ(0);will-change:backdrop-filter}
 .nav-btn.active{color:var(–accent)}
 .nav-btn svg{width:20px;height:20px;stroke-width:2}
 .view{display:none}
@@ -278,7 +278,7 @@ function load() {
   if (!S.step) S.step = 2.5;
 }
 
-function save() { try { localStorage.setItem('gym_v4', JSON.stringify(S)); } catch(e){} }
+function save() { try { localStorage.setItem('gym_v4', JSON.stringify(S)); } catch(e){} cloudSave(); }
 
 function switchView(v) {
   document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('active'); });
@@ -342,13 +342,13 @@ function renderWorkout() {
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ allIds.push(e.id); }); });
   var doneCount = allIds.filter(function(id){ return S.done[id]; }).length;
   var total = allIds.length;
-  document.getElementById('progLabel').textContent = doneCount + '/' + total;
-  document.getElementById('progBar').style.width = (total ? Math.round(doneCount/total*100) : 0) + '%';
+  if (UI.progLabel) UI.progLabel.textContent = doneCount + '/' + total;
+  if (UI.progBar) UI.progBar.style.width = (total ? Math.round(doneCount/total*100) : 0) + '%';
   var sc = document.getElementById('sessionCount'); if(sc) sc.textContent = S.history.length;
   var allDone = doneCount === total && total > 0;
 
-  var container = document.getElementById('workoutContent');
-  container.innerHTML = '';
+  var container = UI.container || document.getElementById('workoutContent');
+  var fragment = document.createDocumentFragment();
 
   day.groups.forEach(function(group, gi) {
     var gDiv = document.createElement('div');
@@ -406,7 +406,7 @@ function renderWorkout() {
 
       gDiv.appendChild(card);
     });
-    container.appendChild(gDiv);
+    fragment.appendChild(gDiv);
   });
 
   var bottomDiv = document.createElement('div');
@@ -424,7 +424,9 @@ function renderWorkout() {
   finBtn.onclick = finishWorkout;
   bottomDiv.appendChild(finBtn);
 
-  container.appendChild(bottomDiv);
+  fragment.appendChild(bottomDiv);
+  container.innerHTML = '';
+  container.appendChild(fragment);
 }
 
 var _touchStartY = 0, _touchStartX = 0, _touchHandled = false;
@@ -488,7 +490,7 @@ function togglePanel(id) {
     var exName = '';
     day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
     var w = (S.weights[id] !== undefined) ? S.weights[id] : 0;
-    document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
+    (UI.wibExName || document.getElementById('wibExName')).textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
     document.getElementById('wibInput').value = w;
     return;
   }
@@ -497,7 +499,7 @@ function togglePanel(id) {
   _weightFresh = true;
   save();
 
-  document.querySelector('.bottom-nav').style.display = 'none';
+  if (UI.bottomNav) UI.bottomNav.style.display = 'none';
   var wcol = document.getElementById('wcol_' + id);
   if (wcol) wcol.classList.add('editing');
 
@@ -506,11 +508,11 @@ function togglePanel(id) {
   day.groups.forEach(function(g){ g.exercises.forEach(function(e){ if(e.id===id) exName=e.name; }); });
   var w = (S.weights[id] !== undefined) ? S.weights[id] : 0;
 
-  document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
-  var wibInp = document.getElementById('wibInput');
+  (UI.wibExName || document.getElementById('wibExName')).textContent = exName.length > 30 ? exName.slice(0,30) + '...' : exName;
+  var wibInp = UI.wibInput || document.getElementById('wibInput');
   wibInp.value = w;
 
-  var bar = document.getElementById('weightInputBar');
+  var bar = UI.weightBar || document.getElementById('weightInputBar');
   bar.style.bottom = '18px';
   bar.classList.add('open');
 
@@ -540,17 +542,17 @@ function closeWib() {
     window._wibVVCleanup = null;
   }
 
-  var wibInp = document.getElementById('wibInput');
+  var wibInp = UI.wibInput || document.getElementById('wibInput');
   wibInp.blur();
 
-  var bar = document.getElementById('weightInputBar');
+  var bar = UI.weightBar || document.getElementById('weightInputBar');
   bar.classList.remove('open');
   bar.style.bottom = '18px';
   bar.style.top = '';
   bar.style.transition = '';
 
   document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
-  document.querySelector('.bottom-nav').style.display = 'flex';
+  if (UI.bottomNav) UI.bottomNav.style.display = 'flex';
 }
 
 function onWibBlur() {
@@ -698,32 +700,76 @@ function clearHistory() {
 }
 
 function showToast(msg) {
-  var t = document.getElementById('toast');
+  var t = UI.toast || document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.Telegram && window.Telegram.WebApp) {
-    var tg = window.Telegram.WebApp;
-    try { tg.ready(); } catch(e) {}
-    try { tg.expand(); } catch(e) {}
-    try { tg.disableVerticalSwipes(); } catch(e) {}
-    try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
-    try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
-    try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
-    try { tg.lockOrientation(); } catch(e) {}
-  }
+// --- Telegram init (single call) ---
+function initTelegram() {
+  if (!window.Telegram || !window.Telegram.WebApp) return;
+  var tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  try { tg.disableVerticalSwipes(); } catch(e) {}
+  try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
+  try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
+  try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
+  try { tg.lockOrientation(); } catch(e) {}
+}
 
-  if (window.Telegram && window.Telegram.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
+// --- Telegram CloudStorage sync ---
+function cloudSave() {
+  if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.CloudStorage) return;
+  try {
+    var data = JSON.stringify({ weights: S.weights, history: S.history, program: S.program });
+    window.Telegram.WebApp.CloudStorage.setItem('gym_data', data, function(){});
+  } catch(e) {}
+}
+
+function cloudLoad(cb) {
+  if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.CloudStorage) { cb(); return; }
+  try {
+    window.Telegram.WebApp.CloudStorage.getItem('gym_data', function(err, val) {
+      if (!err && val) {
+        try {
+          var remote = JSON.parse(val);
+          if (remote.history && remote.history.length > (S.history || []).length) S.history = remote.history;
+          if (remote.weights) S.weights = Object.assign({}, remote.weights, S.weights);
+          if (remote.program) S.program = remote.program;
+          save();
+        } catch(e) {}
+      }
+      cb();
+    });
+  } catch(e) { cb(); }
+}
+
+// --- Cached UI refs ---
+var UI = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+  initTelegram();
+
+  UI.progBar   = document.getElementById('progBar');
+  UI.progLabel = document.getElementById('progLabel');
+  UI.weightBar = document.getElementById('weightInputBar');
+  UI.wibInput  = document.getElementById('wibInput');
+  UI.wibExName = document.getElementById('wibExName');
+  UI.toast     = document.getElementById('toast');
+  UI.container = document.getElementById('workoutContent');
+  UI.bottomNav = document.querySelector('.bottom-nav');
+
   load();
   S.openPanel = null;
-  renderWorkout();
+
+  cloudLoad(function() {
+    renderWorkout();
+  });
 
   document.addEventListener('click', function(e) {
     if (!S.openPanel) return;
-    var bar = document.getElementById('weightInputBar');
-    if (bar && bar.contains(e.target)) return;
+    if (UI.weightBar && UI.weightBar.contains(e.target)) return;
     var allWcols = document.querySelectorAll('.weight-col');
     for (var i = 0; i < allWcols.length; i++) {
       if (allWcols[i].contains(e.target)) return;
