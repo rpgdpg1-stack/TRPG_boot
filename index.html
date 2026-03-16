@@ -1,1604 +1,331 @@
 <!DOCTYPE html>
-
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>💪 Тренировки</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-/* Telegram theme override */
-:root {
-  --tg-theme-bg-color: #0C0C0C;
-  --tg-theme-text-color: #efefef;
-  --tg-theme-button-color: #AAD066;
-  --tg-color-scheme: dark;
-}
-
-:root {
-–bg: #0C0C0C;
-–surface: #1a1a1a;
-–surface-variant: #222222;
-–surface-variant-2: #2e2e2e;
-–primary: #AAD066;
-–primary-dim: rgba(170, 208, 102, 0.1);
-–text-primary: #efefef;
-–text-secondary: #b0b0b0;
-–text-muted: #5a5a5a;
-–border: #2a2a2a;
-–border-light: rgba(255, 255, 255, 0.1);
-–danger: rgba(200, 60, 60, 0.85);
-–success-bg: #3C643C;
-}
-
-- {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  }
-
-/* Telegram overrides button color — reset appearance only */
-button, input, textarea, select {
-font-family: inherit;
--webkit-appearance: none;
-appearance: none;
-}
-
-body {
-background: #0C0C0C !important;
-color: #efefef !important;
-font-family: ‘Manrope’, -apple-system, BlinkMacSystemFont, sans-serif;
-min-height: 100vh;
-overflow-x: hidden;
-padding-bottom: 90px;
-}
-
-/* Header */
-.header {
-background: transparent;
-padding: 18px 0 8px;
-position: sticky;
-top: 0;
-z-index: 100;
-}
-
-.app-title {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 18px;
-letter-spacing: 3px;
-color: #ffffff;
-}
-
-/* Day Tabs */
-.day-tabs {
-display: flex;
-gap: 8px;
-padding: 0 12px 8px;
-align-items: flex-end;
-}
-
-.day-tab {
-flex: 1;
-height: 70px;
-border-radius: 35px;
-border: 1px solid rgba(255, 255, 255, 0.1) !important;
-background: rgba(255, 255, 255, 0.07) !important;
-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
--webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-color: #5a5a5a !important;
-font-family: ‘Manrope’, -apple-system, sans-serif !important;
-font-size: 9px;
-font-weight: 700;
-cursor: pointer;
-text-align: center;
-transition: color 0.25s, background 0.25s;
-text-transform: uppercase;
-line-height: 1;
-display: flex;
-align-items: center;
-justify-content: center;
-margin-bottom: 0;
-}
-
-.day-tab .dn {
-display: block;
-font-family: ‘Tiny5’, monospace !important;
-font-size: 44px;
-letter-spacing: 1px;
-line-height: 1;
-color: #5a5a5a !important;
-transition: color 0.25s;
-pointer-events: none;
-}
-
-.day-tab.active,
-button.day-tab.active {
-background: rgba(255, 255, 255, 0.07) !important;
-border: 1px solid rgba(255, 255, 255, 0.1) !important;
-color: #AAD066 !important;
-}
-
-.day-tab.active .dn,
-button.day-tab.active .dn {
-color: #AAD066 !important;
-}
-
-/* Progress Bar */
-.progress-wrap {
-padding: 0 14px;
-margin: 0 12px 8px;
-background: rgba(255, 255, 255, 0.07);
-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
--webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-border: 1px solid var(–border-light);
-border-radius: 25px;
-height: 44px;
-display: flex;
-align-items: center;
-gap: 10px;
-}
-
-.progress-label {
-font-size: 10px;
-font-weight: 700;
-color: var(–text-muted);
-white-space: nowrap;
-flex-shrink: 0;
-}
-
-.progress-bg {
-flex: 1;
-background: rgba(255, 255, 255, 0.1);
-border-radius: 6px;
-height: 5px;
-overflow: hidden;
-}
-
-.progress-fill {
-height: 100%;
-background: var(–primary);
-border-radius: 6px;
-transition: width 0.4s ease;
-}
-
-.progress-count {
-font-size: 10px;
-font-weight: 700;
-color: #AAD066 !important;
-white-space: nowrap;
-flex-shrink: 0;
-}
-
-/* Content */
-.content {
-padding: 16px 12px 0;
-}
-
-/* Muscle Group */
-.muscle-group {
-margin-bottom: 24px;
-}
-
-.muscle-label {
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 10px;
-margin-bottom: 14px;
-padding: 0 4px;
-text-align: center;
-}
-
-.muscle-label .dot {
-width: 6px;
-height: 6px;
-border-radius: 50%;
-background: #ffffff;
-flex-shrink: 0;
-}
-
-.muscle-label span {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 16px;
-letter-spacing: 3px;
-color: #ffffff;
-text-transform: uppercase;
-}
-
-/* Exercise Card */
-.exercise-card {
-background: #222222;
-border-radius: 25px;
-margin-bottom: 8px;
-overflow: hidden;
-transition: opacity 0.2s, background 0.2s;
-cursor: pointer;
--webkit-tap-highlight-color: transparent;
-}
-
-.exercise-card:active {
-background: #1a1a1a;
-}
-
-.exercise-card.done {
-opacity: 0.5;
-background: #1c1c1c;
-}
-
-.ex-main {
-display: flex;
-align-items: center;
-padding: 8px 14px 8px 8px;
-gap: 12px;
-}
-
-.ex-info {
-flex: 1;
-min-width: 0;
-}
-
-.ex-name {
-font-size: 13px;
-font-weight: 700;
-line-height: 1.5;
-color: var(–text-secondary);
-cursor: pointer;
-}
-
-.exercise-card.done .ex-name {
-text-decoration: line-through;
-color: var(–text-muted);
-}
-
-.ex-sets {
-font-size: 10px;
-color: var(–text-muted);
-margin-top: 3px;
-}
-
-.ex-right {
-display: flex;
-align-items: center;
-gap: 8px;
-flex-shrink: 0;
-}
-
-/* Weight Display */
-.weight-col {
-display: flex;
-flex-direction: row;
-align-items: center;
-justify-content: center;
-flex-shrink: 0;
-gap: 0;
-cursor: pointer;
-padding: 6px;
-border-radius: 15px;
-transition: background 0.15s;
-}
-
-.weight-col.editing .weight-val {
-border-color: #AAD066;
-background: rgba(170, 208, 102, 0.1);
-}
-
-.weight-val {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 24px;
-color: #AAD066 !important;
-line-height: 1;
-text-align: center;
-padding: 6px;
-display: inline-flex;
-align-items: center;
-justify-content: center;
-border: 2px solid transparent;
-border-radius: 12px;
-transition: border-color 0.2s;
-}
-
-.weight-unit {
-font-size: 9px;
-color: #5a5a5a !important;
-text-transform: uppercase;
-letter-spacing: 1px;
-font-weight: 600;
-margin-left: 3px;
-}
-
-/* Exercise Image */
-.ex-img {
-width: 120px;
-height: 120px;
-border-radius: 17px;
-overflow: hidden;
-flex-shrink: 0;
-background: #2e2e2e;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-}
-
-.ex-img img {
-width: 120px;
-height: 120px;
-object-fit: contain;
-border-radius: 17px;
-display: block;
-}
-
-.ex-img svg {
-width: 36px;
-height: 36px;
-stroke: #5a5a5a;
-stroke-width: 1.5;
-fill: none;
-}
-
-/* Weight Input Bar */
-.weight-input-bar {
-display: none;
-position: fixed;
-left: 12px;
-right: 12px;
-bottom: 18px;
-z-index: 1000;
-background: rgba(255, 255, 255, 0.07);
-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
--webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-border: 1px solid var(–border-light);
-border-radius: 25px;
-padding: 10px 16px;
-align-items: center;
-gap: 12px;
-box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6);
-}
-
-.weight-input-bar.open {
-display: flex;
-}
-
-.wib-label {
-font-size: 11px;
-color: var(–text-muted);
-flex: 1;
-line-height: 1.4;
-font-weight: 600;
-}
-
-.wib-label b {
-display: block;
-color: var(–text-primary);
-font-size: 12px;
-margin-bottom: 1px;
-}
-
-.wib-kg {
-font-size: 10px;
-color: var(–text-muted);
-font-weight: 600;
-letter-spacing: 1px;
-text-transform: uppercase;
-}
-
-.wib-input {
-background: var(–surface-variant-2);
-border: 2px solid var(–primary);
-border-radius: 17px;
-color: var(–primary);
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 28px;
-text-align: center;
-padding: 8px 12px;
-outline: none;
-width: 110px;
-flex-shrink: 0;
-}
-
-/* Image Overlay */
-.img-expand-overlay {
-display: none;
-position: fixed;
-inset: 0;
-z-index: 400;
-background: rgba(0, 0, 0, 0.85);
-align-items: center;
-justify-content: center;
-}
-
-.img-expand-overlay.open {
-display: flex;
-}
-
-.img-expand-inner {
-width: 88vw;
-max-width: 380px;
-border-radius: 25px;
-overflow: hidden;
-background: var(–surface);
-padding: 10px;
-box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
-}
-
-.img-expand-inner img {
-width: 100%;
-height: auto;
-display: block;
-border-radius: 15px;
-}
-
-/* Done Banner */
-.done-banner {
-display: none;
-background: linear-gradient(135deg, var(–primary-dim), rgba(170, 208, 102, 0.02));
-border: 1px solid rgba(170, 208, 102, 0.25);
-border-radius: 25px;
-padding: 16px;
-margin: 0 0 16px;
-text-align: center;
-}
-
-.done-banner.show {
-display: block;
-}
-
-.done-banner .db-emoji {
-font-size: 32px;
-margin-bottom: 6px;
-}
-
-.done-banner .db-text {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 18px;
-letter-spacing: 2px;
-color: #AAD066 !important;
-}
-
-.done-banner .db-sub {
-font-size: 11px;
-color: var(–text-muted);
-margin-top: 4px;
-}
-
-/* Finish Button */
-.finish-btn {
-display: block;
-width: 100%;
-padding: 14px 16px;
-border-radius: 25px;
-background: var(–danger);
-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
--webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-border: 1px solid rgba(255, 120, 120, 0.25);
-color: #fff;
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 20px;
-letter-spacing: 2px;
-cursor: pointer;
-transition: opacity 0.2s;
-text-align: center;
-}
-
-.finish-btn:active {
-opacity: 0.7;
-}
-
-/* Modal */
-.overlay {
-display: none;
-position: fixed;
-inset: 0;
-background: rgba(0, 0, 0, 0.8);
-z-index: 500;
-align-items: flex-end;
-justify-content: center;
-}
-
-.overlay.open {
-display: flex;
-}
-
-.modal {
-background: rgba(26, 26, 26, 0.85);
-backdrop-filter: blur(20px);
--webkit-backdrop-filter: blur(20px);
-border-radius: 20px 20px 0 0;
-padding: 20px 18px 40px;
-width: 100%;
-max-width: 480px;
-border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.modal-handle {
-width: 36px;
-height: 4px;
-background: var(–border);
-border-radius: 2px;
-margin: 0 auto 18px;
-}
-
-.modal-title {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 20px;
-letter-spacing: 1px;
-margin-bottom: 14px;
-color: #AAD066 !important;
-}
-
-.modal-label {
-font-size: 10px;
-color: var(–text-muted);
-text-transform: uppercase;
-letter-spacing: 1px;
-margin-bottom: 5px;
-font-weight: 700;
-}
-
-.modal-input {
-width: 100%;
-background: var(–surface-variant-2);
-border: 1.5px solid var(–border);
-border-radius: 10px;
-color: var(–text-primary);
-font-family: ‘Manrope’, sans-serif;
-font-size: 13px;
-padding: 10px 12px;
-outline: none;
-resize: none;
-line-height: 1.5;
-transition: border-color 0.2s;
-margin-bottom: 12px;
-}
-
-.modal-input:focus {
-border-color: var(–primary);
-}
-
-.modal-row {
-display: flex;
-gap: 8px;
-margin-bottom: 16px;
-}
-
-.modal-row > div {
-flex: 1;
-}
-
-.modal-btns {
-display: flex;
-gap: 8px;
-}
-
-.btn-save {
-flex: 1;
-padding: 13px;
-border-radius: 10px;
-background: var(–primary);
-border: none;
-color: var(–on-primary);
-font-family: ‘Manrope’, sans-serif;
-font-weight: 800;
-font-size: 13px;
-cursor: pointer;
-transition: opacity 0.2s;
-}
-
-.btn-save:active {
-opacity: 0.8;
-}
-
-.btn-cancel {
-padding: 13px 18px;
-border-radius: 10px;
-background: var(–surface-variant-2);
-border: 1px solid var(–border);
-color: var(–text-muted);
-font-family: ‘Manrope’, sans-serif;
-font-weight: 600;
-font-size: 13px;
-cursor: pointer;
-}
-
-/* History */
-.hist-content {
-padding: 16px 12px;
-}
-
-.hist-day-header {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 18px;
-letter-spacing: 1px;
-color: #AAD066 !important;
-margin: 16px 0 8px;
-display: flex;
-align-items: center;
-gap: 8px;
-}
-
-.hist-entry {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-padding: 12px 14px;
-margin-bottom: 8px;
-}
-
-.hist-date {
-font-size: 10px;
-color: var(–text-muted);
-font-weight: 600;
-margin-bottom: 8px;
-text-transform: uppercase;
-letter-spacing: 0.5px;
-}
-
-.hist-pills {
-display: flex;
-flex-wrap: wrap;
-gap: 5px;
-}
-
-.hist-pill {
-background: var(–surface-variant-2);
-border-radius: 8px;
-padding: 4px 9px;
-font-size: 11px;
-color: var(–text-primary);
-display: flex;
-gap: 5px;
-align-items: center;
-font-weight: 500;
-}
-
-.hist-pill .hw {
-color: #AAD066 !important;
-font-weight: 800;
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 14px;
-line-height: 1;
-}
-
-.hist-empty {
-color: var(–text-muted);
-font-size: 13px;
-text-align: center;
-padding: 40px 20px;
-line-height: 1.8;
-}
-
-/* Bottom Navigation */
-.bottom-nav {
-position: fixed;
-bottom: 18px;
-left: 0;
-right: 0;
-background: transparent;
-display: flex;
-z-index: 200;
-padding: 0 12px;
-gap: 12px;
-justify-content: space-between;
-}
-
-.nav-btn {
-flex: 1;
-max-width: 120px;
-height: 70px;
-padding: 0 8px;
-background: rgba(255, 255, 255, 0.07);
-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
--webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-border: 1px solid rgba(255, 255, 255, 0.1);
-border-radius: 35px;
-color: #5a5a5a !important;
-cursor: pointer;
-font-family: ‘Manrope’, -apple-system, sans-serif;
-font-size: 9px;
-text-transform: uppercase;
-letter-spacing: 0.5px;
-font-weight: 700;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-gap: 4px;
-transition: all 0.2s;
-}
-
-.nav-btn.active {
-color: #AAD066 !important;
-}
-
-.nav-btn svg {
-width: 20px;
-height: 20px;
-stroke-width: 2;
-}
-
-/* Views */
-.view {
-display: none;
-}
-
-.view.active {
-display: block;
-}
-
-/* Toast */
-.toast {
-position: fixed;
-bottom: 100px;
-left: 50%;
-transform: translateX(-50%) translateY(16px);
-background: var(–success-bg);
-color: var(–on-primary);
-padding: 9px 18px;
-border-radius: 20px;
-font-size: 12px;
-font-weight: 800;
-opacity: 0;
-transition: all 0.3s;
-z-index: 900;
-pointer-events: none;
-white-space: nowrap;
-font-family: ‘Manrope’, sans-serif;
-}
-
-.toast.show {
-opacity: 1;
-transform: translateX(-50%) translateY(0);
-}
-
-/* Responsive */
-@media (max-width: 380px) {
-.ex-img {
-width: 90px;
-height: 90px;
-}
-
-.weight-val {
-font-size: 20px;
-}
-
-.day-tab .dn {
-font-size: 36px;
-}
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>G-Fit Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0C0C0C;
+            --accent: #AAD066;
+            --card: #222222;
+            --text: #FFFFFF;
+            --muted: #888888;
+            --border: #333333;
+            --success: #AAD066;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Шапка с шрифтом Tiny 5 */
+        .header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 25px;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 10;
+            padding-bottom: 10px;
+        }
+
+        .day-label {
+            font-family: 'Tiny5', sans-serif;
+            font-size: 64px;
+            color: var(--accent);
+            line-height: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-btn {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Прогресс бар */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: var(--card);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Список упражнений */
+        .exercise-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .exercise-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .exercise-card.completed {
+            border-color: var(--accent);
+            opacity: 0.6;
+        }
+
+        .img-placeholder {
+            width: 70px;
+            height: 70px;
+            background: var(--bg);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+        }
+
+        .muscle-img-placeholder {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            display: inline-block;
+            margin-right: 5px;
+            border-radius: 4px;
+        }
+
+        .ex-info {
+            flex-grow: 1;
+        }
+
+        .ex-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .ex-meta {
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .check-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .completed .check-mark {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Гайд модалка */
+        #guide-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .guide-content {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 24px;
+            line-height: 1.6;
+        }
+
+        .guide-content h2 { color: var(--accent); margin-bottom: 15px; }
+        .guide-content p { margin-bottom: 12px; font-size: 14px; }
+        .close-guide {
+            margin-top: 20px;
+            background: var(--accent);
+            color: #000;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .change-day-btn {
+            margin-top: 30px;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 10px;
+            width: 100%;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
 
-<div class="toast" id="toast"></div>
-
-<div class="weight-input-bar" id="weightInputBar">
-  <div class="wib-label">
-    <b id="wibExName"></b>
-    <span class="wib-kg">кг</span>
-  </div>
-  <input class="wib-input" type="text" id="wibInput" inputmode="decimal"
-    onkeydown="onWibKeydown(event)"
-    oninput="onWibInput(this.value)"
-    onchange="onWibInput(this.value)"
-    onblur="onWibBlur()">
-</div>
-
-<div class="img-expand-overlay" id="imgOverlay" onclick="closeImgOverlay()">
-  <div class="img-expand-inner" onclick="event.stopPropagation()">
-    <img id="imgOverlayImg" src="" alt="">
-  </div>
-</div>
-
-<div class="overlay" id="editOverlay">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">✏️ Изменить упражнение</div>
-    <div class="modal-label">Название</div>
-    <textarea class="modal-input" id="editName" rows="2"></textarea>
-    <div class="modal-row">
-      <div>
-        <div class="modal-label">Подходы</div>
-        <input class="modal-input" type="number" id="editSets" min="1" max="10" style="margin-bottom:0">
-      </div>
-      <div>
-        <div class="modal-label">Повторения</div>
-        <input class="modal-input" type="number" id="editReps" min="1" max="100" style="margin-bottom:0">
-      </div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Отмена</button>
-      <button class="btn-save" onclick="saveEdit()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="view active" id="view-workout">
-  <div class="header">
-    <div class="day-tabs" id="dayTabs"></div>
-    <div class="progress-wrap" id="progressWrap">
-      <span class="progress-label">Прогресс</span>
-      <div class="progress-bg">
-        <div class="progress-fill" id="progBar" style="width:0%"></div>
-      </div>
-      <span class="progress-count" id="progLabel">0/0</span>
-    </div>
-  </div>
-  <div class="content" id="workoutContent"></div>
-</div>
-
-<div class="view" id="view-history">
-  <div class="header">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px">
-      <div class="app-title">📊 ИСТОРИЯ</div>
-      <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
-    </div>
-  </div>
-  <div class="hist-content" id="histContent"></div>
-</div>
-
-<nav class="bottom-nav">
-  <button class="nav-btn active" id="nav-workout" onclick="switchView('workout')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path d="M6 4v16M18 4v16M6 12h12M3 8h3M18 8h3M3 16h3M18 16h3"/>
-    </svg>
-    Тренировка
-  </button>
-  <button class="nav-btn" id="nav-history" onclick="switchView('history')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-    </svg>
-    История
-  </button>
-</nav>
-
-<script>
-const STORAGE_KEY = 'gym_v5';
-const CLOUD_KEY = 'gym_data';
-
-const IMGS = {
-  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1453.png",
-  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
-  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
-  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
-};
-
-const IMGS_ANIM = {
-  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1423.gif",
-  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
-  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
-  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
-};
-
-const DEFAULT_PROGRAM = [
-  { day:1, label:"DAY\n1", groups:[
-    { name:"СПИНА", exercises:[
-      { id:"d1_1", name:"Вертикальная тяга широким прямым хватом к груди", sets:4, reps:10 },
-      { id:"d1_2", name:"Горизонтальная тяга блока сидя параллельным хватом", sets:4, reps:10 }
-    ]},
-    { name:"БИЦЕПС", exercises:[
-      { id:"d1_3", name:"Поочередное сгибание рук с гантелями сидя на наклонной скамье 45°", sets:3, reps:12 },
-      { id:"d1_4", name:"Сгибание рук с гантелями хватом молот стоя", sets:3, reps:12 }
-    ]},
-    { name:"НОГИ", exercises:[
-      { id:"d1_5", name:"Разведение ног в тренажере", sets:3, reps:15 },
-      { id:"d1_6", name:"Сгибание ног в тренажере сидя", sets:3, reps:12 }
-    ]},
-    { name:"ПРЕДПЛЕЧЬЯ", exercises:[
-      { id:"d1_7", name:"Сгибание кисти", sets:3, reps:15 },
-      { id:"d1_8", name:"Разгибание кисти", sets:3, reps:15 }
-    ]},
-    { name:"ПРЕСС", exercises:[
-      { id:"d1_9", name:"Скручивание пресса на наклонной скамье", sets:3, reps:15 }
-    ]}
-  ]},
-  { day:2, label:"DAY\n2", groups:[
-    { name:"ГРУДЬ", exercises:[
-      { id:"d2_1", name:"Жим гантелей лежа на наклонной скамье 30°-45°", sets:4, reps:10 },
-      { id:"d2_2", name:"Сведение рук в тренажере бабочка", sets:3, reps:12 }
-    ]},
-    { name:"ТРИЦЕПС", exercises:[
-      { id:"d2_3", name:"Разгибание рук с нижнего блока с канатом стоя", sets:3, reps:12 },
-      { id:"d2_4", name:"Разгибание рук с верхнего блока с канатом стоя", sets:3, reps:12 }
-    ]},
-    { name:"НОГИ", exercises:[
-      { id:"d2_5", name:"Сведение ног в тренажере", sets:3, reps:15 },
-      { id:"d2_6", name:"Разгибания ног в тренажере сидя", sets:3, reps:12 }
-    ]},
-    { name:"ШЕЯ", exercises:[
-      { id:"d2_7", name:"Подъем блина шеей лежа на спине", sets:3, reps:15 },
-      { id:"d2_8", name:"Подъем блина шеей лежа на животе", sets:3, reps:15 }
-    ]},
-    { name:"ПРЕСС", exercises:[
-      { id:"d2_9", name:"Подъем ног в висе на турнике", sets:3, reps:12 }
-    ]}
-  ]},
-  { day:3, label:"DAY\n3", groups:[
-    { name:"СПИНА + ГРУДЬ", exercises:[
-      { id:"d3_1", name:"Подтягивания", sets:4, reps:10 },
-      { id:"d3_2", name:"Жим штанги лежа", sets:4, reps:8 }
-    ]},
-    { name:"ПЛЕЧИ", exercises:[
-      { id:"d3_3", name:"Махи гантелями в стороны стоя", sets:4, reps:15 },
-      { id:"d3_4", name:"Тяга к лицу Face pull", sets:3, reps:15 }
-    ]},
-    { name:"НОГИ", exercises:[
-      { id:"d3_5", name:"Приседания с штангой в Смите", sets:4, reps:10 },
-      { id:"d3_6", name:"Жим ногами платформы", sets:3, reps:12 }
-    ]},
-    { name:"ИКРЫ + ПЛЕЧИ", exercises:[
-      { id:"d3_7", name:"Подъем на носки стоя в тренажере", sets:4, reps:15 },
-      { id:"d3_8", name:"Армейский жим гантелями", sets:3, reps:12 }
-    ]},
-    { name:"ГИПЕРЭКСТЕНЗИЯ", exercises:[
-      { id:"d3_9", name:"Гиперэкстензия у стены с гантелями", sets:3, reps:15 }
-    ]}
-  ]}
-];
-
-const DEFAULT_WEIGHTS = {
-  d1_1:0, d1_2:0, d1_3:0, d1_4:0, d1_5:0, d1_6:0, d1_7:0, d1_8:0, d1_9:0,
-  d2_1:0, d2_2:0, d2_3:0, d2_4:0, d2_5:0, d2_6:0, d2_7:0, d2_8:0, d2_9:0,
-  d3_1:0, d3_2:0, d3_3:0, d3_4:0, d3_5:0, d3_6:0, d3_7:0, d3_8:0, d3_9:0
-};
-
-const State = {
-  currentDay: 0,
-  step: 2.5,
-  program: null,
-  weights: {},
-  done: {},
-  history: [],
-  openPanel: null,
-  editTarget: null
-};
-
-function hapticLight() {
-  if (window.Telegram?.WebApp?.HapticFeedback) {
-    try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
-  }
-}
-
-function hapticSuccess() {
-  if (window.Telegram?.WebApp?.HapticFeedback) {
-    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-  }
-}
-
-function loadState() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      Object.assign(State, parsed);
-    }
-  } catch(e) {}
-  
-  if (!State.program) State.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
-  if (!State.weights || !Object.keys(State.weights).length) State.weights = { ...DEFAULT_WEIGHTS };
-  if (!State.history) State.history = [];
-  if (!State.done) State.done = {};
-  if (!State.step) State.step = 2.5;
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(State));
-  } catch(e) {}
-  cloudSave();
-}
-
-function cloudSave() {
-  if (!window.Telegram?.WebApp?.CloudStorage) return;
-  try {
-    const data = JSON.stringify({ weights: State.weights, history: State.history, program: State.program });
-    window.Telegram.WebApp.CloudStorage.setItem(CLOUD_KEY, data, () => {});
-  } catch(e) {}
-}
-
-function cloudLoad(callback) {
-  if (!window.Telegram?.WebApp?.CloudStorage) { callback(); return; }
-  try {
-    window.Telegram.WebApp.CloudStorage.getItem(CLOUD_KEY, (err, val) => {
-      if (!err && val) {
-        try {
-          const remote = JSON.parse(val);
-          if (remote.history?.length > (State.history || []).length) State.history = remote.history;
-          if (remote.weights) State.weights = { ...remote.weights, ...State.weights };
-          if (remote.program) State.program = remote.program;
-          saveState();
-        } catch(e) {}
-      }
-      callback();
-    });
-  } catch(e) { callback(); }
-}
-
-function renderDayTabs() {
-  const container = document.getElementById('dayTabs');
-  container.innerHTML = '';
-  
-  State.program.forEach((day, i) => {
-    const isActive = i === State.currentDay;
-    const tab = document.createElement('button');
-    tab.className = `day-tab${isActive ? ' active' : ''}`;
-    tab.innerHTML = `<span class="dn">${day.day}</span>`;
-    tab.onclick = () => {
-      hapticLight();
-      State.currentDay = i;
-      State.openPanel = null;
-      saveState();
-      renderWorkout();
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    };
-    container.appendChild(tab);
-  });
-}
-
-function renderWorkout() {
-  renderDayTabs();
-  
-  const day = State.program[State.currentDay];
-  const allIds = [];
-  day.groups.forEach(g => g.exercises.forEach(e => allIds.push(e.id)));
-  
-  const doneCount = allIds.filter(id => State.done[id]).length;
-  const total = allIds.length;
-  
-  document.getElementById('progLabel').textContent = `${doneCount}/${total}`;
-  document.getElementById('progBar').style.width = total ? Math.round(doneCount / total * 100) + '%' : '0%';
-  
-  const allDone = doneCount === total && total > 0;
-  
-  const container = document.getElementById('workoutContent');
-  container.innerHTML = '';
-  
-  day.groups.forEach((group, gi) => {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'muscle-group';
-    
-    groupDiv.innerHTML = `
-      <div class="muscle-label">
-        <div class="dot"></div>
-        <span>${group.name}</span>
-      </div>
-    `;
-    
-    group.exercises.forEach((ex, ei) => {
-      const isDone = !!State.done[ex.id];
-      const weight = State.weights[ex.id] ?? 0;
-      const isOpen = State.openPanel === ex.id;
-      const imgSrc = IMGS[ex.id];
-      
-      const imgInner = imgSrc
-        ? `<img src="${imgSrc}" alt="">`
-        : '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>';
-      
-      const card = document.createElement('div');
-      card.className = `exercise-card${isDone ? ' done' : ''}`;
-      card.dataset.id = ex.id;
-      
-      card.innerHTML = `
-        <div class="ex-main">
-          <div class="ex-img" data-id="${ex.id}">${imgInner}</div>
-          <div class="ex-info">
-            <div class="ex-name">${ex.name}</div>
-            <div class="ex-sets">${ex.sets}x${ex.reps}</div>
-          </div>
-          <div class="weight-col${isOpen ? ' editing' : ''}" data-id="${ex.id}">
-            <div class="weight-val" data-id="${ex.id}">${weight}</div>
-            <div class="weight-unit">кг</div>
-          </div>
+    <div class="header">
+        <div class="day-label">
+            <span id="current-day-text">DAY A</span>
+            <div class="info-btn" onclick="toggleGuide()">i</div>
         </div>
-      `;
-      
-      groupDiv.appendChild(card);
-    });
-    
-    container.appendChild(groupDiv);
-  });
-  
-  const bottomDiv = document.createElement('div');
-  bottomDiv.style.padding = '8px 0 110px';
-  
-  const banner = document.createElement('div');
-  banner.className = `done-banner${allDone ? ' show' : ''}`;
-  banner.innerHTML = `
-    <div class="db-emoji">🔥</div>
-    <div class="db-text">Тренировка завершена!</div>
-    <div class="db-sub">Все упражнения выполнены</div>
-  `;
-  bottomDiv.appendChild(banner);
-  
-  const finishBtn = document.createElement('button');
-  finishBtn.className = 'finish-btn';
-  finishBtn.innerHTML = '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ';
-  finishBtn.onclick = finishWorkout;
-  bottomDiv.appendChild(finishBtn);
-  
-  container.appendChild(bottomDiv);
-}
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
 
-let touchStart = { x: 0, y: 0, handled: false };
+    <div class="exercise-list" id="exercise-list">
+        </div>
 
-function onWeightClick(id) {
-  if (touchStart.handled) {
-    touchStart.handled = false;
-    return;
-  }
-  toggleWeightPanel(id);
-}
+    <button class="change-day-btn" onclick="switchDay()">СМЕНИТЬ ДЕНЬ (А/Б)</button>
 
-function touchStartWeight(e, id) {
-  touchStart.x = e.touches[0].clientX;
-  touchStart.y = e.touches[0].clientY;
-  touchStart.handled = false;
-}
+    <div id="guide-modal">
+        <div class="guide-content">
+            <h2>Гайд Идеала</h2>
+            <p><strong>1. Темп:</strong> 3 секунды вниз, 1 секунда вверх. Не бросайте вес!</p>
+            <p><strong>2. Подбор веса:</strong> Вес, с которым ты можешь сделать 10 раз, но чувствуешь, что осталось сил еще на 2 (правило -2).</p>
+            <p><strong>3. Разминка:</strong> 5-10 мин суставная разминка обязательна перед началом.</p>
+            <p><strong>4. Отдых:</strong> База — 3 мин, изоляция — 1.5 мин.</p>
+            <button class="close-guide" onclick="toggleGuide()">ПОНЯЛ</button>
+        </div>
+    </div>
 
-function touchEndWeight(e, id) {
-  const dy = Math.abs(e.changedTouches[0].clientY - touchStart.y);
-  const dx = Math.abs(e.changedTouches[0].clientX - touchStart.x);
-  
-  if (dy > 8 || dx > 8) return;
-  
-  e.preventDefault();
-  touchStart.handled = true;
-  toggleWeightPanel(id);
-}
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-function toggleWeightPanel(id) {
-  if (State.openPanel === id) {
-    closeWeightPanel();
-    return;
-  }
-  
-  if (State.openPanel) {
-    document.querySelectorAll('.weight-col.editing').forEach(el => el.classList.remove('editing'));
-    State.openPanel = id;
-    saveState();
-    
-    const wcol = document.querySelector(`.weight-col[data-id="${id}"]`);
-    if (wcol) wcol.classList.add('editing');
-    
-    const day = State.program[State.currentDay];
-    let exName = '';
-    day.groups.forEach(g => {
-      g.exercises.forEach(e => {
-        if (e.id === id) exName = e.name;
-      });
-    });
-    
-    const weight = State.weights[id] ?? 0;
-    document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
-    document.getElementById('wibInput').value = weight;
-    return;
-  }
-  
-  State.openPanel = id;
-  saveState();
-  
-  document.querySelector('.bottom-nav').style.display = 'none';
-  
-  const wcol = document.querySelector(`.weight-col[data-id="${id}"]`);
-  if (wcol) wcol.classList.add('editing');
-  
-  const day = State.program[State.currentDay];
-  let exName = '';
-  day.groups.forEach(g => {
-    g.exercises.forEach(e => {
-      if (e.id === id) exName = e.name;
-    });
-  });
-  
-  const weight = State.weights[id] ?? 0;
-  
-  document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
-  const input = document.getElementById('wibInput');
-  input.value = weight;
-  
-  const bar = document.getElementById('weightInputBar');
-  bar.style.bottom = '18px';
-  bar.classList.add('open');
-  
-  function onViewportResize() {
-    const vv = window.visualViewport;
-    const kbHeight = window.innerHeight - vv.height;
-    bar.style.bottom = (kbHeight > 50 ? kbHeight + 4 : 18) + 'px';
-  }
-  
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onViewportResize);
-    window._wibResizeHandler = onViewportResize;
-    onViewportResize();
-  }
-  
-  input.focus();
-  try { input.setSelectionRange(input.value.length, input.value.length); } catch(e) {}
-}
+        let currentDay = 'A';
+        let completedCount = 0;
 
-function closeWeightPanel() {
-  State.openPanel = null;
-  saveState();
-  
-  if (window._wibResizeHandler && window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', window._wibResizeHandler);
-    window._wibResizeHandler = null;
-  }
-  
-  document.getElementById('wibInput').blur();
-  
-  const bar = document.getElementById('weightInputBar');
-  bar.classList.remove('open');
-  bar.style.bottom = '18px';
-  
-  document.querySelectorAll('.weight-col.editing').forEach(el => el.classList.remove('editing'));
-  document.querySelector('.bottom-nav').style.display = 'flex';
-}
+        const data = {
+            'A': [
+                { id: 1, name: 'Подтягивания / Тяга блока', meta: 'Спина • 3х8-10', muscle: '💪' },
+                { id: 2, name: 'Приседания в Смите', meta: 'Ноги • 3х8-10', muscle: '🦵' },
+                { id: 3, name: 'Жим штанги лежа', meta: 'Грудь • 3х8-10', muscle: '🔘' },
+                { id: 4, name: 'Тяга к лицу (Face Pull)', meta: 'Задняя дельта • 3х15', muscle: '🔺' },
+                { id: 5, name: 'Махи в стороны', meta: 'Средняя дельта • 3х12-15', muscle: '🔺' },
+                { id: 6, name: 'Сгибания ног', meta: 'Бицепс бедра • 3х12-15', muscle: '🦵' },
+                { id: 7, name: 'Бицепс на накл. скамье', meta: 'Бицепс • 3х10-12', muscle: '💪' },
+                { id: 8, name: 'Подъем ног в висе', meta: 'Пресс • 3х15', muscle: '🧱' }
+            ],
+            'B': [
+                { id: 9, name: 'Жим ногами', meta: 'Ноги • 3х10-12', muscle: '🦵' },
+                { id: 10, name: 'Горизонтальная тяга', meta: 'Спина • 3х10-12', muscle: '💪' },
+                { id: 11, name: 'Жим гантелей под углом', meta: 'Верх груди • 3х10-12', muscle: '🔘' },
+                { id: 12, name: 'Бабочка (Сведения)', meta: 'Грудь • 3х12-15', muscle: '🔘' },
+                { id: 13, name: 'Разгибания ног', meta: 'Квадрицепс • 3х12-15', muscle: '🦵' },
+                { id: 14, name: 'Армейский жим', meta: 'Плечи • 3х8-10', muscle: '🔺' },
+                { id: 15, name: 'Сведение + Разведение', meta: 'Бедра • 3х15-20', muscle: '🦵' },
+                { id: 16, name: 'Разгибания рук (Трицепс)', meta: 'Трицепс • 3х12', muscle: '💪' }
+            ]
+        };
 
-function onWibInput(value) {
-  if (!State.openPanel) return;
-  
-  const cleaned = String(value).replace(',', '.');
-  const num = parseFloat(cleaned) || 0;
-  
-  const valEl = document.querySelector(`.weight-val[data-id="${State.openPanel}"]`);
-  if (valEl) {
-    valEl.textContent = cleaned.endsWith('.') ? cleaned : num;
-  }
-  
-  State.weights[State.openPanel] = Math.max(0, num);
-  saveState();
-}
+        function renderExercises() {
+            const list = document.getElementById('exercise-list');
+            list.innerHTML = '';
+            completedCount = 0;
+            
+            data[currentDay].forEach(ex => {
+                const card = document.createElement('div');
+                card.className = 'exercise-card';
+                card.onclick = () => toggleExercise(card);
+                card.innerHTML = `
+                    <div class="img-placeholder">📸</div>
+                    <div class="ex-info">
+                        <div class="ex-name">${ex.name}</div>
+                        <div class="ex-meta">
+                            <span class="muscle-img-placeholder"></span> 
+                            ${ex.meta}
+                        </div>
+                    </div>
+                    <div class="check-mark">
+                        <svg width="14" height="11" viewBox="0 0 14 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 5.5L5 9.5L13 1" stroke="black" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            updateProgress();
+        }
 
-function onWibKeydown(e) {
-  if (e.key === 'Enter') {
-    closeWeightPanel();
-    return;
-  }
-}
+        function toggleExercise(card) {
+            card.classList.toggle('completed');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            
+            completedCount = document.querySelectorAll('.completed').length;
+            updateProgress();
+        }
 
-function onWibBlur() {
-  setTimeout(() => {
-    if (State.openPanel) closeWeightPanel();
-  }, 150);
-}
-
-function toggleDone(id) {
-  if (State.openPanel) closeWeightPanel();
-  
-  State.done[id] = !State.done[id];
-  hapticLight();
-  saveState();
-  renderWorkout();
-}
-
-function tapImg(id) {
-  const animSrc = IMGS_ANIM[id];
-  if (!animSrc) return;
-  
-  const img = document.getElementById('imgOverlayImg');
-  img.src = animSrc + '?t=' + Date.now();
-  document.getElementById('imgOverlay').classList.add('open');
-}
-
-function closeImgOverlay() {
-  document.getElementById('imgOverlay').classList.remove('open');
-  setTimeout(() => {
-    document.getElementById('imgOverlayImg').src = '';
-  }, 300);
-}
-
-function openEdit(di, gi, ei) {
-  State.editTarget = { di, gi, ei };
-  const ex = State.program[di].groups[gi].exercises[ei];
-  
-  document.getElementById('editName').value = ex.name;
-  document.getElementById('editSets').value = ex.sets;
-  document.getElementById('editReps').value = ex.reps;
-  document.getElementById('editOverlay').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('editOverlay').classList.remove('open');
-  State.editTarget = null;
-}
-
-function saveEdit() {
-  if (!State.editTarget) return;
-  
-  const { di, gi, ei } = State.editTarget;
-  const ex = State.program[di].groups[gi].exercises[ei];
-  
-  const name = document.getElementById('editName').value.trim();
-  if (name) ex.name = name;
-  
-  const sets = parseInt(document.getElementById('editSets').value);
-  if (!isNaN(sets)) ex.sets = sets;
-  
-  const reps = parseInt(document.getElementById('editReps').value);
-  if (!isNaN(reps)) ex.reps = reps;
-  
-  saveState();
-  closeModal();
-  showToast('Сохранено');
-  renderWorkout();
-}
-
-function finishWorkout() {
-  hapticSuccess();
-  
-  const day = State.program[State.currentDay];
-  const allIds = [];
-  day.groups.forEach(g => g.exercises.forEach(e => allIds.push(e.id)));
-  
-  const snapshot = {};
-  allIds.forEach(id => {
-    snapshot[id] = State.weights[id] ?? 0;
-  });
-  
-  State.history.push({
-    date: Date.now(),
-    dayIdx: State.currentDay,
-    weights: snapshot
-  });
-  
-  allIds.forEach(id => delete State.done[id]);
-  
-  saveState();
-  showToast(`Тренировка дня ${State.currentDay + 1} сохранена!`);
-  window.scrollTo({ top: 0, behavior: 'instant' });
-  renderWorkout();
-}
-
-function renderHistory() {
-  const container = document.getElementById('histContent');
-  
-  const trainedDays = [false, false, false];
-  const tempDone = [false, false, false];
-  
-  State.history.forEach(h => {
-    if (h.dayIdx >= 0 && h.dayIdx < 3) {
-      tempDone[h.dayIdx] = true;
-      if (tempDone[0] && tempDone[1] && tempDone[2]) {
-        tempDone.fill(false);
-      }
-    }
-  });
-  
-  trainedDays.forEach((_, i) => {
-    trainedDays[i] = tempDone[i];
-  });
-  
-  let html = '<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
-  
-  for (let d = 0; d < 3; d++) {
-    const isDone = trainedDays[d];
-    const style = isDone
-      ? 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#AAD066;border:1.5px solid #AAD066;'
-      : 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
-    
-    const numColor = isDone ? '#000' : '#5a5a5a';
-    const labelColor = isDone ? '#000' : '#3a3a3a';
-    const label = isDone ? 'DONE' : 'DAY';
-    
-    html += `<div style="${style}">
-      <span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:${numColor}">${d + 1}</span>
-      <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:${labelColor}">${label}</span>
-    </div>`;
-  }
-  
-  html += '</div>';
-  
-  if (!State.history.length) {
-    container.innerHTML = html + '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
-    return;
-  }
-  
-  const byDay = [[], [], []];
-  const reversed = [...State.history].reverse();
-  
-  reversed.forEach(h => {
-    if (byDay[h.dayIdx]) byDay[h.dayIdx].push(h);
-  });
-  
-  State.program.forEach((day, di) => {
-    const entries = byDay[di];
-    if (!entries?.length) return;
-    
-    html += `<div class="hist-day-header">День ${day.day}</div>`;
-    
-    entries.forEach(h => {
-      const date = new Date(h.date);
-      const dateStr = `${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-      
-      const exercises = [];
-      day.groups.forEach(g => g.exercises.forEach(ex => exercises.push(ex)));
-      
-      const pills = exercises.map(ex => {
-        const w = h.weights[ex.id];
-        if (w === undefined) return '';
-        const short = ex.name.split(' ').slice(0, 3).join(' ');
-        return `<div class="hist-pill"><span style="color:var(--text-muted);font-size:10px">${short}</span><span class="hw">${w}</span></div>`;
-      }).join('');
-      
-      html += `<div class="hist-entry"><div class="hist-date">${dateStr}</div><div class="hist-pills">${pills}</div></div>`;
-    });
-  });
-  
-  container.innerHTML = html;
-}
-
-function clearHistory() {
-  if (!confirm('Очистить всю историю?')) return;
-  State.history = [];
-  saveState();
-  renderHistory();
-  showToast('История очищена');
-}
-
-function switchView(view) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-  
-  document.getElementById(`view-${view}`).classList.add('active');
-  document.getElementById(`nav-${view}`).classList.add('active');
-  
-  if (view === 'history') renderHistory();
-  
-  hapticLight();
-}
-
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2200);
-}
-
-function initTelegram() {
-  if (!window.Telegram?.WebApp) return;
-  
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
-  
-  try { tg.disableVerticalSwipes(); } catch(e) {}
-  try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
-  try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
-  try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
-  try { tg.lockOrientation(); } catch(e) {}
-
-  // Force dark background to prevent theme bleed
-  document.documentElement.style.setProperty('background', '#0C0C0C', 'important');
-  document.body.style.setProperty('background', '#0C0C0C', 'important');
-  document.body.style.setProperty('color', '#efefef', 'important');
-}
-
-function setupEventDelegation() {
-  const workoutView = document.getElementById('view-workout');
-  
-  workoutView.addEventListener('click', (e) => {
-    const img = e.target.closest('.ex-img');
-    if (img && img.dataset.id) {
-      tapImg(img.dataset.id);
-      return;
-    }
-    
-    const weightCol = e.target.closest('.weight-col');
-    if (weightCol && weightCol.dataset.id) {
-      onWeightClick(weightCol.dataset.id);
-      return;
-    }
-
-    // Tap anywhere on card = toggle done
-    const card = e.target.closest('.exercise-card');
-    if (card && card.dataset.id) {
-      toggleDone(card.dataset.id);
-      return;
-    }
-  });
-  
-  workoutView.addEventListener('contextmenu', (e) => {
-    const name = e.target.closest('.ex-name');
-    if (name) {
-      e.preventDefault();
-      
-      const card = e.target.closest('.exercise-card');
-      if (card) {
-        const exId = card.dataset.id;
-        let found = false;
-        
-        State.program[State.currentDay].groups.forEach((group, gi) => {
-          group.exercises.forEach((ex, ei) => {
-            if (ex.id === exId && !found) {
-              openEdit(State.currentDay, gi, ei);
-              found = true;
+        function updateProgress() {
+            const total = data[currentDay].length;
+            const progress = (completedCount / total) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
+            
+            if (progress === 100) {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
-          });
-        });
-      }
-    }
-  });
-  
-  workoutView.addEventListener('touchstart', (e) => {
-    const weightCol = e.target.closest('.weight-col');
-    if (weightCol && weightCol.dataset.id) {
-      touchStartWeight(e, weightCol.dataset.id);
-    }
-  }, { passive: true });
-  
-  workoutView.addEventListener('touchend', (e) => {
-    const weightCol = e.target.closest('.weight-col');
-    if (weightCol && weightCol.dataset.id) {
-      touchEndWeight(e, weightCol.dataset.id);
-    }
-  });
-  
-  let swipeStart = { x: 0, y: 0, moved: false };
-  
-  workoutView.addEventListener('touchstart', (e) => {
-    swipeStart.x = e.touches[0].clientX;
-    swipeStart.y = e.touches[0].clientY;
-    swipeStart.moved = false;
-  }, { passive: true });
-  
-  workoutView.addEventListener('touchmove', (e) => {
-    const dx = Math.abs(e.touches[0].clientX - swipeStart.x);
-    const dy = Math.abs(e.touches[0].clientY - swipeStart.y);
-    if (dx > dy) swipeStart.moved = true;
-  }, { passive: true });
-  
-  workoutView.addEventListener('touchend', (e) => {
-    if (!swipeStart.moved || State.openPanel) return;
-    
-    const dx = e.changedTouches[0].clientX - swipeStart.x;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.y);
-    
-    if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
-    
-    const total = State.program.length;
-    if (dx < 0) {
-      State.currentDay = (State.currentDay + 1) % total;
-    } else {
-      State.currentDay = (State.currentDay - 1 + total) % total;
-    }
-    
-    State.openPanel = null;
-    saveState();
-    hapticLight();
-    renderWorkout();
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  });
-  
-  document.addEventListener('click', (e) => {
-    if (!State.openPanel) return;
-    
-    const bar = document.getElementById('weightInputBar');
-    if (bar?.contains(e.target)) return;
-    
-    if (e.target.closest('.weight-col')) return;
-    
-    closeWeightPanel();
-  });
-}
+        }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initTelegram();
-  loadState();
-  setupEventDelegation();
+        function switchDay() {
+            currentDay = currentDay === 'A' ? 'B' : 'A';
+            document.getElementById('current-day-text').innerText = 'DAY ' + currentDay;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            renderExercises();
+        }
 
-  cloudLoad(() => {
-    renderWorkout();
-  });
-});
-</script>
+        function toggleGuide() {
+            const modal = document.getElementById('guide-modal');
+            const isVisible = modal.style.display === 'block';
+            modal.style.display = isVisible ? 'none' : 'block';
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
 
+        // Инициализация
+        renderExercises();
+    </script>
 </body>
 </html>
