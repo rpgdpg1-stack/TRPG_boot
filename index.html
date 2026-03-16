@@ -5,9 +5,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>💪 Тренировки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
+/* Reset ALL Telegram theme overrides */
+:root {
+  --tg-theme-bg-color: #0C0C0C !important;
+  --tg-theme-text-color: #efefef !important;
+  --tg-theme-hint-color: #5a5a5a !important;
+  --tg-theme-link-color: #AAD066 !important;
+  --tg-theme-button-color: #AAD066 !important;
+  --tg-theme-button-text-color: #000000 !important;
+  --tg-theme-secondary-bg-color: #1a1a1a !important;
+  --tg-color-scheme: dark !important;
+}
+/* fonts loaded via <link> tags */
 
 :root {
 –bg: #0C0C0C;
@@ -32,10 +46,21 @@
   -webkit-tap-highlight-color: transparent;
   }
 
+/* Hard reset — Telegram overrides button color/font to system blue */
+button, input, textarea, select {
+color: inherit !important;
+font-family: inherit !important;
+background: none;
+border: none;
+outline: none;
+-webkit-appearance: none;
+appearance: none;
+}
+
 body {
-background: var(–bg);
-color: var(–text-primary);
-font-family: ‘Manrope’, sans-serif;
+background: #0C0C0C !important;
+color: #efefef !important;
+font-family: ‘Manrope’, -apple-system, BlinkMacSystemFont, sans-serif;
 min-height: 100vh;
 overflow-x: hidden;
 padding-bottom: 90px;
@@ -69,17 +94,17 @@ align-items: flex-end;
 flex: 1;
 height: 70px;
 border-radius: 35px;
-border: 1px solid var(–border-light);
-background: rgba(255, 255, 255, 0.07);
+border: 1px solid rgba(255, 255, 255, 0.1) !important;
+background: rgba(255, 255, 255, 0.07) !important;
 backdrop-filter: blur(20px) saturate(200%) brightness(115%);
 -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-color: var(–text-muted);
-font-family: ‘Manrope’, sans-serif;
+color: #5a5a5a !important;
+font-family: ‘Manrope’, -apple-system, sans-serif !important;
 font-size: 9px;
 font-weight: 700;
 cursor: pointer;
 text-align: center;
-transition: all 0.25s;
+transition: color 0.25s, background 0.25s;
 text-transform: uppercase;
 line-height: 1;
 display: flex;
@@ -90,22 +115,25 @@ margin-bottom: 0;
 
 .day-tab .dn {
 display: block;
-font-family: ‘Tiny5’, sans-serif;
+font-family: ‘Tiny5’, monospace !important;
 font-size: 44px;
 letter-spacing: 1px;
 line-height: 1;
-color: var(–text-muted);
+color: #5a5a5a !important;
 transition: color 0.25s;
+pointer-events: none;
 }
 
-.day-tab.active {
-background: rgba(255, 255, 255, 0.07);
-border: 1px solid var(–border-light);
-color: var(–primary);
+.day-tab.active,
+button.day-tab.active {
+background: rgba(255, 255, 255, 0.07) !important;
+border: 1px solid rgba(255, 255, 255, 0.1) !important;
+color: #AAD066 !important;
 }
 
-.day-tab.active .dn {
-color: var(–primary);
+.day-tab.active .dn,
+button.day-tab.active .dn {
+color: #AAD066 !important;
 }
 
 /* Progress Bar */
@@ -149,7 +177,7 @@ transition: width 0.4s ease;
 .progress-count {
 font-size: 10px;
 font-weight: 700;
-color: var(–primary);
+color: #AAD066 !important;
 white-space: nowrap;
 flex-shrink: 0;
 }
@@ -256,14 +284,14 @@ transition: background 0.15s;
 }
 
 .weight-col.editing .weight-val {
-border-color: var(–primary);
-background: var(–primary-dim);
+border-color: #AAD066;
+background: rgba(170, 208, 102, 0.1);
 }
 
 .weight-val {
 font-family: ‘Bebas Neue’, sans-serif;
 font-size: 24px;
-color: var(–primary);
+color: #AAD066 !important;
 line-height: 1;
 text-align: center;
 padding: 6px;
@@ -277,7 +305,7 @@ transition: border-color 0.2s;
 
 .weight-unit {
 font-size: 9px;
-color: var(–text-muted);
+color: #5a5a5a !important;
 text-transform: uppercase;
 letter-spacing: 1px;
 font-weight: 600;
@@ -304,9 +332,9 @@ font-family: Arial, sans-serif;
 }
 
 .exercise-card.done .ex-check {
-background: var(–primary);
+background: #AAD066;
 border-color: #5a5a5a;
-color: var(–on-primary);
+color: #000;
 }
 
 /* Exercise Image */
@@ -316,7 +344,7 @@ height: 120px;
 border-radius: 17px;
 overflow: hidden;
 flex-shrink: 0;
-background: var(–surface-variant-2);
+background: #2e2e2e;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -334,7 +362,7 @@ display: block;
 .ex-img svg {
 width: 36px;
 height: 36px;
-stroke: var(–text-muted);
+stroke: #5a5a5a;
 stroke-width: 1.5;
 fill: none;
 }
@@ -455,7 +483,7 @@ margin-bottom: 6px;
 font-family: ‘Bebas Neue’, sans-serif;
 font-size: 18px;
 letter-spacing: 2px;
-color: var(–primary);
+color: #AAD066 !important;
 }
 
 .done-banner .db-sub {
@@ -526,7 +554,7 @@ font-family: ‘Bebas Neue’, sans-serif;
 font-size: 20px;
 letter-spacing: 1px;
 margin-bottom: 14px;
-color: var(–primary);
+color: #AAD066 !important;
 }
 
 .modal-label {
@@ -612,7 +640,7 @@ padding: 16px 12px;
 font-family: ‘Bebas Neue’, sans-serif;
 font-size: 18px;
 letter-spacing: 1px;
-color: var(–primary);
+color: #AAD066 !important;
 margin: 16px 0 8px;
 display: flex;
 align-items: center;
@@ -655,7 +683,7 @@ font-weight: 500;
 }
 
 .hist-pill .hw {
-color: var(–primary);
+color: #AAD066 !important;
 font-weight: 800;
 font-family: ‘Bebas Neue’, sans-serif;
 font-size: 14px;
@@ -692,11 +720,11 @@ padding: 0 8px;
 background: rgba(255, 255, 255, 0.07);
 backdrop-filter: blur(20px) saturate(200%) brightness(115%);
 -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-border: 1px solid var(–border-light);
+border: 1px solid rgba(255, 255, 255, 0.1);
 border-radius: 35px;
-color: var(–text-muted);
+color: #5a5a5a !important;
 cursor: pointer;
-font-family: ‘Manrope’, sans-serif;
+font-family: ‘Manrope’, -apple-system, sans-serif;
 font-size: 9px;
 text-transform: uppercase;
 letter-spacing: 0.5px;
@@ -710,7 +738,7 @@ transition: all 0.2s;
 }
 
 .nav-btn.active {
-color: var(–primary);
+color: #AAD066 !important;
 }
 
 .nav-btn svg {
@@ -1022,9 +1050,13 @@ function renderDayTabs() {
   container.innerHTML = '';
   
   State.program.forEach((day, i) => {
+    const isActive = i === State.currentDay;
     const tab = document.createElement('button');
-    tab.className = `day-tab${i === State.currentDay ? ' active' : ''}`;
-    tab.innerHTML = `<span class="dn">${day.day}</span>`;
+    tab.className = `day-tab${isActive ? ' active' : ''}`;
+    tab.innerHTML = `<span class="dn" style="font-family:'Tiny5',monospace;color:${isActive ? '#AAD066' : '#5a5a5a'};display:block;font-size:44px;letter-spacing:1px;line-height:1;">${day.day}</span>`;
+    // Force inline styles — Telegram can't override these
+    tab.style.cssText = `color:${isActive ? '#AAD066' : '#5a5a5a'} !important;`;
+    tab.setAttribute('style', `color:${isActive ? '#AAD066' : '#5a5a5a'}`);
     tab.onclick = () => {
       hapticLight();
       State.currentDay = i;
@@ -1477,6 +1509,11 @@ function initTelegram() {
   try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
   try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
   try { tg.lockOrientation(); } catch(e) {}
+
+  // Force dark background to prevent theme bleed
+  document.documentElement.style.setProperty('background', '#0C0C0C', 'important');
+  document.body.style.setProperty('background', '#0C0C0C', 'important');
+  document.body.style.setProperty('color', '#efefef', 'important');
 }
 
 function setupEventDelegation() {
@@ -1590,7 +1627,23 @@ document.addEventListener('DOMContentLoaded', () => {
   initTelegram();
   loadState();
   setupEventDelegation();
-  
+
+  // Inject override stylesheet last — after Telegram's own styles
+  const overrideStyle = document.createElement('style');
+  overrideStyle.textContent = `
+    html, body { background: #0C0C0C !important; color: #efefef !important; }
+    button.day-tab { color: #5a5a5a !important; background: rgba(255,255,255,0.07) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+    button.day-tab span.dn { color: #5a5a5a !important; }
+    button.day-tab.active { color: #AAD066 !important; background: rgba(255,255,255,0.07) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+    button.day-tab.active span.dn { color: #AAD066 !important; }
+    .weight-val { color: #AAD066 !important; }
+    .progress-count { color: #AAD066 !important; }
+    .nav-btn.active { color: #AAD066 !important; }
+    .ex-name { color: #b0b0b0 !important; }
+    .muscle-label span { color: #ffffff !important; }
+  `;
+  document.head.appendChild(overrideStyle);
+
   cloudLoad(() => {
     renderWorkout();
   });
