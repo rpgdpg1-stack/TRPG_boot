@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>💪 Тренировки PRO</title>
+<title>💪 Тренировки</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
@@ -15,15 +15,12 @@
   --surface-variant-2: #2e2e2e;
   --primary: #AAD066;
   --primary-dim: rgba(170, 208, 102, 0.1);
-  --primary-soft: rgba(170, 208, 102, 0.2);
-  --on-primary: #000000;
   --text-primary: #efefef;
   --text-secondary: #b0b0b0;
   --text-muted: #5a5a5a;
   --border: #2a2a2a;
   --border-light: rgba(255, 255, 255, 0.1);
   --danger: rgba(200, 60, 60, 0.85);
-  --danger-border: rgba(255, 120, 120, 0.25);
   --success-bg: #3C643C;
 }
 
@@ -41,12 +38,6 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   padding-bottom: 90px;
-  opacity: 0;
-  animation: fadeIn 0.3s ease forwards;
-}
-
-@keyframes fadeIn {
-  to { opacity: 1; }
 }
 
 /* Header */
@@ -69,7 +60,7 @@ body {
 .day-tabs {
   display: flex;
   gap: 8px;
-  padding: 0 18px 0;
+  padding: 0 12px 0;
   align-items: flex-end;
 }
 
@@ -85,15 +76,13 @@ body {
   font-weight: 700;
   cursor: pointer;
   text-align: center;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s;
   text-transform: uppercase;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
-  transform: translateZ(0);
-  will-change: transform, height;
 }
 
 .day-tab .dn {
@@ -103,7 +92,7 @@ body {
   letter-spacing: 1px;
   line-height: 1;
   color: #555;
-  transition: color 0.25s, font-size 0.25s;
+  transition: color 0.25s;
 }
 
 .day-tab.active {
@@ -111,7 +100,6 @@ body {
   color: var(--primary);
   margin-bottom: 0;
   height: 78px;
-  transform: scale(1.02);
 }
 
 .day-tab.active .dn {
@@ -119,21 +107,16 @@ body {
   font-size: 59px;
 }
 
-.day-tab:active {
-  transform: scale(0.96);
-}
-
 /* Progress Bar */
 .progress-wrap {
   padding: 0 14px;
-  margin: 0 18px 8px;
+  margin: 0 12px 8px;
   background: var(--surface-variant);
   border-radius: 25px;
   height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: border-radius 0.25s;
 }
 
 .progress-label {
@@ -156,7 +139,7 @@ body {
   height: 100%;
   background: var(--primary);
   border-radius: 6px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.4s ease;
 }
 
 .progress-count {
@@ -167,7 +150,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Content */
+/* Content - одинаковые отступы по краям */
 .content {
   padding: 16px 12px 0;
 }
@@ -175,18 +158,6 @@ body {
 /* Muscle Group */
 .muscle-group {
   margin-bottom: 24px;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .muscle-label {
@@ -197,7 +168,6 @@ body {
   margin-bottom: 14px;
   padding: 0 4px;
   text-align: center;
-  position: relative;
 }
 
 .muscle-label .dot {
@@ -214,70 +184,15 @@ body {
   letter-spacing: 3px;
   color: #ffffff;
   text-transform: uppercase;
-  position: relative;
 }
 
-.muscle-label::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  width: 30px;
-  height: 2px;
-  background: var(--primary);
-  border-radius: 1px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.muscle-label:hover::after {
-  opacity: 0.5;
-}
-
-/* Muscle Progress */
-.muscle-progress {
-  margin: 8px 0 12px;
-  padding: 0 4px;
-}
-
-.muscle-progress-bar {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.muscle-progress-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-/* Exercise Card */
+/* Exercise Card - одинаковые отступы */
 .exercise-card {
   background: var(--surface-variant);
   border-radius: 25px;
   margin-bottom: 8px;
   overflow: hidden;
-  transition: opacity 0.25s, transform 0.2s;
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  animation: cardAppear 0.3s ease;
-}
-
-@keyframes cardAppear {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.exercise-card:active {
-  transform: scale(0.99);
+  transition: opacity 0.25s;
 }
 
 .exercise-card.done {
@@ -287,7 +202,7 @@ body {
 .ex-main {
   display: flex;
   align-items: center;
-  padding: 8px 10px;
+  padding: 8px 12px;
   gap: 12px;
 }
 
@@ -302,7 +217,6 @@ body {
   line-height: 1.5;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.2s;
 }
 
 .exercise-card.done .ex-name {
@@ -323,32 +237,23 @@ body {
   flex-shrink: 0;
 }
 
-/* Weight Display */
+/* Weight Display - как было */
 .weight-col {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  gap: 0;
   cursor: pointer;
   padding: 6px;
   border-radius: 15px;
   transition: background 0.15s;
 }
 
-.weight-col:active {
-  background: rgba(255, 255, 255, 0.05);
-}
-
 .weight-col.editing .weight-val {
   border-color: var(--primary);
   background: var(--primary-dim);
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
 }
 
 .weight-val {
@@ -363,7 +268,7 @@ body {
   justify-content: center;
   border: 2px solid transparent;
   border-radius: 12px;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s;
 }
 
 .weight-unit {
@@ -375,7 +280,7 @@ body {
   margin-left: 3px;
 }
 
-/* Checkbox */
+/* Checkbox - без анимации мерцания */
 .ex-check {
   width: 36px;
   height: 36px;
@@ -387,24 +292,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.ex-check:active {
-  transform: scale(0.9);
+  transition: all 0.2s;
+  font-size: 14px;
+  color: transparent;
+  font-weight: 400;
+  font-family: Arial, sans-serif;
 }
 
 .exercise-card.done .ex-check {
   background: var(--primary);
   border-color: #5a5a5a;
   color: var(--on-primary);
-  animation: checkPop 0.3s ease;
-}
-
-@keyframes checkPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
 }
 
 /* Exercise Image */
@@ -419,11 +317,6 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.ex-img:active {
-  transform: scale(0.97);
 }
 
 .ex-img img {
@@ -432,11 +325,6 @@ body {
   object-fit: contain;
   border-radius: 17px;
   display: block;
-  transition: transform 0.3s;
-}
-
-.ex-img:hover img {
-  transform: scale(1.05);
 }
 
 .ex-img svg {
@@ -447,38 +335,23 @@ body {
   fill: none;
 }
 
-/* Weight Input Bar */
+/* Weight Input Bar - как было */
 .weight-input-bar {
   display: none;
   position: fixed;
-  left: 18px;
-  right: 18px;
+  left: 12px;
+  right: 12px;
   bottom: 18px;
   z-index: 1000;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(20px) saturate(200%) brightness(115%);
   -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
   border: 1px solid var(--border-light);
   border-radius: 25px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  transition: bottom 0.2s;
-  transform: translateZ(0);
-  will-change: backdrop-filter;
-  animation: slideUpBar 0.3s ease;
-}
-
-@keyframes slideUpBar {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.6);
 }
 
 .weight-input-bar.open {
@@ -520,105 +393,38 @@ body {
   outline: none;
   width: 110px;
   flex-shrink: 0;
-  transition: border-color 0.2s;
 }
 
-.wib-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-dim);
-}
-
-/* Weight Presets */
-.weight-presets {
-  display: flex;
-  gap: 8px;
-  margin-left: 8px;
-}
-
-.preset-btn {
-  background: var(--surface-variant);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--primary);
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 50px;
-  text-align: center;
-}
-
-.preset-btn:active {
-  background: var(--primary-dim);
-  transform: scale(0.95);
-}
-
-/* Rest Timer */
-.rest-timer {
-  display: flex;
+/* Image Overlay */
+.img-expand-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.85);
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: var(--surface);
-  border-radius: 25px;
-  margin: 8px 12px;
-  border: 1px solid var(--border-light);
-  animation: slideDown 0.3s ease;
+  justify-content: center;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.rest-timer-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.rest-timer-time {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
-  color: var(--primary);
-  flex: 1;
-  text-align: center;
-}
-
-.rest-timer-controls {
+.img-expand-overlay.open {
   display: flex;
-  gap: 4px;
 }
 
-.rest-timer-btn {
-  background: var(--surface-variant);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 6px 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
+.img-expand-inner {
+  width: 88vw;
+  max-width: 380px;
+  border-radius: 25px;
+  overflow: hidden;
+  background: var(--surface);
+  padding: 10px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
 }
 
-.rest-timer-btn:active {
-  background: var(--primary-dim);
-  transform: scale(0.95);
-}
-
-.rest-timer-btn.danger {
-  background: var(--danger);
-  color: white;
+.img-expand-inner img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 15px;
 }
 
 /* Done Banner */
@@ -628,20 +434,8 @@ body {
   border: 1px solid rgba(170, 208, 102, 0.25);
   border-radius: 25px;
   padding: 16px;
-  margin: 0 12px 16px;
+  margin: 0 0 16px;
   text-align: center;
-  animation: bannerAppear 0.4s ease;
-}
-
-@keyframes bannerAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 .done-banner.show {
@@ -651,12 +445,6 @@ body {
 .done-banner .db-emoji {
   font-size: 32px;
   margin-bottom: 6px;
-  animation: bounce 1s infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
 }
 
 .done-banner .db-text {
@@ -681,19 +469,18 @@ body {
   background: var(--danger);
   backdrop-filter: blur(20px) saturate(200%) brightness(115%);
   -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(115%);
-  border: 1px solid var(--danger-border);
+  border: 1px solid rgba(255, 120, 120, 0.25);
   color: #fff;
   font-family: 'Bebas Neue', sans-serif;
   font-size: 20px;
   letter-spacing: 2px;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity 0.2s;
   text-align: center;
 }
 
 .finish-btn:active {
   opacity: 0.7;
-  transform: scale(0.98);
 }
 
 /* Modal */
@@ -709,16 +496,10 @@ body {
 
 .overlay.open {
   display: flex;
-  animation: overlayFade 0.3s ease;
-}
-
-@keyframes overlayFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .modal {
-  background: rgba(26, 26, 26, 0.95);
+  background: rgba(26, 26, 26, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px 20px 0 0;
@@ -726,14 +507,6 @@ body {
   width: 100%;
   max-width: 480px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  transform: translateY(0);
-  transition: transform 0.3s ease;
-  animation: modalSlide 0.3s ease;
-}
-
-@keyframes modalSlide {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }
 
 .modal-handle {
@@ -779,7 +552,6 @@ body {
 
 .modal-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-dim);
 }
 
 .modal-row {
@@ -808,12 +580,11 @@ body {
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition: opacity 0.2s;
 }
 
 .btn-save:active {
   opacity: 0.8;
-  transform: scale(0.97);
 }
 
 .btn-cancel {
@@ -826,50 +597,6 @@ body {
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.btn-cancel:active {
-  opacity: 0.7;
-}
-
-/* Image Overlay */
-.img-expand-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 400;
-  background: rgba(0, 0, 0, 0.95);
-  align-items: center;
-  justify-content: center;
-}
-
-.img-expand-overlay.open {
-  display: flex;
-  animation: overlayFade 0.3s ease;
-}
-
-.img-expand-inner {
-  width: 88vw;
-  max-width: 380px;
-  border-radius: 25px;
-  overflow: hidden;
-  background: var(--surface);
-  padding: 10px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
-  transform: scale(0.9);
-  animation: imageZoom 0.3s ease forwards;
-}
-
-@keyframes imageZoom {
-  to { transform: scale(1); }
-}
-
-.img-expand-inner img {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 15px;
 }
 
 /* History */
@@ -894,11 +621,6 @@ body {
   border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 8px;
-  transition: transform 0.2s;
-}
-
-.hist-entry:active {
-  transform: scale(0.99);
 }
 
 .hist-date {
@@ -967,7 +689,7 @@ body {
   background: transparent;
   display: flex;
   z-index: 200;
-  padding: 0 18px;
+  padding: 0 12px;
   gap: 12px;
   justify-content: space-between;
 }
@@ -995,25 +717,16 @@ body {
   justify-content: center;
   gap: 4px;
   transition: all 0.2s;
-  transform: translateZ(0);
-  will-change: backdrop-filter;
-}
-
-.nav-btn:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-btn.active {
   color: var(--primary);
-  background: rgba(170, 208, 102, 0.15);
 }
 
 .nav-btn svg {
   width: 20px;
   height: 20px;
   stroke-width: 2;
-  transition: stroke 0.2s;
 }
 
 /* Views */
@@ -1043,58 +756,11 @@ body {
   pointer-events: none;
   white-space: nowrap;
   font-family: 'Manrope', sans-serif;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* Stats */
-.stats-container {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: var(--surface);
-  border-radius: 25px;
-  margin: 0 12px 16px;
-  border: 1px solid var(--border-light);
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-}
-
-.stat-value {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  color: var(--primary);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 9px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 4px;
-}
-
-/* Loading */
-.loading {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--primary-dim);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Responsive */
@@ -1122,7 +788,7 @@ body {
 
 <div class="toast" id="toast"></div>
 
-<!-- Weight Input Panel -->
+<!-- Weight Input Panel - как было -->
 <div class="weight-input-bar" id="weightInputBar">
   <div class="wib-label">
     <b id="wibExName"></b>
@@ -1133,17 +799,6 @@ body {
     oninput="onWibInput(this.value)"
     onchange="onWibInput(this.value)"
     onblur="onWibBlur()">
-  <div class="weight-presets" id="weightPresets"></div>
-</div>
-
-<!-- Rest Timer -->
-<div class="rest-timer" id="restTimer" style="display: none;">
-  <span class="rest-timer-label">Отдых</span>
-  <span class="rest-timer-time" id="restTimerTime">1:30</span>
-  <div class="rest-timer-controls">
-    <button class="rest-timer-btn" onclick="restTimerAdd(30)">+30</button>
-    <button class="rest-timer-btn danger" onclick="restTimerStop()">✕</button>
-  </div>
 </div>
 
 <!-- Image Overlay -->
@@ -1200,20 +855,6 @@ body {
       <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:Manrope,sans-serif;font-weight:700">Очистить</button>
     </div>
   </div>
-  <div class="stats-container" id="statsContainer" style="display: none;">
-    <div class="stat-item">
-      <div class="stat-value" id="statTotal">0</div>
-      <div class="stat-label">Всего</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" id="statWeek">0</div>
-      <div class="stat-label">За неделю</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" id="statMonth">0</div>
-      <div class="stat-label">За месяц</div>
-    </div>
-  </div>
   <div class="hist-content" id="histContent"></div>
 </div>
 
@@ -1237,39 +878,20 @@ body {
 // ==================== CONSTANTS ====================
 const STORAGE_KEY = 'gym_v5';
 const CLOUD_KEY = 'gym_data';
-const WEIGHT_PRESETS = [2.5, 5, 7.5, 10, 12.5, 15];
-const REST_TIMER_DEFAULT = 90; // seconds
-const HAPTIC = {
-  light: () => {
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
-    } else if (navigator.vibrate) {
-      navigator.vibrate(30);
-    }
-  },
-  medium: () => {
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      try { window.Telegram.WebApp.HapticFeedback.impactOccurred('medium'); } catch(e) {}
-    } else if (navigator.vibrate) {
-      navigator.vibrate(50);
-    }
-  },
-  success: () => {
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-    } else if (navigator.vibrate) {
-      navigator.vibrate([50, 50, 50]);
-    }
-  }
-};
 
 // ==================== MEDIA ASSETS ====================
-const EXERCISE_MEDIA = {
-  d1_1: {
-    static: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1453.png",
-    animated: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1423.gif"
-  },
-  // Add other exercises as needed
+const IMGS = {
+  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1453.png",
+  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
+  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
+  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
+};
+
+const IMGS_ANIM = {
+  d1_1: "https://raw.githubusercontent.com/rpgdpg1-stack/TRPG_boot/refs/heads/main/IMG_1423.gif",
+  d1_2: null, d1_3: null, d1_4: null, d1_5: null, d1_6: null, d1_7: null, d1_8: null, d1_9: null,
+  d2_1: null, d2_2: null, d2_3: null, d2_4: null, d2_5: null, d2_6: null, d2_7: null, d2_8: null, d2_9: null,
+  d3_1: null, d3_2: null, d3_3: null, d3_4: null, d3_5: null, d3_6: null, d3_7: null, d3_8: null, d3_9: null
 };
 
 // ==================== DEFAULT DATA ====================
@@ -1354,67 +976,23 @@ const State = {
   done: {},
   history: [],
   openPanel: null,
-  editTarget: null,
-  
-  // Rest timer
-  restTimer: null,
-  restTimerInterval: null,
-  restTimerEnd: null,
-  
-  // Cache
-  _memoized: {}
+  editTarget: null
 };
 
-// ==================== UI CACHE ====================
-const UI = {
-  elements: {},
-  
-  get(id) {
-    if (!this.elements[id]) {
-      this.elements[id] = document.getElementById(id);
-    }
-    return this.elements[id];
-  },
-  
-  query(selector) {
-    if (!this.elements[selector]) {
-      this.elements[selector] = document.querySelector(selector);
-    }
-    return this.elements[selector];
-  },
-  
-  queryAll(selector) {
-    if (!this.elements[selector]) {
-      this.elements[selector] = document.querySelectorAll(selector);
-    }
-    return this.elements[selector];
-  },
-  
-  clear() {
-    this.elements = {};
-  }
-};
-
-// ==================== INITIALIZATION ====================
-function initTelegram() {
-  if (!window.Telegram?.WebApp) return;
-  
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
-  
-  try { tg.disableVerticalSwipes(); } catch(e) {}
-  try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
-  try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
-  try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
-  try { tg.lockOrientation(); } catch(e) {}
-  
-  // Enable haptic feedback
-  if (tg.HapticFeedback) {
-    console.log('Haptic feedback available');
+// ==================== HELPER FUNCTIONS ====================
+function hapticLight() {
+  if (window.Telegram?.WebApp?.HapticFeedback) {
+    try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
   }
 }
 
+function hapticSuccess() {
+  if (window.Telegram?.WebApp?.HapticFeedback) {
+    try { window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+  }
+}
+
+// ==================== STORAGE ====================
 function loadState() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -1422,11 +1000,8 @@ function loadState() {
       const parsed = JSON.parse(saved);
       Object.assign(State, parsed);
     }
-  } catch(e) {
-    console.warn('Failed to load state:', e);
-  }
+  } catch(e) {}
   
-  // Ensure defaults
   if (!State.program) State.program = JSON.parse(JSON.stringify(DEFAULT_PROGRAM));
   if (!State.weights || !Object.keys(State.weights).length) State.weights = { ...DEFAULT_WEIGHTS };
   if (!State.history) State.history = [];
@@ -1437,109 +1012,39 @@ function loadState() {
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(State));
-  } catch(e) {
-    console.warn('Failed to save state:', e);
-  }
+  } catch(e) {}
   cloudSave();
 }
 
 function cloudSave() {
   if (!window.Telegram?.WebApp?.CloudStorage) return;
-  
   try {
-    const data = JSON.stringify({
-      weights: State.weights,
-      history: State.history,
-      program: State.program,
-      version: 1
-    });
+    const data = JSON.stringify({ weights: State.weights, history: State.history, program: State.program });
     window.Telegram.WebApp.CloudStorage.setItem(CLOUD_KEY, data, () => {});
-  } catch(e) {
-    console.warn('Cloud save failed:', e);
-  }
+  } catch(e) {}
 }
 
 function cloudLoad(callback) {
-  if (!window.Telegram?.WebApp?.CloudStorage) {
-    callback();
-    return;
-  }
-  
+  if (!window.Telegram?.WebApp?.CloudStorage) { callback(); return; }
   try {
     window.Telegram.WebApp.CloudStorage.getItem(CLOUD_KEY, (err, val) => {
       if (!err && val) {
         try {
           const remote = JSON.parse(val);
-          if (remote.history?.length > (State.history || []).length) {
-            State.history = remote.history;
-          }
-          if (remote.weights) {
-            State.weights = { ...remote.weights, ...State.weights };
-          }
-          if (remote.program) {
-            State.program = remote.program;
-          }
+          if (remote.history?.length > (State.history || []).length) State.history = remote.history;
+          if (remote.weights) State.weights = { ...remote.weights, ...State.weights };
+          if (remote.program) State.program = remote.program;
           saveState();
-        } catch(e) {
-          console.warn('Failed to parse cloud data:', e);
-        }
+        } catch(e) {}
       }
       callback();
     });
-  } catch(e) {
-    console.warn('Cloud load failed:', e);
-    callback();
-  }
-}
-
-// ==================== REST TIMER ====================
-function startRestTimer(seconds = REST_TIMER_DEFAULT) {
-  if (State.restTimer) {
-    clearInterval(State.restTimer);
-  }
-  
-  const endTime = Date.now() + seconds * 1000;
-  State.restTimerEnd = endTime;
-  
-  const timerEl = UI.get('restTimer');
-  const timeEl = UI.get('restTimerTime');
-  
-  timerEl.style.display = 'flex';
-  
-  State.restTimer = setInterval(() => {
-    const remaining = Math.max(0, Math.round((State.restTimerEnd - Date.now()) / 1000));
-    const minutes = Math.floor(remaining / 60);
-    const secs = remaining % 60;
-    timeEl.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
-    
-    if (remaining <= 0) {
-      restTimerStop();
-      HAPTIC.success();
-      showToast('Время отдыха вышло!');
-    }
-  }, 200);
-}
-
-function restTimerAdd(seconds) {
-  if (State.restTimerEnd) {
-    State.restTimerEnd += seconds * 1000;
-  } else {
-    startRestTimer(seconds);
-  }
-}
-
-function restTimerStop() {
-  if (State.restTimer) {
-    clearInterval(State.restTimer);
-    State.restTimer = null;
-  }
-  State.restTimerEnd = null;
-  UI.get('restTimer').style.display = 'none';
+  } catch(e) { callback(); }
 }
 
 // ==================== RENDERING ====================
 function renderDayTabs() {
-  const container = UI.get('dayTabs');
+  const container = document.getElementById('dayTabs');
   container.innerHTML = '';
   
   State.program.forEach((day, i) => {
@@ -1547,7 +1052,7 @@ function renderDayTabs() {
     tab.className = `day-tab${i === State.currentDay ? ' active' : ''}`;
     tab.innerHTML = `<span class="dn">${day.day}</span>`;
     tab.onclick = () => {
-      HAPTIC.light();
+      hapticLight();
       State.currentDay = i;
       State.openPanel = null;
       saveState();
@@ -1561,13 +1066,12 @@ function renderDayTabs() {
 }
 
 function updateProgressCorners() {
-  const prog = UI.get('progressWrap');
+  const prog = document.getElementById('progressWrap');
   const activeTab = document.querySelector('.day-tab.active');
   if (!prog || !activeTab) return;
   
   const r = 25;
   
-  // Reset corner classes
   activeTab.classList.remove('corner-left', 'corner-right');
   
   if (State.currentDay === 0) {
@@ -1604,45 +1108,34 @@ function renderWorkout() {
   const doneCount = allIds.filter(id => State.done[id]).length;
   const total = allIds.length;
   
-  UI.get('progLabel').textContent = `${doneCount}/${total}`;
-  UI.get('progBar').style.width = total ? Math.round(doneCount / total * 100) + '%' : '0%';
+  document.getElementById('progLabel').textContent = `${doneCount}/${total}`;
+  document.getElementById('progBar').style.width = total ? Math.round(doneCount / total * 100) + '%' : '0%';
   
   const allDone = doneCount === total && total > 0;
   
-  const container = UI.get('workoutContent');
-  const fragment = document.createDocumentFragment();
+  const container = document.getElementById('workoutContent');
+  container.innerHTML = '';
   
-  // Render muscle groups
   day.groups.forEach((group, gi) => {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'muscle-group';
-    
-    // Group header
-    const groupDone = group.exercises.filter(ex => State.done[ex.id]).length;
-    const groupTotal = group.exercises.length;
-    const groupProgress = groupTotal ? Math.round(groupDone / groupTotal * 100) : 0;
     
     groupDiv.innerHTML = `
       <div class="muscle-label">
         <div class="dot"></div>
         <span>${group.name}</span>
       </div>
-      <div class="muscle-progress">
-        <div class="muscle-progress-bar">
-          <div class="muscle-progress-fill" style="width: ${groupProgress}%"></div>
-        </div>
-      </div>
     `;
     
-    // Exercises
     group.exercises.forEach((ex, ei) => {
       const isDone = !!State.done[ex.id];
       const weight = State.weights[ex.id] ?? 0;
       const isOpen = State.openPanel === ex.id;
-      const media = EXERCISE_MEDIA[ex.id];
+      const imgSrc = IMGS[ex.id];
+      const imgAnimSrc = IMGS_ANIM[ex.id] || imgSrc;
       
-      const imgInner = media?.static
-        ? `<img src="${media.static}" alt="" loading="lazy">`
+      const imgInner = imgSrc
+        ? `<img src="${imgSrc}" alt="">`
         : '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>';
       
       const card = document.createElement('div');
@@ -1671,14 +1164,13 @@ function renderWorkout() {
       groupDiv.appendChild(card);
     });
     
-    fragment.appendChild(groupDiv);
+    container.appendChild(groupDiv);
   });
   
   // Bottom section
   const bottomDiv = document.createElement('div');
   bottomDiv.style.padding = '8px 0 110px';
   
-  // Done banner
   const banner = document.createElement('div');
   banner.className = `done-banner${allDone ? ' show' : ''}`;
   banner.innerHTML = `
@@ -1688,142 +1180,16 @@ function renderWorkout() {
   `;
   bottomDiv.appendChild(banner);
   
-  // Finish button
   const finishBtn = document.createElement('button');
   finishBtn.className = 'finish-btn';
   finishBtn.innerHTML = '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ';
   finishBtn.onclick = finishWorkout;
   bottomDiv.appendChild(finishBtn);
   
-  fragment.appendChild(bottomDiv);
-  
-  container.innerHTML = '';
-  container.appendChild(fragment);
-  
-  // Update weight presets
-  if (State.openPanel) {
-    renderWeightPresets(State.openPanel);
-  }
+  container.appendChild(bottomDiv);
 }
 
-function renderWeightPresets(exerciseId) {
-  const currentWeight = State.weights[exerciseId] ?? 0;
-  const presetsEl = UI.get('weightPresets');
-  
-  presetsEl.innerHTML = WEIGHT_PRESETS.map(inc => {
-    const newWeight = currentWeight + inc;
-    return `<button class="preset-btn" onclick="setWeight('${exerciseId}', ${newWeight})">+${inc}</button>`;
-  }).join('');
-}
-
-function renderHistory() {
-  const container = UI.get('histContent');
-  
-  // Calculate cycle progress
-  const trainedDays = [false, false, false];
-  const tempDone = [false, false, false];
-  
-  State.history.forEach(h => {
-    if (h.dayIdx >= 0 && h.dayIdx < 3) {
-      tempDone[h.dayIdx] = true;
-      if (tempDone[0] && tempDone[1] && tempDone[2]) {
-        tempDone.fill(false);
-      }
-    }
-  });
-  
-  trainedDays.forEach((_, i) => {
-    trainedDays[i] = tempDone[i];
-  });
-  
-  // Render calendar
-  let html = '<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
-  
-  for (let d = 0; d < 3; d++) {
-    const isDone = trainedDays[d];
-    const style = isDone
-      ? 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#AAD066;border:1.5px solid #AAD066;'
-      : 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
-    
-    const numColor = isDone ? '#000' : '#5a5a5a';
-    const labelColor = isDone ? '#000' : '#3a3a3a';
-    const label = isDone ? 'DONE' : 'DAY';
-    
-    html += `<div style="${style}">
-      <span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:${numColor}">${d + 1}</span>
-      <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:${labelColor}">${label}</span>
-    </div>`;
-  }
-  
-  html += '</div>';
-  
-  // Update stats
-  updateStats();
-  
-  if (!State.history.length) {
-    container.innerHTML = html + '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
-    return;
-  }
-  
-  // Group by day
-  const byDay = [[], [], []];
-  const reversed = [...State.history].reverse();
-  
-  reversed.forEach(h => {
-    if (byDay[h.dayIdx]) byDay[h.dayIdx].push(h);
-  });
-  
-  // Render entries
-  State.program.forEach((day, di) => {
-    const entries = byDay[di];
-    if (!entries?.length) return;
-    
-    html += `<div class="hist-day-header">День ${day.day}</div>`;
-    
-    entries.forEach(h => {
-      const date = new Date(h.date);
-      const dateStr = `${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-      
-      const exercises = [];
-      day.groups.forEach(g => g.exercises.forEach(ex => exercises.push(ex)));
-      
-      const pills = exercises.map(ex => {
-        const w = h.weights[ex.id];
-        if (w === undefined) return '';
-        const short = ex.name.split(' ').slice(0, 3).join(' ');
-        return `<div class="hist-pill"><span style="color:var(--text-muted);font-size:10px">${short}</span><span class="hw">${w}</span></div>`;
-      }).join('');
-      
-      html += `<div class="hist-entry"><div class="hist-date">${dateStr}</div><div class="hist-pills">${pills}</div></div>`;
-    });
-  });
-  
-  container.innerHTML = html;
-}
-
-function updateStats() {
-  const statsEl = UI.get('statsContainer');
-  if (!State.history.length) {
-    statsEl.style.display = 'none';
-    return;
-  }
-  
-  statsEl.style.display = 'flex';
-  
-  const total = State.history.length;
-  const now = Date.now();
-  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
-  
-  const thisWeek = State.history.filter(h => h.date > weekAgo).length;
-  const thisMonth = State.history.filter(h => h.date > monthAgo).length;
-  
-  UI.get('statTotal').textContent = total;
-  UI.get('statWeek').textContent = thisWeek;
-  UI.get('statMonth').textContent = thisMonth;
-}
-
-// ==================== EVENT HANDLERS ====================
+// ==================== WEIGHT PANEL ====================
 let touchStart = { x: 0, y: 0, handled: false };
 
 function onWeightClick(id) {
@@ -1858,11 +1224,11 @@ function toggleWeightPanel(id) {
   }
   
   if (State.openPanel) {
-    // Switch exercise
     document.querySelectorAll('.weight-col.editing').forEach(el => el.classList.remove('editing'));
     State.openPanel = id;
+    saveState();
     
-    const wcol = document.getElementById(`wcol_${id}`);
+    const wcol = document.getElementById(`wcol_${id}`) || document.querySelector(`.weight-col[data-id="${id}"]`);
     if (wcol) wcol.classList.add('editing');
     
     const day = State.program[State.currentDay];
@@ -1874,19 +1240,17 @@ function toggleWeightPanel(id) {
     });
     
     const weight = State.weights[id] ?? 0;
-    UI.get('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
-    UI.get('wibInput').value = weight;
-    renderWeightPresets(id);
+    document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
+    document.getElementById('wibInput').value = weight;
     return;
   }
   
-  // Open new panel
   State.openPanel = id;
   saveState();
   
-  UI.query('.bottom-nav').style.display = 'none';
+  document.querySelector('.bottom-nav').style.display = 'none';
   
-  const wcol = document.getElementById(`wcol_${id}`);
+  const wcol = document.getElementById(`wcol_${id}`) || document.querySelector(`.weight-col[data-id="${id}"]`);
   if (wcol) wcol.classList.add('editing');
   
   const day = State.program[State.currentDay];
@@ -1899,13 +1263,11 @@ function toggleWeightPanel(id) {
   
   const weight = State.weights[id] ?? 0;
   
-  UI.get('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
-  const input = UI.get('wibInput');
+  document.getElementById('wibExName').textContent = exName.length > 30 ? exName.slice(0, 30) + '...' : exName;
+  const input = document.getElementById('wibInput');
   input.value = weight;
   
-  renderWeightPresets(id);
-  
-  const bar = UI.get('weightInputBar');
+  const bar = document.getElementById('weightInputBar');
   bar.style.bottom = '18px';
   bar.classList.add('open');
   
@@ -1934,32 +1296,14 @@ function closeWeightPanel() {
     window._wibResizeHandler = null;
   }
   
-  const input = UI.get('wibInput');
-  input.blur();
+  document.getElementById('wibInput').blur();
   
-  const bar = UI.get('weightInputBar');
+  const bar = document.getElementById('weightInputBar');
   bar.classList.remove('open');
   bar.style.bottom = '18px';
   
   document.querySelectorAll('.weight-col.editing').forEach(el => el.classList.remove('editing'));
-  UI.query('.bottom-nav').style.display = 'flex';
-}
-
-function setWeight(id, value) {
-  State.weights[id] = Math.max(0, value);
-  saveState();
-  
-  // Update displayed value
-  const valEl = document.querySelector(`.weight-val[data-id="${id}"]`);
-  if (valEl) valEl.textContent = value;
-  
-  // Update input
-  UI.get('wibInput').value = value;
-  
-  // Update presets
-  renderWeightPresets(id);
-  
-  HAPTIC.light();
+  document.querySelector('.bottom-nav').style.display = 'flex';
 }
 
 function onWibInput(value) {
@@ -1975,9 +1319,6 @@ function onWibInput(value) {
   
   State.weights[State.openPanel] = Math.max(0, num);
   saveState();
-  
-  // Update presets
-  renderWeightPresets(State.openPanel);
 }
 
 function onWibKeydown(e) {
@@ -1985,46 +1326,37 @@ function onWibKeydown(e) {
     closeWeightPanel();
     return;
   }
-  
-  if (e.key === 'Backspace' || e.key === 'Delete') {
-    return;
-  }
 }
 
 function onWibBlur() {
-  HAPTIC.light();
   setTimeout(() => {
     if (State.openPanel) closeWeightPanel();
   }, 150);
 }
 
+// ==================== ACTIONS ====================
 function toggleDone(id) {
   if (State.openPanel) closeWeightPanel();
   
   State.done[id] = !State.done[id];
-  HAPTIC.medium();
+  hapticLight();
   saveState();
   renderWorkout();
-  
-  // Start rest timer if exercise marked as done
-  if (State.done[id]) {
-    startRestTimer();
-  }
 }
 
 function tapImg(id) {
-  const media = EXERCISE_MEDIA[id];
-  if (!media?.animated) return;
+  const animSrc = IMGS_ANIM[id];
+  if (!animSrc) return;
   
-  const img = UI.get('imgOverlayImg');
-  img.src = media.animated + '?t=' + Date.now();
-  UI.get('imgOverlay').classList.add('open');
+  const img = document.getElementById('imgOverlayImg');
+  img.src = animSrc + '?t=' + Date.now();
+  document.getElementById('imgOverlay').classList.add('open');
 }
 
 function closeImgOverlay() {
-  UI.get('imgOverlay').classList.remove('open');
+  document.getElementById('imgOverlay').classList.remove('open');
   setTimeout(() => {
-    UI.get('imgOverlayImg').src = '';
+    document.getElementById('imgOverlayImg').src = '';
   }, 300);
 }
 
@@ -2032,14 +1364,14 @@ function openEdit(di, gi, ei) {
   State.editTarget = { di, gi, ei };
   const ex = State.program[di].groups[gi].exercises[ei];
   
-  UI.get('editName').value = ex.name;
-  UI.get('editSets').value = ex.sets;
-  UI.get('editReps').value = ex.reps;
-  UI.get('editOverlay').classList.add('open');
+  document.getElementById('editName').value = ex.name;
+  document.getElementById('editSets').value = ex.sets;
+  document.getElementById('editReps').value = ex.reps;
+  document.getElementById('editOverlay').classList.add('open');
 }
 
 function closeModal() {
-  UI.get('editOverlay').classList.remove('open');
+  document.getElementById('editOverlay').classList.remove('open');
   State.editTarget = null;
 }
 
@@ -2049,13 +1381,13 @@ function saveEdit() {
   const { di, gi, ei } = State.editTarget;
   const ex = State.program[di].groups[gi].exercises[ei];
   
-  const name = UI.get('editName').value.trim();
+  const name = document.getElementById('editName').value.trim();
   if (name) ex.name = name;
   
-  const sets = parseInt(UI.get('editSets').value);
+  const sets = parseInt(document.getElementById('editSets').value);
   if (!isNaN(sets)) ex.sets = sets;
   
-  const reps = parseInt(UI.get('editReps').value);
+  const reps = parseInt(document.getElementById('editReps').value);
   if (!isNaN(reps)) ex.reps = reps;
   
   saveState();
@@ -2065,7 +1397,7 @@ function saveEdit() {
 }
 
 function finishWorkout() {
-  HAPTIC.success();
+  hapticSuccess();
   
   const day = State.program[State.currentDay];
   const allIds = [];
@@ -2082,13 +1414,90 @@ function finishWorkout() {
     weights: snapshot
   });
   
-  // Clear done marks
   allIds.forEach(id => delete State.done[id]);
   
   saveState();
   showToast(`Тренировка дня ${State.currentDay + 1} сохранена!`);
   window.scrollTo({ top: 0, behavior: 'instant' });
   renderWorkout();
+}
+
+function renderHistory() {
+  const container = document.getElementById('histContent');
+  
+  const trainedDays = [false, false, false];
+  const tempDone = [false, false, false];
+  
+  State.history.forEach(h => {
+    if (h.dayIdx >= 0 && h.dayIdx < 3) {
+      tempDone[h.dayIdx] = true;
+      if (tempDone[0] && tempDone[1] && tempDone[2]) {
+        tempDone.fill(false);
+      }
+    }
+  });
+  
+  trainedDays.forEach((_, i) => {
+    trainedDays[i] = tempDone[i];
+  });
+  
+  let html = '<div style="display:flex;gap:12px;margin-bottom:20px;padding:0 4px;justify-content:center">';
+  
+  for (let d = 0; d < 3; d++) {
+    const isDone = trainedDays[d];
+    const style = isDone
+      ? 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#AAD066;border:1.5px solid #AAD066;'
+      : 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);backdrop-filter:blur(20px) saturate(200%) brightness(115%);';
+    
+    const numColor = isDone ? '#000' : '#5a5a5a';
+    const labelColor = isDone ? '#000' : '#3a3a3a';
+    const label = isDone ? 'DONE' : 'DAY';
+    
+    html += `<div style="${style}">
+      <span style="font-family:Tiny5,sans-serif;font-size:32px;line-height:1;color:${numColor}">${d + 1}</span>
+      <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:${labelColor}">${label}</span>
+    </div>`;
+  }
+  
+  html += '</div>';
+  
+  if (!State.history.length) {
+    container.innerHTML = html + '<div class="hist-empty">История пуста<br><span style="font-size:11px">Завершите тренировку,<br>чтобы данные сохранились</span></div>';
+    return;
+  }
+  
+  const byDay = [[], [], []];
+  const reversed = [...State.history].reverse();
+  
+  reversed.forEach(h => {
+    if (byDay[h.dayIdx]) byDay[h.dayIdx].push(h);
+  });
+  
+  State.program.forEach((day, di) => {
+    const entries = byDay[di];
+    if (!entries?.length) return;
+    
+    html += `<div class="hist-day-header">День ${day.day}</div>`;
+    
+    entries.forEach(h => {
+      const date = new Date(h.date);
+      const dateStr = `${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      
+      const exercises = [];
+      day.groups.forEach(g => g.exercises.forEach(ex => exercises.push(ex)));
+      
+      const pills = exercises.map(ex => {
+        const w = h.weights[ex.id];
+        if (w === undefined) return '';
+        const short = ex.name.split(' ').slice(0, 3).join(' ');
+        return `<div class="hist-pill"><span style="color:var(--text-muted);font-size:10px">${short}</span><span class="hw">${w}</span></div>`;
+      }).join('');
+      
+      html += `<div class="hist-entry"><div class="hist-date">${dateStr}</div><div class="hist-pills">${pills}</div></div>`;
+    });
+  });
+  
+  container.innerHTML = html;
 }
 
 function clearHistory() {
@@ -2103,16 +1512,16 @@ function switchView(view) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
   
-  UI.get(`view-${view}`).classList.add('active');
-  UI.get(`nav-${view}`).classList.add('active');
+  document.getElementById(`view-${view}`).classList.add('active');
+  document.getElementById(`nav-${view}`).classList.add('active');
   
   if (view === 'history') renderHistory();
   
-  HAPTIC.light();
+  hapticLight();
 }
 
 function showToast(msg) {
-  const toast = UI.get('toast');
+  const toast = document.getElementById('toast');
   toast.textContent = msg;
   toast.classList.add('show');
   
@@ -2121,34 +1530,43 @@ function showToast(msg) {
   }, 2200);
 }
 
+// ==================== TELEGRAM INIT ====================
+function initTelegram() {
+  if (!window.Telegram?.WebApp) return;
+  
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  
+  try { tg.disableVerticalSwipes(); } catch(e) {}
+  try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
+  try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
+  try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
+  try { tg.lockOrientation(); } catch(e) {}
+}
+
 // ==================== EVENT DELEGATION ====================
 function setupEventDelegation() {
-  const workoutView = UI.get('view-workout');
+  const workoutView = document.getElementById('view-workout');
   
   workoutView.addEventListener('click', (e) => {
-    // Image click
     const img = e.target.closest('.ex-img');
     if (img && img.dataset.id) {
       tapImg(img.dataset.id);
       return;
     }
     
-    // Weight click
     const weightCol = e.target.closest('.weight-col');
     if (weightCol && weightCol.dataset.id) {
       onWeightClick(weightCol.dataset.id);
       return;
     }
     
-    // Checkbox click
     const check = e.target.closest('.ex-check');
     if (check && check.dataset.id) {
       toggleDone(check.dataset.id);
       return;
     }
-    
-    // Name long press (via contextmenu)
-    // Handled separately
   });
   
   workoutView.addEventListener('contextmenu', (e) => {
@@ -2156,7 +1574,6 @@ function setupEventDelegation() {
     if (name) {
       e.preventDefault();
       
-      // Find exercise indices
       const card = e.target.closest('.exercise-card');
       if (card) {
         const exId = card.dataset.id;
@@ -2174,7 +1591,6 @@ function setupEventDelegation() {
     }
   });
   
-  // Touch events for weight
   workoutView.addEventListener('touchstart', (e) => {
     const weightCol = e.target.closest('.weight-col');
     if (weightCol && weightCol.dataset.id) {
@@ -2189,7 +1605,6 @@ function setupEventDelegation() {
     }
   });
   
-  // Swipe navigation
   let swipeStart = { x: 0, y: 0, moved: false };
   
   workoutView.addEventListener('touchstart', (e) => {
@@ -2221,16 +1636,15 @@ function setupEventDelegation() {
     
     State.openPanel = null;
     saveState();
-    HAPTIC.light();
+    hapticLight();
     renderWorkout();
     window.scrollTo({ top: 0, behavior: 'instant' });
   });
   
-  // Global click to close weight panel
   document.addEventListener('click', (e) => {
     if (!State.openPanel) return;
     
-    const bar = UI.get('weightInputBar');
+    const bar = document.getElementById('weightInputBar');
     if (bar?.contains(e.target)) return;
     
     if (e.target.closest('.weight-col')) return;
@@ -2242,22 +1656,7 @@ function setupEventDelegation() {
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
   initTelegram();
-  
-  // Cache UI elements
-  UI.get('progBar');
-  UI.get('progLabel');
-  UI.get('weightInputBar');
-  UI.get('wibInput');
-  UI.get('wibExName');
-  UI.get('toast');
-  UI.get('workoutContent');
-  UI.get('weightPresets');
-  UI.get('restTimer');
-  UI.get('restTimerTime');
-  UI.get('statsContainer');
-  
   loadState();
-  
   setupEventDelegation();
   
   cloudLoad(() => {
