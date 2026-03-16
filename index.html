@@ -56,20 +56,18 @@ body {
   color: #ffffff;
 }
 
-/* Day Tabs - Контейнер для объединенных фигур */
+/* Day Tabs */
 .day-tabs {
   display: flex;
   gap: 8px;
-  padding: 0 12px;
-  position: relative;
+  padding: 0 12px 0;
   align-items: flex-end;
 }
 
-/* Базовый стиль для всех дней */
 .day-tab {
   flex: 1;
   height: 70px;
-  border-radius: 35px 35px 0 0;
+  border-radius: 35px;
   border: none;
   background: var(--surface-variant);
   color: #555;
@@ -84,17 +82,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 1;
-}
-
-/* Стиль для неактивных дней */
-.day-tab:not(.active) {
-  border-radius: 35px;
-  height: 70px;
   margin-bottom: 8px;
-  align-self: flex-end;
 }
 
 .day-tab .dn {
@@ -107,16 +95,11 @@ body {
   transition: color 0.25s;
 }
 
-/* Активный день - увеличенный и с объединенными углами */
 .day-tab.active {
   background: var(--surface-variant);
   color: var(--primary);
-  height: 78px;
   margin-bottom: 0;
-  border-radius: 35px 35px 0 0;
-  position: relative;
-  z-index: 10;
-  box-shadow: none;
+  height: 78px;
 }
 
 .day-tab.active .dn {
@@ -124,109 +107,16 @@ body {
   font-size: 59px;
 }
 
-/* Создаем объединенный внутренний угол слева */
-.day-tab.active.left-connected::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: -16px;
-  width: 16px;
-  height: 16px;
-  background: radial-gradient(circle at 0 0, transparent 15px, var(--surface-variant) 16px);
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Создаем объединенный внутренний угол справа */
-.day-tab.active.right-connected::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: -16px;
-  width: 16px;
-  height: 16px;
-  background: radial-gradient(circle at 100% 0, transparent 15px, var(--surface-variant) 16px);
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Для первого дня (левый край) */
-.day-tab.active.first-day {
-  border-radius: 35px 35px 0 35px;
-}
-
-.day-tab.active.first-day::before {
-  display: none;
-}
-
-.day-tab.active.first-day.right-connected::after {
-  right: -16px;
-}
-
-/* Для последнего дня (правый край) */
-.day-tab.active.last-day {
-  border-radius: 35px 35px 35px 0;
-}
-
-.day-tab.active.last-day::after {
-  display: none;
-}
-
-.day-tab.active.last-day.left-connected::before {
-  left: -16px;
-}
-
-/* Прогресс бар - теперь соединяется с активным днем */
+/* Progress Bar */
 .progress-wrap {
   padding: 0 14px;
   margin: 0 12px 8px;
   background: var(--surface-variant);
-  border-radius: 0 0 25px 25px;
+  border-radius: 25px;
   height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
-  position: relative;
-  z-index: 5;
-  margin-top: -1px; /* Легкое наложение для устранения зазора */
-}
-
-/* Специальные скругления для прогресс бара в зависимости от позиции */
-.progress-wrap.first-day-active {
-  border-radius: 0 0 25px 25px;
-}
-
-.progress-wrap.middle-day-active {
-  border-radius: 0 0 25px 25px;
-}
-
-.progress-wrap.last-day-active {
-  border-radius: 0 0 25px 25px;
-}
-
-/* Добавляем внутренние скругления для прогресс бара, чтобы он сочетался с активным днем */
-.progress-wrap.has-left-gap::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  background: radial-gradient(circle at 0 100%, transparent 15px, var(--surface-variant) 16px);
-  pointer-events: none;
-  z-index: 6;
-}
-
-.progress-wrap.has-right-gap::after {
-  content: '';
-  position: absolute;
-  top: -8px;
-  right: 0;
-  width: 16px;
-  height: 16px;
-  background: radial-gradient(circle at 100% 100%, transparent 15px, var(--surface-variant) 16px);
-  pointer-events: none;
-  z-index: 6;
 }
 
 .progress-label {
@@ -776,6 +666,20 @@ body {
   line-height: 1.8;
 }
 
+/* Calendar */
+.calendar-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.calendar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
 /* Bottom Navigation */
 .bottom-nav {
   position: fixed;
@@ -1145,30 +1049,7 @@ function renderDayTabs() {
   
   State.program.forEach((day, i) => {
     const tab = document.createElement('button');
-    
-    // Базовые классы
-    let classes = 'day-tab';
-    
-    if (i === State.currentDay) {
-      classes += ' active';
-      
-      // Добавляем классы для соединения углов в зависимости от позиции
-      if (i === 0) {
-        classes += ' first-day';
-      } else if (i === State.program.length - 1) {
-        classes += ' last-day';
-      }
-      
-      // Добавляем соединения с соседями
-      if (i > 0) {
-        classes += ' left-connected';
-      }
-      if (i < State.program.length - 1) {
-        classes += ' right-connected';
-      }
-    }
-    
-    tab.className = classes;
+    tab.className = `day-tab${i === State.currentDay ? ' active' : ''}`;
     tab.innerHTML = `<span class="dn">${day.day}</span>`;
     tab.onclick = () => {
       hapticLight();
@@ -1186,22 +1067,35 @@ function renderDayTabs() {
 
 function updateProgressCorners() {
   const prog = document.getElementById('progressWrap');
-  if (!prog) return;
+  const activeTab = document.querySelector('.day-tab.active');
+  if (!prog || !activeTab) return;
   
-  // Сброс классов
-  prog.classList.remove('first-day-active', 'middle-day-active', 'last-day-active', 'has-left-gap', 'has-right-gap');
+  const r = 25;
   
-  // Добавляем классы в зависимости от позиции активного дня
+  activeTab.classList.remove('corner-left', 'corner-right');
+  
   if (State.currentDay === 0) {
-    prog.classList.add('first-day-active');
-    prog.classList.add('has-right-gap');
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-right');
+    prog.style.borderTopLeftRadius = '0';
+    prog.style.borderTopRightRadius = r + 'px';
   } else if (State.currentDay === State.program.length - 1) {
-    prog.classList.add('last-day-active');
-    prog.classList.add('has-left-gap');
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-left');
+    prog.style.borderTopLeftRadius = r + 'px';
+    prog.style.borderTopRightRadius = '0';
   } else {
-    prog.classList.add('middle-day-active');
-    prog.classList.add('has-left-gap', 'has-right-gap');
+    activeTab.style.borderBottomLeftRadius = '0';
+    activeTab.style.borderBottomRightRadius = '0';
+    activeTab.classList.add('corner-left', 'corner-right');
+    prog.style.borderTopLeftRadius = r + 'px';
+    prog.style.borderTopRightRadius = r + 'px';
   }
+  
+  prog.style.borderBottomLeftRadius = r + 'px';
+  prog.style.borderBottomRightRadius = r + 'px';
 }
 
 function renderWorkout() {
