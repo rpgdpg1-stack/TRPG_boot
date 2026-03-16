@@ -9,25 +9,25 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Tiny5&display=swap');
 :root {
-  --bg:#0C0C0C; --card:#242424; --card2:#2e2e2e;
-  --accent:#9DC44A; --accent-dim:rgba(157,196,74,0.1);
+  --bg:#0C0C0C; --card:#222222; --card2:#2e2e2e;
+  --accent:#AAD066; --accent-dim:rgba(170,208,102,0.1);
   --text:#efefef; --muted:#5a5a5a; --border:#2a2a2a;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:90px}
-.header{background:transparent;padding:18px 0 0;position:sticky;top:0;z-index:100;border-bottom:none}
-.header::before{content:'';position:fixed;top:0;left:0;right:0;height:36px;background:linear-gradient(to bottom,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0) 100%);pointer-events:none;z-index:-1}
+.header{background:#0C0C0C;padding:18px 0 0;position:sticky;top:0;z-index:100;border-bottom:1px solid #222222}
+.header::before{display:none}
 .app-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffffff}
 .stats-pill{background:rgba(36,36,36,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .stats-pill b{color:var(--accent);font-size:13px}
 .day-tabs{display:flex;gap:8px;padding:0 18px 0;background:transparent;align-items:flex-end}
-.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:none;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.day-tab{flex:1;height:70px;padding:0 8px;border-radius:35px;border:none;background:#222222;color:#555;font-family:'Manrope',sans-serif;font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:all .25s;text-transform:uppercase;line-height:1;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .day-tab .dn{display:block;font-family:'Tiny5',sans-serif;font-size:44px;letter-spacing:1px;margin-bottom:0;line-height:1;color:#555;transition:color .25s}
-.day-tab.active{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);color:var(--accent);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);position:relative;z-index:2;margin-bottom:0;height:78px;overflow:visible}.day-tab.active .dn{color:var(--accent);font-size:59px}
+.day-tab.active{background:#222222;border-color:transparent;color:var(--accent);position:relative;z-index:2;margin-bottom:0;height:78px;overflow:visible}.day-tab.active .dn{color:var(--accent);font-size:59px}
 .day-tab.active::before,.day-tab.active::after{content:'';position:absolute;bottom:0px;width:34px;height:34px;pointer-events:none;z-index:3}
-.day-tab.active.corner-left::before{left:-34px;background:radial-gradient(circle at 0% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
-.day-tab.active.corner-right::after{right:-34px;background:radial-gradient(circle at 100% 0%, transparent 33px, rgba(255,255,255,0.07) 34px);filter:blur(0px) brightness(115%) saturate(200%)}
-.progress-wrap{padding:0 14px;margin:0 18px 8px;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%);border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(20px) saturate(200%) brightness(115%);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(115%)}
+.day-tab.active.corner-left::before{left:-34px;background:radial-gradient(circle at 0% 0%, transparent 33px, #222222 34px)}
+.day-tab.active.corner-right::after{right:-34px;background:radial-gradient(circle at 100% 0%, transparent 33px, #222222 34px)}
+.progress-wrap{padding:0 14px;margin:0 18px 8px;background:#222222;border:none;border-radius:25px;height:44px;display:flex;align-items:center;gap:10px}
 .progress-label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .progress-bg{flex:1;background:rgba(255,255,255,0.1);border-radius:6px;height:5px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease}
@@ -37,8 +37,8 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .muscle-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;padding:0 4px;text-align:center}
 .muscle-label .dot{width:6px;height:6px;border-radius:50%;background:#ffffff;flex-shrink:0}
 .muscle-label span{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:#ffffff;text-transform:uppercase}
-.exercise-card{background:rgba(36,36,36,0.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.07);border-radius:25px;margin-bottom:8px;overflow:hidden;transition:border-color .25s,opacity .25s}
-.exercise-card.done{border-color:#3a3a3a;opacity:.65}
+.exercise-card{background:#222222;border:none;border-radius:25px;margin-bottom:8px;overflow:hidden;transition:opacity .25s}
+.exercise-card.done{opacity:.65}
 .ex-main{display:flex;align-items:center;padding:8px 10px;gap:12px}
 .ex-info{flex:1;min-width:0}
 .ex-name{font-size:12.5px;font-weight:700;line-height:1.4;color:#b0b0b0;cursor:pointer}
@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .ex-sets{font-size:10px;color:var(--muted);margin-top:3px}
 .ex-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .weight-col{display:flex;flex-direction:row;align-items:center;justify-content:center;flex-shrink:0;gap:0;cursor:pointer;padding:6px 6px;border-radius:15px;transition:background .15s}
-.weight-col.editing .weight-val{border-color:var(--accent);background:rgba(77,200,100,0.08)}
+.weight-col.editing .weight-val{border-color:var(--accent);background:rgba(170,208,102,0.08)}
 .weight-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);line-height:1;text-align:center;padding:6px;display:inline-flex;align-items:center;justify-content:center;border:2px solid transparent;border-radius:12px;transition:border-color .2s}
 .weight-unit{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-left:3px}
 .ex-check{width:36px;height:36px;border-radius:15px;border:2px solid #3a3a3a;background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;color:transparent;font-weight:400;font-family:Arial,sans-serif}
@@ -64,7 +64,7 @@ body{background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;min
 .img-expand-overlay.open{display:flex}
 .img-expand-inner{width:88vw;max-width:380px;border-radius:25px;overflow:hidden;background:var(--card);padding:10px;box-shadow:0 24px 64px rgba(0,0,0,.9)}
 .img-expand-inner img{width:100%;height:auto;display:block;border-radius:15px}
-.done-banner{display:none;background:linear-gradient(135deg,rgba(157,196,74,.08),rgba(157,196,74,.02));border:1px solid rgba(157,196,74,.25);border-radius:25px;padding:16px;margin:0 12px 16px;text-align:center}
+.done-banner{display:none;background:linear-gradient(135deg,rgba(170,208,102,.08),rgba(170,208,102,.02));border:1px solid rgba(170,208,102,.25);border-radius:25px;padding:16px;margin:0 12px 16px;text-align:center}
 .done-banner.show{display:block}
 .done-banner .db-emoji{font-size:32px;margin-bottom:6px}
 .done-banner .db-text{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
@@ -311,21 +311,18 @@ function updateProgressCorners() {
   activeTab.classList.remove('corner-left', 'corner-right');
 
   if (idx === 0) {
-    // Day 1: left side goes down flush, right side has concave corner
     activeTab.style.borderBottomLeftRadius = '0';
     activeTab.style.borderBottomRightRadius = '0';
     activeTab.classList.add('corner-right');
     prog.style.borderTopLeftRadius = '0';
     prog.style.borderTopRightRadius = r + 'px';
   } else if (idx === S.program.length - 1) {
-    // Day 3: right side flush, left has concave corner
     activeTab.style.borderBottomLeftRadius = '0';
     activeTab.style.borderBottomRightRadius = '0';
     activeTab.classList.add('corner-left');
     prog.style.borderTopLeftRadius = r + 'px';
     prog.style.borderTopRightRadius = '0';
   } else {
-    // Day 2: both sides concave
     activeTab.style.borderBottomLeftRadius = '0';
     activeTab.style.borderBottomRightRadius = '0';
     activeTab.classList.add('corner-left', 'corner-right');
@@ -334,8 +331,6 @@ function updateProgressCorners() {
   }
   prog.style.borderBottomLeftRadius = r + 'px';
   prog.style.borderBottomRightRadius = r + 'px';
-  // Remove top border of progress where it meets active tab
-  prog.style.borderTopColor = 'transparent';
 }
 
 function renderWorkout() {
@@ -391,23 +386,19 @@ function renderWorkout() {
           '</div>' +
         '</div>';
 
-      // Картинка — открыть оверлей
       var imgDiv = card.querySelector('.ex-img');
       if (imgSrc) {
         imgDiv.addEventListener('click', (function(id, anim){ return function(){ tapImg(id, anim); }; })(exId, imgAnimSrc));
       }
 
-      // Вес — открыть панель
       var wcolDiv = card.querySelector('.weight-col');
       wcolDiv.addEventListener('touchstart', (function(id){ return function(e){ touchStartWeight(e, id); }; })(exId), {passive:true});
       wcolDiv.addEventListener('touchend', (function(id){ return function(e){ touchEndWeight(e, id); }; })(exId));
       wcolDiv.addEventListener('click', (function(id){ return function(){ onWeightClick(id); }; })(exId));
 
-      // Галочка
       var checkDiv = card.querySelector('.ex-check');
       checkDiv.addEventListener('click', (function(id){ return function(){ toggleDone(id); }; })(exId));
 
-      // Редактирование названия — долгое нажатие
       var nameDiv = card.querySelector('.ex-name');
       nameDiv.addEventListener('contextmenu', (function(d,g,e){ return function(ev){ ev.preventDefault(); openEdit(d,g,e); }; })(curDay, gi, ei));
 
@@ -416,18 +407,15 @@ function renderWorkout() {
     container.appendChild(gDiv);
   });
 
-  // Bottom cards: done banner + finish button
   var bottomDiv = document.createElement('div');
   bottomDiv.id = 'bottomCards';
   bottomDiv.style.padding = '8px 0 110px';
 
-  // Done banner - only shown when all done
   var banner = document.createElement('div');
   banner.className = 'done-banner' + (allDone ? ' show' : '');
   banner.innerHTML = '<div class="db-emoji">&#128293;</div><div class="db-text">Тренировка завершена!</div><div class="db-sub">Все упражнения выполнены</div>';
   bottomDiv.appendChild(banner);
 
-  // Finish button - always visible
   var finBtn = document.createElement('button');
   finBtn.className = 'finish-btn';
   finBtn.innerHTML = '&#10003; ЗАВЕРШИТЬ ТРЕНИРОВКУ';
@@ -474,6 +462,11 @@ function closeImgOverlay() {
 function toggleDone(id) {
   if (S.openPanel) closeWib();
   S.done[id] = !S.done[id];
+  if (window.Telegram && window.Telegram.WebApp) {
+    try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch(e) {}
+  } else if (navigator.vibrate) {
+    navigator.vibrate(30);
+  }
   save();
   renderWorkout();
 }
@@ -483,7 +476,6 @@ var _weightFresh = false;
 function togglePanel(id) {
   if (S.openPanel === id) { closeWib(); return; }
   if (S.openPanel) {
-    // Switch exercise without closing keyboard
     document.querySelectorAll('.weight-col.editing').forEach(function(el){ el.classList.remove('editing'); });
     S.openPanel = id;
     _weightFresh = true;
@@ -617,7 +609,6 @@ function finishWorkout() {
   var snap = {};
   allIds.forEach(function(id){ snap[id] = (S.weights[id] !== undefined) ? S.weights[id] : 0; });
   S.history.push({ date: Date.now(), dayIdx: S.currentDay, weights: snap });
-  // Clear all done checkmarks regardless of completion
   allIds.forEach(function(id){ delete S.done[id]; });
   save();
   showToast('Тренировка дня ' + (S.currentDay + 1) + ' сохранена!');
@@ -628,16 +619,11 @@ function finishWorkout() {
 function renderHistory() {
   var container = document.getElementById('histContent');
 
-  // Mini calendar logic:
-  // Find last "cycle" - last time all 3 days were completed resets the cycle
-  // Count which days done since last full cycle reset
   var trainedDays = [false, false, false];
   var tempDone = [false, false, false];
-  // Go through history in order, reset when all 3 done
   S.history.forEach(function(h) {
     if (h.dayIdx >= 0 && h.dayIdx < 3) {
       tempDone[h.dayIdx] = true;
-      // If all 3 done, reset cycle
       if (tempDone[0] && tempDone[1] && tempDone[2]) {
         tempDone = [false, false, false];
       }
@@ -645,7 +631,6 @@ function renderHistory() {
   });
   trainedDays = tempDone;
 
-  // Next day to train = first false in trainedDays
   var nextDay = -1;
   for (var nd = 0; nd < 3; nd++) {
     if (!trainedDays[nd]) { nextDay = nd; break; }
@@ -656,12 +641,10 @@ function renderHistory() {
     var isDone = trainedDays[d];
     var style;
     if (isDone) {
-      // Green - like active day tab on main screen
       style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
         'align-items:center;justify-content:center;gap:2px;' +
-        'background:#4DC864;border:1.5px solid #4DC864;';
+        'background:#AAD066;border:1.5px solid #AAD066;';
     } else {
-      // Same glass as inactive day tabs on main screen
       style = 'flex:1;max-width:100px;aspect-ratio:1/1;border-radius:25px;display:flex;flex-direction:column;' +
         'align-items:center;justify-content:center;gap:2px;' +
         'background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.18);' +
@@ -719,15 +702,14 @@ function showToast(msg) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Telegram WebApp setup
   if (window.Telegram && window.Telegram.WebApp) {
     var tg = window.Telegram.WebApp;
     try { tg.ready(); } catch(e) {}
     try { tg.expand(); } catch(e) {}
     try { tg.disableVerticalSwipes(); } catch(e) {}
-    try { tg.setHeaderColor('#1a1a1a'); } catch(e) {}
-    try { tg.setBackgroundColor('#1a1a1a'); } catch(e) {}
-    try { tg.setBottomBarColor('#1a1a1a'); } catch(e) {}
+    try { tg.setHeaderColor('#0C0C0C'); } catch(e) {}
+    try { tg.setBackgroundColor('#0C0C0C'); } catch(e) {}
+    try { tg.setBottomBarColor('#0C0C0C'); } catch(e) {}
     try { tg.lockOrientation(); } catch(e) {}
   }
 
@@ -740,7 +722,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!S.openPanel) return;
     var bar = document.getElementById('weightInputBar');
     if (bar && bar.contains(e.target)) return;
-    // If tapped on another weight col - switch to it, don't close
     var allWcols = document.querySelectorAll('.weight-col');
     for (var i = 0; i < allWcols.length; i++) {
       if (allWcols[i].contains(e.target)) return;
@@ -748,7 +729,6 @@ document.addEventListener('DOMContentLoaded', function() {
     closeWib();
   });
 
-  // Swipe left/right to switch days
   var swipeStartX = 0, swipeStartY = 0, swipeMoved = false;
   var workoutView = document.getElementById('view-workout');
 
@@ -761,7 +741,6 @@ document.addEventListener('DOMContentLoaded', function() {
   workoutView.addEventListener('touchmove', function(e) {
     var dx = Math.abs(e.touches[0].clientX - swipeStartX);
     var dy = Math.abs(e.touches[0].clientY - swipeStartY);
-    // Only mark as moved for horizontal swipes
     if (dx > dy) swipeMoved = true;
   }, { passive: true });
 
@@ -785,8 +764,6 @@ document.addEventListener('DOMContentLoaded', function() {
     renderWorkout();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, { passive: true });
-
-
 });
 </script>
 
