@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>G-Fit Pro</title>
+    <title>G-Fit Pro App</title>
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -14,318 +14,311 @@
             --text: #FFFFFF;
             --muted: #888888;
             --border: #333333;
-            --success: #AAD066;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Manrope', sans-serif; padding: 0 16px 40px; }
 
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Manrope', sans-serif;
-            overflow-x: hidden;
-            padding: 20px;
-        }
-
-        /* Шапка с шрифтом Tiny 5 */
+        /* HEADER & NAVIGATION */
         .header {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 25px;
             position: sticky;
             top: 0;
             background: var(--bg);
-            z-index: 10;
+            z-index: 100;
+            padding: 15px 0 10px;
+            user-select: none;
+        }
+
+        .nav-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: grab;
             padding-bottom: 10px;
         }
 
-        .day-label {
+        .day-title {
             font-family: 'Tiny5', sans-serif;
-            font-size: 64px;
+            font-size: 56px;
             color: var(--accent);
-            line-height: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            line-height: 0.8;
+            margin-bottom: 12px;
         }
 
-        .info-btn {
-            font-family: 'Manrope', sans-serif;
-            font-size: 18px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            color: var(--text);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Прогресс бар */
-        .progress-container {
+        .progress-wrapper {
             width: 100%;
-            height: 6px;
-            background: var(--card);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-label { font-size: 12px; color: var(--muted); white-space: nowrap; font-weight: 700; }
+
+        .progress-bar-bg {
+            flex-grow: 1;
+            height: 4px;
+            background: var(--border);
             border-radius: 10px;
             overflow: hidden;
         }
 
-        #progress-bar {
+        #progress-fill {
             width: 0%;
             height: 100%;
             background: var(--accent);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.3s ease;
         }
 
-        /* Список упражнений */
-        .exercise-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        /* LIST STRUCTURE */
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            margin: 20px 0 10px 4px;
+            font-weight: 800;
+            opacity: 0.7;
         }
 
-        .exercise-card {
+        .exercise-list { display: flex; flex-direction: column; gap: 8px; }
+
+        /* CARDS */
+        .card {
             background: var(--card);
-            border-radius: 16px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 12px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
+            gap: 12px;
+            min-height: 85px; /* Размер как в твоем файле */
+            position: relative;
         }
 
-        .exercise-card.completed {
-            border-color: var(--accent);
-            opacity: 0.6;
-        }
+        .card.done { opacity: 0.5; filter: grayscale(0.5); }
 
-        .img-placeholder {
-            width: 70px;
-            height: 70px;
-            background: var(--bg);
-            border-radius: 12px;
+        .img-box {
+            width: 60px;
+            height: 60px;
+            background: #111;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
             border: 1px solid var(--border);
         }
 
-        .muscle-img-placeholder {
-            width: 20px;
-            height: 20px;
-            background: var(--accent);
-            display: inline-block;
-            margin-right: 5px;
-            border-radius: 4px;
-        }
+        .info { flex-grow: 1; overflow: hidden; }
+        .name { font-size: 15px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .meta { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
 
-        .ex-info {
-            flex-grow: 1;
-        }
-
-        .ex-name {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .ex-meta {
-            font-size: 13px;
-            color: var(--muted);
+        /* WEIGHT INPUT */
+        .weight-control {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 5px;
+            margin-left: auto;
+            padding-right: 5px;
         }
 
-        .check-mark {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+        .weight-val {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--accent);
+            background: transparent;
+            border: none;
+            width: 50px;
+            text-align: center;
+            outline: none;
+        }
+
+        .weight-unit { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+
+        /* CHECKBOX */
+        .check-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
             border: 2px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
-        .completed .check-mark {
+        .done .check-btn {
             background: var(--accent);
             border-color: var(--accent);
         }
 
-        /* Гайд модалка */
-        #guide-modal {
+        /* REPLACE BUTTON */
+        .replace-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #333;
+            color: #fff;
+            font-size: 8px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        /* MODAL */
+        .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9);
-            z-index: 100;
-            padding: 30px 20px;
-            overflow-y: auto;
-        }
-
-        .guide-content {
-            background: var(--card);
-            padding: 25px;
-            border-radius: 24px;
-            line-height: 1.6;
-        }
-
-        .guide-content h2 { color: var(--accent); margin-bottom: 15px; }
-        .guide-content p { margin-bottom: 12px; font-size: 14px; }
-        .close-guide {
-            margin-top: 20px;
-            background: var(--accent);
-            color: #000;
-            padding: 12px;
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-        }
-
-        .change-day-btn {
-            margin-top: 30px;
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid var(--border);
-            padding: 10px;
-            width: 100%;
-            border-radius: 10px;
-            font-size: 12px;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="day-label">
-            <span id="current-day-text">DAY A</span>
-            <div class="info-btn" onclick="toggleGuide()">i</div>
-        </div>
-        <div class="progress-container">
-            <div id="progress-bar"></div>
-        </div>
-    </div>
-
-    <div class="exercise-list" id="exercise-list">
-        </div>
-
-    <button class="change-day-btn" onclick="switchDay()">СМЕНИТЬ ДЕНЬ (А/Б)</button>
-
-    <div id="guide-modal">
-        <div class="guide-content">
-            <h2>Гайд Идеала</h2>
-            <p><strong>1. Темп:</strong> 3 секунды вниз, 1 секунда вверх. Не бросайте вес!</p>
-            <p><strong>2. Подбор веса:</strong> Вес, с которым ты можешь сделать 10 раз, но чувствуешь, что осталось сил еще на 2 (правило -2).</p>
-            <p><strong>3. Разминка:</strong> 5-10 мин суставная разминка обязательна перед началом.</p>
-            <p><strong>4. Отдых:</strong> База — 3 мин, изоляция — 1.5 мин.</p>
-            <button class="close-guide" onclick="toggleGuide()">ПОНЯЛ</button>
+<div class="header">
+    <div class="nav-area" id="nav-area">
+        <div class="day-title" id="day-title">A</div>
+        <div class="progress-wrapper">
+            <span class="progress-label" id="progress-text">ПРОГРЕСС 0/8</span>
+            <div class="progress-bar-bg">
+                <div id="progress-fill"></div>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+<div id="workout-content">
+    </div>
 
-        let currentDay = 'A';
-        let completedCount = 0;
+<div class="modal" id="replace-modal" onclick="this.style.display='none'">
+    <div style="width: 90%;">
+        <p style="text-align: center; margin-bottom: 10px; font-size: 12px; color: var(--accent);">ВЫБЕРИТЕ ЗАМЕНУ</p>
+        <div class="card" style="opacity: 1;">
+            <div class="img-box">📸</div>
+            <div class="info">
+                <div class="name">Альтернативное упр.</div>
+                <div class="meta">Будет доступно позже</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        const data = {
-            'A': [
-                { id: 1, name: 'Подтягивания / Тяга блока', meta: 'Спина • 3х8-10', muscle: '💪' },
-                { id: 2, name: 'Приседания в Смите', meta: 'Ноги • 3х8-10', muscle: '🦵' },
-                { id: 3, name: 'Жим штанги лежа', meta: 'Грудь • 3х8-10', muscle: '🔘' },
-                { id: 4, name: 'Тяга к лицу (Face Pull)', meta: 'Задняя дельта • 3х15', muscle: '🔺' },
-                { id: 5, name: 'Махи в стороны', meta: 'Средняя дельта • 3х12-15', muscle: '🔺' },
-                { id: 6, name: 'Сгибания ног', meta: 'Бицепс бедра • 3х12-15', muscle: '🦵' },
-                { id: 7, name: 'Бицепс на накл. скамье', meta: 'Бицепс • 3х10-12', muscle: '💪' },
-                { id: 8, name: 'Подъем ног в висе', meta: 'Пресс • 3х15', muscle: '🧱' }
+<script>
+    const tg = window.Telegram.WebApp;
+    const content = document.getElementById('workout-content');
+    let currentDay = 'A';
+
+    const program = {
+        'A': {
+            base: [
+                { id: 'a1', name: 'Подтягивания / Тяга блока', meta: 'Спина', goal: '3х8-10' },
+                { id: 'a2', name: 'Приседания в Смите', meta: 'Ноги', goal: '3х8-10' },
+                { id: 'a3', name: 'Жим штанги лежа', meta: 'Грудь', goal: '3х8-10' }
             ],
-            'B': [
-                { id: 9, name: 'Жим ногами', meta: 'Ноги • 3х10-12', muscle: '🦵' },
-                { id: 10, name: 'Горизонтальная тяга', meta: 'Спина • 3х10-12', muscle: '💪' },
-                { id: 11, name: 'Жим гантелей под углом', meta: 'Верх груди • 3х10-12', muscle: '🔘' },
-                { id: 12, name: 'Бабочка (Сведения)', meta: 'Грудь • 3х12-15', muscle: '🔘' },
-                { id: 13, name: 'Разгибания ног', meta: 'Квадрицепс • 3х12-15', muscle: '🦵' },
-                { id: 14, name: 'Армейский жим', meta: 'Плечи • 3х8-10', muscle: '🔺' },
-                { id: 15, name: 'Сведение + Разведение', meta: 'Бедра • 3х15-20', muscle: '🦵' },
-                { id: 16, name: 'Разгибания рук (Трицепс)', meta: 'Трицепс • 3х12', muscle: '💪' }
+            iso: [
+                { id: 'a4', name: 'Тяга к лицу', meta: 'Задняя дельта', goal: '3х15' },
+                { id: 'a5', name: 'Махи гантелями', meta: 'Плечи', goal: '3х12-15' },
+                { id: 'a6', name: 'Сгибания ног', meta: 'Бицепс бедра', goal: '3х12-15' },
+                { id: 'a7', name: 'Бицепс на накл. скамье', meta: 'Бицепс', goal: '3х10-12' },
+                { id: 'a8', name: 'Подъем ног в висе', meta: 'Пресс', goal: '3х15' }
             ]
-        };
-
-        function renderExercises() {
-            const list = document.getElementById('exercise-list');
-            list.innerHTML = '';
-            completedCount = 0;
-            
-            data[currentDay].forEach(ex => {
-                const card = document.createElement('div');
-                card.className = 'exercise-card';
-                card.onclick = () => toggleExercise(card);
-                card.innerHTML = `
-                    <div class="img-placeholder">📸</div>
-                    <div class="ex-info">
-                        <div class="ex-name">${ex.name}</div>
-                        <div class="ex-meta">
-                            <span class="muscle-img-placeholder"></span> 
-                            ${ex.meta}
-                        </div>
-                    </div>
-                    <div class="check-mark">
-                        <svg width="14" height="11" viewBox="0 0 14 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 5.5L5 9.5L13 1" stroke="black" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-            updateProgress();
+        },
+        'B': {
+            base: [
+                { id: 'b1', name: 'Жим ногами', meta: 'Ноги', goal: '3х10-12' },
+                { id: 'b2', name: 'Горизонтальная тяга', meta: 'Спина', goal: '3х10' },
+                { id: 'b3', name: 'Жим гантелей (наклон)', meta: 'Верх груди', goal: '3х10-12' }
+            ],
+            iso: [
+                { id: 'b4', name: 'Бабочка (Сведения)', meta: 'Грудь', goal: '3х12-15' },
+                { id: 'b5', name: 'Разгибания ног', meta: 'Квадрицепс', goal: '3х12-15' },
+                { id: 'b6', name: 'Армейский жим', meta: 'Плечи', goal: '3х8-10' },
+                { id: 'b7', name: 'Сведения / Разведения', meta: 'Бедра', goal: '3х15-20' },
+                { id: 'b8', name: 'Трицепс на блоке', meta: 'Трицепс', goal: '3х12' }
+            ]
         }
+    };
 
-        function toggleExercise(card) {
-            card.classList.toggle('completed');
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            
-            completedCount = document.querySelectorAll('.completed').length;
-            updateProgress();
-        }
+    function render() {
+        const dayData = program[currentDay];
+        let html = '<div class="section-title">Базовые упражнения</div><div class="exercise-list">';
+        
+        dayData.base.forEach(ex => html += createCard(ex));
+        html += '</div><div class="section-title">Изоляция</div><div class="exercise-list">';
+        dayData.iso.forEach(ex => html += createCard(ex));
+        html += '</div>';
+        
+        content.innerHTML = html;
+        updateProgress();
+    }
 
-        function updateProgress() {
-            const total = data[currentDay].length;
-            const progress = (completedCount / total) * 100;
-            document.getElementById('progress-bar').style.width = progress + '%';
-            
-            if (progress === 100) {
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }
-        }
+    function createCard(ex) {
+        const weight = localStorage.getItem(`w_${ex.id}`) || '0';
+        return `
+            <div class="card" id="card-${ex.id}">
+                <div class="replace-btn" onclick="openReplace(event)">Замена</div>
+                <div class="img-box">📸</div>
+                <div class="info">
+                    <div class="name">${ex.name}</div>
+                    <div class="meta">${ex.meta} • ${ex.goal}</div>
+                </div>
+                <div class="weight-control">
+                    <input type="number" class="weight-val" value="${weight}" 
+                           onchange="saveWeight('${ex.id}', this.value)" 
+                           onclick="event.stopPropagation()">
+                    <span class="weight-unit">кг</span>
+                </div>
+                <div class="check-btn" onclick="toggleDone('${ex.id}')">
+                    <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1" stroke="black" stroke-width="2.5"/></svg>
+                </div>
+            </div>
+        `;
+    }
 
-        function switchDay() {
+    function toggleDone(id) {
+        const el = document.getElementById(`card-${id}`);
+        el.classList.toggle('done');
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        updateProgress();
+    }
+
+    function saveWeight(id, val) {
+        localStorage.setItem(`w_${id}`, val);
+    }
+
+    function updateProgress() {
+        const total = document.querySelectorAll('.card').length;
+        const done = document.querySelectorAll('.card.done').length;
+        const perc = (done / total) * 100;
+        document.getElementById('progress-fill').style.width = perc + '%';
+        document.getElementById('progress-text').innerText = `ПРОГРЕСС ${done}/${total}`;
+    }
+
+    function openReplace(e) {
+        e.stopPropagation();
+        document.getElementById('replace-modal').style.display = 'flex';
+    }
+
+    // SWIPE LOGIC ДЛЯ ХЕДЕРА
+    let touchStartX = 0;
+    const navArea = document.getElementById('nav-area');
+
+    navArea.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+    navArea.addEventListener('touchend', e => {
+        const touchEndX = e.changedTouches[0].clientX;
+        if (Math.abs(touchStartX - touchEndX) > 50) {
             currentDay = currentDay === 'A' ? 'B' : 'A';
-            document.getElementById('current-day-text').innerText = 'DAY ' + currentDay;
+            document.getElementById('day-title').innerText = currentDay;
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            renderExercises();
+            render();
         }
+    });
 
-        function toggleGuide() {
-            const modal = document.getElementById('guide-modal');
-            const isVisible = modal.style.display === 'block';
-            modal.style.display = isVisible ? 'none' : 'block';
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        }
+    render();
+</script>
 
-        // Инициализация
-        renderExercises();
-    </script>
 </body>
 </html>
