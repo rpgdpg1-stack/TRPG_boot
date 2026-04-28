@@ -1,4 +1,16 @@
-<header class="header">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TrainingRPG</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
     <div class="nav-area">
         <div class="days-selector">
             <button onclick="changeDay('A')" id="btn-A" class="day-btn active">A</button>
@@ -11,3 +23,9 @@
         </div>
     </div>
 </header>
+        <div id="exercise-list" class="exercise-list"></div>
+        <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
