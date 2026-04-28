@@ -1,10 +1,10 @@
-// ЗАМЕНИ SHEET_ID и убедись, что GID совпадает с листом program_days
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID = '1002309655'; // Открой лист program_days и скопируй цифры после gid= из URL
-const G_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+const GID_DAYS = '1002309655'; // ТВОЙ GID листа program_days
+const GID_EX = '0';          // ТВОЙ GID листа exercises
 
 const tg = window.Telegram.WebApp;
-let exercises = [];
+let exercisesLibrary = {}; // Тут будут названия и картинки
+let workoutPlan = [];      // Тут будет план на день
 let completedIds = [];
 let currentDay = 'A';
 
@@ -12,61 +12,81 @@ async function init() {
     tg.expand();
     const saved = localStorage.getItem('completed_exercises');
     if (saved) completedIds = JSON.parse(saved);
-    await loadData();
+    await loadFullData();
 }
 
-async function loadData() {
+// Функция для получения данных из конкретного листа
+async function fetchSheet(gid) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+}
+
+async function loadFullData() {
     try {
-        const res = await fetch(G_URL);
-        const text = await res.text();
-        const json = JSON.parse(text.substring(47).slice(0, -2));
-        
-        // Мапим по скриншоту листа program_days
-        exercises = json.table.rows.map((row, idx) => ({
-            id: 'ex-' + idx,
-            day: row.c[2]?.v || 'A',       // Колонка C: day
-            type: row.c[4]?.v || 'base',   // Колонка E: type
-            muscle: row.c[5]?.v || '',     // Колонка F: muscle_group
-            sub: row.c[6]?.v || '',        // Колонка G: sub_group
-            // Название и мета-данные пока берем заглушкой, так как они в другом листе
-            // Или добавь их в этот лист в колонки H, I, J
-            name: "Упражнение", 
-            meta: "3 x 8-10",
-            weight: 0,
-            img: "" 
-        }));
+        // 1. Загружаем библиотеку упражнений (имена, картинки)
+        const exRows = await fetchSheet(GID_EX);
+        exRows.forEach(row => {
+            const id = row.c[0]?.v;
+            if (id) {
+                exercisesLibrary[id] = {
+                    name: row.c[1]?.v || "Упражнение",
+                    muscle: row.c[2]?.v || "",
+                    meta: row.c[6]?.v || "", // meta_info
+                    img: row.c[9]?.v || ""   // preview
+                };
+            }
+        });
+
+        // 2. Загружаем план (какое упражнение в какой день)
+        const dayRows = await fetchSheet(GID_DAYS);
+        workoutPlan = dayRows.map((row, idx) => {
+            const exIdInPlan = row.c[1]?.v; // Колонка program_id или ex_id
+            const details = exercisesLibrary[exIdInPlan] || {};
+            
+            return {
+                id: 'row-' + idx,
+                day: row.c[2]?.v || 'A',
+                type: row.c[4]?.v || 'base',
+                muscle: details.muscle || row.c[5]?.v || '',
+                name: details.name || "Неизвестно",
+                meta: details.meta || "3x10",
+                img: details.img || ""
+            };
+        });
 
         render();
     } catch (e) {
-        console.error("Ошибка:", e);
+        console.error("Ошибка загрузки:", e);
     }
 }
 
 function render() {
     const list = document.getElementById('exercise-list');
-    const filtered = exercises.filter(ex => ex.day === currentDay);
+    const filtered = workoutPlan.filter(ex => ex.day === currentDay);
     
     let html = '';
-    const sections = ['base', 'isolation', 'accessory']; // Типы как на скриншоте
+    const sections = ['base', 'isolation', 'accessory'];
 
     sections.forEach(sec => {
         const secEx = filtered.filter(ex => ex.type === sec);
         if (secEx.length > 0) {
-            html += `<div class="section-title">${sec}</div>`;
+            html += `<div class="section-title">${sec.toUpperCase()}</div>`;
             secEx.forEach(ex => {
                 const isDone = completedIds.includes(ex.id);
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" id="${ex.id}" onclick="toggleCard('${ex.id}')">
                         <div class="img-box">
-                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=${ex.muscle}'">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=FIT'">
                         </div>
                         <div class="info">
-                            <div class="cat-label">${ex.muscle} (${ex.sub})</div>
+                            <div class="cat-label">${ex.muscle}</div>
                             <div class="name">${ex.name}</div>
                             <div class="meta">${ex.meta}</div>
                         </div>
                         <div class="weight-control" onclick="event.stopPropagation()">
-                            <input type="number" class="weight-val" value="${ex.weight}">
+                            <input type="number" class="weight-val" placeholder="0">
                             <div class="weight-unit">KG</div>
                         </div>
                     </div>
@@ -75,7 +95,7 @@ function render() {
         }
     });
 
-    list.innerHTML = html || `<p style="text-align:center; margin-top:20px;">Нет данных для дня ${currentDay}</p>`;
+    list.innerHTML = html || `<p style="color:gray; text-align:center; padding:20px;">Нет данных для дня ${currentDay}</p>`;
     updateProgress();
 }
 
@@ -92,7 +112,7 @@ function toggleCard(id) {
 }
 
 function updateProgress() {
-    const dayEx = exercises.filter(ex => ex.day === currentDay);
+    const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
     const total = dayEx.length;
     const done = dayEx.filter(ex => completedIds.includes(ex.id)).length;
     const perc = total > 0 ? (done / total) * 100 : 0;
