@@ -5,329 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TrainingRPG</title>
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --bg: #0C0C0C;
-            --accent: #AAD066;
-            --card: #222222;
-            --text: #FFFFFF;
-            --muted: #888888;
-            --border: #333333;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: 'Manrope', sans-serif; padding: 0 16px 40px; min-height: 100vh; }
-
-        .header {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            z-index: 100;
-            padding: 25px 0 15px;
-            user-select: none;
-        }
-
-        .nav-area { display: flex; flex-direction: column; align-items: center; }
-
-        .day-title {
-            font-family: 'Tiny5', sans-serif;
-            font-size: 72px;
-            color: var(--accent);
-            line-height: 0.8;
-            margin-bottom: 20px;
-        }
-
-        .progress-wrapper {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 4px;
-        }
-
-        .progress-label { font-size: 11px; color: var(--muted); white-space: nowrap; font-weight: 800; letter-spacing: 1px; }
-
-        .progress-bar-bg {
-            flex-grow: 1;
-            height: 4px;
-            background: var(--border);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        #progress-fill {
-            width: 0%;
-            height: 100%;
-            background: var(--accent);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .section-title {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--accent);
-            margin: 35px 0 15px 4px;
-            font-weight: 800;
-            opacity: 0.6;
-        }
-
-        .exercise-list { display: flex; flex-direction: column; gap: 12px; }
-
-        /* CARDS (150px) */
-        .card {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            height: 150px;
-            position: relative;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        /* Эффект затемнения при нажатии */
-        .card.done {
-            opacity: 0.3;
-            filter: grayscale(1);
-            border-color: transparent;
-        }
-
-        .img-box {
-            width: 95px;
-            height: 95px;
-            background: #111;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border: 1px solid var(--border);
-            margin-right: 20px;
-        }
-
-        .info { 
-            flex-grow: 1; 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .name { 
-            font-size: 15px; 
-            font-weight: 800; 
-            margin-bottom: 4px; 
-            line-height: 1.3;
-            padding-right: 10px;
-        }
-
-        .meta { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* WEIGHT CONTROL ПРИЖАТ К ПРАВОМУ КРАЮ */
-        .weight-control {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: center;
-            min-width: 70px;
-            margin-left: auto;
-        }
-
-        .weight-val {
-            font-size: 28px;
-            font-weight: 900;
-            color: var(--accent);
-            background: transparent;
-            border: none;
-            width: 100%;
-            text-align: right;
-            outline: none;
-            font-family: 'Manrope', sans-serif;
-            padding-right: 2px;
-        }
-
-        .weight-unit { font-size: 9px; color: var(--muted); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
-
-        /* REPLACE BUTTON (Сетка в углу) */
-        .replace-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            color: var(--muted);
-            cursor: pointer;
-            padding: 4px;
-            z-index: 10;
-            transition: color 0.2s;
-        }
-        
-        .replace-btn svg { width: 16px; height: 16px; fill: currentColor; }
-        .replace-btn:active { color: var(--accent); }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.96);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(10px);
-        }
-    </style>
 </head>
-<body onclick="blurAllInputs(event)">
+<body>
+    <div id="app">
+        <div id="screen-programs" class="screen hidden">
+            <h1 class="font-tiny">PROGRAMS</h1>
+            <div class="program-card" onclick="selectProgram('gym')">
+                <div class="program-icon">🏋️‍♂️</div>
+                <span>СПОРТЗАЛ</span>
+            </div>
+            <div class="program-card" onclick="selectProgram('pool')">
+                <div class="program-icon">🏊‍♂️</div>
+                <span>БАССЕЙН</span>
+            </div>
+        </div>
 
-<div class="header">
-    <div class="nav-area" id="nav-area">
-        <div class="day-title" id="day-title">A</div>
-        <div class="progress-wrapper">
-            <span class="progress-label" id="progress-text">0 / 8 DONE</span>
-            <div class="progress-bar-bg">
-                <div id="progress-fill"></div>
+        <div id="screen-training" class="screen">
+            <header class="header">
+                <div class="day-selector" onclick="toggleDayPicker()">
+                    <h1 id="current-day-label" class="font-tiny">A</h1>
+                </div>
+                
+                <div class="progress-container">
+                    <span id="progress-text" class="progress-label">0 / 0</span>
+                    <div class="progress-bar">
+                        <div id="progress-fill"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="exercise-list" class="exercise-list">
+                </div>
+
+            <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+        </div>
+
+        <nav class="tab-bar">
+            <div class="tab-item" onclick="showScreen('programs')">🏠</div>
+            <div class="tab-item active">🔥</div>
+            <div class="tab-item">⚙️</div>
+        </nav>
+
+        <div id="modal-congrats" class="modal hidden" onclick="closeCongrats()">
+            <div class="modal-content">
+                <img src="https://cdn.selectel.ru/your-congrats-image.png" alt="Done">
+                <h2>КРАСАВА!</h2>
+                <p>Тренировка завершена успешно.</p>
+                <button onclick="closeCongrats()">ОК</button>
             </div>
         </div>
     </div>
-</div>
-
-<div id="workout-content"></div>
-
-<div class="modal" id="replace-modal" onclick="this.style.display='none'">
-    <div style="width: 90%;">
-        <p style="text-align: center; margin-bottom: 24px; font-size: 12px; color: var(--accent); font-weight: 800; letter-spacing: 2px;">ВЫБЕРИТЕ ЗАМЕНУ</p>
-        <div class="card" style="opacity: 1; height: 150px;">
-            <div class="img-box">📸</div>
-            <div class="info">
-                <div class="name">Альтернатива</div>
-                <div class="meta">Библиотека пуста</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram.WebApp;
-    const content = document.getElementById('workout-content');
-    let currentDay = 'A';
-
-    const program = {
-        'A': {
-            base: [
-                { id: 'a1', name: 'Подтягивания / Тяга блока', meta: 'Спина • 3х8-10' },
-                { id: 'a2', name: 'Приседания в Смите', meta: 'Ноги • 3х8-10' },
-                { id: 'a3', name: 'Жим штанги лежа', meta: 'Грудь • 3х8-10' }
-            ],
-            iso: [
-                { id: 'a4', name: 'Тяга к лицу (Face Pull)', meta: 'Задняя дельта • 3х15' },
-                { id: 'a5', name: 'Махи гантелями в стороны', meta: 'Плечи • 3х12-15' },
-                { id: 'a6', name: 'Сгибания ног сидя', meta: 'Бицепс бедра • 3х12-15' },
-                { id: 'a7', name: 'Бицепс на наклонной скамье', meta: 'Бицепс • 3х10-12' },
-                { id: 'a8', name: 'Подъем ног в висе', meta: 'Пресс • 3х15' }
-            ]
-        },
-        'B': {
-            base: [
-                { id: 'b1', name: 'Жим ногами в тренажере', meta: 'Ноги • 3х10-12' },
-                { id: 'b2', name: 'Горизонтальная тяга блока', meta: 'Спина • 3х10' },
-                { id: 'b3', name: 'Жим гантелей (30° наклон)', meta: 'Верх груди • 3х10-12' }
-            ],
-            iso: [
-                { id: 'b4', name: 'Бабочка (Сведения в трен)', meta: 'Грудь • 3х12-15' },
-                { id: 'b5', name: 'Разгибания ног сидя', meta: 'Квадрицепс • 3х12-15' },
-                { id: 'b6', name: 'Армейский жим гантелей', meta: 'Плечи • 3х8-10' },
-                { id: 'b7', name: 'Сведения / Разведения ног', meta: 'Бедра • 3х15-20' },
-                { id: 'b8', name: 'Трицепс на блоке', meta: 'Трицепс • 3х12' }
-            ]
-        }
-    };
-
-    function render() {
-        const dayData = program[currentDay];
-        let html = '<div class="section-title">Power Base</div><div class="exercise-list">';
-        dayData.base.forEach(ex => html += createCard(ex));
-        html += '</div><div class="section-title">Isolate & Form</div><div class="exercise-list">';
-        dayData.iso.forEach(ex => html += createCard(ex));
-        html += '</div>';
-        content.innerHTML = html;
-        updateProgress();
-    }
-
-    function createCard(ex) {
-        const weight = localStorage.getItem(`w_${ex.id}`) || '0';
-        return `
-            <div class="card" id="card-${ex.id}" onclick="toggleDone(event, '${ex.id}')">
-                <div class="replace-btn" onclick="openReplace(event)">
-                    <svg viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>
-                </div>
-                <div class="img-box">📸</div>
-                <div class="info">
-                    <div class="name">${ex.name}</div>
-                    <div class="meta">${ex.meta}</div>
-                </div>
-                <div class="weight-control" onclick="event.stopPropagation()">
-                    <input type="number" 
-                           inputmode="decimal" 
-                           class="weight-val" 
-                           value="${weight}" 
-                           onchange="saveWeight('${ex.id}', this.value)" 
-                           onkeydown="handleKey(event)">
-                    <span class="weight-unit">KG</span>
-                </div>
-            </div>
-        `;
-    }
-
-    function toggleDone(event, id) {
-        // Если клик по инпуту — ничего не делаем
-        if (event.target.tagName === 'INPUT') return;
-        
-        const el = document.getElementById(`card-${id}`);
-        el.classList.toggle('done');
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        updateProgress();
-    }
-
-    function saveWeight(id, val) { localStorage.setItem(`w_${id}`, val); }
-
-    function handleKey(e) { if (e.key === 'Enter') e.target.blur(); }
-    
-    function blurAllInputs(e) {
-        if (e.target.tagName !== 'INPUT') {
-            document.querySelectorAll('input').forEach(i => i.blur());
-        }
-    }
-
-    function updateProgress() {
-        const total = document.querySelectorAll('.card').length;
-        const done = document.querySelectorAll('.card.done').length;
-        const perc = (done / total) * 100;
-        document.getElementById('progress-fill').style.width = perc + '%';
-        document.getElementById('progress-text').innerText = `${done} / ${total} DONE`;
-    }
-
-    function openReplace(e) {
-        e.stopPropagation();
-        document.getElementById('replace-modal').style.display = 'flex';
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    }
-
-    let touchStartX = 0;
-    const navArea = document.getElementById('nav-area');
-    navArea.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
-    navArea.addEventListener('touchend', e => {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(dx) > 70) {
-            currentDay = currentDay === 'A' ? 'B' : 'A';
-            document.getElementById('day-title').innerText = currentDay;
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            render();
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        }
-    });
-
-    render();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
