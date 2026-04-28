@@ -12,26 +12,29 @@
     <div id="app">
         <header class="header">
             <div class="nav-area">
-                <div class="days-selector">
-                    <button onclick="changeDay('A')" id="btn-A" class="day-btn active">A</button>
-                    <button onclick="changeDay('B')" id="btn-B" class="day-btn">B</button>
-                    <button onclick="changeDay('C')" id="btn-C" class="day-btn">C</button>
-                </div>
+                <div class="day-title" id="day-display" onclick="openDayPicker()">A</div>
                 <div class="progress-wrapper">
-                    <div class="progress-info">
-                        <span class="progress-label" id="progress-text">0 / 0 DONE</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div id="progress-fill"></div>
-                    </div>
+                    <span class="progress-label" id="progress-text">0 / 0 DONE</span>
+                    <div class="progress-bar-bg"><div id="progress-fill"></div></div>
                 </div>
             </div>
         </header>
 
-        <div id="exercise-list" class="exercise-list">
-            </div>
+        <div id="exercise-list" class="exercise-list"></div>
 
         <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+
+        <div id="day-picker" class="modal-overlay hidden" onclick="closeDayPicker()">
+            <div class="bottom-sheet" onclick="event.stopPropagation()">
+                <div class="sheet-line"></div>
+                <div class="sheet-title">ВЫБЕРИ ДЕНЬ</div>
+                <div class="days-grid">
+                    <button onclick="changeDay('A')">A</button>
+                    <button onclick="changeDay('B')">B</button>
+                    <button onclick="changeDay('C')">C</button>
+                </div>
+            </div>
+        </div>
 
         <nav class="tab-bar">
             <div class="tab-item">🏠</div>
@@ -39,7 +42,6 @@
             <div class="tab-item">⚙️</div>
         </nav>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
