@@ -1,18 +1,14 @@
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID_DAYS = '1002309655'; 
+const GID_DAYS = '1002309655'; // ТВОЙ ИД ПРОГРАМ ДЕЙС
 const GID_EX = '0';          
 
 const tg = window.Telegram?.WebApp;
-let exercisesLibrary = []; 
 let workoutPlan = [];      
 let completedIds = [];
 let currentDay = 'A';
 
 async function init() {
-    if (tg) {
-        tg.expand();
-        tg.ready();
-    }
+    if (tg) { tg.expand(); tg.ready(); }
     const saved = localStorage.getItem('completed_exercises');
     if (saved) completedIds = JSON.parse(saved);
     await loadFullData();
@@ -28,12 +24,10 @@ async function fetchSheet(gid) {
 async function loadFullData() {
     try {
         const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
-
-        // Библиотека упражнений
-        exercisesLibrary = exRows.filter(r => r.c[0]?.v).map(row => ({
-            id: row.c[0]?.v,
-            name: row.c[1]?.v || "Упражнение",
-            muscle: row.c[2]?.v || "",
+        
+        const library = exRows.filter(r => r.c[0]?.v).map(row => ({
+            name: row.c[1]?.v,
+            muscle: row.c[2]?.v,
             sub: String(row.c[3]?.v || "").trim().toLowerCase(),
             type: String(row.c[4]?.v || "base").toLowerCase(),
             meta: row.c[6]?.v || "",
@@ -41,88 +35,71 @@ async function loadFullData() {
             img: row.c[9]?.v || ""
         }));
 
-        // План тренировок
         workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
-            const subGroup = String(row.c[6]?.v || "").trim().toLowerCase();
-            const day = String(row.c[2]?.v || 'A').toUpperCase();
-            const type = String(row.c[4]?.v || 'base').toLowerCase();
-
-            const alts = exercisesLibrary
-                .filter(ex => ex.sub === subGroup)
-                .sort((a, b) => a.priority - b.priority);
-
+            const sub = String(row.c[6]?.v || "").trim().toLowerCase();
+            const alts = library.filter(ex => ex.sub === sub).sort((a,b) => a.priority - b.priority);
             return {
                 rowId: 'row-' + idx,
-                day: day,
-                type: type,
-                main: alts[0] || { name: "Не найдено", muscle: "None", sub: subGroup, meta: "" },
-                alternatives: alts.slice(1)
+                day: String(row.c[2]?.v).toUpperCase(),
+                type: String(row.c[4]?.v || 'base').toLowerCase(),
+                main: alts[0] || { name: "Не найдено", muscle: "Error", sub: sub },
+                sub: sub
             };
         });
-
         render();
-    } catch (e) {
-        console.error("Ошибка загрузки:", e);
-    }
-}
-
-function changeDay(day) {
-    currentDay = day;
-    document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-${day}`).classList.add('active');
-    render();
+    } catch (e) { console.error(e); }
 }
 
 function render() {
     const list = document.getElementById('exercise-list');
-    const filtered = workoutPlan.filter(item => item.day === currentDay);
+    document.getElementById('day-display').innerText = currentDay;
+    const filtered = workoutPlan.filter(it => it.day === currentDay);
     
     let html = '';
-    const sections = ['base', 'isolation', 'accessory'];
-
-    sections.forEach(sec => {
+    ['base', 'isolation', 'accessory'].forEach(sec => {
         const items = filtered.filter(it => it.type === sec);
         if (items.length > 0) {
-            html += `<div class="section-title">${sec}</div>`;
+            html += `<div class="section-title">${sec.toUpperCase()}</div>`;
             items.forEach(item => {
-                const ex = item.main;
                 const isDone = completedIds.includes(item.rowId);
-                const weight = ex.meta ? (ex.meta.match(/\d+/)?.[0] || "0") : "0";
-
+                const weight = item.main.meta ? (item.main.meta.match(/\d+/)?.[0] || "0") : "0";
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" onclick="toggleCard('${item.rowId}')">
-                        <div class="info-btn" onclick="event.stopPropagation(); alert('Info about ${ex.name}')">i</div>
-                        <div class="img-box">
-                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=FIT'">
-                        </div>
+                        <div class="info-btn">i</div>
+                        <div class="img-box"><img src="${item.main.img}"></div>
                         <div class="info-content">
-                            <div class="muscle-group-row">
-                                <span class="muscle-label">${ex.muscle}</span>
-                                <span class="subgroup-label">${ex.sub}</span>
+                            <div class="muscle-row">
+                                <span class="m-group">${item.main.muscle}</span>
+                                <span class="s-group">${item.sub}</span>
                             </div>
-                            <div class="ex-name">${ex.name}</div>
-                            <div class="sets-label">${ex.meta || '3 x 10'}</div>
+                            <div class="ex-name">${item.main.name}</div>
+                            <div class="ex-meta">${item.main.meta || '3 x 10'}</div>
                         </div>
-                        <div class="weight-area">
-                            <div class="weight-num">${weight}</div>
-                            <div class="weight-unit">KG</div>
+                        <div class="weight-box">
+                            <div class="w-num">${weight}</div>
+                            <div class="w-unit">KG</div>
                         </div>
                     </div>`;
             });
         }
     });
-    list.innerHTML = html || `<p style="text-align:center; color:#555; margin-top:50px;">REST DAY</p>`;
+    list.innerHTML = html || `<p style="text-align:center; color:#555;">REST DAY</p>`;
     updateProgress();
 }
 
 function toggleCard(id) {
-    if (completedIds.includes(id)) {
-        completedIds = completedIds.filter(i => i !== id);
-    } else {
-        completedIds.push(id);
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    }
+    completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    render();
+}
+
+function openDayPicker() { document.getElementById('day-picker').classList.remove('hidden'); }
+function closeDayPicker() { document.getElementById('day-picker').classList.add('hidden'); }
+
+function changeDay(day) {
+    currentDay = day;
+    closeDayPicker();
     render();
 }
 
