@@ -1,5 +1,7 @@
+// ЗАМЕНИ SHEET_ID и убедись, что GID совпадает с листом program_days
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const G_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const GID = '1002309655'; // Открой лист program_days и скопируй цифры после gid= из URL
+const G_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
 
 const tg = window.Telegram.WebApp;
 let exercises = [];
@@ -8,10 +10,8 @@ let currentDay = 'A';
 
 async function init() {
     tg.expand();
-    // Грузим прогресс из локального хранилища (пока без облака для простоты)
     const saved = localStorage.getItem('completed_exercises');
     if (saved) completedIds = JSON.parse(saved);
-    
     await loadData();
 }
 
@@ -19,22 +19,26 @@ async function loadData() {
     try {
         const res = await fetch(G_URL);
         const text = await res.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const json = JSON.parse(text.substring(47).slice(0, -2));
         
+        // Мапим по скриншоту листа program_days
         exercises = json.table.rows.map((row, idx) => ({
             id: 'ex-' + idx,
-            type: row.c[2]?.v, // База / Изоляция
-            day: row.c[1]?.v,
-            name: row.c[4]?.v,
-            muscle: row.c[5]?.v,
-            meta: row.c[7]?.v,
-            weight: row.c[8]?.v || 0,
-            img: row.c[9]?.v // Ссылка на Selectel
+            day: row.c[2]?.v || 'A',       // Колонка C: day
+            type: row.c[4]?.v || 'base',   // Колонка E: type
+            muscle: row.c[5]?.v || '',     // Колонка F: muscle_group
+            sub: row.c[6]?.v || '',        // Колонка G: sub_group
+            // Название и мета-данные пока берем заглушкой, так как они в другом листе
+            // Или добавь их в этот лист в колонки H, I, J
+            name: "Упражнение", 
+            meta: "3 x 8-10",
+            weight: 0,
+            img: "" 
         }));
 
         render();
     } catch (e) {
-        console.error("Ошибка данных:", e);
+        console.error("Ошибка:", e);
     }
 }
 
@@ -43,27 +47,26 @@ function render() {
     const filtered = exercises.filter(ex => ex.day === currentDay);
     
     let html = '';
-    // Группировка по типам
-    const types = ['БАЗА', 'ИЗОЛЯЦИЯ'];
-    
-    types.forEach(type => {
-        const typeEx = filtered.filter(ex => ex.type?.toUpperCase() === type);
-        if (typeEx.length > 0) {
-            html += `<div class="section-title">${type}</div>`;
-            typeEx.forEach(ex => {
+    const sections = ['base', 'isolation', 'accessory']; // Типы как на скриншоте
+
+    sections.forEach(sec => {
+        const secEx = filtered.filter(ex => ex.type === sec);
+        if (secEx.length > 0) {
+            html += `<div class="section-title">${sec}</div>`;
+            secEx.forEach(ex => {
                 const isDone = completedIds.includes(ex.id);
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" id="${ex.id}" onclick="toggleCard('${ex.id}')">
                         <div class="img-box">
-                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150'">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=${ex.muscle}'">
                         </div>
                         <div class="info">
-                            <div class="cat-label">${ex.muscle}</div>
+                            <div class="cat-label">${ex.muscle} (${ex.sub})</div>
                             <div class="name">${ex.name}</div>
                             <div class="meta">${ex.meta}</div>
                         </div>
                         <div class="weight-control" onclick="event.stopPropagation()">
-                            <input type="number" class="weight-val" value="${ex.weight}" onchange="saveWeight('${ex.id}', this.value)">
+                            <input type="number" class="weight-val" value="${ex.weight}">
                             <div class="weight-unit">KG</div>
                         </div>
                     </div>
@@ -72,7 +75,7 @@ function render() {
         }
     });
 
-    list.innerHTML = html;
+    list.innerHTML = html || `<p style="text-align:center; margin-top:20px;">Нет данных для дня ${currentDay}</p>`;
     updateProgress();
 }
 
@@ -89,26 +92,12 @@ function toggleCard(id) {
 }
 
 function updateProgress() {
-    const total = exercises.filter(ex => ex.day === currentDay).length;
-    const done = completedIds.filter(id => {
-        return exercises.find(ex => ex.id === id && ex.day === currentDay);
-    }).length;
-    
+    const dayEx = exercises.filter(ex => ex.day === currentDay);
+    const total = dayEx.length;
+    const done = dayEx.filter(ex => completedIds.includes(ex.id)).length;
     const perc = total > 0 ? (done / total) * 100 : 0;
     document.getElementById('progress-fill').style.width = perc + '%';
     document.getElementById('progress-text').innerText = `${done} / ${total} DONE`;
-}
-
-function finishWorkout() {
-    document.getElementById('modal-congrats').classList.remove('hidden');
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-}
-
-function closeModal() {
-    document.getElementById('modal-congrats').classList.add('hidden');
-    completedIds = [];
-    localStorage.removeItem('completed_exercises');
-    render();
 }
 
 init();
