@@ -2,88 +2,138 @@ const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
 const GID_DAYS = '1002309655'; 
 const GID_EX = '0';          
 
-const tg = window.Telegram.WebApp;
+// Защита: проверяем наличие Telegram WebApp
+const tg = window.Telegram?.WebApp;
+
+let exercisesLibrary = []; 
 let workoutPlan = [];      
 let completedIds = [];
+let currentDay = 'A';
+
+async function init() {
+    if (tg) {
+        tg.expand();
+        tg.ready();
+    }
+    await loadFullData();
+}
+
+async function fetchSheet(gid) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+}
 
 async function loadFullData() {
-    const listContainer = document.getElementById('exercise-list');
+    const container = document.getElementById('exercise-list');
     try {
-        const [exRows, dayRows] = await Promise.all([
-            fetchSheet(GID_EX),
-            fetchSheet(GID_DAYS)
-        ]);
+        const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
 
-        // Собираем библиотеку упражнений
-        const library = exRows.filter(r => r.c[0]?.v).map(row => ({
-            name: row.c[1]?.v,
-            sub: String(row.c[3]?.v || "").trim().toLowerCase(),
-            priority: parseInt(row.c[8]?.v) || 99,
-            img: row.c[9]?.v || "",
-            meta: row.c[6]?.v || ""
+        // 1. Собираем библиотеку упражнений
+        exercisesLibrary = exRows.filter(r => r.c[0]?.v).map(row => ({
+            id: row.c[0]?.v,
+            name: row.c[1]?.v || "Упражнение",
+            muscle: row.c[2]?.v || "",
+            sub: String(row.c[3]?.v || "").trim().toLowerCase(), // Колонка D: sub_group
+            type: String(row.c[4]?.v || "base").toLowerCase(),
+            meta: row.c[6]?.v || "",
+            priority: parseInt(row.c[8]?.v) || 99, // Колонка I: Priority
+            img: row.c[9]?.v || "" // Колонка J: preview
         }));
 
-        // Собираем план, сопоставляя по sub_group
+        // 2. Собираем план тренировки
         workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
-            const subFromSheet = String(row.c[6]?.v || "").trim().toLowerCase();
-            const alts = library
-                .filter(ex => ex.sub === subFromSheet)
+            const subGroup = String(row.c[6]?.v || "").trim().toLowerCase(); // Колонка G: sub_group
+            const day = String(row.c[2]?.v || 'A').toUpperCase();
+
+            // Ищем все упражнения для этой подгруппы и сортируем по приоритету
+            const alts = exercisesLibrary
+                .filter(ex => ex.sub === subGroup)
                 .sort((a, b) => a.priority - b.priority);
 
             return {
                 rowId: 'row-' + idx,
-                day: String(row.c[2]?.v).toUpperCase(),
-                type: String(row.c[4]?.v || "base").toLowerCase(),
-                main: alts[0] || null,
-                sub: subFromSheet
+                day: day,
+                type: String(row.c[4]?.v || 'base').toLowerCase(),
+                main: alts[0] || { name: "Не найдено: " + subGroup, muscle: "Error" },
+                alternatives: alts.slice(1)
             };
         });
 
         render();
     } catch (e) {
-        listContainer.innerHTML = `<div style="color:red; padding:20px;">Ошибка: ${e.message}. Проверь GID и доступ к таблице!</div>`;
+        console.error(e);
+        container.innerHTML = `<div style="color:red; padding:20px;">Ошибка: ${e.message}</div>`;
     }
-}
-
-async function fetchSheet(gid) {
-    const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`);
-    if (!res.ok) throw new Error("Таблица недоступна");
-    const text = await res.text();
-    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
 }
 
 function render() {
     const list = document.getElementById('exercise-list');
-    const filtered = workoutPlan.filter(item => item.day === 'A');
+    const filtered = workoutPlan.filter(item => item.day === currentDay);
     
     if (filtered.length === 0) {
-        list.innerHTML = `<p style="text-align:center; padding:20px; color:gray;">Нет данных для дня A. Проверь колонку 'day' в таблице.</p>`;
+        list.innerHTML = `<p style="text-align:center; padding:50px;">Нет упражнений для дня ${currentDay}</p>`;
         return;
     }
 
-    list.innerHTML = filtered.map(item => {
-        if (!item.main) return `<div class="card" style="border:1px dashed red;">Не найдено упражнение для подгруппы: ${item.sub}</div>`;
-        const isDone = completedIds.includes(item.rowId);
-        return `
-            <div class="card ${isDone ? 'done' : ''}" id="${item.rowId}">
-                <div class="img-box" onclick="toggleCard('${item.rowId}')">
-                    <img src="${item.main.img}" onerror="this.src='https://via.placeholder.com/150?text=GYM'">
-                </div>
-                <div class="info" onclick="toggleCard('${item.rowId}')">
-                    <div class="cat-label">${item.main.sub}</div>
-                    <div class="name">${item.main.name}</div>
-                    <div class="meta">${item.main.meta}</div>
-                </div>
-            </div>`;
-    }).join('');
+    let html = '';
+    const sections = ['base', 'isolation', 'accessory'];
+
+    sections.forEach(sec => {
+        const items = filtered.filter(it => it.type === sec);
+        if (items.length > 0) {
+            html += `<div class="section-title">${sec}</div>`;
+            items.forEach(item => {
+                const ex = item.main;
+                const isDone = completedIds.includes(item.rowId);
+                html += `
+                    <div class="card ${isDone ? 'done' : ''}" onclick="toggleCard('${item.rowId}')">
+                        <div class="img-box">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=GYM'">
+                        </div>
+                        <div class="info">
+                            <div class="cat-label">${ex.muscle} (${item.main.sub})</div>
+                            <div class="name">${ex.name}</div>
+                            <div class="meta">${ex.meta}</div>
+                        </div>
+                        <div class="side-controls" onclick="event.stopPropagation()">
+                            <button class="replace-btn" onclick="showAlternatives('${item.rowId}')">🔄</button>
+                            <div class="weight-control">
+                                <input type="number" class="weight-val" placeholder="0">
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+    });
+    list.innerHTML = html;
+    updateProgress();
+}
+
+function showAlternatives(rowId) {
+    const item = workoutPlan.find(p => p.rowId === rowId);
+    if (item && item.alternatives.length > 0) {
+        const current = item.main;
+        item.main = item.alternatives.shift();
+        item.alternatives.push(current);
+        render();
+    }
 }
 
 function toggleCard(id) {
     completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
+    localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
 }
 
-window.onload = () => {
-    tg.expand();
-    loadFullData();
-};
+function updateProgress() {
+    const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
+    const done = dayEx.filter(ex => completedIds.includes(ex.rowId)).length;
+    const perc = dayEx.length > 0 ? (done / dayEx.length) * 100 : 0;
+    document.getElementById('progress-fill').style.width = perc + '%';
+    document.getElementById('progress-text').innerText = `${done} / ${dayEx.length} DONE`;
+}
+
+// Запуск после полной загрузки страницы
+window.addEventListener('load', init);
