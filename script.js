@@ -1,6 +1,6 @@
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID_DAYS = '1002309655'; // Лист program_days
-const GID_EX = '0';          // Лист exercises (ID может быть другим, проверь!)
+const GID_DAYS = '1002309655'; // ЗАМЕНИ НА СВОЙ GID листа program_days
+const GID_EX = '0';          // ЗАМЕНИ НА СВОЙ GID листа exercises
 
 const tg = window.Telegram.WebApp;
 let exercisesLibrary = []; 
@@ -10,6 +10,9 @@ let currentDay = 'A';
 
 async function init() {
     tg.expand();
+    tg.ready();
+    const saved = localStorage.getItem('completed_exercises');
+    if (saved) completedIds = JSON.parse(saved);
     await loadFullData();
 }
 
@@ -22,7 +25,7 @@ async function fetchSheet(gid) {
 
 async function loadFullData() {
     try {
-        // 1. Загружаем все упражнения и сортируем их по приоритету
+        // 1. Загружаем библиотеку упражнений
         const exRows = await fetchSheet(GID_EX);
         exercisesLibrary = exRows.map(row => ({
             id: row.c[0]?.v,
@@ -31,28 +34,26 @@ async function loadFullData() {
             sub: row.c[3]?.v || "",
             type: row.c[4]?.v || "base",
             meta: row.c[6]?.v || "",
-            priority: parseInt(row.c[8]?.v) || 99, // Колонка I: Priority
+            priority: parseInt(row.c[8]?.v) || 99,
             img: row.c[9]?.v || ""
         })).sort((a, b) => a.priority - b.priority);
 
-        // 2. Загружаем план на день
+        // 2. Загружаем план и подставляем лучшие упражнения по приоритету
         const dayRows = await fetchSheet(GID_DAYS);
         workoutPlan = dayRows.map((row, idx) => {
             const day = row.c[2]?.v || 'A';
-            const subGroup = row.c[6]?.v; // Колонка G в program_days: sub_group
+            const subGroup = row.c[6]?.v; 
             
-            // Ищем все упражнения из этой подгруппы в библиотеке
             const alternatives = exercisesLibrary.filter(ex => ex.sub === subGroup);
-            // Основное упражнение — это первое по приоритету (уже отсортировано выше)
-            const mainEx = alternatives[0] || {};
+            const mainEx = alternatives[0] || { name: "Не найдено", muscle: subGroup };
 
             return {
                 rowId: 'row-' + idx,
-                day: day,
-                type: row.c[4]?.v || 'base',
+                day: day.toUpperCase(),
+                type: (row.c[4]?.v || 'base').toLowerCase(),
                 sub: subGroup,
                 main: mainEx,
-                alternatives: alternatives.slice(1) // Остальные пойдут в замены
+                alternatives: alternatives.slice(1)
             };
         });
 
@@ -72,23 +73,22 @@ function render() {
     sections.forEach(sec => {
         const secEx = filtered.filter(ex => ex.type === sec);
         if (secEx.length > 0) {
-            html += `<div class="section-title">${sec.toUpperCase()}</div>`;
+            html += `<div class="section-title">${sec}</div>`;
             secEx.forEach(item => {
                 const ex = item.main;
                 const isDone = completedIds.includes(item.rowId);
-                
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" id="${item.rowId}">
                         <div class="img-box" onclick="toggleCard('${item.rowId}')">
-                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=${ex.sub}'">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=FIT'">
                         </div>
                         <div class="info" onclick="toggleCard('${item.rowId}')">
-                            <div class="cat-label">${ex.muscle} (${ex.sub})</div>
+                            <div class="cat-label">${ex.muscle} (${item.sub})</div>
                             <div class="name">${ex.name}</div>
                             <div class="meta">${ex.meta}</div>
                         </div>
                         <div class="side-controls">
-                            <div class="replace-btn" onclick="showAlternatives('${item.rowId}')">🔄</div>
+                            <button class="replace-btn" onclick="showAlternatives('${item.rowId}')">🔄</button>
                             <div class="weight-control">
                                 <input type="number" class="weight-val" placeholder="0">
                             </div>
@@ -99,24 +99,18 @@ function render() {
         }
     });
 
-    list.innerHTML = html || `<p style="text-align:center; padding:20px;">План пуст</p>`;
+    list.innerHTML = html || `<p style="text-align:center; padding:50px; color:gray;">План на день ${currentDay} пуст</p>`;
     updateProgress();
 }
 
 function showAlternatives(rowId) {
     const item = workoutPlan.find(p => p.rowId === rowId);
-    if (!item || item.alternatives.length === 0) {
-        alert("Нет замен для этой подгруппы");
-        return;
+    if (item && item.alternatives.length > 0) {
+        const oldMain = item.main;
+        item.main = item.alternatives.shift();
+        item.alternatives.push(oldMain);
+        render();
     }
-    
-    // Простая логика: при клике на 🔄 мы просто меняем основное упражнение на следующее по списку
-    const current = item.main;
-    item.alternatives.push(current); // Старое в конец списка
-    item.main = item.alternatives.shift(); // Новое из начала списка
-    
-    render(); // Перерисовываем
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 }
 
 function toggleCard(id) {
@@ -124,7 +118,6 @@ function toggleCard(id) {
         completedIds = completedIds.filter(i => i !== id);
     } else {
         completedIds.push(id);
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
