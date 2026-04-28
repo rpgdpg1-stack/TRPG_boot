@@ -1,111 +1,114 @@
-const tg = window.Telegram.WebApp;
-const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk'; // Замени на свой
+const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
 const G_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
+const tg = window.Telegram.WebApp;
 let exercises = [];
 let completedIds = [];
-
-// Инициализация ТГ
-tg.expand();
-tg.ready();
+let currentDay = 'A';
 
 async function init() {
-    // 1. Грузим прогресс из облака ТГ
-    tg.CloudStorage.getItem('completed_ids', (err, value) => {
-        if (value) completedIds = JSON.parse(value);
-        loadTable();
-    });
+    tg.expand();
+    // Грузим прогресс из локального хранилища (пока без облака для простоты)
+    const saved = localStorage.getItem('completed_exercises');
+    if (saved) completedIds = JSON.parse(saved);
+    
+    await loadData();
 }
 
-async function loadTable() {
+async function loadData() {
     try {
-        const response = await fetch(G_URL);
-        const text = await response.text();
+        const res = await fetch(G_URL);
+        const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
-        exercises = json.table.rows.map((row, index) => ({
-            id: index,
-            program: row.c[0]?.v,
+        exercises = json.table.rows.map((row, idx) => ({
+            id: 'ex-' + idx,
+            type: row.c[2]?.v, // База / Изоляция
             day: row.c[1]?.v,
-            category: row.c[2]?.v,
             name: row.c[4]?.v,
             muscle: row.c[5]?.v,
-            sub: row.c[6]?.v || '',
             meta: row.c[7]?.v,
             weight: row.c[8]?.v || 0,
             img: row.c[9]?.v // Ссылка на Selectel
         }));
 
-        renderExercises('A'); // По умолчанию День А
+        render();
     } catch (e) {
-        console.error("Ошибка загрузки таблицы", e);
+        console.error("Ошибка данных:", e);
     }
 }
 
-function renderExercises(day) {
+function render() {
     const list = document.getElementById('exercise-list');
-    list.innerHTML = '';
+    const filtered = exercises.filter(ex => ex.day === currentDay);
     
-    const filtered = exercises.filter(ex => ex.day === day);
+    let html = '';
+    // Группировка по типам
+    const types = ['БАЗА', 'ИЗОЛЯЦИЯ'];
     
-    filtered.forEach(ex => {
-        const isDone = completedIds.includes(ex.id);
-        const card = document.createElement('div');
-        card.className = `exercise-card ${isDone ? 'completed' : ''}`;
-        card.onclick = () => toggleComplete(ex.id);
-        
-        card.innerHTML = `
-            <img src="${ex.img}" class="ex-image">
-            <div class="ex-info">
-                <div class="ex-muscle">${ex.muscle} <span class="ex-subgroup">(${ex.sub})</span></div>
-                <div class="ex-name">${ex.name}</div>
-                <div class="ex-meta">${ex.meta}</div>
-            </div>
-            <div class="ex-stats">
-                <div class="ex-weight">${ex.weight}</div>
-                <div class="ex-unit">KG</div>
-            </div>
-            <div class="btn-info">i</div>
-        `;
-        list.appendChild(card);
+    types.forEach(type => {
+        const typeEx = filtered.filter(ex => ex.type?.toUpperCase() === type);
+        if (typeEx.length > 0) {
+            html += `<div class="section-title">${type}</div>`;
+            typeEx.forEach(ex => {
+                const isDone = completedIds.includes(ex.id);
+                html += `
+                    <div class="card ${isDone ? 'done' : ''}" id="${ex.id}" onclick="toggleCard('${ex.id}')">
+                        <div class="img-box">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150'">
+                        </div>
+                        <div class="info">
+                            <div class="cat-label">${ex.muscle}</div>
+                            <div class="name">${ex.name}</div>
+                            <div class="meta">${ex.meta}</div>
+                        </div>
+                        <div class="weight-control" onclick="event.stopPropagation()">
+                            <input type="number" class="weight-val" value="${ex.weight}" onchange="saveWeight('${ex.id}', this.value)">
+                            <div class="weight-unit">KG</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
     });
+
+    list.innerHTML = html;
     updateProgress();
 }
 
-function toggleComplete(id) {
-    tg.HapticFeedback.impactOccurred('medium');
+function toggleCard(id) {
     if (completedIds.includes(id)) {
         completedIds = completedIds.filter(i => i !== id);
     } else {
         completedIds.push(id);
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
-    
-    // Сохраняем в ТГ
-    tg.CloudStorage.setItem('completed_ids', JSON.stringify(completedIds));
-    renderExercises(document.getElementById('current-day-label').innerText);
+    localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
+    document.getElementById(id).classList.toggle('done');
+    updateProgress();
 }
 
 function updateProgress() {
-    const total = exercises.filter(ex => ex.day === document.getElementById('current-day-label').innerText).length;
-    const done = completedIds.length;
-    const percent = total > 0 ? (done / total) * 100 : 0;
+    const total = exercises.filter(ex => ex.day === currentDay).length;
+    const done = completedIds.filter(id => {
+        return exercises.find(ex => ex.id === id && ex.day === currentDay);
+    }).length;
     
-    document.getElementById('progress-fill').style.width = percent + '%';
-    document.getElementById('progress-text').innerText = `${done} / ${total}`;
+    const perc = total > 0 ? (done / total) * 100 : 0;
+    document.getElementById('progress-fill').style.width = perc + '%';
+    document.getElementById('progress-text').innerText = `${done} / ${total} DONE`;
 }
 
 function finishWorkout() {
-    tg.HapticFeedback.notificationOccurred('success');
     document.getElementById('modal-congrats').classList.remove('hidden');
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 }
 
-function closeCongrats() {
-    // Сбрасываем и переходим к следующему дню (логика переключения)
-    completedIds = [];
-    tg.CloudStorage.setItem('completed_ids', '[]');
+function closeModal() {
     document.getElementById('modal-congrats').classList.add('hidden');
-    // Тут можно добавить смену дня A -> B
-    location.reload(); 
+    completedIds = [];
+    localStorage.removeItem('completed_exercises');
+    render();
 }
 
 init();
