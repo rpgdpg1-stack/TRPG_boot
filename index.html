@@ -1,27 +1,13 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TrainingRPG</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="app">
-        <header class="header">
-            <div class="nav-area">
-                <div class="day-title" id="day-title">A</div>
-                <div class="progress-wrapper">
-                    <span class="progress-label" id="progress-text">0 / 0 DONE</span>
-                    <div class="progress-bar-bg"><div id="progress-fill"></div></div>
-                </div>
-            </div>
-        </header>
-        <div id="exercise-list" class="exercise-list"></div>
-        <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+<header class="header">
+    <div class="nav-area">
+        <div class="days-selector">
+            <button onclick="changeDay('A')" id="btn-A" class="day-btn active">A</button>
+            <button onclick="changeDay('B')" id="btn-B" class="day-btn">B</button>
+            <button onclick="changeDay('C')" id="btn-C" class="day-btn">C</button>
+        </div>
+        <div class="progress-wrapper">
+            <span class="progress-label" id="progress-text">0 / 0 DONE</span>
+            <div class="progress-bar-bg"><div id="progress-fill"></div></div>
+        </div>
     </div>
-    <script src="script.js"></script>
-</body>
-</html>
+</header>
