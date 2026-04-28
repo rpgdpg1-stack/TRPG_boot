@@ -1,6 +1,6 @@
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID_DAYS = '1002309655'; // ЗАМЕНИ НА СВОЙ GID листа program_days
-const GID_EX = '0';          // ЗАМЕНИ НА СВОЙ GID листа exercises
+const GID_DAYS = '1002309655'; // ТВОЙ GID листа program_days
+const GID_EX = '0';          // ТВОЙ GID листа exercises
 
 const tg = window.Telegram.WebApp;
 let exercisesLibrary = []; 
@@ -20,60 +20,69 @@ async function fetchSheet(gid) {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
     const res = await fetch(url);
     const text = await res.text();
-    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+    // Очистка JSON-ответа от Google
+    const jsonText = text.substring(47).slice(0, -2);
+    return JSON.parse(jsonText).table.rows;
 }
 
 async function loadFullData() {
     try {
         // 1. Загружаем библиотеку упражнений
         const exRows = await fetchSheet(GID_EX);
-        exercisesLibrary = exRows.map(row => ({
-            id: row.c[0]?.v,
-            name: row.c[1]?.v || "Упражнение",
-            muscle: row.c[2]?.v || "",
-            sub: row.c[3]?.v || "",
-            type: row.c[4]?.v || "base",
-            meta: row.c[6]?.v || "",
-            priority: parseInt(row.c[8]?.v) || 99,
-            img: row.c[9]?.v || ""
-        })).sort((a, b) => a.priority - b.priority);
+        exercisesLibrary = exRows.map(row => {
+            const c = row.c;
+            return {
+                id: c[0]?.v,
+                name: c[1]?.v || "Упражнение",
+                muscle: c[2]?.v || "",
+                sub: c[3]?.v || "", // sub_group
+                type: c[4]?.v || "base",
+                meta: c[6]?.v || "", // meta_info
+                priority: parseInt(c[8]?.v) || 99, // Priority
+                img: c[9]?.v || "" // preview
+            };
+        });
 
-        // 2. Загружаем план и подставляем лучшие упражнения по приоритету
+        // 2. Загружаем план и фильтруем по подгруппам с учетом приоритета
         const dayRows = await fetchSheet(GID_DAYS);
         workoutPlan = dayRows.map((row, idx) => {
-            const day = row.c[2]?.v || 'A';
-            const subGroup = row.c[6]?.v; 
-            
-            const alternatives = exercisesLibrary.filter(ex => ex.sub === subGroup);
-            const mainEx = alternatives[0] || { name: "Не найдено", muscle: subGroup };
+            const c = row.c;
+            const subGroup = c[6]?.v; // sub_group в листе program_days
+            const day = String(c[2]?.v || 'A').toUpperCase();
+
+            // Берем все упражнения из этой подгруппы и сортируем по приоритету
+            const alternatives = exercisesLibrary
+                .filter(ex => ex.sub === subGroup)
+                .sort((a, b) => a.priority - b.priority);
 
             return {
                 rowId: 'row-' + idx,
-                day: day.toUpperCase(),
-                type: (row.c[4]?.v || 'base').toLowerCase(),
+                day: day,
+                type: (c[4]?.v || 'base').toLowerCase(),
                 sub: subGroup,
-                main: mainEx,
+                main: alternatives[0] || { name: "Упражнение не найдено", muscle: subGroup },
                 alternatives: alternatives.slice(1)
             };
         });
 
         render();
     } catch (e) {
-        console.error("Ошибка:", e);
+        console.error("Критическая ошибка:", e);
+        document.getElementById('exercise-list').innerHTML = `<p style="color:red; text-align:center;">Ошибка загрузки. Проверь GID!</p>`;
     }
 }
 
 function render() {
     const list = document.getElementById('exercise-list');
-    const filtered = workoutPlan.filter(ex => ex.day === currentDay);
+    const filtered = workoutPlan.filter(item => item.day === currentDay);
     
     let html = '';
     const sections = ['base', 'isolation', 'accessory'];
 
     sections.forEach(sec => {
-        const secEx = filtered.filter(ex => ex.type === sec);
+        const secEx = filtered.filter(item => item.type === sec);
         if (secEx.length > 0) {
-            html += `<div class="section-title">${sec}</div>`;
+            html += `<div class="section-title">${sec.toUpperCase()}</div>`;
             secEx.forEach(item => {
                 const ex = item.main;
                 const isDone = completedIds.includes(item.rowId);
@@ -99,17 +108,19 @@ function render() {
         }
     });
 
-    list.innerHTML = html || `<p style="text-align:center; padding:50px; color:gray;">План на день ${currentDay} пуст</p>`;
+    list.innerHTML = html || `<p style="text-align:center; color:gray;">План пуст</p>`;
     updateProgress();
 }
 
 function showAlternatives(rowId) {
     const item = workoutPlan.find(p => p.rowId === rowId);
     if (item && item.alternatives.length > 0) {
+        // Циклическая замена: текущее в конец, первое из альтернатив — в основу
         const oldMain = item.main;
         item.main = item.alternatives.shift();
         item.alternatives.push(oldMain);
         render();
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 }
 
@@ -118,6 +129,7 @@ function toggleCard(id) {
         completedIds = completedIds.filter(i => i !== id);
     } else {
         completedIds.push(id);
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
