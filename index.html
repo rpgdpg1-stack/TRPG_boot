@@ -10,50 +10,34 @@
 </head>
 <body>
     <div id="app">
-        <div id="screen-programs" class="screen hidden">
-            <h1 class="font-tiny">PROGRAMS</h1>
-            <div class="program-card" onclick="selectProgram('gym')">
-                <div class="program-icon">🏋️‍♂️</div>
-                <span>СПОРТЗАЛ</span>
-            </div>
-            <div class="program-card" onclick="selectProgram('pool')">
-                <div class="program-icon">🏊‍♂️</div>
-                <span>БАССЕЙН</span>
-            </div>
-        </div>
-
-        <div id="screen-training" class="screen">
-            <header class="header">
-                <div class="day-selector" onclick="toggleDayPicker()">
-                    <h1 id="current-day-label" class="font-tiny">A</h1>
-                </div>
-                
-                <div class="progress-container">
-                    <span id="progress-text" class="progress-label">0 / 0</span>
-                    <div class="progress-bar">
+        <header class="header">
+            <div class="nav-area">
+                <div class="day-title" id="day-title">A</div>
+                <div class="progress-wrapper">
+                    <span class="progress-label" id="progress-text">0 / 0 DONE</span>
+                    <div class="progress-bar-bg">
                         <div id="progress-fill"></div>
                     </div>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <div id="exercise-list" class="exercise-list">
-                </div>
+        <div id="exercise-list" class="exercise-list">
+            </div>
 
-            <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
-        </div>
+        <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
 
         <nav class="tab-bar">
-            <div class="tab-item" onclick="showScreen('programs')">🏠</div>
+            <div class="tab-item">🏠</div>
             <div class="tab-item active">🔥</div>
             <div class="tab-item">⚙️</div>
         </nav>
 
-        <div id="modal-congrats" class="modal hidden" onclick="closeCongrats()">
-            <div class="modal-content">
-                <img src="https://cdn.selectel.ru/your-congrats-image.png" alt="Done">
+        <div id="modal-congrats" class="modal-overlay hidden" onclick="closeModal()">
+            <div class="modal-card">
                 <h2>КРАСАВА!</h2>
-                <p>Тренировка завершена успешно.</p>
-                <button onclick="closeCongrats()">ОК</button>
+                <p>Тренировка завершена.</p>
+                <button onclick="closeModal()">OK</button>
             </div>
         </div>
     </div>
