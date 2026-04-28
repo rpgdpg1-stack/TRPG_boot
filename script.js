@@ -1,6 +1,6 @@
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID_DAYS = '1002309655'; // ТВОЙ GID листа program_days
-const GID_EX = '0';          // ТВОЙ GID листа exercises
+const GID_DAYS = '1002309655'; 
+const GID_EX = '0';          
 
 const tg = window.Telegram.WebApp;
 let exercisesLibrary = []; 
@@ -10,7 +10,6 @@ let currentDay = 'A';
 
 async function init() {
     tg.expand();
-    tg.ready();
     const saved = localStorage.getItem('completed_exercises');
     if (saved) completedIds = JSON.parse(saved);
     await loadFullData();
@@ -20,55 +19,49 @@ async function fetchSheet(gid) {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
     const res = await fetch(url);
     const text = await res.text();
-    // Очистка JSON-ответа от Google
-    const jsonText = text.substring(47).slice(0, -2);
-    return JSON.parse(jsonText).table.rows;
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    return json.table.rows;
 }
 
 async function loadFullData() {
     try {
-        // 1. Загружаем библиотеку упражнений
-        const exRows = await fetchSheet(GID_EX);
-        exercisesLibrary = exRows.map(row => {
-            const c = row.c;
-            return {
-                id: c[0]?.v,
-                name: c[1]?.v || "Упражнение",
-                muscle: c[2]?.v || "",
-                sub: c[3]?.v || "", // sub_group
-                type: c[4]?.v || "base",
-                meta: c[6]?.v || "", // meta_info
-                priority: parseInt(c[8]?.v) || 99, // Priority
-                img: c[9]?.v || "" // preview
-            };
-        });
+        console.log("Загрузка данных...");
+        const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
 
-        // 2. Загружаем план и фильтруем по подгруппам с учетом приоритета
-        const dayRows = await fetchSheet(GID_DAYS);
-        workoutPlan = dayRows.map((row, idx) => {
-            const c = row.c;
-            const subGroup = c[6]?.v; // sub_group в листе program_days
-            const day = String(c[2]?.v || 'A').toUpperCase();
+        // 1. Собираем библиотеку (Лист exercises)
+        exercisesLibrary = exRows.filter(r => r.c[0]?.v).map(row => ({
+            id: row.c[0]?.v,
+            name: row.c[1]?.v || "Упражнение",
+            sub: String(row.c[3]?.v || "").trim().toLowerCase(), // Чистим подгруппу
+            type: String(row.c[4]?.v || "base").toLowerCase(),
+            meta: row.c[6]?.v || "",
+            priority: parseInt(row.c[8]?.v) || 99,
+            img: row.c[9]?.v || ""
+        }));
 
-            // Берем все упражнения из этой подгруппы и сортируем по приоритету
-            const alternatives = exercisesLibrary
-                .filter(ex => ex.sub === subGroup)
+        // 2. Собираем план (Лист program_days)
+        workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
+            const dayFromSheet = String(row.c[2]?.v || "").trim().toUpperCase();
+            const subFromSheet = String(row.c[6]?.v || "").trim().toLowerCase(); //
+            
+            // Фильтруем замены по подгруппе и приоритету
+            const alts = exercisesLibrary
+                .filter(ex => ex.sub === subFromSheet)
                 .sort((a, b) => a.priority - b.priority);
 
             return {
                 rowId: 'row-' + idx,
-                day: day,
-                type: (c[4]?.v || 'base').toLowerCase(),
-                sub: subGroup,
-                main: alternatives[0] || { name: "Упражнение не найдено", muscle: subGroup },
-                alternatives: alternatives.slice(1)
+                day: dayFromSheet,
+                type: String(row.c[4]?.v || "base").toLowerCase(),
+                main: alts[0] || { name: "Не найдено: " + subFromSheet, sub: subFromSheet },
+                alternatives: alts.slice(1)
             };
         });
 
+        console.log("План загружен:", workoutPlan);
         render();
     } catch (e) {
-        console.error("Критическая ошибка:", e);
-        document.getElementById('exercise-list').innerHTML = `<p style="color:red; text-align:center;">Ошибка загрузки. Проверь GID!</p>`;
+        console.error("Ошибка загрузки:", e);
     }
 }
 
@@ -76,23 +69,28 @@ function render() {
     const list = document.getElementById('exercise-list');
     const filtered = workoutPlan.filter(item => item.day === currentDay);
     
+    if (filtered.length === 0) {
+        list.innerHTML = `<p style="text-align:center; padding:20px;">Нет упражнений для дня ${currentDay}</p>`;
+        return;
+    }
+
     let html = '';
     const sections = ['base', 'isolation', 'accessory'];
 
     sections.forEach(sec => {
         const secEx = filtered.filter(item => item.type === sec);
         if (secEx.length > 0) {
-            html += `<div class="section-title">${sec.toUpperCase()}</div>`;
+            html += `<div class="section-title">${sec}</div>`;
             secEx.forEach(item => {
                 const ex = item.main;
                 const isDone = completedIds.includes(item.rowId);
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" id="${item.rowId}">
                         <div class="img-box" onclick="toggleCard('${item.rowId}')">
-                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=FIT'">
+                            <img src="${ex.img}" onerror="this.src='https://via.placeholder.com/150?text=GYM'">
                         </div>
                         <div class="info" onclick="toggleCard('${item.rowId}')">
-                            <div class="cat-label">${ex.muscle} (${item.sub})</div>
+                            <div class="cat-label">${item.main.sub}</div>
                             <div class="name">${ex.name}</div>
                             <div class="meta">${ex.meta}</div>
                         </div>
@@ -102,25 +100,21 @@ function render() {
                                 <input type="number" class="weight-val" placeholder="0">
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
     });
-
-    list.innerHTML = html || `<p style="text-align:center; color:gray;">План пуст</p>`;
+    list.innerHTML = html;
     updateProgress();
 }
 
 function showAlternatives(rowId) {
     const item = workoutPlan.find(p => p.rowId === rowId);
     if (item && item.alternatives.length > 0) {
-        // Циклическая замена: текущее в конец, первое из альтернатив — в основу
-        const oldMain = item.main;
+        const current = item.main;
         item.main = item.alternatives.shift();
-        item.alternatives.push(oldMain);
+        item.alternatives.push(current);
         render();
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 }
 
@@ -129,7 +123,6 @@ function toggleCard(id) {
         completedIds = completedIds.filter(i => i !== id);
     } else {
         completedIds.push(id);
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
