@@ -1,104 +1,64 @@
-:root {
-    --bg: #000;
-    --card-bg: #222;
-    --accent: #9ED153;
-    --gray: #888;
-}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TrainingRPG</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="nav-area">
+                <!-- Огромная буква дня с индикатором выбора -->
+                <div class="day-selector-trigger" onclick="openDayPicker()">
+                    <span id="day-display">A</span>
+                    <span class="arrow-down">↓</span>
+                </div>
+                
+                <div class="progress-container">
+                    <span id="progress-text">0 / 0 DONE</span>
+                    <div class="progress-bg">
+                        <div id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-body {
-    background: var(--bg);
-    color: #fff;
-    font-family: 'Manrope', sans-serif;
-    margin: 0;
-    overflow-x: hidden;
-}
+        <div id="exercise-list"></div>
 
-#app { padding: 16px; padding-bottom: 120px; }
+        <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
 
-/* Header */
-.header { margin-bottom: 20px; }
-.nav-area { display: flex; align-items: center; gap: 20px; }
-.day-title { 
-    font-family: 'Tiny5'; 
-    font-size: 80px; 
-    color: var(--accent); 
-    line-height: 1;
-    cursor: pointer;
-}
+        <!-- Bottom Sheet для выбора дня -->
+        <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
+            <div class="bottom-sheet" onclick="event.stopPropagation()">
+                <div class="sheet-handle"></div>
+                <div class="sheet-header">ДЕНЬ ТРЕНИРОВКИ</div>
+                <div class="days-grid">
+                    <div class="day-option" onclick="changeDay('A')">
+                        <span class="day-letter">A</span>
+                        <span class="day-name">ДЕНЬ А</span>
+                    </div>
+                    <div class="day-option" onclick="changeDay('B')">
+                        <span class="day-letter">Б</span>
+                        <span class="day-name">ДЕНЬ Б</span>
+                    </div>
+                    <div class="day-option" onclick="changeDay('C')">
+                        <span class="day-letter">C</span>
+                        <span class="day-name">ДЕНЬ C</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-.progress-wrapper { flex-grow: 1; }
-.progress-label { font-size: 12px; font-weight: 800; color: var(--gray); display: block; margin-bottom: 5px; }
-.progress-bar-bg { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-#progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.4s; }
-
-/* Карточка из Figma */
-.card {
-    position: relative;
-    background: var(--card-bg);
-    border-radius: 33px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-    min-height: 150px;
-    box-sizing: border-box;
-    transition: 0.3s;
-}
-
-.card.done::before {
-    content: ""; position: absolute; inset: 0;
-    background: #000; background-blend-mode: saturation;
-    opacity: 0.5; z-index: 2; border-radius: 33px;
-}
-.card.done::after {
-    content: ""; position: absolute; inset: 0;
-    background: rgba(0,0,0,0.4); backdrop-filter: blur(1px);
-    z-index: 3; border-radius: 33px;
-}
-
-.img-box {
-    width: 118px; height: 118px;
-    border: 1px solid var(--gray); border-radius: 20px;
-    overflow: hidden; flex-shrink: 0; z-index: 1;
-}
-.img-box img { width: 100%; height: 100%; object-fit: cover; }
-
-.info-content { flex-grow: 1; z-index: 1; }
-.muscle-row { display: flex; gap: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; }
-.m-group { color: #648337; }
-.s-group { color: var(--gray); }
-.ex-name { font-size: 16px; font-weight: 600; margin: 6px 0; color: #F0F0F0; }
-.ex-meta { font-size: 10px; color: var(--gray); }
-
-.weight-box { text-align: right; z-index: 1; min-width: 44px; }
-.w-num { font-size: 24px; font-weight: 800; color: var(--accent); line-height: 1; }
-.w-unit { font-size: 9px; color: var(--gray); font-weight: 800; }
-
-.info-btn { position: absolute; top: 18px; right: 20px; font-family: 'Tiny5'; color: var(--gray); z-index: 5; }
-
-/* Bottom Sheet */
-.modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-    display: flex; align-items: flex-end; z-index: 100; transition: 0.3s;
-}
-.modal-overlay.hidden { opacity: 0; pointer-events: none; }
-.bottom-sheet {
-    width: 100%; background: #1a1a1a; border-radius: 30px 30px 0 0;
-    padding: 20px; box-sizing: border-box; transform: translateY(0); transition: 0.3s;
-}
-.modal-overlay.hidden .bottom-sheet { transform: translateY(100%); }
-.sheet-line { width: 40px; height: 4px; background: #333; border-radius: 2px; margin: 0 auto 20px; }
-.sheet-title { font-family: 'Tiny5'; font-size: 24px; text-align: center; color: var(--accent); margin-bottom: 20px; }
-.days-grid { display: flex; justify-content: space-around; }
-.days-grid button {
-    font-family: 'Tiny5'; font-size: 40px; background: none; border: 1px solid #333;
-    color: #fff; border-radius: 15px; width: 80px; height: 80px;
-}
-
-.btn-finish {
-    width: 100%; padding: 20px; background: var(--accent); border: none;
-    border-radius: 20px; font-weight: 800; font-size: 16px; margin-top: 10px;
-}
-
-.section-title { font-size: 10px; color: #C6624A; letter-spacing: 2px; margin: 20px 0 10px; font-weight: 800; }
+        <nav class="tab-bar">
+            <div class="tab-item">🏠</div>
+            <div class="tab-item active">🔥</div>
+            <div class="tab-item">⚙️</div>
+        </nav>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
