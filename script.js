@@ -13,29 +13,38 @@ let library = [];
 let completedIds = [];
 let currentDay = 'A';
 let isEditingWeight = false;
-
-// Swipe state
 let startX = 0;
 let activeCard = null;
 
 const tg = window.Telegram?.WebApp;
+
+// Инициализация Fullscreen и Telegram настроек
+if (tg) {
+    tg.expand();
+    tg.enableClosingConfirmation();
+    tg.headerColor = '#0d0d0d';
+    tg.backgroundColor = '#0d0d0d';
+    if (tg.requestFullscreen) tg.requestFullscreen();
+}
+
 document.body.style.opacity = "1";
 
 async function init() {
-    if (tg) { tg.expand(); tg.ready(); }
-    const saved = localStorage.getItem('completed_exercises');
-    if (saved) completedIds = JSON.parse(saved);
+    // Загрузка данных из облака Телеграм
+    if (tg?.CloudStorage) {
+        tg.CloudStorage.getItem('completed_exercises', (err, val) => {
+            if (val) completedIds = JSON.parse(val);
+        });
+    } else {
+        const saved = localStorage.getItem('completed_exercises');
+        if (saved) completedIds = JSON.parse(saved);
+    }
+    
     await loadData();
     setTimeout(() => {
         document.body.classList.add('loaded');
         document.getElementById('loader').style.display = 'none';
     }, 600);
-}
-
-function translate(text) {
-    if (!text) return "";
-    let clean = text.replace(/_/g, ' ').replace(/[()]/g, '').toUpperCase();
-    return TRANSLATIONS[clean] || clean;
 }
 
 async function loadData() {
@@ -57,10 +66,16 @@ async function loadData() {
             day: String(row.c[2]?.v).toUpperCase(),
             type: String(row.c[4]?.v || 'base').toLowerCase(),
             main: mainEx || { name: sub, muscle: "УПРАЖНЕНИЕ", subgroup: "", img: "" },
-            weight: "0"
+            weight: localStorage.getItem(`weight_row-${idx}`) || "0"
         };
     });
     render();
+}
+
+function translate(text) {
+    if (!text) return "";
+    let clean = text.replace(/_/g, ' ').replace(/[()]/g, '').toUpperCase();
+    return TRANSLATIONS[clean] || clean;
 }
 
 function render() {
@@ -77,14 +92,14 @@ function render() {
             items.forEach(item => {
                 const isDone = completedIds.includes(item.rowId);
                 html += `
-                <div class="card-wrapper">
+                <div class="card-wrapper" data-id="${item.rowId}">
                     <div class="card-actions">
                         <div class="action-btn btn-info" onclick="openInfoScreen('${item.rowId}')">
-                            <svg width="16" height="16" viewBox="0 0 12 12"><path d="M9.63281 2.48096V0.730957H11.3828V2.48096H9.63281ZM11.3828 11.231H9.63281V4.23096H11.3828V11.231Z" fill="#4B90C9"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M5.11523 2.52002V0.77002H6.86523V2.52002H5.11523ZM6.86523 11.27H5.11523V4.27002H6.86523V11.27Z" fill="#4B90C9"/></svg>
                             <span class="action-label label-info">ИНФО</span>
                         </div>
                         <div class="action-btn btn-swap" onclick="openReplaceScreen('${item.rowId}')">
-                            <svg width="16" height="16" viewBox="0 0 12 12"><path d="M2 2H10V4L12 2L10 0V2H0V7H2V2ZM10 10H2V8L0 10L2 12V10H12V5H10V10Z" fill="#9ED153"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M6.01172 0.5C7.6804 0.5 9.17502 1.24355 10.1836 2.41699L11.4902 1.08301V5.42773H7.23828L9.12891 3.49414C8.39591 2.58312 7.27206 2 6.01172 2C3.80266 2 2.01185 3.79097 2.01172 6C2.01172 8.20914 3.80258 10 6.01172 10C7.71963 10 9.17636 8.9294 9.75 7.42285H11.3252C10.6982 9.77075 8.55725 11.5 6.01172 11.5C2.97415 11.5 0.511719 9.03757 0.511719 6C0.511851 2.96255 2.97423 0.5 6.01172 0.5Z" fill="#9ED153"/></svg>
                             <span class="action-label label-swap">СМЕНА</span>
                         </div>
                     </div>
@@ -106,7 +121,8 @@ function render() {
                         </div>
                         <div class="weight-side" onclick="event.stopPropagation()">
                             <input type="number" class="weight-input" value="${item.weight}" 
-                                   onfocus="isEditingWeight=true; this.select()" onblur="setTimeout(()=>isEditingWeight=false,200)">
+                                   onfocus="isEditingWeight=true; this.select()" 
+                                   oninput="updateWeight('${item.rowId}', this.value)">
                             <div class="w-label">KG</div>
                         </div>
                     </div>
@@ -118,10 +134,13 @@ function render() {
     updateProgress();
 }
 
+// Умный свайп
 function handleTouchStart(e) {
     if (isEditingWeight) return;
     startX = e.touches[0].clientX;
-    activeCard = e.currentTarget;
+    const card = e.currentTarget;
+    if (activeCard && activeCard !== card) closeAllSwipes();
+    activeCard = card;
     activeCard.style.transition = 'none';
 }
 
@@ -136,46 +155,97 @@ function handleTouchMove(e) {
 
 function handleTouchEnd() {
     if (!activeCard) return;
-    activeCard.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+    activeCard.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
     let currentX = new WebKitCSSMatrix(window.getComputedStyle(activeCard).transform).m41;
-    activeCard.style.transform = currentX < -70 ? 'translateX(-150px)' : 'translateX(0)';
+    if (currentX < -70) {
+        activeCard.style.transform = 'translateX(-150px)';
+        tg?.HapticFeedback.impactOccurred('light');
+    } else {
+        activeCard.style.transform = 'translateX(0)';
+    }
+}
+
+// Авто-закрытие при клике мимо или скролле
+function closeAllSwipes(e) {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        if (e && card.contains(e.target)) return;
+        card.style.transform = 'translateX(0)';
+    });
     activeCard = null;
 }
 
-function openInfoScreen(id) {
+// Сохранение веса
+function updateWeight(id, val) {
     const item = workoutPlan.find(it => it.rowId === id);
-    document.getElementById('info-body').innerHTML = `<h2>${item.main.name}</h2><p>${item.main.muscle} ${item.main.subgroup}</p>`;
+    if (item) {
+        item.weight = val;
+        localStorage.setItem(`weight_${id}`, val);
+    }
+}
+
+// Клики и Вибро
+function handleCardClick(id, event) {
+    if (isEditingWeight) { document.activeElement.blur(); isEditingWeight=false; return; }
+    let x = new WebKitCSSMatrix(window.getComputedStyle(event.currentTarget).transform).m41;
+    if (x < -10) return;
+
+    if (completedIds.includes(id)) {
+        completedIds = completedIds.filter(i => i !== id);
+    } else {
+        completedIds.push(id);
+        tg?.HapticFeedback.notificationOccurred('success');
+    }
+    
+    saveToCloud('completed_exercises', completedIds);
+    render();
+}
+
+function openInfoScreen(id) {
+    tg?.HapticFeedback.impactOccurred('medium');
+    const item = workoutPlan.find(it => it.rowId === id);
+    document.getElementById('info-body').innerHTML = `<h2>${item.main.name}</h2><p>${item.main.muscle}</p>`;
     document.getElementById('info-screen').classList.remove('hidden');
 }
 
 function openReplaceScreen(id) {
+    tg?.HapticFeedback.impactOccurred('medium');
     const item = workoutPlan.find(it => it.rowId === id);
     const sub = item.main.subgroup.replace(/[()]/g, '');
     const options = library.filter(ex => ex.subgroup.includes(sub));
     let html = '';
     options.forEach(ex => {
-        html += `<div style="background:#1C1C1E; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; align-items:center;" onclick="confirmReplace('${id}', '${ex.name}')">
-            <img src="${ex.img}" style="width:40px; height:40px; margin-right:15px; border-radius:5px; background:#fff;">
-            <div><div style="font-weight:600; font-size:14px;">${ex.name}</div><div style="font-size:10px; color:#8E8E93;">${ex.muscle}</div></div>
-        </div>`;
+        html += `<div class="day-option" style="font-size:14px; margin-bottom:10px;" onclick="confirmReplace('${id}', '${ex.name}')">${ex.name}</div>`;
     });
     document.getElementById('replace-list').innerHTML = html;
     document.getElementById('replace-screen').classList.remove('hidden');
 }
 
 function confirmReplace(rowId, newName) {
+    tg?.HapticFeedback.notificationOccurred('success');
     const item = workoutPlan.find(it => it.rowId === rowId);
     const newEx = library.find(ex => ex.name === newName);
-    if (item && newEx) { item.main = newEx; render(); closeReplace(); }
+    if (item && newEx) {
+        item.main = newEx;
+        render();
+        closeReplace();
+    }
 }
 
-function handleCardClick(id, event) {
-    if (isEditingWeight) return;
-    let x = new WebKitCSSMatrix(window.getComputedStyle(event.currentTarget).transform).m41;
-    if (x < -10) return;
-    completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
-    localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
+function changeDay(day) {
+    tg?.HapticFeedback.impactOccurred('light');
+    currentDay = day;
+    closeDayPicker();
     render();
+}
+
+// Работа с облаком Телеграм
+function saveToCloud(key, data) {
+    const json = JSON.stringify(data);
+    localStorage.setItem(key, json);
+    if (tg?.CloudStorage) {
+        tg.CloudStorage.setItem(key, json);
+    }
 }
 
 async function fetchSheet(gid) {
@@ -189,7 +259,6 @@ function closeInfo() { document.getElementById('info-screen').classList.add('hid
 function closeReplace() { document.getElementById('replace-screen').classList.add('hidden'); }
 function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
 function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
-function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
 function updateProgress() {
     const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
     const done = dayEx.filter(ex => completedIds.includes(ex.rowId)).length;
