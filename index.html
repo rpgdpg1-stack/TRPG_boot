@@ -10,13 +10,11 @@
 </head>
 <body>
     <div id="app">
-        <!-- Лоадер -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪</div>
             <p>ЗАГРУЗКА...</p>
         </div>
 
-        <!-- Хедер -->
         <header class="sticky-header">
             <div class="header-content">
                 <div class="day-selector-trigger" onclick="openDayPicker()">
@@ -24,7 +22,9 @@
                     <span class="arrow-down">↓</span>
                 </div>
                 <div class="progress-section">
-                    <span id="progress-text">0 / 0 ПРОГРЕСС</span>
+                    <div class="progress-header">
+                        <span id="progress-text">0 / 0 ПРОГРЕСС</span>
+                    </div>
                     <div class="progress-bg">
                         <div id="progress-fill"></div>
                     </div>
@@ -32,20 +32,12 @@
             </div>
         </header>
 
-        <!-- Контент -->
         <main class="content-scroll" id="main-content" style="display: none;">
             <div id="exercise-list"></div>
-            <div class="footer-space">
-                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
-            </div>
+            <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
         </main>
 
-        <!-- Инфо-окно -->
-        <div id="info-modal" class="info-modal hidden">
-            <!-- Контент вставляется через JS -->
-        </div>
-
-        <!-- Выбор дня -->
+        <!-- Модалка выбора дня -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
@@ -54,6 +46,14 @@
                     <div class="day-option" onclick="changeDay('B')"><span>Б</span></div>
                     <div class="day-option" onclick="changeDay('C')"><span>C</span></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Модалка инфо -->
+        <div id="info-modal" class="info-overlay hidden">
+            <div class="info-container">
+                <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
+                <div id="info-content-body"></div>
             </div>
         </div>
     </div>
