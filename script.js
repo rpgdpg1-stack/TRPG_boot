@@ -1,3 +1,7 @@
+const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
+const GID_DAYS = '1002309655';
+const GID_EX = '0';
+
 let workoutPlan = [];
 let completedIds = [];
 let currentDay = 'A';
@@ -13,21 +17,45 @@ async function init() {
     
     await loadData();
     
-    // Плавное скрытие лоадера
     setTimeout(() => {
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('main-content').style.display = 'block';
     }, 1000);
 }
 
+async function fetchSheet(gid) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+}
+
 async function loadData() {
-    // Тут твой fetch из Google Sheets (оставил структуру)
-    // Имитация данных для теста:
-    workoutPlan = [
-        { rowId: '1', day: 'A', type: 'base', weight: '80', main: { name: 'Приседания', muscle: 'НОГИ', img: '' } },
-        { rowId: '2', day: 'A', type: 'isolation', weight: '12', main: { name: 'Подъем на бицепс', muscle: 'РУКИ', img: '' } }
-    ];
-    render();
+    try {
+        const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
+        
+        const library = exRows.filter(r => r.c[0]?.v).map(row => ({
+            name: row.c[1]?.v || "",
+            muscle: row.c[2]?.v || "",
+            sub: String(row.c[3]?.v || "").trim(),
+            type: String(row.c[4]?.v || "base").toLowerCase(),
+            meta: row.c[6]?.v || "",
+            img: row.c[9]?.v || ""
+        }));
+
+        workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
+            const sub = String(row.c[6]?.v || "").trim();
+            const mainEx = library.find(ex => ex.sub.toLowerCase() === sub.toLowerCase());
+            return {
+                rowId: 'row-' + idx,
+                day: String(row.c[2]?.v).toUpperCase(),
+                type: String(row.c[4]?.v || 'base').toLowerCase(),
+                main: mainEx || { name: "Упр. не найдено", muscle: "—", sub: sub },
+                weight: mainEx?.meta?.match(/\d+/)?.[0] || "0"
+            };
+        });
+        render();
+    } catch (e) { console.error("Ошибка загрузки:", e); }
 }
 
 function render() {
@@ -45,43 +73,35 @@ function render() {
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" onclick="handleCardClick('${item.rowId}', event)">
                         <div class="card-inner-content">
-                            <div class="img-box"><img src="${item.main.img}" onerror="this.src='https://via.placeholder.com/150'"></div>
+                            <div class="img-box"><img src="${item.main.img}"></div>
                             <div class="info-content">
-                                <div class="muscle-row"><span class="m-main">${item.main.muscle}</span></div>
+                                <div class="muscle-row">${item.main.muscle}</div>
                                 <div class="ex-name">${item.main.name}</div>
-                                <div class="ex-sets">3 x 8-12</div>
+                                <div class="ex-sets">3 x 8-10</div>
                             </div>
                         </div>
-                        
                         <div class="weight-side" onclick="event.stopPropagation()">
-                            <input type="number" class="weight-input" 
-                                   value="${item.weight}" 
+                            <input type="number" class="weight-input" value="${item.weight}" 
                                    oninput="if(this.value.length>3)this.value=this.value.slice(0,3)"
-                                   onfocus="startWeightEdit()" 
-                                   onblur="endWeightEdit()"
+                                   onfocus="isEditingWeight=true" onblur="setTimeout(()=>isEditingWeight=false,100)"
                                    onchange="updateWeight('${item.rowId}', this.value)">
                             <div class="weight-done-btn" onclick="this.previousElementSibling.blur()">ГОТОВО</div>
                             <div class="w-label">КГ</div>
                         </div>
-
                         <div class="info-btn" onclick="openInfo('${item.rowId}', event)">i</div>
                     </div>`;
             });
         }
     });
-    list.innerHTML = html;
+    list.innerHTML = html || '<p style="text-align:center; color:gray;">Нет упражнений на этот день</p>';
     updateProgress();
 }
 
-// Умный клик по карточке
 function handleCardClick(id, event) {
     if (isEditingWeight) {
-        // Если клавиатура открыта, просто закрываем её и ничего не делаем
-        document.querySelectorAll('.weight-input').forEach(el => el.blur());
+        document.querySelectorAll('input').forEach(i => i.blur());
         return;
     }
-    
-    // Обычное переключение статуса "Выполнено"
     if (completedIds.includes(id)) {
         completedIds = completedIds.filter(i => i !== id);
     } else {
@@ -92,35 +112,21 @@ function handleCardClick(id, event) {
     render();
 }
 
-function startWeightEdit() { isEditingWeight = true; }
-function endWeightEdit() { 
-    // Задержка, чтобы кнопка "Готово" успела обработать клик раньше, чем сбросится флаг
-    setTimeout(() => { isEditingWeight = false; }, 150); 
-}
-
 function updateWeight(id, val) {
     const item = workoutPlan.find(it => it.rowId === id);
     if (item) item.weight = val;
 }
 
+function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
+function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
+function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
+
 function openInfo(id, event) {
     event.stopPropagation();
-    if (isEditingWeight) return;
-    
     const item = workoutPlan.find(it => it.rowId === id);
-    const modal = document.getElementById('info-modal');
-    modal.innerHTML = `
-        <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
-        <div style="padding:20px">
-            <h2 style="font-family:'Tiny5'; color:var(--accent)">${item.main.name}</h2>
-            <div style="width:100%; height:200px; background:#333; border-radius:20px; margin-bottom:20px"></div>
-            <p>${item.main.muscle}</p>
-            <p style="color:var(--gray)">Описание техники упражнения будет здесь...</p>
-        </div>
-    `;
-    modal.classList.remove('hidden');
+    document.getElementById('info-content-body').innerHTML = `<h2>${item.main.name}</h2><p>${item.main.muscle}</p>`;
+    document.getElementById('info-modal').classList.remove('hidden');
 }
-
 function closeInfo() { document.getElementById('info-modal').classList.add('hidden'); }
 
 function updateProgress() {
