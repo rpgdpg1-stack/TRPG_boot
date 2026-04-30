@@ -8,10 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<!-- Скрываем body сразу при чтении файла -->
 <body style="opacity: 0; background: #0d0d0d;">
     <div id="app">
-        <!-- Лоадер всегда должен быть виден первым -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
@@ -25,9 +23,7 @@
                 </div>
                 <div class="progress-section">
                     <span id="progress-text">0 / 0 ПРОГРЕСС</span>
-                    <div class="progress-bg">
-                        <div id="progress-fill"></div>
-                    </div>
+                    <div class="progress-bg"><div id="progress-fill"></div></div>
                 </div>
             </div>
         </header>
@@ -39,6 +35,25 @@
             </div>
         </main>
 
+        <!-- Окно выбора замены (Смена) -->
+        <div id="replace-screen" class="full-modal hidden">
+            <div class="modal-header">
+                <div class="back-btn" onclick="closeReplace()">← НАЗАД</div>
+                <div class="modal-title">ЗАМЕНА</div>
+            </div>
+            <div id="replace-list" class="modal-body"></div>
+        </div>
+
+        <!-- Окно Инфо -->
+        <div id="info-screen" class="full-modal hidden">
+            <div class="modal-header">
+                <div class="back-btn" onclick="closeInfo()">← НАЗАД</div>
+                <div class="modal-title">ИНФО</div>
+            </div>
+            <div id="info-body" class="modal-body info-style"></div>
+        </div>
+
+        <!-- Селектор дня (старая модалка снизу) -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
@@ -47,13 +62,6 @@
                     <div class="day-option" onclick="changeDay('B')"><span>Б</span></div>
                     <div class="day-option" onclick="changeDay('C')"><span>C</span></div>
                 </div>
-            </div>
-        </div>
-
-        <div id="info-modal" class="info-overlay hidden">
-            <div class="info-container">
-                <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
-                <div id="info-content-body"></div>
             </div>
         </div>
     </div>
