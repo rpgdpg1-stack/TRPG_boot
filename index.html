@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TrainingRPG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
-        <!-- Лоадер: Тот самый бицепс и мелкий пиксельный текст -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
@@ -38,7 +37,6 @@
             </div>
         </main>
 
-        <!-- Модалка выбора дня -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
@@ -50,7 +48,6 @@
             </div>
         </div>
 
-        <!-- Модалка инфо -->
         <div id="info-modal" class="info-overlay hidden">
             <div class="info-container">
                 <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
