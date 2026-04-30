@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TrainingRPG</title>
+    <title>RPG Training</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app">
-        <!-- ЛОАДЕР -->
-        <div id="loader" class="loader">
-            <div class="bicep-emoji">💪🏻</div>
-            <p class="loader-text-tiny">ЗАГРУЗКА...</p>
-        </div>
+    <!-- Состояние загрузки (всегда сверху) -->
+    <div id="loader" class="loader">
+        <div class="bicep-emoji">💪🏻</div>
+        <p class="loader-text">ЗАГРУЗКА...</p>
+    </div>
 
-        <!-- ГЛАВНЫЙ ЭКРАН (ВЫБОР ПРОГРАММЫ) -->
+    <div id="app" style="visibility: hidden;">
+        <!-- ЭКРАН 1: ГЛАВНАЯ -->
         <section id="home-screen" class="screen">
             <div class="rpg-logo">RPG</div>
-            <p class="training-app-sub">TRAINING APP</p>
+            <p class="sub-logo">TRAINING APP</p>
             
             <div class="main-menu">
                 <div class="menu-card" onclick="showScreen('workout-screen')">
@@ -38,100 +38,88 @@
                     </div>
                     <div class="menu-arrow">❯</div>
                 </div>
-                <button class="btn-create-dashed" onclick="showSoon()">+ СОЗДАТЬ ТРЕНИРОВКУ</button>
+                <button class="btn-dashed" onclick="showSoon()">+ СОЗДАТЬ ТРЕНИРОВКУ</button>
             </div>
         </section>
 
-        <!-- ЭКРАН ТРЕНИРОВКИ -->
+        <!-- ЭКРАН 2: ТРЕНИРОВКА -->
         <section id="workout-screen" class="screen hidden">
-            <header class="progress-container">
-                <div class="progress-row">
-                    <span id="progress-digits">0 / 0</span>
-                    <div class="progress-bar-bg">
-                        <div id="progress-fill"></div>
-                    </div>
+            <header class="header-fixed">
+                <div class="progress-wrap">
+                    <span id="progress-text">0/10</span>
+                    <div class="bar-bg"><div id="bar-fill"></div></div>
                 </div>
             </header>
 
-            <main class="content-scroll" id="exercise-list" onscroll="closeAllSwipes()"></main>
-            
-            <div class="footer-action">
-                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ</button>
-            </div>
+            <div id="exercise-list" class="content-scroll"></div>
+
+            <div class="footer-spacer"></div>
         </section>
 
-        <!-- ТАБ-БАР (ОСТРОВОК) -->
-        <nav class="tab-island-container">
+        <!-- ТАБ-БАР -->
+        <nav class="tab-bar">
             <div class="tab-island">
-                <div class="tab-item" onclick="showScreen('home-screen')">
-                    <span class="tab-icon">💎</span>
-                    <span class="tab-label">Тренировки</span>
+                <div class="tab-btn" onclick="showScreen('home-screen')">
+                    <span>💎</span><label>Тренировки</label>
                 </div>
-                <div class="tab-item day-trigger" onclick="openDayPicker()">
-                    <span id="current-day-tab" class="tiny-day">A</span>
-                    <span class="tab-label">День</span>
+                <div class="tab-btn active-day" onclick="openDayPicker()">
+                    <span id="tab-day-val" class="tiny">A</span><label>День</label>
                 </div>
-                <div class="tab-item" onclick="showSoon()">
-                    <span class="tab-icon">⚙️</span>
-                    <span class="tab-label">Настройки</span>
+                <div class="tab-btn" onclick="showSoon()">
+                    <span>⚙️</span><label>Настройки</label>
                 </div>
             </div>
         </nav>
 
-        <!-- МОДАЛКА ВЫБОРА ДНЯ -->
-        <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
-            <div class="bottom-sheet" onclick="event.stopPropagation()">
-                <div class="sheet-handle"></div>
+        <!-- МОДАЛКА: ВЫБОР ДНЯ -->
+        <div id="day-picker" class="overlay hidden" onclick="closeModals()">
+            <div class="sheet" onclick="event.stopPropagation()">
+                <div class="handle"></div>
                 <div class="sheet-title">ДЕНЬ ТРЕНИРОВКИ</div>
                 <div class="days-grid">
-                    <div class="day-option" id="btn-day-A" onclick="changeDay('A')">
-                        <span class="day-letter">A</span>
-                        <span class="day-sub">ДЕНЬ A</span>
-                    </div>
-                    <div class="day-option" id="btn-day-B" onclick="changeDay('B')">
-                        <span class="day-letter">B</span>
-                        <span class="day-sub">ДЕНЬ B</span>
-                    </div>
-                    <div class="day-option" id="btn-day-C" onclick="changeDay('C')">
-                        <span class="day-letter">C</span>
-                        <span class="day-sub">ДЕНЬ C</span>
-                    </div>
+                    <div class="day-card" id="d-A" onclick="setDay('A')"><span>A</span><small>ДЕНЬ A</small></div>
+                    <div class="day-card" id="d-B" onclick="setDay('B')"><span>B</span><small>ДЕНЬ B</small></div>
+                    <div class="day-card" id="d-C" onclick="setDay('C')"><span>C</span><small>ДЕНЬ C</small></div>
                 </div>
             </div>
         </div>
 
-        <!-- ЭКРАН ЗАМЕНЫ -->
-        <div id="replace-screen" class="full-modal hidden">
-            <div class="modal-header">
-                <div class="back-btn" onclick="closeReplace()">← НАЗАД</div>
-                <div class="modal-title-box">
-                    <div class="modal-title">ЗАМЕНА</div>
-                    <div id="replace-filter-info" class="modal-subtitle"></div>
+        <!-- МОДАЛКА: ЗАМЕНА -->
+        <div id="replace-screen" class="full-page hidden">
+            <div class="page-header">
+                <button class="back-btn" onclick="closeModals()">← НАЗАД</button>
+                <div class="header-center">
+                    <div class="tiny">ЗАМЕНА</div>
+                    <div id="replace-sub" class="filter-tag"></div>
                 </div>
             </div>
-            <div id="replace-list" class="modal-body"></div>
-        </div>
-
-        <!-- МОДАЛКА ФИНИША -->
-        <div id="finish-modal" class="modal-overlay hidden" onclick="closeFinish()">
-            <div class="modal-content finish-card" onclick="event.stopPropagation()">
-                <div class="fire-emoji">🔥</div>
-                <div class="done-title">ОТЛИЧНО!</div>
-                <p class="done-text">Тренировка завершена.<br>Отличная работа, продолжай в том же духе!</p>
-                <button class="btn-full-green" onclick="tg.close()">ОК, ЗАКРЫТЬ ПРИЛОЖЕНИЕ</button>
-                <div class="back-link" onclick="closeFinish()">Главная</div>
+            <div id="replace-list" class="page-body"></div>
+            <div id="replace-footer" class="page-footer hidden">
+                <button class="btn-green-main" onclick="applyReplacement()">ЗАМЕНИТЬ УПРАЖНЕНИЕ</button>
             </div>
         </div>
 
-        <!-- ЭКРАН ИНФО -->
-        <div id="info-screen" class="full-modal hidden">
-            <div class="modal-header">
-                <div class="back-btn" onclick="closeInfo()">← НАЗАД</div>
-                <div class="modal-title">ИНФО</div>
+        <!-- МОДАЛКА: ИНФО -->
+        <div id="info-screen" class="full-page hidden">
+            <div class="page-header">
+                <button class="back-btn" onclick="closeModals()">← НАЗАД</button>
+                <div class="tiny">ИНФОРМАЦИЯ</div>
             </div>
-            <div id="info-body" class="modal-body info-style"></div>
+            <div id="info-body" class="page-body"></div>
+        </div>
+
+        <!-- МОДАЛКА: ФИНИШ -->
+        <div id="finish-modal" class="overlay hidden">
+            <div class="modal-finish">
+                <div class="fire-anim">🔥</div>
+                <div class="tiny" style="font-size: 32px; color: #9ED153;">ОТЛИЧНО!</div>
+                <p>Тренировка завершена. Отличная работа!</p>
+                <button class="btn-green-main" onclick="tg.close()">ОК, ЗАКРЫТЬ</button>
+                <div class="link-gray" onclick="closeModals()">Вернуться</div>
+            </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
