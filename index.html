@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body style="opacity: 0; background: #0d0d0d;">
-    <div id="app">
+    <div id="app" onclick="closeAllSwipes(event)">
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
@@ -25,13 +25,15 @@
                     <span id="progress-text">0 / 0 ПРОГРЕСС</span>
                     <div class="progress-bg"><div id="progress-fill"></div></div>
                 </div>
+                <!-- Кнопка закрытия справа -->
+                <div class="header-close" onclick="tg.close()">✕</div>
             </div>
         </header>
 
-        <main class="content-scroll" id="main-content">
+        <main class="content-scroll" id="main-content" onscroll="closeAllSwipes()">
             <div id="exercise-list"></div>
             <div class="footer-padding">
-                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ</button>
             </div>
         </main>
 
