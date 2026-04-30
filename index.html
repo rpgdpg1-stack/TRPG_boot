@@ -10,6 +10,7 @@
 </head>
 <body>
     <div id="app">
+        <!-- Лоадер -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
@@ -37,6 +38,7 @@
             </div>
         </main>
 
+        <!-- Модалка выбора дня -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
@@ -48,6 +50,7 @@
             </div>
         </div>
 
+        <!-- Модалка инфо -->
         <div id="info-modal" class="info-overlay hidden">
             <div class="info-container">
                 <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
