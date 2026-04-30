@@ -9,19 +9,24 @@ let isEditingWeight = false;
 
 const tg = window.Telegram?.WebApp;
 
+// Как только скрипт начал работу - разрешаем показ body (но контент еще скрыт через CSS класс loaded)
+document.body.style.opacity = "1";
+
 async function init() {
     if (tg) { tg.expand(); tg.ready(); }
+    
     const saved = localStorage.getItem('completed_exercises');
     if (saved) completedIds = JSON.parse(saved);
     
-    // Сначала загружаем все данные
+    // Загружаем данные из таблиц
     await loadData();
     
-    // Когда данные готовы, убираем лоадер и снимаем блокировку с body
+    // Когда всё отрендерилось и готово - убираем лоадер
     setTimeout(() => {
-        document.getElementById('loader').style.display = 'none';
-        document.body.classList.remove('js-loading');
-    }, 800); // 800ms для плавности
+        document.body.classList.add('loaded'); // Показываем контент хедера и списка
+        const loader = document.getElementById('loader');
+        if (loader) loader.style.display = 'none';
+    }, 500); 
 }
 
 async function fetchSheet(gid) {
@@ -41,7 +46,6 @@ async function loadData() {
         muscle: row.c[2]?.v || "",
         subgroup: row.c[3]?.v ? `(${row.c[3].v})` : "",
         subID: String(row.c[3]?.v || "").trim(),
-        type: String(row.c[4]?.v || "base").toLowerCase(),
         img: row.c[9]?.v || ""
     }));
 
@@ -88,8 +92,7 @@ function render() {
                         </div>
                         <div class="weight-side" onclick="event.stopPropagation()">
                             <input type="number" class="weight-input" value="${item.weight}" 
-                                   inputmode="numeric" onclick="this.select()"
-                                   onfocus="isEditingWeight=true; this.select()" 
+                                   inputmode="numeric" onfocus="isEditingWeight=true; this.select()" 
                                    onblur="setTimeout(()=>isEditingWeight=false,200)"
                                    oninput="updateWeight('${item.rowId}', this.value)">
                             <div class="w-label">KG</div>
