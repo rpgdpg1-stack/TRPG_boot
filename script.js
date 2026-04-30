@@ -2,10 +2,10 @@ const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
 const GID_DAYS = '1002309655';
 const GID_EX = '0';
 
-// Словарь перевода
 const TRANSLATIONS = {
     'BACK': 'СПИНА', 'CHEST': 'ГРУДЬ', 'LEGS': 'НОГИ', 'SHOULDERS': 'ПЛЕЧИ',
-    'ARMS': 'РУКИ', 'ABS': 'ПРЕСС', 'WIDTH': 'ШИРИНА', 'THICKNESS': 'ТОЛЩИНА'
+    'ARMS': 'РУКИ', 'ABS': 'ПРЕСС', 'WIDTH': 'ШИРИНА', 'THICKNESS': 'ТОЛЩИНА',
+    'NECK': 'ШЕЯ', 'EXTENSORS': 'РАЗГИБАТЕЛИ'
 };
 
 let workoutPlan = [];
@@ -14,13 +14,12 @@ let completedIds = [];
 let currentDay = 'A';
 let isEditingWeight = false;
 
+// Swipe state
+let startX = 0;
+let activeCard = null;
+
 const tg = window.Telegram?.WebApp;
 document.body.style.opacity = "1";
-
-// Логика свайпа
-let startX = 0;
-let currentTranslate = 0;
-let activeCard = null;
 
 async function init() {
     if (tg) { tg.expand(); tg.ready(); }
@@ -35,7 +34,7 @@ async function init() {
 
 function translate(text) {
     if (!text) return "";
-    const clean = text.replace(/_/g, ' ').toUpperCase();
+    let clean = text.replace(/_/g, ' ').replace(/[()]/g, '').toUpperCase();
     return TRANSLATIONS[clean] || clean;
 }
 
@@ -68,7 +67,6 @@ function render() {
     const list = document.getElementById('exercise-list');
     document.getElementById('day-display').innerText = currentDay;
     const filtered = workoutPlan.filter(it => it.day === currentDay);
-    
     const typeNames = { 'base': 'БАЗА', 'isolation': 'ИЗОЛЯЦИЯ', 'accessory': 'ДОП' };
     let html = '';
 
@@ -81,11 +79,16 @@ function render() {
                 html += `
                 <div class="card-wrapper">
                     <div class="card-actions">
-                        <div class="action-btn btn-info" onclick="openInfoScreen('${item.rowId}')">ИНФО</div>
-                        <div class="action-btn btn-swap" onclick="openReplaceScreen('${item.rowId}')">СМЕНА</div>
+                        <div class="action-btn btn-info" onclick="openInfoScreen('${item.rowId}')">
+                            <svg width="16" height="16" viewBox="0 0 12 12"><path d="M9.63281 2.48096V0.730957H11.3828V2.48096H9.63281ZM11.3828 11.231H9.63281V4.23096H11.3828V11.231Z" fill="#4B90C9"/></svg>
+                            <span class="action-label label-info">ИНФО</span>
+                        </div>
+                        <div class="action-btn btn-swap" onclick="openReplaceScreen('${item.rowId}')">
+                            <svg width="16" height="16" viewBox="0 0 12 12"><path d="M2 2H10V4L12 2L10 0V2H0V7H2V2ZM10 10H2V8L0 10L2 12V10H12V5H10V10Z" fill="#9ED153"/></svg>
+                            <span class="action-label label-swap">СМЕНА</span>
+                        </div>
                     </div>
                     <div class="card ${isDone ? 'done' : ''}" 
-                         data-id="${item.rowId}"
                          ontouchstart="handleTouchStart(event)" 
                          ontouchmove="handleTouchMove(event)" 
                          ontouchend="handleTouchEnd(event)"
@@ -103,9 +106,7 @@ function render() {
                         </div>
                         <div class="weight-side" onclick="event.stopPropagation()">
                             <input type="number" class="weight-input" value="${item.weight}" 
-                                   inputmode="numeric" onfocus="isEditingWeight=true; this.select()" 
-                                   onblur="setTimeout(()=>isEditingWeight=false,200)"
-                                   oninput="updateWeight('${item.rowId}', this.value)">
+                                   onfocus="isEditingWeight=true; this.select()" onblur="setTimeout(()=>isEditingWeight=false,200)">
                             <div class="w-label">KG</div>
                         </div>
                     </div>
@@ -117,7 +118,6 @@ function render() {
     updateProgress();
 }
 
-// TOUCH ОБРАБОТЧИКИ
 function handleTouchStart(e) {
     if (isEditingWeight) return;
     startX = e.touches[0].clientX;
@@ -126,51 +126,38 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
-    if (!activeCard || isEditingWeight) return;
+    if (!activeCard) return;
     let x = e.touches[0].clientX;
     let diff = x - startX;
-    if (diff > 0) diff = 0; // Запрещаем свайп вправо
-    if (diff < -140) diff = -140; // Макс. сдвиг для 2 кнопок
+    if (diff > 0) diff = 0;
+    if (diff < -160) diff = -160;
     activeCard.style.transform = `translateX(${diff}px)`;
 }
 
-function handleTouchEnd(e) {
+function handleTouchEnd() {
     if (!activeCard) return;
-    activeCard.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
-    let matrix = new WebKitCSSMatrix(window.getComputedStyle(activeCard).transform);
-    if (matrix.m41 < -70) {
-        activeCard.style.transform = 'translateX(-140px)';
-    } else {
-        activeCard.style.transform = 'translateX(0)';
-    }
+    activeCard.style.transition = 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+    let currentX = new WebKitCSSMatrix(window.getComputedStyle(activeCard).transform).m41;
+    activeCard.style.transform = currentX < -70 ? 'translateX(-150px)' : 'translateX(0)';
+    activeCard = null;
 }
 
-// ОКНА
 function openInfoScreen(id) {
     const item = workoutPlan.find(it => it.rowId === id);
-    document.getElementById('info-body').innerHTML = `
-        <h2>${item.main.name}</h2>
-        <p>Группа: ${item.main.muscle} ${item.main.subgroup}</p>
-        <p style="margin-top:20px;">Здесь будет подробное описание техники выполнения упражнения, советы и работающие мышцы.</p>
-    `;
+    document.getElementById('info-body').innerHTML = `<h2>${item.main.name}</h2><p>${item.main.muscle} ${item.main.subgroup}</p>`;
     document.getElementById('info-screen').classList.remove('hidden');
 }
 
 function openReplaceScreen(id) {
     const item = workoutPlan.find(it => it.rowId === id);
-    const subID = item.main.subgroup.replace(/[()]/g, '');
-    const options = library.filter(ex => ex.subgroup.includes(subID));
-    
+    const sub = item.main.subgroup.replace(/[()]/g, '');
+    const options = library.filter(ex => ex.subgroup.includes(sub));
     let html = '';
     options.forEach(ex => {
-        html += `
-            <div class="replace-item" onclick="confirmReplace('${id}', '${ex.name}')">
-                <img src="${ex.img}">
-                <div class="replace-info">
-                    <div class="name">${ex.name}</div>
-                    <div class="muscle-sub" style="font-size:10px;">${ex.muscle}</div>
-                </div>
-            </div>`;
+        html += `<div style="background:#1C1C1E; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; align-items:center;" onclick="confirmReplace('${id}', '${ex.name}')">
+            <img src="${ex.img}" style="width:40px; height:40px; margin-right:15px; border-radius:5px; background:#fff;">
+            <div><div style="font-weight:600; font-size:14px;">${ex.name}</div><div style="font-size:10px; color:#8E8E93;">${ex.muscle}</div></div>
+        </div>`;
     });
     document.getElementById('replace-list').innerHTML = html;
     document.getElementById('replace-screen').classList.remove('hidden');
@@ -179,24 +166,14 @@ function openReplaceScreen(id) {
 function confirmReplace(rowId, newName) {
     const item = workoutPlan.find(it => it.rowId === rowId);
     const newEx = library.find(ex => ex.name === newName);
-    if (item && newEx) {
-        item.main = newEx;
-        render();
-        closeReplace();
-    }
+    if (item && newEx) { item.main = newEx; render(); closeReplace(); }
 }
 
-function closeInfo() { document.getElementById('info-screen').classList.add('hidden'); }
-function closeReplace() { document.getElementById('replace-screen').classList.add('hidden'); }
-
-// Базовые функции (остались без изменений)
 function handleCardClick(id, event) {
     if (isEditingWeight) return;
-    let matrix = new WebKitCSSMatrix(window.getComputedStyle(event.currentTarget).transform);
-    if (matrix.m41 < -10) return; // Если карточка сдвинута, клик не засчитываем как выполнение
-
+    let x = new WebKitCSSMatrix(window.getComputedStyle(event.currentTarget).transform).m41;
+    if (x < -10) return;
     completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
-    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
 }
@@ -208,11 +185,8 @@ async function fetchSheet(gid) {
     return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
 }
 
-function updateWeight(id, val) {
-    const item = workoutPlan.find(it => it.rowId === id);
-    if (item) item.weight = val;
-}
-
+function closeInfo() { document.getElementById('info-screen').classList.add('hidden'); }
+function closeReplace() { document.getElementById('replace-screen').classList.add('hidden'); }
 function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
 function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
 function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
@@ -223,5 +197,6 @@ function updateProgress() {
     document.getElementById('progress-fill').style.width = perc + '%';
     document.getElementById('progress-text').innerText = `${done} / ${dayEx.length} ПРОГРЕСС`;
 }
+function finishWorkout() { tg?.close(); }
 
 window.addEventListener('load', init);
