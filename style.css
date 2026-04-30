@@ -1,76 +1,107 @@
 :root {
-    --bg: #000;
+    --bg: #0d0d0d;
     --card: #1C1C1E;
     --accent: #9ED153;
-    --gray: #8E8E93;
+    --gray-text: #8E8E93;
     --safe-top: env(safe-area-inset-top, 44px);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
 body { background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; margin: 0; overflow: hidden; }
 
-/* Лоадер: Сжимающийся бицепс 💪🏻 */
+/* Лоадер */
 .loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
-.bicep-emoji { 
-    font-size: 60px; 
-    animation: bicep-squeeze 0.6s infinite alternate ease-in-out; 
-}
-@keyframes bicep-squeeze { 
-    0% { transform: scale(1) rotate(0deg); } 
-    100% { transform: scale(0.85, 1.1) rotate(10deg); } /* Эффект напряжения/сжатия */
-}
-.loader-text-tiny { 
-    font-family: 'Tiny5'; 
-    color: var(--accent); 
-    font-size: 16px; /* Меньший кегель */
-    margin-top: 10px; 
-    letter-spacing: 1px; 
-    opacity: 0.8;
-}
+.bicep-emoji { font-size: 60px; animation: bicep-squeeze 0.6s infinite alternate ease-in-out; }
+@keyframes bicep-squeeze { 0% { transform: scale(1) rotate(0deg); } 100% { transform: scale(0.85, 1.1) rotate(10deg); } }
+.loader-text-tiny { font-family: 'Tiny5'; color: var(--accent); font-size: 16px; margin-top: 10px; letter-spacing: 1px; opacity: 0.8; }
 
 /* Хедер */
 .sticky-header { position: fixed; top: 0; left: 0; right: 0; background: var(--bg); z-index: 100; padding-top: var(--safe-top); padding-bottom: 10px; }
 .header-content { padding: 0 16px; display: flex; flex-direction: column; align-items: center; }
 #day-display { font-family: 'Tiny5'; font-size: 64px; color: var(--accent); line-height: 1; }
-.arrow-down { color: var(--gray); font-size: 14px; margin-top: -8px; }
+.arrow-down { color: var(--gray-text); font-size: 14px; margin-top: -8px; }
 
-/* Прогресс с четким отступом 20px */
 .progress-section { width: 100%; margin-top: 10px; margin-bottom: 20px; }
-#progress-text { font-size: 10px; font-weight: 800; color: var(--gray); letter-spacing: 1px; display: block; margin-bottom: 6px; }
+#progress-text { font-size: 10px; font-weight: 800; color: var(--gray-text); letter-spacing: 1px; display: block; margin-bottom: 6px; }
 .progress-bg { height: 6px; background: #2C2C2E; border-radius: 10px; overflow: hidden; }
 #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.5s ease; }
 
-/* Контент */
+/* Контент и карточки */
 .content-scroll { height: 100vh; overflow-y: auto; padding: calc(var(--safe-top) + 145px) 16px 120px 16px; }
 
-/* Карточки: Блюр 1.9 + Затемнение 40% */
-.card { position: relative; background: var(--card); border-radius: 34px; height: 150px; display: flex; align-items: center; padding: 16px; margin-bottom: 12px; transition: 0.3s; overflow: hidden; }
+.card { 
+    position: relative; 
+    background: var(--card); 
+    border-radius: 38px; 
+    min-height: 150px; 
+    display: flex; 
+    align-items: center; 
+    padding: 16px; 
+    margin-bottom: 16px; /* Отступ между карточками 16px */
+    transition: 0.3s; 
+    overflow: hidden; 
+}
+
+/* Эффект выполнения: Blur 1.9 + Затемнение 40% */
 .card.done .card-inner-content, .card.done .weight-side, .card.done .info-btn { filter: grayscale(100%) blur(1.9px); }
 .card.done::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 2; }
-.card.done::after { content: ""; position: absolute; inset: 0; z-index: 3; }
 
-.card-inner-content { display: flex; align-items: center; width: 100%; }
-.img-box { width: 110px; height: 110px; border-radius: 22px; overflow: hidden; flex-shrink: 0; background: #222; }
-.img-box img { width: 100%; height: 100%; object-fit: cover; }
+.card-inner-content { display: flex; align-items: center; width: 100%; z-index: 1; }
 
-.info-content { margin-left: 14px; flex-grow: 1; padding-right: 75px; }
-.muscle-row { font-size: 9px; font-weight: 800; color: #648337; text-transform: uppercase; margin-bottom: 4px; }
-.ex-name { font-size: 15px; font-weight: 600; line-height: 1.2; }
+/* Размер изображения 118x118 */
+.img-box { 
+    width: 118px; 
+    height: 118px; 
+    border-radius: 28px; 
+    overflow: hidden; 
+    flex-shrink: 0; 
+    background: #fff; 
+}
+.img-box img { width: 100%; height: 100%; object-fit: contain; }
 
-/* Вес: Клавиатура только цифры + Автовыделение */
-.weight-side { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 70px; display: flex; flex-direction: column; align-items: center; z-index: 10; }
-.weight-input { background: transparent; border: none; color: var(--accent); font-family: 'Manrope'; font-weight: 800; font-size: 32px; width: 100%; text-align: center; padding: 0; -moz-appearance: textfield; }
-.weight-input::-webkit-outer-spin-button, .weight-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.w-label { font-size: 10px; color: var(--gray); font-weight: 800; margin-top: -5px; }
+/* Текстовая область */
+.info-content { margin-left: 16px; flex-grow: 1; padding-right: 65px; }
 
-.info-btn { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--gray); font-family: 'Tiny5'; font-size: 20px; z-index: 5; }
-.btn-finish-capsule { width: 100%; padding: 20px; background: var(--accent); color: #000; border-radius: 100px; font-family: 'Tiny5'; font-size: 18px; border: none; margin-top: 30px; }
-.footer-padding { padding-bottom: 60px; }
+/* Группа мышц: h5, Manrope 10px, ExtraBold, Letter Spacing 20% */
+.muscle-row { 
+    font-size: 10px; 
+    font-family: 'Manrope';
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 0.2em; 
+    margin-bottom: 8px;
+}
+.muscle-main { color: #648337; } /* Цвет как на скрине (зеленоватый) */
+.muscle-sub { color: var(--gray-text); }
+
+/* Название упражнения: H3, Geist 14px, SemiBold */
+.ex-name { 
+    font-family: 'Geist';
+    font-size: 14px; 
+    font-weight: 600; 
+    line-height: 1.2; 
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+/* Подходы: Manrope 10px, серый, сжатые буквы */
+.ex-sets { 
+    font-family: 'Manrope';
+    font-size: 10px; 
+    color: var(--gray-text); 
+    letter-spacing: -0.02em;
+}
+
+/* Вес: Числа */
+.weight-side { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 70px; text-align: center; z-index: 10; }
+.weight-input { 
+    background: transparent; border: none; 
+    color: var(--accent); font-family: 'Manrope'; font-weight: 800; 
+    font-size: 32px; width: 100%; text-align: center; padding: 0; 
+}
+.w-label { font-size: 10px; color: var(--gray-text); font-weight: 800; margin-top: -4px; text-transform: uppercase; }
+
+.info-btn { position: absolute; top: 16px; right: 20px; color: var(--gray-text); font-family: 'Tiny5'; font-size: 18px; opacity: 0.5; }
 .section-title { font-size: 10px; color: #C6624A; letter-spacing: 2px; text-transform: uppercase; margin: 25px 0 12px 4px; font-weight: 800; }
-
+.btn-finish-capsule { width: 100%; padding: 20px; background: var(--accent); color: #000; border-radius: 100px; font-family: 'Tiny5'; font-size: 18px; border: none; margin-top: 20px; }
 .hidden { display: none !important; }
-.modal-overlay, .info-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: flex-end; }
-.bottom-sheet { width: 100%; background: #1C1C1E; border-radius: 24px 24px 0 0; padding: 20px; padding-bottom: 40px; }
-.days-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px 0; }
-.day-option { background: #2C2C2E; padding: 20px; border-radius: 18px; text-align: center; font-family: 'Tiny5'; font-size: 24px; color: var(--accent); }
