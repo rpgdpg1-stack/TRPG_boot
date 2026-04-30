@@ -12,26 +12,43 @@
     <div id="app">
         <header class="header">
             <div class="nav-area">
-                <div class="day-title" id="day-display" onclick="openDayPicker()">A</div>
-                <div class="progress-wrapper">
-                    <span class="progress-label" id="progress-text">0 / 0 DONE</span>
-                    <div class="progress-bar-bg"><div id="progress-fill"></div></div>
+                <!-- Огромная буква дня с индикатором выбора -->
+                <div class="day-selector-trigger" onclick="openDayPicker()">
+                    <span id="day-display">A</span>
+                    <span class="arrow-down">↓</span>
+                </div>
+                
+                <div class="progress-container">
+                    <span id="progress-text">0 / 0 DONE</span>
+                    <div class="progress-bg">
+                        <div id="progress-fill"></div>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <div id="exercise-list" class="exercise-list"></div>
+        <div id="exercise-list"></div>
 
         <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
 
-        <div id="day-picker" class="modal-overlay hidden" onclick="closeDayPicker()">
+        <!-- Bottom Sheet для выбора дня -->
+        <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
-                <div class="sheet-line"></div>
-                <div class="sheet-title">ВЫБЕРИ ДЕНЬ</div>
+                <div class="sheet-handle"></div>
+                <div class="sheet-header">ДЕНЬ ТРЕНИРОВКИ</div>
                 <div class="days-grid">
-                    <button onclick="changeDay('A')">A</button>
-                    <button onclick="changeDay('B')">B</button>
-                    <button onclick="changeDay('C')">C</button>
+                    <div class="day-option" onclick="changeDay('A')">
+                        <span class="day-letter">A</span>
+                        <span class="day-name">ДЕНЬ А</span>
+                    </div>
+                    <div class="day-option" onclick="changeDay('B')">
+                        <span class="day-letter">Б</span>
+                        <span class="day-name">ДЕНЬ Б</span>
+                    </div>
+                    <div class="day-option" onclick="changeDay('C')">
+                        <span class="day-letter">C</span>
+                        <span class="day-name">ДЕНЬ C</span>
+                    </div>
                 </div>
             </div>
         </div>
