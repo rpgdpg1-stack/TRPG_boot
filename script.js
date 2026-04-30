@@ -1,214 +1,220 @@
+const tg = window.Telegram.WebApp;
 const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-const GID_DAYS = '1002309655';
-const GID_EX = '0';
 
-const tg = window.Telegram?.WebApp;
-let workoutPlan = [];
-let library = [];
-let completedIds = [];
-let currentDay = 'A';
-let activeCard = null;
-let startX = 0;
+let state = {
+    currentDay: 'A',
+    workoutData: [],
+    library: [],
+    completed: [],
+    selectedForReplace: null, // ID того, что меняем
+    replacementId: null       // ID нового упражнения
+};
 
-// Инициализация
+// Запуск
 async function init() {
-    if (tg) {
-        tg.expand();
-        tg.enableClosingConfirmation();
-        tg.headerColor = '#0d0d0d';
-        tg.backgroundColor = '#0d0d0d';
-        
-        // Загрузка из облака
-        tg.CloudStorage.getItem('completed_ids', (err, val) => {
-            if (val) completedIds = JSON.parse(val);
-        });
+    tg.expand();
+    tg.enableClosingConfirmation();
+    // Блокируем свайп вниз для закрытия
+    if (tg.isVersionAtLeast('7.7')) {
+        tg.disableVerticalSwipes();
     }
 
-    await loadData();
-    document.getElementById('loader').style.display = 'none';
-}
-
-async function loadData() {
-    try {
-        const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
-        
-        library = exRows.filter(r => r.c[0]?.v).map(row => ({
-            name: row.c[1]?.v || "",
-            muscle: String(row.c[2]?.v || "").toUpperCase(),
-            subgroup: row.c[3]?.v || "",
-            img: row.c[9]?.v || ""
-        }));
-
-        workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => ({
-            rowId: 'row-' + idx,
-            day: String(row.c[2]?.v).toUpperCase().replace('Б', 'B'), // Исправляем кириллицу Б на B
-            type: String(row.c[4]?.v || 'base').toLowerCase(),
-            main: library.find(ex => ex.subgroup === row.c[6]?.v) || { name: row.c[6]?.v, muscle: "УПРАЖНЕНИЕ", img: "" },
-            weight: localStorage.getItem(`w_${idx}`) || "0"
-        }));
-        
-        render();
-    } catch (e) { console.error("Ошибка загрузки:", e); }
-}
-
-function render() {
-    const list = document.getElementById('exercise-list');
-    const filtered = workoutPlan.filter(it => it.day === currentDay);
+    await loadAllData();
     
-    // Обновляем таб-бар и активный день
-    document.getElementById('current-day-tab').innerText = currentDay;
-    document.querySelectorAll('.day-option').forEach(el => el.classList.remove('active'));
-    document.getElementById(`btn-day-${currentDay}`)?.classList.add('active');
+    // Загружаем прогресс из облака
+    tg.CloudStorage.getItem('completed_tasks', (err, val) => {
+        if (val) state.completed = JSON.parse(val);
+        renderWorkout();
+        hideLoader();
+    });
+}
 
+async function loadAllData() {
+    try {
+        const [exResp, dayResp] = await Promise.all([
+            fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=0`),
+            fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=1002309655`)
+        ]);
+
+        const exJson = JSON.parse((await exResp.text()).substring(47).slice(0, -2));
+        const dayJson = JSON.parse((await dayResp.text()).substring(47).slice(0, -2));
+
+        state.library = exJson.table.rows.map(r => ({
+            id: r.c[0]?.v,
+            name: r.c[1]?.v,
+            muscle: r.c[2]?.v,
+            subgroup: r.c[3]?.v,
+            img: r.c[9]?.v
+        }));
+
+        state.workoutData = dayJson.table.rows.filter(r => r.c[2]?.v).map((r, i) => ({
+            rowId: `row-${i}`,
+            day: String(r.c[2]?.v).toUpperCase().replace('Б', 'B'),
+            exercise: state.library.find(l => l.subgroup === r.c[6]?.v) || { name: r.c[6]?.v, muscle: 'УПР', img: '' },
+            weight: localStorage.getItem(`weight-${i}`) || "0"
+        }));
+
+    } catch (e) { alert("Ошибка загрузки данных"); }
+}
+
+function renderWorkout() {
+    const list = document.getElementById('exercise-list');
+    const dayData = state.workoutData.filter(d => d.day === state.currentDay);
+    
+    document.getElementById('tab-day-val').innerText = state.currentDay;
+    
     let html = '';
-    filtered.forEach(item => {
-        const isDone = completedIds.includes(item.rowId);
+    dayData.forEach(item => {
+        const isDone = state.completed.includes(item.rowId);
         html += `
-        <div class="card-wrapper" data-id="${item.rowId}">
-            <div class="card-actions">
-                <div class="action-btn btn-info" onclick="openInfo('${item.rowId}')">ИНФО</div>
-                <div class="action-btn btn-swap" onclick="openReplace('${item.rowId}')">СМЕНА</div>
-            </div>
-            <div class="card ${isDone ? 'done' : ''}" 
-                 ontouchstart="hTouchStart(event)" ontouchmove="hTouchMove(event)" ontouchend="hTouchEnd(event)"
-                 onclick="toggleDone('${item.rowId}')">
-                <div class="img-box"><img src="${item.main.img}"></div>
-                <div class="info-content">
-                    <div class="muscle-row">${item.main.muscle}</div>
-                    <div class="ex-name">${item.main.name}</div>
+            <div class="ex-wrapper" data-id="${item.rowId}">
+                <div class="ex-actions">
+                    <div class="act-btn btn-info" onclick="openInfo('${item.exercise.name}')">ИНФО</div>
+                    <div class="act-btn btn-swap" onclick="openReplace('${item.rowId}')">СМЕНА</div>
                 </div>
-                <div class="weight-side" onclick="event.stopPropagation()">
-                    <input type="number" inputmode="decimal" class="weight-input" value="${item.weight}" 
-                           oninput="saveWeight('${item.rowId}', this.value)">
+                <div class="ex-card ${isDone ? 'done' : ''}" 
+                     onclick="toggleTask('${item.rowId}')"
+                     ontouchstart="handleTS(event)" ontouchmove="handleTM(event)" ontouchend="handleTE(event)">
+                    <img src="${item.exercise.img}" class="ex-img">
+                    <div class="ex-info">
+                        <div class="ex-muscle">${item.exercise.muscle}</div>
+                        <div class="ex-name">${item.exercise.name}</div>
+                    </div>
+                    <div class="ex-weight-box" onclick="event.stopPropagation()">
+                        <input type="number" class="weight-input" value="${item.weight}" 
+                               onchange="saveWeight('${item.rowId}', this.value)">
+                    </div>
                 </div>
             </div>
-        </div>`;
+        `;
     });
     list.innerHTML = html;
     updateProgress();
 }
 
-// Навигация
+// ЛОГИКА ЭКРАНА ЗАМЕНЫ
+function openReplace(rowId) {
+    tg.HapticFeedback.impactOccurred('medium');
+    state.selectedForReplace = rowId;
+    const item = state.workoutData.find(w => w.rowId === rowId);
+    
+    document.getElementById('replace-sub').innerText = `${item.exercise.muscle} (${item.exercise.subgroup || 'БАЗА'})`;
+    
+    const options = state.library.filter(l => l.muscle === item.exercise.muscle);
+    let html = '';
+    options.forEach(opt => {
+        html += `
+            <div class="rep-item" id="opt-${opt.id}" onclick="selectReplacement('${opt.id}')">
+                <img src="${opt.img}" class="ex-img" style="width:50px; height:50px;">
+                <div class="ex-info">
+                    <div class="ex-name">${opt.name}</div>
+                </div>
+                <div class="act-btn btn-info" style="width:40px" onclick="event.stopPropagation(); openInfo('${opt.name}')">ⓘ</div>
+                <div class="rep-check"></div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('replace-list').innerHTML = html;
+    document.getElementById('replace-screen').classList.remove('hidden');
+    document.getElementById('replace-footer').classList.add('hidden');
+}
+
+function selectReplacement(optId) {
+    tg.HapticFeedback.selectionChanged();
+    state.replacementId = optId;
+    document.querySelectorAll('.rep-item').forEach(el => el.classList.remove('selected'));
+    document.getElementById(`opt-${optId}`).classList.add('selected');
+    document.getElementById('replace-footer').classList.remove('hidden');
+}
+
+function applyReplacement() {
+    const newEx = state.library.find(l => String(l.id) === String(state.replacementId));
+    const task = state.workoutData.find(w => w.rowId === state.selectedForReplace);
+    if (newEx && task) {
+        task.exercise = newEx;
+        tg.HapticFeedback.notificationOccurred('success');
+        closeModals();
+        renderWorkout();
+    }
+}
+
+// ВСПОМОГАТЕЛЬНОЕ
+function toggleTask(id) {
+    if (state.completed.includes(id)) {
+        state.completed = state.completed.filter(i => i !== id);
+    } else {
+        state.completed.push(id);
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+    saveCloud();
+    renderWorkout();
+}
+
+function setDay(day) {
+    state.currentDay = day;
+    tg.HapticFeedback.impactOccurred('light');
+    closeModals();
+    renderWorkout();
+}
+
+function updateProgress() {
+    const dayTasks = state.workoutData.filter(d => d.day === state.currentDay);
+    const doneCount = dayTasks.filter(t => state.completed.includes(t.rowId)).length;
+    const total = dayTasks.length;
+    document.getElementById('progress-text').innerText = `${doneCount}/${total}`;
+    document.getElementById('bar-fill').style.width = total ? `${(doneCount/total)*100}%` : '0%';
+    
+    if (doneCount === total && total > 0) {
+        setTimeout(() => document.getElementById('finish-modal').classList.remove('hidden'), 500);
+    }
+}
+
+function saveWeight(id, val) {
+    const task = state.workoutData.find(w => w.rowId === id);
+    if (task) {
+        task.weight = val;
+        localStorage.setItem(`weight-${id.split('-')[1]}`, val);
+    }
+}
+
 function showScreen(id) {
-    tg?.HapticFeedback.impactOccurred('medium');
+    tg.HapticFeedback.impactOccurred('medium');
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
 }
 
-function changeDay(day) {
-    tg?.HapticFeedback.notificationOccurred('success');
-    currentDay = day;
-    closeDayPicker();
-    render();
+function openDayPicker() {
+    document.getElementById('day-picker').classList.remove('hidden');
 }
 
-// Функции карточек
-function toggleDone(id) {
-    if (completedIds.includes(id)) {
-        completedIds = completedIds.filter(i => i !== id);
-    } else {
-        completedIds.push(id);
-        tg?.HapticFeedback.notificationOccurred('success');
-    }
-    saveCloud();
-    render();
+function closeModals() {
+    document.querySelectorAll('.overlay, .full-page').forEach(m => m.classList.add('hidden'));
 }
 
-function saveWeight(id, val) {
-    const item = workoutPlan.find(it => it.rowId === id);
-    if (item) {
-        item.weight = val;
-        localStorage.setItem(`w_${id.split('-')[1]}`, val);
-    }
+function hideLoader() {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.visibility = 'visible';
 }
 
-// Свайпы (плавные)
-function hTouchStart(e) { startX = e.touches[0].clientX; activeCard = e.currentTarget; activeCard.style.transition = 'none'; }
-function hTouchMove(e) {
-    let diff = e.touches[0].clientX - startX;
-    if (diff > 0) diff = 0;
-    if (diff < -150) diff = -150;
-    activeCard.style.transform = `translateX(${diff}px)`;
-}
-function hTouchEnd() {
-    activeCard.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-    const x = new WebKitCSSMatrix(window.getComputedStyle(activeCard).transform).m41;
-    if (x < -60) {
-        activeCard.style.transform = 'translateX(-140px)';
-        tg?.HapticFeedback.impactOccurred('light');
-    } else {
-        activeCard.style.transform = 'translateX(0)';
-    }
-}
-
-function closeAllSwipes() {
-    document.querySelectorAll('.card').forEach(c => c.style.transform = 'translateX(0)');
-}
-
-// Модалки
-function openDayPicker() { tg?.HapticFeedback.impactOccurred('light'); document.getElementById('day-picker-overlay').classList.remove('hidden'); }
-function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
-
-function openReplace(id) {
-    const item = workoutPlan.find(it => it.rowId === id);
-    const filterText = `${item.main.muscle} (${item.main.subgroup || 'БАЗА'})`;
-    document.getElementById('replace-filter-info').innerText = filterText;
-    
-    const options = library.filter(ex => ex.muscle === item.main.muscle);
-    let html = '';
-    options.forEach(ex => {
-        const isActive = ex.name === item.main.name;
-        html += `
-        <div class="replace-card ${isActive ? 'active' : ''}" onclick="confirmReplace('${id}', '${ex.name}')">
-            <div class="img-box" style="width:60px; height:60px;"><img src="${ex.img}"></div>
-            <div class="replace-info">
-                <div class="ex-name" style="font-size:13px;">${ex.name}</div>
-            </div>
-            <div class="replace-check"></div>
-        </div>`;
-    });
-    document.getElementById('replace-list').innerHTML = html;
-    document.getElementById('replace-screen').classList.remove('hidden');
-}
-
-function confirmReplace(rowId, name) {
-    tg?.HapticFeedback.notificationOccurred('success');
-    const item = workoutPlan.find(it => it.rowId === rowId);
-    item.main = library.find(l => l.name === name);
-    setTimeout(() => { closeReplace(); render(); }, 200);
-}
-
-function closeReplace() { document.getElementById('replace-screen').classList.add('hidden'); }
-
-function finishWorkout() {
-    tg?.HapticFeedback.notificationOccurred('success');
-    document.getElementById('finish-modal').classList.remove('hidden');
-}
-function closeFinish() { document.getElementById('finish-modal').classList.add('hidden'); showScreen('home-screen'); }
-
-function showSoon() {
-    tg?.HapticFeedback.impactOccurred('light');
-    alert("Скоро будет!");
-}
-
-// Вспомогательные
-function updateProgress() {
-    const dayEx = workoutPlan.filter(it => it.day === currentDay);
-    const done = dayEx.filter(it => completedIds.includes(it.rowId)).length;
-    const perc = dayEx.length ? (done / dayEx.length) * 100 : 0;
-    document.getElementById('progress-fill').style.width = perc + '%';
-    document.getElementById('progress-digits').innerText = `${done} / ${dayEx.length}`;
-}
+function showSoon() { alert("Скоро будет!"); }
 
 function saveCloud() {
-    if (tg?.CloudStorage) tg.CloudStorage.setItem('completed_ids', JSON.stringify(completedIds));
+    tg.CloudStorage.setItem('completed_tasks', JSON.stringify(state.completed));
 }
 
-async function fetchSheet(gid) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
-    const res = await fetch(url);
-    const text = await res.text();
-    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+// СВАЙПЫ
+let startX = 0, currentActive = null;
+function handleTS(e) { startX = e.touches[0].clientX; currentActive = e.currentTarget; currentActive.style.transition = 'none'; }
+function handleTM(e) {
+    let x = e.touches[0].clientX - startX;
+    if (x < -140) x = -140; if (x > 0) x = 0;
+    currentActive.style.transform = `translateX(${x}px)`;
+}
+function handleTE() {
+    currentActive.style.transition = 'transform 0.3s';
+    const x = new WebKitCSSMatrix(window.getComputedStyle(currentActive).transform).m41;
+    currentActive.style.transform = x < -70 ? 'translateX(-130px)' : 'translateX(0)';
 }
 
-window.addEventListener('load', init);
+window.onload = init;
