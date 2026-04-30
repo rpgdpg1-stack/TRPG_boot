@@ -1,4 +1,62 @@
-// ... (SHEET_ID и прочие константы остаются прежними)
+const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
+const GID_DAYS = '1002309655';
+const GID_EX = '0';
+
+let workoutPlan = [];
+let completedIds = [];
+let currentDay = 'A';
+let isEditingWeight = false;
+
+const tg = window.Telegram?.WebApp;
+const typeTranslation = { 'base': 'БАЗА', 'isolation': 'ИЗОЛЯЦИЯ', 'accessory': 'ДОП' };
+
+async function init() {
+    if (tg) { tg.expand(); tg.ready(); }
+    const saved = localStorage.getItem('completed_exercises');
+    if (saved) completedIds = JSON.parse(saved);
+    
+    await loadData();
+    
+    // Даем небольшую паузу для плавности
+    setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+    }, 1200);
+}
+
+async function fetchSheet(gid) {
+    try {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+        const res = await fetch(url);
+        const text = await res.text();
+        return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+    } catch (e) { return []; }
+}
+
+async function loadData() {
+    const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
+    
+    const library = exRows.filter(r => r.c[0]?.v).map(row => ({
+        name: row.c[1]?.v || "",
+        muscle: row.c[2]?.v || "",
+        sub: String(row.c[3]?.v || "").trim(),
+        type: String(row.c[4]?.v || "base").toLowerCase(),
+        img: row.c[9]?.v || ""
+    }));
+
+    workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
+        const sub = String(row.c[6]?.v || "").trim();
+        const mainEx = library.find(ex => ex.sub.toLowerCase() === sub.toLowerCase());
+        return {
+            rowId: 'row-' + idx,
+            day: String(row.c[2]?.v).toUpperCase(),
+            type: String(row.c[4]?.v || 'base').toLowerCase(),
+            main: mainEx || { name: sub, muscle: "—", img: "" },
+            weight: "0"
+        };
+    });
+    render();
+}
 
 function render() {
     const list = document.getElementById('exercise-list');
@@ -27,9 +85,8 @@ function render() {
                                    class="weight-input" 
                                    value="${item.weight}" 
                                    inputmode="numeric" 
-                                   pattern="[0-9]*"
                                    onclick="this.select()"
-                                   onfocus="this.select(); isEditingWeight=true" 
+                                   onfocus="isEditingWeight=true; this.select()" 
                                    onblur="setTimeout(()=>isEditingWeight=false,200)"
                                    oninput="if(this.value.length>3)this.value=this.value.slice(0,3); updateWeight('${item.rowId}', this.value)">
                             <div class="w-label">КГ</div>
@@ -44,21 +101,43 @@ function render() {
 }
 
 function handleCardClick(id, event) {
-    // Если клавиатура открыта, закрываем её и не засчитываем тап по карточке
     if (isEditingWeight) {
-        document.querySelectorAll('input').forEach(i => i.blur());
+        document.activeElement.blur();
         return;
     }
-    
-    // Обычная логика выполнения
-    if (completedIds.includes(id)) {
-        completedIds = completedIds.filter(i => i !== id);
-    } else {
-        completedIds.push(id);
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    }
+    completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
     render();
 }
 
-// ... (остальные функции loadData, openDayPicker и т.д. без изменений)
+function updateWeight(id, val) {
+    const item = workoutPlan.find(it => it.rowId === id);
+    if (item) item.weight = val;
+}
+
+function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
+function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
+function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
+
+function openInfo(id, event) {
+    event.stopPropagation();
+    const item = workoutPlan.find(it => it.rowId === id);
+    document.getElementById('info-content-body').innerHTML = `<h2 style="font-family:Tiny5;color:var(--accent);">${item.main.name}</h2><p>${item.main.muscle}</p>`;
+    document.getElementById('info-modal').classList.remove('hidden');
+}
+function closeInfo() { document.getElementById('info-modal').classList.add('hidden'); }
+
+function finishWorkout() {
+    tg?.close();
+}
+
+function updateProgress() {
+    const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
+    const done = dayEx.filter(ex => completedIds.includes(ex.rowId)).length;
+    const perc = dayEx.length > 0 ? (done / dayEx.length) * 100 : 0;
+    document.getElementById('progress-fill').style.width = perc + '%';
+    document.getElementById('progress-text').innerText = `${done} / ${dayEx.length} ПРОГРЕСС`;
+}
+
+window.addEventListener('load', init);
