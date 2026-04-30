@@ -10,19 +10,17 @@
 
 body { background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; margin: 0; overflow: hidden; }
 
-/* Лоадер */
+/* Лоадер: Классический светлый бицепс */
 .loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
 .bicep-emoji { 
-    font-size: 70px; 
-    filter: brightness(0) invert(1); /* Белый цвет */
-    animation: pump-fast 0.4s infinite alternate cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+    font-size: 60px; 
+    animation: gentle-pump 1.2s infinite ease-in-out; 
 }
-@keyframes pump-fast { from { transform: scale(1); } to { transform: scale(1.3) rotate(5deg); } }
-
-.loader-text { 
-    font-family: 'Tiny5'; color: var(--accent); font-size: 28px; margin-top: 20px; 
-    letter-spacing: 3px; text-shadow: 0 0 10px rgba(158, 209, 83, 0.5); 
+@keyframes gentle-pump { 
+    0%, 100% { transform: scale(1); } 
+    50% { transform: scale(1.1); } 
 }
+.loader-text { font-family: 'Tiny5'; color: var(--accent); font-size: 24px; margin-top: 15px; letter-spacing: 2px; }
 
 /* Хедер */
 .sticky-header { position: fixed; top: 0; left: 0; right: 0; background: var(--bg); z-index: 100; padding-top: var(--safe-top); padding-bottom: 10px; }
@@ -30,29 +28,19 @@ body { background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; m
 #day-display { font-family: 'Tiny5'; font-size: 64px; color: var(--accent); line-height: 1; }
 .arrow-down { color: var(--gray); font-size: 14px; margin-top: -8px; }
 
-.progress-section { width: 100%; margin-top: 10px; }
+/* Прогресс с увеличенным отступом */
+.progress-section { width: 100%; margin-top: 10px; margin-bottom: 20px; /* Минимум 16-20px до контента */ }
 #progress-text { font-size: 10px; font-weight: 800; color: var(--gray); letter-spacing: 1px; display: block; margin-bottom: 6px; }
 .progress-bg { height: 6px; background: #2C2C2E; border-radius: 10px; overflow: hidden; }
 #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.5s ease; }
 
 /* Контент */
-.content-scroll { height: 100vh; overflow-y: auto; padding: calc(var(--safe-top) + 135px) 16px 120px 16px; }
+.content-scroll { height: 100vh; overflow-y: auto; padding: calc(var(--safe-top) + 145px) 16px 120px 16px; }
 
-/* Карточки */
-.card {
-    position: relative; background: var(--card); border-radius: 34px;
-    height: 150px; display: flex; align-items: center;
-    padding: 16px; margin-bottom: 12px; transition: 0.3s; overflow: hidden;
-}
-
-/* Эффект выполнения: Блюр 1.9 + Затемнение 40% + Монохром */
-.card.done .card-inner-content, .card.done .weight-side, .card.done .info-btn { 
-    filter: grayscale(100%) blur(1.9px); 
-}
-.card.done::before {
-    content: ""; position: absolute; inset: 0;
-    background: rgba(0, 0, 0, 0.4); z-index: 2;
-}
+/* Карточки и эффекты */
+.card { position: relative; background: var(--card); border-radius: 34px; height: 150px; display: flex; align-items: center; padding: 16px; margin-bottom: 12px; transition: 0.3s; overflow: hidden; }
+.card.done .card-inner-content, .card.done .weight-side, .card.done .info-btn { filter: grayscale(100%) blur(1.9px); }
+.card.done::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 2; }
 .card.done::after { content: ""; position: absolute; inset: 0; z-index: 3; }
 
 .card-inner-content { display: flex; align-items: center; width: 100%; }
@@ -63,35 +51,16 @@ body { background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; m
 .muscle-row { font-size: 9px; font-weight: 800; color: #648337; text-transform: uppercase; margin-bottom: 4px; }
 .ex-name { font-size: 15px; font-weight: 600; line-height: 1.2; }
 
-/* Вес */
-.weight-side {
-    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    width: 70px; display: flex; flex-direction: column; align-items: center; z-index: 10;
-}
-.weight-input {
-    background: transparent; border: none; color: var(--accent);
-    font-family: 'Manrope'; font-weight: 800; font-size: 32px;
-    width: 100%; text-align: center; padding: 0;
-}
+/* Вес - Чистый вид без лишних кнопок */
+.weight-side { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 70px; display: flex; flex-direction: column; align-items: center; z-index: 10; }
+.weight-input { background: transparent; border: none; color: var(--accent); font-family: 'Manrope'; font-weight: 800; font-size: 32px; width: 100%; text-align: center; padding: 0; }
 .w-label { font-size: 10px; color: var(--gray); font-weight: 800; margin-top: -5px; }
 
-.weight-done-btn {
-    display: none; position: absolute; top: -65px; right: 0;
-    background: var(--accent); color: #000; font-family: 'Tiny5';
-    padding: 12px 24px; border-radius: 12px; z-index: 100; font-size: 14px;
-}
-.weight-input:focus ~ .weight-done-btn { display: block; }
+/* Скрываем кнопку готово */
+.weight-done-btn { display: none !important; }
 
 .info-btn { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--gray); font-family: 'Tiny5'; font-size: 20px; z-index: 5; }
-
 .btn-finish-capsule { width: 100%; padding: 20px; background: var(--accent); color: #000; border-radius: 100px; font-family: 'Tiny5'; font-size: 18px; border: none; margin-top: 30px; }
-.footer-padding { padding-bottom: 60px; }
-
 .section-title { font-size: 10px; color: #C6624A; letter-spacing: 2px; text-transform: uppercase; margin: 25px 0 12px 4px; font-weight: 800; }
 
-/* Модалки */
 .hidden { display: none !important; }
-.modal-overlay, .info-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: flex-end; }
-.bottom-sheet { width: 100%; background: #1C1C1E; border-radius: 24px 24px 0 0; padding: 20px; padding-bottom: 40px; }
-.days-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px 0; }
-.day-option { background: #2C2C2E; padding: 20px; border-radius: 18px; text-align: center; font-family: 'Tiny5'; font-size: 24px; color: var(--accent); }
