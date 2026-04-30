@@ -20,13 +20,22 @@ async function init() {
     }, 1000);
 }
 
+async function fetchSheet(gid) {
+    try {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+        const res = await fetch(url);
+        const text = await res.text();
+        return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+    } catch (e) { return []; }
+}
+
 async function loadData() {
     const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
     
     const library = exRows.filter(r => r.c[0]?.v).map(row => ({
         name: row.c[1]?.v || "",
         muscle: row.c[2]?.v || "",
-        subgroup: row.c[3]?.v ? `(${row.c[3].v})` : "", // Подгруппа в скобках
+        subgroup: row.c[3]?.v ? `(${row.c[3].v})` : "",
         subID: String(row.c[3]?.v || "").trim(),
         type: String(row.c[4]?.v || "base").toLowerCase(),
         img: row.c[9]?.v || ""
@@ -63,7 +72,7 @@ function render() {
                 html += `
                     <div class="card ${isDone ? 'done' : ''}" onclick="handleCardClick('${item.rowId}', event)">
                         <div class="card-inner-content">
-                            <div class="img-box"><img src="${item.main.img}"></div>
+                            <div class="img-box"><img src="${item.main.img}" onerror="this.src='https://via.placeholder.com/118'"></div>
                             <div class="info-content">
                                 <div class="muscle-row">
                                     <span class="muscle-main">${item.main.muscle}</span> 
@@ -81,21 +90,13 @@ function render() {
                                    oninput="updateWeight('${item.rowId}', this.value)">
                             <div class="w-label">KG</div>
                         </div>
-                        <div class="info-btn">i</div>
+                        <div class="info-btn" onclick="openInfo('${item.rowId}', event)">i</div>
                     </div>`;
             });
         }
     });
     list.innerHTML = html;
     updateProgress();
-}
-
-// ... вспомогательные функции (fetchSheet, updateWeight, handleCardClick) такие же как раньше
-async function fetchSheet(gid) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
-    const res = await fetch(url);
-    const text = await res.text();
-    return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
 }
 
 function handleCardClick(id, event) {
@@ -110,6 +111,24 @@ function updateWeight(id, val) {
     const item = workoutPlan.find(it => it.rowId === id);
     if (item) item.weight = val;
 }
+
+function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
+function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
+function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
+
+function openInfo(id, event) {
+    event.stopPropagation();
+    const item = workoutPlan.find(it => it.rowId === id);
+    if (!item) return;
+    document.getElementById('info-content-body').innerHTML = `
+        <h2 style="font-family:Geist; color:var(--accent);">${item.main.name}</h2>
+        <p style="color:var(--gray-text); text-transform:uppercase;">${item.main.muscle} ${item.main.subgroup}</p>
+    `;
+    document.getElementById('info-modal').classList.remove('hidden');
+}
+function closeInfo() { document.getElementById('info-modal').classList.add('hidden'); }
+
+function finishWorkout() { tg?.close(); }
 
 function updateProgress() {
     const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
