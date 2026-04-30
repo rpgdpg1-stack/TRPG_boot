@@ -4,17 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TrainingRPG</title>
+    <!-- Подключение Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Шрифты: Tiny5 для пиксельного эффекта, Manrope и Geist для интерфейса -->
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body style="opacity: 0; background: #0d0d0d;">
     <div id="app">
+        <!-- Экран загрузки -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
         </div>
 
+        <!-- Фиксированный хедер с прогрессом -->
         <header class="sticky-header">
             <div class="header-content">
                 <div class="day-selector-trigger" onclick="openDayPicker()">
@@ -23,37 +27,46 @@
                 </div>
                 <div class="progress-section">
                     <span id="progress-text">0 / 0 ПРОГРЕСС</span>
-                    <div class="progress-bg"><div id="progress-fill"></div></div>
+                    <div class="progress-bg">
+                        <div id="progress-fill"></div>
+                    </div>
                 </div>
             </div>
         </header>
 
+        <!-- Основной контент со списком упражнений -->
         <main class="content-scroll" id="main-content">
-            <div id="exercise-list"></div>
+            <div id="exercise-list">
+                <!-- Карточки будут генерироваться здесь через script.js -->
+            </div>
             <div class="footer-padding">
                 <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
             </div>
         </main>
 
-        <!-- Окно выбора замены (Смена) -->
+        <!-- Полноэкранное окно: ЗАМЕНА -->
         <div id="replace-screen" class="full-modal hidden">
             <div class="modal-header">
                 <div class="back-btn" onclick="closeReplace()">← НАЗАД</div>
                 <div class="modal-title">ЗАМЕНА</div>
             </div>
-            <div id="replace-list" class="modal-body"></div>
+            <div id="replace-list" class="modal-body">
+                <!-- Список альтернативных упражнений -->
+            </div>
         </div>
 
-        <!-- Окно Инфо -->
+        <!-- Полноэкранное окно: ИНФО -->
         <div id="info-screen" class="full-modal hidden">
             <div class="modal-header">
                 <div class="back-btn" onclick="closeInfo()">← НАЗАД</div>
                 <div class="modal-title">ИНФО</div>
             </div>
-            <div id="info-body" class="modal-body info-style"></div>
+            <div id="info-body" class="modal-body info-style">
+                <!-- Описание упражнения -->
+            </div>
         </div>
 
-        <!-- Селектор дня (старая модалка снизу) -->
+        <!-- Модалка выбора тренировочного дня (A, B, C) -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
             <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
@@ -65,6 +78,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Основной скрипт -->
     <script src="script.js"></script>
 </body>
 </html>
