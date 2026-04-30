@@ -10,14 +10,19 @@
 </head>
 <body>
     <div id="app">
-        <!-- Фиксированный хедер -->
+        <!-- Загрузчик -->
+        <div id="loader" class="loader">
+            <div class="bicep-emoji">💪</div>
+            <p>ЗАГРУЗКА...</p>
+        </div>
+
         <header class="sticky-header">
             <div class="header-content">
                 <div class="day-selector-trigger" onclick="openDayPicker()">
                     <span id="day-display">A</span>
                     <span class="arrow-down">↓</span>
                 </div>
-                <div class="progress-container">
+                <div class="progress-section">
                     <span id="progress-text">0 / 0 ПРОГРЕСС</span>
                     <div class="progress-bg">
                         <div id="progress-fill"></div>
@@ -26,40 +31,26 @@
             </div>
         </header>
 
-        <!-- Список упражнений с отступом под хедер -->
-        <main class="content-scroll">
+        <main class="content-scroll" id="main-content" style="display: none;">
             <div id="exercise-list"></div>
-            <button class="btn-finish" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+            <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
         </main>
 
-        <!-- Модалка выбора дня -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
-            <div class="bottom-sheet" onclick="event.stopPropagation()">
+            <div class="bottom-sheet">
                 <div class="sheet-handle"></div>
-                <div class="sheet-header">ВЫБЕРИТЕ ДЕНЬ</div>
                 <div class="days-grid">
-                    <div class="day-option" onclick="changeDay('A')"><span class="day-letter">A</span></div>
-                    <div class="day-option" onclick="changeDay('B')"><span class="day-letter">Б</span></div>
-                    <div class="day-option" onclick="changeDay('C')"><span class="day-letter">C</span></div>
+                    <div class="day-option" onclick="changeDay('A')"><span>A</span></div>
+                    <div class="day-option" onclick="changeDay('B')"><span>Б</span></div>
+                    <div class="day-option" onclick="changeDay('C')"><span>C</span></div>
                 </div>
             </div>
         </div>
 
-        <!-- Окно Информации (Упрощенное) -->
         <div id="info-modal" class="info-modal hidden">
-            <div class="info-nav">
-                <button onclick="closeInfo()">← НАЗАД</button>
-            </div>
-            <div id="info-content-body">
-                <!-- Сюда JS вставит видео и текст -->
-            </div>
+            <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
+            <div id="info-content-body"></div>
         </div>
-
-        <nav class="tab-bar">
-            <div class="tab-item">🏠</div>
-            <div class="tab-item active">🔥</div>
-            <div class="tab-item">⚙️</div>
-        </nav>
     </div>
     <script src="script.js"></script>
 </body>
