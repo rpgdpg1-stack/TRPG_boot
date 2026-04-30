@@ -10,12 +10,13 @@
 </head>
 <body>
     <div id="app">
-        <!-- Загрузчик -->
+        <!-- Лоадер -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪</div>
             <p>ЗАГРУЗКА...</p>
         </div>
 
+        <!-- Хедер -->
         <header class="sticky-header">
             <div class="header-content">
                 <div class="day-selector-trigger" onclick="openDayPicker()">
@@ -31,13 +32,22 @@
             </div>
         </header>
 
+        <!-- Контент -->
         <main class="content-scroll" id="main-content" style="display: none;">
             <div id="exercise-list"></div>
-            <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+            <div class="footer-space">
+                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>
+            </div>
         </main>
 
+        <!-- Инфо-окно -->
+        <div id="info-modal" class="info-modal hidden">
+            <!-- Контент вставляется через JS -->
+        </div>
+
+        <!-- Выбор дня -->
         <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
-            <div class="bottom-sheet">
+            <div class="bottom-sheet" onclick="event.stopPropagation()">
                 <div class="sheet-handle"></div>
                 <div class="days-grid">
                     <div class="day-option" onclick="changeDay('A')"><span>A</span></div>
@@ -45,11 +55,6 @@
                     <div class="day-option" onclick="changeDay('C')"><span>C</span></div>
                 </div>
             </div>
-        </div>
-
-        <div id="info-modal" class="info-modal hidden">
-            <div class="info-nav" onclick="closeInfo()">← НАЗАД</div>
-            <div id="info-content-body"></div>
         </div>
     </div>
     <script src="script.js"></script>
