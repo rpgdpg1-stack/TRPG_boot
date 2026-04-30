@@ -1,82 +1,144 @@
-:root {
-    --bg: #0d0d0d;
-    --card: #1C1C1E;
-    --accent: #9ED153;
-    --gray-text: #8E8E93;
-    --safe-top: env(safe-area-inset-top, 44px);
+const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
+const GID_DAYS = '1002309655';
+const GID_EX = '0';
+
+let workoutPlan = [];
+let completedIds = [];
+let currentDay = 'A';
+let isEditingWeight = false;
+
+const tg = window.Telegram?.WebApp;
+
+async function init() {
+    if (tg) { tg.expand(); tg.ready(); }
+    const saved = localStorage.getItem('completed_exercises');
+    if (saved) completedIds = JSON.parse(saved);
+    
+    // Сначала загружаем все данные
+    await loadData();
+    
+    // Когда данные готовы, убираем лоадер и снимаем блокировку с body
+    setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.body.classList.remove('js-loading');
+    }, 800); // 800ms для плавности
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-body { background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; margin: 0; overflow: hidden; }
-
-/* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ МОРГАНИЯ */
-body.js-loading .sticky-header,
-body.js-loading .content-scroll {
-    display: none !important;
+async function fetchSheet(gid) {
+    try {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+        const res = await fetch(url);
+        const text = await res.text();
+        return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+    } catch (e) { return []; }
 }
 
-/* Лоадер: всегда сверху */
-.loader { 
-    position: fixed; inset: 0; background: var(--bg); 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    z-index: 9999; 
-}
-.bicep-emoji { font-size: 60px; animation: bicep-squeeze 0.6s infinite alternate ease-in-out; }
-@keyframes bicep-squeeze { 0% { transform: scale(1) rotate(0deg); } 100% { transform: scale(0.85, 1.1) rotate(10deg); } }
-.loader-text-tiny { font-family: 'Tiny5'; color: var(--accent); font-size: 16px; margin-top: 10px; letter-spacing: 1px; opacity: 0.8; }
+async function loadData() {
+    const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
+    
+    const library = exRows.filter(r => r.c[0]?.v).map(row => ({
+        name: row.c[1]?.v || "",
+        muscle: row.c[2]?.v || "",
+        subgroup: row.c[3]?.v ? `(${row.c[3].v})` : "",
+        subID: String(row.c[3]?.v || "").trim(),
+        type: String(row.c[4]?.v || "base").toLowerCase(),
+        img: row.c[9]?.v || ""
+    }));
 
-/* Хедер */
-.sticky-header { position: fixed; top: 0; left: 0; right: 0; background: var(--bg); z-index: 100; padding-top: var(--safe-top); padding-bottom: 10px; }
-.header-content { padding: 0 16px; display: flex; flex-direction: column; align-items: center; }
-.day-selector-trigger { cursor: pointer; display: flex; flex-direction: column; align-items: center; z-index: 110; }
-#day-display { font-family: 'Tiny5'; font-size: 64px; color: var(--accent); line-height: 1; }
-.arrow-down { color: var(--gray-text); font-size: 14px; margin-top: -8px; }
-
-.progress-section { width: 100%; margin-top: 10px; margin-bottom: 20px; }
-#progress-text { font-size: 10px; font-weight: 800; color: var(--gray-text); letter-spacing: 1px; display: block; margin-bottom: 6px; }
-.progress-bg { height: 6px; background: #2C2C2E; border-radius: 10px; overflow: hidden; }
-#progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.5s ease; }
-
-/* Карточки */
-.content-scroll { height: 100vh; overflow-y: auto; padding: calc(var(--safe-top) + 145px) 16px 120px 16px; }
-.card { 
-    position: relative; background: var(--card); border-radius: 38px; 
-    min-height: 150px; display: flex; align-items: center; 
-    padding: 16px; margin-bottom: 16px; transition: 0.3s; overflow: hidden; 
+    workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
+        const sub = String(row.c[6]?.v || "").trim();
+        const mainEx = library.find(ex => ex.subID.toLowerCase() === sub.toLowerCase());
+        return {
+            rowId: 'row-' + idx,
+            day: String(row.c[2]?.v).toUpperCase(),
+            type: String(row.c[4]?.v || 'base').toLowerCase(),
+            main: mainEx || { name: sub, muscle: "УПРАЖНЕНИЕ", subgroup: "", img: "" },
+            weight: "0"
+        };
+    });
+    render();
 }
 
-.card.done .card-inner-content, .card.done .weight-side, .card.done .info-btn { filter: grayscale(100%) blur(1.9px); }
-.card.done::before { 
-    content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); 
-    z-index: 1; pointer-events: none; 
+function render() {
+    const list = document.getElementById('exercise-list');
+    document.getElementById('day-display').innerText = currentDay;
+    const filtered = workoutPlan.filter(it => it.day === currentDay);
+    
+    const typeNames = { 'base': 'БАЗА', 'isolation': 'ИЗОЛЯЦИЯ', 'accessory': 'ДОП' };
+    let html = '';
+
+    ['base', 'isolation', 'accessory'].forEach(secKey => {
+        const items = filtered.filter(it => it.type === secKey);
+        if (items.length > 0) {
+            html += `<div class="section-title">${typeNames[secKey]}</div>`;
+            items.forEach(item => {
+                const isDone = completedIds.includes(item.rowId);
+                html += `
+                    <div class="card ${isDone ? 'done' : ''}" onclick="handleCardClick('${item.rowId}', event)">
+                        <div class="card-inner-content">
+                            <div class="img-box"><img src="${item.main.img}" onerror="this.src='https://via.placeholder.com/118'"></div>
+                            <div class="info-content">
+                                <div class="muscle-row">
+                                    <span class="muscle-main">${item.main.muscle}</span> 
+                                    <span class="muscle-sub">${item.main.subgroup}</span>
+                                </div>
+                                <div class="ex-name">${item.main.name}</div>
+                                <div class="ex-sets">3×8-10</div>
+                            </div>
+                        </div>
+                        <div class="weight-side" onclick="event.stopPropagation()">
+                            <input type="number" class="weight-input" value="${item.weight}" 
+                                   inputmode="numeric" onclick="this.select()"
+                                   onfocus="isEditingWeight=true; this.select()" 
+                                   onblur="setTimeout(()=>isEditingWeight=false,200)"
+                                   oninput="updateWeight('${item.rowId}', this.value)">
+                            <div class="w-label">KG</div>
+                        </div>
+                        <div class="info-btn" onclick="openInfo('${item.rowId}', event)">i</div>
+                    </div>`;
+            });
+        }
+    });
+    list.innerHTML = html;
+    updateProgress();
 }
 
-.card-inner-content { display: flex; align-items: center; width: 100%; z-index: 2; }
-.img-box { width: 118px; height: 118px; border-radius: 28px; overflow: hidden; flex-shrink: 0; background: #fff; }
-.img-box img { width: 100%; height: 100%; object-fit: contain; }
+function handleCardClick(id, event) {
+    if (isEditingWeight) { document.activeElement.blur(); return; }
+    completedIds.includes(id) ? completedIds = completedIds.filter(i => i !== id) : completedIds.push(id);
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    localStorage.setItem('completed_exercises', JSON.stringify(completedIds));
+    render();
+}
 
-.info-content { margin-left: 16px; flex-grow: 1; padding-right: 60px; }
-.muscle-row { font-size: 10px; font-family: 'Manrope'; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 8px; }
-.muscle-main { color: #648337; }
-.muscle-sub { color: var(--gray-text); }
+function updateWeight(id, val) {
+    const item = workoutPlan.find(it => it.rowId === id);
+    if (item) item.weight = val;
+}
 
-.ex-name { font-family: 'Geist'; font-size: 14px; font-weight: 600; line-height: 1.2; color: #fff; margin-bottom: 8px; }
-.ex-sets { font-family: 'Manrope'; font-size: 10px; color: var(--gray-text); letter-spacing: -0.02em; }
+function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
+function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
+function changeDay(day) { currentDay = day; closeDayPicker(); render(); }
 
-.weight-side { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 55px; text-align: center; z-index: 10; }
-.weight-input { background: transparent; border: none; color: var(--accent); font-family: 'Manrope'; font-weight: 800; font-size: 20px; width: 100%; text-align: center; padding: 0; }
-.w-label { font-size: 10px; color: var(--gray-text); font-weight: 800; margin-top: -2px; }
+function openInfo(id, event) {
+    event.stopPropagation();
+    const item = workoutPlan.find(it => it.rowId === id);
+    if (!item) return;
+    document.getElementById('info-content-body').innerHTML = `
+        <h2 style="font-family:Geist; color:var(--accent);">${item.main.name}</h2>
+        <p style="color:var(--gray-text); text-transform:uppercase;">${item.main.muscle} ${item.main.subgroup}</p>
+    `;
+    document.getElementById('info-modal').classList.remove('hidden');
+}
+function closeInfo() { document.getElementById('info-modal').classList.add('hidden'); }
+function finishWorkout() { tg?.close(); }
 
-.info-btn { position: absolute; top: 16px; right: 16px; color: var(--gray-text); font-family: 'Tiny5'; font-size: 18px; opacity: 0.5; z-index: 15; padding: 5px; }
+function updateProgress() {
+    const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
+    const done = dayEx.filter(ex => completedIds.includes(ex.rowId)).length;
+    const perc = dayEx.length > 0 ? (done / dayEx.length) * 100 : 0;
+    document.getElementById('progress-fill').style.width = perc + '%';
+    document.getElementById('progress-text').innerText = `${done} / ${dayEx.length} ПРОГРЕСС`;
+}
 
-.section-title { font-size: 10px; color: #C6624A; letter-spacing: 2px; text-transform: uppercase; margin: 25px 0 12px 4px; font-weight: 800; }
-.btn-finish-capsule { width: 100%; padding: 20px; background: var(--accent); color: #000; border-radius: 100px; font-family: 'Tiny5'; font-size: 18px; border: none; margin-top: 20px; }
-.footer-padding { padding-bottom: 80px; }
-
-.hidden { display: none !important; }
-.modal-overlay, .info-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: flex-end; }
-.bottom-sheet { width: 100%; background: #1C1C1E; border-radius: 24px 24px 0 0; padding: 20px 20px 40px 20px; }
-.days-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px 0; }
-.day-option { background: #2C2C2E; padding: 20px; border-radius: 18px; text-align: center; font-family: 'Tiny5'; font-size: 24px; color: var(--accent); }
-.info-container { width: 100%; height: 100%; background: var(--bg); padding: 20px; padding-top: var(--safe-top); }
-.info-nav { font-family: 'Tiny5'; color: var(--accent); font-size: 20px; margin-bottom: 20px; }
+window.addEventListener('load', init);
