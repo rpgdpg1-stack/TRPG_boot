@@ -8,9 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="js-loading"> <!-- Добавлен класс для скрытия контента -->
+<!-- Скрываем body сразу при чтении файла -->
+<body style="opacity: 0; background: #0d0d0d;">
     <div id="app">
-        <!-- Лоадер теперь вне основного потока скрытия -->
+        <!-- Лоадер всегда должен быть виден первым -->
         <div id="loader" class="loader">
             <div class="bicep-emoji">💪🏻</div>
             <p class="loader-text-tiny">ЗАГРУЗКА...</p>
