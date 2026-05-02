@@ -1,393 +1,301 @@
 <!DOCTYPE html>
+
 <html lang="ru">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TrainingRPG</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Manrope:wght@400;800&family=Geist:wght@600&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg: #0d0d0d;
-            --card: #1C1C1E;
-            --accent: #9ED153;
-            --gray-text: #8E8E93;
-            --safe-top: env(safe-area-inset-top, 44px);
-        }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Manrope', sans-serif; 
-            margin: 0; overflow: hidden; transition: opacity 0.3s ease; 
-        }
+<meta charset="UTF-8">
 
-        /* Состояние загрузки */
-        body:not(.loaded) .sticky-header, body:not(.loaded) .content-scroll { display: none !important; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .bicep-emoji { font-size: 60px; animation: bicep-squeeze 0.6s infinite alternate ease-in-out; }
-        @keyframes bicep-squeeze { 0% { transform: scale(1) rotate(0deg); } 100% { transform: scale(0.85, 1.1) rotate(10deg); } }
-        .loader-text-tiny { font-family: 'Tiny5'; color: var(--accent); font-size: 16px; margin-top: 10px; letter-spacing: 1px; }
+<title>RPG Training</title>
 
-        /* Хедер с большой буквой */
-        .sticky-header { position: fixed; top: 0; left: 0; right: 0; background: var(--bg); z-index: 100; padding-top: var(--safe-top); padding-bottom: 10px; }
-        .header-content { padding: 0 16px; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .header-close { position: absolute; right: 20px; top: calc(var(--safe-top) + 10px); font-size: 20px; color: var(--gray-text); }
-        #day-display { font-family: 'Tiny5'; font-size: 64px; color: var(--accent); line-height: 1; }
-        .arrow-down { color: var(--gray-text); font-size: 14px; margin-top: -8px; }
+<style>
 
-        .progress-section { width: 100%; margin-top: 10px; margin-bottom: 20px; }
-        #progress-text { font-size: 10px; font-weight: 800; color: var(--gray-text); letter-spacing: 1px; display: block; margin-bottom: 6px; }
-        .progress-bg { height: 6px; background: #2C2C2E; border-radius: 10px; overflow: hidden; }
-        #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.5s ease; }
+body {
 
-        /* Контент */
-        .content-scroll { height: 100vh; overflow-y: auto; padding: calc(var(--safe-top) + 145px) 16px 120px 16px; scroll-behavior: smooth; }
+    background:#0a0a0a;
 
-        /* Карточки и Свайпы */
-        .card-wrapper { position: relative; margin-bottom: 16px; border-radius: 38px; overflow: hidden; background: #2C2C2E; }
-        .card-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; z-index: 1; }
-        .action-btn { width: 75px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-        .btn-info { background: #2C2C2E; border-right: 1px solid #1C1C1E; }
-        .btn-swap { background: #3A3A3C; }
-        .action-label { font-family: 'Tiny5'; font-size: 10px; letter-spacing: 1px; }
-        .label-info { color: #4B90C9; }
-        .label-swap { color: var(--accent); }
+    color:#fff;
 
-        .card { 
-            position: relative; z-index: 2; background: var(--card); border-radius: 38px; 
-            min-height: 150px; display: flex; align-items: center; padding: 16px; 
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); will-change: transform;
-        }
+    font-family:system-ui;
 
-        /* Эффект Done */
-        .card.done .card-inner-content, .card.done .weight-side { filter: grayscale(100%) blur(1.9px); }
-        .card.done::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 1; pointer-events: none; }
+    margin:0;
 
-        .card-inner-content { display: flex; align-items: center; width: 100%; }
-        .img-box { width: 118px; height: 118px; border-radius: 28px; overflow: hidden; flex-shrink: 0; background: #fff; }
-        .img-box img { width: 100%; height: 100%; object-fit: contain; }
+}
 
-        .info-content { margin-left: 16px; flex-grow: 1; padding-right: 50px; }
-        .muscle-row { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 8px; }
-        .muscle-main { color: #648337; }
-        .muscle-sub { color: var(--gray-text); }
-        .ex-name { font-family: 'Geist'; font-size: 14px; font-weight: 600; line-height: 1.2; color: #fff; margin-bottom: 8px; }
-        .ex-sets { font-family: 'Manrope'; font-size: 10px; color: var(--gray-text); }
+.card {
 
-        .weight-side { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 55px; text-align: center; z-index: 10; }
-        .weight-input { background: transparent; border: none; color: var(--accent); font-weight: 800; font-size: 20px; width: 100%; text-align: center; }
-        .w-label { font-size: 10px; color: var(--gray-text); font-weight: 800; }
+    background:#161618;
 
-        /* Модалки и Секции */
-        .section-title { font-size: 10px; color: #C6624A; letter-spacing: 2px; text-transform: uppercase; margin: 25px 0 12px 4px; font-weight: 800; }
-        .btn-finish-capsule { width: 100%; padding: 20px; background: var(--accent); color: #000; border-radius: 100px; font-family: 'Tiny5'; font-size: 18px; border: none; }
-        
-        .full-modal { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; padding-top: var(--safe-top); }
-        .modal-header { padding: 16px; display: flex; align-items: center; border-bottom: 1px solid #1C1C1E; }
-        .back-btn { font-family: 'Tiny5'; color: var(--accent); font-size: 18px; background:none; border:none; }
-        .modal-title { flex-grow: 1; text-align: center; font-family: 'Tiny5'; font-size: 18px; margin-right: 50px; }
-        .modal-body { flex-grow: 1; overflow-y: auto; padding: 16px; }
+    margin:10px;
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: flex-end; }
-        .bottom-sheet { width: 100%; background: #1C1C1E; border-radius: 24px 24px 0 0; padding: 20px 20px 40px 20px; }
-        .sheet-handle { width: 40px; height: 4px; background: #3a3a3c; border-radius: 2px; margin: 0 auto 10px; }
-        .days-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px 0; }
-        .day-option { background: #2C2C2E; padding: 20px; border-radius: 18px; text-align: center; font-family: 'Tiny5'; font-size: 24px; color: var(--accent); }
-        
-        .hidden { display: none !important; }
-    </style>
+    padding:16px;
+
+    border-radius:20px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    transition:0.2s;
+
+}
+
+.card.done {
+
+    opacity:0.4;
+
+    transform:scale(0.97);
+
+}
+
+.btn {
+
+    background:#9ED153;
+
+    color:#000;
+
+    border:none;
+
+    padding:16px;
+
+    border-radius:999px;
+
+    width:90%;
+
+    margin:20px auto;
+
+    display:block;
+
+    font-weight:800;
+
+    box-shadow:0 0 24px rgba(158,209,83,0.25);
+
+}
+
+#finish {
+
+    position:fixed;
+
+    inset:0;
+
+    background:#000;
+
+    display:none;
+
+    align-items:center;
+
+    justify-content:center;
+
+    flex-direction:column;
+
+}
+
+</style>
+
 </head>
-<body style="opacity: 0;">
 
-    <div id="app" onclick="closeAllSwipes(event)">
-        <!-- LOADER -->
-        <div id="loader" class="loader">
-            <div class="bicep-emoji">💪🏻</div>
-            <p class="loader-text-tiny">ЗАГРУЗКА...</p>
+<body>
+
+<h2 style="text-align:center;">💪 RPG TRAINING</h2>
+
+<div id="list"></div>
+
+<button class="btn" onclick="finishWorkout()">ЗАВЕРШИТЬ</button>
+
+<div id="finish">
+
+    <h1>🔥 МОЩНО</h1>
+
+    <p id="finishText"></p>
+
+    <button class="btn" onclick="location.reload()">OK</button>
+
+</div>
+
+<script>
+
+const tg = window.Telegram?.WebApp || {
+
+    HapticFeedback:{
+
+        impactOccurred:()=>{},
+
+        notificationOccurred:()=>{}
+
+    },
+
+    CloudStorage:{
+
+        setItem:()=>{},
+
+        getItem:(k,cb)=>cb(null,null)
+
+    }
+
+};
+
+let state = {
+
+    exercises:[
+
+        {id:1,name:"Жим лёжа"},
+
+        {id:2,name:"Тяга"},
+
+        {id:3,name:"Присед"}
+
+    ],
+
+    done:[]
+
+};
+
+/* ========= LOAD ========= */
+
+tg.CloudStorage.getItem('rpg_v5_state',(e,val)=>{
+
+    if(val){
+
+        state = JSON.parse(val);
+
+    }
+
+    render();
+
+});
+
+/* ========= SAVE ========= */
+
+function save(){
+
+    tg.CloudStorage.setItem('rpg_v5_state',JSON.stringify(state));
+
+}
+
+/* ========= RENDER ========= */
+
+function render(){
+
+    const list = document.getElementById('list');
+
+    list.innerHTML = state.exercises.map(ex=>{
+
+        const done = state.done.includes(ex.id);
+
+        return `
+
+        <div class="card ${done?'done':''}" onclick="toggle(${ex.id})">
+
+            <div>${ex.name}</div>
+
+            <div>${done?'✅':''}</div>
+
         </div>
 
-        <!-- HEADER -->
-        <header class="sticky-header">
-            <div class="header-content">
-                <div class="day-selector-trigger" onclick="openDayPicker()" style="text-align: center;">
-                    <div id="day-display">A</div>
-                    <div class="arrow-down">↓</div>
-                </div>
-                <div class="progress-section">
-                    <span id="progress-text">0 / 0 ПРОГРЕСС</span>
-                    <div class="progress-bg"><div id="progress-fill"></div></div>
-                </div>
-                <div class="header-close" onclick="tg.close()">✕</div>
-            </div>
-        </header>
+        `;
 
-        <!-- MAIN LIST -->
-        <main class="content-scroll" id="main-content" onscroll="closeAllSwipes()">
-            <div id="exercise-list"></div>
-            <div style="padding: 20px 0 100px;">
-                <button class="btn-finish-capsule" onclick="finishWorkout()">ЗАВЕРШИТЬ</button>
-            </div>
-        </main>
+    }).join('');
 
-        <!-- MODALS -->
-        <div id="replace-screen" class="full-modal hidden">
-            <div class="modal-header">
-                <button class="back-btn" onclick="closeReplace()">← НАЗАД</button>
-                <div class="modal-title">ЗАМЕНА</div>
-            </div>
-            <div id="replace-list" class="modal-body"></div>
-        </div>
+}
 
-        <div id="info-screen" class="full-modal hidden">
-            <div class="modal-header">
-                <button class="back-btn" onclick="closeInfo()">← НАЗАД</button>
-                <div class="modal-title">ИНФО</div>
-            </div>
-            <div id="info-body" class="modal-body"></div>
-        </div>
+/* ========= TOGGLE ========= */
 
-        <div id="day-picker-overlay" class="modal-overlay hidden" onclick="closeDayPicker()">
-            <div class="bottom-sheet" onclick="event.stopPropagation()">
-                <div class="sheet-handle"></div>
-                <div class="days-grid">
-                    <div class="day-option" onclick="changeDay('A')"><span>A</span></div>
-                    <div class="day-option" onclick="changeDay('B')"><span>Б</span></div>
-                    <div class="day-option" onclick="changeDay('C')"><span>C</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
+function toggle(id){
 
-    <script>
-        const SHEET_ID = '1HiOp9bNlvIt_ayUiY5P8ycBlczt6PrLn0F8BSvv8OZk';
-        const GID_DAYS = '1002309655';
-        const GID_EX = '0';
+    if(state.done.includes(id)){
 
-        const TRANSLATIONS = {
-            'BACK': 'СПИНА', 'CHEST': 'ГРУДЬ', 'LEGS': 'НОГИ', 'SHOULDERS': 'ПЛЕЧИ',
-            'ARMS': 'РУКИ', 'ABS': 'ПРЕСС', 'WIDTH': 'ШИРИНА', 'THICKNESS': 'ТОЛЩИНА'
-        };
+        state.done = state.done.filter(i=>i!==id);
 
-        let workoutPlan = [];
-        let library = [];
-        let completedIds = [];
-        let currentDay = 'A';
-        let isEditingWeight = false;
-        let startX = 0;
-        let activeCard = null;
+        tg.HapticFeedback.impactOccurred('light');
 
-        const tg = window.Telegram.WebApp;
+    }else{
 
-        async function init() {
-            tg.expand();
-            tg.enableClosingConfirmation();
-            if (tg.isVersionAtLeast('7.7')) tg.disableVerticalSwipes();
+        state.done.push(id);
 
-            // Загрузка из облака
-            tg.CloudStorage.getItem('completed_exercises_v3', (err, val) => {
-                if (val) completedIds = JSON.parse(val);
-                loadData();
-            });
-        }
+        tg.HapticFeedback.notificationOccurred('success');
 
-        async function loadData() {
-            try {
-                const [exRows, dayRows] = await Promise.all([fetchSheet(GID_EX), fetchSheet(GID_DAYS)]);
-                
-                library = exRows.filter(r => r.c[0]?.v).map(row => ({
-                    id: row.c[0]?.v,
-                    name: row.c[1]?.v || "",
-                    muscle: translate(row.c[2]?.v),
-                    subgroup: row.c[3]?.v ? `(${translate(row.c[3].v)})` : "",
-                    subID: String(row.c[3]?.v || "").trim(),
-                    img: row.c[9]?.v || ""
-                }));
+        startRest();
 
-                workoutPlan = dayRows.filter(r => r.c[2]?.v).map((row, idx) => {
-                    const sub = String(row.c[6]?.v || "").trim();
-                    const mainEx = library.find(ex => ex.subID.toLowerCase() === sub.toLowerCase());
-                    return {
-                        rowId: 'row-' + idx,
-                        day: String(row.c[2]?.v).toUpperCase().replace('Б', 'B'),
-                        type: String(row.c[4]?.v || 'base').toLowerCase(),
-                        main: mainEx || { name: sub, muscle: "УПРАЖНЕНИЕ", subgroup: "", img: "" },
-                        weight: localStorage.getItem(`w_v3_${idx}`) || "0"
-                    };
-                });
+        setTimeout(()=>{
 
-                render();
-                document.body.style.opacity = "1";
-                document.body.classList.add('loaded');
-                document.getElementById('loader').style.display = 'none';
-            } catch (e) { console.error(e); }
-        }
+            scrollNext(id);
 
-        function translate(text) {
-            if (!text) return "";
-            let clean = text.replace(/_/g, ' ').replace(/[()]/g, '').toUpperCase();
-            return TRANSLATIONS[clean] || clean;
-        }
+        },300);
 
-        async function fetchSheet(gid) {
-            const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`);
-            const text = await res.text();
-            return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
-        }
+    }
 
-        function render() {
-            const list = document.getElementById('exercise-list');
-            document.getElementById('day-display').innerText = currentDay === 'B' ? 'Б' : currentDay;
-            const filtered = workoutPlan.filter(it => it.day === currentDay);
-            const typeNames = { 'base': 'БАЗА', 'isolation': 'ИЗОЛЯЦИЯ', 'accessory': 'ДОП' };
-            
-            let html = '';
-            ['base', 'isolation', 'accessory'].forEach(secKey => {
-                const items = filtered.filter(it => it.type === secKey);
-                if (items.length > 0) {
-                    html += `<div class="section-title">${typeNames[secKey]}</div>`;
-                    items.forEach(item => {
-                        const isDone = completedIds.includes(item.rowId);
-                        html += `
-                        <div class="card-wrapper" data-id="${item.rowId}">
-                            <div class="card-actions">
-                                <div class="action-btn btn-info" onclick="openInfoScreen('${item.rowId}')">
-                                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M5.11523 2.52002V0.77002H6.86523V2.52002H5.11523ZM6.86523 11.27H5.11523V4.27002H6.86523V11.27Z" fill="#4B90C9"/></svg>
-                                    <span class="action-label label-info">ИНФО</span>
-                                </div>
-                                <div class="action-btn btn-swap" onclick="openReplaceScreen('${item.rowId}')">
-                                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M6.01172 0.5C7.6804 0.5 9.17502 1.24355 10.1836 2.41699L11.4902 1.08301V5.42773H7.23828L9.12891 3.49414C8.39591 2.58312 7.27206 2 6.01172 2C3.80266 2 2.01185 3.79097 2.01172 6C2.01172 8.20914 3.80258 10 6.01172 10C7.71963 10 9.17636 8.9294 9.75 7.42285H11.3252C10.6982 9.77075 8.55725 11.5 6.01172 11.5C2.97415 11.5 0.511719 9.03757 0.511719 6C0.511851 2.96255 2.97423 0.5 6.01172 0.5Z" fill="#9ED153"/></svg>
-                                    <span class="action-label label-swap">СМЕНА</span>
-                                </div>
-                            </div>
-                            <div class="card ${isDone ? 'done' : ''}" 
-                                 ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)"
-                                 onclick="handleCardClick('${item.rowId}', event)">
-                                <div class="card-inner-content">
-                                    <div class="img-box"><img src="${item.main.img}" onerror="this.src='https://via.placeholder.com/118'"></div>
-                                    <div class="info-content">
-                                        <div class="muscle-row">
-                                            <span class="muscle-main">${item.main.muscle}</span> 
-                                            <span class="muscle-sub">${item.main.subgroup}</span>
-                                        </div>
-                                        <div class="ex-name">${item.main.name}</div>
-                                        <div class="ex-sets">3×8-10</div>
-                                    </div>
-                                </div>
-                                <div class="weight-side" onclick="event.stopPropagation()">
-                                    <input type="number" class="weight-input" value="${item.weight}" 
-                                           onfocus="isEditingWeight=true; this.select()" 
-                                           oninput="updateWeight('${item.rowId}', this.value)">
-                                    <div class="w-label">KG</div>
-                                </div>
-                            </div>
-                        </div>`;
-                    });
-                }
-            });
-            list.innerHTML = html;
-            updateProgress();
-        }
+    save();
 
-        // SWIPES
-        function handleTouchStart(e) {
-            if (isEditingWeight) return;
-            startX = e.touches[0].clientX;
-            activeCard = e.currentTarget;
-            activeCard.style.transition = 'none';
-        }
-        function handleTouchMove(e) {
-            if (!activeCard) return;
-            let x = e.touches[0].clientX - startX;
-            if (x > 0) x = 0; if (x < -160) x = -160;
-            activeCard.style.transform = `translateX(${x}px)`;
-        }
-        function handleTouchEnd() {
-            if (!activeCard) return;
-            activeCard.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-            let curX = new WebKitCSSMatrix(window.getComputedStyle(activeCard).transform).m41;
-            activeCard.style.transform = curX < -70 ? 'translateX(-150px)' : 'translateX(0)';
-        }
-        function closeAllSwipes(e) {
-            document.querySelectorAll('.card').forEach(c => {
-                if (e && c.contains(e.target)) return;
-                c.style.transform = 'translateX(0)';
-            });
-        }
+    render();
 
-        // LOGIC
-        function handleCardClick(id, e) {
-            if (isEditingWeight) { document.activeElement.blur(); isEditingWeight=false; return; }
-            let x = new WebKitCSSMatrix(window.getComputedStyle(e.currentTarget).transform).m41;
-            if (x < -10) return;
+}
 
-            if (completedIds.includes(id)) {
-                completedIds = completedIds.filter(i => i !== id);
-            } else {
-                completedIds.push(id);
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            tg.CloudStorage.setItem('completed_exercises_v3', JSON.stringify(completedIds));
-            render();
-        }
+/* ========= SCROLL ========= */
 
-        function updateWeight(id, val) {
-            const item = workoutPlan.find(it => it.rowId === id);
-            if (item) {
-                item.weight = val;
-                localStorage.setItem(`w_v3_${id.split('-')[1]}`, val);
-            }
-        }
+function scrollNext(id){
 
-        function updateProgress() {
-            const dayEx = workoutPlan.filter(ex => ex.day === currentDay);
-            const done = dayEx.filter(ex => completedIds.includes(ex.rowId)).length;
-            const perc = dayEx.length > 0 ? (done / dayEx.length) * 100 : 0;
-            document.getElementById('progress-fill').style.width = perc + '%';
-            document.getElementById('progress-text').innerText = `${done} / ${dayEx.length} ПРОГРЕСС`;
-        }
+    const index = state.exercises.findIndex(e=>e.id===id);
 
-        function changeDay(day) {
-            currentDay = day;
-            tg.HapticFeedback.impactOccurred('light');
-            closeDayPicker();
-            render();
-        }
+    if(index === -1) return;
 
-        function openDayPicker() { document.getElementById('day-picker-overlay').classList.remove('hidden'); }
-        function closeDayPicker() { document.getElementById('day-picker-overlay').classList.add('hidden'); }
-        function closeInfo() { document.getElementById('info-screen').classList.add('hidden'); }
-        function closeReplace() { document.getElementById('replace-screen').classList.add('hidden'); }
-        
-        function openInfoScreen(id) {
-            const item = workoutPlan.find(it => it.rowId === id);
-            document.getElementById('info-body').innerHTML = `<h2 class="tiny">${item.main.name}</h2><p>${item.main.muscle}</p>`;
-            document.getElementById('info-screen').classList.remove('hidden');
-        }
+    const next = document.querySelectorAll('.card')[index+1];
 
-        function openReplaceScreen(id) {
-            const item = workoutPlan.find(it => it.rowId === id);
-            const sub = item.main.subgroup.replace(/[()]/g, '');
-            const options = library.filter(ex => ex.muscle === item.main.muscle);
-            let html = '';
-            options.forEach(ex => {
-                html += `<div class="day-option" style="font-size:14px; margin-bottom:10px;" onclick="confirmReplace('${id}', '${ex.name}')">${ex.name}</div>`;
-            });
-            document.getElementById('replace-list').innerHTML = html;
-            document.getElementById('replace-screen').classList.remove('hidden');
-        }
+    if(next){
 
-        function confirmReplace(rowId, newName) {
-            const item = workoutPlan.find(it => it.rowId === rowId);
-            const newEx = library.find(ex => ex.name === newName);
-            if (item && newEx) { item.main = newEx; render(); closeReplace(); }
-        }
+        next.scrollIntoView({behavior:'smooth',block:'center'});
 
-        function finishWorkout() { tg.close(); }
+    }
 
-        window.onload = init;
-    </script>
+}
+
+/* ========= REST ========= */
+
+let restTimer=null;
+
+function startRest(){
+
+    if(restTimer) clearTimeout(restTimer);
+
+    restTimer = setTimeout(()=>{
+
+        tg.HapticFeedback.impactOccurred('medium');
+
+    },2000);
+
+}
+
+/* ========= FINISH ========= */
+
+function finishWorkout(){
+
+    if(state.done.length === 0){
+
+        alert("Сделай хотя бы одно упражнение");
+
+        return;
+
+    }
+
+    document.getElementById('finish').style.display='flex';
+
+    document.getElementById('finishText').innerText =
+
+        `Сделано: ${state.done.length} упражнений`;
+
+    tg.HapticFeedback.notificationOccurred('success');
+
+    state.done=[];
+
+    save();
+
+}
+
+</script>
+
 </body>
+
 </html>
