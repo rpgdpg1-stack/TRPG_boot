@@ -1,1 +1,33 @@
 
+# Зависимости (библиотеки) — не нужны в гите, ставятся автоматически
+node_modules
+.pnp
+.pnp.js
+
+# Билды — собираются на Vercel автоматически
+dist
+dist-ssr
+build
+
+# Локальные файлы редакторов
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Переменные окружения (секретные ключи)
+.env
+.env.local
+.env.*.local
