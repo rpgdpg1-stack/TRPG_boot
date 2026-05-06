@@ -1,21 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export default function Loader({ onFinish }) {
-  const [dots, setDots] = useState(1)
-
   useEffect(() => {
-    // Анимация точек: 1 → 2 → 3 → 1 → ...
-    const dotsTimer = setInterval(() => {
-      setDots(prev => (prev % 3) + 1)
-    }, 400)
-
     // Через 1.8 сек скрываем лоадер
     const finishTimer = setTimeout(onFinish, 1800)
-
-    return () => {
-      clearInterval(dotsTimer)
-      clearTimeout(finishTimer)
-    }
+    return () => clearTimeout(finishTimer)
   }, [onFinish])
 
   return (
@@ -24,11 +13,7 @@ export default function Loader({ onFinish }) {
         <span style={styles.biceps} role="img" aria-label="biceps">💪</span>
       </div>
 
-      {/* Контейнер текста — центрирован, точки в отдельном абсолютном блоке справа */}
-      <div style={styles.textWrapper}>
-        <span style={styles.text}>LOADING</span>
-        <span style={styles.dotsBlock}>{'.'.repeat(dots)}</span>
-      </div>
+      <div style={styles.text}>LOADING</div>
 
       <style>{`
         @keyframes flexBiceps {
@@ -52,18 +37,19 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    gap: '40px'
+    // Отступ между бицепсом и надписью — 24px
+    gap: '24px'
   },
   bicepsWrapper: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '120px',
-    height: '120px'
+    width: '110px',
+    height: '110px'
   },
   biceps: {
-    // Уменьшили на ~10%: было 96px → стало 86px
-    fontSize: '86px',
+    // Уменьшили ещё на 10%: было 86px → стало 77px
+    fontSize: '77px',
     display: 'block',
     lineHeight: 1,
     animation: 'flexBiceps 1.8s ease-in-out infinite',
@@ -71,26 +57,11 @@ const styles = {
     filter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
     WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)'
   },
-  // Обёртка текста — центрирует надпись, точки висят справа отдельно
-  textWrapper: {
-    position: 'relative',
-    display: 'inline-block'
-  },
   text: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '16px',
+    // Уменьшили на ~15%: было 16px → стало 14px
+    fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '3px'
-  },
-  // Точки выходят за правую границу слова LOADING — текст центруется по слову
-  dotsBlock: {
-    position: 'absolute',
-    left: '100%',
-    top: 0,
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '16px',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    paddingLeft: '3px'
   }
 }
