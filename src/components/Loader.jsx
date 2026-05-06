@@ -1,22 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 export default function Loader({ onFinish }) {
   const sceneRef = useRef(null)
-  const [weightIdx, setWeightIdx] = useState(0)
-
-  // Три значения веса — меняются последовательно за время лоадера (1.8 сек)
-  const weights = ['50 KG', '70 KG', '100 KG']
 
   useEffect(() => {
-    // 1) Таймер закрытия лоадера через 1.8 сек
+    // 1) Закрываем лоадер через 1.8 сек
     const finishTimer = setTimeout(onFinish, 1800)
 
-    // 2) Меняем вес каждые 600 мс (50 → 70 → 100 за 1.8 сек)
-    const weightTimer = setInterval(() => {
-      setWeightIdx(prev => (prev + 1) % weights.length)
-    }, 600)
-
-    // 3) Спавним частицы вокруг бицепса каждые 250 мс
+    // 2) Спавним частицы вокруг бицепса каждые 250 мс
     const spawnParticle = () => {
       const scene = sceneRef.current
       if (!scene) return
@@ -55,10 +46,9 @@ export default function Loader({ onFinish }) {
       setTimeout(spawnParticle, i * 60)
     }
 
-    // Очистка всех таймеров при размонтировании
+    // Очистка таймеров при закрытии лоадера
     return () => {
       clearTimeout(finishTimer)
-      clearInterval(weightTimer)
       clearInterval(particleTimer)
     }
   }, [onFinish])
@@ -69,8 +59,6 @@ export default function Loader({ onFinish }) {
         <div style={styles.biceps} role="img" aria-label="biceps">💪</div>
         <div style={styles.plusOne}>+1</div>
       </div>
-
-      <div style={styles.weight}>{weights[weightIdx]}</div>
 
       <style>{`
         @keyframes flexBiceps {
@@ -106,9 +94,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
-    // Уменьшили отступ между сценой и весом на 50%: было 24px → стало 12px
-    gap: '12px'
+    zIndex: 9999
   },
   scene: {
     position: 'relative',
@@ -141,13 +127,5 @@ const styles = {
     zIndex: 3,
     opacity: 0,
     animation: 'plusOneFly 1.8s ease-out infinite'
-    // Тень textShadow убрана — плоский цвет
-  },
-  weight: {
-    fontFamily: 'var(--font-tiny5)',
-    // Увеличили шрифт на 20%: было 14px → стало 17px
-    fontSize: '17px',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px'
   }
 }
