@@ -1,19 +1,76 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function Loader({ onFinish }) {
+  const sceneRef = useRef(null)
+  const [weightIdx, setWeightIdx] = useState(0)
+
+  // Три значения веса — меняются последовательно за время лоадера (1.8 сек)
+  const weights = ['50 KG', '70 KG', '100 KG']
+
   useEffect(() => {
-    // Через 1.8 сек скрываем лоадер
+    // 1) Таймер закрытия лоадера через 1.8 сек
     const finishTimer = setTimeout(onFinish, 1800)
-    return () => clearTimeout(finishTimer)
+
+    // 2) Меняем вес каждые 600 мс (50 → 70 → 100 за 1.8 сек)
+    const weightTimer = setInterval(() => {
+      setWeightIdx(prev => (prev + 1) % weights.length)
+    }, 600)
+
+    // 3) Спавним частицы вокруг бицепса каждые 250 мс
+    const spawnParticle = () => {
+      const scene = sceneRef.current
+      if (!scene) return
+
+      const particle = document.createElement('div')
+      particle.style.cssText = `
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #9ED153;
+        z-index: 1;
+        pointer-events: none;
+      `
+
+      // Случайная стартовая позиция вокруг бицепса
+      const startX = 50 + (Math.random() * 60 - 30) // 35-65%
+      const startY = 60 + (Math.random() * 30 - 15) // 50-75%
+      const drift = (Math.random() * 40 - 20) + 'px'
+      const duration = (1 + Math.random() * 0.8) + 's'
+
+      particle.style.left = startX + '%'
+      particle.style.top = startY + '%'
+      particle.style.setProperty('--drift', drift)
+      particle.style.animation = `particleFloat ${duration} ease-out forwards`
+
+      scene.appendChild(particle)
+
+      // Удаляем частицу из DOM после анимации (чтоб не копилось)
+      setTimeout(() => particle.remove(), 2000)
+    }
+
+    const particleTimer = setInterval(spawnParticle, 250)
+
+    // Стартовый "взрыв" из 4 частиц сразу
+    for (let i = 0; i < 4; i++) {
+      setTimeout(spawnParticle, i * 60)
+    }
+
+    // Очистка всех таймеров при размонтировании
+    return () => {
+      clearTimeout(finishTimer)
+      clearInterval(weightTimer)
+      clearInterval(particleTimer)
+    }
   }, [onFinish])
 
   return (
     <div style={styles.container}>
-      <div style={styles.bicepsWrapper}>
-        <span style={styles.biceps} role="img" aria-label="biceps">💪</span>
+      <div ref={sceneRef} style={styles.scene}>
+        <div style={styles.biceps} role="img" aria-label="biceps">💪</div>
+        <div style={styles.plusOne}>+1</div>
       </div>
 
-      <div style={styles.text}>LOADING</div>
+      <div style={styles.weight}>{weights[weightIdx]}</div>
 
       <style>{`
         @keyframes flexBiceps {
@@ -21,6 +78,19 @@ export default function Loader({ onFinish }) {
           45%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
           55%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
           100% { transform: rotate(0deg) scale(1); }
+        }
+
+        @keyframes particleFloat {
+          0%   { opacity: 0; transform: translateY(0) translateX(0) scale(1); }
+          10%  { opacity: 1; }
+          100% { opacity: 0; transform: translateY(-80px) translateX(var(--drift, 0px)) scale(0.5); }
+        }
+
+        @keyframes plusOneFly {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.6); }
+          15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
+          80%  { opacity: 1; transform: translateX(-50%) translateY(-70px) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-90px) scale(1); }
         }
       `}</style>
     </div>
@@ -37,30 +107,46 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    // Отступ между бицепсом и надписью — 24px
-    gap: '24px'
+    // Уменьшили отступ между сценой и весом на 50%: было 24px → стало 12px
+    gap: '12px'
   },
-  bicepsWrapper: {
+  scene: {
+    position: 'relative',
+    width: '200px',
+    height: '200px',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '110px',
-    height: '110px'
+    justifyContent: 'center'
   },
   biceps: {
-    // Уменьшили ещё на 10%: было 86px → стало 77px
     fontSize: '77px',
-    display: 'block',
     lineHeight: 1,
+    display: 'block',
     animation: 'flexBiceps 1.8s ease-in-out infinite',
     transformOrigin: '60% 85%',
     filter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
-    WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)'
+    WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
+    position: 'relative',
+    zIndex: 2
   },
-  text: {
+  plusOne: {
+    position: 'absolute',
+    top: '30%',
+    left: '50%',
+    transform: 'translateX(-50%)',
     fontFamily: 'var(--font-tiny5)',
-    // Уменьшили на ~15%: было 16px → стало 14px
-    fontSize: '14px',
+    fontSize: '32px',
+    color: 'var(--color-primary)',
+    letterSpacing: '2px',
+    zIndex: 3,
+    opacity: 0,
+    animation: 'plusOneFly 1.8s ease-out infinite'
+    // Тень textShadow убрана — плоский цвет
+  },
+  weight: {
+    fontFamily: 'var(--font-tiny5)',
+    // Увеличили шрифт на 20%: было 14px → стало 17px
+    fontSize: '17px',
     color: 'var(--color-primary)',
     letterSpacing: '3px'
   }
