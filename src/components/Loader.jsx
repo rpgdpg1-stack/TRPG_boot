@@ -4,7 +4,7 @@ export default function Loader({ onFinish }) {
   const [dots, setDots] = useState(1)
 
   useEffect(() => {
-    // Анимация точек: 1 → 2 → 3 → 1 → 2 → 3 ...
+    // Анимация точек: 1 → 2 → 3 → 1 → ...
     const dotsTimer = setInterval(() => {
       setDots(prev => (prev % 3) + 1)
     }, 400)
@@ -24,8 +24,10 @@ export default function Loader({ onFinish }) {
         <span style={styles.biceps} role="img" aria-label="biceps">💪</span>
       </div>
 
-      <div style={styles.text}>
-        LOADING<span style={styles.dotsBlock}>{'.'.repeat(dots)}</span>
+      {/* Контейнер текста — центрирован, точки в отдельном абсолютном блоке справа */}
+      <div style={styles.textWrapper}>
+        <span style={styles.text}>LOADING</span>
+        <span style={styles.dotsBlock}>{'.'.repeat(dots)}</span>
       </div>
 
       <style>{`
@@ -56,34 +58,39 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '140px',
-    height: '140px'
+    width: '120px',
+    height: '120px'
   },
   biceps: {
-    fontSize: '96px',
+    // Уменьшили на ~10%: было 96px → стало 86px
+    fontSize: '86px',
     display: 'block',
     lineHeight: 1,
-    // Анимация "напряжения" — медленная, плавная, реалистичная
     animation: 'flexBiceps 1.8s ease-in-out infinite',
-    // Точка вращения — нижняя часть (там где предплечье, имитация локтя)
     transformOrigin: '60% 85%',
-    // Тонировка эмодзи в светло-бежевый кожный цвет
-    // Эмодзи разные на разных платформах — этот фильтр универсально приводит к тёплому бежевому
     filter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
     WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)'
+  },
+  // Обёртка текста — центрирует надпись, точки висят справа отдельно
+  textWrapper: {
+    position: 'relative',
+    display: 'inline-block'
   },
   text: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '16px',
     color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    // Фиксируем ширину чтобы текст не "прыгал" когда меняется количество точек
-    minWidth: '140px',
-    textAlign: 'left'
+    letterSpacing: '3px'
   },
+  // Точки выходят за правую границу слова LOADING — текст центруется по слову
   dotsBlock: {
-    display: 'inline-block',
-    minWidth: '28px',
-    textAlign: 'left'
+    position: 'absolute',
+    left: '100%',
+    top: 0,
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '16px',
+    color: 'var(--color-primary)',
+    letterSpacing: '3px',
+    paddingLeft: '3px'
   }
 }
