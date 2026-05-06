@@ -1,46 +1,39 @@
 import { useEffect, useState } from 'react'
 
 export default function Loader({ onFinish }) {
-  const [progress, setProgress] = useState(0)
+  const [dots, setDots] = useState(1)
 
   useEffect(() => {
-    // Прогресс-бар плавно заполняется за 1.5 секунды
-    const duration = 1500
-    const interval = 30
-    const step = (interval / duration) * 100
+    // Анимация точек: 1 → 2 → 3 → 1 → 2 → 3 ...
+    const dotsTimer = setInterval(() => {
+      setDots(prev => (prev % 3) + 1)
+    }, 400)
 
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        const next = prev + step
-        if (next >= 100) {
-          clearInterval(timer)
-          // Когда дошёл до 100% — вызываем onFinish (родитель скроет лоадер)
-          setTimeout(onFinish, 100)
-          return 100
-        }
-        return next
-      })
-    }, interval)
+    // Через 1.8 сек скрываем лоадер
+    const finishTimer = setTimeout(onFinish, 1800)
 
-    return () => clearInterval(timer)
+    return () => {
+      clearInterval(dotsTimer)
+      clearTimeout(finishTimer)
+    }
   }, [onFinish])
 
   return (
     <div style={styles.container}>
       <div style={styles.bicepsWrapper}>
-        <span style={styles.biceps}>💪</span>
+        <span style={styles.biceps} role="img" aria-label="biceps">💪</span>
       </div>
 
-      <div style={styles.barContainer}>
-        <div style={{ ...styles.barFill, width: `${progress}%` }} />
+      <div style={styles.text}>
+        LOADING<span style={styles.dotsBlock}>{'.'.repeat(dots)}</span>
       </div>
-
-      <div style={styles.text}>RPG LOADING...</div>
 
       <style>{`
         @keyframes flexBiceps {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.25); }
+          0%   { transform: rotate(0deg) scale(1); }
+          45%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
+          55%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
+          100% { transform: rotate(0deg) scale(1); }
         }
       `}</style>
     </div>
@@ -57,40 +50,40 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    gap: '32px'
+    gap: '40px'
   },
   bicepsWrapper: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '120px',
-    height: '120px'
+    width: '140px',
+    height: '140px'
   },
   biceps: {
-    fontSize: '80px',
+    fontSize: '96px',
     display: 'block',
-    animation: 'flexBiceps 0.8s ease-in-out infinite',
-    transformOrigin: 'center',
-    // Делаем эмодзи "пиксельным" — отключаем сглаживание
-    imageRendering: 'pixelated',
-    filter: 'contrast(1.05)'
-  },
-  barContainer: {
-    width: '180px',
-    height: '4px',
-    background: '#222222',
-    borderRadius: '2px',
-    overflow: 'hidden'
-  },
-  barFill: {
-    height: '100%',
-    background: 'var(--color-primary)',
-    transition: 'width 0.03s linear'
+    lineHeight: 1,
+    // Анимация "напряжения" — медленная, плавная, реалистичная
+    animation: 'flexBiceps 1.8s ease-in-out infinite',
+    // Точка вращения — нижняя часть (там где предплечье, имитация локтя)
+    transformOrigin: '60% 85%',
+    // Тонировка эмодзи в светло-бежевый кожный цвет
+    // Эмодзи разные на разных платформах — этот фильтр универсально приводит к тёплому бежевому
+    filter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
+    WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)'
   },
   text: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '14px',
+    fontSize: '16px',
     color: 'var(--color-primary)',
-    letterSpacing: '2px'
+    letterSpacing: '3px',
+    // Фиксируем ширину чтобы текст не "прыгал" когда меняется количество точек
+    minWidth: '140px',
+    textAlign: 'left'
+  },
+  dotsBlock: {
+    display: 'inline-block',
+    minWidth: '28px',
+    textAlign: 'left'
   }
 }
