@@ -7,15 +7,14 @@ import DayBadge from './DayBadge'
 
 /**
  * Карточка программы внутри категории.
- * Содержит: иконку-закреп (бицепс), название, теги, значок активного дня.
- * При тапе → переход на /program/:id
+ * Иконка-закреп — ПИКСЕЛЬНОЕ СЕРДЦЕ (без серого фона).
+ * Высота 88px (компактнее чем категории).
  */
 export default function ProgramCard({ id, title, tags = [], available = true, comingSoon = false }) {
   const navigate = useNavigate()
   const [pinned, setPinned] = useState(false)
   const [activeDay, setActiveDay] = useState(null)
 
-  // Загружаем состояние из хранилища
   useEffect(() => {
     let cancelled = false
     Promise.all([isPinned(id), getActiveDay(id)]).then(([p, d]) => {
@@ -51,16 +50,16 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         cursor: available ? 'pointer' : 'default'
       }}
     >
-      {/* Иконка-закреп бицепс в углу */}
+      {/* Закреп-сердце в углу — без фона, чисто иконка */}
       <button
         onClick={handlePinTap}
         style={styles.pinButton}
         aria-label={pinned ? 'Открепить' : 'Закрепить'}
       >
-        <BicepsIcon filled={pinned} />
+        <HeartIcon filled={pinned} />
       </button>
 
-      {/* Контент */}
+      {/* Название */}
       <div style={styles.title}>{title}</div>
 
       {/* Теги */}
@@ -75,10 +74,10 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         </div>
       )}
 
-      {/* Значок активного дня (если есть) */}
+      {/* Значок активного дня */}
       {activeDay && available && (
         <div style={styles.dayBadgeWrap}>
-          <DayBadge day={activeDay} size={36} />
+          <DayBadge day={activeDay} size={32} />
           <div style={styles.dayLabel}>СЕГОДНЯ</div>
         </div>
       )}
@@ -87,33 +86,72 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
 }
 
 /**
- * Пиксельная иконка бицепса (16x16).
- * filled = false — контур
- * filled = true  — залит зелёным
+ * Пиксельное сердце 16x16.
+ * filled = false — серый контур
+ * filled = true  — зелёное залитое
  */
-function BicepsIcon({ filled }) {
-  const color = filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.25)'
+function HeartIcon({ filled }) {
+  const color = filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.3)'
 
-  // Простая пиксельная форма бицепса (упрощённая)
+  if (filled) {
+    // Залитое сердце
+    return (
+      <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+        {/* Верхние горбики */}
+        <rect x="2" y="3" width="3" height="2" fill={color} />
+        <rect x="11" y="3" width="3" height="2" fill={color} />
+        <rect x="1" y="5" width="5" height="2" fill={color} />
+        <rect x="10" y="5" width="5" height="2" fill={color} />
+        {/* Серединка соединяется */}
+        <rect x="6" y="5" width="4" height="2" fill={color} />
+        {/* Тело сердца */}
+        <rect x="1" y="7" width="14" height="2" fill={color} />
+        <rect x="2" y="9" width="12" height="2" fill={color} />
+        <rect x="3" y="11" width="10" height="1" fill={color} />
+        <rect x="4" y="12" width="8" height="1" fill={color} />
+        <rect x="5" y="13" width="6" height="1" fill={color} />
+        <rect x="6" y="14" width="4" height="1" fill={color} />
+        <rect x="7" y="15" width="2" height="1" fill={color} />
+      </svg>
+    )
+  }
+
+  // Контур сердца — только границы
   return (
     <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      {/* Кулак */}
-      <rect x="11" y="2" width="3" height="3" fill={color} />
-      {/* Предплечье */}
-      <rect x="11" y="5" width="2" height="3" fill={color} />
-      {/* Пик бицепса */}
-      <rect x="3" y="6" width="2" height="2" fill={color} />
-      {/* Основная масса */}
-      <rect x="2" y="7" width="9" height="3" fill={color} />
-      {/* Низ мышцы */}
-      <rect x="3" y="10" width="6" height="1" fill={color} />
+      {/* Верх */}
+      <rect x="2" y="3" width="3" height="1" fill={color} />
+      <rect x="11" y="3" width="3" height="1" fill={color} />
+      <rect x="1" y="4" width="1" height="1" fill={color} />
+      <rect x="5" y="4" width="1" height="1" fill={color} />
+      <rect x="10" y="4" width="1" height="1" fill={color} />
+      <rect x="14" y="4" width="1" height="1" fill={color} />
+      {/* Боковые */}
+      <rect x="1" y="5" width="1" height="2" fill={color} />
+      <rect x="14" y="5" width="1" height="2" fill={color} />
+      <rect x="6" y="5" width="1" height="1" fill={color} />
+      <rect x="9" y="5" width="1" height="1" fill={color} />
+      <rect x="7" y="6" width="2" height="1" fill={color} />
+      {/* Нижние стороны */}
+      <rect x="1" y="7" width="1" height="1" fill={color} />
+      <rect x="14" y="7" width="1" height="1" fill={color} />
+      <rect x="2" y="8" width="1" height="1" fill={color} />
+      <rect x="13" y="8" width="1" height="1" fill={color} />
+      <rect x="3" y="9" width="1" height="1" fill={color} />
+      <rect x="12" y="9" width="1" height="1" fill={color} />
+      <rect x="3" y="10" width="1" height="1" fill={color} />
+      <rect x="12" y="10" width="1" height="1" fill={color} />
+      <rect x="4" y="11" width="1" height="1" fill={color} />
+      <rect x="11" y="11" width="1" height="1" fill={color} />
+      <rect x="5" y="12" width="1" height="1" fill={color} />
+      <rect x="10" y="12" width="1" height="1" fill={color} />
+      <rect x="6" y="13" width="1" height="1" fill={color} />
+      <rect x="9" y="13" width="1" height="1" fill={color} />
+      <rect x="7" y="14" width="2" height="1" fill={color} />
     </svg>
   )
 }
 
-/**
- * Цвет тега по названию
- */
 function getTagColor(tag) {
   const t = tag.toLowerCase()
   if (t === 'зал') return 'var(--tag-gym)'
@@ -125,27 +163,27 @@ function getTagColor(tag) {
 const styles = {
   card: {
     position: 'relative',
-    padding: '20px 16px',
+    padding: '18px 16px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
+    minHeight: '88px',
     textAlign: 'left',
-    transition: 'transform 0.1s ease, opacity 0.2s ease',
-    minHeight: '100px'
+    transition: 'transform 0.1s ease, opacity 0.2s ease'
   },
   pinButton: {
     position: 'absolute',
-    top: '12px',
-    right: '12px',
-    width: '36px',
-    height: '36px',
+    top: '14px',
+    right: '14px',
+    width: '28px',
+    height: '28px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: '10px',
-    transition: 'background 0.2s ease',
-    zIndex: 2
+    background: 'transparent', // убрали серый фон!
+    transition: 'transform 0.15s ease',
+    zIndex: 2,
+    padding: 0
   },
   title: {
     fontFamily: 'var(--font-manrope)',
@@ -153,7 +191,7 @@ const styles = {
     fontWeight: 700,
     color: 'var(--color-text)',
     marginBottom: '8px',
-    paddingRight: '48px' // место для иконки-закрепа
+    paddingRight: '40px'
   },
   tags: {
     display: 'flex',
@@ -183,12 +221,12 @@ const styles = {
   },
   dayBadgeWrap: {
     position: 'absolute',
-    bottom: '14px',
+    bottom: '12px',
     right: '14px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '4px'
+    gap: '3px'
   },
   dayLabel: {
     fontFamily: 'var(--font-tiny5)',
