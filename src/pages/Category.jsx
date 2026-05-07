@@ -5,39 +5,58 @@ import { getPinnedPrograms } from '../lib/storage'
 import ProgramCard from '../components/ProgramCard'
 
 /**
- * Универсальный экран категории. Контент берётся из CATEGORIES_DATA по id из URL.
- * Здесь живут программы конкретной категории (Силовая, Бассейн, Растяжка).
+ * Универсальный экран категории.
+ * Шапка с пиксельным заголовком в цвете категории.
  */
 
 const CATEGORIES_DATA = {
   gym: {
     title: 'СИЛОВАЯ',
     subtitle: 'ВЫБЕРИ ПРОГРАММУ',
+    color: 'var(--cat-strength)',
     programs: [
-      {
-        id: 'split',
-        title: 'Сплит',
-        tags: ['зал'],
-        available: true,
-        comingSoon: false
-      }
-      // Тут позже появятся: Фулбоди, ПушПуллЛегс и т.д.
-    ]
+      { id: 'split', title: 'Сплит', tags: ['зал'], available: true, comingSoon: false }
+    ],
+    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
+  },
+  cardio: {
+    title: 'КАРДИО',
+    subtitle: 'СКОРО',
+    color: 'var(--cat-cardio)',
+    programs: [
+      { id: 'running', title: 'Бег', tags: [], available: false, comingSoon: true },
+      { id: 'hiit',    title: 'HIIT', tags: [], available: false, comingSoon: true }
+    ],
+    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   pool: {
     title: 'БАССЕЙН',
     subtitle: 'СКОРО',
+    color: 'var(--cat-pool)',
     programs: [
       { id: 'cardio-pool', title: 'Кардио план', tags: [], available: false, comingSoon: true }
-    ]
+    ],
+    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   stretch: {
     title: 'РАСТЯЖКА',
     subtitle: 'СКОРО',
+    color: 'var(--cat-stretch)',
     programs: [
-      { id: 'yoga', title: 'Йога', tags: [], available: false, comingSoon: true },
+      { id: 'yoga',    title: 'Йога',    tags: [], available: false, comingSoon: true },
       { id: 'pilates', title: 'Пилатес', tags: [], available: false, comingSoon: true }
-    ]
+    ],
+    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
+  },
+  recovery: {
+    title: 'ВОССТАНОВЛЕНИЕ',
+    subtitle: 'СКОРО',
+    color: 'var(--cat-recovery)',
+    programs: [
+      { id: 'sleep',  title: 'Сон',           tags: [], available: false, comingSoon: true },
+      { id: 'breath', title: 'Дыхание',       tags: [], available: false, comingSoon: true }
+    ],
+    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   }
 }
 
@@ -48,23 +67,20 @@ export default function Category() {
 
   const data = CATEGORIES_DATA[id]
 
-  // Управление кнопкой Назад в Телеге
   useEffect(() => {
     backButton.show(() => navigate('/'))
     return () => backButton.hide()
   }, [navigate])
 
-  // Подгружаем закрепы для сортировки
   useEffect(() => {
     getPinnedPrograms().then(setPinnedIds)
   }, [])
 
   const handleCreateTap = () => {
     haptic.light()
-    // Заглушка — создание своей тренировки добавим позже
+    // Заглушка
   }
 
-  // Если категория не найдена — fallback
   if (!data) {
     return (
       <div className="page page-enter" style={styles.notFoundPage}>
@@ -85,13 +101,13 @@ export default function Category() {
   return (
     <div className="page page-enter" style={styles.page}>
 
-      {/* Шапка категории */}
+      {/* Шапка категории — пиксельный заголовок в цвете акцента */}
       <header style={styles.header}>
-        <h1 style={styles.title}>{data.title}</h1>
+        <h1 style={{ ...styles.title, color: data.color }}>{data.title}</h1>
         <div style={styles.subtitle}>{data.subtitle}</div>
       </header>
 
-      {/* Список программ */}
+      {/* Программы */}
       <div style={styles.programs}>
         {sortedPrograms.map(prog => (
           <ProgramCard
@@ -105,18 +121,16 @@ export default function Category() {
         ))}
       </div>
 
-      {/* Создать свою тренировку */}
+      {/* Кнопка создать свою программу */}
       <button onClick={handleCreateTap} style={styles.createButton}>
-        + СОЗДАТЬ СВОЮ ТРЕНИРОВКУ
+        {data.createLabel}
       </button>
     </div>
   )
 }
 
 const styles = {
-  page: {
-    padding: '16px 16px 24px'
-  },
+  page: {},
   header: {
     marginBottom: '24px',
     marginTop: '8px',
@@ -125,7 +139,6 @@ const styles = {
   title: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '36px',
-    color: 'var(--color-primary)',
     letterSpacing: '3px',
     lineHeight: 1,
     marginBottom: '8px'
