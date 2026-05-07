@@ -7,8 +7,7 @@ import { spawnBurst } from '../components/ParticlesBg'
 
 /**
  * Главный экран — Тренировки.
- * Шапка с приветствием 👾 → логотип RPG → 5 категорий.
- * Без аватара-заглушки. Без кнопки справочника (она уехала в Настройки).
+ * Названия категорий — обычный белый Manrope (потом пользователь подцепит цветные иконки).
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -28,7 +27,7 @@ export default function Home() {
     })
   }, [])
 
-  // Порядок категорий: Силовая → Кардио → Бассейн → Растяжка → Восстановление
+  // Цвета пока остаются в данных — потом будут на иконках
   const categories = [
     { id: 'gym',       icon: '🏋️', title: 'СИЛОВАЯ',         subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК', color: 'var(--cat-strength)', available: true,  comingSoon: false },
     { id: 'cardio',    icon: '🏃', title: 'КАРДИО',          subtitle: 'БЕГ · HIIT',           color: 'var(--cat-cardio)',   available: true,  comingSoon: true },
@@ -72,7 +71,7 @@ export default function Home() {
         <div style={styles.logoSubtitle}>TRAINING APP</div>
       </div>
 
-      {/* Категории — название пиксельным шрифтом, без серого фона у эмодзи */}
+      {/* Категории — название белым Manrope, цвет акцента уйдёт на иконки */}
       <div style={styles.cards}>
         {categories.map(cat => (
           <button
@@ -80,12 +79,11 @@ export default function Home() {
             onClick={(e) => handleCategoryTap(cat, e)}
             style={styles.categoryCard}
           >
-            {/* Эмодзи — без фона */}
+            {/* Эмодзи без фона. Сейчас цветной акцент тут — позже заменишь на свою иконку */}
             <span style={styles.categoryIcon}>{cat.icon}</span>
 
-            {/* Название и подзаголовок */}
             <div style={styles.categoryContent}>
-              <div style={{ ...styles.categoryTitle, color: cat.color }}>
+              <div style={styles.categoryTitle}>
                 {cat.title}
               </div>
               <div style={styles.categorySubtitle}>
@@ -103,9 +101,7 @@ export default function Home() {
 }
 
 const styles = {
-  page: {
-    // padding-top уже в .page (под Telegram nav)
-  },
+  page: {},
   header: {
     position: 'sticky',
     top: 'calc(var(--tg-safe-top) + 4px)',
@@ -142,7 +138,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    paddingLeft: '28px' // выровняно под текст приветствия (после эмодзи)
+    paddingLeft: '28px'
   },
   lvlText: {
     fontFamily: 'var(--font-tiny5)',
@@ -210,7 +206,7 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    height: '100px', // как просил
+    height: '100px',
     textAlign: 'left',
     transition: 'transform 0.1s ease'
   },
@@ -228,11 +224,14 @@ const styles = {
     flexDirection: 'column',
     gap: '4px'
   },
+  // Название категории — БЕЛЫЙ обычный Manrope, не пиксельный
   categoryTitle: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '20px',
-    letterSpacing: '2px',
-    lineHeight: 1
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '18px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    letterSpacing: '0.5px',
+    lineHeight: 1.1
   },
   categorySubtitle: {
     fontFamily: 'var(--font-manrope)',
