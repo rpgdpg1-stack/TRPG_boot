@@ -1,13 +1,89 @@
+import { useEffect, useState } from 'react'
+import { getStreak, getUserLevel, getLevelName, getTotalWorkouts } from '../lib/storage'
+import { haptic } from '../lib/telegram'
+
+/**
+ * Экран прогресса. Структура заложена под будущий контент.
+ * Сейчас — карточки-разделы со статусом "Скоро".
+ */
 export default function Progress() {
+  const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
+
+  useEffect(() => {
+    Promise.all([
+      getStreak(),
+      getUserLevel(),
+      getTotalWorkouts()
+    ]).then(([streak, level, total]) => {
+      setStats({
+        streak,
+        level,
+        levelName: getLevelName(level),
+        total
+      })
+    })
+  }, [])
+
+  const sections = [
+    { id: 'charts', icon: '📈', title: 'Графики', subtitle: 'Динамика весов и повторов' },
+    { id: 'achievements', icon: '🏆', title: 'Достижения', subtitle: 'Ачивки и значки' },
+    { id: 'measurements', icon: '📏', title: 'Замеры тела', subtitle: 'Прогресс веса и объёмов' },
+    { id: 'calendar', icon: '📅', title: 'Календарь', subtitle: 'Активность по дням' },
+    { id: 'records', icon: '💪', title: 'Личные рекорды', subtitle: '1RM по упражнениям' }
+  ]
+
+  const handleSectionTap = () => {
+    haptic.light()
+    // Заглушка
+  }
+
   return (
-    <div className="page page-enter" style={styles.page}>
+    <div className="page page-fade" style={styles.page}>
+
+      {/* Шапка с заголовком и общей статой */}
+      <header style={styles.header}>
+        <h1 style={styles.title}>ПРОГРЕСС</h1>
+
+        <div style={styles.statsRow}>
+          <div style={styles.statBox}>
+            <div style={styles.statValue}>LVL {stats.level}</div>
+            <div style={styles.statLabel}>{stats.levelName}</div>
+          </div>
+          <div style={styles.statBox}>
+            <div style={styles.statValue}>🔥 {stats.streak}</div>
+            <div style={styles.statLabel}>СТРИК</div>
+          </div>
+          <div style={styles.statBox}>
+            <div style={styles.statValue}>{stats.total}</div>
+            <div style={styles.statLabel}>ВСЕГО</div>
+          </div>
+        </div>
+      </header>
+
+      {/* Заглушка-призыв */}
       <div style={styles.placeholder}>
-        <div style={styles.icon}>📊</div>
-        <h2 style={styles.title}>Прогресс</h2>
-        <p style={styles.text}>
-          Здесь будет твоя статистика<br/>
-          и пиксельная инфографика.
-        </p>
+        <div style={styles.placeholderTitle}>Скоро здесь будет твой прогресс</div>
+        <div style={styles.placeholderText}>
+          Сделай первую тренировку и начни наполнять статистику
+        </div>
+      </div>
+
+      {/* Карточки разделов */}
+      <div style={styles.sections}>
+        {sections.map(section => (
+          <button
+            key={section.id}
+            onClick={handleSectionTap}
+            style={styles.sectionCard}
+          >
+            <span style={styles.sectionIcon}>{section.icon}</span>
+            <div style={styles.sectionContent}>
+              <div style={styles.sectionTitle}>{section.title}</div>
+              <div style={styles.sectionSubtitle}>{section.subtitle}</div>
+            </div>
+            <span style={styles.sectionSoon}>СКОРО</span>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -15,30 +91,107 @@ export default function Progress() {
 
 const styles = {
   page: {
-    padding: '32px 16px',
-    minHeight: '70vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
+    padding: '16px 16px 24px'
   },
-  placeholder: {
-    textAlign: 'center'
-  },
-  icon: {
-    fontSize: '64px',
-    marginBottom: '16px'
+  header: {
+    textAlign: 'center',
+    marginBottom: '24px',
+    marginTop: '8px'
   },
   title: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '32px',
+    fontSize: '36px',
     color: 'var(--color-primary)',
-    marginBottom: '12px',
-    letterSpacing: '2px'
+    letterSpacing: '3px',
+    lineHeight: 1,
+    marginBottom: '20px'
   },
-  text: {
+  statsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '8px'
+  },
+  statBox: {
+    padding: '12px 8px',
+    background: 'var(--color-card)',
+    borderRadius: '16px',
+    textAlign: 'center'
+  },
+  statValue: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '16px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px',
+    marginBottom: '4px'
+  },
+  statLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '9px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1.5px',
+    fontWeight: 600
+  },
+  placeholder: {
+    textAlign: 'center',
+    padding: '24px 16px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 'var(--radius-card)',
+    marginBottom: '24px'
+  },
+  placeholderTitle: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    marginBottom: '6px'
+  },
+  placeholderText: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
+  },
+  sections: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  sectionCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '14px 16px',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-small)',
+    width: '100%',
+    textAlign: 'left'
+  },
+  sectionIcon: {
+    fontSize: '22px',
+    width: '32px',
+    textAlign: 'center'
+  },
+  sectionContent: {
+    flex: 1,
+    minWidth: 0
+  },
+  sectionTitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '15px',
+    fontWeight: 600,
+    color: 'var(--color-text)',
+    marginBottom: '2px'
+  },
+  sectionSubtitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)'
+  },
+  sectionSoon: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '10px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px',
+    flexShrink: 0
   }
 }
