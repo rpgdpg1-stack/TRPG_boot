@@ -2,8 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Таб-бар с тремя кнопками: Прогресс / Тренировки / Настройки
- * Активная кнопка — прямоугольник со светлой полупрозрачной заливкой (как в Telegram).
+ * Таб-бар: Прогресс / Тренировки / Настройки.
+ * Все скругления 33px (консистентно).
  */
 export default function TabBar() {
   const location = useLocation()
@@ -86,7 +86,7 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.85)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-card)', // 33px внешний
     border: '1px solid rgba(255, 255, 255, 0.06)',
     zIndex: 100
   },
@@ -98,8 +98,8 @@ const styles = {
     gap: '3px',
     padding: '0 18px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 8px)', // -4px сверху, -4px снизу
-    borderRadius: 'calc(var(--radius-card) - 6px)',
+    height: 'calc(var(--tabbar-height) - 8px)', // 64px при 72px высоте
+    borderRadius: 'var(--radius-card)', // 33px и для активной кнопки тоже!
     transition: 'background 0.2s ease'
   },
   icon: {
