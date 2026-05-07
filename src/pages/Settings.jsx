@@ -3,9 +3,9 @@ import { getUser } from '../lib/telegram'
 import { haptic } from '../lib/telegram'
 
 /**
- * Экран настроек/профиля.
- * Сверху — фото из Telegram + имя + @username.
- * Ниже — карточки разделов (заглушки сейчас, наполним позже).
+ * Экран настроек — стилизован под Telegram-настройки.
+ * Большое фото по центру, имя крупно, ниже @username серым.
+ * Без заголовка страницы.
  */
 export default function Settings() {
   const [user, setUser] = useState(null)
@@ -15,19 +15,19 @@ export default function Settings() {
   }, [])
 
   const sections = [
-    { id: 'personal', icon: '👤', title: 'Личные данные', subtitle: 'Пол · Рост · Возраст' },
-    { id: 'measurements', icon: '📏', title: 'Замеры тела', subtitle: 'Вес · Объёмы · Фото' },
-    { id: 'goal', icon: '🎯', title: 'Цель', subtitle: 'Что хочешь достичь' },
-    { id: 'notifications', icon: '🔔', title: 'Уведомления', subtitle: 'Напоминания о тренировках' },
-    { id: 'support', icon: '💬', title: 'Поддержка', subtitle: 'Написать в отдел заботы' },
-    { id: 'feedback', icon: '💡', title: 'Идеи и предложения', subtitle: 'Помоги улучшить приложение' },
-    { id: 'gift', icon: '🎁', title: 'Подарить сертификат', subtitle: 'Скоро' },
-    { id: 'about', icon: 'ℹ️', title: 'О приложении', subtitle: 'Версия · Политика' }
+    { id: 'personal',     icon: '👤', title: 'Личные данные',         subtitle: 'Пол · Рост · Возраст' },
+    { id: 'measurements', icon: '📏', title: 'Замеры тела',           subtitle: 'Вес · Объёмы · Фото' },
+    { id: 'goal',         icon: '🎯', title: 'Цель',                  subtitle: 'Что хочешь достичь' },
+    { id: 'library',      icon: '📚', title: 'Справочник упражнений', subtitle: 'База упражнений с техникой' },
+    { id: 'notifications',icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
+    { id: 'support',      icon: '💬', title: 'Поддержка',             subtitle: 'Написать в отдел заботы' },
+    { id: 'feedback',     icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
+    { id: 'gift',         icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
+    { id: 'about',        icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' }
   ]
 
   const handleSectionTap = () => {
     haptic.light()
-    // Заглушка — переход на конкретный раздел добавим позже
   }
 
   const displayName = user?.first_name || 'ATHLETE'
@@ -36,7 +36,7 @@ export default function Settings() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка с аватаром и именем */}
+      {/* Профиль в стиле Telegram — фото большое, по центру, имя, никнейм */}
       <header style={styles.header}>
         <div style={styles.avatar}>
           {user?.photo_url ? (
@@ -47,13 +47,11 @@ export default function Settings() {
             </div>
           )}
         </div>
-        <div style={styles.userInfo}>
-          <div style={styles.name}>{displayName}</div>
-          {username && <div style={styles.username}>{username}</div>}
-        </div>
+        <div style={styles.name}>{displayName}</div>
+        {username && <div style={styles.username}>{username}</div>}
       </header>
 
-      {/* Карточки разделов */}
+      {/* Список разделов */}
       <div style={styles.sections}>
         {sections.map(section => (
           <button
@@ -75,23 +73,21 @@ export default function Settings() {
 }
 
 const styles = {
-  page: {
-    padding: '16px 16px 24px'
-  },
+  page: {},
   header: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: '14px',
-    padding: '20px 8px',
-    marginBottom: '24px'
+    gap: '12px',
+    padding: '16px 8px 28px',
+    marginBottom: '16px'
   },
   avatar: {
-    width: '64px',
-    height: '64px',
+    width: '108px',
+    height: '108px',
     borderRadius: '50%',
     overflow: 'hidden',
-    flexShrink: 0,
-    border: '2px solid var(--color-primary)'
+    flexShrink: 0
   },
   avatarImg: {
     width: '100%',
@@ -106,24 +102,21 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '28px',
+    fontSize: '44px',
     color: 'var(--color-primary)'
-  },
-  userInfo: {
-    flex: 1,
-    minWidth: 0
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: 700,
     color: 'var(--color-text)',
-    marginBottom: '2px'
+    marginTop: '4px'
   },
   username: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)'
+    fontSize: '14px',
+    color: 'var(--color-text-secondary)',
+    marginTop: '-2px'
   },
   sections: {
     display: 'flex',
