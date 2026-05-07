@@ -1,93 +1,120 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getUser } from '../lib/telegram'
+import { getStreak, getUserLevel, getLevelName } from '../lib/storage'
 import { haptic } from '../lib/telegram'
+import CategoryCard from '../components/CategoryCard'
 
+/**
+ * Главный экран — Тренировки.
+ * Содержит: sticky шапку (имя + LVL + стрик), логотип, заглушку аватара, 3 категории, кнопку справочника.
+ */
 export default function Home() {
   const navigate = useNavigate()
+  const [userName, setUserName] = useState('ATHLETE')
+  const [streak, setStreak] = useState(0)
+  const [level, setLevel] = useState(1)
+  const [levelName, setLevelName] = useState('NEWBIE')
 
-  const programs = [
+  useEffect(() => {
+    // Имя из Telegram (с fallback на ATHLETE)
+    const user = getUser()
+    if (user?.first_name) {
+      setUserName(user.first_name)
+    }
+
+    // Стрик и уровень из хранилища
+    Promise.all([getStreak(), getUserLevel()]).then(([s, l]) => {
+      setStreak(s)
+      setLevel(l)
+      setLevelName(getLevelName(l))
+    })
+  }, [])
+
+  const categories = [
     {
       id: 'gym',
       icon: '🏋️',
-      title: 'Зал',
-      subtitle: 'ПРОГРАММА A • B • C',
-      action: 'НАЧАТЬ ДЕНЬ A',
-      enabled: true
+      title: 'СИЛОВАЯ',
+      subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК',
+      available: true,
+      comingSoon: false
     },
     {
       id: 'pool',
       icon: '🏊',
-      title: 'Бассейн',
-      subtitle: 'КАРДИО ПЛАН',
-      action: null,
-      enabled: false
+      title: 'БАССЕЙН',
+      subtitle: 'КАРДИО ПЛАНЫ',
+      available: true,
+      comingSoon: true
     },
     {
       id: 'stretch',
       icon: '🧘',
-      title: 'Растяжка',
-      subtitle: 'МОБИЛЬНОСТЬ',
-      action: null,
-      enabled: false
+      title: 'РАСТЯЖКА',
+      subtitle: 'ЙОГА · ПИЛАТЕС',
+      available: true,
+      comingSoon: true
     }
   ]
 
-  const handleProgramTap = (program) => {
+  const handleLibraryTap = () => {
     haptic.light()
-    if (program.id === 'gym') {
-      navigate('/workout')
-    } else {
-      // Заглушка для бассейна и растяжки — пока ничего не делаем
-      // На Шаге 6 добавим экран "скоро"
-    }
-  }
-
-  const handleCreateTap = () => {
-    haptic.light()
-    // Заглушка — функция будет позже
+    // Заглушка — справочник упражнений будет позже
   }
 
   return (
-    <div className="page page-enter" style={styles.page}>
+    <div className="page page-fade" style={styles.page}>
+
+      {/* Sticky шапка с именем и LVL */}
+      <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.greeting}>Привет, {userName}!</div>
+          <div style={styles.lvlBlock}>
+            <span style={styles.lvlText}>LVL {level}</span>
+            <span style={styles.lvlDot}>•</span>
+            <span style={styles.lvlName}>{levelName}</span>
+          </div>
+        </div>
+        <div style={styles.headerRight}>
+          <span style={styles.streakIcon}>🔥</span>
+          <span style={styles.streakNumber}>{streak}</span>
+        </div>
+      </header>
+
       {/* Логотип */}
       <div style={styles.logoBlock}>
         <h1 style={styles.logo}>RPG</h1>
         <div style={styles.logoSubtitle}>TRAINING APP</div>
-        <div style={styles.dots}>
-          {[...Array(7)].map((_, i) => (
-            <span key={i} style={styles.dot} />
-          ))}
+      </div>
+
+      {/* Заглушка под пиксельного человечка */}
+      <div style={styles.avatarPlaceholder}>
+        <div style={styles.avatarInner}>
+          <div style={styles.avatarHint}>
+            ПИКСЕЛЬНЫЙ<br/>АВАТАР<br/>СКОРО
+          </div>
         </div>
       </div>
 
-      {/* Карточки программ */}
+      {/* Категории тренировок */}
       <div style={styles.cards}>
-        {programs.map(program => (
-          <button
-            key={program.id}
-            onClick={() => handleProgramTap(program)}
-            style={{
-              ...styles.programCard,
-              opacity: program.enabled ? 1 : 0.55
-            }}
-          >
-            <div style={styles.programIcon}>
-              <span style={styles.programIconEmoji}>{program.icon}</span>
-            </div>
-            <div style={styles.programContent}>
-              <div style={styles.programTitle}>{program.title}</div>
-              <div style={styles.programSubtitle}>{program.subtitle}</div>
-              {program.action && (
-                <div style={styles.programAction}>{program.action}</div>
-              )}
-            </div>
-            <div style={styles.programArrow}>›</div>
-          </button>
+        {categories.map(cat => (
+          <CategoryCard
+            key={cat.id}
+            id={cat.id}
+            icon={cat.icon}
+            title={cat.title}
+            subtitle={cat.subtitle}
+            available={cat.available}
+            comingSoon={cat.comingSoon}
+          />
         ))}
       </div>
 
-      {/* Создать тренировку */}
-      <button onClick={handleCreateTap} style={styles.createButton}>
-        + СОЗДАТЬ ТРЕНИРОВКУ
+      {/* Кнопка справочника упражнений */}
+      <button onClick={handleLibraryTap} style={styles.libraryButton}>
+        📚 СПРАВОЧНИК УПРАЖНЕНИЙ
       </button>
     </div>
   )
@@ -95,112 +122,128 @@ export default function Home() {
 
 const styles = {
   page: {
-    padding: '32px 16px 24px'
+    padding: '16px 16px 24px'
+  },
+  header: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 4px',
+    marginBottom: '12px',
+    background: 'rgba(13, 12, 12, 0.85)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    borderRadius: '16px'
+  },
+  headerLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    paddingLeft: '8px'
+  },
+  greeting: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '16px',
+    fontWeight: 700,
+    color: 'var(--color-text)'
+  },
+  lvlBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  lvlText: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px'
+  },
+  lvlDot: {
+    color: 'var(--color-text-secondary)',
+    fontSize: '10px'
+  },
+  lvlName: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px'
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    background: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: '12px'
+  },
+  streakIcon: {
+    fontSize: '16px'
+  },
+  streakNumber: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '14px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px'
   },
   logoBlock: {
     textAlign: 'center',
-    marginBottom: '32px'
+    marginBottom: '20px',
+    marginTop: '8px'
   },
   logo: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '72px',
+    fontSize: '56px',
     color: 'var(--color-primary)',
     letterSpacing: '4px',
     lineHeight: 1,
-    marginBottom: '8px'
+    marginBottom: '4px'
   },
   logoSubtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
-    letterSpacing: '4px',
-    marginBottom: '12px'
+    letterSpacing: '4px'
   },
-  dots: {
+  // Заглушка под пиксельного аватара
+  avatarPlaceholder: {
+    width: '120px',
+    height: '160px',
+    margin: '0 auto 24px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1.5px dashed rgba(255, 255, 255, 0.1)',
+    borderRadius: '20px',
     display: 'flex',
-    justifyContent: 'center',
-    gap: '6px'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  dot: {
-    width: '5px',
-    height: '5px',
-    borderRadius: '50%',
-    background: 'var(--color-text-secondary)',
-    opacity: 0.5
+  avatarInner: {
+    textAlign: 'center'
+  },
+  avatarHint: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '10px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px',
+    lineHeight: 1.6
   },
   cards: {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    marginBottom: '24px'
+    marginBottom: '20px'
   },
-  programCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '16px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
+  libraryButton: {
     width: '100%',
-    textAlign: 'left',
-    transition: 'transform 0.1s ease, opacity 0.2s ease'
-  },
-  programIcon: {
-    width: '56px',
-    height: '56px',
-    borderRadius: '20px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0
-  },
-  programIconEmoji: {
-    fontSize: '32px'
-  },
-  programContent: {
-    flex: 1,
-    minWidth: 0
-  },
-  programTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    marginBottom: '2px'
-  },
-  programSubtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
-  programAction: {
-    display: 'inline-block',
-    marginTop: '8px',
-    padding: '5px 10px',
-    background: 'var(--color-primary-dark)',
-    color: 'var(--color-primary)',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    letterSpacing: '1px',
-    borderRadius: '8px'
-  },
-  programArrow: {
-    fontSize: '24px',
-    color: 'var(--color-text-secondary)',
-    flexShrink: 0
-  },
-  createButton: {
-    width: '100%',
-    padding: '20px',
+    padding: '18px',
     border: '1.5px dashed rgba(255, 255, 255, 0.15)',
     borderRadius: 'var(--radius-card)',
     color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: 600,
     letterSpacing: '1.5px',
     background: 'transparent'
