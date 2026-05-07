@@ -3,64 +3,50 @@ import { getStreak, getUserLevel, getLevelName, getTotalWorkouts } from '../lib/
 import { haptic } from '../lib/telegram'
 
 /**
- * Экран прогресса. Структура заложена под будущий контент.
- * Сейчас — карточки-разделы со статусом "Скоро".
+ * Экран прогресса — без заголовка.
+ * Сразу показываем три блока статистики, призыв и список разделов.
  */
 export default function Progress() {
   const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
 
   useEffect(() => {
-    Promise.all([
-      getStreak(),
-      getUserLevel(),
-      getTotalWorkouts()
-    ]).then(([streak, level, total]) => {
-      setStats({
-        streak,
-        level,
-        levelName: getLevelName(level),
-        total
-      })
+    Promise.all([getStreak(), getUserLevel(), getTotalWorkouts()]).then(([streak, level, total]) => {
+      setStats({ streak, level, levelName: getLevelName(level), total })
     })
   }, [])
 
   const sections = [
-    { id: 'charts', icon: '📈', title: 'Графики', subtitle: 'Динамика весов и повторов' },
-    { id: 'achievements', icon: '🏆', title: 'Достижения', subtitle: 'Ачивки и значки' },
-    { id: 'measurements', icon: '📏', title: 'Замеры тела', subtitle: 'Прогресс веса и объёмов' },
-    { id: 'calendar', icon: '📅', title: 'Календарь', subtitle: 'Активность по дням' },
-    { id: 'records', icon: '💪', title: 'Личные рекорды', subtitle: '1RM по упражнениям' }
+    { id: 'charts',       icon: '📈', title: 'Графики',         subtitle: 'Динамика весов и повторов' },
+    { id: 'achievements', icon: '🏆', title: 'Достижения',      subtitle: 'Ачивки и значки' },
+    { id: 'measurements', icon: '📏', title: 'Замеры тела',     subtitle: 'Прогресс веса и объёмов' },
+    { id: 'calendar',     icon: '📅', title: 'Календарь',       subtitle: 'Активность по дням' },
+    { id: 'records',      icon: '💪', title: 'Личные рекорды',  subtitle: '1RM по упражнениям' }
   ]
 
   const handleSectionTap = () => {
     haptic.light()
-    // Заглушка
   }
 
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка с заголовком и общей статой */}
-      <header style={styles.header}>
-        <h1 style={styles.title}>ПРОГРЕСС</h1>
-
-        <div style={styles.statsRow}>
-          <div style={styles.statBox}>
-            <div style={styles.statValue}>LVL {stats.level}</div>
-            <div style={styles.statLabel}>{stats.levelName}</div>
-          </div>
-          <div style={styles.statBox}>
-            <div style={styles.statValue}>🔥 {stats.streak}</div>
-            <div style={styles.statLabel}>СТРИК</div>
-          </div>
-          <div style={styles.statBox}>
-            <div style={styles.statValue}>{stats.total}</div>
-            <div style={styles.statLabel}>ВСЕГО</div>
-          </div>
+      {/* Сразу три бокса статистики (без заголовка) */}
+      <div style={styles.statsRow}>
+        <div style={styles.statBox}>
+          <div style={styles.statValue}>LVL {stats.level}</div>
+          <div style={styles.statLabel}>{stats.levelName}</div>
         </div>
-      </header>
+        <div style={styles.statBox}>
+          <div style={styles.statValue}>🔥 {stats.streak}</div>
+          <div style={styles.statLabel}>СТРИК</div>
+        </div>
+        <div style={styles.statBox}>
+          <div style={styles.statValue}>{stats.total}</div>
+          <div style={styles.statLabel}>ВСЕГО</div>
+        </div>
+      </div>
 
-      {/* Заглушка-призыв */}
+      {/* Призыв */}
       <div style={styles.placeholder}>
         <div style={styles.placeholderTitle}>Скоро здесь будет твой прогресс</div>
         <div style={styles.placeholderText}>
@@ -90,31 +76,18 @@ export default function Progress() {
 }
 
 const styles = {
-  page: {
-    padding: '16px 16px 24px'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '24px',
-    marginTop: '8px'
-  },
-  title: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '36px',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    marginBottom: '20px'
-  },
+  page: {},
   statsRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px'
+    gap: '8px',
+    marginTop: '8px',
+    marginBottom: '20px'
   },
   statBox: {
-    padding: '12px 8px',
+    padding: '14px 8px',
     background: 'var(--color-card)',
-    borderRadius: '16px',
+    borderRadius: '20px',
     textAlign: 'center'
   },
   statValue: {
@@ -136,7 +109,7 @@ const styles = {
     padding: '24px 16px',
     background: 'rgba(255, 255, 255, 0.02)',
     borderRadius: 'var(--radius-card)',
-    marginBottom: '24px'
+    marginBottom: '20px'
   },
   placeholderTitle: {
     fontFamily: 'var(--font-manrope)',
