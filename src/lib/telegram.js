@@ -1,9 +1,8 @@
 /**
- * Обёртка над Telegram Web App SDK
- * Если что-то меняется в API Телеги — правим только этот файл
+ * Обёртка над Telegram Web App SDK.
+ * Если что-то меняется в API Телеги — правим только этот файл.
  */
 
-// Достаём объект WebApp из глобального Telegram (он подключен в index.html)
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
 /**
@@ -15,20 +14,30 @@ export function initTelegram() {
     return
   }
 
-  // Сообщаем Телеге что мы готовы — он скрывает свой лоадер
   tg.ready()
 
-  // Раскрываем приложение на полный экран
+  // Раскрываем приложение на полный экран (старый API)
   tg.expand()
 
-  // Запрещаем сворачивание свайпом вниз (чтобы не закрывалось случайно)
-  if (tg.disableVerticalSwipes) {
+  // Запрашиваем fullscreen (новый API, Bot API 8.0+).
+  // Если метод отсутствует — игнорируем, ошибки не будет.
+  try {
+    if (typeof tg.requestFullscreen === 'function') {
+      tg.requestFullscreen()
+    }
+  } catch (e) {
+    // На старых версиях метод может бросать ошибку — глотаем
+    console.log('requestFullscreen недоступен:', e?.message)
+  }
+
+  // Запрещаем сворачивание свайпом вниз
+  if (typeof tg.disableVerticalSwipes === 'function') {
     tg.disableVerticalSwipes()
   }
 }
 
 /**
- * Данные текущего пользователя (имя, id, username, аватарка)
+ * Данные текущего пользователя
  */
 export function getUser() {
   return tg?.initDataUnsafe?.user || null
@@ -66,7 +75,7 @@ export const backButton = {
 }
 
 /**
- * Главная кнопка снизу (зелёная нативная кнопка Телеги)
+ * Главная кнопка снизу (зелёная нативная)
  */
 export const mainButton = {
   show: (text, onClick) => {
@@ -82,14 +91,8 @@ export const mainButton = {
   }
 }
 
-/**
- * Закрыть мини-приложение
- */
 export function closeApp() {
   tg?.close()
 }
 
-/**
- * Сырой доступ к объекту Telegram.WebApp если нужно что-то особенное
- */
 export const webApp = tg
