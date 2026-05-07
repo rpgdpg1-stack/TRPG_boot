@@ -4,7 +4,7 @@ import { haptic } from '../lib/telegram'
 
 /**
  * Экран прогресса — без заголовка.
- * Сразу показываем три блока статистики, призыв и список разделов.
+ * Все карточки со скруглением 33px (консистентно с остальным UI).
  */
 export default function Progress() {
   const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
@@ -30,7 +30,7 @@ export default function Progress() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Сразу три бокса статистики (без заголовка) */}
+      {/* Боксы статистики — скругление 33px */}
       <div style={styles.statsRow}>
         <div style={styles.statBox}>
           <div style={styles.statValue}>LVL {stats.level}</div>
@@ -54,7 +54,7 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* Карточки разделов */}
+      {/* Карточки разделов — скругление 33px (таблетки) */}
       <div style={styles.sections}>
         {sections.map(section => (
           <button
@@ -84,11 +84,16 @@ const styles = {
     marginTop: '8px',
     marginBottom: '20px'
   },
+  // Боксы статов — скругление 33px (квадратные становятся скруглёнными)
   statBox: {
-    padding: '14px 8px',
+    padding: '18px 8px',
     background: 'var(--color-card)',
-    borderRadius: '20px',
-    textAlign: 'center'
+    borderRadius: 'var(--radius-card)', // 33px
+    textAlign: 'center',
+    minHeight: '78px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center'
   },
   statValue: {
     fontFamily: 'var(--font-tiny5)',
@@ -133,11 +138,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '14px 16px',
+    padding: '14px 20px',
     background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-small)', // теперь 33px
     width: '100%',
-    textAlign: 'left'
+    textAlign: 'left',
+    minHeight: '60px'
   },
   sectionIcon: {
     fontSize: '22px',
