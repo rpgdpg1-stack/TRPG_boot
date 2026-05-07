@@ -13,7 +13,7 @@
   --color-text-secondary: #888888;
   --color-overlay: rgba(0, 0, 0, 0.4);
 
-  /* Цвета акцентов категорий (новая палитра) */
+  /* Цвета акцентов категорий */
   --cat-strength: #E84545;     /* Силовая — красный */
   --cat-cardio: #FF8C42;       /* Кардио — оранжевый */
   --cat-pool: #3FA2F7;         /* Бассейн — синий */
@@ -25,9 +25,9 @@
   --tag-home: #4A90E2;
   --tag-outdoor: #5DBB63;
 
-  /* Скругления (33px везде) */
+  /* Скругления (33px везде, консистентно) */
   --radius-card: 33px;
-  --radius-small: 16px;
+  --radius-small: 33px;
 
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
@@ -43,8 +43,8 @@
   --duration-page: 280ms;
 
   /* Safe-area под Telegram nav (закрыть/назад/свернуть) */
-  /* Telegram занимает примерно 56px сверху на устройствах */
-  --tg-safe-top: 56px;
+  /* Поднял с 56px до 92px чтобы контент не перекрывался шапкой Телеги */
+  --tg-safe-top: 92px;
 }
 
 /* ============================================ */
@@ -99,7 +99,6 @@ img, button { -webkit-user-drag: none; }
   padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 24px);
 }
 
-/* Все страницы получают отступ сверху под Telegram nav */
 .page {
   padding: calc(var(--tg-safe-top) + 8px) 16px 24px;
   position: relative;
@@ -107,7 +106,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* АНИМАЦИИ ПЕРЕХОДОВ МЕЖДУ ЭКРАНАМИ (iOS-стиль) */
+/* АНИМАЦИИ ПЕРЕХОДОВ */
 /* ============================================ */
 
 .page-enter {
@@ -146,6 +145,5 @@ img, button { -webkit-user-drag: none; }
   100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
 }
 
-/* Скрываем скроллбары */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
