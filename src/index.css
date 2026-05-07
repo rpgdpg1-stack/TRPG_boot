@@ -1,24 +1,31 @@
 /* ============================================ */
 /* ПЕРЕМЕННЫЕ — все цвета и размеры в одном месте */
-/* Хочешь поменять цвет — меняй здесь, оно само применится везде */
 /* ============================================ */
 
 :root {
   /* Основные цвета */
   --color-bg: #0D0C0C;
   --color-card: #222222;
+  --color-card-hover: #2a2a2a;
   --color-primary: #9ED153;
   --color-primary-dark: #648337;
   --color-text: #FFFFFF;
   --color-text-secondary: #888888;
   --color-overlay: rgba(0, 0, 0, 0.4);
 
-  /* Цвета тегов категорий */
-  --tag-gym: #FF8C42;        /* Зал — оранжевый */
-  --tag-home: #4A90E2;       /* Дом — голубой */
-  --tag-outdoor: #5DBB63;    /* Улица — зелёный отличный от основного */
+  /* Цвета акцентов категорий (новая палитра) */
+  --cat-strength: #E84545;     /* Силовая — красный */
+  --cat-cardio: #FF8C42;       /* Кардио — оранжевый */
+  --cat-pool: #3FA2F7;         /* Бассейн — синий */
+  --cat-stretch: #F178B6;      /* Растяжка — розовый */
+  --cat-recovery: #FFFFFF;     /* Восстановление — белый */
 
-  /* Скругления */
+  /* Цвета тегов программ */
+  --tag-gym: #FF8C42;
+  --tag-home: #4A90E2;
+  --tag-outdoor: #5DBB63;
+
+  /* Скругления (33px везде) */
   --radius-card: 33px;
   --radius-small: 16px;
 
@@ -28,16 +35,20 @@
   --font-tiny5: 'Tiny5', monospace;
 
   /* Размеры таббара */
-  --tabbar-height: 70px;
+  --tabbar-height: 72px;
   --tabbar-bottom: 16px;
 
   /* Анимации */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-page: 280ms;
+
+  /* Safe-area под Telegram nav (закрыть/назад/свернуть) */
+  /* Telegram занимает примерно 56px сверху на устройствах */
+  --tg-safe-top: 56px;
 }
 
 /* ============================================ */
-/* СБРОС СТАНДАРТНЫХ СТИЛЕЙ */
+/* СБРОС */
 /* ============================================ */
 
 * {
@@ -73,19 +84,9 @@ button {
   cursor: pointer;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
-
-img, button {
-  -webkit-user-drag: none;
-}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+img, button { -webkit-user-drag: none; }
 
 /* ============================================ */
 /* Утилитарные классы */
@@ -98,78 +99,53 @@ img, button {
   padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 24px);
 }
 
+/* Все страницы получают отступ сверху под Telegram nav */
 .page {
-  padding: 24px 16px;
+  padding: calc(var(--tg-safe-top) + 8px) 16px 24px;
   position: relative;
   z-index: 1;
 }
 
 /* ============================================ */
 /* АНИМАЦИИ ПЕРЕХОДОВ МЕЖДУ ЭКРАНАМИ (iOS-стиль) */
-/* Используем для всех страниц через классы */
 /* ============================================ */
 
-/* Появление страницы — въезжает справа */
 .page-enter {
   animation: pageSlideIn var(--duration-page) var(--ease-ios) both;
 }
 
 @keyframes pageSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Появление с fade (для главной) */
 .page-fade {
   animation: pageFadeIn var(--duration-page) var(--ease-ios) both;
 }
 
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================ */
-/* АНИМАЦИИ ЧАСТИЦ (для ParticlesBg и всплесков) */
+/* АНИМАЦИИ ЧАСТИЦ */
 /* ============================================ */
 
-/* Фоновая частица — летит снизу вверх с покачиванием */
 @keyframes particleFloatBg {
-  0% {
-    opacity: 0;
-    transform: translateY(0) translateX(0);
-  }
-  10% {
-    opacity: var(--particle-opacity, 0.35);
-  }
-  50% {
-    transform: translateY(-50vh) translateX(var(--drift-mid, 8px));
-  }
-  90% {
-    opacity: var(--particle-opacity, 0.35);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-105vh) translateX(var(--drift-end, 0px));
-  }
+  0%   { opacity: 0; transform: translateY(0) translateX(0); }
+  10%  { opacity: var(--particle-opacity, 0.35); }
+  50%  { transform: translateY(-50vh) translateX(var(--drift-mid, 8px)); }
+  90%  { opacity: var(--particle-opacity, 0.35); }
+  100% { opacity: 0; transform: translateY(-105vh) translateX(var(--drift-end, 0px)); }
 }
 
-/* Всплеск-искра — вылетает из точки наружу */
 @keyframes particleBurst {
   0%   { opacity: 0; transform: translate(0, 0) scale(1); }
   10%  { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
 }
 
-/* ============================================ */
-/* Прячем скроллбары на webkit, оставляем функциональность */
-/* ============================================ */
-
+/* Скрываем скроллбары */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
