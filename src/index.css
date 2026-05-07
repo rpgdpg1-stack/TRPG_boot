@@ -4,7 +4,7 @@
 /* ============================================ */
 
 :root {
-  /* Цвета */
+  /* Основные цвета */
   --color-bg: #0D0C0C;
   --color-card: #222222;
   --color-primary: #9ED153;
@@ -12,6 +12,11 @@
   --color-text: #FFFFFF;
   --color-text-secondary: #888888;
   --color-overlay: rgba(0, 0, 0, 0.4);
+
+  /* Цвета тегов категорий */
+  --tag-gym: #FF8C42;        /* Зал — оранжевый */
+  --tag-home: #4A90E2;       /* Дом — голубой */
+  --tag-outdoor: #5DBB63;    /* Улица — зелёный отличный от основного */
 
   /* Скругления */
   --radius-card: 33px;
@@ -25,6 +30,10 @@
   /* Размеры таббара */
   --tabbar-height: 70px;
   --tabbar-bottom: 16px;
+
+  /* Анимации */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-page: 280ms;
 }
 
 /* ============================================ */
@@ -74,20 +83,8 @@ img {
   max-width: 100%;
 }
 
-/* Запрет долгого тапа от выделения текста */
 img, button {
   -webkit-user-drag: none;
-}
-
-/* ============================================ */
-/* iOS Corner Smoothing — имитация squircle (60% smoothing как в Фигме) */
-/* Используем mask для плавных углов вместо обычных */
-/* ============================================ */
-
-.squircle {
-  border-radius: var(--radius-card);
-  /* iOS-стиль скругления через CSS, ближе к Figma 60% smoothing */
-  mask-image: paint(squircle);
 }
 
 /* ============================================ */
@@ -103,14 +100,76 @@ img, button {
 
 .page {
   padding: 24px 16px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Анимация появления страниц */
+/* ============================================ */
+/* АНИМАЦИИ ПЕРЕХОДОВ МЕЖДУ ЭКРАНАМИ (iOS-стиль) */
+/* Используем для всех страниц через классы */
+/* ============================================ */
+
+/* Появление страницы — въезжает справа */
 .page-enter {
-  animation: fadeIn 0.25s ease-out;
+  animation: pageSlideIn var(--duration-page) var(--ease-ios) both;
 }
 
-@keyframes fadeIn {
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Появление с fade (для главной) */
+.page-fade {
+  animation: pageFadeIn var(--duration-page) var(--ease-ios) both;
+}
+
+@keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================ */
+/* АНИМАЦИИ ЧАСТИЦ (для ParticlesBg и всплесков) */
+/* ============================================ */
+
+/* Фоновая частица — летит снизу вверх с покачиванием */
+@keyframes particleFloatBg {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0);
+  }
+  10% {
+    opacity: var(--particle-opacity, 0.35);
+  }
+  50% {
+    transform: translateY(-50vh) translateX(var(--drift-mid, 8px));
+  }
+  90% {
+    opacity: var(--particle-opacity, 0.35);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-105vh) translateX(var(--drift-end, 0px));
+  }
+}
+
+/* Всплеск-искра — вылетает из точки наружу */
+@keyframes particleBurst {
+  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+  10%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
+}
+
+/* ============================================ */
+/* Прячем скроллбары на webkit, оставляем функциональность */
+/* ============================================ */
+
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
