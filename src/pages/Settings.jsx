@@ -4,8 +4,7 @@ import { haptic } from '../lib/telegram'
 
 /**
  * Экран настроек — стилизован под Telegram-настройки.
- * Большое фото по центру, имя крупно, ниже @username серым.
- * Без заголовка страницы.
+ * Все карточки скруглены 33px (через --radius-small который теперь = 33px).
  */
 export default function Settings() {
   const [user, setUser] = useState(null)
@@ -36,7 +35,7 @@ export default function Settings() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Профиль в стиле Telegram — фото большое, по центру, имя, никнейм */}
+      {/* Профиль в стиле Telegram */}
       <header style={styles.header}>
         <div style={styles.avatar}>
           {user?.photo_url ? (
@@ -51,7 +50,7 @@ export default function Settings() {
         {username && <div style={styles.username}>{username}</div>}
       </header>
 
-      {/* Список разделов */}
+      {/* Список разделов — все карточки со скруглением 33px */}
       <div style={styles.sections}>
         {sections.map(section => (
           <button
@@ -123,16 +122,18 @@ const styles = {
     flexDirection: 'column',
     gap: '8px'
   },
+  // Карточка раздела — высота ~64px при скруглении 33px = таблетка
   sectionCard: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '14px 16px',
+    padding: '14px 20px',
     background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-small)', // теперь 33px
     width: '100%',
     textAlign: 'left',
-    transition: 'background 0.15s ease'
+    transition: 'background 0.15s ease',
+    minHeight: '60px'
   },
   sectionIcon: {
     fontSize: '22px',
