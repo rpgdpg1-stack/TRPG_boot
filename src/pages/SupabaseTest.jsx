@@ -1,61 +1,82 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { getCurrentUser, ensureAuth } from '../lib/auth'
 
 /**
- * Временная страница для проверки подключения Supabase.
- * Читает упражнения из таблицы exercises и выводит первые 10.
+ * Тестовая страница: проверяем (1) чтение упражнений, (2) авторизацию юзера.
  *
- * Если работает — увидим список упражнений на русском.
- * Если ошибка — покажет красным.
- *
- * После успешной проверки эту страницу удалим.
+ * После Г6 эту страницу удалим.
  */
 export default function SupabaseTest() {
   const [exercises, setExercises] = useState([])
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    async function loadExercises() {
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('id, name, muscle_group, sub_group')
-        .order('id')
-        .limit(10)
+    async function load() {
+      try {
+        // 1) Подгружаем юзера: если уже авторизован — берём из памяти,
+        //    иначе вызываем ensureAuth (на случай если страницу открыли напрямую)
+        let u = getCurrentUser()
+        if (!u) u = await ensureAuth()
+        setUser(u)
 
-      if (error) {
-        console.error('Supabase error:', error)
-        setError(error.message)
-      } else {
+        // 2) Загружаем упражнения
+        const { data, error } = await supabase
+          .from('exercises')
+          .select('id, name, muscle_group, sub_group')
+          .order('id')
+          .limit(10)
+
+        if (error) throw error
         setExercises(data || [])
+      } catch (e) {
+        console.error('SupabaseTest error:', e)
+        setError(e.message || String(e))
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    loadExercises()
+    load()
   }, [])
 
   return (
     <div className="page page-fade" style={styles.page}>
       <h1 style={styles.title}>SUPABASE TEST</h1>
 
-      {loading && <div style={styles.info}>Загрузка из базы...</div>}
+      {loading && <div style={styles.info}>Загрузка...</div>}
 
       {error && (
         <div style={styles.error}>
-          <div style={styles.errorTitle}>❌ Ошибка подключения:</div>
+          <div style={styles.errorTitle}>❌ Ошибка:</div>
           <div style={styles.errorText}>{error}</div>
         </div>
       )}
 
-      {!loading && !error && exercises.length === 0 && (
-        <div style={styles.info}>База подключена, но упражнений не найдено.</div>
+      {/* Блок текущего юзера */}
+      {!loading && (
+        <div style={user ? styles.success : styles.warning}>
+          {user ? (
+            <>
+              ✅ Юзер в БД: <b>#{user.id}</b><br />
+              telegram_id: {user.telegram_id}<br />
+              имя: {user.first_name || '—'}<br />
+              username: {user.username ? '@' + user.username : '—'}<br />
+              мускулы: {user.total_muscles}
+            </>
+          ) : (
+            <>⚠️ Юзер не авторизован</>
+          )}
+        </div>
       )}
 
+      {/* Блок упражнений */}
       {!loading && !error && exercises.length > 0 && (
         <>
           <div style={styles.success}>
-            ✅ Подключение работает! Получено упражнений: {exercises.length}
+            ✅ Упражнений получено: {exercises.length}
           </div>
           <div style={styles.list}>
             {exercises.map(ex => (
@@ -99,7 +120,18 @@ const styles = {
     border: '1px solid rgba(158, 209, 83, 0.3)',
     borderRadius: '12px',
     padding: '12px 16px',
-    marginBottom: '16px'
+    marginBottom: '12px',
+    lineHeight: 1.6
+  },
+  warning: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: '#FF8C42',
+    background: 'rgba(255, 140, 66, 0.08)',
+    border: '1px solid rgba(255, 140, 66, 0.3)',
+    borderRadius: '12px',
+    padding: '12px 16px',
+    marginBottom: '12px'
   },
   error: {
     fontFamily: 'var(--font-manrope)',
