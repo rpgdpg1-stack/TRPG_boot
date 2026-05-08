@@ -1,10 +1,8 @@
 import { haptic } from '../lib/telegram'
-import PlayerCard from '../components/PlayerCard'
 
 /**
- * Экран настроек.
- * Сверху — PlayerCard (профиль игрока).
- * Ниже — три группы разделов: ИГРОК / ПРОГРЕСС / СИСТЕМА.
+ * Экран настроек — без PlayerCard (он теперь на Главной).
+ * Только сгруппированные разделы: ИГРОК / ПРОГРЕСС / СИСТЕМА.
  */
 export default function Settings() {
 
@@ -45,12 +43,9 @@ export default function Settings() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Профиль игрока */}
-      <PlayerCard />
-
       {/* Группы разделов */}
-      {groups.map(group => (
-        <section key={group.title} style={styles.group}>
+      {groups.map((group, idx) => (
+        <section key={group.title} style={{ ...styles.group, marginTop: idx === 0 ? '8px' : '24px' }}>
           <h3 style={styles.groupTitle}>{group.title}</h3>
           <div style={styles.items}>
             {group.items.map(item => (
@@ -76,9 +71,7 @@ export default function Settings() {
 
 const styles = {
   page: {},
-  group: {
-    marginTop: '28px'
-  },
+  group: {},
   groupTitle: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '11px',
@@ -93,7 +86,6 @@ const styles = {
     flexDirection: 'column',
     gap: '6px'
   },
-  // Карточки разделов — компактнее (52px высоты)
   itemCard: {
     display: 'flex',
     alignItems: 'center',
