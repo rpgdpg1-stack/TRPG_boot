@@ -10,6 +10,7 @@ import Category from './pages/Category'
 import Program from './pages/Program'
 import Progress from './pages/Progress'
 import Settings from './pages/Settings'
+import SupabaseTest from './pages/SupabaseTest'
 
 import { initTelegram } from './lib/telegram'
 
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/program/:id" element={<Program />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/supabase-test" element={<SupabaseTest />} />
       </Routes>
 
       <TabBar />
