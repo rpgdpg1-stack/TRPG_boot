@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 /**
  * Фоновые пиксельные частицы — тихий поток.
  * 2-3 частицы постоянно появляются снизу и летят вверх с лёгким покачиванием.
- * Размер 2-4px, прозрачность 25-40% (микс для глубины).
  */
 export default function ParticlesBg() {
   const containerRef = useRef(null)
@@ -20,16 +19,14 @@ export default function ParticlesBg() {
 
       const particle = document.createElement('div')
 
-      // Микс размеров: 60% маленьких, 40% побольше
       const isSmall = Math.random() < 0.6
       const size = isSmall ? (Math.random() < 0.5 ? 2 : 3) : 4
       const opacity = isSmall ? 0.25 + Math.random() * 0.15 : 0.30 + Math.random() * 0.15
 
-      // Стартовая позиция — внизу экрана, X случайный
-      const startX = Math.random() * 100 // в процентах
+      const startX = Math.random() * 100
       const driftMid = (Math.random() * 30 - 15) + 'px'
       const driftEnd = (Math.random() * 20 - 10) + 'px'
-      const duration = 5 + Math.random() * 2 // 5-7 секунд
+      const duration = 5 + Math.random() * 2
 
       particle.style.cssText = `
         position: fixed;
@@ -48,23 +45,19 @@ export default function ParticlesBg() {
 
       container.appendChild(particle)
 
-      // Автоудаление через 8 сек (с запасом после анимации)
       const removeTimer = setTimeout(() => particle.remove(), (duration + 1) * 1000)
       timers.push(removeTimer)
     }
 
-    // Запускаем сразу 2 частицы для старта
     spawnParticle()
     setTimeout(spawnParticle, 800)
 
-    // Дальше каждые ~2 секунды появляется новая
     const interval = setInterval(spawnParticle, 2000)
 
     return () => {
       isActive = false
       clearInterval(interval)
       timers.forEach(clearTimeout)
-      // Удаляем все оставшиеся частицы
       container.querySelectorAll('div').forEach(el => el.remove())
     }
   }, [])
@@ -85,10 +78,7 @@ export default function ParticlesBg() {
 }
 
 /**
- * Утилита для создания "всплеска" частиц из конкретной точки.
- * Используется при тапах на карточки.
- *
- * Пример: spawnBurst(50, 200, 4) — создаёт 4 искры в точке (50, 200) экрана
+ * Утилита для "всплеска" частиц при тапах на карточки.
  */
 export function spawnBurst(x, y, count = 4) {
   const burst = document.createElement('div')
@@ -128,8 +118,7 @@ export function spawnBurst(x, y, count = 4) {
 }
 
 /**
- * УСИЛЕННЫЙ всплеск для выполнения daily quest.
- * Больше частиц (12 вместо 4), бо́льший радиус, плюс центральная вспышка.
+ * Усиленный всплеск при выполнении буста дня.
  */
 export function spawnQuestBurst(x, y) {
   const burst = document.createElement('div')
@@ -143,7 +132,6 @@ export function spawnQuestBurst(x, y) {
     z-index: 50;
   `
 
-  // Центральная вспышка — мягкий glow в эпицентре
   const flash = document.createElement('div')
   flash.style.cssText = `
     position: absolute;
@@ -157,16 +145,13 @@ export function spawnQuestBurst(x, y) {
   `
   burst.appendChild(flash)
 
-  // 12 частиц во все стороны
   const count = 12
   for (let i = 0; i < count; i++) {
     const spark = document.createElement('div')
     const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3
-    const distance = 35 + Math.random() * 35 // больше радиус чем у обычного burst
+    const distance = 35 + Math.random() * 35
     const burstX = Math.cos(angle) * distance + 'px'
     const burstY = Math.sin(angle) * distance + 'px'
-
-    // Размер частиц чуть больше: 3-4px
     const size = 3 + Math.floor(Math.random() * 2)
 
     spark.style.cssText = `
@@ -186,4 +171,52 @@ export function spawnQuestBurst(x, y) {
 
   document.body.appendChild(burst)
   setTimeout(() => burst.remove(), 1000)
+}
+
+/**
+ * НОВОЕ: пиксельные искорки из горящих огоньков серии (Порция В).
+ * Спавнятся при тапе по ряду огоньков (когда стрик 3+).
+ * 3 кубика от каждого огонька, медленно плывут вверх и затухают.
+ * Не "касаются" верхних блоков — короткая дистанция, низкий z-index чтобы не перекрывали.
+ */
+export function spawnFireSparks(x, y) {
+  const burst = document.createElement('div')
+  burst.style.cssText = `
+    position: fixed;
+    left: ${x}px;
+    top: ${y}px;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 30;
+  `
+
+  // 3 искорки на каждый огонёк, цвета пламени
+  const colors = ['#FFD700', '#FF8C42', '#FF8C42']
+  for (let i = 0; i < 3; i++) {
+    const spark = document.createElement('div')
+    const offsetX = (Math.random() * 8 - 4) + 'px' // лёгкий разброс по горизонтали
+    const driftY = -(20 + Math.random() * 14) + 'px' // взлёт 20-34 px (короткий)
+    const driftX = (Math.random() * 6 - 3) + 'px'
+    const size = 2 + Math.floor(Math.random() * 2)
+    const delay = (i * 0.08).toFixed(2) + 's'
+
+    spark.style.cssText = `
+      position: absolute;
+      left: ${offsetX};
+      top: 0;
+      width: ${size}px;
+      height: ${size}px;
+      background: ${colors[i]};
+      box-shadow: 0 0 4px ${colors[i]};
+      --burst-x: ${driftX};
+      --burst-y: ${driftY};
+      animation: particleBurst 1.2s ease-out ${delay} forwards;
+      opacity: 0;
+    `
+    burst.appendChild(spark)
+  }
+
+  document.body.appendChild(burst)
+  setTimeout(() => burst.remove(), 1600)
 }
