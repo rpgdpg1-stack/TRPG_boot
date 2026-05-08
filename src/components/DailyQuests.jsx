@@ -1,71 +1,91 @@
 import { useEffect, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { getDailyQuests, completeQuest, addXP } from '../lib/storage'
-import { spawnQuestBurst } from './ParticlesBg'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
- * Блок ежедневных заданий на Главной.
- * 3 демо-задания, при выполнении даём XP + хаптик + усиленный всплеск частиц.
+ * Блок ежедневных бустов на Главной — "ЗАБУСТИТЬ ДЕНЬ".
+ *
+ * НОВОЕ в Порции В:
+ * - Заголовок "⬆️ ЗАБУСТИТЬ ДЕНЬ"
+ * - В строке задания только текст и чекбокс (без +XP)
+ * - При тапе: над чекбоксом всплывает "+20 💪" и улетает вверх
+ * - Когда все буст-задания выполнены — тап по блоку показывает попап
  */
 
-// Демо-список квестов. Позже наполним динамикой/из API.
 const DEMO_QUESTS = [
   { id: 'squats',  title: 'Присесть 20 раз',  xp: 20 },
-  { id: 'water',   title: 'Выпить воду',       xp: 20 },
-  { id: 'stretch', title: 'Растяжка 10 мин',   xp: 30 }
+  { id: 'water',   title: 'Выпить воду',      xp: 20 },
+  { id: 'stretch', title: 'Растяжка 10 мин',  xp: 30 }
 ]
 
 export default function DailyQuests() {
   const [completed, setCompleted] = useState({})
-  const [animating, setAnimating] = useState(null) // id квеста в момент анимации
+  const [animating, setAnimating] = useState(null)
+  const [floatingRewards, setFloatingRewards] = useState([]) // [{id, xp, key}]
+  const [showAllDonePopup, setShowAllDonePopup] = useState(false)
 
   useEffect(() => {
     getDailyQuests().then(setCompleted)
   }, [])
 
-  const handleQuestTap = async (quest, e) => {
-    // Если уже выполнен — игнорируем тап
+  const allDone = DEMO_QUESTS.every(q => completed[q.id])
+
+  const handleQuestTap = async (quest) => {
     if (completed[quest.id] || animating) return
 
     haptic.success()
-
-    // Усиленный всплеск частиц из центра квеста
-    const rect = e.currentTarget.getBoundingClientRect()
-    spawnQuestBurst(rect.left + rect.width / 2, rect.top + rect.height / 2)
-
-    // Помечаем что идёт анимация (на случай если юзер быстро тапнет ещё раз)
     setAnimating(quest.id)
 
-    // Сохраняем в хранилище
+    // Запускаем "+20 💪" над чекбоксом
+    const rewardKey = Date.now()
+    setFloatingRewards(prev => [...prev, { id: quest.id, xp: quest.xp, key: rewardKey }])
+    setTimeout(() => {
+      setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
+    }, 1100)
+
     const newCompleted = await completeQuest(quest.id)
     setCompleted(newCompleted)
 
-    // Начисляем XP
     await addXP(quest.xp)
-
-    // Сообщаем PlayerCard что XP изменились
     window.dispatchEvent(new CustomEvent('xp-updated'))
 
-    // Через 600мс снимаем флаг анимации
     setTimeout(() => setAnimating(null), 600)
   }
 
+  // Тап по контейнеру когда всё выполнено — показать попап
+  const handleContainerTap = (e) => {
+    if (!allDone) return
+    // Не показываем повторно если кликнули на уже отмеченный квест
+    if (e.target.closest('button[data-quest-row]')) return
+    haptic.light()
+    setShowAllDonePopup(prev => !prev)
+    setTimeout(() => setShowAllDonePopup(false), 4000)
+  }
+
   return (
-    <div style={styles.container}>
+    <div
+      onClick={handleContainerTap}
+      style={{
+        ...styles.container,
+        cursor: allDone ? 'pointer' : 'default'
+      }}
+    >
       <div style={styles.header}>
-        <span style={styles.title}>ЗАДАНИЯ НА СЕГОДНЯ</span>
+        <span style={styles.title}>⬆️ ЗАБУСТИТЬ ДЕНЬ</span>
       </div>
 
       <div style={styles.list}>
         {DEMO_QUESTS.map(quest => {
           const isDone = completed[quest.id]
           const isAnimating = animating === quest.id
+          const reward = floatingRewards.find(r => r.id === quest.id)
 
           return (
             <button
               key={quest.id}
-              onClick={(e) => handleQuestTap(quest, e)}
+              data-quest-row
+              onClick={() => handleQuestTap(quest)}
               disabled={isDone}
               style={{
                 ...styles.questRow,
@@ -74,7 +94,15 @@ export default function DailyQuests() {
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
-              <PixelCheckbox checked={isDone} size={22} />
+              {/* Чекбокс + всплывающая награда над ним */}
+              <div style={styles.checkboxWrap}>
+                <PixelCheckbox checked={isDone} size={22} />
+                {reward && (
+                  <span key={reward.key} style={styles.floatingReward}>
+                    +{reward.xp} 💪
+                  </span>
+                )}
+              </div>
 
               <span style={{
                 ...styles.questText,
@@ -83,23 +111,35 @@ export default function DailyQuests() {
               }}>
                 {quest.title}
               </span>
-
-              <span style={{
-                ...styles.questXP,
-                color: isDone ? 'var(--color-text-secondary)' : 'var(--color-primary)'
-              }}>
-                +{quest.xp} XP
-              </span>
             </button>
           )
         })}
       </div>
+
+      {/* Попап "всё выполнено" */}
+      {showAllDonePopup && (
+        <div style={styles.popup}>
+          Все бусты на сегодня собраны.<br />
+          Возвращайся завтра — будут новые.
+        </div>
+      )}
+
+      {/* CSS-кейфреймы для всплывающей награды */}
+      <style>{`
+        @keyframes rewardFloat {
+          0%   { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+          15%  { opacity: 1; transform: translate(-50%, -8px) scale(1); }
+          85%  { opacity: 1; transform: translate(-50%, -34px) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -44px) scale(0.9); }
+        }
+      `}</style>
     </div>
   )
 }
 
 const styles = {
   container: {
+    position: 'relative',
     margin: '20px 0',
     padding: '14px 16px 12px',
     background: 'rgba(255, 255, 255, 0.02)',
@@ -133,7 +173,27 @@ const styles = {
     width: '100%',
     textAlign: 'left',
     transition: 'transform 0.15s ease, opacity 0.3s ease',
-    borderRadius: '12px'
+    borderRadius: '12px',
+    border: 'none'
+  },
+  checkboxWrap: {
+    position: 'relative',
+    flexShrink: 0,
+    width: '22px',
+    height: '22px'
+  },
+  floatingReward: {
+    position: 'absolute',
+    bottom: '100%',
+    left: '50%',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-primary)',
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    textShadow: '0 0 6px rgba(158, 209, 83, 0.6)',
+    animation: 'rewardFloat 1.1s ease-out forwards'
   },
   questText: {
     flex: 1,
@@ -142,11 +202,24 @@ const styles = {
     fontWeight: 500,
     transition: 'color 0.3s ease, text-decoration 0.3s ease'
   },
-  questXP: {
-    fontFamily: 'var(--font-tiny5)',
+  popup: {
+    position: 'absolute',
+    bottom: '-58px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(34, 34, 34, 0.95)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '14px',
+    padding: '10px 14px',
+    fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
-    letterSpacing: '1px',
-    flexShrink: 0,
-    transition: 'color 0.3s ease'
+    color: 'var(--color-text)',
+    textAlign: 'center',
+    lineHeight: 1.4,
+    whiteSpace: 'nowrap',
+    animation: 'pageFadeIn 0.2s ease-out',
+    zIndex: 50
   }
 }
