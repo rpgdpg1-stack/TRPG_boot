@@ -1,5 +1,5 @@
 /* ============================================ */
-/* ПЕРЕМЕННЫЕ — все цвета и размеры в одном месте */
+/* ПЕРЕМЕННЫЕ */
 /* ============================================ */
 
 :root {
@@ -14,18 +14,26 @@
   --color-overlay: rgba(0, 0, 0, 0.4);
 
   /* Цвета акцентов категорий */
-  --cat-strength: #E84545;     /* Силовая — красный */
-  --cat-cardio: #FF8C42;       /* Кардио — оранжевый */
-  --cat-pool: #3FA2F7;         /* Бассейн — синий */
-  --cat-stretch: #F178B6;      /* Растяжка — розовый */
-  --cat-recovery: #FFFFFF;     /* Восстановление — белый */
+  --cat-strength: #E84545;
+  --cat-cardio: #FF8C42;
+  --cat-pool: #3FA2F7;
+  --cat-stretch: #F178B6;
+  --cat-recovery: #FFFFFF;
+
+  /* Цвета редкости (рангов) */
+  --rarity-common: #9ED153;     /* Зелёный — Новобранец, Спортсмен */
+  --rarity-rare: #3FA2F7;       /* Синий — Атлет, Боец */
+  --rarity-epic: #B47BFF;       /* Фиолетовый — Витязь, Центурион */
+  --rarity-legendary: #FF8C42;  /* Оранжевый — Геракл, Титан */
+  --rarity-mythic: #E84545;     /* Красный — Легенда, Ахилл */
+  --rarity-godlike: #FFD700;    /* Золотой — Бессмертный */
 
   /* Цвета тегов программ */
   --tag-gym: #FF8C42;
   --tag-home: #4A90E2;
   --tag-outdoor: #5DBB63;
 
-  /* Скругления (33px везде, консистентно) */
+  /* Скругления */
   --radius-card: 33px;
   --radius-small: 33px;
 
@@ -42,8 +50,7 @@
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-page: 280ms;
 
-  /* Safe-area под Telegram nav (закрыть/назад/свернуть) */
-  /* Поднял с 56px до 92px чтобы контент не перекрывался шапкой Телеги */
+  /* Safe-area под Telegram nav */
   --tg-safe-top: 92px;
 }
 
@@ -143,6 +150,15 @@ img, button { -webkit-user-drag: none; }
   0%   { opacity: 0; transform: translate(0, 0) scale(1); }
   10%  { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
+}
+
+/* ============================================ */
+/* GLOW для XP-бара и интерактивных элементов */
+/* ============================================ */
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px var(--color-primary); }
+  50%      { box-shadow: 0 0 16px var(--color-primary); }
 }
 
 ::-webkit-scrollbar { display: none; }
