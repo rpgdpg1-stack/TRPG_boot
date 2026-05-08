@@ -1,57 +1,94 @@
 /**
  * Система рангов и уровней RPG.
- * Здесь живут все формулы прокачки, ранги, цвета редкости.
  *
- * Пока используется как справочник + заглушки для XP.
- * Когда будет реальная логика тренировок — формулы XP можно будет легко изменить.
+ * НОВАЯ ЛОГИКА (Порция В):
+ * - 11 рангов × 3 уровня внутри каждого = 33 уровня
+ * - Бессмертный — от уровня 34 и до бесконечности
+ * - Каждый уровень требует +300 мускулов от предыдущего
+ *
+ * Уровень 1 (НОВОБРАНЕЦ 1)  → 0 мускулов (старт)
+ * Уровень 2 (НОВОБРАНЕЦ 2)  → 300
+ * Уровень 3 (НОВОБРАНЕЦ 3)  → 600
+ * Уровень 4 (СПОРТСМЕН 1)   → 900
+ * ...
+ * Уровень 33 (АХИЛЛ 3)      → 9600
+ * Уровень 34 (БЕССМЕРТНЫЙ 1) → 9900
+ * И дальше каждые +300 = новый уровень бессмертного.
  */
 
 /* ============================================ */
-/* РАНГИ — 50 уровней, 11 званий */
+/* РАНГИ — каждый по 3 уровня (кроме бессмертного) */
 /* ============================================ */
 
-export const RANKS = [
-  { from: 1,  to: 4,  name: 'НОВОБРАНЕЦ',   color: '#9ED153', rarity: 'common',     emoji: '🟢' },
-  { from: 5,  to: 9,  name: 'СПОРТСМЕН',    color: '#9ED153', rarity: 'common',     emoji: '🟢' },
-  { from: 10, to: 14, name: 'АТЛЕТ',        color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
-  { from: 15, to: 19, name: 'БОЕЦ',         color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
-  { from: 20, to: 24, name: 'ВИТЯЗЬ',       color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
-  { from: 25, to: 29, name: 'ЦЕНТУРИОН',    color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
-  { from: 30, to: 34, name: 'ГЕРАКЛ',       color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
-  { from: 35, to: 39, name: 'ТИТАН',        color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
-  { from: 40, to: 44, name: 'ЛЕГЕНДА',      color: '#E84545', rarity: 'mythic',     emoji: '🔴' },
-  { from: 45, to: 49, name: 'АХИЛЛ',        color: '#E84545', rarity: 'mythic',     emoji: '🔴' },
-  { from: 50, to: 999,name: 'БЕССМЕРТНЫЙ',  color: '#FFD700', rarity: 'godlike',    emoji: '🏆' }
+export const RANK_NAMES = [
+  { name: 'НОВОБРАНЕЦ',  color: '#9ED153', rarity: 'common',     emoji: '🟢' },  // ур. 1-3
+  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢' },  // ур. 4-6
+  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },  // ур. 7-9
+  { name: 'БОЕЦ',        color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },  // ур. 10-12
+  { name: 'ВИТЯЗЬ',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },  // ур. 13-15
+  { name: 'ЦЕНТУРИОН',   color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },  // ур. 16-18
+  { name: 'ГЕРАКЛ',      color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },  // ур. 19-21
+  { name: 'ТИТАН',       color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },  // ур. 22-24
+  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴' },  // ур. 25-27
+  { name: 'АХИЛЛ',       color: '#E84545', rarity: 'mythic',     emoji: '🔴' }   // ур. 28-30
 ]
+// БЕССМЕРТНЫЙ — особый, от уровня 31 и далее
+export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', emoji: '🏆' }
 
 /**
- * Получить ранг по числу уровня
+ * Уровней внутри одного ранга (для не-бессмертных)
+ */
+export const LEVELS_PER_RANK = 3
+
+/**
+ * Сколько мускулов нужно для перехода с уровня (N-1) на уровень N.
+ * По нашей логике — 300 на каждый уровень.
+ */
+export const XP_PER_LEVEL = 300
+
+/**
+ * Уровень, с которого начинается БЕССМЕРТНЫЙ.
+ * 10 рангов × 3 уровня + 1 = 31
+ */
+export const IMMORTAL_START_LEVEL = RANK_NAMES.length * LEVELS_PER_RANK + 1 // = 31
+
+/* ============================================ */
+/* ФУНКЦИИ ПОЛУЧЕНИЯ РАНГА И УРОВНЯ */
+/* ============================================ */
+
+/**
+ * Получить ранг и подуровень внутри ранга по числу глобального уровня.
+ * Возвращает: { name, color, emoji, rarity, subLevel }
+ *
+ * subLevel — это "1", "2", "3" внутри ранга (или 1+ для бессмертного).
+ * Используется для отображения "НОВОБРАНЕЦ 2".
  */
 export function getRankByLevel(level) {
-  return RANKS.find(r => level >= r.from && level <= r.to) || RANKS[0]
+  if (level >= IMMORTAL_START_LEVEL) {
+    return {
+      ...IMMORTAL,
+      subLevel: level - IMMORTAL_START_LEVEL + 1
+    }
+  }
+
+  const rankIndex = Math.floor((level - 1) / LEVELS_PER_RANK) // 0,1,2...
+  const subLevel = ((level - 1) % LEVELS_PER_RANK) + 1        // 1,2,3
+  const rank = RANK_NAMES[rankIndex] || RANK_NAMES[0]
+
+  return { ...rank, subLevel }
 }
 
-/* ============================================ */
-/* XP ФОРМУЛЫ */
-/* ============================================ */
-
 /**
- * Сколько XP нужно чтобы достичь уровня N (накопительно).
- * Формула экспоненциальная: каждый следующий уровень требует больше.
- *
- * Уровень 1 → 0 XP (старт)
- * Уровень 2 → 1000 XP
- * Уровень 3 → 2200 XP
- * Уровень 4 → 3600 XP
- * И так далее...
+ * Сколько мускулов нужно чтобы достичь глобального уровня N (накопительно).
+ * Уровень 1 → 0, уровень 2 → 300, уровень 3 → 600 ...
  */
 export function xpRequiredForLevel(level) {
   if (level <= 1) return 0
-  return Math.floor(1000 * (level - 1) + 100 * Math.pow(level - 1, 2))
+  return (level - 1) * XP_PER_LEVEL
 }
 
 /**
- * Сколько XP осталось до следующего уровня
+ * Сколько мускулов осталось до следующего уровня
  */
 export function xpToNextLevel(currentXP) {
   const level = getLevelFromXP(currentXP)
@@ -59,15 +96,11 @@ export function xpToNextLevel(currentXP) {
 }
 
 /**
- * Получить текущий уровень по общему количеству XP
+ * Получить текущий глобальный уровень по общему количеству мускулов
  */
 export function getLevelFromXP(totalXP) {
-  let level = 1
-  while (xpRequiredForLevel(level + 1) <= totalXP) {
-    level++
-    if (level > 999) break
-  }
-  return level
+  if (totalXP < 0) return 1
+  return Math.floor(totalXP / XP_PER_LEVEL) + 1
 }
 
 /**
@@ -83,7 +116,7 @@ export function getLevelProgress(totalXP) {
 }
 
 /**
- * XP в текущем уровне (для отображения "700/1000")
+ * Мускулы в текущем уровне (для отображения "180/300")
  */
 export function getXPInCurrentLevel(totalXP) {
   const level = getLevelFromXP(totalXP)
@@ -96,20 +129,20 @@ export function getXPInCurrentLevel(totalXP) {
 }
 
 /* ============================================ */
-/* НАГРАДЫ XP — пока константы, потом подключим */
+/* НАГРАДЫ В МУСКУЛАХ */
 /* ============================================ */
 
 export const XP_REWARDS = {
   WORKOUT_COMPLETE: 150,
   STREAK_BONUS_3DAYS: 50,
   STREAK_BONUS_7DAYS: 150,
-  QUEST_SMALL: 20,        // вода, простые задания
-  QUEST_MEDIUM: 30,       // растяжка, отжимания
-  QUEST_LARGE: 50         // длинные тренировки
+  QUEST_SMALL: 20,
+  QUEST_MEDIUM: 30,
+  QUEST_LARGE: 50
 }
 
 /* ============================================ */
-/* СКЛОНЕНИЕ слов "день/дня/дней" */
+/* СКЛОНЕНИЕ слов */
 /* ============================================ */
 
 export function pluralizeDays(count) {
@@ -119,4 +152,16 @@ export function pluralizeDays(count) {
   if (n1 > 1 && n1 < 5) return 'ДНЯ'
   if (n1 === 1) return 'ДЕНЬ'
   return 'ДНЕЙ'
+}
+
+/**
+ * Склонение "тренировка / тренировки / тренировок"
+ */
+export function pluralizeWorkouts(count) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'тренировок'
+  if (n1 > 1 && n1 < 5) return 'тренировки'
+  if (n1 === 1) return 'тренировка'
+  return 'тренировок'
 }
