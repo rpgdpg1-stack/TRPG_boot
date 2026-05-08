@@ -21,12 +21,12 @@
   --cat-recovery: #FFFFFF;
 
   /* Цвета редкости (рангов) */
-  --rarity-common: #9ED153;     /* Зелёный — Новобранец, Спортсмен */
-  --rarity-rare: #3FA2F7;       /* Синий — Атлет, Боец */
-  --rarity-epic: #B47BFF;       /* Фиолетовый — Витязь, Центурион */
-  --rarity-legendary: #FF8C42;  /* Оранжевый — Геракл, Титан */
-  --rarity-mythic: #E84545;     /* Красный — Легенда, Ахилл */
-  --rarity-godlike: #FFD700;    /* Золотой — Бессмертный */
+  --rarity-common: #9ED153;
+  --rarity-rare: #3FA2F7;
+  --rarity-epic: #B47BFF;
+  --rarity-legendary: #FF8C42;
+  --rarity-mythic: #E84545;
+  --rarity-godlike: #FFD700;
 
   /* Цвета тегов программ */
   --tag-gym: #FF8C42;
@@ -153,12 +153,21 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* GLOW для XP-бара и интерактивных элементов */
+/* GLOW и анимация Featured карточки */
 /* ============================================ */
 
 @keyframes pulseGlow {
   0%, 100% { box-shadow: 0 0 8px var(--color-primary); }
   50%      { box-shadow: 0 0 16px var(--color-primary); }
+}
+
+@keyframes featuredGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(232, 69, 69, 0.15), inset 0 0 30px rgba(232, 69, 69, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(232, 69, 69, 0.25), inset 0 0 30px rgba(232, 69, 69, 0.08);
+  }
 }
 
 ::-webkit-scrollbar { display: none; }
