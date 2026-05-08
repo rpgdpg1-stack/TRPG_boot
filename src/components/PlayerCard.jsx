@@ -36,7 +36,13 @@ export default function PlayerCard() {
     loadData()
 
     window.addEventListener('xp-updated', loadData)
-    return () => window.removeEventListener('xp-updated', loadData)
+    window.addEventListener('user-ready', loadData)
+    window.addEventListener('user-updated', loadData)
+    return () => {
+      window.removeEventListener('xp-updated', loadData)
+      window.removeEventListener('user-ready', loadData)
+      window.removeEventListener('user-updated', loadData)
+    }
   }, [])
 
   const level = getLevelFromXP(xp)
