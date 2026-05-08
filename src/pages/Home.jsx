@@ -3,11 +3,11 @@ import { haptic } from '../lib/telegram'
 import { spawnBurst } from '../components/ParticlesBg'
 import HomeHeader from '../components/HomeHeader'
 import PlayerCard from '../components/PlayerCard'
+import DailyQuests from '../components/DailyQuests'
 
 /**
  * Главный экран — Тренировки.
  * Структура: HomeHeader (лого вверху) → PlayerCard → DailyQuests → Категории
- * DailyQuests добавим в Порции Б.
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -37,12 +37,8 @@ export default function Home() {
       {/* Профиль игрока: аватар + имя + ник + ранг + XP-бар + серия */}
       <PlayerCard />
 
-      {/* Daily Quests — добавим в Порции Б, пока заглушка */}
-      <div style={styles.questsPlaceholder}>
-        <div style={styles.questsPlaceholderText}>
-          ЗАДАНИЯ НА СЕГОДНЯ — скоро (Порция Б)
-        </div>
-      </div>
+      {/* Ежедневные задания */}
+      <DailyQuests />
 
       {/* Категории */}
       <div style={styles.cards}>
@@ -83,20 +79,6 @@ const styles = {
     // Поднимаем чуть выше для PlayerCard, т.к. тут нет тяжёлой шапки
     paddingTop: 'calc(var(--tg-safe-top) - 24px)',
     position: 'relative'
-  },
-  questsPlaceholder: {
-    margin: '20px 0',
-    padding: '20px 16px',
-    background: 'rgba(255, 255, 255, 0.02)',
-    border: '1.5px dashed rgba(255, 255, 255, 0.08)',
-    borderRadius: 'var(--radius-card)',
-    textAlign: 'center'
-  },
-  questsPlaceholderText: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1.5px'
   },
   cards: {
     display: 'flex',
