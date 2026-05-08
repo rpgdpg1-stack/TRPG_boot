@@ -5,68 +5,101 @@
  * вызываем RPC upsert_user в Supabase — она создаёт или обновляет запись.
  * Получаем внутренний ID нашего юзера и держим его в памяти приложения.
  *
- * Используется в App.jsx при старте, и в storage.js (Г6) при чтении/записи данных.
+ * Подписка через CustomEvent 'user-ready' — компоненты ждут пока авторизация завершится.
  */
 
 import { supabase } from './supabase'
 import { getUser as getTelegramUser } from './telegram'
 
-// Текущий авторизованный юзер. Заполняется при старте приложения.
 let currentUser = null
+let authPromise = null // защита от множественных параллельных вызовов
 
 /**
- * Получить текущего юзера (синхронно, после авторизации).
- * Вернёт null если ensureAuth ещё не выполнился или упал.
+ * Получить текущего юзера (синхронно).
+ * Вернёт null если ensureAuth ещё не выполнился.
  */
 export function getCurrentUser() {
   return currentUser
 }
 
 /**
- * Запустить авторизацию: достать данные из Telegram, синхронизировать с Supabase.
- * Вызывается один раз при старте приложения из App.jsx.
- *
- * Возвращает объект юзера из БД (или null если что-то пошло не так).
+ * Запустить авторизацию. Безопасно вызывать многократно — выполнится один раз.
  */
 export async function ensureAuth() {
-  const tgUser = getTelegramUser()
+  if (authPromise) return authPromise
 
-  // Если приложение запущено вне Телеги (например DevTools на десктопе) —
-  // используем фейковый ID для разработки.
-  // ВАЖНО: в проде Mini App всегда даёт реальный telegram_id.
-  const telegramId = tgUser?.id || getDevFallbackId()
-  const firstName = tgUser?.first_name || 'Dev User'
-  const username = tgUser?.username || null
-  const photoUrl = tgUser?.photo_url || null
+  authPromise = (async () => {
+    const tgUser = getTelegramUser()
+    const telegramId = tgUser?.id || getDevFallbackId()
+    const firstName = tgUser?.first_name || 'Dev User'
+    const username = tgUser?.username || null
+    const photoUrl = tgUser?.photo_url || null
 
-  console.log('[auth] Авторизация для telegram_id:', telegramId)
+    console.log('[auth] Авторизация для telegram_id:', telegramId)
 
-  const { data, error } = await supabase.rpc('upsert_user', {
-    p_telegram_id: telegramId,
-    p_first_name: firstName,
-    p_username: username,
-    p_photo_url: photoUrl
-  })
+    const { data, error } = await supabase.rpc('upsert_user', {
+      p_telegram_id: telegramId,
+      p_first_name: firstName,
+      p_username: username,
+      p_photo_url: photoUrl
+    })
+
+    if (error) {
+      console.error('[auth] Ошибка авторизации:', error)
+      authPromise = null // даём возможность ретрая
+      return null
+    }
+
+    currentUser = data
+    console.log('[auth] Авторизован как:', currentUser)
+
+    // Уведомляем приложение что юзер готов
+    window.dispatchEvent(new CustomEvent('user-ready', { detail: currentUser }))
+
+    return currentUser
+  })()
+
+  return authPromise
+}
+
+/**
+ * Перечитать юзера из БД (например после начисления мускулов).
+ * Обновляет currentUser и шлёт событие user-updated.
+ */
+export async function refreshCurrentUser() {
+  if (!currentUser) return null
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single()
 
   if (error) {
-    console.error('[auth] Ошибка авторизации:', error)
-    currentUser = null
+    console.error('[auth] refreshCurrentUser error:', error)
     return null
   }
 
   currentUser = data
-  console.log('[auth] Авторизован как:', currentUser)
+  window.dispatchEvent(new CustomEvent('user-updated', { detail: currentUser }))
   return currentUser
 }
 
 /**
+ * Локально обновить кешированного юзера (без запроса в БД).
+ * Используем когда мы уже знаем новое значение поля (например после add_muscles).
+ */
+export function setCurrentUser(user) {
+  currentUser = user
+  window.dispatchEvent(new CustomEvent('user-updated', { detail: currentUser }))
+}
+
+/**
  * Фейковый ID для разработки вне Телеги.
- * Берём из localStorage чтобы был стабильный между перезагрузками.
  */
 function getDevFallbackId() {
   let id = localStorage.getItem('dev_telegram_id')
   if (!id) {
-    // Случайный ID в диапазоне 100000000-999999999 (как реальные telegram_id)
     id = String(Math.floor(100_000_000 + Math.random() * 900_000_000))
     localStorage.setItem('dev_telegram_id', id)
   }
