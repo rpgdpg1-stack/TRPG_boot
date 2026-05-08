@@ -27,6 +27,10 @@ export default function DailyQuests() {
 
   useEffect(() => {
     getDailyQuests().then(setCompleted)
+
+    // Если юзер ещё авторизуется — список квестов из localStorage уже доступен,
+    // но XP начислять имеет смысл только когда юзер готов.
+    // Здесь специальной реакции не нужно — handleQuestTap проверит сам.
   }, [])
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
