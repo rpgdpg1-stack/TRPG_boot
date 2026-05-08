@@ -1,89 +1,67 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUser } from '../lib/telegram'
-import { getStreak, getUserLevel, getLevelName } from '../lib/storage'
 import { haptic } from '../lib/telegram'
 import { spawnBurst } from '../components/ParticlesBg'
+import HomeHeader from '../components/HomeHeader'
+import PlayerCard from '../components/PlayerCard'
 
 /**
  * Главный экран — Тренировки.
- * Названия категорий — обычный белый Manrope (потом пользователь подцепит цветные иконки).
+ * Структура: HomeHeader (лого вверху) → PlayerCard → DailyQuests → Категории
+ * DailyQuests добавим в Порции Б.
  */
 export default function Home() {
   const navigate = useNavigate()
-  const [userName, setUserName] = useState('ATHLETE')
-  const [streak, setStreak] = useState(0)
-  const [level, setLevel] = useState(1)
-  const [levelName, setLevelName] = useState('NEWBIE')
 
-  useEffect(() => {
-    const user = getUser()
-    if (user?.first_name) setUserName(user.first_name)
-
-    Promise.all([getStreak(), getUserLevel()]).then(([s, l]) => {
-      setStreak(s)
-      setLevel(l)
-      setLevelName(getLevelName(l))
-    })
-  }, [])
-
-  // Цвета пока остаются в данных — потом будут на иконках
+  // Порядок категорий
   const categories = [
-    { id: 'gym',       icon: '🏋️', title: 'СИЛОВАЯ',         subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК', color: 'var(--cat-strength)', available: true,  comingSoon: false },
-    { id: 'cardio',    icon: '🏃', title: 'КАРДИО',          subtitle: 'БЕГ · HIIT',           color: 'var(--cat-cardio)',   available: true,  comingSoon: true },
-    { id: 'pool',      icon: '🏊', title: 'БАССЕЙН',         subtitle: 'ВОДНЫЕ ТРЕНИРОВКИ',    color: 'var(--cat-pool)',     available: true,  comingSoon: true },
-    { id: 'stretch',   icon: '🧘', title: 'РАСТЯЖКА',        subtitle: 'ЙОГА · ПИЛАТЕС',       color: 'var(--cat-stretch)',  available: true,  comingSoon: true },
-    { id: 'recovery',  icon: '🌿', title: 'ВОССТАНОВЛЕНИЕ',  subtitle: 'СОН · ОТДЫХ',          color: 'var(--cat-recovery)', available: true,  comingSoon: true }
+    { id: 'gym',       icon: '🏋️', title: 'СИЛОВАЯ',         subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК', color: 'var(--cat-strength)', available: true,  comingSoon: false, featured: true },
+    { id: 'cardio',    icon: '🏃', title: 'КАРДИО',          subtitle: 'БЕГ · HIIT',           color: 'var(--cat-cardio)',   available: true,  comingSoon: true,  featured: false },
+    { id: 'pool',      icon: '🏊', title: 'БАССЕЙН',         subtitle: 'ВОДНЫЕ ТРЕНИРОВКИ',    color: 'var(--cat-pool)',     available: true,  comingSoon: true,  featured: false },
+    { id: 'stretch',   icon: '🧘', title: 'РАСТЯЖКА',        subtitle: 'ЙОГА · ПИЛАТЕС',       color: 'var(--cat-stretch)',  available: true,  comingSoon: true,  featured: false },
+    { id: 'recovery',  icon: '🌿', title: 'ВОССТАНОВЛЕНИЕ',  subtitle: 'СОН · ОТДЫХ',          color: 'var(--cat-recovery)', available: true,  comingSoon: true,  featured: false }
   ]
 
   const handleCategoryTap = (cat, e) => {
     haptic.light()
     const rect = e.currentTarget.getBoundingClientRect()
-    spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 5)
+    spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 6)
     setTimeout(() => navigate(`/category/${cat.id}`), 80)
   }
 
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Sticky шапка с приветствием */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.greeting}>
-            <span style={styles.greetingEmoji}>👾</span>
-            <span>Привет, {userName}!</span>
-          </div>
-          <div style={styles.lvlBlock}>
-            <span style={styles.lvlText}>LVL {level}</span>
-            <span style={styles.lvlDot}>•</span>
-            <span style={styles.lvlName}>{levelName}</span>
-          </div>
-        </div>
-        <div style={styles.headerRight}>
-          <span style={styles.streakIcon}>🔥</span>
-          <span style={styles.streakNumber}>{streak}</span>
-        </div>
-      </header>
+      {/* Шапка-логотип сверху на уровне TG nav */}
+      <HomeHeader />
 
-      {/* Логотип */}
-      <div style={styles.logoBlock}>
-        <h1 style={styles.logo}>RPG</h1>
-        <div style={styles.logoSubtitle}>TRAINING APP</div>
+      {/* Профиль игрока: аватар + имя + ник + ранг + XP-бар + серия */}
+      <PlayerCard />
+
+      {/* Daily Quests — добавим в Порции Б, пока заглушка */}
+      <div style={styles.questsPlaceholder}>
+        <div style={styles.questsPlaceholderText}>
+          ЗАДАНИЯ НА СЕГОДНЯ — скоро (Порция Б)
+        </div>
       </div>
 
-      {/* Категории — название белым Manrope, цвет акцента уйдёт на иконки */}
+      {/* Категории */}
       <div style={styles.cards}>
         {categories.map(cat => (
           <button
             key={cat.id}
             onClick={(e) => handleCategoryTap(cat, e)}
-            style={styles.categoryCard}
+            style={{
+              ...styles.categoryCard,
+              ...(cat.featured ? styles.categoryCardFeatured : {})
+            }}
           >
-            {/* Эмодзи без фона. Сейчас цветной акцент тут — позже заменишь на свою иконку */}
             <span style={styles.categoryIcon}>{cat.icon}</span>
 
             <div style={styles.categoryContent}>
-              <div style={styles.categoryTitle}>
+              <div style={{
+                ...styles.categoryTitle,
+                color: cat.featured ? cat.color : 'var(--color-text)'
+              }}>
                 {cat.title}
               </div>
               <div style={styles.categorySubtitle}>
@@ -101,103 +79,32 @@ export default function Home() {
 }
 
 const styles = {
-  page: {},
-  header: {
-    position: 'sticky',
-    top: 'calc(var(--tg-safe-top) + 4px)',
-    zIndex: 10,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 12px',
-    marginBottom: '16px',
-    background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderRadius: '20px'
+  page: {
+    // Поднимаем чуть выше для PlayerCard, т.к. тут нет тяжёлой шапки
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    position: 'relative'
   },
-  headerLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '3px'
+  questsPlaceholder: {
+    margin: '20px 0',
+    padding: '20px 16px',
+    background: 'rgba(255, 255, 255, 0.02)',
+    border: '1.5px dashed rgba(255, 255, 255, 0.08)',
+    borderRadius: 'var(--radius-card)',
+    textAlign: 'center'
   },
-  greeting: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '16px',
-    fontWeight: 700,
-    color: 'var(--color-text)'
-  },
-  greetingEmoji: {
-    fontSize: '20px',
-    lineHeight: 1
-  },
-  lvlBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    paddingLeft: '28px'
-  },
-  lvlText: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
-  },
-  lvlDot: {
-    color: 'var(--color-text-secondary)',
-    fontSize: '10px'
-  },
-  lvlName: {
+  questsPlaceholderText: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    padding: '6px 12px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '12px'
-  },
-  streakIcon: {
-    fontSize: '16px'
-  },
-  streakNumber: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '14px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
-  },
-  logoBlock: {
-    textAlign: 'center',
-    marginBottom: '24px',
-    marginTop: '12px'
-  },
-  logo: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '56px',
-    color: 'var(--color-primary)',
-    letterSpacing: '4px',
-    lineHeight: 1,
-    marginBottom: '4px'
-  },
-  logoSubtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '4px'
+    letterSpacing: '1.5px'
   },
   cards: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: '12px',
+    marginTop: '8px'
   },
+  // Обычная карточка категории
   categoryCard: {
     display: 'flex',
     alignItems: 'center',
@@ -206,9 +113,17 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    height: '100px',
+    height: '92px',
     textAlign: 'left',
-    transition: 'transform 0.1s ease'
+    transition: 'transform 0.1s ease, opacity 0.2s ease',
+    opacity: 0.85
+  },
+  // Выделенная карточка (Силовая) — ярче, выше, со свечением
+  categoryCardFeatured: {
+    height: '110px',
+    opacity: 1,
+    border: '1px solid rgba(232, 69, 69, 0.4)',
+    boxShadow: '0 0 20px rgba(232, 69, 69, 0.15), inset 0 0 30px rgba(232, 69, 69, 0.05)'
   },
   categoryIcon: {
     fontSize: '34px',
@@ -224,7 +139,6 @@ const styles = {
     flexDirection: 'column',
     gap: '4px'
   },
-  // Название категории — БЕЛЫЙ обычный Manrope, не пиксельный
   categoryTitle: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '18px',
