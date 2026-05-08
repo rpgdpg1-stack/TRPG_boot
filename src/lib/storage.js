@@ -1,6 +1,5 @@
 /**
  * Универсальная обёртка над хранилищем данных пользователя.
- * Telegram CloudStorage (если доступен) или localStorage (fallback).
  */
 
 import { getLevelFromXP } from './levels'
@@ -8,9 +7,7 @@ import { getLevelFromXP } from './levels'
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 const cloud = tg?.CloudStorage
 
-/* ============================================ */
 /* НИЗКОУРОВНЕВЫЕ МЕТОДЫ */
-/* ============================================ */
 
 function getItem(key) {
   return new Promise((resolve) => {
@@ -45,9 +42,7 @@ function removeItem(key) {
   })
 }
 
-/* ============================================ */
 /* АКТИВНЫЙ ДЕНЬ ПРОГРАММЫ */
-/* ============================================ */
 
 export async function getActiveDay(programId) {
   const lastCompleted = await getItem(`program:${programId}:last_day`)
@@ -60,9 +55,7 @@ export async function setLastCompletedDay(programId, day) {
   return setItem(`program:${programId}:last_day`, day)
 }
 
-/* ============================================ */
 /* ЗАКРЕПЫ ПРОГРАММ */
-/* ============================================ */
 
 export async function getPinnedPrograms() {
   const raw = await getItem('pinned_programs')
@@ -84,30 +77,17 @@ export async function togglePin(programId) {
   return idx === -1
 }
 
-/* ============================================ */
 /* XP, УРОВЕНЬ, СТРИК */
-/* Сейчас заглушки — позже подключим реальные тренировки */
-/* ============================================ */
 
-/**
- * Получить общий XP пользователя
- * Пока заглушка возвращает 0 (можно поменять для тестов на 700)
- */
 export async function getTotalXP() {
   const raw = await getItem('total_xp')
   return raw ? parseInt(raw, 10) || 0 : 0
 }
 
-/**
- * Установить общий XP (для тестов и будущих наград)
- */
 export async function setTotalXP(xp) {
   return setItem('total_xp', xp)
 }
 
-/**
- * Добавить XP (например после тренировки или квеста)
- */
 export async function addXP(amount) {
   const current = await getTotalXP()
   const newTotal = current + amount
@@ -115,17 +95,11 @@ export async function addXP(amount) {
   return newTotal
 }
 
-/**
- * Получить текущий уровень по XP
- */
 export async function getUserLevel() {
   const xp = await getTotalXP()
   return getLevelFromXP(xp)
 }
 
-/**
- * Получить серию (стрик) дней подряд
- */
 export async function getStreak() {
   const raw = await getItem('streak_days')
   return raw ? parseInt(raw, 10) || 0 : 0
@@ -135,18 +109,54 @@ export async function setStreak(days) {
   return setItem('streak_days', days)
 }
 
-/**
- * Всего тренировок (для статистики)
- */
 export async function getTotalWorkouts() {
   const raw = await getItem('total_workouts')
   return raw ? parseInt(raw, 10) || 0 : 0
 }
 
-/* ============================================ */
-/* НАЗВАНИЕ УРОВНЯ — оставлено для совместимости */
-/* Используем getRankByLevel из ./levels вместо этого */
-/* ============================================ */
+/* DAILY QUESTS — для Порции Б */
+
+/**
+ * Получить состояние ежедневных квестов на сегодня.
+ * Возвращает объект { questId: true/false, ... }
+ */
+export async function getDailyQuests() {
+  const raw = await getItem('daily_quests')
+  if (!raw) return {}
+  try {
+    const data = JSON.parse(raw)
+    // Проверяем что это сегодня (если другой день — сбрасываем)
+    const today = getTodayKey()
+    if (data.date !== today) return {}
+    return data.completed || {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Отметить квест выполненным
+ */
+export async function completeQuest(questId) {
+  const today = getTodayKey()
+  const completed = await getDailyQuests()
+  completed[questId] = true
+  await setItem('daily_quests', JSON.stringify({ date: today, completed }))
+  return completed
+}
+
+/**
+ * Ключ дня для сброса квестов в 3:00 МСК
+ * Пока упрощённо — берём текущий день, сброс по локальному времени
+ */
+function getTodayKey() {
+  const now = new Date()
+  // 3 часа ночи МСК = смещение -3 часа
+  now.setHours(now.getHours() - 3)
+  return now.toISOString().split('T')[0]
+}
+
+/* НАЗВАНИЕ УРОВНЯ — для совместимости */
 
 export function getLevelName(level) {
   if (level >= 50) return 'БЕССМЕРТНЫЙ'
@@ -162,9 +172,7 @@ export function getLevelName(level) {
   return 'НОВОБРАНЕЦ'
 }
 
-/* ============================================ */
 /* ОТЛАДКА */
-/* ============================================ */
 
 export async function clearAllData() {
   const keys = [
@@ -172,6 +180,7 @@ export async function clearAllData() {
     'streak_days',
     'total_workouts',
     'total_xp',
+    'daily_quests',
     'program:split:last_day'
   ]
   for (const key of keys) await removeItem(key)
