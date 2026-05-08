@@ -1,27 +1,42 @@
 import { useEffect, useState } from 'react'
 import { getUser, haptic } from '../lib/telegram'
-import { getTotalXP, getStreak } from '../lib/storage'
-import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, pluralizeDays, XP_REWARDS } from '../lib/levels'
+import { getTotalXP, getWeeklyStreak } from '../lib/storage'
+import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, pluralizeWorkouts, XP_REWARDS } from '../lib/levels'
+import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
 
 /**
- * Главный блок персонажа — на Главной странице.
- * Аватар круглый с пиксельной рамкой + кольцо XP по периметру.
- * Имя, ник, ранг, XP-бар, серия.
+ * Главный блок персонажа на Главной.
+ *
+ * НОВОЕ в Порции В:
+ * - Аватар без зелёных пикселей (только круглое кольцо XP)
+ * - Фото больше — занимает место бывших пикселей
+ * - Подпись формата "🟢 НОВОБРАНЕЦ 1" (без слова "УРОВЕНЬ")
+ * - XP-бар с эмодзи 💪 слева, сплошной полосой и цифрами справа
+ * - Внизу 3 огонька серии (демо: 1 горит, 2 пустых)
+ * - 4-й огонёк появляется только если стрик > 3
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
   const [xp, setXP] = useState(0)
-  const [streak, setStreak] = useState(0)
+  const [weeklyStreak, setWeeklyStreak] = useState(1) // демо-значение
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
 
   useEffect(() => {
     setUser(getUser())
-    Promise.all([getTotalXP(), getStreak()]).then(([xp, s]) => {
-      setXP(xp)
-      setStreak(s)
-    })
+
+    const loadData = () => {
+      Promise.all([getTotalXP(), getWeeklyStreak()]).then(([xpVal, streak]) => {
+        setXP(xpVal)
+        setWeeklyStreak(streak)
+      })
+    }
+
+    loadData()
+
+    window.addEventListener('xp-updated', loadData)
+    return () => window.removeEventListener('xp-updated', loadData)
   }, [])
 
   const level = getLevelFromXP(xp)
@@ -37,16 +52,32 @@ export default function PlayerCard() {
     setShowXPDetails(prev => !prev)
   }
 
-  const handleStreakTap = () => {
+  const handleStreakTap = (e) => {
     haptic.light()
     setShowStreakHint(prev => !prev)
-    setTimeout(() => setShowStreakHint(false), 3000)
+    setTimeout(() => setShowStreakHint(false), 4000)
+
+    // Если стрик 3+ — пускаем искорки из огоньков вверх
+    if (weeklyStreak >= 3) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      // Из каждого огонька (равномерно по ширине ряда)
+      const flameCount = weeklyStreak >= 4 ? 4 : 3
+      for (let i = 0; i < flameCount; i++) {
+        const x = rect.left + (rect.width / (flameCount + 1)) * (i + 1)
+        const y = rect.top + rect.height / 2
+        spawnFireSparks(x, y)
+      }
+    }
   }
+
+  // Сколько огоньков всего показывать: 3 по умолчанию, 4 если стрик 4+
+  const totalFlames = weeklyStreak >= 4 ? 4 : 3
+  const filledFlames = Math.min(weeklyStreak, totalFlames)
 
   return (
     <div style={styles.container}>
 
-      {/* АВАТАР с круглой пиксельной рамкой и кольцом XP */}
+      {/* АВАТАР с круглым кольцом XP (без пиксельных квадратов) */}
       <div style={styles.avatarWrap}>
         <svg
           style={styles.ring}
@@ -78,12 +109,9 @@ export default function PlayerCard() {
               transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
             }}
           />
-
-          {/* Пиксельная рамка вокруг аватара */}
-          <PixelFrame radius={58} cx={70} cy={70} color={rank.color} />
         </svg>
 
-        {/* Сама фотка */}
+        {/* Сама фотка — теперь крупнее (132×132 при контейнере 140×140) */}
         <div style={styles.avatarInner}>
           {user?.photo_url ? (
             <img src={user.photo_url} alt="" style={styles.avatarImg} />
@@ -99,55 +127,59 @@ export default function PlayerCard() {
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
 
-      {/* РАНГ */}
+      {/* РАНГ — формат "🟢 НОВОБРАНЕЦ 1" */}
       <div style={{ ...styles.rank, color: rank.color }}>
-        {rank.emoji} {rank.name} · УРОВЕНЬ {level}
+        {rank.emoji} {rank.name} {rank.subLevel}
       </div>
 
-      {/* XP-БАР (кликабельный) */}
+      {/* XP-БАР (мускулы) */}
       <div style={styles.xpBlock}>
         <button onClick={handleXPTap} style={styles.xpBarButton}>
-          <XPBar progress={progress} color={rank.color} segments={20} />
+          <XPBar progress={progress} color={rank.color} current={current} needed={needed} />
         </button>
-        <div style={styles.xpNumbers}>
-          <span style={styles.xpCurrent}>{current}</span>
-          <span style={styles.xpSlash}>/</span>
-          <span style={styles.xpNeeded}>{needed}</span>
-        </div>
 
-        {/* Попап с разбором XP */}
+        {/* Попап с разбором мускулов */}
         {showXPDetails && (
           <div style={styles.popup}>
             <div style={styles.popupRow}>
               <span>За тренировку</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.WORKOUT_COMPLETE} XP</span>
+              <span style={styles.popupValue}>+{XP_REWARDS.WORKOUT_COMPLETE} 💪</span>
             </div>
             <div style={styles.popupRow}>
               <span>За серию (3 дня)</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_3DAYS} XP</span>
+              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_3DAYS} 💪</span>
             </div>
             <div style={styles.popupRow}>
               <span>За серию (7 дней)</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_7DAYS} XP</span>
+              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_7DAYS} 💪</span>
             </div>
             <div style={{ ...styles.popupRow, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
               <span>До следующего уровня</span>
-              <span style={{ ...styles.popupValue, color: rank.color }}>{needed - current} XP</span>
+              <span style={{ ...styles.popupValue, color: rank.color }}>{needed - current} 💪</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* БЕЙДЖ СЕРИИ */}
-      <button onClick={handleStreakTap} style={styles.streakBadge}>
-        <span style={styles.streakIcon}>🔥</span>
-        <span style={styles.streakLabel}>СЕРИЯ:</span>
-        <span style={styles.streakValue}>{streak} {pluralizeDays(streak)}</span>
+      {/* РЯД ОГОНЬКОВ СЕРИИ */}
+      <button onClick={handleStreakTap} style={styles.streakRow} aria-label="Серия тренировок">
+        {Array.from({ length: totalFlames }).map((_, i) => {
+          const isLit = i < filledFlames
+          return <FlameIcon key={i} lit={isLit} />
+        })}
       </button>
 
+      {/* Попап серии — пиксельные оранжевые цифры */}
       {showStreakHint && (
-        <div style={styles.streakHint}>
-          Чем длиннее серия — тем больше бонусов к опыту
+        <div style={styles.streakPopup}>
+          <span style={styles.streakPopupText}>
+            Серия:🔥
+            <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
+            {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
+          </span>
+          <span style={styles.streakPopupSub}>
+            (серия сбросится в начале следующей недели)
+          </span>
         </div>
       )}
     </div>
@@ -155,30 +187,42 @@ export default function PlayerCard() {
 }
 
 /**
- * Пиксельная рамка вокруг аватара — крупные квадраты 4x4 по окружности
+ * Иконка огонька — горящий или пустой контур.
+ * SVG примитивно повторяет форму эмодзи 🔥.
  */
-function PixelFrame({ radius, cx, cy, color }) {
-  const count = 24
-  const pixels = []
+function FlameIcon({ lit }) {
+  const size = 22
 
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2 - Math.PI / 2
-    const x = cx + Math.cos(angle) * radius
-    const y = cy + Math.sin(angle) * radius
-    pixels.push(
-      <rect
-        key={i}
-        x={x - 2}
-        y={y - 2}
-        width="4"
-        height="4"
-        fill={color}
-        opacity="0.85"
-      />
+  if (lit) {
+    // Заполненный — оранжевый с градиентом
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 4px rgba(255, 140, 66, 0.6))' }}>
+        <defs>
+          <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#FFD700" />
+            <stop offset="50%" stopColor="#FF8C42" />
+            <stop offset="100%" stopColor="#E84545" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M12 2 C 8 6, 6 9, 6 13 C 6 17, 9 21, 12 21 C 15 21, 18 17, 18 13 C 18 10, 16 8, 14 7 C 14 9, 13 10, 12 10 C 12 7, 13 5, 12 2 Z"
+          fill="url(#flameGrad)"
+        />
+      </svg>
     )
   }
 
-  return <g>{pixels}</g>
+  // Пустой — только контур серым
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12 2 C 8 6, 6 9, 6 13 C 6 17, 9 21, 12 21 C 15 21, 18 17, 18 13 C 18 10, 16 8, 14 7 C 14 9, 13 10, 12 10 C 12 7, 13 5, 12 2 Z"
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.25)"
+        strokeWidth="1.5"
+      />
+    </svg>
+  )
 }
 
 const styles = {
@@ -202,12 +246,13 @@ const styles = {
     height: '100%'
   },
   avatarInner: {
+    // Теперь больше: 124x124 (было 108x108)
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '108px',
-    height: '108px',
+    width: '124px',
+    height: '124px',
     borderRadius: '50%',
     overflow: 'hidden',
     background: 'var(--color-card)'
@@ -224,7 +269,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '44px',
+    fontSize: '52px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
   },
@@ -258,28 +303,6 @@ const styles = {
     padding: 0,
     background: 'transparent'
   },
-  xpNumbers: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'baseline',
-    gap: '4px',
-    marginTop: '6px',
-    fontFamily: 'var(--font-tiny5)'
-  },
-  xpCurrent: {
-    fontSize: '13px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
-  },
-  xpSlash: {
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)'
-  },
-  xpNeeded: {
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
   popup: {
     position: 'absolute',
     top: 'calc(100% + 8px)',
@@ -308,47 +331,51 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '1px'
   },
-  streakBadge: {
+  streakRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     padding: '8px 14px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: '20px',
+    background: 'transparent',
     marginTop: '12px'
   },
-  streakIcon: {
-    fontSize: '16px'
-  },
-  streakLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
-  streakValue: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
-  },
-  streakHint: {
+  streakPopup: {
     position: 'absolute',
-    bottom: '-30px',
+    bottom: '-44px',
     left: '50%',
     transform: 'translateX(-50%)',
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '12px',
-    padding: '8px 12px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
+    borderRadius: '14px',
+    padding: '10px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
     whiteSpace: 'nowrap',
     animation: 'pageFadeIn 0.2s ease-out',
     zIndex: 50
+  },
+  streakPopupText: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text)',
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '2px'
+  },
+  streakPopupNumber: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '14px',
+    color: '#FF8C42', // оранжевый под цвет огня
+    letterSpacing: '1px',
+    margin: '0 2px'
+  },
+  streakPopupSub: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    color: 'var(--color-text-secondary)'
   }
 }
