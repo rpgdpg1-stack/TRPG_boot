@@ -10,9 +10,20 @@ export default function Progress() {
   const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
 
   useEffect(() => {
-    Promise.all([getStreak(), getUserLevel(), getTotalWorkouts()]).then(([streak, level, total]) => {
-      setStats({ streak, level, levelName: getLevelName(level), total })
-    })
+    const loadStats = () => {
+      Promise.all([getStreak(), getUserLevel(), getTotalWorkouts()]).then(([streak, level, total]) => {
+        setStats({ streak, level, levelName: getLevelName(level), total })
+      })
+    }
+
+    loadStats()
+
+    window.addEventListener('user-ready', loadStats)
+    window.addEventListener('user-updated', loadStats)
+    return () => {
+      window.removeEventListener('user-ready', loadStats)
+      window.removeEventListener('user-updated', loadStats)
+    }
   }, [])
 
   const sections = [
