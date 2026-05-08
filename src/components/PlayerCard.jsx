@@ -5,7 +5,7 @@ import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, 
 import XPBar from './XPBar'
 
 /**
- * Главный блок персонажа в Настройках.
+ * Главный блок персонажа — на Главной странице.
  * Аватар круглый с пиксельной рамкой + кольцо XP по периметру.
  * Имя, ник, ранг, XP-бар, серия.
  */
@@ -40,7 +40,6 @@ export default function PlayerCard() {
   const handleStreakTap = () => {
     haptic.light()
     setShowStreakHint(prev => !prev)
-    // Скрываем через 3 сек
     setTimeout(() => setShowStreakHint(false), 3000)
   }
 
@@ -49,13 +48,12 @@ export default function PlayerCard() {
 
       {/* АВАТАР с круглой пиксельной рамкой и кольцом XP */}
       <div style={styles.avatarWrap}>
-        {/* SVG: кольцо XP (прогресс) и пиксельная рамка */}
         <svg
           style={styles.ring}
           viewBox="0 0 140 140"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Кольцо-фон (тёмное) */}
+          {/* Кольцо-фон */}
           <circle
             cx="70"
             cy="70"
@@ -64,7 +62,7 @@ export default function PlayerCard() {
             stroke="rgba(255, 255, 255, 0.06)"
             strokeWidth="3"
           />
-          {/* Кольцо XP — прогресс */}
+          {/* Кольцо XP */}
           <circle
             cx="70"
             cy="70"
@@ -81,11 +79,11 @@ export default function PlayerCard() {
             }}
           />
 
-          {/* Пиксельная рамка вокруг аватара — крупные квадраты по окружности */}
+          {/* Пиксельная рамка вокруг аватара */}
           <PixelFrame radius={58} cx={70} cy={70} color={rank.color} />
         </svg>
 
-        {/* Сама фотка — круглая */}
+        {/* Сама фотка */}
         <div style={styles.avatarInner}>
           {user?.photo_url ? (
             <img src={user.photo_url} alt="" style={styles.avatarImg} />
@@ -97,7 +95,7 @@ export default function PlayerCard() {
         </div>
       </div>
 
-      {/* ИМЯ */}
+      {/* ИМЯ И НИК */}
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
 
@@ -116,7 +114,6 @@ export default function PlayerCard() {
           <span style={styles.xpSlash}>/</span>
           <span style={styles.xpNeeded}>{needed}</span>
         </div>
-        <div style={styles.xpLabel}>ОПЫТ ДО СЛЕДУЮЩЕГО УРОВНЯ</div>
 
         {/* Попап с разбором XP */}
         {showXPDetails && (
@@ -148,7 +145,6 @@ export default function PlayerCard() {
         <span style={styles.streakValue}>{streak} {pluralizeDays(streak)}</span>
       </button>
 
-      {/* Подсказка про серию */}
       {showStreakHint && (
         <div style={styles.streakHint}>
           Чем длиннее серия — тем больше бонусов к опыту
@@ -162,7 +158,6 @@ export default function PlayerCard() {
  * Пиксельная рамка вокруг аватара — крупные квадраты 4x4 по окружности
  */
 function PixelFrame({ radius, cx, cy, color }) {
-  // 24 пикселя по периметру
   const count = 24
   const pixels = []
 
@@ -191,7 +186,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '24px 16px 28px',
+    padding: '8px 16px 4px',
     position: 'relative'
   },
   avatarWrap: {
@@ -235,23 +230,23 @@ const styles = {
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '24px',
+    fontSize: '22px',
     fontWeight: 700,
     color: 'var(--color-text)',
     marginTop: '4px'
   },
   username: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: '13px',
     color: 'var(--color-text-secondary)',
     marginTop: '-2px',
-    marginBottom: '14px'
+    marginBottom: '12px'
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
     letterSpacing: '1.5px',
-    marginBottom: '14px'
+    marginBottom: '12px'
   },
   xpBlock: {
     width: '100%',
@@ -268,31 +263,22 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'baseline',
     gap: '4px',
-    marginTop: '8px',
+    marginTop: '6px',
     fontFamily: 'var(--font-tiny5)'
   },
   xpCurrent: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: 'var(--color-primary)',
     letterSpacing: '1px'
   },
   xpSlash: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: 'var(--color-text-secondary)'
   },
   xpNeeded: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
-  },
-  xpLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '9px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1.5px',
-    textAlign: 'center',
-    marginTop: '4px'
   },
   popup: {
     position: 'absolute',
@@ -330,7 +316,7 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.04)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: '20px',
-    marginTop: '14px'
+    marginTop: '12px'
   },
   streakIcon: {
     fontSize: '16px'
