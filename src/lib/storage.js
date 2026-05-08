@@ -1,5 +1,9 @@
 /**
  * Универсальная обёртка над хранилищем данных пользователя.
+ *
+ * НОВОЕ в Порции В:
+ * - getWeeklyStreak / setWeeklyStreak / addWorkoutToWeek для огоньков серии
+ * - getCurrentWeekKey — ключ недели для сброса по понедельникам в 03:00 МСК
  */
 
 import { getLevelFromXP } from './levels'
@@ -77,7 +81,7 @@ export async function togglePin(programId) {
   return idx === -1
 }
 
-/* XP, УРОВЕНЬ, СТРИК */
+/* МУСКУЛЫ (бывший XP), УРОВЕНЬ, СТАРЫЙ ДНЕВНОЙ СТРИК */
 
 export async function getTotalXP() {
   const raw = await getItem('total_xp')
@@ -100,6 +104,7 @@ export async function getUserLevel() {
   return getLevelFromXP(xp)
 }
 
+// Старый дневной стрик — оставляем для совместимости с Progress.jsx
 export async function getStreak() {
   const raw = await getItem('streak_days')
   return raw ? parseInt(raw, 10) || 0 : 0
@@ -114,18 +119,80 @@ export async function getTotalWorkouts() {
   return raw ? parseInt(raw, 10) || 0 : 0
 }
 
-/* DAILY QUESTS — для Порции Б */
+/* НЕДЕЛЬНЫЙ СТРИК — для огоньков на Главной (Порция В) */
 
 /**
- * Получить состояние ежедневных квестов на сегодня.
- * Возвращает объект { questId: true/false, ... }
+ * Ключ текущей недели (понедельник 03:00 МСК — начало).
+ * Возвращает строку вида "2026-W19".
+ *
+ * Как работает: смещаемся на -3 часа (3:00 МСК), потом находим понедельник этой недели.
  */
+export function getCurrentWeekKey() {
+  const now = new Date()
+  // Сдвиг на -3 часа: до 3:00 МСК неделя считается "прошлой"
+  now.setHours(now.getHours() - 3)
+
+  // Находим понедельник
+  const day = now.getDay() // 0=вс, 1=пн ... 6=сб
+  const diff = day === 0 ? -6 : 1 - day // сдвиг до понедельника
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+
+  // Формат YYYY-MM-DD
+  return monday.toISOString().split('T')[0]
+}
+
+/**
+ * Получить количество тренировок за текущую неделю.
+ * Если неделя сменилась — автоматически сбрасывается.
+ *
+ * Демо-режим: если в хранилище ничего нет, возвращаем 1
+ * (чтобы один огонёк уже горел, как договаривались).
+ */
+export async function getWeeklyStreak() {
+  const raw = await getItem('weekly_streak')
+  if (!raw) return 1 // демо-значение
+
+  try {
+    const data = JSON.parse(raw)
+    const currentWeek = getCurrentWeekKey()
+    if (data.week !== currentWeek) {
+      // Неделя сменилась — сбрасываем
+      return 0
+    }
+    return data.count || 0
+  } catch {
+    return 1 // на ошибку парсинга — тоже демо
+  }
+}
+
+/**
+ * Установить значение недельного стрика напрямую (для отладки/демо).
+ */
+export async function setWeeklyStreak(count) {
+  const week = getCurrentWeekKey()
+  return setItem('weekly_streak', JSON.stringify({ week, count }))
+}
+
+/**
+ * Прибавить +1 тренировку к недельному стрику.
+ * Вызывается когда пользователь завершает тренировку (пока негде, но логика готова).
+ */
+export async function addWorkoutToWeek() {
+  const current = await getWeeklyStreak()
+  const next = Math.min(current + 1, 4) // лимит 4
+  await setWeeklyStreak(next)
+  return next
+}
+
+/* DAILY QUESTS (буcты дня) */
+
 export async function getDailyQuests() {
   const raw = await getItem('daily_quests')
   if (!raw) return {}
   try {
     const data = JSON.parse(raw)
-    // Проверяем что это сегодня (если другой день — сбрасываем)
     const today = getTodayKey()
     if (data.date !== today) return {}
     return data.completed || {}
@@ -134,9 +201,6 @@ export async function getDailyQuests() {
   }
 }
 
-/**
- * Отметить квест выполненным
- */
 export async function completeQuest(questId) {
   const today = getTodayKey()
   const completed = await getDailyQuests()
@@ -147,28 +211,26 @@ export async function completeQuest(questId) {
 
 /**
  * Ключ дня для сброса квестов в 3:00 МСК
- * Пока упрощённо — берём текущий день, сброс по локальному времени
  */
 function getTodayKey() {
   const now = new Date()
-  // 3 часа ночи МСК = смещение -3 часа
   now.setHours(now.getHours() - 3)
   return now.toISOString().split('T')[0]
 }
 
-/* НАЗВАНИЕ УРОВНЯ — для совместимости */
+/* НАЗВАНИЕ УРОВНЯ — для совместимости со старым Progress.jsx */
 
 export function getLevelName(level) {
-  if (level >= 50) return 'БЕССМЕРТНЫЙ'
-  if (level >= 45) return 'АХИЛЛ'
-  if (level >= 40) return 'ЛЕГЕНДА'
-  if (level >= 35) return 'ТИТАН'
-  if (level >= 30) return 'ГЕРАКЛ'
-  if (level >= 25) return 'ЦЕНТУРИОН'
-  if (level >= 20) return 'ВИТЯЗЬ'
-  if (level >= 15) return 'БОЕЦ'
-  if (level >= 10) return 'АТЛЕТ'
-  if (level >= 5) return 'СПОРТСМЕН'
+  if (level >= 31) return 'БЕССМЕРТНЫЙ'
+  if (level >= 28) return 'АХИЛЛ'
+  if (level >= 25) return 'ЛЕГЕНДА'
+  if (level >= 22) return 'ТИТАН'
+  if (level >= 19) return 'ГЕРАКЛ'
+  if (level >= 16) return 'ЦЕНТУРИОН'
+  if (level >= 13) return 'ВИТЯЗЬ'
+  if (level >= 10) return 'БОЕЦ'
+  if (level >= 7)  return 'АТЛЕТ'
+  if (level >= 4)  return 'СПОРТСМЕН'
   return 'НОВОБРАНЕЦ'
 }
 
@@ -181,6 +243,7 @@ export async function clearAllData() {
     'total_workouts',
     'total_xp',
     'daily_quests',
+    'weekly_streak',
     'program:split:last_day'
   ]
   for (const key of keys) await removeItem(key)
