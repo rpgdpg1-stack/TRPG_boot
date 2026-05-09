@@ -50,6 +50,11 @@
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-page: 280ms;
 
+  /* Press-эффект (нативное iOS-нажатие) */
+  --press-scale: 0.97;
+  --press-duration: 120ms;
+  --press-ease: cubic-bezier(0.4, 0, 0.6, 1);
+
   /* Safe-area под Telegram nav */
   --tg-safe-top: 92px;
 }
@@ -113,6 +118,26 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
+/* PRESS-эффект — нативное iOS/Telegram нажатие */
+/* Используется на кнопках категорий, программ, и других тапаемых "плитках". */
+/* На active — масштаб 0.97 (визуальное "вдавливание"). */
+/* На отпускание — плавный возврат через стандартный transition. */
+/* ============================================ */
+
+.press-tile {
+  transition:
+    transform var(--press-duration) var(--press-ease),
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.press-tile:active {
+  transform: scale(var(--press-scale));
+  transition: transform 60ms var(--press-ease);
+}
+
+/* ============================================ */
 /* АНИМАЦИИ ПЕРЕХОДОВ */
 /* ============================================ */
 
@@ -135,7 +160,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* АНИМАЦИИ ЧАСТИЦ */
+/* АНИМАЦИИ ЧАСТИЦ (для буст-заданий и огоньков серии) */
 /* ============================================ */
 
 @keyframes particleFloatBg {
