@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { backButton, haptic } from '../lib/telegram'
+import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getActiveDay } from '../lib/storage'
 
 /**
- * Экран программы — здесь выбор дня тренировки (A / B / C).
- * Сейчас заглушка — реальные упражнения подключим в Шаге 3 (Google Sheets).
+ * Экран программы — выбор дня A/B/C.
+ *
+ * Г8.2:
+ * - Возврат всегда в категорию (не navigate(-1) который иногда кидает на главную)
+ * - Кнопка назад через setHandler (без мерцания)
  */
+
+// Какая программа в какой категории — для возврата по кнопке Назад
+const PROGRAM_TO_CATEGORY = {
+  split: 'gym'
+  // когда добавим другие — допишем сюда
+}
 
 const PROGRAM_DATA = {
   split: {
@@ -22,11 +31,13 @@ export default function Program() {
   const [activeDay, setActiveDay] = useState(null)
 
   const data = PROGRAM_DATA[id]
+  const parentCategory = PROGRAM_TO_CATEGORY[id] || 'gym'
 
   useEffect(() => {
-    backButton.show(() => navigate(-1))
-    return () => backButton.hide()
-  }, [navigate])
+    // Кнопка назад → в родительскую категорию (а не navigate(-1) который мог кинуть на главную)
+    backButton.setHandler(() => navigate(`/category/${parentCategory}`))
+    lockVerticalSwipes()
+  }, [navigate, parentCategory])
 
   useEffect(() => {
     getActiveDay(id).then(setActiveDay)
@@ -40,19 +51,16 @@ export default function Program() {
     )
   }
 
-  // Если активного дня нет — рекомендуем начать с A
   const recommendedDay = activeDay || 'A'
 
   const handleDayTap = (day) => {
     haptic.light()
-    // Заглушка — переход на экран дня тренировки добавим в Шаге 3
     console.log('Выбран день:', day)
   }
 
   return (
     <div className="page page-enter" style={styles.page}>
 
-      {/* Шапка */}
       <header style={styles.header}>
         <h1 style={styles.title}>{data.title}</h1>
         <div style={styles.tags}>
@@ -62,7 +70,6 @@ export default function Program() {
         </div>
       </header>
 
-      {/* Подсказка про активный день */}
       {activeDay && (
         <div style={styles.activeDayHint}>
           СЕГОДНЯ ДЕНЬ <span style={styles.activeDayLetter}>{activeDay}</span>
@@ -74,7 +81,6 @@ export default function Program() {
         </div>
       )}
 
-      {/* Три квадрата дней */}
       <div style={styles.daysGrid}>
         {data.days.map(day => {
           const isRecommended = day === recommendedDay
@@ -104,12 +110,11 @@ export default function Program() {
         })}
       </div>
 
-      {/* Заглушка — список упражнений будет в Шаге 3 */}
       <div style={styles.placeholder}>
         <div style={styles.placeholderIcon}>💪</div>
         <div style={styles.placeholderTitle}>Упражнения скоро</div>
         <div style={styles.placeholderText}>
-          На следующем шаге подключим Google Sheets<br/>
+          На следующем шаге подключим упражнения из Supabase<br/>
           и здесь появятся реальные упражнения дня
         </div>
       </div>
@@ -118,117 +123,30 @@ export default function Program() {
 }
 
 const styles = {
-  page: {
-    padding: '16px 16px 24px'
-  },
-  header: {
-    marginBottom: '20px',
-    textAlign: 'center'
-  },
-  title: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '40px',
-    color: 'var(--color-primary)',
-    letterSpacing: '4px',
-    lineHeight: 1,
-    marginBottom: '8px'
-  },
-  tags: {
-    display: 'flex',
-    gap: '6px',
-    justifyContent: 'center'
-  },
-  tag: {
-    display: 'inline-block',
-    padding: '3px 10px',
-    background: 'var(--tag-gym)',
-    borderRadius: '6px',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-bg)',
-    letterSpacing: '1px',
-    fontWeight: 600
-  },
-  activeDayHint: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    textAlign: 'center',
-    marginBottom: '16px'
-  },
-  activeDayLetter: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '14px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
-  },
-  daysGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '10px',
-    marginBottom: '32px'
-  },
+  page: { padding: '16px 16px 24px' },
+  header: { marginBottom: '20px', textAlign: 'center' },
+  title: { fontFamily: 'var(--font-tiny5)', fontSize: '40px', color: 'var(--color-primary)', letterSpacing: '4px', lineHeight: 1, marginBottom: '8px' },
+  tags: { display: 'flex', gap: '6px', justifyContent: 'center' },
+  tag: { display: 'inline-block', padding: '3px 10px', background: 'var(--tag-gym)', borderRadius: '6px', fontFamily: 'var(--font-tiny5)', fontSize: '11px', color: 'var(--color-bg)', letterSpacing: '1px', fontWeight: 600 },
+  activeDayHint: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center', marginBottom: '16px' },
+  activeDayLetter: { fontFamily: 'var(--font-tiny5)', fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '1px' },
+  daysGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '32px' },
   dayCard: {
     aspectRatio: '1',
     background: 'var(--color-card)',
     borderRadius: '24px',
     border: '2px solid transparent',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     gap: '8px',
     transition: 'all 0.2s ease'
   },
-  dayCardActive: {
-    border: '2px solid var(--color-primary)',
-    background: 'rgba(158, 209, 83, 0.08)'
-  },
-  dayLetter: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '52px',
-    letterSpacing: '0',
-    lineHeight: 1
-  },
-  dayLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 600,
-    letterSpacing: '1.5px'
-  },
-  placeholder: {
-    textAlign: 'center',
-    padding: '40px 20px',
-    background: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 'var(--radius-card)'
-  },
-  placeholderIcon: {
-    fontSize: '48px',
-    marginBottom: '12px'
-  },
-  placeholderTitle: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '20px',
-    color: 'var(--color-primary)',
-    letterSpacing: '2px',
-    marginBottom: '8px'
-  },
-  placeholderText: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    lineHeight: 1.6
-  },
-  notFoundPage: {
-    minHeight: '70vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  notFoundText: {
-    fontFamily: 'var(--font-manrope)',
-    color: 'var(--color-text-secondary)'
-  }
+  dayCardActive: { border: '2px solid var(--color-primary)', background: 'rgba(158, 209, 83, 0.08)' },
+  dayLetter: { fontFamily: 'var(--font-tiny5)', fontSize: '52px', letterSpacing: '0', lineHeight: 1 },
+  dayLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' },
+  placeholder: { textAlign: 'center', padding: '40px 20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-card)' },
+  placeholderIcon: { fontSize: '48px', marginBottom: '12px' },
+  placeholderTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '20px', color: 'var(--color-primary)', letterSpacing: '2px', marginBottom: '8px' },
+  placeholderText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.6 },
+  notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
