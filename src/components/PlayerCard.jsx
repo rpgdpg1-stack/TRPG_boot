@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getUser, haptic } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak } from '../lib/storage'
 import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, pluralizeWorkouts, XP_REWARDS } from '../lib/levels'
@@ -8,20 +8,22 @@ import XPBar from './XPBar'
 /**
  * Главный блок персонажа на Главной.
  *
- * НОВОЕ в Порции В:
- * - Аватар без зелёных пикселей (только круглое кольцо XP)
- * - Фото больше — занимает место бывших пикселей
- * - Подпись формата "🟢 НОВОБРАНЕЦ 1" (без слова "УРОВЕНЬ")
- * - XP-бар с эмодзи 💪 слева, сплошной полосой и цифрами справа
- * - Внизу 3 огонька серии (демо: 1 горит, 2 пустых)
- * - 4-й огонёк появляется только если стрик > 3
+ * НОВОЕ в Г8:
+ * - Попапы XP и серии закрываются по клику вне их (через document listener)
+ * - Анимация появления снизу мягко (popupSlideDown), без "выезда" сбоку
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
   const [xp, setXP] = useState(0)
-  const [weeklyStreak, setWeeklyStreak] = useState(1) // демо-значение
+  const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
+
+  // Рефы на триггеры — чтобы при клике "вне" не закрывать если кликнули на сам триггер
+  const xpButtonRef = useRef(null)
+  const xpPopupRef = useRef(null)
+  const streakButtonRef = useRef(null)
+  const streakPopupRef = useRef(null)
 
   useEffect(() => {
     setUser(getUser())
@@ -45,6 +47,30 @@ export default function PlayerCard() {
     }
   }, [])
 
+  // Закрытие попапов по клику вне их
+  useEffect(() => {
+    if (!showXPDetails && !showStreakHint) return
+
+    const handleOutsideClick = (e) => {
+      // XP попап: не закрываем если кликнули по триггеру или по самому попапу
+      if (showXPDetails) {
+        if (xpButtonRef.current?.contains(e.target)) return
+        if (xpPopupRef.current?.contains(e.target)) return
+        setShowXPDetails(false)
+      }
+      // Streak попап: то же самое
+      if (showStreakHint) {
+        if (streakButtonRef.current?.contains(e.target)) return
+        if (streakPopupRef.current?.contains(e.target)) return
+        setShowStreakHint(false)
+      }
+    }
+
+    // Используем pointerdown вместо click — срабатывает раньше и надёжнее
+    document.addEventListener('pointerdown', handleOutsideClick)
+    return () => document.removeEventListener('pointerdown', handleOutsideClick)
+  }, [showXPDetails, showStreakHint])
+
   const level = getLevelFromXP(xp)
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
@@ -56,17 +82,16 @@ export default function PlayerCard() {
   const handleXPTap = () => {
     haptic.light()
     setShowXPDetails(prev => !prev)
+    setShowStreakHint(false) // закрываем другой попап если открыт
   }
 
   const handleStreakTap = (e) => {
     haptic.light()
     setShowStreakHint(prev => !prev)
-    setTimeout(() => setShowStreakHint(false), 4000)
+    setShowXPDetails(false)
 
-    // Если стрик 3+ — пускаем искорки из огоньков вверх
     if (weeklyStreak >= 3) {
       const rect = e.currentTarget.getBoundingClientRect()
-      // Из каждого огонька (равномерно по ширине ряда)
       const flameCount = weeklyStreak >= 4 ? 4 : 3
       for (let i = 0; i < flameCount; i++) {
         const x = rect.left + (rect.width / (flameCount + 1)) * (i + 1)
@@ -76,30 +101,20 @@ export default function PlayerCard() {
     }
   }
 
-  // Сколько огоньков всего показывать: 3 по умолчанию, 4 если стрик 4+
   const totalFlames = weeklyStreak >= 4 ? 4 : 3
   const filledFlames = Math.min(weeklyStreak, totalFlames)
 
   return (
     <div style={styles.container}>
 
-      {/* АВАТАР с круглым кольцом XP (без пиксельных квадратов) */}
+      {/* АВАТАР с круглым кольцом XP */}
       <div style={styles.avatarWrap}>
         <svg
           style={styles.ring}
           viewBox="0 0 140 140"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Кольцо-фон */}
-          <circle
-            cx="70"
-            cy="70"
-            r="66"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.06)"
-            strokeWidth="3"
-          />
-          {/* Кольцо XP */}
+          <circle cx="70" cy="70" r="66" fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
           <circle
             cx="70"
             cy="70"
@@ -117,7 +132,6 @@ export default function PlayerCard() {
           />
         </svg>
 
-        {/* Сама фотка — теперь крупнее (132×132 при контейнере 140×140) */}
         <div style={styles.avatarInner}>
           {user?.photo_url ? (
             <img src={user.photo_url} alt="" style={styles.avatarImg} />
@@ -129,24 +143,25 @@ export default function PlayerCard() {
         </div>
       </div>
 
-      {/* ИМЯ И НИК */}
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
 
-      {/* РАНГ — формат "🟢 НОВОБРАНЕЦ 1" */}
       <div style={{ ...styles.rank, color: rank.color }}>
         {rank.emoji} {rank.name} {rank.subLevel}
       </div>
 
-      {/* XP-БАР (мускулы) */}
+      {/* XP-БАР */}
       <div style={styles.xpBlock}>
-        <button onClick={handleXPTap} style={styles.xpBarButton}>
+        <button
+          ref={xpButtonRef}
+          onClick={handleXPTap}
+          style={styles.xpBarButton}
+        >
           <XPBar progress={progress} color={rank.color} current={current} needed={needed} />
         </button>
 
-        {/* Попап с разбором мускулов */}
         {showXPDetails && (
-          <div style={styles.popup}>
+          <div ref={xpPopupRef} style={styles.popup}>
             <div style={styles.popupRow}>
               <span>За тренировку</span>
               <span style={styles.popupValue}>+{XP_REWARDS.WORKOUT_COMPLETE} 💪</span>
@@ -167,40 +182,52 @@ export default function PlayerCard() {
         )}
       </div>
 
-      {/* РЯД ОГОНЬКОВ СЕРИИ */}
-      <button onClick={handleStreakTap} style={styles.streakRow} aria-label="Серия тренировок">
-        {Array.from({ length: totalFlames }).map((_, i) => {
-          const isLit = i < filledFlames
-          return <FlameIcon key={i} lit={isLit} />
-        })}
-      </button>
+      {/* РЯД ОГОНЬКОВ */}
+      <div style={styles.streakWrap}>
+        <button
+          ref={streakButtonRef}
+          onClick={handleStreakTap}
+          style={styles.streakRow}
+          aria-label="Серия тренировок"
+        >
+          {Array.from({ length: totalFlames }).map((_, i) => (
+            <FlameIcon key={i} lit={i < filledFlames} />
+          ))}
+        </button>
 
-      {/* Попап серии — пиксельные оранжевые цифры */}
-      {showStreakHint && (
-        <div style={styles.streakPopup}>
-          <span style={styles.streakPopupText}>
-            Серия:🔥
-            <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
-            {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
-          </span>
-          <span style={styles.streakPopupSub}>
-            (серия сбросится в начале следующей недели)
-          </span>
-        </div>
-      )}
+        {showStreakHint && (
+          <div ref={streakPopupRef} style={styles.streakPopup}>
+            <span style={styles.streakPopupText}>
+              Серия:🔥
+              <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
+              {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
+            </span>
+            <span style={styles.streakPopupSub}>
+              (серия сбросится в начале следующей недели)
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Локальные кейфреймы для попапов */}
+      <style>{`
+        @keyframes popupSlideDown {
+          from { opacity: 0; transform: translate(-50%, -6px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes popupSlideDownNoX {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
 
-/**
- * Иконка огонька — горящий или пустой контур.
- * SVG примитивно повторяет форму эмодзи 🔥.
- */
 function FlameIcon({ lit }) {
   const size = 22
 
   if (lit) {
-    // Заполненный — оранжевый с градиентом
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 4px rgba(255, 140, 66, 0.6))' }}>
         <defs>
@@ -218,7 +245,6 @@ function FlameIcon({ lit }) {
     )
   }
 
-  // Пустой — только контур серым
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -252,7 +278,6 @@ const styles = {
     height: '100%'
   },
   avatarInner: {
-    // Теперь больше: 124x124 (было 108x108)
     position: 'absolute',
     top: '50%',
     left: '50%',
@@ -310,6 +335,7 @@ const styles = {
     background: 'transparent'
   },
   popup: {
+    // Появляется снизу от XP-бара, выровнен по бару
     position: 'absolute',
     top: 'calc(100% + 8px)',
     left: 0,
@@ -321,7 +347,7 @@ const styles = {
     borderRadius: '20px',
     padding: '14px 16px',
     zIndex: 50,
-    animation: 'pageFadeIn 0.2s ease-out'
+    animation: 'popupSlideDownNoX 0.25s ease-out'
   },
   popupRow: {
     display: 'flex',
@@ -337,17 +363,25 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '1px'
   },
+  // Обёртка над огоньками — нужна для позиционирования попапа относительно ряда
+  streakWrap: {
+    position: 'relative',
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
   streakRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     padding: '8px 14px',
-    background: 'transparent',
-    marginTop: '12px'
+    background: 'transparent'
   },
   streakPopup: {
+    // Появляется снизу от ряда огоньков
     position: 'absolute',
-    bottom: '-44px',
+    top: 'calc(100% + 6px)',
     left: '50%',
     transform: 'translateX(-50%)',
     background: 'rgba(34, 34, 34, 0.95)',
@@ -361,7 +395,7 @@ const styles = {
     alignItems: 'center',
     gap: '2px',
     whiteSpace: 'nowrap',
-    animation: 'pageFadeIn 0.2s ease-out',
+    animation: 'popupSlideDown 0.25s ease-out',
     zIndex: 50
   },
   streakPopupText: {
@@ -375,7 +409,7 @@ const styles = {
   streakPopupNumber: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '14px',
-    color: '#FF8C42', // оранжевый под цвет огня
+    color: '#FF8C42',
     letterSpacing: '1px',
     margin: '0 2px'
   },
