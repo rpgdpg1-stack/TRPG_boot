@@ -1,25 +1,26 @@
 /**
  * Авторизация пользователя через Telegram WebApp.
  *
- * При старте приложения берём данные пользователя из Telegram SDK,
- * вызываем RPC upsert_user в Supabase — она создаёт или обновляет запись.
- * Получаем внутренний ID нашего юзера и держим его в памяти приложения.
+ * Прод-режим: данные пользователя берутся из window.Telegram.WebApp.initDataUnsafe.user.
+ * Без этих данных авторизация не происходит — приложение работает в read-only режиме.
  *
- * Подписка через CustomEvent 'user-ready' — компоненты ждут пока авторизация завершится.
+ * Дев-режим: явно включается через localStorage.setItem('dev_mode', 'true').
+ * Когда включён — используется стабильный фейковый ID для разработки в браузере.
  */
 
 import { supabase } from './supabase'
 import { getUser as getTelegramUser } from './telegram'
 
 let currentUser = null
-let authPromise = null // защита от множественных параллельных вызовов
+let authPromise = null
+let authState = 'pending' // 'pending' | 'no-telegram' | 'ok' | 'error'
 
-/**
- * Получить текущего юзера (синхронно).
- * Вернёт null если ensureAuth ещё не выполнился.
- */
 export function getCurrentUser() {
   return currentUser
+}
+
+export function getAuthState() {
+  return authState
 }
 
 /**
@@ -30,12 +31,30 @@ export async function ensureAuth() {
 
   authPromise = (async () => {
     const tgUser = getTelegramUser()
-    const telegramId = tgUser?.id || getDevFallbackId()
-    const firstName = tgUser?.first_name || 'Dev User'
-    const username = tgUser?.username || null
-    const photoUrl = tgUser?.photo_url || null
+    const devMode = localStorage.getItem('dev_mode') === 'true'
 
-    console.log('[auth] Авторизация для telegram_id:', telegramId)
+    let telegramId, firstName, username, photoUrl
+
+    if (tgUser?.id) {
+      // Прод: данные из Telegram WebApp
+      telegramId = tgUser.id
+      firstName = tgUser.first_name || null
+      username = tgUser.username || null
+      photoUrl = tgUser.photo_url || null
+      console.log('[auth] Telegram user found:', telegramId)
+    } else if (devMode) {
+      // Дев-режим: фейковый ID, но СТАБИЛЬНЫЙ (один и тот же на всех устройствах)
+      telegramId = 999999999 // фиксированный, чтобы все dev-сессии = один юзер
+      firstName = 'Dev User'
+      username = null
+      photoUrl = null
+      console.log('[auth] Dev mode active, using fixed dev ID:', telegramId)
+    } else {
+      // Не Telegram, не dev-mode — авторизация невозможна
+      authState = 'no-telegram'
+      console.warn('[auth] Telegram user data not available. Open through Telegram or enable dev mode.')
+      return null
+    }
 
     const { data, error } = await supabase.rpc('upsert_user', {
       p_telegram_id: telegramId,
@@ -45,17 +64,16 @@ export async function ensureAuth() {
     })
 
     if (error) {
-      console.error('[auth] Ошибка авторизации:', error)
-      authPromise = null // даём возможность ретрая
+      console.error('[auth] Auth error:', error)
+      authState = 'error'
+      authPromise = null
       return null
     }
 
     currentUser = data
-    console.log('[auth] Авторизован как:', currentUser)
-
-    // Уведомляем приложение что юзер готов
+    authState = 'ok'
+    console.log('[auth] Authorized as:', currentUser)
     window.dispatchEvent(new CustomEvent('user-ready', { detail: currentUser }))
-
     return currentUser
   })()
 
@@ -64,7 +82,6 @@ export async function ensureAuth() {
 
 /**
  * Перечитать юзера из БД (например после начисления мускулов).
- * Обновляет currentUser и шлёт событие user-updated.
  */
 export async function refreshCurrentUser() {
   if (!currentUser) return null
@@ -87,21 +104,8 @@ export async function refreshCurrentUser() {
 
 /**
  * Локально обновить кешированного юзера (без запроса в БД).
- * Используем когда мы уже знаем новое значение поля (например после add_muscles).
  */
 export function setCurrentUser(user) {
   currentUser = user
   window.dispatchEvent(new CustomEvent('user-updated', { detail: currentUser }))
-}
-
-/**
- * Фейковый ID для разработки вне Телеги.
- */
-function getDevFallbackId() {
-  let id = localStorage.getItem('dev_telegram_id')
-  if (!id) {
-    id = String(Math.floor(100_000_000 + Math.random() * 900_000_000))
-    localStorage.setItem('dev_telegram_id', id)
-  }
-  return parseInt(id, 10)
 }
