@@ -8,6 +8,7 @@ import ParticlesBg from './components/ParticlesBg'
 import Home from './pages/Home'
 import Category from './pages/Category'
 import Program from './pages/Program'
+import WorkoutDay from './pages/WorkoutDay'
 import Progress from './pages/Progress'
 import Settings from './pages/Settings'
 
@@ -19,7 +20,6 @@ export default function App() {
 
   useEffect(() => {
     initTelegram()
-    // Авторизуемся в Supabase в фоне.
     ensureAuth().catch(err => {
       console.error('[App] ensureAuth failed:', err)
     })
@@ -37,6 +37,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/category/:id" element={<Category />} />
         <Route path="/program/:id" element={<Program />} />
+        <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
