@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { isPinned, togglePin, getActiveDay } from '../lib/storage'
-import { spawnBurst } from './ParticlesBg'
 import DayBadge from './DayBadge'
 
 /**
  * Карточка программы внутри категории.
- * Иконка-закреп — ПИКСЕЛЬНОЕ СЕРДЦЕ (без серого фона).
- * Высота 88px (компактнее чем категории).
+ *
+ * Г8.3: убрали spawnBurst при тапе.
+ * Нативное iOS-style нажатие: haptic + CSS :active scale.
+ * Закреп-сердце сохраняет свои хаптики (medium), но без частиц.
  */
 export default function ProgramCard({ id, title, tags = [], available = true, comingSoon = false }) {
   const navigate = useNavigate()
@@ -26,11 +27,9 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
     return () => { cancelled = true }
   }, [id])
 
-  const handleCardTap = (e) => {
+  const handleCardTap = () => {
     if (!available) return
     haptic.light()
-    const rect = e.currentTarget.getBoundingClientRect()
-    spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 5)
     setTimeout(() => navigate(`/program/${id}`), 80)
   }
 
@@ -44,13 +43,13 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
   return (
     <div
       onClick={handleCardTap}
+      className={available ? 'press-tile' : ''}
       style={{
         ...styles.card,
         opacity: available ? 1 : 0.55,
         cursor: available ? 'pointer' : 'default'
       }}
     >
-      {/* Закреп-сердце в углу — без фона, чисто иконка */}
       <button
         onClick={handlePinTap}
         style={styles.pinButton}
@@ -59,10 +58,8 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         <HeartIcon filled={pinned} />
       </button>
 
-      {/* Название */}
       <div style={styles.title}>{title}</div>
 
-      {/* Теги */}
       {tags.length > 0 && (
         <div style={styles.tags}>
           {tags.map(tag => (
@@ -74,7 +71,6 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         </div>
       )}
 
-      {/* Значок активного дня */}
       {activeDay && available && (
         <div style={styles.dayBadgeWrap}>
           <DayBadge day={activeDay} size={32} />
@@ -85,26 +81,17 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
   )
 }
 
-/**
- * Пиксельное сердце 16x16.
- * filled = false — серый контур
- * filled = true  — зелёное залитое
- */
 function HeartIcon({ filled }) {
   const color = filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.3)'
 
   if (filled) {
-    // Залитое сердце
     return (
       <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-        {/* Верхние горбики */}
         <rect x="2" y="3" width="3" height="2" fill={color} />
         <rect x="11" y="3" width="3" height="2" fill={color} />
         <rect x="1" y="5" width="5" height="2" fill={color} />
         <rect x="10" y="5" width="5" height="2" fill={color} />
-        {/* Серединка соединяется */}
         <rect x="6" y="5" width="4" height="2" fill={color} />
-        {/* Тело сердца */}
         <rect x="1" y="7" width="14" height="2" fill={color} />
         <rect x="2" y="9" width="12" height="2" fill={color} />
         <rect x="3" y="11" width="10" height="1" fill={color} />
@@ -116,23 +103,19 @@ function HeartIcon({ filled }) {
     )
   }
 
-  // Контур сердца — только границы
   return (
     <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      {/* Верх */}
       <rect x="2" y="3" width="3" height="1" fill={color} />
       <rect x="11" y="3" width="3" height="1" fill={color} />
       <rect x="1" y="4" width="1" height="1" fill={color} />
       <rect x="5" y="4" width="1" height="1" fill={color} />
       <rect x="10" y="4" width="1" height="1" fill={color} />
       <rect x="14" y="4" width="1" height="1" fill={color} />
-      {/* Боковые */}
       <rect x="1" y="5" width="1" height="2" fill={color} />
       <rect x="14" y="5" width="1" height="2" fill={color} />
       <rect x="6" y="5" width="1" height="1" fill={color} />
       <rect x="9" y="5" width="1" height="1" fill={color} />
       <rect x="7" y="6" width="2" height="1" fill={color} />
-      {/* Нижние стороны */}
       <rect x="1" y="7" width="1" height="1" fill={color} />
       <rect x="14" y="7" width="1" height="1" fill={color} />
       <rect x="2" y="8" width="1" height="1" fill={color} />
@@ -168,8 +151,8 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     width: '100%',
     minHeight: '88px',
-    textAlign: 'left',
-    transition: 'transform 0.1s ease, opacity 0.2s ease'
+    textAlign: 'left'
+    // transition приходит из .press-tile
   },
   pinButton: {
     position: 'absolute',
@@ -180,7 +163,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'transparent', // убрали серый фон!
+    background: 'transparent',
     transition: 'transform 0.15s ease',
     zIndex: 2,
     padding: 0
@@ -193,12 +176,7 @@ const styles = {
     marginBottom: '8px',
     paddingRight: '40px'
   },
-  tags: {
-    display: 'flex',
-    gap: '6px',
-    flexWrap: 'wrap',
-    alignItems: 'center'
-  },
+  tags: { display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' },
   tag: {
     display: 'inline-block',
     padding: '3px 8px',
