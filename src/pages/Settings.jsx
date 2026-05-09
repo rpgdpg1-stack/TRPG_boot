@@ -1,8 +1,10 @@
 import { haptic } from '../lib/telegram'
+import { clearAllData } from '../lib/storage'
+import { refreshCurrentUser } from '../lib/auth'
 
 /**
- * Экран настроек — без PlayerCard (он теперь на Главной).
- * Только сгруппированные разделы: ИГРОК / ПРОГРЕСС / СИСТЕМА.
+ * Экран настроек — три группы: ИГРОК / ПРОГРЕСС / СИСТЕМА.
+ * В СИСТЕМА последним пунктом — кнопка "Сбросить прогресс" для отладки.
  */
 export default function Settings() {
 
@@ -26,24 +28,47 @@ export default function Settings() {
     {
       title: 'СИСТЕМА',
       items: [
-        { id: 'library',      icon: '📚', title: 'Справочник упражнений', subtitle: 'База с техникой и видео' },
-        { id: 'notifications',icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
-        { id: 'support',      icon: '💬', title: 'Поддержка',             subtitle: 'Написать в отдел заботы' },
-        { id: 'feedback',     icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
-        { id: 'gift',         icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
-        { id: 'about',        icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' }
+        { id: 'library',       icon: '📚', title: 'Справочник упражнений', subtitle: 'База с техникой и видео' },
+        { id: 'notifications', icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
+        { id: 'support',       icon: '💬', title: 'Поддержка',             subtitle: 'Написать в отдел заботы' },
+        { id: 'feedback',      icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
+        { id: 'gift',          icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
+        { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' },
+        { id: 'debug-reset',   icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик' }
       ]
     }
   ]
 
-  const handleSectionTap = () => {
+  const handleSectionTap = async (item) => {
     haptic.light()
+
+    if (item.id === 'debug-reset') {
+      const confirmed = window.confirm(
+        'Сбросить весь прогресс?\n\nУдалятся:\n— Мускулы 💪\n— Недельный стрик\n— Все выполненные квесты\n— История начислений\n\nЭто действие нельзя отменить.'
+      )
+      if (!confirmed) return
+
+      try {
+        await clearAllData()
+        await refreshCurrentUser()
+        // Уведомляем все компоненты что данные обнулились
+        window.dispatchEvent(new CustomEvent('xp-updated'))
+        haptic.success()
+        window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
+      } catch (err) {
+        console.error('[Settings] reset failed:', err)
+        haptic.error()
+        window.alert('Не удалось сбросить прогресс. Проверь подключение к интернету.')
+      }
+      return
+    }
+
+    // Остальные пункты пока заглушки
   }
 
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Группы разделов */}
       {groups.map((group, idx) => (
         <section key={group.title} style={{ ...styles.group, marginTop: idx === 0 ? '8px' : '24px' }}>
           <h3 style={styles.groupTitle}>{group.title}</h3>
@@ -51,12 +76,20 @@ export default function Settings() {
             {group.items.map(item => (
               <button
                 key={item.id}
-                onClick={handleSectionTap}
-                style={styles.itemCard}
+                onClick={() => handleSectionTap(item)}
+                style={{
+                  ...styles.itemCard,
+                  ...(item.id === 'debug-reset' ? styles.itemCardDanger : {})
+                }}
               >
                 <span style={styles.itemIcon}>{item.icon}</span>
                 <div style={styles.itemContent}>
-                  <div style={styles.itemTitle}>{item.title}</div>
+                  <div style={{
+                    ...styles.itemTitle,
+                    color: item.id === 'debug-reset' ? '#FF8C42' : 'var(--color-text)'
+                  }}>
+                    {item.title}
+                  </div>
                   <div style={styles.itemSubtitle}>{item.subtitle}</div>
                 </div>
                 <span style={styles.itemArrow}>›</span>
@@ -98,6 +131,10 @@ const styles = {
     minHeight: '52px',
     transition: 'background 0.15s ease'
   },
+  itemCardDanger: {
+    background: 'rgba(255, 140, 66, 0.06)',
+    border: '1px solid rgba(255, 140, 66, 0.2)'
+  },
   itemIcon: {
     fontSize: '20px',
     width: '28px',
@@ -111,7 +148,6 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 600,
-    color: 'var(--color-text)',
     marginBottom: '1px'
   },
   itemSubtitle: {
