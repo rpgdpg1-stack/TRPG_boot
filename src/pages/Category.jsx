@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { backButton, haptic } from '../lib/telegram'
+import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms } from '../lib/storage'
 import ProgramCard from '../components/ProgramCard'
 
 /**
  * Универсальный экран категории.
- * Шапка с пиксельным заголовком в цвете категории.
+ *
+ * Г8.2:
+ * - Кнопка назад настраивается через setHandler (без скрытия — нет мерцания)
+ * - Возврат на конкретный путь '/' а не navigate(-1)
+ * - Повторно блокируем свайп вниз
  */
 
 const CATEGORIES_DATA = {
@@ -68,17 +72,37 @@ export default function Category() {
   const data = CATEGORIES_DATA[id]
 
   useEffect(() => {
-    backButton.show(() => navigate('/'))
-    return () => backButton.hide()
+    // Перенастраиваем кнопку назад без скрытия — это убирает мерцание крестика
+    backButton.setHandler(() => navigate('/'))
+    // На всякий случай повторно блокируем свайп вниз
+    lockVerticalSwipes()
+    // НЕ вызываем backButton.hide() в cleanup — следующий экран сам перенастроит
   }, [navigate])
 
   useEffect(() => {
     getPinnedPrograms().then(setPinnedIds)
   }, [])
 
+  // На главной странице кнопку назад надо скрыть. Это делаем при размонтировании.
+  // Но: если переходим на Program (он сам поставит свою кнопку) — лишний hide ничего не сломает,
+  // потому что Program в useEffect сразу вызовет setHandler.
+  // А вот если возвращаемся на Home (через тап по back) — Home кнопку не настраивает, и она исчезнет естественным путём.
+  // Чтобы это сработало корректно, скрываем при размонтировании ТОЛЬКО если идём на главную.
+  useEffect(() => {
+    return () => {
+      // Проверяем — мы возвращаемся на главную или идём вглубь?
+      // Простая эвристика: если pathname сменился на '/' — скрываем.
+      // Но в момент cleanup pathname уже мог поменяться, поэтому делаем через таймер.
+      setTimeout(() => {
+        if (window.location.pathname === '/') {
+          backButton.hide()
+        }
+      }, 50)
+    }
+  }, [])
+
   const handleCreateTap = () => {
     haptic.light()
-    // Заглушка
   }
 
   if (!data) {
@@ -89,7 +113,6 @@ export default function Category() {
     )
   }
 
-  // Сортировка: закреплённые наверх
   const sortedPrograms = [...data.programs].sort((a, b) => {
     const aPinned = pinnedIds.includes(a.id)
     const bPinned = pinnedIds.includes(b.id)
@@ -101,13 +124,11 @@ export default function Category() {
   return (
     <div className="page page-enter" style={styles.page}>
 
-      {/* Шапка категории — пиксельный заголовок в цвете акцента */}
       <header style={styles.header}>
         <h1 style={{ ...styles.title, color: data.color }}>{data.title}</h1>
         <div style={styles.subtitle}>{data.subtitle}</div>
       </header>
 
-      {/* Программы */}
       <div style={styles.programs}>
         {sortedPrograms.map(prog => (
           <ProgramCard
@@ -121,7 +142,6 @@ export default function Category() {
         ))}
       </div>
 
-      {/* Кнопка создать свою программу */}
       <button onClick={handleCreateTap} style={styles.createButton}>
         {data.createLabel}
       </button>
@@ -131,51 +151,18 @@ export default function Category() {
 
 const styles = {
   page: {},
-  header: {
-    marginBottom: '24px',
-    marginTop: '8px',
-    textAlign: 'center'
-  },
-  title: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '36px',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    marginBottom: '8px'
-  },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
-  },
-  programs: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    marginBottom: '20px'
-  },
+  header: { marginBottom: '24px', marginTop: '8px', textAlign: 'center' },
+  title: { fontFamily: 'var(--font-tiny5)', fontSize: '36px', letterSpacing: '3px', lineHeight: 1, marginBottom: '8px' },
+  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px' },
+  programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
   createButton: {
-    width: '100%',
-    padding: '20px',
+    width: '100%', padding: '20px',
     border: '1.5px dashed rgba(255, 255, 255, 0.15)',
     borderRadius: 'var(--radius-card)',
     color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    letterSpacing: '1.5px',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, letterSpacing: '1.5px',
     background: 'transparent'
   },
-  notFoundPage: {
-    minHeight: '70vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  notFoundText: {
-    fontFamily: 'var(--font-manrope)',
-    color: 'var(--color-text-secondary)'
-  }
+  notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
