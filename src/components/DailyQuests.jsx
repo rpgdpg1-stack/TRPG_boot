@@ -6,9 +6,10 @@ import PixelCheckbox from './PixelCheckbox'
 /**
  * Блок ежедневных бустов на Главной — "ЗАБУСТИТЬ ДЕНЬ".
  *
- * НОВОЕ в Г8:
- * - Попап "всё выполнено" появляется снизу плавной анимацией
- * - Закрывается по клику вне (не только повторным тапом по блоку)
+ * Г8.1:
+ * - Когда все 3 буста выполнены — попап появляется при тапе ПО ВСЕМУ блоку (включая зоны квестов)
+ * - Попап в геометрическом центре блока, плавное появление и исчезновение через 4 сек
+ * - Закрывается также по клику вне
  */
 
 const DEMO_QUESTS = [
@@ -25,11 +26,10 @@ export default function DailyQuests() {
 
   const containerRef = useRef(null)
   const popupRef = useRef(null)
+  const popupAutoCloseTimer = useRef(null)
 
   useEffect(() => {
-    const loadQuests = () => {
-      getDailyQuests().then(setCompleted)
-    }
+    const loadQuests = () => { getDailyQuests().then(setCompleted) }
     loadQuests()
     window.addEventListener('user-ready', loadQuests)
     window.addEventListener('user-updated', loadQuests)
@@ -39,12 +39,11 @@ export default function DailyQuests() {
     }
   }, [])
 
-  // Закрытие попапа "всё выполнено" по клику вне
+  // Закрытие попапа по клику вне
   useEffect(() => {
     if (!showAllDonePopup) return
 
     const handleOutsideClick = (e) => {
-      // Не закрываем если кликнули по контейнеру (это переключатель) или по самому попапу
       if (containerRef.current?.contains(e.target)) return
       if (popupRef.current?.contains(e.target)) return
       setShowAllDonePopup(false)
@@ -54,9 +53,26 @@ export default function DailyQuests() {
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [showAllDonePopup])
 
+  // Авто-закрытие через 4 сек
+  useEffect(() => {
+    if (showAllDonePopup) {
+      popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
+    }
+    return () => {
+      if (popupAutoCloseTimer.current) clearTimeout(popupAutoCloseTimer.current)
+    }
+  }, [showAllDonePopup])
+
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
-  const handleQuestTap = async (quest) => {
+  const handleQuestTap = async (quest, e) => {
+    // Если все буст выполнены — делегируем тап на контейнер (показываем попап)
+    if (allDone) {
+      e.stopPropagation() // не даём дважды сработать
+      handleContainerInteraction()
+      return
+    }
+
     if (completed[quest.id] || animating) return
 
     haptic.success()
@@ -71,18 +87,26 @@ export default function DailyQuests() {
       setTimeout(() => {
         setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
       }, 1100)
-
       window.dispatchEvent(new CustomEvent('xp-updated'))
     }
 
     setTimeout(() => setAnimating(null), 600)
   }
 
+  // Открыть/переоткрыть попап (общий для тапа по контейнеру и по строкам когда allDone)
+  const handleContainerInteraction = () => {
+    haptic.light()
+    setShowAllDonePopup(true)
+    // Если уже был открыт — сбрасываем таймер на новые 4 сек
+    if (popupAutoCloseTimer.current) clearTimeout(popupAutoCloseTimer.current)
+    popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
+  }
+
+  // Тап по контейнеру (не по строке)
   const handleContainerTap = (e) => {
     if (!allDone) return
     if (e.target.closest('button[data-quest-row]')) return
-    haptic.light()
-    setShowAllDonePopup(prev => !prev)
+    handleContainerInteraction()
   }
 
   return (
@@ -108,12 +132,13 @@ export default function DailyQuests() {
             <button
               key={quest.id}
               data-quest-row
-              onClick={() => handleQuestTap(quest)}
-              disabled={isDone}
+              onClick={(e) => handleQuestTap(quest, e)}
+              // Не дизаблим если все выполнены — нужен тап для попапа
+              disabled={isDone && !allDone}
               style={{
                 ...styles.questRow,
                 opacity: isDone ? 0.5 : 1,
-                cursor: isDone ? 'default' : 'pointer',
+                cursor: isDone && !allDone ? 'default' : 'pointer',
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
@@ -138,6 +163,7 @@ export default function DailyQuests() {
         })}
       </div>
 
+      {/* Попап в геометрическом центре блока */}
       {showAllDonePopup && (
         <div ref={popupRef} style={styles.popup}>
           Все бусты на сегодня собраны.<br />
@@ -152,9 +178,13 @@ export default function DailyQuests() {
           85%  { opacity: 1; transform: translate(-50%, -34px) scale(1); }
           100% { opacity: 0; transform: translate(-50%, -44px) scale(0.9); }
         }
-        @keyframes questPopupSlideDown {
-          from { opacity: 0; transform: translate(-50%, -6px); }
-          to   { opacity: 1; transform: translate(-50%, 0); }
+        /* Появление из центра + автоисчезновение через 4 сек.
+           Длительность 4.4с = 0.25с появление + 4с показ + 0.4с исчезновение */
+        @keyframes questPopupShowHideCenter {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+          6%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          94%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
         }
       `}</style>
     </div>
@@ -170,48 +200,23 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
   },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
-    paddingLeft: '4px'
-  },
-  title: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px'
-  },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingLeft: '4px' },
+  title: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '2px' },
+  list: { display: 'flex', flexDirection: 'column', gap: '4px' },
   questRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
+    display: 'flex', alignItems: 'center', gap: '12px',
     padding: '10px 8px',
     background: 'transparent',
-    width: '100%',
-    textAlign: 'left',
+    width: '100%', textAlign: 'left',
     transition: 'transform 0.15s ease, opacity 0.3s ease',
     borderRadius: '12px',
     border: 'none'
   },
-  checkboxWrap: {
-    position: 'relative',
-    flexShrink: 0,
-    width: '22px',
-    height: '22px'
-  },
+  checkboxWrap: { position: 'relative', flexShrink: 0, width: '22px', height: '22px' },
   floatingReward: {
     position: 'absolute',
-    bottom: '100%',
-    left: '50%',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
+    bottom: '100%', left: '50%',
+    fontFamily: 'var(--font-tiny5)', fontSize: '13px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
@@ -219,32 +224,26 @@ const styles = {
     textShadow: '0 0 6px rgba(158, 209, 83, 0.6)',
     animation: 'rewardFloat 1.1s ease-out forwards'
   },
-  questText: {
-    flex: 1,
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 500,
-    transition: 'color 0.3s ease, text-decoration 0.3s ease'
-  },
+  questText: { flex: 1, fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 500, transition: 'color 0.3s ease, text-decoration 0.3s ease' },
   popup: {
-    // Снизу от блока, плавно сверху-вниз
+    // Геометрический центр контейнера
     position: 'absolute',
-    top: 'calc(100% + 6px)',
+    top: '50%',
     left: '50%',
-    transform: 'translateX(-50%)',
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '14px',
-    padding: '10px 14px',
+    padding: '12px 16px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
     color: 'var(--color-text)',
     textAlign: 'center',
     lineHeight: 1.4,
     whiteSpace: 'nowrap',
-    animation: 'questPopupSlideDown 0.25s ease-out',
-    zIndex: 50
+    animation: 'questPopupShowHideCenter 4.4s ease-out forwards',
+    zIndex: 50,
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
   }
 }
