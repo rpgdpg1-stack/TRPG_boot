@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { haptic } from '../lib/telegram'
-import { getDailyQuests, completeQuest, addXP } from '../lib/storage'
+import { getDailyQuests, completeQuest } from '../lib/storage'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
@@ -26,11 +26,19 @@ export default function DailyQuests() {
   const [showAllDonePopup, setShowAllDonePopup] = useState(false)
 
   useEffect(() => {
-    getDailyQuests().then(setCompleted)
+    const loadQuests = () => {
+      getDailyQuests().then(setCompleted)
+    }
 
-    // Если юзер ещё авторизуется — список квестов из localStorage уже доступен,
-    // но XP начислять имеет смысл только когда юзер готов.
-    // Здесь специальной реакции не нужно — handleQuestTap проверит сам.
+    loadQuests()
+
+    // Когда юзер авторизуется — перечитываем квесты из БД
+    window.addEventListener('user-ready', loadQuests)
+    window.addEventListener('user-updated', loadQuests)
+    return () => {
+      window.removeEventListener('user-ready', loadQuests)
+      window.removeEventListener('user-updated', loadQuests)
+    }
   }, [])
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
@@ -41,18 +49,23 @@ export default function DailyQuests() {
     haptic.success()
     setAnimating(quest.id)
 
-    // Запускаем "+20 💪" над чекбоксом
-    const rewardKey = Date.now()
-    setFloatingRewards(prev => [...prev, { id: quest.id, xp: quest.xp, key: rewardKey }])
-    setTimeout(() => {
-      setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
-    }, 1100)
+    // Атомарный вызов: запись + начисление мускулов одной транзакцией.
+    // Сервер сам проверит что квест ещё не выполнен — если выполнен,
+    // wasNew будет false и XP не начислятся повторно.
+    const result = await completeQuest(quest.id, quest.xp)
+    setCompleted(result.completed)
 
-    const newCompleted = await completeQuest(quest.id)
-    setCompleted(newCompleted)
+    // Анимацию "+20 💪" показываем только если реально начислили
+    if (result.wasNew) {
+      const rewardKey = Date.now()
+      setFloatingRewards(prev => [...prev, { id: quest.id, xp: quest.xp, key: rewardKey }])
+      setTimeout(() => {
+        setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
+      }, 1100)
 
-    await addXP(quest.xp)
-    window.dispatchEvent(new CustomEvent('xp-updated'))
+      // Уведомляем PlayerCard что мускулы изменились
+      window.dispatchEvent(new CustomEvent('xp-updated'))
+    }
 
     setTimeout(() => setAnimating(null), 600)
   }
