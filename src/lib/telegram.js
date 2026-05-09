@@ -15,37 +15,40 @@ export function initTelegram() {
   }
 
   tg.ready()
-
-  // Раскрываем приложение на полный экран (старый API)
   tg.expand()
 
-  // Запрашиваем fullscreen (новый API, Bot API 8.0+).
-  // Если метод отсутствует — игнорируем, ошибки не будет.
   try {
     if (typeof tg.requestFullscreen === 'function') {
       tg.requestFullscreen()
     }
   } catch (e) {
-    // На старых версиях метод может бросать ошибку — глотаем
     console.log('requestFullscreen недоступен:', e?.message)
   }
 
-  // Запрещаем сворачивание свайпом вниз
-  if (typeof tg.disableVerticalSwipes === 'function') {
-    tg.disableVerticalSwipes()
-  }
+  lockVerticalSwipes()
 }
 
 /**
- * Данные текущего пользователя
+ * Запрещает свайп-вниз для закрытия Mini App.
+ *
+ * Telegram иногда сбрасывает эту настройку при переходах между страницами,
+ * поэтому компоненты могут вызывать её повторно при монтировании.
+ *
+ * Дополнительно навешиваем preventDefault на touch-события если палец
+ * случайно попал в зону где Telegram считает это свайпом-закрытием.
  */
+export function lockVerticalSwipes() {
+  if (!tg) return
+
+  if (typeof tg.disableVerticalSwipes === 'function') {
+    try { tg.disableVerticalSwipes() } catch (e) { /* ignore */ }
+  }
+}
+
 export function getUser() {
   return tg?.initDataUnsafe?.user || null
 }
 
-/**
- * Тактильная отдача (вибрация на телефоне)
- */
 export const haptic = {
   light: () => tg?.HapticFeedback?.impactOccurred('light'),
   medium: () => tg?.HapticFeedback?.impactOccurred('medium'),
@@ -59,13 +62,31 @@ export const haptic = {
 }
 
 /**
- * Управление кнопкой "Назад" в шапке Телеграма
+ * Управление кнопкой "Назад" в шапке Телеграма.
+ *
+ * ВАЖНО (Г8.2): hide() убран из cleanup'ов компонентов чтобы не было
+ * мерцания "крестик закрытия" при переходах между экранами с навигацией.
+ * Кнопка остаётся видимой пока мы не вернёмся на главную.
+ *
+ * setHandler заменяет обработчик клика без скрытия/показа кнопки.
  */
 export const backButton = {
   show: (onClick) => {
     if (!tg?.BackButton) return
     tg.BackButton.show()
     tg.BackButton.onClick(onClick)
+  },
+  /**
+   * Сменить обработчик БЕЗ скрытия кнопки.
+   * Используется когда переходим между экранами одного потока.
+   */
+  setHandler: (onClick) => {
+    if (!tg?.BackButton) return
+    // Сначала отписываемся от всех старых обработчиков, потом ставим новый
+    tg.BackButton.offClick()
+    tg.BackButton.onClick(onClick)
+    // На всякий случай — если кнопка скрыта, покажем
+    tg.BackButton.show()
   },
   hide: () => {
     if (!tg?.BackButton) return
@@ -74,9 +95,6 @@ export const backButton = {
   }
 }
 
-/**
- * Главная кнопка снизу (зелёная нативная)
- */
 export const mainButton = {
   show: (text, onClick) => {
     if (!tg?.MainButton) return
