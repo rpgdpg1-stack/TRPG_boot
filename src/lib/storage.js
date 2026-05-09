@@ -218,27 +218,84 @@ export async function getTotalWorkouts() {
 }
 
 /* ============================================ */
-/* DAILY QUESTS — остаются в localStorage */
+/* DAILY QUESTS — в Supabase, синхронизируются между устройствами */
 /* ============================================ */
 
+/**
+ * Получить ID квестов которые юзер уже выполнил сегодня.
+ * Возвращает объект { questId: true, ... } для совместимости со старым кодом.
+ */
 export async function getDailyQuests() {
-  const raw = localGet('daily_quests')
-  if (!raw) return {}
-  try {
-    const data = JSON.parse(raw)
-    if (data.date !== getTodayKey()) return {}
-    return data.completed || {}
-  } catch {
+  const userId = getUserId()
+  if (!userId) return {}
+
+  const dayKey = getTodayKey()
+
+  const { data, error } = await supabase
+    .from('daily_quests')
+    .select('quest_id')
+    .eq('user_id', userId)
+    .eq('day_key', dayKey)
+
+  if (error) {
+    console.error('[storage] getDailyQuests error:', error)
     return {}
   }
+
+  // Превращаем массив в объект { questId: true }
+  const result = {}
+  for (const row of data || []) {
+    result[row.quest_id] = true
+  }
+  return result
 }
 
-export async function completeQuest(questId) {
-  const today = getTodayKey()
+/**
+ * Атомарно выполнить квест: записать в БД + начислить мускулы.
+ * Защищена от двойного начисления — если квест уже выполнен сегодня,
+ * вернёт текущий список без изменений и НЕ начислит XP повторно.
+ *
+ * @param {string} questId — 'squats' / 'water' / 'stretch'
+ * @param {number} reward — сколько мускулов за квест (передаётся из DailyQuests.jsx)
+ * @returns {object} { completed, wasNew, newTotalMuscles }
+ */
+export async function completeQuest(questId, reward = 20) {
+  const userId = getUserId()
+  if (!userId) {
+    console.warn('[storage] completeQuest без авторизации')
+    return { completed: {}, wasNew: false, newTotalMuscles: 0 }
+  }
+
+  const dayKey = getTodayKey()
+
+  const { data, error } = await supabase.rpc('complete_daily_quest', {
+    p_user_id: userId,
+    p_day_key: dayKey,
+    p_quest_id: questId,
+    p_reward: reward
+  })
+
+  if (error) {
+    console.error('[storage] completeQuest error:', error)
+    return { completed: await getDailyQuests(), wasNew: false, newTotalMuscles: 0 }
+  }
+
+  // RPC вернула { was_new, new_total_muscles }
+  const result = data?.[0] || data || {}
+
+  // Обновляем локальный кеш юзера если начисление было новым
+  if (result.was_new && result.new_total_muscles !== undefined) {
+    const u = getCurrentUser()
+    if (u) setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
+  }
+
+  // Возвращаем актуальный список выполненных
   const completed = await getDailyQuests()
-  completed[questId] = true
-  localSet('daily_quests', JSON.stringify({ date: today, completed }))
-  return completed
+  return {
+    completed,
+    wasNew: result.was_new || false,
+    newTotalMuscles: result.new_total_muscles || 0
+  }
 }
 
 function getTodayKey() {
@@ -307,8 +364,24 @@ export function getLevelName(level) {
 export async function clearAllData() {
   const userId = getUserId()
 
-  // Локальные данные
-  ['pinned_programs', 'daily_quests', 'program:split:last_day'].forEach(localRemove)
+  // Локальные данные (квесты теперь в БД, а не тут — но удалим старые записи на всякий)
+  ;['pinned_programs', 'daily_quests', 'program:split:last_day'].forEach(localRemove)
+
+  // Серверные — обнуляем мускулы, стрик, удаляем квесты дня
+  if (userId) {
+    await supabase.from('users').update({
+      total_muscles: 0,
+      weekly_streak: 0,
+      weekly_streak_week: null
+    }).eq('id', userId)
+
+    await supabase.from('muscle_history').delete().eq('user_id', userId)
+    await supabase.from('daily_quests').delete().eq('user_id', userId)
+
+    const { data } = await supabase.from('users').select('*').eq('id', userId).single()
+    if (data) setCurrentUser(data)
+  }
+}
 
   // Серверные — обнуляем мускулы и стрик
   if (userId) {
