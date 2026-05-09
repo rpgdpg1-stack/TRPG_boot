@@ -55,7 +55,7 @@ export default function Program() {
 
   const handleDayTap = (day) => {
     haptic.light()
-    console.log('Выбран день:', day)
+    setTimeout(() => navigate(`/workout/${id}/${day}`), 80)
   }
 
   return (
@@ -108,15 +108,6 @@ export default function Program() {
             </button>
           )
         })}
-      </div>
-
-      <div style={styles.placeholder}>
-        <div style={styles.placeholderIcon}>💪</div>
-        <div style={styles.placeholderTitle}>Упражнения скоро</div>
-        <div style={styles.placeholderText}>
-          На следующем шаге подключим упражнения из Supabase<br/>
-          и здесь появятся реальные упражнения дня
-        </div>
       </div>
     </div>
   )
