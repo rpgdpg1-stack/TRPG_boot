@@ -1,12 +1,16 @@
 /**
  * Хранилище данных пользователя.
  *
- * Г6: переезд с Telegram CloudStorage на Supabase.
- *
+ * Г6-Г7: всё критичное живёт в Supabase.
  * - Мускулы 💪 → users.total_muscles + лог в muscle_history
  * - Недельный стрик → users.weekly_streak + weekly_streak_week
- * - Daily Quests → остаются в localStorage (один день, нет смысла синхронизировать)
- * - Закрепы программ и активный день → пока в localStorage (мелкие и редкие)
+ * - Daily Quests → daily_quests (с защитой от дублей через RPC)
+ *
+ * В localStorage остаётся только UI-состояние:
+ * - Закрепы программ (pinned_programs)
+ * - Активный день программы (program:X:last_day)
+ *
+ * Эти вещи не синхронизируются между устройствами и это ок.
  */
 
 import { supabase } from './supabase'
@@ -14,21 +18,13 @@ import { getCurrentUser, setCurrentUser } from './auth'
 import { getLevelFromXP } from './levels'
 
 /* ============================================ */
-/* ВНУТРЕННИЙ HELPER */
+/* ВНУТРЕННИЕ ХЕЛПЕРЫ */
 /* ============================================ */
 
-/**
- * Получить ID текущего юзера в нашей БД.
- * Если авторизация ещё не прошла — вернёт null.
- */
 function getUserId() {
-  const u = getCurrentUser()
-  return u?.id || null
+  return getCurrentUser()?.id || null
 }
 
-/**
- * Локальное хранилище — для daily quests и закрепов программ.
- */
 function localGet(key) {
   try { return localStorage.getItem(key) } catch { return null }
 }
@@ -39,28 +35,27 @@ function localRemove(key) {
   try { localStorage.removeItem(key); return true } catch { return false }
 }
 
+/**
+ * Ключ дня для сброса квестов в 03:00 МСК
+ */
+function getTodayKey() {
+  const now = new Date()
+  now.setHours(now.getHours() - 3)
+  return now.toISOString().split('T')[0]
+}
+
 /* ============================================ */
-/* МУСКУЛЫ 💪 (бывший XP) */
+/* МУСКУЛЫ 💪 */
 /* ============================================ */
 
 export async function getTotalXP() {
-  const user = getCurrentUser()
-  if (!user) return 0
-  return user.total_muscles || 0
+  return getCurrentUser()?.total_muscles || 0
 }
 
-/**
- * Начислить мускулы юзеру. Атомарно через RPC.
- *
- * @param {number} amount — сколько начислить
- * @param {string} source — 'workout' / 'quest' / 'streak_bonus' (для статистики)
- * @param {string} sourceId — опционально, доп. ID
- * @returns {number} новый total_muscles
- */
 export async function addXP(amount, source = 'quest', sourceId = null) {
   const userId = getUserId()
   if (!userId) {
-    console.warn('[storage] addXP вызван без авторизации')
+    console.warn('[storage] addXP без авторизации')
     return 0
   }
 
@@ -76,16 +71,11 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
     return getCurrentUser()?.total_muscles || 0
   }
 
-  // Обновляем кеш юзера локально (без лишнего запроса)
   const u = getCurrentUser()
   if (u) setCurrentUser({ ...u, total_muscles: data })
-
   return data
 }
 
-/**
- * Установить total_muscles напрямую (только для отладки/сброса).
- */
 export async function setTotalXP(value) {
   const userId = getUserId()
   if (!userId) return false
@@ -103,20 +93,16 @@ export async function setTotalXP(value) {
 }
 
 export async function getUserLevel() {
-  const xp = await getTotalXP()
-  return getLevelFromXP(xp)
+  return getLevelFromXP(await getTotalXP())
 }
 
 /* ============================================ */
-/* НЕДЕЛЬНЫЙ СТРИК (огоньки) */
+/* НЕДЕЛЬНЫЙ СТРИК */
 /* ============================================ */
 
-/**
- * Ключ текущей недели — понедельник 03:00 МСК как начало.
- */
 export function getCurrentWeekKey() {
   const now = new Date()
-  now.setHours(now.getHours() - 3) // -3 ч = до 03:00 МСК неделя считается прошлой
+  now.setHours(now.getHours() - 3)
   const day = now.getDay()
   const diff = day === 0 ? -6 : 1 - day
   const monday = new Date(now)
@@ -125,36 +111,22 @@ export function getCurrentWeekKey() {
   return monday.toISOString().split('T')[0]
 }
 
-/**
- * Получить количество тренировок на текущей неделе.
- * Если в БД сохранена другая неделя — считается что 0 (сброс).
- */
 export async function getWeeklyStreak() {
   const user = getCurrentUser()
   if (!user) return 0
-
-  const currentWeek = getCurrentWeekKey()
-  if (user.weekly_streak_week !== currentWeek) {
-    // Неделя сменилась — стрик уже неактуален
-    return 0
-  }
+  if (user.weekly_streak_week !== getCurrentWeekKey()) return 0
   return user.weekly_streak || 0
 }
 
-/**
- * Установить значение стрика напрямую (для отладки).
- */
 export async function setWeeklyStreak(count) {
   const userId = getUserId()
   if (!userId) return false
-
-  const week = getCurrentWeekKey()
 
   const { data, error } = await supabase
     .from('users')
     .update({
       weekly_streak: count,
-      weekly_streak_week: week,
+      weekly_streak_week: getCurrentWeekKey(),
       updated_at: new Date().toISOString()
     })
     .eq('id', userId)
@@ -167,20 +139,13 @@ export async function setWeeklyStreak(count) {
   return true
 }
 
-/**
- * Добавить +1 тренировку к недельному стрику.
- * Если неделя сменилась — начинаем с 1.
- * Лимит 4.
- */
 export async function addWorkoutToWeek() {
   const userId = getUserId()
   if (!userId) return 0
-
   const currentWeek = getCurrentWeekKey()
   const user = getCurrentUser()
   const isCurrentWeek = user?.weekly_streak_week === currentWeek
   const newCount = Math.min(isCurrentWeek ? (user.weekly_streak + 1) : 1, 4)
-
   await setWeeklyStreak(newCount)
   return newCount
 }
@@ -189,76 +154,45 @@ export async function addWorkoutToWeek() {
 /* СОВМЕСТИМОСТЬ — старые экраны */
 /* ============================================ */
 
-/**
- * Старый "дневной стрик" в Progress.jsx — пока возвращаем недельный.
- */
-export async function getStreak() {
-  return getWeeklyStreak()
-}
+export async function getStreak() { return getWeeklyStreak() }
+export async function setStreak(value) { return setWeeklyStreak(value) }
 
-export async function setStreak(value) {
-  return setWeeklyStreak(value)
-}
-
-/**
- * Всего тренировок — считаем из таблицы workouts.
- */
 export async function getTotalWorkouts() {
   const userId = getUserId()
   if (!userId) return 0
-
   const { count, error } = await supabase
     .from('workouts')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
-
   if (error) { console.error('[storage] getTotalWorkouts error:', error); return 0 }
   return count || 0
 }
 
 /* ============================================ */
-/* DAILY QUESTS — в Supabase, синхронизируются между устройствами */
+/* DAILY QUESTS — только Supabase, никаких localStorage */
 /* ============================================ */
 
-/**
- * Получить ID квестов которые юзер уже выполнил сегодня.
- * Возвращает объект { questId: true, ... } для совместимости со старым кодом.
- */
 export async function getDailyQuests() {
   const userId = getUserId()
   if (!userId) return {}
-
-  const dayKey = getTodayKey()
 
   const { data, error } = await supabase
     .from('daily_quests')
     .select('quest_id')
     .eq('user_id', userId)
-    .eq('day_key', dayKey)
+    .eq('day_key', getTodayKey())
 
   if (error) {
     console.error('[storage] getDailyQuests error:', error)
     return {}
   }
 
-  // Превращаем массив в объект { questId: true }
   const result = {}
-  for (const row of data || []) {
-    result[row.quest_id] = true
-  }
+  for (const row of data || []) result[row.quest_id] = true
   return result
 }
 
-/**
- * Атомарно выполнить квест: записать в БД + начислить мускулы.
- * Защищена от двойного начисления — если квест уже выполнен сегодня,
- * вернёт текущий список без изменений и НЕ начислит XP повторно.
- *
- * @param {string} questId — 'squats' / 'water' / 'stretch'
- * @param {number} reward — сколько мускулов за квест (передаётся из DailyQuests.jsx)
- * @returns {object} { completed, wasNew, newTotalMuscles }
- */
 export async function completeQuest(questId, reward = 20) {
   const userId = getUserId()
   if (!userId) {
@@ -266,11 +200,9 @@ export async function completeQuest(questId, reward = 20) {
     return { completed: {}, wasNew: false, newTotalMuscles: 0 }
   }
 
-  const dayKey = getTodayKey()
-
   const { data, error } = await supabase.rpc('complete_daily_quest', {
     p_user_id: userId,
-    p_day_key: dayKey,
+    p_day_key: getTodayKey(),
     p_quest_id: questId,
     p_reward: reward
   })
@@ -280,28 +212,19 @@ export async function completeQuest(questId, reward = 20) {
     return { completed: await getDailyQuests(), wasNew: false, newTotalMuscles: 0 }
   }
 
-  // RPC вернула { was_new, new_total_muscles }
   const result = data?.[0] || data || {}
 
-  // Обновляем локальный кеш юзера если начисление было новым
   if (result.was_new && result.new_total_muscles !== undefined) {
     const u = getCurrentUser()
     if (u) setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
   }
 
-  // Возвращаем актуальный список выполненных
   const completed = await getDailyQuests()
   return {
     completed,
     wasNew: result.was_new || false,
     newTotalMuscles: result.new_total_muscles || 0
   }
-}
-
-function getTodayKey() {
-  const now = new Date()
-  now.setHours(now.getHours() - 3)
-  return now.toISOString().split('T')[0]
 }
 
 /* ============================================ */
@@ -326,8 +249,7 @@ export async function getPinnedPrograms() {
 }
 
 export async function isPinned(programId) {
-  const pinned = await getPinnedPrograms()
-  return pinned.includes(programId)
+  return (await getPinnedPrograms()).includes(programId)
 }
 
 export async function togglePin(programId) {
@@ -340,7 +262,7 @@ export async function togglePin(programId) {
 }
 
 /* ============================================ */
-/* НАЗВАНИЕ УРОВНЯ — для Progress.jsx (legacy) */
+/* ИМЕНА УРОВНЕЙ — для Progress.jsx (legacy) */
 /* ============================================ */
 
 export function getLevelName(level) {
@@ -358,44 +280,30 @@ export function getLevelName(level) {
 }
 
 /* ============================================ */
-/* ОТЛАДКА — сброс данных юзера */
+/* СБРОС ВСЕХ ДАННЫХ (для кнопки "Сбросить прогресс") */
 /* ============================================ */
 
 export async function clearAllData() {
   const userId = getUserId()
 
-  // Локальные данные (квесты теперь в БД, а не тут — но удалим старые записи на всякий)
-  ;['pinned_programs', 'daily_quests', 'program:split:last_day'].forEach(localRemove)
+  // Чистим локальные мусорные ключи
+  ;['pinned_programs', 'daily_quests', 'weekly_streak', 'dev_telegram_id', 'program:split:last_day'].forEach(localRemove)
 
-  // Серверные — обнуляем мускулы, стрик, удаляем квесты дня
-  if (userId) {
-    await supabase.from('users').update({
-      total_muscles: 0,
-      weekly_streak: 0,
-      weekly_streak_week: null
-    }).eq('id', userId)
+  if (!userId) return
 
-    await supabase.from('muscle_history').delete().eq('user_id', userId)
-    await supabase.from('daily_quests').delete().eq('user_id', userId)
+  // Сбрасываем профиль юзера
+  await supabase.from('users').update({
+    total_muscles: 0,
+    weekly_streak: 0,
+    weekly_streak_week: null,
+    updated_at: new Date().toISOString()
+  }).eq('id', userId)
 
-    const { data } = await supabase.from('users').select('*').eq('id', userId).single()
-    if (data) setCurrentUser(data)
-  }
-}
+  // Удаляем историю
+  await supabase.from('muscle_history').delete().eq('user_id', userId)
+  await supabase.from('daily_quests').delete().eq('user_id', userId)
 
-  // Серверные — обнуляем мускулы и стрик
-  if (userId) {
-    await supabase.from('users').update({
-      total_muscles: 0,
-      weekly_streak: 0,
-      weekly_streak_week: null
-    }).eq('id', userId)
-
-    // Опционально: удаляем историю
-    await supabase.from('muscle_history').delete().eq('user_id', userId)
-
-    // Перечитываем юзера
-    const { data } = await supabase.from('users').select('*').eq('id', userId).single()
-    if (data) setCurrentUser(data)
-  }
+  // Перечитываем юзера в локальный кеш
+  const { data } = await supabase.from('users').select('*').eq('id', userId).single()
+  if (data) setCurrentUser(data)
 }
