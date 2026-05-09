@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { haptic } from '../lib/telegram'
 import { getDailyQuests, completeQuest } from '../lib/storage'
 import PixelCheckbox from './PixelCheckbox'
@@ -6,11 +6,9 @@ import PixelCheckbox from './PixelCheckbox'
 /**
  * Блок ежедневных бустов на Главной — "ЗАБУСТИТЬ ДЕНЬ".
  *
- * НОВОЕ в Порции В:
- * - Заголовок "⬆️ ЗАБУСТИТЬ ДЕНЬ"
- * - В строке задания только текст и чекбокс (без +XP)
- * - При тапе: над чекбоксом всплывает "+20 💪" и улетает вверх
- * - Когда все буст-задания выполнены — тап по блоку показывает попап
+ * НОВОЕ в Г8:
+ * - Попап "всё выполнено" появляется снизу плавной анимацией
+ * - Закрывается по клику вне (не только повторным тапом по блоку)
  */
 
 const DEMO_QUESTS = [
@@ -22,17 +20,17 @@ const DEMO_QUESTS = [
 export default function DailyQuests() {
   const [completed, setCompleted] = useState({})
   const [animating, setAnimating] = useState(null)
-  const [floatingRewards, setFloatingRewards] = useState([]) // [{id, xp, key}]
+  const [floatingRewards, setFloatingRewards] = useState([])
   const [showAllDonePopup, setShowAllDonePopup] = useState(false)
+
+  const containerRef = useRef(null)
+  const popupRef = useRef(null)
 
   useEffect(() => {
     const loadQuests = () => {
       getDailyQuests().then(setCompleted)
     }
-
     loadQuests()
-
-    // Когда юзер авторизуется — перечитываем квесты из БД
     window.addEventListener('user-ready', loadQuests)
     window.addEventListener('user-updated', loadQuests)
     return () => {
@@ -40,6 +38,21 @@ export default function DailyQuests() {
       window.removeEventListener('user-updated', loadQuests)
     }
   }, [])
+
+  // Закрытие попапа "всё выполнено" по клику вне
+  useEffect(() => {
+    if (!showAllDonePopup) return
+
+    const handleOutsideClick = (e) => {
+      // Не закрываем если кликнули по контейнеру (это переключатель) или по самому попапу
+      if (containerRef.current?.contains(e.target)) return
+      if (popupRef.current?.contains(e.target)) return
+      setShowAllDonePopup(false)
+    }
+
+    document.addEventListener('pointerdown', handleOutsideClick)
+    return () => document.removeEventListener('pointerdown', handleOutsideClick)
+  }, [showAllDonePopup])
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
@@ -49,13 +62,9 @@ export default function DailyQuests() {
     haptic.success()
     setAnimating(quest.id)
 
-    // Атомарный вызов: запись + начисление мускулов одной транзакцией.
-    // Сервер сам проверит что квест ещё не выполнен — если выполнен,
-    // wasNew будет false и XP не начислятся повторно.
     const result = await completeQuest(quest.id, quest.xp)
     setCompleted(result.completed)
 
-    // Анимацию "+20 💪" показываем только если реально начислили
     if (result.wasNew) {
       const rewardKey = Date.now()
       setFloatingRewards(prev => [...prev, { id: quest.id, xp: quest.xp, key: rewardKey }])
@@ -63,25 +72,22 @@ export default function DailyQuests() {
         setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
       }, 1100)
 
-      // Уведомляем PlayerCard что мускулы изменились
       window.dispatchEvent(new CustomEvent('xp-updated'))
     }
 
     setTimeout(() => setAnimating(null), 600)
   }
 
-  // Тап по контейнеру когда всё выполнено — показать попап
   const handleContainerTap = (e) => {
     if (!allDone) return
-    // Не показываем повторно если кликнули на уже отмеченный квест
     if (e.target.closest('button[data-quest-row]')) return
     haptic.light()
     setShowAllDonePopup(prev => !prev)
-    setTimeout(() => setShowAllDonePopup(false), 4000)
   }
 
   return (
     <div
+      ref={containerRef}
       onClick={handleContainerTap}
       style={{
         ...styles.container,
@@ -111,7 +117,6 @@ export default function DailyQuests() {
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
-              {/* Чекбокс + всплывающая награда над ним */}
               <div style={styles.checkboxWrap}>
                 <PixelCheckbox checked={isDone} size={22} />
                 {reward && (
@@ -133,21 +138,23 @@ export default function DailyQuests() {
         })}
       </div>
 
-      {/* Попап "всё выполнено" */}
       {showAllDonePopup && (
-        <div style={styles.popup}>
+        <div ref={popupRef} style={styles.popup}>
           Все бусты на сегодня собраны.<br />
           Возвращайся завтра — будут новые.
         </div>
       )}
 
-      {/* CSS-кейфреймы для всплывающей награды */}
       <style>{`
         @keyframes rewardFloat {
           0%   { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
           15%  { opacity: 1; transform: translate(-50%, -8px) scale(1); }
           85%  { opacity: 1; transform: translate(-50%, -34px) scale(1); }
           100% { opacity: 0; transform: translate(-50%, -44px) scale(0.9); }
+        }
+        @keyframes questPopupSlideDown {
+          from { opacity: 0; transform: translate(-50%, -6px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
         }
       `}</style>
     </div>
@@ -220,8 +227,9 @@ const styles = {
     transition: 'color 0.3s ease, text-decoration 0.3s ease'
   },
   popup: {
+    // Снизу от блока, плавно сверху-вниз
     position: 'absolute',
-    bottom: '-58px',
+    top: 'calc(100% + 6px)',
     left: '50%',
     transform: 'translateX(-50%)',
     background: 'rgba(34, 34, 34, 0.95)',
@@ -236,7 +244,7 @@ const styles = {
     textAlign: 'center',
     lineHeight: 1.4,
     whiteSpace: 'nowrap',
-    animation: 'pageFadeIn 0.2s ease-out',
+    animation: 'questPopupSlideDown 0.25s ease-out',
     zIndex: 50
   }
 }
