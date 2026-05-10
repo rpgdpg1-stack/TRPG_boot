@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
+import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, MUSCLE_GROUP_LABELS } from '../lib/programs'
 import ExerciseCard from '../components/ExerciseCard'
 
@@ -11,6 +12,9 @@ import ExerciseCard from '../components/ExerciseCard'
  * - Загружает упражнения из Supabase через get_workout_day RPC
  * - Группирует по muscle_group, рисует sticky-заголовки
  * - Кнопка назад → /program/:programId
+ *
+ * ВАЖНО: запрос идёт после того как юзер авторизован.
+ * Если на момент монтирования юзера нет — ждём событие 'user-ready'.
  *
  * Д2: тап по карточке = активация + анимация "Готово, молодец"
  *     модалка финиша когда все активированы
@@ -33,7 +37,6 @@ export default function WorkoutDay() {
     let cancelled = false
 
     const load = async () => {
-      setLoading(true)
       setError(null)
       try {
         const data = await getWorkoutDay(programId, day)
@@ -42,7 +45,7 @@ export default function WorkoutDay() {
           setLoading(false)
         }
       } catch (e) {
-        console.error('WorkoutDay load error:', e)
+        console.error('[WorkoutDay] load error:', e)
         if (!cancelled) {
           setError(e.message || String(e))
           setLoading(false)
@@ -50,20 +53,31 @@ export default function WorkoutDay() {
       }
     }
 
-    load()
+    // Если юзер уже есть — грузим сразу
+    if (getCurrentUser()) {
+      load()
+    } else {
+      // Иначе ждём готовности auth
+      console.log('[WorkoutDay] auth not ready, waiting for user-ready event')
+    }
 
-    // Когда юзер только-только авторизовался — перезагружаем
-    const onUserReady = () => load()
+    // На любой случай — слушаем 'user-ready' и 'user-updated', грузим после
+    const onUserReady = () => {
+      console.log('[WorkoutDay] user-ready fired, loading exercises')
+      load()
+    }
     window.addEventListener('user-ready', onUserReady)
+    window.addEventListener('user-updated', onUserReady)
 
     return () => {
       cancelled = true
       window.removeEventListener('user-ready', onUserReady)
+      window.removeEventListener('user-updated', onUserReady)
     }
   }, [programId, day])
 
   // Группируем последовательные слоты с одной muscle_group в "секции"
-  // (для sticky-заголовков). Важно — не сортируем, идём по order_num.
+  // (для sticky-заголовков). Идём по order_num, не сортируем.
   const sections = groupByMuscleGroup(slots)
 
   return (
@@ -93,7 +107,6 @@ export default function WorkoutDay() {
         <div style={styles.sectionsWrap}>
           {sections.map((section, sIdx) => (
             <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-              {/* Sticky заголовок группы мышц */}
               <h2 style={styles.stickyHeader}>
                 {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
               </h2>
@@ -117,12 +130,6 @@ export default function WorkoutDay() {
 
 /**
  * Группируем подряд идущие слоты с одной muscle_group.
- * Если в дне идёт back-back-back-arms-arms-forearms-forearms-neck-neck-back,
- * получим 5 секций: back(3), arms(2), forearms(2), neck(2), back(1).
- *
- * Это правильно — даём sticky-заголовок для каждой "пачки" последовательных
- * упражнений одной группы. Если потом захочется одной секции на группу
- * (объединять разрозненные блоки) — поменяем эту функцию.
  */
 function groupByMuscleGroup(slots) {
   if (!slots.length) return []
@@ -174,10 +181,8 @@ const styles = {
     flexDirection: 'column',
     gap: '8px'
   },
-  // Sticky-заголовок: липнет к верху страницы при прокрутке
   stickyHeader: {
     position: 'sticky',
-    // отступ от верхнего края экрана — учитываем безопасную зону Telegram
     top: 'calc(var(--tg-safe-top) - 80px)',
     zIndex: 10,
     fontFamily: 'var(--font-tiny5)',
@@ -187,8 +192,6 @@ const styles = {
     fontWeight: 'normal',
     padding: '8px 4px',
     margin: 0,
-    // Полупрозрачный фон с блюром — заголовок остаётся читаемым на любой
-    // карточке, проходящей под ним при прокрутке
     background: 'rgba(13, 12, 12, 0.85)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
