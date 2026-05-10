@@ -15,7 +15,7 @@
  */
 
 export const SPLIT_PROGRAM = {
-  id: 'split',
+  id: 'prog_001',
   title: 'СПЛИТ',
   days: {
     A: [
@@ -60,7 +60,8 @@ export const SPLIT_PROGRAM = {
  * Получить слоты дня программы.
  */
 export function getProgramDaySlots(programId, day) {
-  if (programId === 'split') {
+  // Принимаем оба варианта: красивый 'split' и реальный 'prog_001'
+  if (programId === 'split' || programId === 'prog_001') {
     return SPLIT_PROGRAM.days[day] || []
   }
   return []
