@@ -1,11 +1,17 @@
+import { useState, useEffect } from 'react'
+
 /**
  * Карточка упражнения на экране дня тренировки.
  *
- * Д1: только отображение — превью, название, схема, заданный вес юзера.
- * Д2: добавим тап для активации (✅ Готово, молодец) + затемнение
- * Д3: добавим тап-зону на цифру веса → клавиатура + долгое нажатие → меню Инфо/Сменить
+ * Д2:
+ * - Тап → onTap (родитель управляет активацией)
+ * - isActive → визуальное состояние "выполнено"
+ *   (затемнение + блюр + монохром)
+ * - "✅ Готово, молодец!" всплывает по центру при первой активации (1.5 сек)
+ *
+ * Д3 (потом): тап на цифру веса → клавиатура, долгое нажатие → меню Инфо/Сменить.
  */
-export default function ExerciseCard({ slot }) {
+export default function ExerciseCard({ slot, isActive = false, onTap }) {
   const {
     exercise_name,
     meta_info,
@@ -14,9 +20,34 @@ export default function ExerciseCard({ slot }) {
     user_weight_kg
   } = slot
 
-  return (
-    <div style={styles.card}>
+  // Локальное состояние - показывать ли всплывающую надпись "Готово, молодец!"
+  // Триггерится каждый раз при переходе isActive false → true.
+  const [showDoneToast, setShowDoneToast] = useState(false)
 
+  useEffect(() => {
+    if (isActive) {
+      setShowDoneToast(true)
+      const timer = setTimeout(() => setShowDoneToast(false), 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [isActive])
+
+  const handleClick = () => {
+    if (onTap) onTap(slot)
+  }
+
+  return (
+    <div
+      onClick={handleClick}
+      style={{
+        ...styles.card,
+        cursor: 'pointer',
+        // Активная карточка: затемнение + блюр + монохром
+        opacity: isActive ? 0.45 : 1,
+        filter: isActive ? 'grayscale(0.85) blur(0.4px)' : 'none',
+        transition: 'opacity 0.3s ease, filter 0.3s ease'
+      }}
+    >
       {/* Превью / плейсхолдер */}
       <div style={styles.preview}>
         {preview_url ? (
@@ -46,12 +77,28 @@ export default function ExerciseCard({ slot }) {
         </div>
       </div>
 
+      {/* Всплывающая надпись "Готово, молодец!" */}
+      {showDoneToast && (
+        <div style={styles.doneToast}>
+          ✅ Готово, молодец!
+        </div>
+      )}
+
+      <style>{`
+        @keyframes doneToastFade {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+          15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          75%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+        }
+      `}</style>
     </div>
   )
 }
 
 const styles = {
   card: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
@@ -59,8 +106,7 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '90px',
-    transition: 'opacity 0.25s ease, filter 0.25s ease'
+    minHeight: '90px'
   },
   preview: {
     flexShrink: 0,
@@ -73,14 +119,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  previewImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover'
-  },
-  previewPlaceholder: {
-    fontSize: '28px'
-  },
+  previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  previewPlaceholder: { fontSize: '28px' },
   content: {
     flex: 1,
     minWidth: 0,
@@ -143,5 +183,27 @@ const styles = {
     fontSize: '10px',
     color: 'var(--color-text-secondary)',
     fontWeight: 500
+  },
+  doneToast: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    background: 'rgba(34, 34, 34, 0.95)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(158, 209, 83, 0.3)',
+    borderRadius: '14px',
+    padding: '8px 14px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-primary)',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    animation: 'doneToastFade 1.5s ease-out forwards',
+    zIndex: 10,
+    filter: 'none', // важно: всплывашка не должна блюриться вместе с карточкой
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(158, 209, 83, 0.15)'
   }
 }
