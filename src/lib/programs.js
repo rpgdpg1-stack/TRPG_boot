@@ -1,8 +1,11 @@
 /**
  * Работа с программами тренировок и их упражнениями.
  *
- * Финальная версия Д1: структура программы из splitProgram.js,
- * упражнения и веса — из Supabase через RPC + фоллбэки.
+ * - Структура программы — из splitProgram.js (захардкожена в коде)
+ * - Упражнения и веса — из Supabase через RPC + фоллбэки
+ * - Завершение тренировки — атомарная RPC api_finish_workout
+ *   (создаёт workouts + exercise_sets, начисляет мускулы, обновляет стрик,
+ *    защита от повторного начисления в один день)
  */
 
 import { supabase } from './supabase'
@@ -78,7 +81,6 @@ export async function getWorkoutDay(programId, day) {
 
   // 5. Собираем результат
   const result = slotsRaw.map(slot => {
-    // Приоритет: свап юзера > default из кода > первое подходящее по фильтру
     let exerciseId = swapsByOrder[slot.order_num]
     let isSwapped = !!exerciseId
 
@@ -86,8 +88,6 @@ export async function getWorkoutDay(programId, day) {
       exerciseId = slot.default_exercise_id || null
     }
 
-    // Если default_exercise_id не задан или такого упражнения нет в БД —
-    // фоллбэк на первое подходящее по подгруппе+типу
     if (!exerciseId || !exById[exerciseId]) {
       const candidates = exercises.filter(
         e => e.sub_group === slot.sub_group && e.type === slot.type
@@ -210,18 +210,26 @@ export async function getExerciseById(exerciseId) {
   }
   return data
 }
+
 /**
- * Завершить тренировку — атомарная RPC функция в БД.
+ * Завершить тренировку — атомарная RPC функция.
  * Создаёт workouts, exercise_sets, начисляет мускулы и обновляет стрик.
+ * Защита от повторного начисления в один день — на стороне БД.
  *
- * @returns { workoutId, newTotalMuscles, newWeeklyStreak } или null при ошибке
+ * Возвращает:
+ *  - workoutId, newTotalMuscles, newWeeklyStreak — актуальные значения
+ *  - alreadyCompletedToday: true если этот день программы уже завершён сегодня
  */
 export async function finishWorkout(programId, day, exerciseIds, reward = 150) {
+  console.log('[programs] finishWorkout called:', { programId, day, exerciseIds, reward })
+
   const user = getCurrentUser()
   if (!user) {
     console.warn('[programs] finishWorkout без авторизации')
     return null
   }
+
+  console.log('[programs] calling api_finish_workout RPC for user', user.id)
 
   const { data, error } = await supabase.rpc('api_finish_workout', {
     p_user_id: user.id,
@@ -232,18 +240,24 @@ export async function finishWorkout(programId, day, exerciseIds, reward = 150) {
   })
 
   if (error) {
-    console.error('[programs] api_finish_workout error:', error)
+    console.error('[programs] api_finish_workout ERROR:', error)
+    console.error('[programs] error message:', error.message)
+    console.error('[programs] error details:', error.details)
+    console.error('[programs] error hint:', error.hint)
+    console.error('[programs] error code:', error.code)
     return null
   }
 
-  // Функция возвращает массив с одной строкой
+  console.log('[programs] api_finish_workout SUCCESS, raw data:', data)
+
   const result = data?.[0]
-  if (!result) return null
+  if (!result) {
+    console.warn('[programs] no result from api_finish_workout')
+    return null
+  }
 
   console.log('[programs] workout finished:', result)
 
-  // Обновляем кешированного юзера в auth (через setCurrentUser)
-  // чтобы Home сразу показал новые мускулы и стрик
   const { setCurrentUser } = await import('./auth')
   setCurrentUser({
     ...user,
@@ -252,20 +266,19 @@ export async function finishWorkout(programId, day, exerciseIds, reward = 150) {
     weekly_streak_week: getCurrentWeekKey()
   })
 
-  // Триггерим обновление UI везде где слушают
   window.dispatchEvent(new CustomEvent('xp-updated'))
   window.dispatchEvent(new CustomEvent('user-updated'))
 
   return {
     workoutId: result.workout_id,
     newTotalMuscles: result.new_total_muscles,
-    newWeeklyStreak: result.new_weekly_streak
+    newWeeklyStreak: result.new_weekly_streak,
+    alreadyCompletedToday: result.already_completed_today || false
   }
 }
 
 /**
  * Хелпер - вычислить ключ текущей недели по МСК.
- * Дублирует логику из storage.js чтобы programs.js не зависел от него.
  */
 function getCurrentWeekKey() {
   const now = new Date()
