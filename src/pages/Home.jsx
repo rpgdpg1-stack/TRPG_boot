@@ -1,18 +1,23 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { haptic } from '../lib/telegram'
+import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import HomeHeader from '../components/HomeHeader'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 
 /**
  * Главный экран — Тренировки.
- * Структура: HomeHeader → PlayerCard → DailyQuests → Категории
  *
- * Г8.3: убрали spawnBurst при тапе по категории.
- * Теперь нативное iOS-style нажатие: лёгкий haptic + CSS :active scale.
+ * Г8.3-fix: при монтировании скрываем кнопку "Назад" Telegram —
+ * она тут не нужна (главный экран = корень навигации).
  */
 export default function Home() {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    backButton.hide()
+    lockVerticalSwipes()
+  }, [])
 
   const categories = [
     { id: 'gym',       icon: '🏋️', title: 'СИЛОВАЯ',         subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК', color: 'var(--cat-strength)', available: true,  comingSoon: false, featured: true },
@@ -24,7 +29,6 @@ export default function Home() {
 
   const handleCategoryTap = (cat) => {
     haptic.light()
-    // Небольшая задержка чтобы пользователь увидел press-эффект перед переходом
     setTimeout(() => navigate(`/category/${cat.id}`), 80)
   }
 
@@ -86,7 +90,6 @@ const styles = {
     height: '92px',
     textAlign: 'left',
     opacity: 0.85
-    // transition теперь приходит из .press-tile (см. index.css)
   },
   categoryCardFeatured: {
     height: '110px',
