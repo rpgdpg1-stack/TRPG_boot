@@ -7,10 +7,8 @@ import ProgramCard from '../components/ProgramCard'
 /**
  * Универсальный экран категории.
  *
- * Г8.2:
- * - Кнопка назад настраивается через setHandler (без скрытия — нет мерцания)
- * - Возврат на конкретный путь '/' а не navigate(-1)
- * - Повторно блокируем свайп вниз
+ * Г8.3-fix: cleanup упрощён — корневые экраны (Home/Progress/Settings)
+ * сами скрывают кнопку при монтировании.
  */
 
 const CATEGORIES_DATA = {
@@ -72,33 +70,12 @@ export default function Category() {
   const data = CATEGORIES_DATA[id]
 
   useEffect(() => {
-    // Перенастраиваем кнопку назад без скрытия — это убирает мерцание крестика
     backButton.setHandler(() => navigate('/'))
-    // На всякий случай повторно блокируем свайп вниз
     lockVerticalSwipes()
-    // НЕ вызываем backButton.hide() в cleanup — следующий экран сам перенастроит
   }, [navigate])
 
   useEffect(() => {
     getPinnedPrograms().then(setPinnedIds)
-  }, [])
-
-  // На главной странице кнопку назад надо скрыть. Это делаем при размонтировании.
-  // Но: если переходим на Program (он сам поставит свою кнопку) — лишний hide ничего не сломает,
-  // потому что Program в useEffect сразу вызовет setHandler.
-  // А вот если возвращаемся на Home (через тап по back) — Home кнопку не настраивает, и она исчезнет естественным путём.
-  // Чтобы это сработало корректно, скрываем при размонтировании ТОЛЬКО если идём на главную.
-  useEffect(() => {
-    return () => {
-      // Проверяем — мы возвращаемся на главную или идём вглубь?
-      // Простая эвристика: если pathname сменился на '/' — скрываем.
-      // Но в момент cleanup pathname уже мог поменяться, поэтому делаем через таймер.
-      setTimeout(() => {
-        if (window.location.pathname === '/') {
-          backButton.hide()
-        }
-      }, 50)
-    }
   }, [])
 
   const handleCreateTap = () => {
