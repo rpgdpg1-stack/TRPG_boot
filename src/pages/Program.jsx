@@ -21,7 +21,8 @@ const PROGRAM_DATA = {
   split: {
     title: 'СПЛИТ',
     tags: ['зал'],
-    days: ['A', 'B', 'C']
+    days: ['A', 'B', 'C'],
+    dbId: 'prog_001'  // как программа называется в БД
   }
 }
 
@@ -55,7 +56,9 @@ export default function Program() {
 
   const handleDayTap = (day) => {
     haptic.light()
-    setTimeout(() => navigate(`/workout/${id}/${day}`), 80)
+    // Используем БД id (prog_001) для URL — он попадёт в БД при finishWorkout
+    const programDbId = data.dbId || id
+    setTimeout(() => navigate(`/workout/${programDbId}/${day}`), 80)
   }
 
   return (
