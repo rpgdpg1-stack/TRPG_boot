@@ -1,22 +1,16 @@
 /**
  * Работа с программами тренировок и их упражнениями.
  *
- * Д1-fix3: Не используем RPC. Грузим program_days и exercises
- * прямыми SELECT-запросами и собираем результат на клиенте.
- * Это надёжнее — RPC по непонятной причине возвращал [] из браузера.
+ * Д1-fix4: ВСЕ запросы через RPC функции с SECURITY DEFINER.
+ * Это работает по той же схеме что и add_muscles/upsert_user — обходит RLS,
+ * выполняется от имени postgres. Так же как мускулы у нас уже работают.
  */
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 
 /**
- * Получить упражнения для дня тренировки.
- * Логика:
- *  1. Берём слоты из program_days по program_id + day
- *  2. Берём свапы юзера из user_exercise_swaps
- *  3. Берём exercises (для имён, превью, мета)
- *  4. Берём веса юзера из user_exercise_weights
- *  5. Собираем результат
+ * Получить упражнения для дня тренировки через 4 RPC вызова.
  */
 export async function getWorkoutDay(programId, day) {
   console.log('[programs] getWorkoutDay called with', programId, day)
@@ -27,15 +21,13 @@ export async function getWorkoutDay(programId, day) {
   }
 
   // 1. Слоты программы
-  const { data: slotsRaw, error: slotsErr } = await supabase
-    .from('program_days')
-    .select('order_num, muscle_group, sub_group, type')
-    .eq('program_id', programId)
-    .eq('day', day)
-    .order('order_num', { ascending: true })
+  const { data: slotsRaw, error: slotsErr } = await supabase.rpc('api_get_program_day', {
+    p_program_id: programId,
+    p_day: day
+  })
 
   if (slotsErr) {
-    console.error('[programs] program_days error:', slotsErr)
+    console.error('[programs] api_get_program_day error:', slotsErr)
     return []
   }
   console.log('[programs] got', (slotsRaw || []).length, 'slots from program_days')
@@ -43,55 +35,46 @@ export async function getWorkoutDay(programId, day) {
   if (!slotsRaw || !slotsRaw.length) return []
 
   // 2. Свапы юзера
-  const { data: swaps, error: swapsErr } = await supabase
-    .from('user_exercise_swaps')
-    .select('order_num, exercise_id')
-    .eq('user_id', user.id)
-    .eq('program_id', programId)
-    .eq('day', day)
-
+  const { data: swaps, error: swapsErr } = await supabase.rpc('api_get_user_swaps', {
+    p_user_id: user.id,
+    p_program_id: programId,
+    p_day: day
+  })
   if (swapsErr) console.warn('[programs] swaps error:', swapsErr)
+
   const swapsByOrder = {}
   for (const s of swaps || []) swapsByOrder[s.order_num] = s.exercise_id
 
-  // 3. Все упражнения (88 строк, кэшируем целиком — проще)
-  const { data: exercises, error: exErr } = await supabase
-    .from('exercises')
-    .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority')
-    .order('priority', { ascending: true })
+  // 3. Все упражнения
+  const { data: exercises, error: exErr } = await supabase.rpc('api_get_all_exercises')
 
   if (exErr) {
-    console.error('[programs] exercises error:', exErr)
+    console.error('[programs] api_get_all_exercises error:', exErr)
     return []
   }
   console.log('[programs] got', (exercises || []).length, 'exercises total')
 
-  // Индексируем для быстрого поиска
   const exById = {}
   for (const e of exercises || []) exById[e.id] = e
 
   // 4. Веса юзера
-  const { data: weights, error: wErr } = await supabase
-    .from('user_exercise_weights')
-    .select('exercise_id, weight_kg')
-    .eq('user_id', user.id)
-
+  const { data: weights, error: wErr } = await supabase.rpc('api_get_user_weights', {
+    p_user_id: user.id
+  })
   if (wErr) console.warn('[programs] weights error:', wErr)
+
   const weightsByEx = {}
   for (const w of weights || []) weightsByEx[w.exercise_id] = w.weight_kg
 
   // 5. Собираем результат
   const result = slotsRaw.map(slot => {
-    // Какое упражнение на этом слоте?
     let exerciseId = swapsByOrder[slot.order_num]
     let isSwapped = !!exerciseId
 
     if (!exerciseId) {
-      // Дефолтное — наименьший priority в подгруппе+типе
       const candidates = (exercises || []).filter(
         e => e.sub_group === slot.sub_group && e.type === slot.type
       )
-      // exercises уже отсортированы по priority ASC
       exerciseId = candidates[0]?.id || null
     }
 
@@ -112,45 +95,39 @@ export async function getWorkoutDay(programId, day) {
     }
   })
 
-  console.log('[programs] returning', result.length, 'enriched slots. Sample:', result[0])
+  console.log('[programs] returning', result.length, 'enriched slots')
   return result
 }
 
 /**
- * Получить все упражнения по подгруппе+типу — для экрана замены.
+ * Получить упражнения по подгруппе+типу — для экрана замены.
+ * Используем общий список и фильтруем на клиенте.
  */
 export async function getExercisesForSubgroup(subGroup, type) {
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('id, name, meta_info, preview_url, video_url, priority')
-    .eq('sub_group', subGroup)
-    .eq('type', type)
-    .order('priority', { ascending: true })
+  const { data, error } = await supabase.rpc('api_get_all_exercises')
 
   if (error) {
     console.error('[programs] getExercisesForSubgroup error:', error)
     return []
   }
-  return data || []
+
+  return (data || []).filter(e => e.sub_group === subGroup && e.type === type)
 }
 
 /**
- * Сохранить замену упражнения в слоте программы.
+ * Сохранить замену упражнения.
  */
 export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
   const user = getCurrentUser()
   if (!user) return false
 
-  const { error } = await supabase
-    .from('user_exercise_swaps')
-    .upsert({
-      user_id: user.id,
-      program_id: programId,
-      day,
-      order_num: orderNum,
-      exercise_id: exerciseId,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,program_id,day,order_num' })
+  const { error } = await supabase.rpc('api_save_user_swap', {
+    p_user_id: user.id,
+    p_program_id: programId,
+    p_day: day,
+    p_order_num: orderNum,
+    p_exercise_id: exerciseId
+  })
 
   if (error) {
     console.error('[programs] saveExerciseSwap error:', error)
@@ -160,20 +137,17 @@ export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
 }
 
 /**
- * Сохранить рабочий вес юзера для упражнения.
+ * Сохранить вес упражнения.
  */
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
 
-  const { error } = await supabase
-    .from('user_exercise_weights')
-    .upsert({
-      user_id: user.id,
-      exercise_id: exerciseId,
-      weight_kg: weightKg,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,exercise_id' })
+  const { error } = await supabase.rpc('api_save_user_weight', {
+    p_user_id: user.id,
+    p_exercise_id: exerciseId,
+    p_weight_kg: weightKg
+  })
 
   if (error) {
     console.error('[programs] saveExerciseWeight error:', error)
@@ -184,19 +158,17 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
 
 /**
  * Получить полную информацию об упражнении.
+ * Используем общий список (через RPC) и фильтруем.
  */
 export async function getExerciseById(exerciseId) {
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('*')
-    .eq('id', exerciseId)
-    .single()
+  const { data, error } = await supabase.rpc('api_get_all_exercises')
 
   if (error) {
     console.error('[programs] getExerciseById error:', error)
     return null
   }
-  return data
+
+  return (data || []).find(e => e.id === exerciseId) || null
 }
 
 /**
