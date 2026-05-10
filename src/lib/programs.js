@@ -210,6 +210,73 @@ export async function getExerciseById(exerciseId) {
   }
   return data
 }
+/**
+ * Завершить тренировку — атомарная RPC функция в БД.
+ * Создаёт workouts, exercise_sets, начисляет мускулы и обновляет стрик.
+ *
+ * @returns { workoutId, newTotalMuscles, newWeeklyStreak } или null при ошибке
+ */
+export async function finishWorkout(programId, day, exerciseIds, reward = 150) {
+  const user = getCurrentUser()
+  if (!user) {
+    console.warn('[programs] finishWorkout без авторизации')
+    return null
+  }
+
+  const { data, error } = await supabase.rpc('api_finish_workout', {
+    p_user_id: user.id,
+    p_program_id: programId,
+    p_day: day,
+    p_exercise_ids: exerciseIds,
+    p_reward: reward
+  })
+
+  if (error) {
+    console.error('[programs] api_finish_workout error:', error)
+    return null
+  }
+
+  // Функция возвращает массив с одной строкой
+  const result = data?.[0]
+  if (!result) return null
+
+  console.log('[programs] workout finished:', result)
+
+  // Обновляем кешированного юзера в auth (через setCurrentUser)
+  // чтобы Home сразу показал новые мускулы и стрик
+  const { setCurrentUser } = await import('./auth')
+  setCurrentUser({
+    ...user,
+    total_muscles: result.new_total_muscles,
+    weekly_streak: result.new_weekly_streak,
+    weekly_streak_week: getCurrentWeekKey()
+  })
+
+  // Триггерим обновление UI везде где слушают
+  window.dispatchEvent(new CustomEvent('xp-updated'))
+  window.dispatchEvent(new CustomEvent('user-updated'))
+
+  return {
+    workoutId: result.workout_id,
+    newTotalMuscles: result.new_total_muscles,
+    newWeeklyStreak: result.new_weekly_streak
+  }
+}
+
+/**
+ * Хелпер - вычислить ключ текущей недели по МСК.
+ * Дублирует логику из storage.js чтобы programs.js не зависел от него.
+ */
+function getCurrentWeekKey() {
+  const now = new Date()
+  now.setHours(now.getHours() - 3)
+  const day = now.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+  return monday.toISOString().split('T')[0]
+}
 
 export const MUSCLE_GROUP_LABELS = {
   back: 'СПИНА',
