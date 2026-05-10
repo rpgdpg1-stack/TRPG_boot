@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react'
 import { getStreak, getUserLevel, getLevelName, getTotalWorkouts } from '../lib/storage'
-import { haptic } from '../lib/telegram'
+import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 
 /**
- * Экран прогресса — без заголовка.
- * Все карточки со скруглением 33px (консистентно с остальным UI).
+ * Экран прогресса.
+ *
+ * Г8.3-fix: при монтировании скрываем кнопку "Назад" — этот экран
+ * корневой в своей вкладке таб-бара.
  */
 export default function Progress() {
   const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
+
+  useEffect(() => {
+    backButton.hide()
+    lockVerticalSwipes()
+  }, [])
 
   useEffect(() => {
     const loadStats = () => {
@@ -41,7 +48,6 @@ export default function Progress() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Боксы статистики — скругление 33px */}
       <div style={styles.statsRow}>
         <div style={styles.statBox}>
           <div style={styles.statValue}>LVL {stats.level}</div>
@@ -57,7 +63,6 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* Призыв */}
       <div style={styles.placeholder}>
         <div style={styles.placeholderTitle}>Скоро здесь будет твой прогресс</div>
         <div style={styles.placeholderText}>
@@ -65,7 +70,6 @@ export default function Progress() {
         </div>
       </div>
 
-      {/* Карточки разделов — скругление 33px (таблетки) */}
       <div style={styles.sections}>
         {sections.map(section => (
           <button
@@ -88,100 +92,18 @@ export default function Progress() {
 
 const styles = {
   page: {},
-  statsRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px',
-    marginTop: '8px',
-    marginBottom: '20px'
-  },
-  // Боксы статов — скругление 33px (квадратные становятся скруглёнными)
-  statBox: {
-    padding: '18px 8px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)', // 33px
-    textAlign: 'center',
-    minHeight: '78px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center'
-  },
-  statValue: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '16px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px',
-    marginBottom: '4px'
-  },
-  statLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '9px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1.5px',
-    fontWeight: 600
-  },
-  placeholder: {
-    textAlign: 'center',
-    padding: '24px 16px',
-    background: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 'var(--radius-card)',
-    marginBottom: '20px'
-  },
-  placeholderTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    marginBottom: '6px'
-  },
-  placeholderText: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    lineHeight: 1.5
-  },
-  sections: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px'
-  },
-  sectionCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '14px 20px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)', // теперь 33px
-    width: '100%',
-    textAlign: 'left',
-    minHeight: '60px'
-  },
-  sectionIcon: {
-    fontSize: '22px',
-    width: '32px',
-    textAlign: 'center'
-  },
-  sectionContent: {
-    flex: 1,
-    minWidth: 0
-  },
-  sectionTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 600,
-    color: 'var(--color-text)',
-    marginBottom: '2px'
-  },
-  sectionSubtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)'
-  },
-  sectionSoon: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '10px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px',
-    flexShrink: 0
-  }
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px', marginBottom: '20px' },
+  statBox: { padding: '18px 8px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', textAlign: 'center', minHeight: '78px', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  statValue: { fontFamily: 'var(--font-tiny5)', fontSize: '16px', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: '4px' },
+  statLabel: { fontFamily: 'var(--font-manrope)', fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', fontWeight: 600 },
+  placeholder: { textAlign: 'center', padding: '24px 16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-card)', marginBottom: '20px' },
+  placeholderTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)', marginBottom: '6px' },
+  placeholderText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.5 },
+  sections: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  sectionCard: { display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px', background: 'var(--color-card)', borderRadius: 'var(--radius-small)', width: '100%', textAlign: 'left', minHeight: '60px' },
+  sectionIcon: { fontSize: '22px', width: '32px', textAlign: 'center' },
+  sectionContent: { flex: 1, minWidth: 0 },
+  sectionTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '2px' },
+  sectionSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
+  sectionSoon: { fontFamily: 'var(--font-tiny5)', fontSize: '10px', color: 'var(--color-text-secondary)', letterSpacing: '1px', flexShrink: 0 }
 }
