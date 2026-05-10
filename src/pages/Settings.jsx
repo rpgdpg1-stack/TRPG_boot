@@ -1,12 +1,19 @@
-import { haptic } from '../lib/telegram'
+import { useEffect } from 'react'
+import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { clearAllData } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 
 /**
- * Экран настроек — три группы: ИГРОК / ПРОГРЕСС / СИСТЕМА.
- * В СИСТЕМА последним пунктом — кнопка "Сбросить прогресс" для отладки.
+ * Экран настроек.
+ *
+ * Г8.3-fix: при монтировании скрываем кнопку "Назад" — корневой экран вкладки.
  */
 export default function Settings() {
+
+  useEffect(() => {
+    backButton.hide()
+    lockVerticalSwipes()
+  }, [])
 
   const groups = [
     {
@@ -51,7 +58,6 @@ export default function Settings() {
       try {
         await clearAllData()
         await refreshCurrentUser()
-        // Уведомляем все компоненты что данные обнулились
         window.dispatchEvent(new CustomEvent('xp-updated'))
         haptic.success()
         window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
@@ -62,8 +68,6 @@ export default function Settings() {
       }
       return
     }
-
-    // Остальные пункты пока заглушки
   }
 
   return (
@@ -105,59 +109,13 @@ export default function Settings() {
 const styles = {
   page: {},
   group: {},
-  groupTitle: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    fontWeight: 'normal',
-    marginBottom: '10px',
-    paddingLeft: '16px'
-  },
-  items: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px'
-  },
-  itemCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 18px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)',
-    width: '100%',
-    textAlign: 'left',
-    minHeight: '52px',
-    transition: 'background 0.15s ease'
-  },
-  itemCardDanger: {
-    background: 'rgba(255, 140, 66, 0.06)',
-    border: '1px solid rgba(255, 140, 66, 0.2)'
-  },
-  itemIcon: {
-    fontSize: '20px',
-    width: '28px',
-    textAlign: 'center'
-  },
-  itemContent: {
-    flex: 1,
-    minWidth: 0
-  },
-  itemTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 600,
-    marginBottom: '1px'
-  },
-  itemSubtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    color: 'var(--color-text-secondary)'
-  },
-  itemArrow: {
-    fontSize: '18px',
-    color: 'var(--color-text-secondary)',
-    flexShrink: 0
-  }
+  groupTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '11px', color: 'var(--color-text-secondary)', letterSpacing: '2px', fontWeight: 'normal', marginBottom: '10px', paddingLeft: '16px' },
+  items: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  itemCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 18px', background: 'var(--color-card)', borderRadius: 'var(--radius-small)', width: '100%', textAlign: 'left', minHeight: '52px', transition: 'background 0.15s ease' },
+  itemCardDanger: { background: 'rgba(255, 140, 66, 0.06)', border: '1px solid rgba(255, 140, 66, 0.2)' },
+  itemIcon: { fontSize: '20px', width: '28px', textAlign: 'center' },
+  itemContent: { flex: 1, minWidth: 0 },
+  itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, marginBottom: '1px' },
+  itemSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '10px', color: 'var(--color-text-secondary)' },
+  itemArrow: { fontSize: '18px', color: 'var(--color-text-secondary)', flexShrink: 0 }
 }
