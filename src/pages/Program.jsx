@@ -6,15 +6,13 @@ import { getActiveDay } from '../lib/storage'
 /**
  * Экран программы — выбор дня A/B/C.
  *
- * Г8.2:
- * - Возврат всегда в категорию (не navigate(-1) который иногда кидает на главную)
- * - Кнопка назад через setHandler (без мерцания)
+ * dbId — это идентификатор программы в Supabase (prog_001),
+ * id в URL (split) — для красивых ссылок.
+ * При тапе по дню навигируем используя dbId, чтобы он был доступен в /workout/:programId/:day
  */
 
-// Какая программа в какой категории — для возврата по кнопке Назад
 const PROGRAM_TO_CATEGORY = {
   split: 'gym'
-  // когда добавим другие — допишем сюда
 }
 
 const PROGRAM_DATA = {
@@ -22,7 +20,7 @@ const PROGRAM_DATA = {
     title: 'СПЛИТ',
     tags: ['зал'],
     days: ['A', 'B', 'C'],
-    dbId: 'prog_001'  // как программа называется в БД
+    dbId: 'prog_001'
   }
 }
 
@@ -35,7 +33,6 @@ export default function Program() {
   const parentCategory = PROGRAM_TO_CATEGORY[id] || 'gym'
 
   useEffect(() => {
-    // Кнопка назад → в родительскую категорию (а не navigate(-1) который мог кинуть на главную)
     backButton.setHandler(() => navigate(`/category/${parentCategory}`))
     lockVerticalSwipes()
   }, [navigate, parentCategory])
@@ -56,7 +53,7 @@ export default function Program() {
 
   const handleDayTap = (day) => {
     haptic.light()
-    // Используем БД id (prog_001) для URL — он попадёт в БД при finishWorkout
+    // Навигируем по dbId (prog_001), чтобы при сохранении в БД использовался правильный foreign key
     const programDbId = data.dbId || id
     setTimeout(() => navigate(`/workout/${programDbId}/${day}`), 80)
   }
@@ -137,10 +134,6 @@ const styles = {
   dayCardActive: { border: '2px solid var(--color-primary)', background: 'rgba(158, 209, 83, 0.08)' },
   dayLetter: { fontFamily: 'var(--font-tiny5)', fontSize: '52px', letterSpacing: '0', lineHeight: 1 },
   dayLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' },
-  placeholder: { textAlign: 'center', padding: '40px 20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-card)' },
-  placeholderIcon: { fontSize: '48px', marginBottom: '12px' },
-  placeholderTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '20px', color: 'var(--color-primary)', letterSpacing: '2px', marginBottom: '8px' },
-  placeholderText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: 1.6 },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
