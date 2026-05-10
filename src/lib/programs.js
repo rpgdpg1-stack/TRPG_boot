@@ -1,18 +1,14 @@
 /**
  * Работа с программами тренировок и их упражнениями.
  *
- * Д1-final: Структура программы — из захардкоженного файла splitProgram.js.
- * Упражнения и веса — из Supabase через RPC (которые точно работают,
- * как мускулы).
+ * Финальная версия Д1: структура программы из splitProgram.js,
+ * упражнения и веса — из Supabase через RPC + фоллбэки.
  */
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { getProgramDaySlots } from '../data/splitProgram'
 
-/**
- * Получить упражнения для дня тренировки.
- */
 export async function getWorkoutDay(programId, day) {
   console.log('[programs] getWorkoutDay called with', programId, day)
   const user = getCurrentUser()
@@ -21,74 +17,59 @@ export async function getWorkoutDay(programId, day) {
     return []
   }
 
-  // 1. Слоты программы — БЕРЁМ ИЗ КОДА, не из БД
+  // 1. Слоты программы — из кода
   const slotsRaw = getProgramDaySlots(programId, day)
   console.log('[programs] got', slotsRaw.length, 'slots from code')
   if (!slotsRaw.length) return []
 
-  // 2. Свапы юзера — пробуем из Supabase, если не получится — пусто
+  // 2. Свапы юзера
   let swapsByOrder = {}
   try {
-    const { data: swaps, error: swapsErr } = await supabase.rpc('api_get_user_swaps', {
+    const { data: swaps, error } = await supabase.rpc('api_get_user_swaps', {
       p_user_id: user.id,
       p_program_id: programId,
       p_day: day
     })
-    if (!swapsErr && swaps) {
+    if (!error && swaps) {
       for (const s of swaps) swapsByOrder[s.order_num] = s.exercise_id
-    } else if (swapsErr) {
-      console.warn('[programs] swaps error (continuing):', swapsErr.message)
     }
   } catch (e) {
     console.warn('[programs] swaps fetch failed (continuing):', e?.message)
   }
 
-  // 3. Все упражнения — пробуем разными способами
+  // 3. Все упражнения — RPC, фоллбэк на прямой SELECT
   let exercises = []
-
-  // Способ А: через RPC api_get_all_exercises (если функция создана)
   try {
     const { data, error } = await supabase.rpc('api_get_all_exercises')
-    if (!error && data && data.length) {
+    if (!error && data?.length) {
       exercises = data
       console.log('[programs] got', exercises.length, 'exercises via RPC')
-    } else if (error) {
-      console.warn('[programs] api_get_all_exercises failed:', error.message)
     }
-  } catch (e) {
-    console.warn('[programs] api_get_all_exercises threw:', e?.message)
-  }
+  } catch (e) {}
 
-  // Способ Б: прямой SELECT (на случай если RPC не создан)
   if (!exercises.length) {
     try {
       const { data, error } = await supabase
         .from('exercises')
         .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority')
         .order('priority', { ascending: true })
-      if (!error && data && data.length) {
+      if (!error && data?.length) {
         exercises = data
         console.log('[programs] got', exercises.length, 'exercises via direct SELECT')
       }
-    } catch (e) {
-      console.warn('[programs] direct SELECT threw:', e?.message)
-    }
-  }
-
-  if (!exercises.length) {
-    console.warn('[programs] WARNING: could not load exercises from DB, using placeholders')
+    } catch (e) {}
   }
 
   const exById = {}
   for (const e of exercises) exById[e.id] = e
 
-  // 4. Веса юзера — пробуем из Supabase, если не получится — пусто
+  // 4. Веса юзера
   let weightsByEx = {}
   try {
-    const { data: weights, error: wErr } = await supabase.rpc('api_get_user_weights', {
+    const { data: weights, error } = await supabase.rpc('api_get_user_weights', {
       p_user_id: user.id
     })
-    if (!wErr && weights) {
+    if (!error && weights) {
       for (const w of weights) weightsByEx[w.exercise_id] = w.weight_kg
     }
   } catch (e) {
@@ -97,20 +78,24 @@ export async function getWorkoutDay(programId, day) {
 
   // 5. Собираем результат
   const result = slotsRaw.map(slot => {
+    // Приоритет: свап юзера > default из кода > первое подходящее по фильтру
     let exerciseId = swapsByOrder[slot.order_num]
     let isSwapped = !!exerciseId
 
     if (!exerciseId) {
-      // Дефолтное упражнение для подгруппы+типа
+      exerciseId = slot.default_exercise_id || null
+    }
+
+    // Если default_exercise_id не задан или такого упражнения нет в БД —
+    // фоллбэк на первое подходящее по подгруппе+типу
+    if (!exerciseId || !exById[exerciseId]) {
       const candidates = exercises.filter(
         e => e.sub_group === slot.sub_group && e.type === slot.type
       )
-      exerciseId = candidates[0]?.id || null
+      exerciseId = candidates[0]?.id || exerciseId
     }
 
     const ex = exerciseId ? exById[exerciseId] : null
-
-    // Если упражнение не нашли в БД — показываем имя подгруппы как заглушку
     const fallbackName = `${slot.sub_group} (${slot.type})`
 
     return {
@@ -132,11 +117,7 @@ export async function getWorkoutDay(programId, day) {
   return result
 }
 
-/**
- * Получить упражнения по подгруппе+типу — для экрана замены.
- */
 export async function getExercisesForSubgroup(subGroup, type) {
-  // Пробуем через RPC
   try {
     const { data, error } = await supabase.rpc('api_get_all_exercises')
     if (!error && data) {
@@ -144,7 +125,6 @@ export async function getExercisesForSubgroup(subGroup, type) {
     }
   } catch (e) {}
 
-  // Фоллбэк: прямой SELECT
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, meta_info, preview_url, video_url, priority')
@@ -159,14 +139,10 @@ export async function getExercisesForSubgroup(subGroup, type) {
   return data || []
 }
 
-/**
- * Сохранить замену упражнения. Пробуем RPC, потом upsert.
- */
 export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
   const user = getCurrentUser()
   if (!user) return false
 
-  // Пробуем через RPC
   try {
     const { error } = await supabase.rpc('api_save_user_swap', {
       p_user_id: user.id,
@@ -178,7 +154,6 @@ export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
     if (!error) return true
   } catch (e) {}
 
-  // Фоллбэк: прямой upsert
   const { error } = await supabase.from('user_exercise_swaps').upsert({
     user_id: user.id,
     program_id: programId,
@@ -195,9 +170,6 @@ export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
   return true
 }
 
-/**
- * Сохранить вес упражнения.
- */
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
@@ -225,9 +197,6 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
   return true
 }
 
-/**
- * Получить полную информацию об упражнении.
- */
 export async function getExerciseById(exerciseId) {
   const { data, error } = await supabase
     .from('exercises')
@@ -242,9 +211,6 @@ export async function getExerciseById(exerciseId) {
   return data
 }
 
-/**
- * Названия групп мышц на русском.
- */
 export const MUSCLE_GROUP_LABELS = {
   back: 'СПИНА',
   chest: 'ГРУДЬ',
