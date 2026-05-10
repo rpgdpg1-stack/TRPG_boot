@@ -1,29 +1,14 @@
-/**
- * Работа с программами тренировок и их упражнениями.
- *
- * Тут крутится логика чтения из Supabase:
- * - getWorkoutDay — получить упражнения для конкретного дня программы у юзера
- * - getExercisesForSubgroup — список упражнений для замены (по подгруппе+типу)
- * - saveExerciseSwap — сохранить замену упражнения в слоте
- * - saveExerciseWeight — сохранить вес юзера для упражнения
- * - getExerciseById — получить детали упражнения (для экрана "инфо")
- */
-
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 
-/**
- * Получить упражнения для дня тренировки.
- * @param {string} programId - например 'prog_001'
- * @param {string} day - 'A' / 'B' / 'C'
- * @returns массив объектов { order_num, muscle_group, sub_group, type, exercise_id, exercise_name, meta_info, preview_url, video_url, is_swapped, user_weight_kg }
- */
 export async function getWorkoutDay(programId, day) {
+  console.log('[programs] getWorkoutDay called with', programId, day)
   const user = getCurrentUser()
   if (!user) {
-    console.warn('[programs] getWorkoutDay без авторизации')
+    console.warn('[programs] no user!')
     return []
   }
+  console.log('[programs] calling RPC with user.id =', user.id)
 
   const { data, error } = await supabase.rpc('get_workout_day', {
     p_user_id: user.id,
@@ -32,17 +17,15 @@ export async function getWorkoutDay(programId, day) {
   })
 
   if (error) {
-    console.error('[programs] getWorkoutDay error:', error)
+    console.error('[programs] RPC ERROR:', error)
+    console.error('[programs] error details:', JSON.stringify(error))
     return []
   }
 
+  console.log('[programs] RPC success, got', (data || []).length, 'rows. Sample:', data?.[0])
   return data || []
 }
 
-/**
- * Получить все упражнения по подгруппе+типу — для экрана замены.
- * Возвращает в порядке priority (дефолтное упражнение будет первым).
- */
 export async function getExercisesForSubgroup(subGroup, type) {
   const { data, error } = await supabase
     .from('exercises')
@@ -55,14 +38,9 @@ export async function getExercisesForSubgroup(subGroup, type) {
     console.error('[programs] getExercisesForSubgroup error:', error)
     return []
   }
-
   return data || []
 }
 
-/**
- * Сохранить замену упражнения в слоте программы.
- * Если запись уже есть — обновляется (upsert).
- */
 export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
   const user = getCurrentUser()
   if (!user) return false
@@ -76,9 +54,7 @@ export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
       order_num: orderNum,
       exercise_id: exerciseId,
       updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'user_id,program_id,day,order_num'
-    })
+    }, { onConflict: 'user_id,program_id,day,order_num' })
 
   if (error) {
     console.error('[programs] saveExerciseSwap error:', error)
@@ -87,10 +63,6 @@ export async function saveExerciseSwap(programId, day, orderNum, exerciseId) {
   return true
 }
 
-/**
- * Сохранить рабочий вес юзера для упражнения.
- * Используется в Д3, добавляю заранее.
- */
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
@@ -102,9 +74,7 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
       exercise_id: exerciseId,
       weight_kg: weightKg,
       updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'user_id,exercise_id'
-    })
+    }, { onConflict: 'user_id,exercise_id' })
 
   if (error) {
     console.error('[programs] saveExerciseWeight error:', error)
@@ -113,9 +83,6 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
   return true
 }
 
-/**
- * Получить полную информацию об упражнении — для экрана "Инфо".
- */
 export async function getExerciseById(exerciseId) {
   const { data, error } = await supabase
     .from('exercises')
@@ -130,9 +97,6 @@ export async function getExerciseById(exerciseId) {
   return data
 }
 
-/**
- * Названия групп мышц на русском — для sticky-заголовков.
- */
 export const MUSCLE_GROUP_LABELS = {
   back: 'СПИНА',
   chest: 'ГРУДЬ',
