@@ -3,7 +3,10 @@ import { haptic } from '../lib/telegram'
 
 /**
  * Таб-бар: Прогресс / Тренировки / Настройки.
- * Все скругления 33px (консистентно).
+ *
+ * Е1-fix: "Тренировки" теперь возвращает на главную (/) с любого
+ * экрана раздела тренировок (категория/программа/день).
+ * Если уже на главной — ничего не делает.
  */
 export default function TabBar() {
   const location = useLocation()
@@ -11,7 +14,10 @@ export default function TabBar() {
 
   const isWorkoutSection = location.pathname === '/' ||
                            location.pathname.startsWith('/category') ||
-                           location.pathname.startsWith('/program')
+                           location.pathname.startsWith('/program') ||
+                           location.pathname.startsWith('/workout')
+
+  const isExactHome = location.pathname === '/'
 
   const tabs = [
     {
@@ -19,26 +25,31 @@ export default function TabBar() {
       path: '/progress',
       label: 'Прогресс',
       icon: '📊',
-      isActive: location.pathname === '/progress'
+      isActive: location.pathname === '/progress',
+      // Прогресс — если уже на /progress, не реагируем
+      canTap: location.pathname !== '/progress'
     },
     {
       id: 'workouts',
       path: '/',
       label: 'Тренировки',
       icon: '💪',
-      isActive: isWorkoutSection
+      isActive: isWorkoutSection,
+      // Тренировки активны на всем разделе, но кликабельны только если НЕ ровно на /
+      canTap: !isExactHome
     },
     {
       id: 'settings',
       path: '/settings',
       label: 'Настройки',
       icon: '⚙️',
-      isActive: location.pathname === '/settings'
+      isActive: location.pathname === '/settings',
+      canTap: location.pathname !== '/settings'
     }
   ]
 
   const handleTap = (tab) => {
-    if (tab.isActive) return
+    if (!tab.canTap) return
     haptic.light()
     navigate(tab.path)
   }
@@ -51,7 +62,12 @@ export default function TabBar() {
           onClick={() => handleTap(tab)}
           style={{
             ...styles.tab,
-            background: tab.isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent'
+            background: tab.isActive && isExactHome === (tab.id === 'workouts') && tab.id === 'workouts'
+              ? 'rgba(255, 255, 255, 0.08)'
+              : tab.isActive
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'transparent',
+            cursor: tab.canTap ? 'pointer' : 'default'
           }}
         >
           <span style={{
@@ -86,7 +102,7 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.85)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: 'var(--radius-card)', // 33px внешний
+    borderRadius: 'var(--radius-card)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     zIndex: 100
   },
@@ -98,15 +114,11 @@ const styles = {
     gap: '3px',
     padding: '0 18px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 8px)', // 64px при 72px высоте
-    borderRadius: 'var(--radius-card)', // 33px и для активной кнопки тоже!
+    height: 'calc(var(--tabbar-height) - 8px)',
+    borderRadius: 'var(--radius-card)',
     transition: 'background 0.2s ease'
   },
-  icon: {
-    fontSize: '22px',
-    lineHeight: 1,
-    transition: 'opacity 0.2s ease'
-  },
+  icon: { fontSize: '22px', lineHeight: 1, transition: 'opacity 0.2s ease' },
   label: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '10px',
