@@ -8,10 +8,14 @@ import DailyQuests from '../components/DailyQuests'
  * Главный экран — Тренировки.
  *
  * E1:
- * - Логотип убран отсюда (живёт в Loader)
- * - PlayerCard sticky: прилипает к верху при скролле
- * - Daily Quests и категории скроллятся под ним
- * - Над категориями серый пиксельный заголовок "ТРЕНИРОВКИ"
+ * - Логотип в Loader (убран отсюда)
+ * - PlayerCard sticky, сжимается при скролле
+ * - Под закрепом — Daily Quests и категории, скроллятся
+ * - Над категориями серый заголовок "ТРЕНИРОВКИ"
+ *
+ * Закреп имеет:
+ * - Сплошной непрозрачный фон var(--color-bg) — ничего не просвечивает
+ * - z-index 10 (ниже частиц 200 и табБара 100, но выше контента)
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -37,7 +41,7 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* SICKY ШАПКА — PlayerCard всегда на виду */}
+      {/* SICKY ШАПКА */}
       <div style={styles.stickyHeader}>
         <PlayerCard />
       </div>
@@ -92,21 +96,21 @@ const styles = {
     paddingLeft: 0,
     paddingRight: 0
   },
-  // Sticky-шапка с PlayerCard
+  // Sticky-шапка: непрозрачный фон, z-index 10 (под частицами 200, под табБаром 100)
   stickyHeader: {
     position: 'sticky',
-    // прилипает к верхней безопасной зоне (там где у TG может быть статусбар)
     top: 'calc(var(--tg-safe-top) - 80px)',
-    zIndex: 50,
+    zIndex: 10,
     background: 'var(--color-bg)',
     paddingLeft: '16px',
     paddingRight: '16px',
-    paddingBottom: '8px',
-    // Лёгкий блюр-разделитель под блоком
-    boxShadow: '0 8px 16px -8px rgba(0, 0, 0, 0.4)'
+    paddingTop: '4px',
+    paddingBottom: '8px'
   },
   scrollableContent: {
-    padding: '0 16px'
+    padding: '0 16px',
+    position: 'relative',
+    zIndex: 1
   },
   categoriesHeader: {
     fontFamily: 'var(--font-tiny5)',
@@ -117,7 +121,7 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  cards: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  cards: { display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '24px' },
   categoryCard: {
     display: 'flex',
     alignItems: 'center',
@@ -130,7 +134,6 @@ const styles = {
     textAlign: 'left',
     opacity: 0.85
   },
-  // Featured (Силовая) — оставляем красный пока, в Е3 поменяем на зелёный
   categoryCardFeatured: {
     height: '110px',
     opacity: 1,
