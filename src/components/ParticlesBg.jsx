@@ -3,6 +3,13 @@ import { useEffect, useRef } from 'react'
 /**
  * Фоновые пиксельные частицы — тихий поток.
  * 2-3 частицы постоянно появляются снизу и летят вверх с лёгким покачиванием.
+ *
+ * E1-fix: z-index 200 (было 0). Частицы теперь летят поверх sticky-шапки PlayerCard.
+ * Слои:
+ *   200 — частицы (этот файл)
+ *   100 — таб-бар
+ *    10 — sticky-шапка на главной
+ *     1 — основной контент
  */
 export default function ParticlesBg() {
   const containerRef = useRef(null)
@@ -35,7 +42,7 @@ export default function ParticlesBg() {
         width: ${size}px;
         height: ${size}px;
         background: var(--color-primary);
-        z-index: 0;
+        z-index: 200;
         pointer-events: none;
         --particle-opacity: ${opacity};
         --drift-mid: ${driftMid};
@@ -69,7 +76,7 @@ export default function ParticlesBg() {
         position: 'fixed',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: 200,
         overflow: 'hidden'
       }}
       aria-hidden="true"
@@ -174,10 +181,9 @@ export function spawnQuestBurst(x, y) {
 }
 
 /**
- * НОВОЕ: пиксельные искорки из горящих огоньков серии (Порция В).
+ * Пиксельные искорки из горящих огоньков серии (Порция В).
  * Спавнятся при тапе по ряду огоньков (когда стрик 3+).
  * 3 кубика от каждого огонька, медленно плывут вверх и затухают.
- * Не "касаются" верхних блоков — короткая дистанция, низкий z-index чтобы не перекрывали.
  */
 export function spawnFireSparks(x, y) {
   const burst = document.createElement('div')
@@ -191,12 +197,11 @@ export function spawnFireSparks(x, y) {
     z-index: 30;
   `
 
-  // 3 искорки на каждый огонёк, цвета пламени
   const colors = ['#FFD700', '#FF8C42', '#FF8C42']
   for (let i = 0; i < 3; i++) {
     const spark = document.createElement('div')
-    const offsetX = (Math.random() * 8 - 4) + 'px' // лёгкий разброс по горизонтали
-    const driftY = -(20 + Math.random() * 14) + 'px' // взлёт 20-34 px (короткий)
+    const offsetX = (Math.random() * 8 - 4) + 'px'
+    const driftY = -(20 + Math.random() * 14) + 'px'
     const driftX = (Math.random() * 6 - 3) + 'px'
     const size = 2 + Math.floor(Math.random() * 2)
     const delay = (i * 0.08).toFixed(2) + 's'
