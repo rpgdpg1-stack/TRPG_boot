@@ -9,11 +9,8 @@ import XPBar from './XPBar'
 /**
  * Главный блок персонажа на Главной.
  *
- * Г8.1:
- * - Принудительный refresh юзера из БД при монтировании (для случая когда данные правились в Supabase UI)
- * - Попапы плавно появляются и плавно исчезают
- * - Автоматически закрываются через 4 секунды
- * - Закрываются по клику вне
+ * E1: При скролле страницы карточка сжимается в компактный режим —
+ * маленький аватар слева, имя и ранг в одну строку, тонкий XP-бар.
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
@@ -21,6 +18,7 @@ export default function PlayerCard() {
   const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
+  const [compact, setCompact] = useState(false)
 
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
@@ -40,9 +38,6 @@ export default function PlayerCard() {
     }
 
     loadData()
-
-    // ВАЖНО: при первом монтировании принудительно перечитываем юзера из БД.
-    // Это нужно когда данные правили в Supabase UI пока приложение было открыто.
     refreshCurrentUser().then(loadData).catch(() => {})
 
     window.addEventListener('xp-updated', loadData)
@@ -55,10 +50,28 @@ export default function PlayerCard() {
     }
   }, [])
 
+  // Слушаем скролл для compact-режима
+  useEffect(() => {
+    let ticking = false
+
+    const handleScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const y = window.scrollY || window.pageYOffset || 0
+        // Порог: 40px скролла = переход в compact
+        setCompact(y > 40)
+        ticking = false
+      })
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // Закрытие попапов по клику вне
   useEffect(() => {
     if (!showXPDetails && !showStreakHint) return
-
     const handleOutsideClick = (e) => {
       if (showXPDetails) {
         if (xpButtonRef.current?.contains(e.target)) return
@@ -71,29 +84,22 @@ export default function PlayerCard() {
         setShowStreakHint(false)
       }
     }
-
     document.addEventListener('pointerdown', handleOutsideClick)
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [showXPDetails, showStreakHint])
 
-  // Авто-закрытие XP попапа через 4 сек
   useEffect(() => {
     if (showXPDetails) {
       xpAutoCloseTimer.current = setTimeout(() => setShowXPDetails(false), 4000)
     }
-    return () => {
-      if (xpAutoCloseTimer.current) clearTimeout(xpAutoCloseTimer.current)
-    }
+    return () => { if (xpAutoCloseTimer.current) clearTimeout(xpAutoCloseTimer.current) }
   }, [showXPDetails])
 
-  // Авто-закрытие Streak попапа через 4 сек
   useEffect(() => {
     if (showStreakHint) {
       streakAutoCloseTimer.current = setTimeout(() => setShowStreakHint(false), 4000)
     }
-    return () => {
-      if (streakAutoCloseTimer.current) clearTimeout(streakAutoCloseTimer.current)
-    }
+    return () => { if (streakAutoCloseTimer.current) clearTimeout(streakAutoCloseTimer.current) }
   }, [showStreakHint])
 
   const level = getLevelFromXP(xp)
@@ -129,45 +135,59 @@ export default function PlayerCard() {
   const totalFlames = weeklyStreak >= 4 ? 4 : 3
   const filledFlames = Math.min(weeklyStreak, totalFlames)
 
+  // Размеры зависят от compact-режима
+  const avatarSize = compact ? 56 : 140
+  const avatarInnerSize = compact ? 50 : 124
+  const ringR = compact ? 26 : 66
+  const ringCircumference = 2 * Math.PI * ringR
+
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, ...(compact ? styles.containerCompact : {}) }}>
 
-      <div style={styles.avatarWrap}>
-        <svg style={styles.ring} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="70" cy="70" r="66" fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
-          <circle
-            cx="70" cy="70" r="66"
-            fill="none"
-            stroke={rank.color}
-            strokeWidth="3"
-            strokeLinecap="butt"
-            strokeDasharray={`${(progress / 100) * 414.7} 414.7`}
-            transform="rotate(-90 70 70)"
-            style={{
-              filter: `drop-shadow(0 0 4px ${rank.color})`,
-              transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
-            }}
-          />
-        </svg>
+      {/* Верхняя часть: аватар + имя/ранг (в compact в одну строку) */}
+      <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
 
-        <div style={styles.avatarInner}>
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt="" style={styles.avatarImg} />
-          ) : (
-            <div style={styles.avatarPlaceholder}>{displayName.charAt(0).toUpperCase()}</div>
-          )}
+        <div style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize, marginBottom: compact ? 0 : 12 }}>
+          <svg style={styles.ring} viewBox={`0 0 ${avatarSize} ${avatarSize}`} xmlns="http://www.w3.org/2000/svg">
+            <circle cx={avatarSize/2} cy={avatarSize/2} r={ringR} fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
+            <circle
+              cx={avatarSize/2} cy={avatarSize/2} r={ringR}
+              fill="none"
+              stroke={rank.color}
+              strokeWidth="3"
+              strokeLinecap="butt"
+              strokeDasharray={`${(progress / 100) * ringCircumference} ${ringCircumference}`}
+              transform={`rotate(-90 ${avatarSize/2} ${avatarSize/2})`}
+              style={{
+                filter: `drop-shadow(0 0 4px ${rank.color})`,
+                transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
+              }}
+            />
+          </svg>
+
+          <div style={{ ...styles.avatarInner, width: avatarInnerSize, height: avatarInnerSize }}>
+            {user?.photo_url ? (
+              <img src={user.photo_url} alt="" style={styles.avatarImg} />
+            ) : (
+              <div style={{ ...styles.avatarPlaceholder, fontSize: compact ? '20px' : '52px' }}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div style={styles.name}>{displayName}</div>
-      {username && <div style={styles.username}>{username}</div>}
+        <div style={{ ...styles.nameBlock, ...(compact ? styles.nameBlockCompact : {}) }}>
+          <div style={{ ...styles.name, fontSize: compact ? '15px' : '22px' }}>{displayName}</div>
+          {username && !compact && <div style={styles.username}>{username}</div>}
+          <div style={{ ...styles.rank, color: rank.color, fontSize: compact ? '10px' : '13px' }}>
+            {rank.emoji} {rank.name} {rank.subLevel}
+          </div>
+        </div>
 
-      <div style={{ ...styles.rank, color: rank.color }}>
-        {rank.emoji} {rank.name} {rank.subLevel}
       </div>
 
       {/* XP-БАР */}
-      <div style={styles.xpBlock}>
+      <div style={{ ...styles.xpBlock, ...(compact ? styles.xpBlockCompact : {}) }}>
         <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
           <XPBar progress={progress} color={rank.color} current={current} needed={needed} />
         </button>
@@ -194,37 +214,36 @@ export default function PlayerCard() {
         )}
       </div>
 
-      {/* ОГОНЬКИ */}
-      <div style={styles.streakWrap}>
-        <button
-          ref={streakButtonRef}
-          onClick={handleStreakTap}
-          style={styles.streakRow}
-          aria-label="Серия тренировок"
-        >
-          {Array.from({ length: totalFlames }).map((_, i) => (
-            <FlameIcon key={i} lit={i < filledFlames} />
-          ))}
-        </button>
+      {/* ОГОНЬКИ — в compact прячем, в обычном видны */}
+      {!compact && (
+        <div style={styles.streakWrap}>
+          <button
+            ref={streakButtonRef}
+            onClick={handleStreakTap}
+            style={styles.streakRow}
+            aria-label="Серия тренировок"
+          >
+            {Array.from({ length: totalFlames }).map((_, i) => (
+              <FlameIcon key={i} lit={i < filledFlames} />
+            ))}
+          </button>
 
-        {showStreakHint && (
-          <div ref={streakPopupRef} style={styles.streakPopup}>
-            <span style={styles.streakPopupText}>
-              Серия:🔥
-              <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
-              {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
-            </span>
-            <span style={styles.streakPopupSub}>
-              (серия сбросится в начале следующей недели)
-            </span>
-          </div>
-        )}
-      </div>
+          {showStreakHint && (
+            <div ref={streakPopupRef} style={styles.streakPopup}>
+              <span style={styles.streakPopupText}>
+                Серия:🔥
+                <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
+                {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
+              </span>
+              <span style={styles.streakPopupSub}>
+                (серия сбросится в начале следующей недели)
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       <style>{`
-        /* Появление + автоисчезновение через 4 сек.
-           Анимация: 0-6% появление, 94-100% исчезновение.
-           Длительность 4.4с = 0.25с появление + 4с показ + 0.4с исчезновение */
         @keyframes popupShowHide {
           0%   { opacity: 0; transform: translateY(-6px); }
           6%   { opacity: 1; transform: translateY(0); }
@@ -266,27 +285,105 @@ function FlameIcon({ lit }) {
 }
 
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 16px 4px', position: 'relative' },
-  avatarWrap: { position: 'relative', width: '140px', height: '140px', marginBottom: '12px' },
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '8px 16px 4px',
+    position: 'relative',
+    transition: 'padding 0.3s ease'
+  },
+  containerCompact: {
+    padding: '4px 16px 4px',
+    alignItems: 'stretch'
+  },
+  topRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    transition: 'all 0.3s ease',
+    width: '100%'
+  },
+  topRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '6px'
+  },
+  avatarWrap: {
+    position: 'relative',
+    transition: 'width 0.3s ease, height 0.3s ease, margin-bottom 0.3s ease',
+    flexShrink: 0
+  },
   ring: { position: 'absolute', inset: 0, width: '100%', height: '100%' },
   avatarInner: {
-    position: 'absolute', top: '50%', left: '50%',
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '124px', height: '124px',
-    borderRadius: '50%', overflow: 'hidden',
-    background: 'var(--color-card)'
+    borderRadius: '50%',
+    overflow: 'hidden',
+    background: 'var(--color-card)',
+    transition: 'width 0.3s ease, height 0.3s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
-    width: '100%', height: '100%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)', fontSize: '52px',
-    color: 'var(--color-primary)', background: 'var(--color-card)'
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'var(--font-tiny5)',
+    color: 'var(--color-primary)',
+    background: 'var(--color-card)'
   },
-  name: { fontFamily: 'var(--font-manrope)', fontSize: '22px', fontWeight: 700, color: 'var(--color-text)', marginTop: '4px' },
-  username: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '-2px', marginBottom: '12px' },
-  rank: { fontFamily: 'var(--font-tiny5)', fontSize: '13px', letterSpacing: '1.5px', marginBottom: '12px' },
-  xpBlock: { width: '100%', maxWidth: '320px', position: 'relative' },
+  nameBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    transition: 'all 0.3s ease'
+  },
+  nameBlockCompact: {
+    alignItems: 'flex-start',
+    gap: '1px',
+    flex: 1,
+    minWidth: 0
+  },
+  name: {
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    marginTop: 0,
+    transition: 'font-size 0.3s ease',
+    lineHeight: 1.1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '100%'
+  },
+  username: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    marginBottom: '12px'
+  },
+  rank: {
+    fontFamily: 'var(--font-tiny5)',
+    letterSpacing: '1.5px',
+    marginBottom: 0,
+    transition: 'font-size 0.3s ease'
+  },
+  xpBlock: {
+    width: '100%',
+    maxWidth: '320px',
+    position: 'relative',
+    marginTop: '12px',
+    transition: 'margin-top 0.3s ease'
+  },
+  xpBlockCompact: {
+    marginTop: '4px',
+    maxWidth: '100%'
+  },
   xpBarButton: { width: '100%', padding: 0, background: 'transparent' },
   popup: {
     position: 'absolute',
@@ -301,7 +398,14 @@ const styles = {
     zIndex: 50,
     animation: 'popupShowHide 4.4s ease-out forwards'
   },
-  popupRow: { display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', padding: '4px 0' },
+  popupRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    padding: '4px 0'
+  },
   popupValue: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-primary)', letterSpacing: '1px' },
   streakWrap: { position: 'relative', marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   streakRow: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent' },
@@ -316,7 +420,10 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '14px',
     padding: '10px 14px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
     whiteSpace: 'nowrap',
     animation: 'popupShowHideCentered 4.4s ease-out forwards',
     zIndex: 50
