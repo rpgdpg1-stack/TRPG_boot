@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react'
 
+/**
+ * Стартовый экран загрузки.
+ * Анимация бицепса с пиксельными частицами, "+1" улетает вверх,
+ * под бицепсом — логотип RPG TRAINING APP.
+ */
 export default function Loader({ onFinish }) {
   const sceneRef = useRef(null)
 
   useEffect(() => {
-    // 1) Закрываем лоадер через 1.8 сек
     const finishTimer = setTimeout(onFinish, 1800)
 
-    // 2) Спавним частицы вокруг бицепса каждые 250 мс
     const spawnParticle = () => {
       const scene = sceneRef.current
       if (!scene) return
@@ -21,10 +24,8 @@ export default function Loader({ onFinish }) {
         z-index: 1;
         pointer-events: none;
       `
-
-      // Случайная стартовая позиция вокруг бицепса
-      const startX = 50 + (Math.random() * 60 - 30) // 35-65%
-      const startY = 60 + (Math.random() * 30 - 15) // 50-75%
+      const startX = 50 + (Math.random() * 60 - 30)
+      const startY = 60 + (Math.random() * 30 - 15)
       const drift = (Math.random() * 40 - 20) + 'px'
       const duration = (1 + Math.random() * 0.8) + 's'
 
@@ -34,19 +35,12 @@ export default function Loader({ onFinish }) {
       particle.style.animation = `particleFloat ${duration} ease-out forwards`
 
       scene.appendChild(particle)
-
-      // Удаляем частицу из DOM после анимации (чтоб не копилось)
       setTimeout(() => particle.remove(), 2000)
     }
 
     const particleTimer = setInterval(spawnParticle, 250)
+    for (let i = 0; i < 4; i++) setTimeout(spawnParticle, i * 60)
 
-    // Стартовый "взрыв" из 4 частиц сразу
-    for (let i = 0; i < 4; i++) {
-      setTimeout(spawnParticle, i * 60)
-    }
-
-    // Очистка таймеров при закрытии лоадера
     return () => {
       clearTimeout(finishTimer)
       clearInterval(particleTimer)
@@ -60,6 +54,12 @@ export default function Loader({ onFinish }) {
         <div style={styles.plusOne}>+1</div>
       </div>
 
+      {/* Логотип переехал из главной сюда */}
+      <div style={styles.logoBlock}>
+        <span style={styles.logo}>RPG</span>
+        <span style={styles.logoSubtitle}>TRAINING APP</span>
+      </div>
+
       <style>{`
         @keyframes flexBiceps {
           0%   { transform: rotate(0deg) scale(1); }
@@ -67,18 +67,20 @@ export default function Loader({ onFinish }) {
           55%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
           100% { transform: rotate(0deg) scale(1); }
         }
-
         @keyframes particleFloat {
           0%   { opacity: 0; transform: translateY(0) translateX(0) scale(1); }
           10%  { opacity: 1; }
           100% { opacity: 0; transform: translateY(-80px) translateX(var(--drift, 0px)) scale(0.5); }
         }
-
         @keyframes plusOneFly {
           0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.6); }
           15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
           80%  { opacity: 1; transform: translateX(-50%) translateY(-70px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-90px) scale(1); }
+        }
+        @keyframes logoFadeIn {
+          0%   { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
@@ -94,7 +96,8 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999
+    zIndex: 9999,
+    gap: '24px'
   },
   scene: {
     position: 'relative',
@@ -127,5 +130,25 @@ const styles = {
     zIndex: 3,
     opacity: 0,
     animation: 'plusOneFly 1.8s ease-out infinite'
+  },
+  logoBlock: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '8px',
+    animation: 'logoFadeIn 0.6s ease-out 0.3s both'
+  },
+  logo: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '20px',
+    color: 'var(--color-primary)',
+    letterSpacing: '3px',
+    lineHeight: 1
+  },
+  logoSubtitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px'
   }
 }
