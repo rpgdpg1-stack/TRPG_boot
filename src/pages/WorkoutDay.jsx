@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
-import { getWorkoutDay, MUSCLE_GROUP_LABELS, finishWorkout } from '../lib/programs'
+import { getWorkoutDay, finishWorkout } from '../features/programs/api'
+import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import ExerciseCard from '../components/ExerciseCard'
@@ -13,11 +14,8 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * Правка #1: убран polling getCurrentUser() каждые 100мс (50 попыток).
- * Этот костыль был нужен потому что Loader закрывался по таймеру 1.8с
- * независимо от готовности auth. Теперь Loader ждёт promise ensureAuth(),
- * так что к моменту монтирования WorkoutDay юзер гарантированно есть.
- * Если по какой-то причине его всё-таки нет — показываем понятную ошибку.
+ * Правка #1: polling getCurrentUser убран — Loader гарантирует юзера до маунта.
+ * Правка #3: programId в URL — это slug ('split'). dbId конвертируется внутри API.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -43,8 +41,6 @@ export default function WorkoutDay() {
     let cancelled = false
 
     const load = async () => {
-      // К этому моменту Loader уже дождался ensureAuth(). Если юзера нет —
-      // значит auth провалился (нет Telegram, ошибка сети при upsert и т.п.).
       if (!getCurrentUser()) {
         setError('Не удалось авторизоваться. Перезапусти приложение.')
         setLoading(false)

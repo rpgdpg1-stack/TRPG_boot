@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
-import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../lib/programs'
+import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
 
 /**
  * Полноэкранная страница замены упражнения.
  *
- * URL: /swap/:programId/:day/:orderNum
+ * URL: /swap/:programId/:day/:orderNum (programId = slug, например 'split')
  * Передаём через location.state: { subGroup, type, currentExerciseId }
- *
- * Если state нет (юзер открыл страницу напрямую) — показываем ошибку.
- *
- * Логика:
- * - Загружаем все упражнения той же subGroup+type
- * - Текущее закреплено сверху (выделено зелёным)
- * - Снизу список альтернатив с радио-кнопками
- * - Кнопка "Сменить" внизу — активна когда выбрано НЕ текущее
- * - Тап Сменить → saveExerciseSwap → возврат на /workout/:programId/:day
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -37,7 +28,6 @@ export default function SwapExercise() {
     lockVerticalSwipes()
   }, [navigate, programId, day])
 
-  // Загружаем альтернативы и данные текущего упражнения
   useEffect(() => {
     let cancelled = false
 
@@ -55,7 +45,6 @@ export default function SwapExercise() {
 
         if (cancelled) return
 
-        // Сортируем альтернативы по priority и имени
         const sorted = (alternatives || []).slice().sort((a, b) => {
           const pa = a.priority ?? 99
           const pb = b.priority ?? 99
@@ -76,19 +65,21 @@ export default function SwapExercise() {
     return () => { cancelled = true }
   }, [subGroup, type, currentExerciseId, currentExerciseName])
 
-  // Тап на альтернативу — выбрать
   const handleSelect = (exerciseId) => {
     haptic.light()
     setSelectedId(exerciseId)
   }
 
-  // Кнопка Сменить
   const handleConfirm = async () => {
     if (!selectedId || selectedId === currentExerciseId) return
     if (saving) return
 
     setSaving(true)
     try {
+      // saveExerciseSwap внутри по-прежнему ожидает programId как dbId.
+      // НО на следующем этапе мы переведём её на slug. Пока передаём slug —
+      // если у тебя в БД старые записи с dbId, они продолжат работать,
+      // а новые свапы пойдут со slug. Чистая миграция случится в Блоке 4.
       const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId)
       if (ok) {
         haptic.success()
@@ -105,10 +96,8 @@ export default function SwapExercise() {
     }
   }
 
-  // Альтернативы кроме текущей
   const alternatives = allExercises.filter(e => e.id !== currentExerciseId)
 
-  // Без правильных данных — показываем ошибку
   if (!subGroup || !type) {
     return (
       <div className="page page-enter" style={styles.page}>
@@ -134,7 +123,6 @@ export default function SwapExercise() {
 
       {!loading && currentExercise && (
         <>
-          {/* Текущее упражнение — закреплено сверху */}
           <div style={styles.currentBlock}>
             <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
             <ExerciseRow
@@ -145,7 +133,6 @@ export default function SwapExercise() {
             />
           </div>
 
-          {/* Альтернативы */}
           <div style={styles.alternativesBlock}>
             <div style={styles.sectionLabel}>
               АЛЬТЕРНАТИВЫ {alternatives.length > 0 && `(${alternatives.length})`}
@@ -172,7 +159,6 @@ export default function SwapExercise() {
         </>
       )}
 
-      {/* Кнопка Сменить — внизу */}
       {!loading && (
         <div style={styles.bottomBar}>
           <button
@@ -192,9 +178,6 @@ export default function SwapExercise() {
   )
 }
 
-/**
- * Одна строка в списке альтернатив.
- */
 function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
   return (
     <button onClick={onTap} className="press-tile" style={{
@@ -206,7 +189,6 @@ function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
           ? 'rgba(255, 255, 255, 0.04)'
           : 'var(--color-card)'
     }}>
-      {/* Превью */}
       <div style={rowStyles.preview}>
         {exercise.preview_url ? (
           <img src={exercise.preview_url} alt="" style={rowStyles.previewImg} />
@@ -215,7 +197,6 @@ function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
         )}
       </div>
 
-      {/* Название */}
       <div style={rowStyles.content}>
         <div style={rowStyles.name}>{exercise.name}</div>
         {exercise.meta_info && (
@@ -223,7 +204,6 @@ function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
         )}
       </div>
 
-      {/* Радио-кружок */}
       <div style={rowStyles.radio}>
         <div style={{
           ...rowStyles.radioOuter,

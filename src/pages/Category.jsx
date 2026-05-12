@@ -2,47 +2,58 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms } from '../lib/storage'
+import { getProgramsByCategory } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 
-const CATEGORIES_DATA = {
+/**
+ * Экран категории — список программ внутри неё.
+ *
+ * Правка #3: программы для категории берутся из реестра.
+ * Чтобы добавить программу — регистрируешь в features/programs/registry.js,
+ * указываешь category — и она автоматически появляется тут.
+ */
+
+const CATEGORIES_META = {
   gym: {
     title: 'СИЛОВАЯ',
     subtitle: 'ВЫБЕРИ ПРОГРАММУ',
     color: 'var(--color-primary)',
-    programs: [
-      { id: 'split', title: 'Сплит', tags: ['зал'], available: true, comingSoon: false }
-    ],
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   cardio: {
     title: 'КАРДИО',
     subtitle: 'СКОРО',
     color: 'var(--cat-cardio)',
-    programs: [
-      { id: 'running', title: 'Бег', tags: [], available: false, comingSoon: true },
-      { id: 'hiit',    title: 'HIIT', tags: [], available: false, comingSoon: true }
-    ],
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   pool: {
     title: 'ПЛАВАНИЕ',
     subtitle: 'СКОРО',
     color: 'var(--cat-pool)',
-    programs: [
-      { id: 'cardio-pool', title: 'Кардио план', tags: [], available: false, comingSoon: true }
-    ],
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   stretch: {
     title: 'РАСТЯЖКА',
     subtitle: 'СКОРО',
     color: 'var(--cat-stretch)',
-    programs: [
-      { id: 'yoga',    title: 'Йога',    tags: [], available: false, comingSoon: true },
-      { id: 'pilates', title: 'Пилатес', tags: [], available: false, comingSoon: true }
-    ],
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   }
+}
+
+// Заглушки для категорий где программы ещё не сделаны.
+// Удалить когда появятся реальные программы в registry.
+const PLACEHOLDER_PROGRAMS = {
+  cardio: [
+    { slug: 'running', title: 'Бег', tags: [], available: false, comingSoon: true },
+    { slug: 'hiit',    title: 'HIIT', tags: [], available: false, comingSoon: true }
+  ],
+  pool: [
+    { slug: 'cardio-pool', title: 'Кардио план', tags: [], available: false, comingSoon: true }
+  ],
+  stretch: [
+    { slug: 'yoga',    title: 'Йога',    tags: [], available: false, comingSoon: true },
+    { slug: 'pilates', title: 'Пилатес', tags: [], available: false, comingSoon: true }
+  ]
 }
 
 export default function Category() {
@@ -50,7 +61,12 @@ export default function Category() {
   const navigate = useNavigate()
   const [pinnedIds, setPinnedIds] = useState([])
 
-  const data = CATEGORIES_DATA[id]
+  const meta = CATEGORIES_META[id]
+
+  // Реальные программы из реестра + placeholder'ы для будущих
+  const realPrograms = getProgramsByCategory(id)
+  const placeholderPrograms = realPrograms.length === 0 ? (PLACEHOLDER_PROGRAMS[id] || []) : []
+  const programs = [...realPrograms, ...placeholderPrograms]
 
   useEffect(() => {
     backButton.setHandler(() => navigate('/'))
@@ -65,7 +81,7 @@ export default function Category() {
     haptic.light()
   }
 
-  if (!data) {
+  if (!meta) {
     return (
       <div className="page page-enter" style={styles.notFoundPage}>
         <div style={styles.notFoundText}>Категория не найдена</div>
@@ -73,9 +89,9 @@ export default function Category() {
     )
   }
 
-  const sortedPrograms = [...data.programs].sort((a, b) => {
-    const aPinned = pinnedIds.includes(a.id)
-    const bPinned = pinnedIds.includes(b.id)
+  const sortedPrograms = [...programs].sort((a, b) => {
+    const aPinned = pinnedIds.includes(a.slug)
+    const bPinned = pinnedIds.includes(b.slug)
     if (aPinned && !bPinned) return -1
     if (!aPinned && bPinned) return 1
     return 0
@@ -85,15 +101,15 @@ export default function Category() {
     <div className="page page-enter" style={styles.page}>
 
       <header style={styles.header}>
-        <h1 style={{ ...styles.title, color: data.color }}>{data.title}</h1>
-        <div style={styles.subtitle}>{data.subtitle}</div>
+        <h1 style={{ ...styles.title, color: meta.color }}>{meta.title}</h1>
+        <div style={styles.subtitle}>{meta.subtitle}</div>
       </header>
 
       <div style={styles.programs}>
         {sortedPrograms.map(prog => (
           <ProgramCard
-            key={prog.id}
-            id={prog.id}
+            key={prog.slug}
+            id={prog.slug}
             title={prog.title}
             tags={prog.tags}
             available={prog.available}
@@ -103,7 +119,7 @@ export default function Category() {
       </div>
 
       <button onClick={handleCreateTap} style={styles.createButton}>
-        {data.createLabel}
+        {meta.createLabel}
       </button>
     </div>
   )

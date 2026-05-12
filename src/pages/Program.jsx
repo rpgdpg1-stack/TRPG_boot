@@ -2,35 +2,22 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getActiveDay } from '../lib/storage'
+import { getProgramBySlug } from '../features/programs/registry'
 
 /**
  * Экран программы — выбор дня A/B/C.
  *
- * dbId — это идентификатор программы в Supabase (prog_001),
- * id в URL (split) — для красивых ссылок.
- * При тапе по дню навигируем используя dbId, чтобы он был доступен в /workout/:programId/:day
+ * Правка #3: данные программы теперь берутся из registry.js по slug,
+ * больше нет захардкоженных PROGRAM_DATA и PROGRAM_TO_CATEGORY.
+ * URL дня тренировки — со slug: /workout/split/A
  */
-
-const PROGRAM_TO_CATEGORY = {
-  split: 'gym'
-}
-
-const PROGRAM_DATA = {
-  split: {
-    title: 'СПЛИТ',
-    tags: ['зал'],
-    days: ['A', 'B', 'C'],
-    dbId: 'prog_001'
-  }
-}
-
 export default function Program() {
-  const { id } = useParams()
+  const { id } = useParams()  // id = slug ('split')
   const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(null)
 
-  const data = PROGRAM_DATA[id]
-  const parentCategory = PROGRAM_TO_CATEGORY[id] || 'gym'
+  const program = getProgramBySlug(id)
+  const parentCategory = program?.category || 'gym'
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/category/${parentCategory}`))
@@ -41,7 +28,7 @@ export default function Program() {
     getActiveDay(id).then(setActiveDay)
   }, [id])
 
-  if (!data) {
+  if (!program) {
     return (
       <div className="page page-enter" style={styles.notFoundPage}>
         <div style={styles.notFoundText}>Программа не найдена</div>
@@ -49,22 +36,22 @@ export default function Program() {
     )
   }
 
-  const recommendedDay = activeDay || 'A'
+  const days = Object.keys(program.data.days) // ['A', 'B', 'C']
+  const recommendedDay = activeDay || days[0]
 
   const handleDayTap = (day) => {
     haptic.light()
-    // Навигируем по dbId (prog_001), чтобы при сохранении в БД использовался правильный foreign key
-    const programDbId = data.dbId || id
-    setTimeout(() => navigate(`/workout/${programDbId}/${day}`), 80)
+    // Используем slug (id из URL) — конвертация в dbId происходит внутри API
+    setTimeout(() => navigate(`/workout/${id}/${day}`), 80)
   }
 
   return (
     <div className="page page-enter" style={styles.page}>
 
       <header style={styles.header}>
-        <h1 style={styles.title}>{data.title}</h1>
+        <h1 style={styles.title}>{program.title}</h1>
         <div style={styles.tags}>
-          {data.tags.map(tag => (
+          {program.tags.map(tag => (
             <span key={tag} style={styles.tag}>{tag.toUpperCase()}</span>
           ))}
         </div>
@@ -77,12 +64,12 @@ export default function Program() {
       )}
       {!activeDay && (
         <div style={styles.activeDayHint}>
-          НАЧНИ С ДНЯ <span style={styles.activeDayLetter}>A</span>
+          НАЧНИ С ДНЯ <span style={styles.activeDayLetter}>{days[0]}</span>
         </div>
       )}
 
       <div style={styles.daysGrid}>
-        {data.days.map(day => {
+        {days.map(day => {
           const isRecommended = day === recommendedDay
           return (
             <button

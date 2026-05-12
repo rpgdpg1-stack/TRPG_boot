@@ -1,22 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { saveExerciseWeight } from '../lib/programs'
+import { saveExerciseWeight } from '../features/exercises/api'
 import { haptic } from '../lib/telegram'
 
 /**
  * Карточка упражнения на экране дня тренировки.
  *
- * Д2:
- * - Тап → onTap (родитель активирует/деактивирует)
- * - isActive → визуальное состояние "выполнено"
- *
- * Д3.1 (вес):
- * - Тап по полю веса → нативная цифровая клавиатура
- * - Закрытие клавиатуры → автосохранение
- *
- * Д3.2 (долгое нажатие):
- * - Long-press 500мс → onLongPress (родитель показывает меню Инфо/Сменить)
- * - Если был long-press — обычный onTap не вызывается
- * - Если активная клавиатура веса — long-press игнорируется
+ * Д2: Тап → onTap, isActive → визуальное состояние "выполнено"
+ * Д3.1: Тап по полю веса → нативная цифровая клавиатура, автосохранение
+ * Д3.2: Long-press 500мс → onLongPress (меню Инфо/Сменить)
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
@@ -34,12 +25,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const [localWeight, setLocalWeight] = useState(user_weight_kg)
   const inputRef = useRef(null)
 
-  // Long-press
   const longPressTimer = useRef(null)
   const longPressFired = useRef(false)
   const pointerStartPos = useRef({ x: 0, y: 0 })
   const LONG_PRESS_MS = 500
-  const MOVE_THRESHOLD_PX = 10 // если палец дёрнулся больше — отменяем
+  const MOVE_THRESHOLD_PX = 10
 
   useEffect(() => {
     setLocalWeight(user_weight_kg)
@@ -63,14 +53,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }, [editing])
 
-  // Очистка таймера при размонтировании
   useEffect(() => {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
     }
   }, [])
 
-  // POINTER DOWN — стартуем таймер долгого нажатия
   const handlePointerDown = (e) => {
     if (editing) return
     longPressFired.current = false
@@ -85,7 +73,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }, LONG_PRESS_MS)
   }
 
-  // POINTER MOVE — если палец сильно ушёл, отменяем
   const handlePointerMove = (e) => {
     if (!longPressTimer.current) return
     const dx = Math.abs(e.clientX - pointerStartPos.current.x)
@@ -96,7 +83,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  // POINTER UP / CANCEL — снимаем таймер
   const handlePointerUp = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
@@ -104,7 +90,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  // CLICK — обычный тап. Если был long-press — игнорируем
   const handleClick = (e) => {
     if (editing) return
     if (longPressFired.current) {
@@ -114,11 +99,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (onTap) onTap(slot)
   }
 
-  // Тап по полю веса
   const handleWeightTap = (e) => {
     e.stopPropagation()
     if (!exercise_id) return
-    // Отменяем возможный long-press таймер
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
@@ -127,7 +110,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     setEditing(true)
   }
 
-  // Чтобы long-press не стрелял с поля веса
   const handleWeightPointerDown = (e) => {
     e.stopPropagation()
   }
