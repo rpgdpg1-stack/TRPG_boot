@@ -2,15 +2,21 @@ import { useEffect, useRef } from 'react'
 
 /**
  * Модалка завершения тренировки.
- * Появляется когда юзер активировал все карточки упражнений.
  *
- * Содержит:
- * - 🔥 Огонёк по центру с пиксельными искрами вверх (как на огоньках стрика)
- * - Текст "ТРЕНИРОВКА ЗАВЕРШЕНА"
- * - Бейдж "+150 💪"
- * - Кнопка ОК → закрыть и вернуться на главную
+ * Правка #7: добавлена защита от потери прогресса при плохом интернете.
+ * Три состояния:
+ *  - idle    → стандартный вид с кнопкой ОК
+ *  - saving  → "Сохранение..." с заблокированной кнопкой
+ *  - error   → красная плашка + кнопка "Повторить" (можно тыкать пока не получится)
+ *
+ * Логика сохранения теперь в родителе (WorkoutDay), модалка только показывает UI.
+ *
+ * @param reward    - сколько мускулов начисляется
+ * @param status    - 'idle' | 'saving' | 'error'
+ * @param errorMsg  - текст ошибки если status === 'error'
+ * @param onConfirm - вызывается при тапе на ОК/Повторить
  */
-export default function WorkoutFinishedModal({ reward = 150, onConfirm }) {
+export default function WorkoutFinishedModal({ reward = 150, status = 'idle', errorMsg = '', onConfirm }) {
   const sceneRef = useRef(null)
 
   // Спавним пиксельные искорки из огонька (как у горящих огоньков стрика)
@@ -50,7 +56,6 @@ export default function WorkoutFinishedModal({ reward = 150, onConfirm }) {
     }
 
     const interval = setInterval(spawnSpark, 90)
-    // Стартовый "залп" из 6 искр
     for (let i = 0; i < 6; i++) setTimeout(spawnSpark, i * 40)
 
     return () => {
@@ -59,24 +64,63 @@ export default function WorkoutFinishedModal({ reward = 150, onConfirm }) {
     }
   }, [])
 
+  // Тексты для кнопки и заголовка в зависимости от состояния
+  const isSaving = status === 'saving'
+  const isError = status === 'error'
+
+  const titleText = isError ? 'НЕ УДАЛОСЬ СОХРАНИТЬ' : 'ТРЕНИРОВКА ЗАВЕРШЕНА'
+  const buttonText = isSaving
+    ? 'СОХРАНЕНИЕ...'
+    : isError
+      ? 'ПОВТОРИТЬ'
+      : 'ОК'
+
+  const handleClick = () => {
+    if (isSaving) return // блокируем повторные клики во время сохранения
+    onConfirm?.()
+  }
+
   return (
     <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div style={{
+        ...styles.modal,
+        ...(isError ? styles.modalError : {})
+      }}>
 
         {/* Огонёк со спаунящимися искрами */}
         <div ref={sceneRef} style={styles.scene}>
-          <div style={styles.flame}>🔥</div>
+          <div style={styles.flame}>{isError ? '⚠️' : '🔥'}</div>
         </div>
 
         {/* Заголовок */}
-        <div style={styles.title}>ТРЕНИРОВКА ЗАВЕРШЕНА</div>
+        <div style={{
+          ...styles.title,
+          color: isError ? '#FF8C42' : 'var(--color-text)'
+        }}>
+          {titleText}
+        </div>
 
-        {/* Бейдж награды */}
-        <div style={styles.rewardBadge}>+{reward} 💪</div>
+        {/* В норме — бейдж награды. При ошибке — сообщение */}
+        {isError ? (
+          <div style={styles.errorMessage}>
+            {errorMsg || 'Проверь подключение к интернету и попробуй ещё раз.'}
+          </div>
+        ) : (
+          <div style={styles.rewardBadge}>+{reward} 💪</div>
+        )}
 
-        {/* Кнопка ОК */}
-        <button onClick={onConfirm} style={styles.confirmButton}>
-          ОК
+        {/* Кнопка действия */}
+        <button
+          onClick={handleClick}
+          disabled={isSaving}
+          style={{
+            ...styles.confirmButton,
+            ...(isError ? styles.confirmButtonError : {}),
+            opacity: isSaving ? 0.6 : 1,
+            cursor: isSaving ? 'default' : 'pointer'
+          }}
+        >
+          {buttonText}
         </button>
 
       </div>
@@ -127,6 +171,10 @@ const styles = {
     animation: 'modalScaleIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 66, 0.15)'
   },
+  modalError: {
+    border: '1px solid rgba(255, 140, 66, 0.3)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 66, 0.2)'
+  },
   scene: {
     position: 'relative',
     width: '120px',
@@ -145,7 +193,6 @@ const styles = {
   title: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '18px',
-    color: 'var(--color-text)',
     letterSpacing: '2px',
     textAlign: 'center'
   },
@@ -160,6 +207,14 @@ const styles = {
     borderRadius: '12px',
     textShadow: '0 0 10px rgba(158, 209, 83, 0.5)'
   },
+  errorMessage: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    lineHeight: 1.5,
+    padding: '8px 4px'
+  },
   confirmButton: {
     marginTop: '8px',
     width: '100%',
@@ -172,7 +227,10 @@ const styles = {
     letterSpacing: '1.5px',
     borderRadius: '14px',
     border: 'none',
-    transition: 'transform 0.12s ease',
-    cursor: 'pointer'
+    transition: 'opacity 0.2s ease, transform 0.12s ease'
+  },
+  confirmButtonError: {
+    background: '#FF8C42',
+    color: '#0D0C0C'
   }
 }

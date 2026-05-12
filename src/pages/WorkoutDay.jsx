@@ -16,6 +16,8 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
  *
  * Правка #1: polling getCurrentUser убран — Loader гарантирует юзера до маунта.
  * Правка #3: programId в URL — это slug ('split'). dbId конвертируется внутри API.
+ * Правка #7: модалка завершения с состояниями saving/error и кнопкой Повторить.
+ *            Прогресс больше не теряется при плохом интернете.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -27,7 +29,10 @@ export default function WorkoutDay() {
 
   const [activeOrderNums, setActiveOrderNums] = useState(() => new Set())
   const [showFinishedModal, setShowFinishedModal] = useState(false)
-  const [finishing, setFinishing] = useState(false)
+
+  // Состояние модалки финиша: 'idle' | 'saving' | 'error'
+  const [finishStatus, setFinishStatus] = useState('idle')
+  const [finishErrorMsg, setFinishErrorMsg] = useState('')
 
   const [actionSlot, setActionSlot] = useState(null)
   const [infoSlot, setInfoSlot] = useState(null)
@@ -67,7 +72,7 @@ export default function WorkoutDay() {
   }, [programId, day])
 
   const handleCardTap = (slot) => {
-    if (showFinishedModal || finishing) return
+    if (showFinishedModal) return
     if (actionSlot || infoSlot) return
 
     setActiveOrderNums(prev => {
@@ -88,7 +93,7 @@ export default function WorkoutDay() {
   }
 
   const handleCardLongPress = (slot) => {
-    if (showFinishedModal || finishing) return
+    if (showFinishedModal) return
     setActionSlot(slot)
   }
 
@@ -114,9 +119,17 @@ export default function WorkoutDay() {
     })
   }
 
+  /**
+   * Попытка завершить тренировку.
+   * При ошибке модалка остаётся открытой с кнопкой "Повторить" —
+   * юзер может тыкать сколько угодно пока не получится.
+   */
   const handleConfirmFinish = async () => {
-    if (finishing) return
-    setFinishing(true)
+    // Защита от повторных кликов во время сохранения
+    if (finishStatus === 'saving') return
+
+    setFinishStatus('saving')
+    setFinishErrorMsg('')
 
     try {
       const exerciseIds = slots.map(s => s.exercise_id).filter(Boolean)
@@ -124,20 +137,27 @@ export default function WorkoutDay() {
 
       const result = await finishWorkout(programId, day, exerciseIds, reward)
 
-      if (result) {
-        await setLastCompletedDay(programId, day)
-        haptic.success()
-      } else {
-        haptic.warning()
-        console.warn('[WorkoutDay] finishWorkout returned null, navigating anyway')
+      if (!result) {
+        // finishWorkout вернул null = что-то пошло не так в API/RPC
+        setFinishStatus('error')
+        setFinishErrorMsg('Проверь подключение к интернету и попробуй ещё раз.')
+        haptic.error()
+        return
       }
 
+      // Успех — записываем что день пройден и уходим на главную
+      await setLastCompletedDay(programId, day)
+      haptic.success()
+
       setShowFinishedModal(false)
+      setFinishStatus('idle')
       navigate('/')
+
     } catch (e) {
       console.error('[WorkoutDay] handleConfirmFinish error:', e)
+      setFinishStatus('error')
+      setFinishErrorMsg(e?.message || 'Что-то пошло не так. Попробуй ещё раз.')
       haptic.error()
-      setFinishing(false)
     }
   }
 
@@ -211,6 +231,8 @@ export default function WorkoutDay() {
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
+          status={finishStatus}
+          errorMsg={finishErrorMsg}
           onConfirm={handleConfirmFinish}
         />
       )}

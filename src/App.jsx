@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Routes, Route } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
+import ErrorBoundary from './components/layout/ErrorBoundary'
 import TabBar from './components/TabBar'
 import ParticlesBg from './components/ParticlesBg'
 
@@ -21,7 +22,6 @@ export default function App() {
 
   // Стартуем auth ОДИН раз и кладём промис в ref —
   // Loader ждёт именно этот промис, не запускает повторно.
-  // useRef + ленивая инициализация = промис существует уже к первому рендеру.
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
     initTelegram()
@@ -40,21 +40,26 @@ export default function App() {
     )
   }
 
+  // ErrorBoundary оборачивает ВСЁ приложение (правка #6).
+  // Если в любом компоненте упадёт исключение — увидим красивый экран,
+  // а не белое пятно.
   return (
-    <div className="app">
-      <ParticlesBg />
+    <ErrorBoundary>
+      <div className="app">
+        <ParticlesBg />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/category/:id" element={<Category />} />
-        <Route path="/program/:id" element={<Program />} />
-        <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
-        <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
-        <Route path="/progress" element={<Progress />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/category/:id" element={<Category />} />
+          <Route path="/program/:id" element={<Program />} />
+          <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
+          <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
+          <Route path="/progress" element={<Progress />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
 
-      <TabBar />
-    </div>
+        <TabBar />
+      </div>
+    </ErrorBoundary>
   )
 }
