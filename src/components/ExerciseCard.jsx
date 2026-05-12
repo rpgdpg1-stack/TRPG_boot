@@ -1,18 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { saveExerciseWeight } from '../lib/programs'
 
 /**
  * Карточка упражнения на экране дня тренировки.
  *
  * Д2:
  * - Тап → onTap (родитель управляет активацией)
- * - isActive → визуальное состояние "выполнено"
- *   (затемнение + блюр + монохром)
- * - "✅ Готово, молодец!" всплывает по центру при первой активации (1.5 сек)
+ * - isActive → визуальное состояние "выполнено" (затемнение + блюр + монохром)
+ * - "✅ Готово, молодец!" всплывает при первой активации (1.5 сек)
  *
- * Д3 (потом): тап на цифру веса → клавиатура, долгое нажатие → меню Инфо/Сменить.
+ * Д3.1 (ввод веса):
+ * - Тап по полю веса → нативная цифровая клавиатура
+ * - Текущее значение выделено, можно печатать поверх
+ * - Закрытие клавиатуры → автосохранение в БД (user_exercise_weights)
+ * - Тап по полю веса НЕ активирует карточку (event.stopPropagation)
  */
 export default function ExerciseCard({ slot, isActive = false, onTap }) {
   const {
+    exercise_id,
     exercise_name,
     meta_info,
     preview_url,
@@ -20,10 +25,18 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
     user_weight_kg
   } = slot
 
-  // Локальное состояние - показывать ли всплывающую надпись "Готово, молодец!"
-  // Триггерится каждый раз при переходе isActive false → true.
   const [showDoneToast, setShowDoneToast] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('') // строка во время редактирования
+  const [localWeight, setLocalWeight] = useState(user_weight_kg) // отображение после сохранения
+  const inputRef = useRef(null)
 
+  // Синхронизируем локальный вес если родитель прислал новый
+  useEffect(() => {
+    setLocalWeight(user_weight_kg)
+  }, [user_weight_kg])
+
+  // Toast "Готово, молодец" — как было
   useEffect(() => {
     if (isActive) {
       setShowDoneToast(true)
@@ -32,23 +45,109 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
     }
   }, [isActive])
 
-  const handleClick = () => {
+  // Когда переходим в режим редактирования — фокусируем и выделяем
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      // Микро-задержка — даёт iOS показать клавиатуру стабильно
+      const timer = setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [editing])
+
+  // Тап на карточку — родитель решит активировать/нет
+  const handleCardClick = (e) => {
+    // Если идёт редактирование — не активируем
+    if (editing) return
     if (onTap) onTap(slot)
   }
 
+  // Тап на поле веса — открыть ввод. НЕ всплывает до карточки.
+  const handleWeightTap = (e) => {
+    e.stopPropagation()
+    if (!exercise_id) return // нечего сохранять
+    // В draft кладём текущий вес или пустую строку
+    setDraft(localWeight !== null && localWeight !== undefined ? String(localWeight) : '')
+    setEditing(true)
+  }
+
+  // Изменение значения в input
+  const handleInputChange = (e) => {
+    let v = e.target.value
+    // Разрешаем только цифры, точку, запятую
+    v = v.replace(/,/g, '.')
+    v = v.replace(/[^0-9.]/g, '')
+    // Не больше одной точки
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    // Максимум 5 символов (например 999.5)
+    if (v.length > 5) v = v.slice(0, 5)
+    setDraft(v)
+  }
+
+  // Закрытие клавиатуры — сохраняем
+  const handleInputBlur = async () => {
+    setEditing(false)
+
+    // Парсим
+    const trimmed = draft.trim()
+    if (trimmed === '') {
+      // Пустое — оставляем как было, ничего не сохраняем
+      return
+    }
+
+    const num = parseFloat(trimmed)
+    if (isNaN(num) || num < 0) {
+      // Невалидное — откатываем
+      return
+    }
+
+    // Округляем до 0.5 кг для аккуратности, ограничиваем 1-500
+    const clamped = Math.max(0, Math.min(500, num))
+    const rounded = Math.round(clamped * 2) / 2 // шаг 0.5
+
+    // Если не изменилось — не сохраняем
+    if (rounded === localWeight) return
+
+    setLocalWeight(rounded) // оптимистичное обновление
+
+    // Сохраняем в БД (fire-and-forget с логом)
+    try {
+      const ok = await saveExerciseWeight(exercise_id, rounded)
+      if (!ok) {
+        console.warn('[ExerciseCard] saveExerciseWeight returned false')
+      }
+    } catch (e) {
+      console.error('[ExerciseCard] saveExerciseWeight error:', e)
+    }
+  }
+
+  // Enter/Готово на клавиатуре — закрываем
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      inputRef.current?.blur()
+    }
+  }
+
+  const displayWeight = localWeight !== null && localWeight !== undefined
+    ? localWeight
+    : null
+
   return (
     <div
-      onClick={handleClick}
+      onClick={handleCardClick}
       style={{
         ...styles.card,
         cursor: 'pointer',
-        // Активная карточка: затемнение + блюр + монохром
         opacity: isActive ? 0.45 : 1,
         filter: isActive ? 'grayscale(0.85) blur(0.4px)' : 'none',
         transition: 'opacity 0.3s ease, filter 0.3s ease'
       }}
     >
-      {/* Превью / плейсхолдер */}
+      {/* Превью */}
       <div style={styles.preview}>
         {preview_url ? (
           <img src={preview_url} alt="" style={styles.previewImg} />
@@ -66,18 +165,39 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
         <div style={styles.meta}>{meta_info || ''}</div>
       </div>
 
-      {/* Вес */}
-      <div style={styles.weightBlock}>
+      {/* Вес — кнопка/поле */}
+      <div
+        style={styles.weightBlock}
+        onClick={handleWeightTap}
+      >
         <div style={styles.weightLabel}>ВЕС</div>
-        <div style={styles.weightValue}>
-          {user_weight_kg !== null && user_weight_kg !== undefined
-            ? `${user_weight_kg}`
-            : '—'}
-          <span style={styles.weightUnit}>кг</span>
-        </div>
+
+        {editing ? (
+          <div style={styles.weightInputWrap}>
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*"
+              value={draft}
+              onChange={handleInputChange}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="—"
+              style={styles.weightInput}
+            />
+            <span style={styles.weightUnit}>кг</span>
+          </div>
+        ) : (
+          <div style={styles.weightValue}>
+            {displayWeight !== null ? displayWeight : '—'}
+            <span style={styles.weightUnit}>кг</span>
+          </div>
+        )}
       </div>
 
-      {/* Всплывающая надпись "Готово, молодец!" */}
+      {/* Toast "Готово, молодец!" */}
       {showDoneToast && (
         <div style={styles.doneToast}>
           ✅ Готово, молодец!
@@ -161,7 +281,10 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'flex-end',
     gap: '2px',
-    minWidth: '64px'
+    minWidth: '72px',
+    padding: '8px 6px',
+    margin: '-8px -6px', // расширяем тап-зону без визуального сдвига
+    borderRadius: '8px'
   },
   weightLabel: {
     fontFamily: 'var(--font-tiny5)',
@@ -177,6 +300,30 @@ const styles = {
     display: 'flex',
     alignItems: 'baseline',
     gap: '3px'
+  },
+  weightInputWrap: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '3px'
+  },
+  weightInput: {
+    width: '52px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '20px',
+    color: 'var(--color-primary)',
+    letterSpacing: '0.5px',
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    textAlign: 'right',
+    padding: 0,
+    margin: 0,
+    // Подсветка курсора цветом primary
+    caretColor: 'var(--color-primary)',
+    // Системный размер на iOS чтобы не было zoom
+    fontSize: '20px',
+    // У текстовых инпутов на iOS может быть min-width — обнуляем
+    minWidth: 0
   },
   weightUnit: {
     fontFamily: 'var(--font-manrope)',
@@ -203,7 +350,7 @@ const styles = {
     pointerEvents: 'none',
     animation: 'doneToastFade 1.5s ease-out forwards',
     zIndex: 10,
-    filter: 'none', // важно: всплывашка не должна блюриться вместе с карточкой
+    filter: 'none',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(158, 209, 83, 0.15)'
   }
 }
