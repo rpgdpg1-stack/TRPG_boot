@@ -4,18 +4,21 @@ import { getDailyQuests, completeQuest } from '../lib/storage'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
- * Блок ежедневных бустов на Главной — "ЗАБУСТИТЬ ДЕНЬ".
+ * Дневной буст — 3 ежедневных квеста по 20 💪 каждый.
  *
- * Г8.1:
- * - Когда все 3 буста выполнены — попап появляется при тапе ПО ВСЕМУ блоку (включая зоны квестов)
- * - Попап в геометрическом центре блока, плавное появление и исчезновение через 4 сек
- * - Закрывается также по клику вне
+ * Е2:
+ * - Название "ДНЕВНОЙ БУСТ"
+ * - Справа от каждого квеста — бейдж "+20 💪"
+ * - При выполнении: 💪 эмодзи улетает ВВЕРХ из бейджа справа
+ * - Выполнено → текст и бейдж зачёркнуты
+ * - Снэппи отклик: реагируем по pointerdown, не ждём click
+ * - Все квесты собраны → попап-подсказка в центре блока
  */
 
 const DEMO_QUESTS = [
   { id: 'squats',  title: 'Присесть 20 раз',  xp: 20 },
   { id: 'water',   title: 'Выпить воду',      xp: 20 },
-  { id: 'stretch', title: 'Растяжка 10 мин',  xp: 30 }
+  { id: 'stretch', title: 'Растяжка 10 мин',  xp: 20 }
 ]
 
 export default function DailyQuests() {
@@ -27,6 +30,7 @@ export default function DailyQuests() {
   const containerRef = useRef(null)
   const popupRef = useRef(null)
   const popupAutoCloseTimer = useRef(null)
+  const lastTapRef = useRef({}) // защита от двойного pointerdown
 
   useEffect(() => {
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
@@ -42,13 +46,11 @@ export default function DailyQuests() {
   // Закрытие попапа по клику вне
   useEffect(() => {
     if (!showAllDonePopup) return
-
     const handleOutsideClick = (e) => {
       if (containerRef.current?.contains(e.target)) return
       if (popupRef.current?.contains(e.target)) return
       setShowAllDonePopup(false)
     }
-
     document.addEventListener('pointerdown', handleOutsideClick)
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [showAllDonePopup])
@@ -65,10 +67,15 @@ export default function DailyQuests() {
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
-  const handleQuestTap = async (quest, e) => {
-    // Если все буст выполнены — делегируем тап на контейнер (показываем попап)
+  // Снэппи реакция на pointerdown — не ждём click (60ms экономии)
+  const handleQuestPointerDown = async (quest, e) => {
+    // Защита: не реагируем повторно если только что обработали (300мс)
+    const now = Date.now()
+    if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
+    lastTapRef.current[quest.id] = now
+
     if (allDone) {
-      e.stopPropagation() // не даём дважды сработать
+      e.stopPropagation()
       handleContainerInteraction()
       return
     }
@@ -93,17 +100,14 @@ export default function DailyQuests() {
     setTimeout(() => setAnimating(null), 600)
   }
 
-  // Открыть/переоткрыть попап (общий для тапа по контейнеру и по строкам когда allDone)
   const handleContainerInteraction = () => {
     haptic.light()
     setShowAllDonePopup(true)
-    // Если уже был открыт — сбрасываем таймер на новые 4 сек
     if (popupAutoCloseTimer.current) clearTimeout(popupAutoCloseTimer.current)
     popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
   }
 
-  // Тап по контейнеру (не по строке)
-  const handleContainerTap = (e) => {
+  const handleContainerPointerDown = (e) => {
     if (!allDone) return
     if (e.target.closest('button[data-quest-row]')) return
     handleContainerInteraction()
@@ -112,14 +116,14 @@ export default function DailyQuests() {
   return (
     <div
       ref={containerRef}
-      onClick={handleContainerTap}
+      onPointerDown={handleContainerPointerDown}
       style={{
         ...styles.container,
         cursor: allDone ? 'pointer' : 'default'
       }}
     >
       <div style={styles.header}>
-        <span style={styles.title}>⬆️ ЗАБУСТИТЬ ДЕНЬ</span>
+        <span style={styles.title}>ДНЕВНОЙ БУСТ</span>
       </div>
 
       <div style={styles.list}>
@@ -132,8 +136,7 @@ export default function DailyQuests() {
             <button
               key={quest.id}
               data-quest-row
-              onClick={(e) => handleQuestTap(quest, e)}
-              // Не дизаблим если все выполнены — нужен тап для попапа
+              onPointerDown={(e) => handleQuestPointerDown(quest, e)}
               disabled={isDone && !allDone}
               style={{
                 ...styles.questRow,
@@ -142,15 +145,12 @@ export default function DailyQuests() {
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
+              {/* Чекбокс */}
               <div style={styles.checkboxWrap}>
                 <PixelCheckbox checked={isDone} size={22} />
-                {reward && (
-                  <span key={reward.key} style={styles.floatingReward}>
-                    +{reward.xp} 💪
-                  </span>
-                )}
               </div>
 
+              {/* Текст квеста */}
               <span style={{
                 ...styles.questText,
                 textDecoration: isDone ? 'line-through' : 'none',
@@ -158,12 +158,29 @@ export default function DailyQuests() {
               }}>
                 {quest.title}
               </span>
+
+              {/* Бейдж +20💪 справа + точка спавна летящей награды */}
+              <div style={styles.rewardBadgeWrap}>
+                <span style={{
+                  ...styles.rewardBadge,
+                  textDecoration: isDone ? 'line-through' : 'none',
+                  opacity: isDone ? 0.55 : 1
+                }}>
+                  +{quest.xp} 💪
+                </span>
+
+                {reward && (
+                  <span key={reward.key} style={styles.floatingReward}>
+                    +{reward.xp} 💪
+                  </span>
+                )}
+              </div>
             </button>
           )
         })}
       </div>
 
-      {/* Попап в геометрическом центре блока */}
+      {/* Попап в центре блока — когда все собраны */}
       {showAllDonePopup && (
         <div ref={popupRef} style={styles.popup}>
           Все бусты на сегодня собраны.<br />
@@ -172,14 +189,12 @@ export default function DailyQuests() {
       )}
 
       <style>{`
-        @keyframes rewardFloat {
-          0%   { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
-          15%  { opacity: 1; transform: translate(-50%, -8px) scale(1); }
-          85%  { opacity: 1; transform: translate(-50%, -34px) scale(1); }
-          100% { opacity: 0; transform: translate(-50%, -44px) scale(0.9); }
+        @keyframes rewardFloatUp {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
+          15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
+          85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
         }
-        /* Появление из центра + автоисчезновение через 4 сек.
-           Длительность 4.4с = 0.25с появление + 4с показ + 0.4с исчезновение */
         @keyframes questPopupShowHideCenter {
           0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
           6%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -200,33 +215,78 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
   },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingLeft: '4px' },
-  title: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '2px' },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '10px',
+    paddingLeft: '4px'
+  },
+  title: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px'
+  },
   list: { display: 'flex', flexDirection: 'column', gap: '4px' },
   questRow: {
-    display: 'flex', alignItems: 'center', gap: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
     padding: '10px 8px',
     background: 'transparent',
-    width: '100%', textAlign: 'left',
-    transition: 'transform 0.15s ease, opacity 0.3s ease',
+    width: '100%',
+    textAlign: 'left',
+    // Снэппи реакция — короткий transition только на transform
+    transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease',
     borderRadius: '12px',
     border: 'none'
   },
-  checkboxWrap: { position: 'relative', flexShrink: 0, width: '22px', height: '22px' },
+  checkboxWrap: {
+    position: 'relative',
+    flexShrink: 0,
+    width: '22px',
+    height: '22px'
+  },
+  questText: {
+    flex: 1,
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 500,
+    transition: 'color 0.3s ease, text-decoration 0.3s ease'
+  },
+  rewardBadgeWrap: {
+    position: 'relative',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center'
+  },
+  rewardBadge: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    color: 'var(--color-primary)',
+    letterSpacing: '0.5px',
+    padding: '4px 8px',
+    background: 'rgba(158, 209, 83, 0.10)',
+    border: '1px solid rgba(158, 209, 83, 0.25)',
+    borderRadius: '8px',
+    whiteSpace: 'nowrap',
+    transition: 'opacity 0.3s ease, text-decoration 0.3s ease'
+  },
   floatingReward: {
     position: 'absolute',
-    bottom: '100%', left: '50%',
-    fontFamily: 'var(--font-tiny5)', fontSize: '13px',
+    bottom: '100%',
+    left: '50%',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
-    textShadow: '0 0 6px rgba(158, 209, 83, 0.6)',
-    animation: 'rewardFloat 1.1s ease-out forwards'
+    textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
+    animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  questText: { flex: 1, fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 500, transition: 'color 0.3s ease, text-decoration 0.3s ease' },
   popup: {
-    // Геометрический центр контейнера
     position: 'absolute',
     top: '50%',
     left: '50%',
