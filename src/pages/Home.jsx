@@ -5,17 +5,12 @@ import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 
 /**
- * Главный экран — Тренировки.
+ * Главная — Тренировки.
  *
- * E1:
- * - Логотип в Loader (убран отсюда)
- * - PlayerCard sticky, сжимается при скролле
- * - Под закрепом — Daily Quests и категории, скроллятся
- * - Над категориями серый заголовок "ТРЕНИРОВКИ"
- *
- * Закреп имеет:
- * - Сплошной непрозрачный фон var(--color-bg) — ничего не просвечивает
- * - z-index 10 (ниже частиц 200 и табБара 100, но выше контента)
+ * E3:
+ * - СИЛОВАЯ: подзаголовок "1 программа: Сплит", зелёная рамка
+ * - БАССЕЙН → ПЛАВАНИЕ
+ * - ВОССТАНОВЛЕНИЕ убрана
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -26,11 +21,46 @@ export default function Home() {
   }, [])
 
   const categories = [
-    { id: 'gym',       icon: '🏋️', title: 'СИЛОВАЯ',         subtitle: 'ПРОГРАММЫ ТРЕНИРОВОК', color: 'var(--cat-strength)', available: true,  comingSoon: false, featured: true },
-    { id: 'cardio',    icon: '🏃', title: 'КАРДИО',          subtitle: 'БЕГ · HIIT',           color: 'var(--cat-cardio)',   available: true,  comingSoon: true,  featured: false },
-    { id: 'pool',      icon: '🏊', title: 'БАССЕЙН',         subtitle: 'ВОДНЫЕ ТРЕНИРОВКИ',    color: 'var(--cat-pool)',     available: true,  comingSoon: true,  featured: false },
-    { id: 'stretch',   icon: '🧘', title: 'РАСТЯЖКА',        subtitle: 'ЙОГА · ПИЛАТЕС',       color: 'var(--cat-stretch)',  available: true,  comingSoon: true,  featured: false },
-    { id: 'recovery',  icon: '🌿', title: 'ВОССТАНОВЛЕНИЕ',  subtitle: 'СОН · ОТДЫХ',          color: 'var(--cat-recovery)', available: true,  comingSoon: true,  featured: false }
+    {
+      id: 'gym',
+      icon: '🏋️',
+      title: 'СИЛОВАЯ',
+      subtitle: '1 программа: Сплит',
+      color: 'var(--color-primary)',
+      available: true,
+      comingSoon: false,
+      featured: true
+    },
+    {
+      id: 'cardio',
+      icon: '🏃',
+      title: 'КАРДИО',
+      subtitle: 'БЕГ · HIIT',
+      color: 'var(--cat-cardio)',
+      available: true,
+      comingSoon: true,
+      featured: false
+    },
+    {
+      id: 'pool',
+      icon: '🏊',
+      title: 'ПЛАВАНИЕ',
+      subtitle: 'ВОДНЫЕ ТРЕНИРОВКИ',
+      color: 'var(--cat-pool)',
+      available: true,
+      comingSoon: true,
+      featured: false
+    },
+    {
+      id: 'stretch',
+      icon: '🧘',
+      title: 'РАСТЯЖКА',
+      subtitle: 'ЙОГА · ПИЛАТЕС',
+      color: 'var(--cat-stretch)',
+      available: true,
+      comingSoon: true,
+      featured: false
+    }
   ]
 
   const handleCategoryTap = (cat) => {
@@ -41,12 +71,10 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* SICKY ШАПКА */}
       <div style={styles.stickyHeader}>
         <PlayerCard />
       </div>
 
-      {/* СКРОЛЛЯЩИЙСЯ КОНТЕНТ */}
       <div style={styles.scrollableContent}>
 
         <DailyQuests />
@@ -96,7 +124,6 @@ const styles = {
     paddingLeft: 0,
     paddingRight: 0
   },
-  // Sticky-шапка: непрозрачный фон, z-index 10 (под частицами 200, под табБаром 100)
   stickyHeader: {
     position: 'sticky',
     top: 'calc(var(--tg-safe-top) - 80px)',
@@ -134,11 +161,12 @@ const styles = {
     textAlign: 'left',
     opacity: 0.85
   },
+  // E3: зелёная рамка вместо красной
   categoryCardFeatured: {
     height: '110px',
     opacity: 1,
-    border: '1px solid rgba(232, 69, 69, 0.4)',
-    boxShadow: '0 0 20px rgba(232, 69, 69, 0.15), inset 0 0 30px rgba(232, 69, 69, 0.05)'
+    border: '1px solid rgba(158, 209, 83, 0.4)',
+    boxShadow: '0 0 20px rgba(158, 209, 83, 0.18), inset 0 0 30px rgba(158, 209, 83, 0.05)'
   },
   categoryIcon: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
   categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' },
