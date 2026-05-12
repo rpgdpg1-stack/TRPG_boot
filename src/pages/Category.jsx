@@ -4,18 +4,11 @@ import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms } from '../lib/storage'
 import ProgramCard from '../components/ProgramCard'
 
-/**
- * Универсальный экран категории.
- *
- * Г8.3-fix: cleanup упрощён — корневые экраны (Home/Progress/Settings)
- * сами скрывают кнопку при монтировании.
- */
-
 const CATEGORIES_DATA = {
   gym: {
     title: 'СИЛОВАЯ',
     subtitle: 'ВЫБЕРИ ПРОГРАММУ',
-    color: 'var(--cat-strength)',
+    color: 'var(--color-primary)',
     programs: [
       { id: 'split', title: 'Сплит', tags: ['зал'], available: true, comingSoon: false }
     ],
@@ -32,7 +25,7 @@ const CATEGORIES_DATA = {
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   pool: {
-    title: 'БАССЕЙН',
+    title: 'ПЛАВАНИЕ',
     subtitle: 'СКОРО',
     color: 'var(--cat-pool)',
     programs: [
@@ -47,16 +40,6 @@ const CATEGORIES_DATA = {
     programs: [
       { id: 'yoga',    title: 'Йога',    tags: [], available: false, comingSoon: true },
       { id: 'pilates', title: 'Пилатес', tags: [], available: false, comingSoon: true }
-    ],
-    createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
-  },
-  recovery: {
-    title: 'ВОССТАНОВЛЕНИЕ',
-    subtitle: 'СКОРО',
-    color: 'var(--cat-recovery)',
-    programs: [
-      { id: 'sleep',  title: 'Сон',           tags: [], available: false, comingSoon: true },
-      { id: 'breath', title: 'Дыхание',       tags: [], available: false, comingSoon: true }
     ],
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   }
