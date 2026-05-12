@@ -8,9 +8,8 @@ import XPBar from './XPBar'
 
 /**
  * Главный блок персонажа на Главной.
- *
- * E1: При скролле страницы карточка сжимается в компактный режим —
- * маленький аватар слева, имя и ранг в одну строку, тонкий XP-бар.
+ * Всегда полноразмерный — большой аватар по центру, имя+юзернейм+ранг под ним,
+ * XP-бар, огоньки серии. БЕЗ сжатия при скролле.
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
@@ -18,7 +17,6 @@ export default function PlayerCard() {
   const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
-  const [compact, setCompact] = useState(false)
 
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
@@ -48,25 +46,6 @@ export default function PlayerCard() {
       window.removeEventListener('user-ready', loadData)
       window.removeEventListener('user-updated', loadData)
     }
-  }, [])
-
-  // Слушаем скролл для compact-режима
-  useEffect(() => {
-    let ticking = false
-
-    const handleScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => {
-        const y = window.scrollY || window.pageYOffset || 0
-        // Порог: 40px скролла = переход в compact
-        setCompact(y > 40)
-        ticking = false
-      })
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Закрытие попапов по клику вне
@@ -135,59 +114,51 @@ export default function PlayerCard() {
   const totalFlames = weeklyStreak >= 4 ? 4 : 3
   const filledFlames = Math.min(weeklyStreak, totalFlames)
 
-  // Размеры зависят от compact-режима
-  const avatarSize = compact ? 56 : 140
-  const avatarInnerSize = compact ? 50 : 124
-  const ringR = compact ? 26 : 66
+  // Полноразмерные параметры
+  const avatarSize = 140
+  const avatarInnerSize = 124
+  const ringR = 66
   const ringCircumference = 2 * Math.PI * ringR
 
   return (
-    <div style={{ ...styles.container, ...(compact ? styles.containerCompact : {}) }}>
+    <div style={styles.container}>
 
-      {/* Верхняя часть: аватар + имя/ранг (в compact в одну строку) */}
-      <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
+      <div style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}>
+        <svg style={styles.ring} viewBox={`0 0 ${avatarSize} ${avatarSize}`} xmlns="http://www.w3.org/2000/svg">
+          <circle cx={avatarSize/2} cy={avatarSize/2} r={ringR} fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
+          <circle
+            cx={avatarSize/2} cy={avatarSize/2} r={ringR}
+            fill="none"
+            stroke={rank.color}
+            strokeWidth="3"
+            strokeLinecap="butt"
+            strokeDasharray={`${(progress / 100) * ringCircumference} ${ringCircumference}`}
+            transform={`rotate(-90 ${avatarSize/2} ${avatarSize/2})`}
+            style={{
+              filter: `drop-shadow(0 0 4px ${rank.color})`,
+              transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
+            }}
+          />
+        </svg>
 
-        <div style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize, marginBottom: compact ? 0 : 12 }}>
-          <svg style={styles.ring} viewBox={`0 0 ${avatarSize} ${avatarSize}`} xmlns="http://www.w3.org/2000/svg">
-            <circle cx={avatarSize/2} cy={avatarSize/2} r={ringR} fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
-            <circle
-              cx={avatarSize/2} cy={avatarSize/2} r={ringR}
-              fill="none"
-              stroke={rank.color}
-              strokeWidth="3"
-              strokeLinecap="butt"
-              strokeDasharray={`${(progress / 100) * ringCircumference} ${ringCircumference}`}
-              transform={`rotate(-90 ${avatarSize/2} ${avatarSize/2})`}
-              style={{
-                filter: `drop-shadow(0 0 4px ${rank.color})`,
-                transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
-              }}
-            />
-          </svg>
-
-          <div style={{ ...styles.avatarInner, width: avatarInnerSize, height: avatarInnerSize }}>
-            {user?.photo_url ? (
-              <img src={user.photo_url} alt="" style={styles.avatarImg} />
-            ) : (
-              <div style={{ ...styles.avatarPlaceholder, fontSize: compact ? '20px' : '52px' }}>
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
+        <div style={{ ...styles.avatarInner, width: avatarInnerSize, height: avatarInnerSize }}>
+          {user?.photo_url ? (
+            <img src={user.photo_url} alt="" style={styles.avatarImg} />
+          ) : (
+            <div style={styles.avatarPlaceholder}>
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
-
-        <div style={{ ...styles.nameBlock, ...(compact ? styles.nameBlockCompact : {}) }}>
-          <div style={{ ...styles.name, fontSize: compact ? '15px' : '22px' }}>{displayName}</div>
-          {username && !compact && <div style={styles.username}>{username}</div>}
-          <div style={{ ...styles.rank, color: rank.color, fontSize: compact ? '10px' : '13px' }}>
-            {rank.emoji} {rank.name} {rank.subLevel}
-          </div>
-        </div>
-
       </div>
 
-      {/* XP-БАР */}
-      <div style={{ ...styles.xpBlock, ...(compact ? styles.xpBlockCompact : {}) }}>
+      <div style={styles.name}>{displayName}</div>
+      {username && <div style={styles.username}>{username}</div>}
+      <div style={{ ...styles.rank, color: rank.color }}>
+        {rank.emoji} {rank.name} {rank.subLevel}
+      </div>
+
+      <div style={styles.xpBlock}>
         <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
           <XPBar progress={progress} color={rank.color} current={current} needed={needed} />
         </button>
@@ -214,34 +185,31 @@ export default function PlayerCard() {
         )}
       </div>
 
-      {/* ОГОНЬКИ — в compact прячем, в обычном видны */}
-      {!compact && (
-        <div style={styles.streakWrap}>
-          <button
-            ref={streakButtonRef}
-            onClick={handleStreakTap}
-            style={styles.streakRow}
-            aria-label="Серия тренировок"
-          >
-            {Array.from({ length: totalFlames }).map((_, i) => (
-              <FlameIcon key={i} lit={i < filledFlames} />
-            ))}
-          </button>
+      <div style={styles.streakWrap}>
+        <button
+          ref={streakButtonRef}
+          onClick={handleStreakTap}
+          style={styles.streakRow}
+          aria-label="Серия тренировок"
+        >
+          {Array.from({ length: totalFlames }).map((_, i) => (
+            <FlameIcon key={i} lit={i < filledFlames} />
+          ))}
+        </button>
 
-          {showStreakHint && (
-            <div ref={streakPopupRef} style={styles.streakPopup}>
-              <span style={styles.streakPopupText}>
-                Серия:🔥
-                <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
-                {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
-              </span>
-              <span style={styles.streakPopupSub}>
-                (серия сбросится в начале следующей недели)
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+        {showStreakHint && (
+          <div ref={streakPopupRef} style={styles.streakPopup}>
+            <span style={styles.streakPopupText}>
+              Серия:🔥
+              <span style={styles.streakPopupNumber}>{weeklyStreak}</span>
+              {' '}{pluralizeWorkouts(weeklyStreak)} в неделю
+            </span>
+            <span style={styles.streakPopupSub}>
+              (серия сбросится в начале следующей недели)
+            </span>
+          </div>
+        )}
+      </div>
 
       <style>{`
         @keyframes popupShowHide {
@@ -290,29 +258,11 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '8px 16px 4px',
-    position: 'relative',
-    transition: 'padding 0.3s ease'
-  },
-  containerCompact: {
-    padding: '4px 16px 4px',
-    alignItems: 'stretch'
-  },
-  topRow: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    transition: 'all 0.3s ease',
-    width: '100%'
-  },
-  topRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '6px'
+    position: 'relative'
   },
   avatarWrap: {
     position: 'relative',
-    transition: 'width 0.3s ease, height 0.3s ease, margin-bottom 0.3s ease',
+    marginBottom: '12px',
     flexShrink: 0
   },
   ring: { position: 'absolute', inset: 0, width: '100%', height: '100%' },
@@ -323,8 +273,7 @@ const styles = {
     transform: 'translate(-50%, -50%)',
     borderRadius: '50%',
     overflow: 'hidden',
-    background: 'var(--color-card)',
-    transition: 'width 0.3s ease, height 0.3s ease'
+    background: 'var(--color-card)'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
@@ -334,32 +283,17 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
+    fontSize: '52px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
   },
-  nameBlock: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    transition: 'all 0.3s ease'
-  },
-  nameBlockCompact: {
-    alignItems: 'flex-start',
-    gap: '1px',
-    flex: 1,
-    minWidth: 0
-  },
   name: {
     fontFamily: 'var(--font-manrope)',
+    fontSize: '22px',
     fontWeight: 700,
     color: 'var(--color-text)',
-    marginTop: 0,
-    transition: 'font-size 0.3s ease',
     lineHeight: 1.1,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    maxWidth: '100%'
+    marginTop: 0
   },
   username: {
     fontFamily: 'var(--font-manrope)',
@@ -369,20 +303,14 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
-    letterSpacing: '1.5px',
-    marginBottom: 0,
-    transition: 'font-size 0.3s ease'
+    fontSize: '13px',
+    letterSpacing: '1.5px'
   },
   xpBlock: {
     width: '100%',
     maxWidth: '320px',
     position: 'relative',
-    marginTop: '12px',
-    transition: 'margin-top 0.3s ease'
-  },
-  xpBlockCompact: {
-    marginTop: '4px',
-    maxWidth: '100%'
+    marginTop: '12px'
   },
   xpBarButton: { width: '100%', padding: 0, background: 'transparent' },
   popup: {
