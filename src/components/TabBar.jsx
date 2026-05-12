@@ -2,11 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Таб-бар: Прогресс / Тренировки / Настройки.
- *
- * Е1-fix: "Тренировки" теперь возвращает на главную (/) с любого
- * экрана раздела тренировок (категория/программа/день).
- * Если уже на главной — ничего не делает.
+ * Таб-бар — премиум-look (E3):
+ * - Полупрозрачный фон с сильным блюром, "стеклянный" эффект
+ * - Активная вкладка — тонкое зелёное свечение
+ * - "Тренировки" возвращает на главную с любого экрана раздела
  */
 export default function TabBar() {
   const location = useLocation()
@@ -26,7 +25,6 @@ export default function TabBar() {
       label: 'Прогресс',
       icon: '📊',
       isActive: location.pathname === '/progress',
-      // Прогресс — если уже на /progress, не реагируем
       canTap: location.pathname !== '/progress'
     },
     {
@@ -35,7 +33,6 @@ export default function TabBar() {
       label: 'Тренировки',
       icon: '💪',
       isActive: isWorkoutSection,
-      // Тренировки активны на всем разделе, но кликабельны только если НЕ ровно на /
       canTap: !isExactHome
     },
     {
@@ -62,23 +59,25 @@ export default function TabBar() {
           onClick={() => handleTap(tab)}
           style={{
             ...styles.tab,
-            background: tab.isActive && isExactHome === (tab.id === 'workouts') && tab.id === 'workouts'
-              ? 'rgba(255, 255, 255, 0.08)'
-              : tab.isActive
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'transparent',
+            background: tab.isActive
+              ? 'rgba(158, 209, 83, 0.10)'
+              : 'transparent',
+            boxShadow: tab.isActive
+              ? 'inset 0 0 0 1px rgba(158, 209, 83, 0.25)'
+              : 'none',
             cursor: tab.canTap ? 'pointer' : 'default'
           }}
         >
           <span style={{
             ...styles.icon,
-            opacity: tab.isActive ? 1 : 0.55
+            opacity: tab.isActive ? 1 : 0.45,
+            filter: tab.isActive ? 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.4))' : 'none'
           }}>
             {tab.icon}
           </span>
           <span style={{
             ...styles.label,
-            color: tab.isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)'
+            color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
           }}>
             {tab.label}
           </span>
@@ -99,11 +98,13 @@ const styles = {
     gap: '4px',
     padding: '4px',
     height: 'var(--tabbar-height)',
-    background: 'rgba(34, 34, 34, 0.85)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    // E3: премиум стекло — сильнее блюр, меньше серого
+    background: 'rgba(20, 20, 20, 0.55)',
+    backdropFilter: 'blur(32px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(32px) saturate(160%)',
     borderRadius: 'var(--radius-card)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.04)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(255, 255, 255, 0.03)',
     zIndex: 100
   },
   tab: {
@@ -116,14 +117,19 @@ const styles = {
     minWidth: '78px',
     height: 'calc(var(--tabbar-height) - 8px)',
     borderRadius: 'var(--radius-card)',
-    transition: 'background 0.2s ease'
+    transition: 'background 0.25s ease, box-shadow 0.25s ease',
+    border: 'none'
   },
-  icon: { fontSize: '22px', lineHeight: 1, transition: 'opacity 0.2s ease' },
+  icon: {
+    fontSize: '22px',
+    lineHeight: 1,
+    transition: 'opacity 0.25s ease, filter 0.25s ease'
+  },
   label: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '10px',
     fontWeight: 600,
     letterSpacing: '0.3px',
-    transition: 'color 0.2s ease'
+    transition: 'color 0.25s ease'
   }
 }
