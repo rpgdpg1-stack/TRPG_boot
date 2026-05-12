@@ -1,18 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { haptic } from '../lib/telegram'
 import { getDailyQuests, completeQuest } from '../lib/storage'
+import { EVENTS, on, emit } from '../lib/events'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
  * Дневной буст — 3 ежедневных квеста по 20 💪 каждый.
  *
- * Е2:
- * - Название "ДНЕВНОЙ БУСТ"
- * - Справа от каждого квеста — бейдж "+20 💪"
- * - При выполнении: 💪 эмодзи улетает ВВЕРХ из бейджа справа
- * - Выполнено → текст и бейдж зачёркнуты
- * - Снэппи отклик: реагируем по pointerdown, не ждём click
- * - Все квесты собраны → попап-подсказка в центре блока
+ * Правка #5: события через централизованный lib/events.js.
  */
 
 const DEMO_QUESTS = [
@@ -30,20 +25,20 @@ export default function DailyQuests() {
   const containerRef = useRef(null)
   const popupRef = useRef(null)
   const popupAutoCloseTimer = useRef(null)
-  const lastTapRef = useRef({}) // защита от двойного pointerdown
+  const lastTapRef = useRef({})
 
   useEffect(() => {
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
     loadQuests()
-    window.addEventListener('user-ready', loadQuests)
-    window.addEventListener('user-updated', loadQuests)
+
+    const offReady = on(EVENTS.USER_READY, loadQuests)
+    const offChanged = on(EVENTS.USER_CHANGED, loadQuests)
     return () => {
-      window.removeEventListener('user-ready', loadQuests)
-      window.removeEventListener('user-updated', loadQuests)
+      offReady()
+      offChanged()
     }
   }, [])
 
-  // Закрытие попапа по клику вне
   useEffect(() => {
     if (!showAllDonePopup) return
     const handleOutsideClick = (e) => {
@@ -55,7 +50,6 @@ export default function DailyQuests() {
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [showAllDonePopup])
 
-  // Авто-закрытие через 4 сек
   useEffect(() => {
     if (showAllDonePopup) {
       popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
@@ -67,9 +61,7 @@ export default function DailyQuests() {
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
-  // Снэппи реакция на pointerdown — не ждём click (60ms экономии)
   const handleQuestPointerDown = async (quest, e) => {
-    // Защита: не реагируем повторно если только что обработали (300мс)
     const now = Date.now()
     if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
     lastTapRef.current[quest.id] = now
@@ -94,7 +86,7 @@ export default function DailyQuests() {
       setTimeout(() => {
         setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
       }, 1100)
-      window.dispatchEvent(new CustomEvent('xp-updated'))
+      // completeQuest уже шлёт USER_CHANGED через storage.js — здесь дублировать не надо
     }
 
     setTimeout(() => setAnimating(null), 600)
@@ -145,12 +137,10 @@ export default function DailyQuests() {
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
-              {/* Чекбокс */}
               <div style={styles.checkboxWrap}>
                 <PixelCheckbox checked={isDone} size={22} />
               </div>
 
-              {/* Текст квеста */}
               <span style={{
                 ...styles.questText,
                 textDecoration: isDone ? 'line-through' : 'none',
@@ -159,7 +149,6 @@ export default function DailyQuests() {
                 {quest.title}
               </span>
 
-              {/* Бейдж +20💪 справа + точка спавна летящей награды */}
               <div style={styles.rewardBadgeWrap}>
                 <span style={{
                   ...styles.rewardBadge,
@@ -180,7 +169,6 @@ export default function DailyQuests() {
         })}
       </div>
 
-      {/* Попап в центре блока — когда все собраны */}
       {showAllDonePopup && (
         <div ref={popupRef} style={styles.popup}>
           Все бусты на сегодня собраны.<br />
@@ -237,7 +225,6 @@ const styles = {
     background: 'transparent',
     width: '100%',
     textAlign: 'left',
-    // Снэппи реакция — короткий transition только на transform
     transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease',
     borderRadius: '12px',
     border: 'none'

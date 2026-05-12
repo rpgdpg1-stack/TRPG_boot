@@ -10,6 +10,7 @@
 
 import { supabase } from './supabase'
 import { getUser as getTelegramUser } from './telegram'
+import { EVENTS, emit } from './events'
 
 let currentUser = null
 let authPromise = null
@@ -36,21 +37,18 @@ export async function ensureAuth() {
     let telegramId, firstName, username, photoUrl
 
     if (tgUser?.id) {
-      // Прод: данные из Telegram WebApp
       telegramId = tgUser.id
       firstName = tgUser.first_name || null
       username = tgUser.username || null
       photoUrl = tgUser.photo_url || null
       console.log('[auth] Telegram user found:', telegramId)
     } else if (devMode) {
-      // Дев-режим: фейковый ID, но СТАБИЛЬНЫЙ (один и тот же на всех устройствах)
-      telegramId = 999999999 // фиксированный, чтобы все dev-сессии = один юзер
+      telegramId = 999999999
       firstName = 'Dev User'
       username = null
       photoUrl = null
       console.log('[auth] Dev mode active, using fixed dev ID:', telegramId)
     } else {
-      // Не Telegram, не dev-mode — авторизация невозможна
       authState = 'no-telegram'
       console.warn('[auth] Telegram user data not available. Open through Telegram or enable dev mode.')
       return null
@@ -73,7 +71,7 @@ export async function ensureAuth() {
     currentUser = data
     authState = 'ok'
     console.log('[auth] Authorized as:', currentUser)
-    window.dispatchEvent(new CustomEvent('user-ready', { detail: currentUser }))
+    emit(EVENTS.USER_READY, currentUser)
     return currentUser
   })()
 
@@ -98,7 +96,7 @@ export async function refreshCurrentUser() {
   }
 
   currentUser = data
-  window.dispatchEvent(new CustomEvent('user-updated', { detail: currentUser }))
+  emit(EVENTS.USER_CHANGED, currentUser)
   return currentUser
 }
 
@@ -107,5 +105,5 @@ export async function refreshCurrentUser() {
  */
 export function setCurrentUser(user) {
   currentUser = user
-  window.dispatchEvent(new CustomEvent('user-updated', { detail: currentUser }))
+  emit(EVENTS.USER_CHANGED, currentUser)
 }

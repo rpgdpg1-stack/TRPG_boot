@@ -1,7 +1,7 @@
 /**
  * Хранилище данных пользователя.
  *
- * Г6-Г7: всё критичное живёт в Supabase.
+ * Всё критичное живёт в Supabase:
  * - Мускулы 💪 → users.total_muscles + лог в muscle_history
  * - Недельный стрик → users.weekly_streak + weekly_streak_week
  * - Daily Quests → daily_quests (с защитой от дублей через RPC)
@@ -15,7 +15,10 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
+import { EVENTS, emit } from './events'
 import { getLevelFromXP } from './levels'
+import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
+import { localGet, localSet, localRemove } from '../utils/storage'
 
 /* ============================================ */
 /* ВНУТРЕННИЕ ХЕЛПЕРЫ */
@@ -23,25 +26,6 @@ import { getLevelFromXP } from './levels'
 
 function getUserId() {
   return getCurrentUser()?.id || null
-}
-
-function localGet(key) {
-  try { return localStorage.getItem(key) } catch { return null }
-}
-function localSet(key, value) {
-  try { localStorage.setItem(key, String(value)); return true } catch { return false }
-}
-function localRemove(key) {
-  try { localStorage.removeItem(key); return true } catch { return false }
-}
-
-/**
- * Ключ дня для сброса квестов в 03:00 МСК
- */
-function getTodayKey() {
-  const now = new Date()
-  now.setHours(now.getHours() - 3)
-  return now.toISOString().split('T')[0]
 }
 
 /* ============================================ */
@@ -100,16 +84,9 @@ export async function getUserLevel() {
 /* НЕДЕЛЬНЫЙ СТРИК */
 /* ============================================ */
 
-export function getCurrentWeekKey() {
-  const now = new Date()
-  now.setHours(now.getHours() - 3)
-  const day = now.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().split('T')[0]
-}
+// getCurrentWeekKey импортирована из utils/dates.js — здесь только реэкспорт
+// для совместимости со старым кодом, который ещё может её импортировать отсюда.
+export { getCurrentWeekKey } from '../utils/dates'
 
 export async function getWeeklyStreak() {
   const user = getCurrentUser()
@@ -216,7 +193,11 @@ export async function completeQuest(questId, reward = 20) {
 
   if (result.was_new && result.new_total_muscles !== undefined) {
     const u = getCurrentUser()
-    if (u) setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
+    if (u) {
+      setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
+      // Единое событие — раньше было два (xp-updated + user-updated)
+      emit(EVENTS.USER_CHANGED, getCurrentUser())
+    }
   }
 
   const completed = await getDailyQuests()
@@ -262,24 +243,6 @@ export async function togglePin(programId) {
 }
 
 /* ============================================ */
-/* ИМЕНА УРОВНЕЙ — для Progress.jsx (legacy) */
-/* ============================================ */
-
-export function getLevelName(level) {
-  if (level >= 31) return 'БЕССМЕРТНЫЙ'
-  if (level >= 28) return 'АХИЛЛ'
-  if (level >= 25) return 'ЛЕГЕНДА'
-  if (level >= 22) return 'ТИТАН'
-  if (level >= 19) return 'ГЕРАКЛ'
-  if (level >= 16) return 'ЦЕНТУРИОН'
-  if (level >= 13) return 'ВИТЯЗЬ'
-  if (level >= 10) return 'БОЕЦ'
-  if (level >= 7)  return 'АТЛЕТ'
-  if (level >= 4)  return 'СПОРТСМЕН'
-  return 'НОВОБРАНЕЦ'
-}
-
-/* ============================================ */
 /* СБРОС ВСЕХ ДАННЫХ (для кнопки "Сбросить прогресс") */
 /* ============================================ */
 
@@ -305,5 +268,8 @@ export async function clearAllData() {
 
   // Перечитываем юзера в локальный кеш
   const { data } = await supabase.from('users').select('*').eq('id', userId).single()
-  if (data) setCurrentUser(data)
+  if (data) {
+    setCurrentUser(data)
+    emit(EVENTS.USER_CHANGED, data)
+  }
 }

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-import { getStreak, getUserLevel, getLevelName, getTotalWorkouts } from '../lib/storage'
+import { getStreak, getUserLevel, getTotalWorkouts } from '../lib/storage'
+import { getRankByLevel } from '../lib/levels'
+import { EVENTS, on } from '../lib/events'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 
 /**
  * Экран прогресса.
  *
- * Г8.3-fix: при монтировании скрываем кнопку "Назад" — этот экран
- * корневой в своей вкладке таб-бара.
+ * Правка #2: убран getLevelName — название ранга получаем через
+ * getRankByLevel(level).name (единый источник правды).
+ * Правка #5: события через централизованный lib/events.js.
  */
 export default function Progress() {
-  const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'NEWBIE', total: 0 })
+  const [stats, setStats] = useState({ streak: 0, level: 1, levelName: 'НОВОБРАНЕЦ', total: 0 })
 
   useEffect(() => {
     backButton.hide()
@@ -19,17 +22,19 @@ export default function Progress() {
   useEffect(() => {
     const loadStats = () => {
       Promise.all([getStreak(), getUserLevel(), getTotalWorkouts()]).then(([streak, level, total]) => {
-        setStats({ streak, level, levelName: getLevelName(level), total })
+        const rank = getRankByLevel(level)
+        setStats({ streak, level, levelName: rank.name, total })
       })
     }
 
     loadStats()
 
-    window.addEventListener('user-ready', loadStats)
-    window.addEventListener('user-updated', loadStats)
+    // Один слушатель вместо двух (user-ready + user-updated → user-changed)
+    const offReady = on(EVENTS.USER_READY, loadStats)
+    const offChanged = on(EVENTS.USER_CHANGED, loadStats)
     return () => {
-      window.removeEventListener('user-ready', loadStats)
-      window.removeEventListener('user-updated', loadStats)
+      offReady()
+      offChanged()
     }
   }, [])
 

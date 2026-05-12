@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { getUser, haptic } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak } from '../lib/storage'
-import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, pluralizeWorkouts, XP_REWARDS } from '../lib/levels'
+import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, XP_REWARDS } from '../lib/levels'
+import { pluralizeWorkouts } from '../utils/plural'
+import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
 import { refreshCurrentUser } from '../lib/auth'
 import XPBar from './XPBar'
@@ -9,9 +11,8 @@ import RanksPopup from './RanksPopup'
 
 /**
  * Главный блок персонажа на Главной.
- * Полноразмерный, без сжатия при скролле.
- *
- * E3: Тап по строке ранга → попап со всеми 11 рангами и подуровнями.
+ * Правка #5: события через централизованный lib/events.js — одно USER_CHANGED
+ * вместо двух (xp-updated + user-updated).
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
@@ -42,13 +43,11 @@ export default function PlayerCard() {
     loadData()
     refreshCurrentUser().then(loadData).catch(() => {})
 
-    window.addEventListener('xp-updated', loadData)
-    window.addEventListener('user-ready', loadData)
-    window.addEventListener('user-updated', loadData)
+    const offReady = on(EVENTS.USER_READY, loadData)
+    const offChanged = on(EVENTS.USER_CHANGED, loadData)
     return () => {
-      window.removeEventListener('xp-updated', loadData)
-      window.removeEventListener('user-ready', loadData)
-      window.removeEventListener('user-updated', loadData)
+      offReady()
+      offChanged()
     }
   }, [])
 
