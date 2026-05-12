@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../lib/programs'
+import { haptic } from '../lib/telegram'
 
 /**
  * Карточка упражнения на экране дня тренировки.
  *
  * Д2:
- * - Тап → onTap (родитель управляет активацией)
- * - isActive → визуальное состояние "выполнено" (затемнение + блюр + монохром)
- * - "✅ Готово, молодец!" всплывает при первой активации (1.5 сек)
+ * - Тап → onTap (родитель активирует/деактивирует)
+ * - isActive → визуальное состояние "выполнено"
  *
- * Д3.1 (ввод веса):
+ * Д3.1 (вес):
  * - Тап по полю веса → нативная цифровая клавиатура
- * - Текущее значение выделено, можно печатать поверх
- * - Закрытие клавиатуры → автосохранение в БД (user_exercise_weights)
- * - Тап по полю веса НЕ активирует карточку (event.stopPropagation)
+ * - Закрытие клавиатуры → автосохранение
+ *
+ * Д3.2 (долгое нажатие):
+ * - Long-press 500мс → onLongPress (родитель показывает меню Инфо/Сменить)
+ * - Если был long-press — обычный onTap не вызывается
+ * - Если активная клавиатура веса — long-press игнорируется
  */
-export default function ExerciseCard({ slot, isActive = false, onTap }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
     exercise_id,
     exercise_name,
@@ -27,16 +30,21 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
 
   const [showDoneToast, setShowDoneToast] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('') // строка во время редактирования
-  const [localWeight, setLocalWeight] = useState(user_weight_kg) // отображение после сохранения
+  const [draft, setDraft] = useState('')
+  const [localWeight, setLocalWeight] = useState(user_weight_kg)
   const inputRef = useRef(null)
 
-  // Синхронизируем локальный вес если родитель прислал новый
+  // Long-press
+  const longPressTimer = useRef(null)
+  const longPressFired = useRef(false)
+  const pointerStartPos = useRef({ x: 0, y: 0 })
+  const LONG_PRESS_MS = 500
+  const MOVE_THRESHOLD_PX = 10 // если палец дёрнулся больше — отменяем
+
   useEffect(() => {
     setLocalWeight(user_weight_kg)
   }, [user_weight_kg])
 
-  // Toast "Готово, молодец" — как было
   useEffect(() => {
     if (isActive) {
       setShowDoneToast(true)
@@ -45,10 +53,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
     }
   }, [isActive])
 
-  // Когда переходим в режим редактирования — фокусируем и выделяем
   useEffect(() => {
     if (editing && inputRef.current) {
-      // Микро-задержка — даёт iOS показать клавиатуру стабильно
       const timer = setTimeout(() => {
         inputRef.current?.focus()
         inputRef.current?.select()
@@ -57,74 +63,109 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
     }
   }, [editing])
 
-  // Тап на карточку — родитель решит активировать/нет
-  const handleCardClick = (e) => {
-    // Если идёт редактирование — не активируем
+  // Очистка таймера при размонтировании
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current)
+    }
+  }, [])
+
+  // POINTER DOWN — стартуем таймер долгого нажатия
+  const handlePointerDown = (e) => {
     if (editing) return
+    longPressFired.current = false
+    pointerStartPos.current = { x: e.clientX, y: e.clientY }
+
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true
+      haptic.medium()
+      if (onLongPress) onLongPress(slot)
+    }, LONG_PRESS_MS)
+  }
+
+  // POINTER MOVE — если палец сильно ушёл, отменяем
+  const handlePointerMove = (e) => {
+    if (!longPressTimer.current) return
+    const dx = Math.abs(e.clientX - pointerStartPos.current.x)
+    const dy = Math.abs(e.clientY - pointerStartPos.current.y)
+    if (dx > MOVE_THRESHOLD_PX || dy > MOVE_THRESHOLD_PX) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  // POINTER UP / CANCEL — снимаем таймер
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  // CLICK — обычный тап. Если был long-press — игнорируем
+  const handleClick = (e) => {
+    if (editing) return
+    if (longPressFired.current) {
+      longPressFired.current = false
+      return
+    }
     if (onTap) onTap(slot)
   }
 
-  // Тап на поле веса — открыть ввод. НЕ всплывает до карточки.
+  // Тап по полю веса
   const handleWeightTap = (e) => {
     e.stopPropagation()
-    if (!exercise_id) return // нечего сохранять
-    // В draft кладём текущий вес или пустую строку
+    if (!exercise_id) return
+    // Отменяем возможный long-press таймер
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
     setDraft(localWeight !== null && localWeight !== undefined ? String(localWeight) : '')
     setEditing(true)
   }
 
-  // Изменение значения в input
+  // Чтобы long-press не стрелял с поля веса
+  const handleWeightPointerDown = (e) => {
+    e.stopPropagation()
+  }
+
   const handleInputChange = (e) => {
     let v = e.target.value
-    // Разрешаем только цифры, точку, запятую
     v = v.replace(/,/g, '.')
     v = v.replace(/[^0-9.]/g, '')
-    // Не больше одной точки
     const parts = v.split('.')
     if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-    // Максимум 5 символов (например 999.5)
     if (v.length > 5) v = v.slice(0, 5)
     setDraft(v)
   }
 
-  // Закрытие клавиатуры — сохраняем
   const handleInputBlur = async () => {
     setEditing(false)
 
-    // Парсим
     const trimmed = draft.trim()
-    if (trimmed === '') {
-      // Пустое — оставляем как было, ничего не сохраняем
-      return
-    }
+    if (trimmed === '') return
 
     const num = parseFloat(trimmed)
-    if (isNaN(num) || num < 0) {
-      // Невалидное — откатываем
-      return
-    }
+    if (isNaN(num) || num < 0) return
 
-    // Округляем до 0.5 кг для аккуратности, ограничиваем 1-500
     const clamped = Math.max(0, Math.min(500, num))
-    const rounded = Math.round(clamped * 2) / 2 // шаг 0.5
+    const rounded = Math.round(clamped * 2) / 2
 
-    // Если не изменилось — не сохраняем
     if (rounded === localWeight) return
 
-    setLocalWeight(rounded) // оптимистичное обновление
+    setLocalWeight(rounded)
 
-    // Сохраняем в БД (fire-and-forget с логом)
     try {
       const ok = await saveExerciseWeight(exercise_id, rounded)
-      if (!ok) {
-        console.warn('[ExerciseCard] saveExerciseWeight returned false')
-      }
+      if (!ok) console.warn('[ExerciseCard] saveExerciseWeight returned false')
     } catch (e) {
       console.error('[ExerciseCard] saveExerciseWeight error:', e)
     }
   }
 
-  // Enter/Готово на клавиатуре — закрываем
   const handleInputKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -132,31 +173,35 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
     }
   }
 
-  const displayWeight = localWeight !== null && localWeight !== undefined
-    ? localWeight
-    : null
+  const displayWeight = localWeight !== null && localWeight !== undefined ? localWeight : null
 
   return (
     <div
-      onClick={handleCardClick}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
       style={{
         ...styles.card,
         cursor: 'pointer',
         opacity: isActive ? 0.45 : 1,
         filter: isActive ? 'grayscale(0.85) blur(0.4px)' : 'none',
-        transition: 'opacity 0.3s ease, filter 0.3s ease'
+        transition: 'opacity 0.3s ease, filter 0.3s ease',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none'
       }}
     >
-      {/* Превью */}
       <div style={styles.preview}>
         {preview_url ? (
-          <img src={preview_url} alt="" style={styles.previewImg} />
+          <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
         ) : (
           <div style={styles.previewPlaceholder}>💪</div>
         )}
       </div>
 
-      {/* Контент */}
       <div style={styles.content}>
         <div style={styles.title}>
           {exercise_name}
@@ -165,10 +210,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
         <div style={styles.meta}>{meta_info || ''}</div>
       </div>
 
-      {/* Вес — кнопка/поле */}
       <div
         style={styles.weightBlock}
         onClick={handleWeightTap}
+        onPointerDown={handleWeightPointerDown}
       >
         <div style={styles.weightLabel}>ВЕС</div>
 
@@ -197,7 +242,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap }) {
         )}
       </div>
 
-      {/* Toast "Готово, молодец!" */}
       {showDoneToast && (
         <div style={styles.doneToast}>
           ✅ Готово, молодец!
@@ -283,7 +327,7 @@ const styles = {
     gap: '2px',
     minWidth: '72px',
     padding: '8px 6px',
-    margin: '-8px -6px', // расширяем тап-зону без визуального сдвига
+    margin: '-8px -6px',
     borderRadius: '8px'
   },
   weightLabel: {
@@ -318,11 +362,7 @@ const styles = {
     textAlign: 'right',
     padding: 0,
     margin: 0,
-    // Подсветка курсора цветом primary
     caretColor: 'var(--color-primary)',
-    // Системный размер на iOS чтобы не было zoom
-    fontSize: '20px',
-    // У текстовых инпутов на iOS может быть min-width — обнуляем
     minWidth: 0
   },
   weightUnit: {
