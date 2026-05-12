@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getCurrentUser, refreshCurrentUser } from '../lib/auth'
+import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, MUSCLE_GROUP_LABELS, finishWorkout } from '../lib/programs'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
@@ -13,11 +13,11 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * Д3.2:
- * - Long-press на карточку → меню Инфо / Сменить
- * - Инфо → модалка-заглушка
- * - Сменить → переход на /swap/:programId/:day/:orderNum
- *   с передачей данных слота через location.state
+ * Правка #1: убран polling getCurrentUser() каждые 100мс (50 попыток).
+ * Этот костыль был нужен потому что Loader закрывался по таймеру 1.8с
+ * независимо от готовности auth. Теперь Loader ждёт promise ensureAuth(),
+ * так что к моменту монтирования WorkoutDay юзер гарантированно есть.
+ * Если по какой-то причине его всё-таки нет — показываем понятную ошибку.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -31,9 +31,8 @@ export default function WorkoutDay() {
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishing, setFinishing] = useState(false)
 
-  // Д3.2: state для меню действий и инфо
-  const [actionSlot, setActionSlot] = useState(null)  // slot для которого открыто меню
-  const [infoSlot, setInfoSlot] = useState(null)      // slot для модалки Инфо
+  const [actionSlot, setActionSlot] = useState(null)
+  const [infoSlot, setInfoSlot] = useState(null)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/program/${programId}`))
@@ -42,12 +41,16 @@ export default function WorkoutDay() {
 
   useEffect(() => {
     let cancelled = false
-    let pollTimer = null
-    let pollAttempts = 0
-    const MAX_POLL_ATTEMPTS = 50
 
-    const doLoad = async () => {
-      setError(null)
+    const load = async () => {
+      // К этому моменту Loader уже дождался ensureAuth(). Если юзера нет —
+      // значит auth провалился (нет Telegram, ошибка сети при upsert и т.п.).
+      if (!getCurrentUser()) {
+        setError('Не удалось авторизоваться. Перезапусти приложение.')
+        setLoading(false)
+        return
+      }
+
       try {
         const data = await getWorkoutDay(programId, day)
         if (!cancelled) {
@@ -63,57 +66,13 @@ export default function WorkoutDay() {
       }
     }
 
-    const tryLoadOrPoll = async () => {
-      if (getCurrentUser()) {
-        await doLoad()
-        return
-      }
-      pollTimer = setInterval(async () => {
-        if (cancelled) {
-          clearInterval(pollTimer)
-          return
-        }
-        pollAttempts++
-        if (getCurrentUser()) {
-          clearInterval(pollTimer)
-          await doLoad()
-          return
-        }
-        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-          clearInterval(pollTimer)
-          try { await refreshCurrentUser() } catch {}
-          if (getCurrentUser()) {
-            await doLoad()
-          } else if (!cancelled) {
-            setError('Не удалось авторизоваться. Перезапусти приложение.')
-            setLoading(false)
-          }
-        }
-      }, 100)
-    }
-
-    tryLoadOrPoll()
-
-    const onUserReady = async () => {
-      if (cancelled) return
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-      await doLoad()
-    }
-    window.addEventListener('user-ready', onUserReady)
-    window.addEventListener('user-updated', onUserReady)
-
-    return () => {
-      cancelled = true
-      if (pollTimer) clearInterval(pollTimer)
-      window.removeEventListener('user-ready', onUserReady)
-      window.removeEventListener('user-updated', onUserReady)
-    }
+    load()
+    return () => { cancelled = true }
   }, [programId, day])
 
-  // Обычный тап — активация
   const handleCardTap = (slot) => {
     if (showFinishedModal || finishing) return
-    if (actionSlot || infoSlot) return // если открыты модалки — игнорируем
+    if (actionSlot || infoSlot) return
 
     setActiveOrderNums(prev => {
       const next = new Set(prev)
@@ -132,28 +91,23 @@ export default function WorkoutDay() {
     })
   }
 
-  // Долгое нажатие → открыть меню
   const handleCardLongPress = (slot) => {
     if (showFinishedModal || finishing) return
     setActionSlot(slot)
   }
 
-  // Меню → Инфо
   const handleMenuInfo = () => {
     if (!actionSlot) return
     const slot = actionSlot
     setActionSlot(null)
-    // Микро-задержка чтобы анимация меню успела свернуться
     setTimeout(() => setInfoSlot(slot), 100)
   }
 
-  // Меню → Сменить
   const handleMenuSwap = () => {
     if (!actionSlot) return
     const slot = actionSlot
     setActionSlot(null)
 
-    // Передаём данные через state, чтобы /swap знал что показывать
     navigate(`/swap/${programId}/${day}/${slot.order_num}`, {
       state: {
         subGroup: slot.sub_group,
@@ -242,7 +196,6 @@ export default function WorkoutDay() {
         </div>
       )}
 
-      {/* Меню действий по долгому нажатию */}
       {actionSlot && (
         <ExerciseActionMenu
           exerciseName={actionSlot.exercise_name}
@@ -252,7 +205,6 @@ export default function WorkoutDay() {
         />
       )}
 
-      {/* Модалка Инфо (заглушка) */}
       {infoSlot && (
         <ExerciseInfoModal
           exerciseName={infoSlot.exercise_name}
@@ -260,7 +212,6 @@ export default function WorkoutDay() {
         />
       )}
 
-      {/* Модалка завершения тренировки */}
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
