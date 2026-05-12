@@ -5,11 +5,13 @@ import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, 
 import { spawnFireSparks } from './ParticlesBg'
 import { refreshCurrentUser } from '../lib/auth'
 import XPBar from './XPBar'
+import RanksPopup from './RanksPopup'
 
 /**
  * Главный блок персонажа на Главной.
- * Всегда полноразмерный — большой аватар по центру, имя+юзернейм+ранг под ним,
- * XP-бар, огоньки серии. БЕЗ сжатия при скролле.
+ * Полноразмерный, без сжатия при скролле.
+ *
+ * E3: Тап по строке ранга → попап со всеми 11 рангами и подуровнями.
  */
 export default function PlayerCard() {
   const [user, setUser] = useState(null)
@@ -17,11 +19,13 @@ export default function PlayerCard() {
   const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
+  const [showRanks, setShowRanks] = useState(false)
 
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
   const streakButtonRef = useRef(null)
   const streakPopupRef = useRef(null)
+  const rankButtonRef = useRef(null)
   const xpAutoCloseTimer = useRef(null)
   const streakAutoCloseTimer = useRef(null)
 
@@ -48,7 +52,7 @@ export default function PlayerCard() {
     }
   }, [])
 
-  // Закрытие попапов по клику вне
+  // Закрытие XP/Streak попапов по клику вне (RanksPopup сам себя закрывает)
   useEffect(() => {
     if (!showXPDetails && !showStreakHint) return
     const handleOutsideClick = (e) => {
@@ -93,12 +97,21 @@ export default function PlayerCard() {
     haptic.light()
     setShowXPDetails(prev => !prev)
     setShowStreakHint(false)
+    setShowRanks(false)
+  }
+
+  const handleRankTap = () => {
+    haptic.light()
+    setShowRanks(prev => !prev)
+    setShowXPDetails(false)
+    setShowStreakHint(false)
   }
 
   const handleStreakTap = (e) => {
     haptic.light()
     setShowStreakHint(prev => !prev)
     setShowXPDetails(false)
+    setShowRanks(false)
 
     if (weeklyStreak >= 3) {
       const rect = e.currentTarget.getBoundingClientRect()
@@ -114,7 +127,6 @@ export default function PlayerCard() {
   const totalFlames = weeklyStreak >= 4 ? 4 : 3
   const filledFlames = Math.min(weeklyStreak, totalFlames)
 
-  // Полноразмерные параметры
   const avatarSize = 140
   const avatarInnerSize = 124
   const ringR = 66
@@ -154,8 +166,23 @@ export default function PlayerCard() {
 
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
-      <div style={{ ...styles.rank, color: rank.color }}>
-        {rank.emoji} {rank.name} {rank.subLevel}
+
+      {/* Ранг — кнопка с попапом */}
+      <div style={styles.rankWrap}>
+        <button
+          ref={rankButtonRef}
+          onClick={handleRankTap}
+          style={{ ...styles.rank, color: rank.color }}
+        >
+          {rank.emoji} {rank.name} {rank.subLevel}
+        </button>
+
+        {showRanks && (
+          <RanksPopup
+            currentLevel={level}
+            onClose={() => setShowRanks(false)}
+          />
+        )}
       </div>
 
       <div style={styles.xpBlock}>
@@ -292,8 +319,7 @@ const styles = {
     fontSize: '22px',
     fontWeight: 700,
     color: 'var(--color-text)',
-    lineHeight: 1.1,
-    marginTop: 0
+    lineHeight: 1.1
   },
   username: {
     fontFamily: 'var(--font-manrope)',
@@ -301,10 +327,19 @@ const styles = {
     color: 'var(--color-text-secondary)',
     marginBottom: '12px'
   },
+  rankWrap: {
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center'
+  },
   rank: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
-    letterSpacing: '1.5px'
+    letterSpacing: '1.5px',
+    padding: '4px 10px',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer'
   },
   xpBlock: {
     width: '100%',
