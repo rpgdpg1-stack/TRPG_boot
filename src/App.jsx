@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState, useRef } from 'react'
 import { Routes, Route } from 'react-router-dom'
 
-import Loader from './components/Loader'
+import Loader from './components/layout/Loader'
 import TabBar from './components/TabBar'
 import ParticlesBg from './components/ParticlesBg'
 
@@ -19,15 +19,25 @@ import { ensureAuth } from './lib/auth'
 export default function App() {
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  // Стартуем auth ОДИН раз и кладём промис в ref —
+  // Loader ждёт именно этот промис, не запускает повторно.
+  // useRef + ленивая инициализация = промис существует уже к первому рендеру.
+  const authPromiseRef = useRef(null)
+  if (authPromiseRef.current === null) {
     initTelegram()
-    ensureAuth().catch(err => {
+    authPromiseRef.current = ensureAuth().catch(err => {
       console.error('[App] ensureAuth failed:', err)
+      return null
     })
-  }, [])
+  }
 
   if (loading) {
-    return <Loader onFinish={() => setLoading(false)} />
+    return (
+      <Loader
+        readyPromise={authPromiseRef.current}
+        onFinish={() => setLoading(false)}
+      />
+    )
   }
 
   return (
