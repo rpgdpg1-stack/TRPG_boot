@@ -6,15 +6,18 @@ import { getWorkoutDay, MUSCLE_GROUP_LABELS, finishWorkout } from '../lib/progra
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import ExerciseCard from '../components/ExerciseCard'
+import ExerciseActionMenu from '../components/ExerciseActionMenu'
+import ExerciseInfoModal from '../components/ExerciseInfoModal'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 
 /**
  * Экран дня тренировки.
  *
- * Д2:
- * - Тап карточки → активация (затемнение + блюр + "Готово, молодец")
- * - Когда ВСЕ карточки активированы → модалка финиша через 0.5 сек
- * - Кнопка ОК → finishWorkout (RPC: workouts + exercise_sets + +150 💪 + стрик) → / (Home)
+ * Д3.2:
+ * - Long-press на карточку → меню Инфо / Сменить
+ * - Инфо → модалка-заглушка
+ * - Сменить → переход на /swap/:programId/:day/:orderNum
+ *   с передачей данных слота через location.state
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -24,21 +27,19 @@ export default function WorkoutDay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Set order_num'ов активных карточек. Используем Set для быстрых toggle-операций
   const [activeOrderNums, setActiveOrderNums] = useState(() => new Set())
-
-  // Показывать ли финальную модалку
   const [showFinishedModal, setShowFinishedModal] = useState(false)
-
-  // Защита от двойного нажатия "ОК"
   const [finishing, setFinishing] = useState(false)
+
+  // Д3.2: state для меню действий и инфо
+  const [actionSlot, setActionSlot] = useState(null)  // slot для которого открыто меню
+  const [infoSlot, setInfoSlot] = useState(null)      // slot для модалки Инфо
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/program/${programId}`))
     lockVerticalSwipes()
   }, [navigate, programId])
 
-  // Загрузка упражнений (как было в Д1)
   useEffect(() => {
     let cancelled = false
     let pollTimer = null
@@ -109,27 +110,21 @@ export default function WorkoutDay() {
     }
   }, [programId, day])
 
-  /**
-   * Тап на карточку — активируем/деактивируем.
-   * Если после активации ВСЕ карточки активны — открываем модалку финиша.
-   */
+  // Обычный тап — активация
   const handleCardTap = (slot) => {
     if (showFinishedModal || finishing) return
+    if (actionSlot || infoSlot) return // если открыты модалки — игнорируем
 
     setActiveOrderNums(prev => {
       const next = new Set(prev)
       if (next.has(slot.order_num)) {
-        // Деактивация
         next.delete(slot.order_num)
         haptic.light()
       } else {
-        // Активация
         next.add(slot.order_num)
         haptic.success()
 
-        // Проверка - все ли карточки теперь активны?
         if (slots.length > 0 && next.size === slots.length) {
-          // Через 0.6 сек показываем модалку (даём toast'у "Готово!" анимироваться)
           setTimeout(() => setShowFinishedModal(true), 600)
         }
       }
@@ -137,26 +132,52 @@ export default function WorkoutDay() {
     })
   }
 
-  /**
-   * Кнопка ОК на модалке финиша.
-   * Финализируем тренировку в БД, ставим last_day, возвращаемся на главную.
-   */
+  // Долгое нажатие → открыть меню
+  const handleCardLongPress = (slot) => {
+    if (showFinishedModal || finishing) return
+    setActionSlot(slot)
+  }
+
+  // Меню → Инфо
+  const handleMenuInfo = () => {
+    if (!actionSlot) return
+    const slot = actionSlot
+    setActionSlot(null)
+    // Микро-задержка чтобы анимация меню успела свернуться
+    setTimeout(() => setInfoSlot(slot), 100)
+  }
+
+  // Меню → Сменить
+  const handleMenuSwap = () => {
+    if (!actionSlot) return
+    const slot = actionSlot
+    setActionSlot(null)
+
+    // Передаём данные через state, чтобы /swap знал что показывать
+    navigate(`/swap/${programId}/${day}/${slot.order_num}`, {
+      state: {
+        subGroup: slot.sub_group,
+        type: slot.type,
+        currentExerciseId: slot.exercise_id,
+        currentExerciseName: slot.exercise_name
+      }
+    })
+  }
+
   const handleConfirmFinish = async () => {
     if (finishing) return
     setFinishing(true)
 
     try {
       const exerciseIds = slots.map(s => s.exercise_id).filter(Boolean)
-      const reward = XP_REWARDS.WORKOUT_COMPLETE // 150
+      const reward = XP_REWARDS.WORKOUT_COMPLETE
 
       const result = await finishWorkout(programId, day, exerciseIds, reward)
 
       if (result) {
-        // Запоминаем какой день только что закончили (для Program.jsx → "Сегодня день B")
         await setLastCompletedDay(programId, day)
         haptic.success()
       } else {
-        // Даже если не смогли записать в БД — UX не должен ломаться
         haptic.warning()
         console.warn('[WorkoutDay] finishWorkout returned null, navigating anyway')
       }
@@ -212,6 +233,7 @@ export default function WorkoutDay() {
                     slot={slot}
                     isActive={activeOrderNums.has(slot.order_num)}
                     onTap={handleCardTap}
+                    onLongPress={handleCardLongPress}
                   />
                 ))}
               </div>
@@ -220,6 +242,25 @@ export default function WorkoutDay() {
         </div>
       )}
 
+      {/* Меню действий по долгому нажатию */}
+      {actionSlot && (
+        <ExerciseActionMenu
+          exerciseName={actionSlot.exercise_name}
+          onInfo={handleMenuInfo}
+          onSwap={handleMenuSwap}
+          onClose={() => setActionSlot(null)}
+        />
+      )}
+
+      {/* Модалка Инфо (заглушка) */}
+      {infoSlot && (
+        <ExerciseInfoModal
+          exerciseName={infoSlot.exercise_name}
+          onClose={() => setInfoSlot(null)}
+        />
+      )}
+
+      {/* Модалка завершения тренировки */}
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
