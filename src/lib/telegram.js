@@ -5,6 +5,10 @@
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
+// Наш фон приложения. Должен совпадать с --color-bg в index.css
+// чтобы между приложением и системным UI Telegram не было видимых "швов".
+const APP_BG = '#0D0C0C'
+
 /**
  * Инициализация — вызвать один раз при старте приложения
  */
@@ -25,7 +29,38 @@ export function initTelegram() {
     console.log('requestFullscreen недоступен:', e?.message)
   }
 
+  // Красим системные области Telegram в наш фон — чтобы при bounce-скролле
+  // и в шапке/футере не было видно "другого" чёрного от Telegram-обёртки.
+  paintTelegramChrome()
+
   lockVerticalSwipes()
+}
+
+/**
+ * Перекрашивает шапку и фон Telegram-обёртки в цвет приложения.
+ * Безопасно вызывать многократно — Telegram сам игнорирует если значение то же.
+ */
+export function paintTelegramChrome() {
+  if (!tg) return
+
+  try {
+    if (typeof tg.setHeaderColor === 'function') {
+      tg.setHeaderColor(APP_BG)
+    }
+  } catch (e) { /* старая версия SDK — игнор */ }
+
+  try {
+    if (typeof tg.setBackgroundColor === 'function') {
+      tg.setBackgroundColor(APP_BG)
+    }
+  } catch (e) { /* старая версия SDK — игнор */ }
+
+  try {
+    // Цвет нижней зоны (там где home indicator на iPhone)
+    if (typeof tg.setBottomBarColor === 'function') {
+      tg.setBottomBarColor(APP_BG)
+    }
+  } catch (e) { /* метод появился позже, может отсутствовать */ }
 }
 
 /**
@@ -33,9 +68,6 @@ export function initTelegram() {
  *
  * Telegram иногда сбрасывает эту настройку при переходах между страницами,
  * поэтому компоненты могут вызывать её повторно при монтировании.
- *
- * Дополнительно навешиваем preventDefault на touch-события если палец
- * случайно попал в зону где Telegram считает это свайпом-закрытием.
  */
 export function lockVerticalSwipes() {
   if (!tg) return
@@ -63,12 +95,6 @@ export const haptic = {
 
 /**
  * Управление кнопкой "Назад" в шапке Телеграма.
- *
- * ВАЖНО (Г8.2): hide() убран из cleanup'ов компонентов чтобы не было
- * мерцания "крестик закрытия" при переходах между экранами с навигацией.
- * Кнопка остаётся видимой пока мы не вернёмся на главную.
- *
- * setHandler заменяет обработчик клика без скрытия/показа кнопки.
  */
 export const backButton = {
   show: (onClick) => {
@@ -76,16 +102,10 @@ export const backButton = {
     tg.BackButton.show()
     tg.BackButton.onClick(onClick)
   },
-  /**
-   * Сменить обработчик БЕЗ скрытия кнопки.
-   * Используется когда переходим между экранами одного потока.
-   */
   setHandler: (onClick) => {
     if (!tg?.BackButton) return
-    // Сначала отписываемся от всех старых обработчиков, потом ставим новый
     tg.BackButton.offClick()
     tg.BackButton.onClick(onClick)
-    // На всякий случай — если кнопка скрыта, покажем
     tg.BackButton.show()
   },
   hide: () => {
