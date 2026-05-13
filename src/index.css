@@ -72,9 +72,31 @@
   user-select: none;
 }
 
-html, body {
+/*
+ * КЛЮЧЕВОЙ ФИКС СКРОЛЛА (правильный iOS-feel):
+ *
+ * html — это самый верхний слой. Когда юзер оттягивает страницу вверх или
+ * вниз за её границы, iOS показывает фон именно ЭТОГО элемента (а не body).
+ * Раньше там был дефолтный белый/чёрный системный — отсюда полоса.
+ *
+ * Решение:
+ *  1. background на html = var(--color-bg) — чтобы при bounce виден был
+ *     наш фон, а не системный
+ *  2. overscroll-behavior НЕ ставим в none — bounce сохраняется, юзер
+ *     чувствует "эластичность" страницы как в нативных iOS-приложениях
+ *  3. -webkit-overflow-scrolling: touch — гладкий momentum-скролл
+ *  4. height: 100% на html — чтобы layout правильно распределялся
+ */
+html {
   width: 100%;
   height: 100%;
+  background: var(--color-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-manrope);
@@ -82,16 +104,13 @@ html, body {
 
   /* Гладкий момент-скролл на iOS */
   -webkit-overflow-scrolling: touch;
-
-  /* Отключаем bounce-эффект iOS — страница не "оттягивается" за пределы.
-   * Это убирает обрезку контента и чёрный фон при скролле вверх/вниз. */
-  overscroll-behavior: none;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  background: var(--color-bg);
 }
 
 button {
@@ -114,8 +133,12 @@ img, button { -webkit-user-drag: none; }
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  /* Чуть больший нижний отступ — даёт буфер при bounce-скролле */
-  padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 40px);
+  background: var(--color-bg);
+  /*
+   * Большой нижний отступ — даёт пространство для bounce-эффекта
+   * под таб-баром. Без него при оттягивании вниз был бы виден край.
+   */
+  padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 60px);
 }
 
 .page {
