@@ -6,6 +6,11 @@ import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
+import {
+  loadWorkoutProgress,
+  saveWorkoutProgress,
+  clearWorkoutProgress
+} from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import ExerciseInfoModal from '../components/ExerciseInfoModal'
@@ -14,10 +19,14 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * Правка #1: polling getCurrentUser убран — Loader гарантирует юзера до маунта.
- * Правка #3: programId в URL — это slug ('split'). dbId конвертируется внутри API.
- * Правка #7: модалка завершения с состояниями saving/error и кнопкой Повторить.
- *            Прогресс больше не теряется при плохом интернете.
+ * ПРАВКИ:
+ * - Прогресс отжатых упражнений сохраняется в localStorage. Если юзер вышел
+ *   и вернулся — продолжает с того же места. Сбрасывается только при явном
+ *   завершении тренировки.
+ * - Кнопка "ЗАВЕРШИТЬ ТРЕНИРОВКУ" всегда внизу страницы. Неактивна пока не
+ *   отжато хотя бы одно упражнение. Юзер может завершить даже не доделав
+ *   все упражнения.
+ * - Старая логика "отжал все → автоматически модалка" остаётся.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -27,10 +36,15 @@ export default function WorkoutDay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [activeOrderNums, setActiveOrderNums] = useState(() => new Set())
+  // Восстанавливаем прогресс синхронно при первом рендере,
+  // чтобы карточки сразу появились в правильном состоянии без мигания.
+  const [activeOrderNums, setActiveOrderNums] = useState(() => {
+    return new Set(loadWorkoutProgress(programId, day))
+  })
+
   const [showFinishedModal, setShowFinishedModal] = useState(false)
 
-  // Состояние модалки финиша: 'idle' | 'saving' | 'error'
+  // Состояние модалки: 'idle' | 'saving' | 'error'
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
 
@@ -71,6 +85,14 @@ export default function WorkoutDay() {
     return () => { cancelled = true }
   }, [programId, day])
 
+  /**
+   * Каждый раз когда меняется набор отжатых — пишем в localStorage.
+   * Это автосохранение: даже если приложение убьют, состояние не потеряется.
+   */
+  useEffect(() => {
+    saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
+  }, [programId, day, activeOrderNums])
+
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
     if (actionSlot || infoSlot) return
@@ -84,6 +106,7 @@ export default function WorkoutDay() {
         next.add(slot.order_num)
         haptic.success()
 
+        // Если отжаты все упражнения — автоматически открываем модалку
         if (slots.length > 0 && next.size === slots.length) {
           setTimeout(() => setShowFinishedModal(true), 600)
         }
@@ -120,33 +143,46 @@ export default function WorkoutDay() {
   }
 
   /**
-   * Попытка завершить тренировку.
-   * При ошибке модалка остаётся открытой с кнопкой "Повторить" —
-   * юзер может тыкать сколько угодно пока не получится.
+   * Тап по кнопке "ЗАВЕРШИТЬ ТРЕНИРОВКУ".
+   * Просто открываем модалку — реальное сохранение происходит при подтверждении.
+   */
+  const handleFinishButtonTap = () => {
+    if (activeOrderNums.size === 0) return
+    haptic.medium()
+    setShowFinishedModal(true)
+  }
+
+  /**
+   * Подтверждение в модалке завершения.
+   * При ошибке модалка остаётся открытой с кнопкой "Повторить".
    */
   const handleConfirmFinish = async () => {
-    // Защита от повторных кликов во время сохранения
     if (finishStatus === 'saving') return
 
     setFinishStatus('saving')
     setFinishErrorMsg('')
 
     try {
-      const exerciseIds = slots.map(s => s.exercise_id).filter(Boolean)
-      const reward = XP_REWARDS.WORKOUT_COMPLETE
+      // Сохраняем только реально активированные упражнения (не все 10 если
+      // юзер решил завершить раньше).
+      const exerciseIds = slots
+        .filter(s => activeOrderNums.has(s.order_num))
+        .map(s => s.exercise_id)
+        .filter(Boolean)
 
+      const reward = XP_REWARDS.WORKOUT_COMPLETE
       const result = await finishWorkout(programId, day, exerciseIds, reward)
 
       if (!result) {
-        // finishWorkout вернул null = что-то пошло не так в API/RPC
         setFinishStatus('error')
         setFinishErrorMsg('Проверь подключение к интернету и попробуй ещё раз.')
         haptic.error()
         return
       }
 
-      // Успех — записываем что день пройден и уходим на главную
+      // Успех — отмечаем день пройденным, чистим прогресс, уходим
       await setLastCompletedDay(programId, day)
+      clearWorkoutProgress(programId, day)
       haptic.success()
 
       setShowFinishedModal(false)
@@ -162,6 +198,8 @@ export default function WorkoutDay() {
   }
 
   const sections = groupByMuscleGroup(slots)
+  const canFinish = activeOrderNums.size > 0
+  const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
   return (
     <div className="page page-enter" style={styles.page}>
@@ -212,6 +250,24 @@ export default function WorkoutDay() {
         </div>
       )}
 
+      {/* Кнопка ЗАВЕРШИТЬ — всегда внизу, неактивна пока ничего не отжато */}
+      {!loading && slots.length > 0 && (
+        <div style={styles.bottomBar}>
+          <button
+            onClick={handleFinishButtonTap}
+            disabled={!canFinish}
+            style={{
+              ...styles.finishButton,
+              ...(isAllDone ? styles.finishButtonReady : {}),
+              opacity: canFinish ? 1 : 0.35,
+              cursor: canFinish ? 'pointer' : 'default'
+            }}
+          >
+            {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+          </button>
+        </div>
+      )}
+
       {actionSlot && (
         <ExerciseActionMenu
           exerciseName={actionSlot.exercise_name}
@@ -255,7 +311,10 @@ function groupByMuscleGroup(slots) {
 }
 
 const styles = {
-  page: { padding: '16px 16px 24px' },
+  page: {
+    // Большой отступ снизу — чтобы контент не залезал под кнопку "Завершить"
+    padding: '16px 16px 120px'
+  },
   header: { marginBottom: '16px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-tiny5)',
@@ -317,5 +376,39 @@ const styles = {
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     wordBreak: 'break-word'
+  },
+  // Bottom-bar над таб-баром — фиксированный, с лёгким градиентом для разделения
+  bottomBar: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    // Над таб-баром: tabbar-height + bottom + небольшой gap
+    bottom: 'calc(var(--tabbar-height) + var(--tabbar-bottom) + 8px)',
+    padding: '8px 16px',
+    background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 30%, var(--color-bg) 100%)',
+    paddingTop: '20px',
+    zIndex: 90,
+    pointerEvents: 'none'
+  },
+  finishButton: {
+    width: '100%',
+    padding: '16px',
+    background: 'var(--color-card)',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '2px',
+    borderRadius: '16px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    pointerEvents: 'auto',
+    transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease'
+  },
+  // Когда отжаты все упражнения — кнопка зелёная и заметная
+  finishButtonReady: {
+    background: 'var(--color-primary)',
+    color: '#0D0C0C',
+    border: '1px solid var(--color-primary)',
+    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
   }
 }
