@@ -7,13 +7,11 @@ import PixelCheckbox from './PixelCheckbox'
 /**
  * Дневной буст — 3 ежедневных квеста по 20 💪 каждый.
  *
- * ПРАВКИ:
- * - Заголовок "ДНЕВНОЙ БУСТ" теперь живёт в Home.jsx (снаружи блока,
- *   симметрия с заголовком "ТРЕНИРОВКИ"). Здесь только список квестов.
- * - Бейдж "+20 💪" без фоновой плашки/рамки — только текст
- * - Когда все 3 буста собраны → блок плавно схлопывается в компактную строку
- *   "Все бусты на сегодня собраны. Возвращайся завтра — будут новые".
- *   Логика всплывающего попапа удалена (раньше показывалась по тапу).
+ * Заголовок "ДНЕВНОЙ БУСТ" живёт в Home.jsx снаружи блока.
+ *
+ * Когда все 3 буста собраны — список квестов плавно исчезает через opacity,
+ * а на его место появляется компактный текст "Все бусты собраны...".
+ * Контейнер сам подстраивается под содержимое — без жёстких maxHeight.
  */
 
 const DEMO_QUESTS = [
@@ -27,7 +25,7 @@ export default function DailyQuests() {
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
 
-  const lastTapRef = useRef({}) // защита от двойного pointerdown
+  const lastTapRef = useRef({})
 
   useEffect(() => {
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
@@ -68,78 +66,64 @@ export default function DailyQuests() {
   }
 
   return (
-    <div style={{
-      ...styles.container,
-      // Когда всё собрано — блок схлопывается:
-      // высота уменьшается, отступы сжимаются, появляется компактный текст.
-      maxHeight: allDone ? '60px' : '300px',
-      transition: 'max-height 0.45s cubic-bezier(0.32, 0.72, 0, 1), padding 0.45s ease'
-    }}>
+    <div style={styles.container}>
 
-      {/* СПИСОК КВЕСТОВ — видим пока не все собраны */}
-      <div style={{
-        ...styles.list,
-        opacity: allDone ? 0 : 1,
-        pointerEvents: allDone ? 'none' : 'auto',
-        transition: 'opacity 0.3s ease'
-      }}>
-        {DEMO_QUESTS.map(quest => {
-          const isDone = completed[quest.id]
-          const isAnimating = animating === quest.id
-          const reward = floatingRewards.find(r => r.id === quest.id)
+      {/* Когда все собраны — показываем только текст. Если нет — список квестов. */}
+      {allDone ? (
+        <div style={styles.allDoneText}>
+          Все бусты на сегодня собраны.<br />
+          Возвращайся завтра — будут новые.
+        </div>
+      ) : (
+        <div style={styles.list}>
+          {DEMO_QUESTS.map(quest => {
+            const isDone = completed[quest.id]
+            const isAnimating = animating === quest.id
+            const reward = floatingRewards.find(r => r.id === quest.id)
 
-          return (
-            <button
-              key={quest.id}
-              data-quest-row
-              onPointerDown={(e) => handleQuestPointerDown(quest, e)}
-              disabled={isDone}
-              style={{
-                ...styles.questRow,
-                opacity: isDone ? 0.5 : 1,
-                cursor: isDone ? 'default' : 'pointer',
-                transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
-              }}
-            >
-              {/* Чекбокс */}
-              <div style={styles.checkboxWrap}>
-                <PixelCheckbox checked={isDone} size={22} />
-              </div>
+            return (
+              <button
+                key={quest.id}
+                data-quest-row
+                onPointerDown={(e) => handleQuestPointerDown(quest, e)}
+                disabled={isDone}
+                style={{
+                  ...styles.questRow,
+                  opacity: isDone ? 0.5 : 1,
+                  cursor: isDone ? 'default' : 'pointer',
+                  transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
+                }}
+              >
+                <div style={styles.checkboxWrap}>
+                  <PixelCheckbox checked={isDone} size={22} />
+                </div>
 
-              {/* Текст квеста */}
-              <span style={{
-                ...styles.questText,
-                textDecoration: isDone ? 'line-through' : 'none',
-                color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
-              }}>
-                {quest.title}
-              </span>
-
-              {/* Бейдж +20💪 справа + точка спавна летящей награды */}
-              <div style={styles.rewardBadgeWrap}>
                 <span style={{
-                  ...styles.rewardBadge,
+                  ...styles.questText,
                   textDecoration: isDone ? 'line-through' : 'none',
-                  opacity: isDone ? 0.55 : 1
+                  color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
                 }}>
-                  +{quest.xp} 💪
+                  {quest.title}
                 </span>
 
-                {reward && (
-                  <span key={reward.key} style={styles.floatingReward}>
-                    +{reward.xp} 💪
+                <div style={styles.rewardBadgeWrap}>
+                  <span style={{
+                    ...styles.rewardBadge,
+                    textDecoration: isDone ? 'line-through' : 'none',
+                    opacity: isDone ? 0.55 : 1
+                  }}>
+                    +{quest.xp} 💪
                   </span>
-                )}
-              </div>
-            </button>
-          )
-        })}
-      </div>
 
-      {/* КОМПАКТНОЕ СООБЩЕНИЕ — видим когда все собраны */}
-      {allDone && (
-        <div style={styles.allDoneText}>
-          Все бусты на сегодня собраны. Возвращайся завтра — будут новые.
+                  {reward && (
+                    <span key={reward.key} style={styles.floatingReward}>
+                      +{reward.xp} 💪
+                    </span>
+                  )}
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -161,8 +145,7 @@ const styles = {
     padding: '12px 16px',
     background: 'rgba(255, 255, 255, 0.02)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 'var(--radius-card)',
-    overflow: 'hidden'
+    borderRadius: 'var(--radius-card)'
   },
   list: {
     display: 'flex',
@@ -200,7 +183,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center'
   },
-  // Бейдж стал чище — без плашки и рамки, просто текст
   rewardBadge: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
@@ -222,13 +204,12 @@ const styles = {
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  // Компактный текст «всё собрано» — заполняет блок целиком когда схлопнут
   allDoneText: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    lineHeight: 1.4,
-    padding: '8px 4px'
+    lineHeight: 1.5,
+    padding: '14px 8px'
   }
 }

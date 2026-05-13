@@ -50,7 +50,7 @@
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --duration-page: 280ms;
 
-  /* Press-эффект (нативное iOS-нажатие) */
+  /* Press-эффект */
   --press-scale: 0.97;
   --press-duration: 120ms;
   --press-ease: cubic-bezier(0.4, 0, 0.6, 1);
@@ -75,11 +75,17 @@
 html, body {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
+
+  /* Гладкий момент-скролл на iOS */
+  -webkit-overflow-scrolling: touch;
+
+  /* Отключаем bounce-эффект iOS — страница не "оттягивается" за пределы.
+   * Это убирает обрезку контента и чёрный фон при скролле вверх/вниз. */
+  overscroll-behavior: none;
 }
 
 #root {
@@ -108,7 +114,8 @@ img, button { -webkit-user-drag: none; }
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 24px);
+  /* Чуть больший нижний отступ — даёт буфер при bounce-скролле */
+  padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 40px);
 }
 
 .page {
@@ -118,10 +125,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* PRESS-эффект — нативное iOS/Telegram нажатие */
-/* Используется на кнопках категорий, программ, и других тапаемых "плитках". */
-/* На active — масштаб 0.97 (визуальное "вдавливание"). */
-/* На отпускание — плавный возврат через стандартный transition. */
+/* PRESS-эффект */
 /* ============================================ */
 
 .press-tile {
@@ -160,7 +164,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* АНИМАЦИИ ЧАСТИЦ (для буст-заданий и огоньков серии) */
+/* АНИМАЦИИ ЧАСТИЦ */
 /* ============================================ */
 
 @keyframes particleFloatBg {
@@ -178,7 +182,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* GLOW и анимация Featured карточки */
+/* GLOW */
 /* ============================================ */
 
 @keyframes pulseGlow {
