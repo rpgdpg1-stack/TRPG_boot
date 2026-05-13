@@ -1,13 +1,19 @@
 import { useEffect, useState, useRef } from 'react'
 import { haptic } from '../lib/telegram'
 import { getDailyQuests, completeQuest } from '../lib/storage'
-import { EVENTS, on, emit } from '../lib/events'
+import { EVENTS, on } from '../lib/events'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
  * Дневной буст — 3 ежедневных квеста по 20 💪 каждый.
  *
- * Правка #5: события через централизованный lib/events.js.
+ * ПРАВКИ:
+ * - Заголовок "ДНЕВНОЙ БУСТ" теперь живёт в Home.jsx (снаружи блока,
+ *   симметрия с заголовком "ТРЕНИРОВКИ"). Здесь только список квестов.
+ * - Бейдж "+20 💪" без фоновой плашки/рамки — только текст
+ * - Когда все 3 буста собраны → блок плавно схлопывается в компактную строку
+ *   "Все бусты на сегодня собраны. Возвращайся завтра — будут новые".
+ *   Логика всплывающего попапа удалена (раньше показывалась по тапу).
  */
 
 const DEMO_QUESTS = [
@@ -20,12 +26,8 @@ export default function DailyQuests() {
   const [completed, setCompleted] = useState({})
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
-  const [showAllDonePopup, setShowAllDonePopup] = useState(false)
 
-  const containerRef = useRef(null)
-  const popupRef = useRef(null)
-  const popupAutoCloseTimer = useRef(null)
-  const lastTapRef = useRef({})
+  const lastTapRef = useRef({}) // защита от двойного pointerdown
 
   useEffect(() => {
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
@@ -39,26 +41,6 @@ export default function DailyQuests() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!showAllDonePopup) return
-    const handleOutsideClick = (e) => {
-      if (containerRef.current?.contains(e.target)) return
-      if (popupRef.current?.contains(e.target)) return
-      setShowAllDonePopup(false)
-    }
-    document.addEventListener('pointerdown', handleOutsideClick)
-    return () => document.removeEventListener('pointerdown', handleOutsideClick)
-  }, [showAllDonePopup])
-
-  useEffect(() => {
-    if (showAllDonePopup) {
-      popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
-    }
-    return () => {
-      if (popupAutoCloseTimer.current) clearTimeout(popupAutoCloseTimer.current)
-    }
-  }, [showAllDonePopup])
-
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
   const handleQuestPointerDown = async (quest, e) => {
@@ -66,13 +48,7 @@ export default function DailyQuests() {
     if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
     lastTapRef.current[quest.id] = now
 
-    if (allDone) {
-      e.stopPropagation()
-      handleContainerInteraction()
-      return
-    }
-
-    if (completed[quest.id] || animating) return
+    if (completed[quest.id] || animating || allDone) return
 
     haptic.success()
     setAnimating(quest.id)
@@ -86,39 +62,27 @@ export default function DailyQuests() {
       setTimeout(() => {
         setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
       }, 1100)
-      // completeQuest уже шлёт USER_CHANGED через storage.js — здесь дублировать не надо
     }
 
     setTimeout(() => setAnimating(null), 600)
   }
 
-  const handleContainerInteraction = () => {
-    haptic.light()
-    setShowAllDonePopup(true)
-    if (popupAutoCloseTimer.current) clearTimeout(popupAutoCloseTimer.current)
-    popupAutoCloseTimer.current = setTimeout(() => setShowAllDonePopup(false), 4000)
-  }
-
-  const handleContainerPointerDown = (e) => {
-    if (!allDone) return
-    if (e.target.closest('button[data-quest-row]')) return
-    handleContainerInteraction()
-  }
-
   return (
-    <div
-      ref={containerRef}
-      onPointerDown={handleContainerPointerDown}
-      style={{
-        ...styles.container,
-        cursor: allDone ? 'pointer' : 'default'
-      }}
-    >
-      <div style={styles.header}>
-        <span style={styles.title}>ДНЕВНОЙ БУСТ</span>
-      </div>
+    <div style={{
+      ...styles.container,
+      // Когда всё собрано — блок схлопывается:
+      // высота уменьшается, отступы сжимаются, появляется компактный текст.
+      maxHeight: allDone ? '60px' : '300px',
+      transition: 'max-height 0.45s cubic-bezier(0.32, 0.72, 0, 1), padding 0.45s ease'
+    }}>
 
-      <div style={styles.list}>
+      {/* СПИСОК КВЕСТОВ — видим пока не все собраны */}
+      <div style={{
+        ...styles.list,
+        opacity: allDone ? 0 : 1,
+        pointerEvents: allDone ? 'none' : 'auto',
+        transition: 'opacity 0.3s ease'
+      }}>
         {DEMO_QUESTS.map(quest => {
           const isDone = completed[quest.id]
           const isAnimating = animating === quest.id
@@ -129,18 +93,20 @@ export default function DailyQuests() {
               key={quest.id}
               data-quest-row
               onPointerDown={(e) => handleQuestPointerDown(quest, e)}
-              disabled={isDone && !allDone}
+              disabled={isDone}
               style={{
                 ...styles.questRow,
                 opacity: isDone ? 0.5 : 1,
-                cursor: isDone && !allDone ? 'default' : 'pointer',
+                cursor: isDone ? 'default' : 'pointer',
                 transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
               }}
             >
+              {/* Чекбокс */}
               <div style={styles.checkboxWrap}>
                 <PixelCheckbox checked={isDone} size={22} />
               </div>
 
+              {/* Текст квеста */}
               <span style={{
                 ...styles.questText,
                 textDecoration: isDone ? 'line-through' : 'none',
@@ -149,6 +115,7 @@ export default function DailyQuests() {
                 {quest.title}
               </span>
 
+              {/* Бейдж +20💪 справа + точка спавна летящей награды */}
               <div style={styles.rewardBadgeWrap}>
                 <span style={{
                   ...styles.rewardBadge,
@@ -169,10 +136,10 @@ export default function DailyQuests() {
         })}
       </div>
 
-      {showAllDonePopup && (
-        <div ref={popupRef} style={styles.popup}>
-          Все бусты на сегодня собраны.<br />
-          Возвращайся завтра — будут новые.
+      {/* КОМПАКТНОЕ СООБЩЕНИЕ — видим когда все собраны */}
+      {allDone && (
+        <div style={styles.allDoneText}>
+          Все бусты на сегодня собраны. Возвращайся завтра — будут новые.
         </div>
       )}
 
@@ -183,12 +150,6 @@ export default function DailyQuests() {
           85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
         }
-        @keyframes questPopupShowHideCenter {
-          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
-          6%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-          94%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
-        }
       `}</style>
     </div>
   )
@@ -197,26 +158,17 @@ export default function DailyQuests() {
 const styles = {
   container: {
     position: 'relative',
-    margin: '20px 0',
-    padding: '14px 16px 12px',
+    padding: '12px 16px',
     background: 'rgba(255, 255, 255, 0.02)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 'var(--radius-card)'
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
   },
-  header: {
+  list: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '10px',
-    paddingLeft: '4px'
+    flexDirection: 'column',
+    gap: '4px'
   },
-  title: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
-  },
-  list: { display: 'flex', flexDirection: 'column', gap: '4px' },
   questRow: {
     display: 'flex',
     alignItems: 'center',
@@ -248,15 +200,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center'
   },
+  // Бейдж стал чище — без плашки и рамки, просто текст
   rewardBadge: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
+    fontSize: '13px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
-    padding: '4px 8px',
-    background: 'rgba(158, 209, 83, 0.10)',
-    border: '1px solid rgba(158, 209, 83, 0.25)',
-    borderRadius: '8px',
     whiteSpace: 'nowrap',
     transition: 'opacity 0.3s ease, text-decoration 0.3s ease'
   },
@@ -273,24 +222,13 @@ const styles = {
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  popup: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    background: 'rgba(34, 34, 34, 0.95)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '14px',
-    padding: '12px 16px',
+  // Компактный текст «всё собрано» — заполняет блок целиком когда схлопнут
+  allDoneText: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.4,
-    whiteSpace: 'nowrap',
-    animation: 'questPopupShowHideCenter 4.4s ease-out forwards',
-    zIndex: 50,
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+    padding: '8px 4px'
   }
 }

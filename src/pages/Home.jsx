@@ -7,10 +7,13 @@ import DailyQuests from '../components/DailyQuests'
 /**
  * Главная — Тренировки.
  *
- * E3:
- * - СИЛОВАЯ: подзаголовок "1 программа: Сплит", зелёная рамка
- * - БАССЕЙН → ПЛАВАНИЕ
- * - ВОССТАНОВЛЕНИЕ убрана
+ * ПРАВКИ:
+ * - Убран sticky-блок с PlayerCard. PlayerCard теперь скроллится вместе с контентом,
+ *   что устраняет торможение и обрезку карточек категорий при свайпе вверх.
+ * - Заголовок "ДНЕВНОЙ БУСТ" вынесен из компонента DailyQuests наружу —
+ *   симметрия с заголовком "ТРЕНИРОВКИ".
+ *
+ * Структура страницы линейная: PlayerCard → буст → тренировки.
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -71,47 +74,47 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      <div style={styles.stickyHeader}>
+      {/* Игрок — без sticky, скроллится со всем контентом */}
+      <div style={styles.playerSection}>
         <PlayerCard />
       </div>
 
-      <div style={styles.scrollableContent}>
+      {/* Заголовок дневного буста — снаружи блока */}
+      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
+      <DailyQuests />
 
-        <DailyQuests />
+      {/* Заголовок тренировок — такой же стиль */}
+      <div style={styles.sectionHeader}>ТРЕНИРОВКИ</div>
 
-        <div style={styles.categoriesHeader}>ТРЕНИРОВКИ</div>
+      <div style={styles.cards}>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => handleCategoryTap(cat)}
+            className="press-tile"
+            style={{
+              ...styles.categoryCard,
+              ...(cat.featured ? styles.categoryCardFeatured : {})
+            }}
+          >
+            <span style={styles.categoryIcon}>{cat.icon}</span>
 
-        <div style={styles.cards}>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryTap(cat)}
-              className="press-tile"
-              style={{
-                ...styles.categoryCard,
-                ...(cat.featured ? styles.categoryCardFeatured : {})
-              }}
-            >
-              <span style={styles.categoryIcon}>{cat.icon}</span>
-
-              <div style={styles.categoryContent}>
-                <div style={{
-                  ...styles.categoryTitle,
-                  color: cat.featured ? cat.color : 'var(--color-text)'
-                }}>
-                  {cat.title}
-                </div>
-                <div style={styles.categorySubtitle}>
-                  {cat.subtitle}
-                  {cat.comingSoon && <span style={styles.soonTag}>СКОРО</span>}
-                </div>
+            <div style={styles.categoryContent}>
+              <div style={{
+                ...styles.categoryTitle,
+                color: cat.featured ? cat.color : 'var(--color-text)'
+              }}>
+                {cat.title}
               </div>
+              <div style={styles.categorySubtitle}>
+                {cat.subtitle}
+                {cat.comingSoon && <span style={styles.soonTag}>СКОРО</span>}
+              </div>
+            </div>
 
-              <div style={styles.categoryArrow}>›</div>
-            </button>
-          ))}
-        </div>
-
+            <div style={styles.categoryArrow}>›</div>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -120,35 +123,29 @@ export default function Home() {
 const styles = {
   page: {
     paddingTop: 'calc(var(--tg-safe-top) - 24px)',
-    position: 'relative',
-    paddingLeft: 0,
-    paddingRight: 0
-  },
-  stickyHeader: {
-    position: 'sticky',
-    top: 'calc(var(--tg-safe-top) - 80px)',
-    zIndex: 10,
-    background: 'var(--color-bg)',
     paddingLeft: '16px',
     paddingRight: '16px',
+    paddingBottom: '24px'
+  },
+  playerSection: {
     paddingTop: '4px',
-    paddingBottom: '8px'
+    paddingBottom: '20px'
   },
-  scrollableContent: {
-    padding: '0 16px',
-    position: 'relative',
-    zIndex: 1
-  },
-  categoriesHeader: {
+  // Единый стиль для двух заголовков "ДНЕВНОЙ БУСТ" и "ТРЕНИРОВКИ"
+  sectionHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',
-    marginTop: '12px',
+    marginTop: '20px',
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  cards: { display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '24px' },
+  cards: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
   categoryCard: {
     display: 'flex',
     alignItems: 'center',
@@ -161,7 +158,6 @@ const styles = {
     textAlign: 'left',
     opacity: 0.85
   },
-  // E3: зелёная рамка вместо красной
   categoryCardFeatured: {
     height: '110px',
     opacity: 1,
