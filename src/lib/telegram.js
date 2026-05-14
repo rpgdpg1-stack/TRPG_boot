@@ -5,8 +5,14 @@
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
-// Наш фон приложения. Должен совпадать с --color-bg в index.css
 const APP_BG = '#0D0C0C'
+
+// Текущие обработчики кнопок — нужны чтобы корректно их удалять при смене.
+// offClick() без аргумента в новых версиях Telegram может не работать —
+// он удаляет все обработчики, но не всегда корректно.
+// Передавая конкретную функцию — гарантированно удаляем именно её.
+let currentBackHandler = null
+let currentSettingsHandler = null
 
 export function initTelegram() {
   if (!tg) {
@@ -76,38 +82,60 @@ export const haptic = {
 }
 
 /**
- * Управление кнопкой "Назад" в шапке Телеграма.
+ * Кнопка "Назад" в шапке Telegram.
+ *
+ * setHandler — главный метод. При смене обработчика:
+ *  1. Удаляем СТАРЫЙ конкретный handler через offClick(currentBackHandler)
+ *  2. Сохраняем новый в currentBackHandler
+ *  3. Регистрируем новый через onClick(newHandler)
+ *  4. Показываем кнопку
+ *
+ * Это решает баг: раньше offClick() без аргумента в новых версиях SDK
+ * не всегда удалял обработчик, и при тапе срабатывали ОБА — старый
+ * (из предыдущего экрана) и новый. Из-за этого Назад вёл "не туда"
+ * или приходилось тапать несколько раз.
  */
 export const backButton = {
   show: (onClick) => {
     if (!tg?.BackButton) return
-    tg.BackButton.show()
+    if (currentBackHandler) {
+      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
+    }
+    currentBackHandler = onClick
     tg.BackButton.onClick(onClick)
+    tg.BackButton.show()
   },
   setHandler: (onClick) => {
     if (!tg?.BackButton) return
-    tg.BackButton.offClick()
+    if (currentBackHandler) {
+      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
+    }
+    currentBackHandler = onClick
     tg.BackButton.onClick(onClick)
     tg.BackButton.show()
   },
   hide: () => {
     if (!tg?.BackButton) return
     tg.BackButton.hide()
-    tg.BackButton.offClick()
+    if (currentBackHandler) {
+      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
+      currentBackHandler = null
+    }
   }
 }
 
 /**
- * Управление кнопкой шестерёнки в шапке Telegram (рядом с кнопкой назад).
- * Показывается на всех экранах и ведёт в настройки приложения.
- *
- * Юзер тапнул шестерёнку в любом месте → попал прямо в Settings,
- * не теряя контекст текущего экрана (можно потом вернуться кнопкой Назад).
+ * Кнопка-шестерёнка в шапке Telegram.
+ * Аналогично backButton — храним конкретный handler чтобы корректно удалять.
  */
 export const settingsButton = {
   show: (onClick) => {
     if (!tg?.SettingsButton) return
     try {
+      if (currentSettingsHandler) {
+        try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
+      }
+      currentSettingsHandler = onClick
       tg.SettingsButton.onClick(onClick)
       tg.SettingsButton.show()
     } catch (e) {
@@ -118,7 +146,10 @@ export const settingsButton = {
     if (!tg?.SettingsButton) return
     try {
       tg.SettingsButton.hide()
-      tg.SettingsButton.offClick()
+      if (currentSettingsHandler) {
+        try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
+        currentSettingsHandler = null
+      }
     } catch (e) { /* ignore */ }
   }
 }
@@ -139,11 +170,7 @@ export const mainButton = {
 
 /**
  * Нативный диалог подтверждения Telegram.
- * Выглядит как системная iOS/Android модалка, более "телеграмно" чем window.confirm().
- *
- * Возвращает Promise<boolean>: true если юзер подтвердил, false если отменил.
- *
- * Фоллбэк на window.confirm() для случая когда Telegram SDK недоступен (dev в браузере).
+ * Возвращает Promise<boolean>: true если подтвердил, false если отменил.
  */
 export function confirm(message) {
   return new Promise((resolve) => {

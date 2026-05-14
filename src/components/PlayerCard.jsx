@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak } from '../lib/storage'
 import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, XP_REWARDS } from '../lib/levels'
@@ -11,10 +12,13 @@ import RanksPopup from './RanksPopup'
 
 /**
  * Главный блок персонажа на Главной.
- * Правка #5: события через централизованный lib/events.js — одно USER_CHANGED
- * вместо двух (xp-updated + user-updated).
+ *
+ * Тап на аватар → переход в настройки (как в Telegram-приложении тапаешь
+ * на свою аватарку в углу чата → попадаешь в свой профиль).
  */
 export default function PlayerCard() {
+  const navigate = useNavigate()
+
   const [user, setUser] = useState(null)
   const [xp, setXP] = useState(0)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
@@ -51,7 +55,6 @@ export default function PlayerCard() {
     }
   }, [])
 
-  // Закрытие XP/Streak попапов по клику вне (RanksPopup сам себя закрывает)
   useEffect(() => {
     if (!showXPDetails && !showStreakHint) return
     const handleOutsideClick = (e) => {
@@ -91,6 +94,11 @@ export default function PlayerCard() {
 
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
+
+  const handleAvatarTap = () => {
+    haptic.light()
+    navigate('/settings')
+  }
 
   const handleXPTap = () => {
     haptic.light()
@@ -134,7 +142,12 @@ export default function PlayerCard() {
   return (
     <div style={styles.container}>
 
-      <div style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}>
+      {/* Аватар — теперь это <button>, тап ведёт на настройки */}
+      <button
+        onClick={handleAvatarTap}
+        style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}
+        aria-label="Открыть настройки"
+      >
         <svg style={styles.ring} viewBox={`0 0 ${avatarSize} ${avatarSize}`} xmlns="http://www.w3.org/2000/svg">
           <circle cx={avatarSize/2} cy={avatarSize/2} r={ringR} fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
           <circle
@@ -161,7 +174,7 @@ export default function PlayerCard() {
             </div>
           )}
         </div>
-      </div>
+      </button>
 
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
@@ -286,10 +299,18 @@ const styles = {
     padding: '8px 16px 4px',
     position: 'relative'
   },
+  // Аватар теперь button — отключаем стандартные стили button и оставляем
+  // визуал как был (просто круг с обводкой)
   avatarWrap: {
     position: 'relative',
     marginBottom: '12px',
-    flexShrink: 0
+    flexShrink: 0,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    // Чтобы при тапе на iOS не было голубого хайлайта
+    WebkitTapHighlightColor: 'transparent'
   },
   ring: { position: 'absolute', inset: 0, width: '100%', height: '100%' },
   avatarInner: {
