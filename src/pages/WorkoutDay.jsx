@@ -20,15 +20,25 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * НОВОЕ:
- *  - Шапка (буква дня + стрелки + прогресс-бар) sticky — всегда наверху при скролле
- *  - Свайп влево/вправо в зоне буквы → переключение дней
- *  - Стрелки и свайп работают идентично
- *  - Анимация перехода между днями (буква вылетает / приезжает)
- *  - Маленькая пиксельная стрелочка вниз рядом с буквой — подсказка о свайпе
- *  - Циклично: A→B→C→A
- *  - Прогресс-бар "1 / 10" шрифт +2 кегля
- *  - Кнопка "Назад" Telegram ведёт на категорию
+ * Архитектура страницы:
+ *
+ *  ┌────────────────────────────────┐
+ *  │  STICKY-ШАПКА                  │ ← position: sticky, top: 0
+ *  │  - padding-top = safe-top      │   фон ЗАЛИВАЕТ ВЕСЬ блок,
+ *  │  - стрелки + буква + прогресс  │   включая зону под Telegram-навигацией
+ *  ├────────────────────────────────┤
+ *  │                                │
+ *  │  СПИСОК УПРАЖНЕНИЙ             │ ← обычный flow
+ *  │  (группы → карточки)           │
+ *  │                                │
+ *  │  Кнопка "ЗАВЕРШИТЬ"            │ ← обычный блок в конце списка
+ *  │                                │   (не fixed — юзер скроллит и видит её)
+ *  └────────────────────────────────┘
+ *
+ * При скролле контента вверх:
+ *  - Шапка ОСТАЁТСЯ на месте (sticky)
+ *  - Карточки уезжают ПОД неё (z-index шапки выше)
+ *  - Фон шапки полностью непрозрачный — карточки не просвечивают
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -49,8 +59,7 @@ export default function WorkoutDay() {
   const [actionSlot, setActionSlot] = useState(null)
   const [infoSlot, setInfoSlot] = useState(null)
 
-  // Направление последнего перехода — для анимации буквы дня
-  // 'right' — переход вперёд (буква приезжает справа), 'left' — назад
+  // Направление перехода для анимации буквы дня
   const [slideDir, setSlideDir] = useState('right')
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -116,10 +125,6 @@ export default function WorkoutDay() {
       } else {
         next.add(slot.order_num)
         haptic.success()
-
-        if (slots.length > 0 && next.size === slots.length) {
-          setTimeout(() => setShowFinishedModal(true), 600)
-        }
       }
       return next
     })
@@ -152,18 +157,14 @@ export default function WorkoutDay() {
     })
   }
 
-  // === Переключение между днями ===
-  // direction: 'next' = вправо (вперёд) | 'prev' = влево (назад)
   const goToDay = (targetDay, direction) => {
     if (targetDay === day) return
     haptic.light()
-    // Если идём вперёд (next) — новая буква приезжает справа (slideDir=right)
-    // Если назад (prev) — приезжает слева (slideDir=left)
     setSlideDir(direction === 'next' ? 'right' : 'left')
     navigate(`/workout/${programId}/${targetDay}`, { replace: true })
   }
 
-  // === СВАЙП В ЗОНЕ ЗАГОЛОВКА ===
+  // === СВАЙП В ЗОНЕ ШАПКИ ===
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
 
@@ -183,15 +184,11 @@ export default function WorkoutDay() {
     touchStartX.current = null
     touchStartY.current = null
 
-    // Свайп засчитываем только если горизонтальный сильнее вертикального
-    // и сильнее минимального порога (50px)
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
 
     if (dx < 0) {
-      // Свайп влево → следующий день
       goToDay(nextDay, 'next')
     } else {
-      // Свайп вправо → предыдущий день
       goToDay(prevDay, 'prev')
     }
   }
@@ -247,18 +244,22 @@ export default function WorkoutDay() {
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
-  // Класс анимации перехода — зависит от направления свайпа/клика
   const dayLetterAnimClass = slideDir === 'right'
     ? 'day-letter-slide-in-right'
     : 'day-letter-slide-in-left'
 
   return (
-    <div className="page page-enter" style={styles.page}>
+    <div style={styles.page}>
 
-      {/* === STICKY-ШАПКА: стрелки + буква + прогресс === */}
+      {/* === STICKY-ШАПКА === */}
+      {/*
+        position: sticky, top: 0 — прибита к верху экрана.
+        padding-top заливает зону под Telegram-навигацией.
+        Фон var(--color-bg) полностью НЕПРОЗРАЧНЫЙ — карточки не просвечивают.
+      */}
       <div style={styles.stickyHeader}>
 
-        {/* Стрелки + буква */}
+        {/* Стрелки + буква дня */}
         <div
           style={styles.headerRow}
           onTouchStart={handleHeaderTouchStart}
@@ -272,8 +273,6 @@ export default function WorkoutDay() {
             <ArrowLeft />
           </button>
 
-          {/* Буква дня + крошечная стрелочка вниз (подсказка о свайпе).
-              key={day} перерендерит элемент при смене дня → анимация запустится */}
           <div style={styles.dayLetterWrap}>
             <span
               key={day}
@@ -310,8 +309,9 @@ export default function WorkoutDay() {
         </div>
       </div>
 
-      {/* Контент идёт под sticky-шапкой */}
+      {/* === ТЕЛО — список упражнений === */}
       <div style={styles.body}>
+
         {error && (
           <div style={styles.error}>
             <div style={styles.errorTitle}>Ошибка загрузки:</div>
@@ -348,25 +348,30 @@ export default function WorkoutDay() {
             ))}
           </div>
         )}
-      </div>
 
-      {/* === КНОПКА ЗАВЕРШИТЬ === */}
-      {!loading && slots.length > 0 && (
-        <div style={styles.bottomBar}>
-          <button
-            onClick={handleFinishButtonTap}
-            disabled={!canFinish}
-            style={{
-              ...styles.finishButton,
-              ...(isAllDone ? styles.finishButtonReady : {}),
-              opacity: canFinish ? 1 : 0.35,
-              cursor: canFinish ? 'pointer' : 'default'
-            }}
-          >
-            {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
-          </button>
-        </div>
-      )}
+        {/* === КНОПКА "ЗАВЕРШИТЬ ТРЕНИРОВКУ" — в конце списка === */}
+        {/*
+          Обычный блок в потоке, не fixed. Юзер пролистывает все упражнения,
+          видит кнопку в самом низу и нажимает.
+          Это эмоционально другая логика: "точно проверил всё — теперь завершаю".
+        */}
+        {!loading && slots.length > 0 && (
+          <div style={styles.finishWrap}>
+            <button
+              onClick={handleFinishButtonTap}
+              disabled={!canFinish}
+              style={{
+                ...styles.finishButton,
+                ...(isAllDone ? styles.finishButtonReady : {}),
+                opacity: canFinish ? 1 : 0.35,
+                cursor: canFinish ? 'pointer' : 'default'
+              }}
+            >
+              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {actionSlot && (
         <ExerciseActionMenu
@@ -396,7 +401,8 @@ export default function WorkoutDay() {
   )
 }
 
-// ===== Пиксельная стрелка влево =====
+// ===== Пиксельные иконки =====
+
 function ArrowLeft() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
@@ -413,7 +419,6 @@ function ArrowLeft() {
   )
 }
 
-// ===== Пиксельная стрелка вправо =====
 function ArrowRight() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
@@ -430,7 +435,6 @@ function ArrowRight() {
   )
 }
 
-// ===== Пиксельная стрелочка вниз — подсказка о свайпе =====
 function SwipeHintArrow() {
   return (
     <svg width="12" height="14" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges" style={{ marginLeft: 4 }}>
@@ -462,25 +466,31 @@ function groupByMuscleGroup(slots) {
 }
 
 const styles = {
-  // Меньше нижний padding — таб-бара тут нет (см. TabBar.jsx), просто оставляем
-  // место для кнопки "Завершить" с отступом
+  // Страница — БЕЗ верхнего padding'а. Верхний отступ заберёт sticky-шапка.
+  // Нижний padding — для отступа кнопки от низа экрана (нет таб-бара).
   page: {
-    padding: '0 16px 140px'
+    padding: '0 16px 40px',
+    minHeight: '100vh',
+    minHeight: '100dvh'
   },
 
   // === STICKY-ШАПКА ===
-  // Прибита к верху страницы. Когда юзер листает вниз — буква и прогресс
-  // остаются видны всегда.
+  // top: 0 — прибита к верху ВИДИМОЙ области страницы.
+  // padding-top: var(--tg-safe-top) — заливает зону под Telegram-навигацией
+  // тем же фоном что у страницы → карточки не просвечивают при скролле.
+  // marginLeft/Right с минусами — компенсация padding'а страницы чтобы
+  // фон шапки растянулся на ВСЮ ширину экрана.
   stickyHeader: {
     position: 'sticky',
-    top: 'calc(var(--tg-safe-top) - 28px)',
-    zIndex: 20,
+    top: 0,
+    zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: 'calc(var(--tg-safe-top) - 28px)',
+    paddingTop: 'var(--tg-safe-top)',
     paddingBottom: '14px',
-    marginTop: 'calc(-1 * (var(--tg-safe-top) - 28px))',
-    // Тень снизу для отделения от контента когда залип
-    boxShadow: '0 8px 16px -8px rgba(13, 12, 12, 0.4)'
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px'
   },
 
   headerRow: {
@@ -489,8 +499,6 @@ const styles = {
     justifyContent: 'space-between',
     padding: '0 8px',
     marginBottom: '14px',
-    // touch-action: pan-y чтобы не блокировался вертикальный скролл когда
-    // юзер случайно касается шапки. Свайп пишем сами через touch события.
     touchAction: 'pan-y'
   },
   arrowButton: {
@@ -519,11 +527,9 @@ const styles = {
     display: 'inline-block'
   },
 
-  // === ПРОГРЕСС-БАР ===
   progressWrap: {
     padding: '0 4px'
   },
-  // +2 кегля: 11px → 13px (по факту 14 для лучшей читаемости)
   progressLabel: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '14px',
@@ -545,9 +551,10 @@ const styles = {
     transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
 
-  // === ТЕЛО (под sticky-шапкой) ===
+  // === ТЕЛО ===
+  // Стартует сразу под sticky-шапкой. Никаких отрицательных margin'ов.
   body: {
-    paddingTop: '8px'
+    paddingTop: '20px'
   },
   sectionsWrap: {
     display: 'flex',
@@ -568,7 +575,6 @@ const styles = {
     padding: '4px 4px',
     margin: 0
   },
-  // 16px между карточками (правка)
   exerciseList: {
     display: 'flex',
     flexDirection: 'column',
@@ -602,22 +608,14 @@ const styles = {
     wordBreak: 'break-word'
   },
 
-  // === КНОПКА ЗАВЕРШИТЬ === (на странице тренировки таб-бара нет —
-  // прибиваем к низу экрана с обычным безопасным отступом)
-  bottomBar: {
-    position: 'fixed',
-    left: 0,
-    right: 0,
-    bottom: '16px',
-    padding: '16px',
-    paddingTop: '24px',
-    background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 30%, var(--color-bg) 100%)',
-    zIndex: 90,
-    pointerEvents: 'none'
+  // === КНОПКА "ЗАВЕРШИТЬ" — в конце списка как обычный блок ===
+  finishWrap: {
+    marginTop: '28px',
+    paddingTop: '8px'
   },
   finishButton: {
     width: '100%',
-    padding: '16px',
+    padding: '18px',
     background: 'var(--color-card)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
@@ -626,8 +624,7 @@ const styles = {
     letterSpacing: '2px',
     borderRadius: '16px',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    pointerEvents: 'auto',
-    transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease'
+    transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease'
   },
   finishButtonReady: {
     background: 'var(--color-primary)',
