@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -20,14 +20,15 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * НОВАЯ ШАПКА (по референсу):
- *  - Стрелки ‹ / › по краям, между ними большая пиксельная буква дня (А/Б/В)
- *  - Переключение между днями ЦИКЛИЧНОЕ: A→B→C→A→...
- *  - Стрелки всегда активны
- *  - Под шапкой подпись "Вчера был день X" (если был) или "Начнём с дня А"
- *  - Прогресс-бар "1 / 10" с тонкой полосой
- *
- * Кнопка "Назад" Telegram возвращает на категорию (минуя удалённый Program.jsx).
+ * НОВОЕ:
+ *  - Шапка (буква дня + стрелки + прогресс-бар) sticky — всегда наверху при скролле
+ *  - Свайп влево/вправо в зоне буквы → переключение дней
+ *  - Стрелки и свайп работают идентично
+ *  - Анимация перехода между днями (буква вылетает / приезжает)
+ *  - Маленькая пиксельная стрелочка вниз рядом с буквой — подсказка о свайпе
+ *  - Циклично: A→B→C→A
+ *  - Прогресс-бар "1 / 10" шрифт +2 кегля
+ *  - Кнопка "Назад" Telegram ведёт на категорию
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -37,7 +38,6 @@ export default function WorkoutDay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Восстанавливаем прогресс синхронно при первом рендере
   const [activeOrderNums, setActiveOrderNums] = useState(() => {
     return new Set(loadWorkoutProgress(programId, day))
   })
@@ -49,23 +49,23 @@ export default function WorkoutDay() {
   const [actionSlot, setActionSlot] = useState(null)
   const [infoSlot, setInfoSlot] = useState(null)
 
-  // Программа и список её дней — для навигации стрелками
+  // Направление последнего перехода — для анимации буквы дня
+  // 'right' — переход вперёд (буква приезжает справа), 'left' — назад
+  const [slideDir, setSlideDir] = useState('right')
+
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
-  // Куда вести стрелки. Циклично: A→B→C→A
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
   const nextDay = currentDayIdx < days.length - 1 ? days[currentDayIdx + 1] : days[0]
 
-  // Кнопка "Назад" Telegram — на категорию программы (gym для split)
   useEffect(() => {
     const categoryId = program?.category || 'gym'
     backButton.setHandler(() => navigate(`/category/${categoryId}`))
     lockVerticalSwipes()
   }, [navigate, program])
 
-  // Перезагружаем прогресс из localStorage при смене дня (важно для стрелок)
   useEffect(() => {
     setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))
   }, [programId, day])
@@ -100,7 +100,6 @@ export default function WorkoutDay() {
     return () => { cancelled = true }
   }, [programId, day])
 
-  // Автосохранение отжатых упражнений в localStorage
   useEffect(() => {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
@@ -153,10 +152,48 @@ export default function WorkoutDay() {
     })
   }
 
-  // Переключение между днями стрелками
-  const goToDay = (targetDay) => {
+  // === Переключение между днями ===
+  // direction: 'next' = вправо (вперёд) | 'prev' = влево (назад)
+  const goToDay = (targetDay, direction) => {
+    if (targetDay === day) return
     haptic.light()
+    // Если идём вперёд (next) — новая буква приезжает справа (slideDir=right)
+    // Если назад (prev) — приезжает слева (slideDir=left)
+    setSlideDir(direction === 'next' ? 'right' : 'left')
     navigate(`/workout/${programId}/${targetDay}`, { replace: true })
+  }
+
+  // === СВАЙП В ЗОНЕ ЗАГОЛОВКА ===
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
+
+  const handleHeaderTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleHeaderTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+
+    const endX = e.changedTouches[0].clientX
+    const endY = e.changedTouches[0].clientY
+    const dx = endX - touchStartX.current
+    const dy = endY - touchStartY.current
+
+    touchStartX.current = null
+    touchStartY.current = null
+
+    // Свайп засчитываем только если горизонтальный сильнее вертикального
+    // и сильнее минимального порога (50px)
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+
+    if (dx < 0) {
+      // Свайп влево → следующий день
+      goToDay(nextDay, 'next')
+    } else {
+      // Свайп вправо → предыдущий день
+      goToDay(prevDay, 'prev')
+    }
   }
 
   const handleFinishButtonTap = () => {
@@ -187,7 +224,6 @@ export default function WorkoutDay() {
         return
       }
 
-      // Успех — отмечаем день пройденным, чистим прогресс, уходим
       await setLastCompletedDay(programId, day)
       clearWorkoutProgress(programId, day)
       haptic.success()
@@ -208,80 +244,113 @@ export default function WorkoutDay() {
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
-  // Прогресс заполнения (для тонкой полосы под шапкой)
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
+
+  // Класс анимации перехода — зависит от направления свайпа/клика
+  const dayLetterAnimClass = slideDir === 'right'
+    ? 'day-letter-slide-in-right'
+    : 'day-letter-slide-in-left'
 
   return (
     <div className="page page-enter" style={styles.page}>
 
-      {/* === ШАПКА: стрелки + пиксельная буква === */}
-      <header style={styles.header}>
-        <button onClick={() => goToDay(prevDay)} style={styles.arrowButton} aria-label="Предыдущий день">
-          <ArrowLeft />
-        </button>
+      {/* === STICKY-ШАПКА: стрелки + буква + прогресс === */}
+      <div style={styles.stickyHeader}>
 
-        <div style={styles.dayLetter}>{day}</div>
+        {/* Стрелки + буква */}
+        <div
+          style={styles.headerRow}
+          onTouchStart={handleHeaderTouchStart}
+          onTouchEnd={handleHeaderTouchEnd}
+        >
+          <button
+            onClick={() => goToDay(prevDay, 'prev')}
+            style={styles.arrowButton}
+            aria-label="Предыдущий день"
+          >
+            <ArrowLeft />
+          </button>
 
-        <button onClick={() => goToDay(nextDay)} style={styles.arrowButton} aria-label="Следующий день">
-          <ArrowRight />
-        </button>
-      </header>
+          {/* Буква дня + крошечная стрелочка вниз (подсказка о свайпе).
+              key={day} перерендерит элемент при смене дня → анимация запустится */}
+          <div style={styles.dayLetterWrap}>
+            <span
+              key={day}
+              className={dayLetterAnimClass}
+              style={styles.dayLetter}
+            >
+              {day}
+            </span>
+            <SwipeHintArrow />
+          </div>
 
-      {/* === ПРОГРЕСС-БАР === */}
-      <div style={styles.progressWrap}>
-        <div style={styles.progressLabel}>
-          {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
+          <button
+            onClick={() => goToDay(nextDay, 'next')}
+            style={styles.arrowButton}
+            aria-label="Следующий день"
+          >
+            <ArrowRight />
+          </button>
         </div>
-        <div style={styles.progressTrack}>
-          <div
-            style={{
-              ...styles.progressFill,
-              width: `${progressPct}%`
-            }}
-          />
+
+        {/* Прогресс */}
+        <div style={styles.progressWrap}>
+          <div style={styles.progressLabel}>
+            {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
+          </div>
+          <div style={styles.progressTrack}>
+            <div
+              style={{
+                ...styles.progressFill,
+                width: `${progressPct}%`
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {error && (
-        <div style={styles.error}>
-          <div style={styles.errorTitle}>Ошибка загрузки:</div>
-          <div style={styles.errorText}>{error}</div>
-        </div>
-      )}
+      {/* Контент идёт под sticky-шапкой */}
+      <div style={styles.body}>
+        {error && (
+          <div style={styles.error}>
+            <div style={styles.errorTitle}>Ошибка загрузки:</div>
+            <div style={styles.errorText}>{error}</div>
+          </div>
+        )}
 
-      {!loading && !error && slots.length === 0 && (
-        <div style={styles.empty}>
-          День пуст — упражнения не настроены для этой программы
-        </div>
-      )}
+        {!loading && !error && slots.length === 0 && (
+          <div style={styles.empty}>
+            День пуст — упражнения не настроены для этой программы
+          </div>
+        )}
 
-      {/* === СПИСОК УПРАЖНЕНИЙ === */}
-      {!loading && sections.length > 0 && (
-        <div style={styles.sectionsWrap}>
-          {sections.map((section, sIdx) => (
-            <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-              <h2 style={styles.muscleHeader}>
-                {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-              </h2>
+        {!loading && sections.length > 0 && (
+          <div style={styles.sectionsWrap}>
+            {sections.map((section, sIdx) => (
+              <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
+                <h2 style={styles.muscleHeader}>
+                  {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+                </h2>
 
-              <div style={styles.exerciseList}>
-                {section.slots.map(slot => (
-                  <ExerciseCard
-                    key={`${slot.order_num}-${slot.exercise_id}`}
-                    slot={slot}
-                    isActive={activeOrderNums.has(slot.order_num)}
-                    onTap={handleCardTap}
-                    onLongPress={handleCardLongPress}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+                <div style={styles.exerciseList}>
+                  {section.slots.map(slot => (
+                    <ExerciseCard
+                      key={`${slot.order_num}-${slot.exercise_id}`}
+                      slot={slot}
+                      isActive={activeOrderNums.has(slot.order_num)}
+                      onTap={handleCardTap}
+                      onLongPress={handleCardLongPress}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* === КНОПКА "ЗАВЕРШИТЬ ТРЕНИРОВКУ" === */}
+      {/* === КНОПКА ЗАВЕРШИТЬ === */}
       {!loading && slots.length > 0 && (
         <div style={styles.bottomBar}>
           <button
@@ -327,9 +396,7 @@ export default function WorkoutDay() {
   )
 }
 
-/**
- * Пиксельная стрелка влево (как в макете)
- */
+// ===== Пиксельная стрелка влево =====
 function ArrowLeft() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
@@ -346,9 +413,7 @@ function ArrowLeft() {
   )
 }
 
-/**
- * Пиксельная стрелка вправо
- */
+// ===== Пиксельная стрелка вправо =====
 function ArrowRight() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
@@ -360,6 +425,23 @@ function ArrowRight() {
         <rect x="14" y="14" width="2" height="2" />
         <rect x="12" y="16" width="2" height="2" />
         <rect x="10" y="18" width="2" height="2" />
+      </g>
+    </svg>
+  )
+}
+
+// ===== Пиксельная стрелочка вниз — подсказка о свайпе =====
+function SwipeHintArrow() {
+  return (
+    <svg width="12" height="14" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges" style={{ marginLeft: 4 }}>
+      <g fill="rgba(255,255,255,0.35)">
+        <rect x="5"  y="2"  width="2" height="2" />
+        <rect x="5"  y="4"  width="2" height="2" />
+        <rect x="5"  y="6"  width="2" height="2" />
+        <rect x="3"  y="8"  width="2" height="2" />
+        <rect x="5"  y="8"  width="2" height="2" />
+        <rect x="7"  y="8"  width="2" height="2" />
+        <rect x="5"  y="10" width="2" height="2" />
       </g>
     </svg>
   )
@@ -380,27 +462,52 @@ function groupByMuscleGroup(slots) {
 }
 
 const styles = {
+  // Меньше нижний padding — таб-бара тут нет (см. TabBar.jsx), просто оставляем
+  // место для кнопки "Завершить" с отступом
   page: {
-    padding: '8px 16px 120px'
+    padding: '0 16px 140px'
   },
-  // === ШАПКА со стрелками и буквой дня ===
-  header: {
+
+  // === STICKY-ШАПКА ===
+  // Прибита к верху страницы. Когда юзер листает вниз — буква и прогресс
+  // остаются видны всегда.
+  stickyHeader: {
+    position: 'sticky',
+    top: 'calc(var(--tg-safe-top) - 28px)',
+    zIndex: 20,
+    background: 'var(--color-bg)',
+    paddingTop: 'calc(var(--tg-safe-top) - 28px)',
+    paddingBottom: '14px',
+    marginTop: 'calc(-1 * (var(--tg-safe-top) - 28px))',
+    // Тень снизу для отделения от контента когда залип
+    boxShadow: '0 8px 16px -8px rgba(13, 12, 12, 0.4)'
+  },
+
+  headerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 8px',
-    marginBottom: '8px'
+    padding: '0 8px',
+    marginBottom: '14px',
+    // touch-action: pan-y чтобы не блокировался вертикальный скролл когда
+    // юзер случайно касается шапки. Свайп пишем сами через touch события.
+    touchAction: 'pan-y'
   },
   arrowButton: {
     background: 'transparent',
     border: 'none',
-    padding: '8px',
+    padding: '12px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'opacity 0.15s ease',
     WebkitTapHighlightColor: 'transparent'
+  },
+  dayLetterWrap: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: '120px'
   },
   dayLetter: {
     fontFamily: 'var(--font-tiny5)',
@@ -408,16 +515,18 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,
-    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)'
+    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
+    display: 'inline-block'
   },
+
   // === ПРОГРЕСС-БАР ===
   progressWrap: {
-    padding: '0 4px',
-    marginBottom: '20px'
+    padding: '0 4px'
   },
+  // +2 кегля: 11px → 13px (по факту 14 для лучшей читаемости)
   progressLabel: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
+    fontSize: '14px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
     marginBottom: '6px'
@@ -435,7 +544,11 @@ const styles = {
     borderRadius: '2px',
     transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
-  // === СЕКЦИИ С УПРАЖНЕНИЯМИ ===
+
+  // === ТЕЛО (под sticky-шапкой) ===
+  body: {
+    paddingTop: '8px'
+  },
   sectionsWrap: {
     display: 'flex',
     flexDirection: 'column',
@@ -444,9 +557,8 @@ const styles = {
   section: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '12px'
   },
-  // Заголовок мышечной группы — пиксельный
   muscleHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
@@ -456,10 +568,11 @@ const styles = {
     padding: '4px 4px',
     margin: 0
   },
+  // 16px между карточками (правка)
   exerciseList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '16px'
   },
   empty: {
     textAlign: 'center',
@@ -488,14 +601,16 @@ const styles = {
     color: 'var(--color-text-secondary)',
     wordBreak: 'break-word'
   },
-  // === КНОПКА ЗАВЕРШИТЬ ===
+
+  // === КНОПКА ЗАВЕРШИТЬ === (на странице тренировки таб-бара нет —
+  // прибиваем к низу экрана с обычным безопасным отступом)
   bottomBar: {
     position: 'fixed',
     left: 0,
     right: 0,
-    bottom: 'calc(var(--tabbar-height) + var(--tabbar-bottom) + 8px)',
-    padding: '8px 16px',
-    paddingTop: '20px',
+    bottom: '16px',
+    padding: '16px',
+    paddingTop: '24px',
     background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 30%, var(--color-bg) 100%)',
     zIndex: 90,
     pointerEvents: 'none'

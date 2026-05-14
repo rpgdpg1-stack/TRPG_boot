@@ -2,21 +2,25 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Таб-бар — 3 вкладки:
- * - Прогресс (📊)
- * - Тренировки (💪) — центральная, ведёт на главную
- * - Восстановление (🛌) — советы по восстановлению
+ * Таб-бар — 3 вкладки: Прогресс / Тренировки / Восстановление.
  *
- * Настройки переехали в шестерёнку Telegram в шапке (см. App.jsx).
+ * НЕ показывается на экранах тренировки (/workout/...) и замены упражнения
+ * (/swap/...) — там юзеру нужен фокус, таб-бар отвлекает и закрывает
+ * нижнюю кнопку "Завершить тренировку".
  */
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // Прячем таб-бар на экранах тренировки и замены упражнений
+  const isHiddenOnPath =
+    location.pathname.startsWith('/workout') ||
+    location.pathname.startsWith('/swap')
+
+  if (isHiddenOnPath) return null
+
   const isWorkoutSection = location.pathname === '/' ||
-                           location.pathname.startsWith('/category') ||
-                           location.pathname.startsWith('/program') ||
-                           location.pathname.startsWith('/workout')
+                           location.pathname.startsWith('/category')
 
   const isExactHome = location.pathname === '/'
 
@@ -114,7 +118,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '3px',
-    // Чуть меньше padding на каждой кнопке — лейбл "Восстановление" длинный
     padding: '0 12px',
     minWidth: '78px',
     height: 'calc(var(--tabbar-height) - 8px)',

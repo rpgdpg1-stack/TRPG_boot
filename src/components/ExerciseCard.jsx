@@ -4,24 +4,13 @@ import { SUB_GROUP_LABELS } from '../features/programs/labels'
 import { haptic } from '../lib/telegram'
 
 /**
- * Карточка упражнения — новый дизайн по референсу Figma.
- *
- * Структура (слева направо):
- *   [Превью 118×118] [Подгруппа / Название / Подходы] [Вес 100 / KG]
- *
- * Размеры внутренностей фиксированные (точно как в макете).
- * Ширина самой карточки — 100% контейнера (адаптивная под экран).
- *
- * Состояния:
- *  - default — обычный вид
- *  - selected (isActive=true) — карточка приглушена + превью в монохроме
- *
- * Жесты:
- *  - Тап → onTap (родитель активирует/деактивирует)
- *  - Тап по полю веса → нативная цифровая клавиатура, автосохранение
- *  - Long-press 500мс → onLongPress (меню Инфо/Сменить)
- *
- * Тост "✅ Готово, молодец!" появляется при первой активации.
+ * Карточка упражнения — обновлено по фидбеку:
+ *  - Тап по числу веса → клавиатура с первого раза (отдельный pointerDown, минуя long-press)
+ *  - Дефолтный вес 0 вместо "—"
+ *  - Когда клавиатура открыта → тап по любому месту карточки её закрывает,
+ *    но НЕ активирует карточку (handleClick игнорируется пока editing=true)
+ *  - При активации (isActive) — оверлей с blur + monochrome + затемнение 40%
+ *    появляется как один эффект (по Figma)
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
@@ -37,7 +26,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const [showDoneToast, setShowDoneToast] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
-  const [localWeight, setLocalWeight] = useState(user_weight_kg)
+  // Дефолтный вес = 0 (вместо null/прочерка)
+  const [localWeight, setLocalWeight] = useState(
+    user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
+  )
   const inputRef = useRef(null)
 
   // Long-press
@@ -47,11 +39,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
-  // Подгруппа в виде человекочитаемого подзаголовка ("ШИРИНА" вместо "lats")
   const subGroupLabel = SUB_GROUP_LABELS[sub_group] || (sub_group || '').toUpperCase()
 
   useEffect(() => {
-    setLocalWeight(user_weight_kg)
+    setLocalWeight(
+      user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
+    )
   }, [user_weight_kg])
 
   useEffect(() => {
@@ -67,7 +60,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       const timer = setTimeout(() => {
         inputRef.current?.focus()
         inputRef.current?.select()
-      }, 50)
+      }, 30)
       return () => clearTimeout(timer)
     }
   }, [editing])
@@ -78,8 +71,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }, [])
 
-  const handlePointerDown = (e) => {
+  // === ЖЕСТЫ ПО КАРТОЧКЕ (не по весу) ===
+  const handleCardPointerDown = (e) => {
+    // Если редактируем вес — никаких long-press на карточку
     if (editing) return
+
     longPressFired.current = false
     pointerStartPos.current = { x: e.clientX, y: e.clientY }
 
@@ -92,7 +88,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }, LONG_PRESS_MS)
   }
 
-  const handlePointerMove = (e) => {
+  const handleCardPointerMove = (e) => {
     if (!longPressTimer.current) return
     const dx = Math.abs(e.clientX - pointerStartPos.current.x)
     const dy = Math.abs(e.clientY - pointerStartPos.current.y)
@@ -102,14 +98,16 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  const handlePointerUp = () => {
+  const handleCardPointerUp = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
   }
 
-  const handleClick = () => {
+  const handleCardClick = () => {
+    // ВАЖНО: пока редактируем вес — клик по карточке НЕ активирует её.
+    // Тап в этот момент только закрывает клавиатуру (onBlur инпута).
     if (editing) return
     if (longPressFired.current) {
       longPressFired.current = false
@@ -118,18 +116,29 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (onTap) onTap(slot)
   }
 
-  const handleWeightTap = (e) => {
-    e.stopPropagation()
+  // === ТАП ПО ВЕСУ — открывает клавиатуру с первого раза ===
+  // Используем pointerDown (а не click), чтобы реакция была мгновенной
+  // и не пересекалась с логикой long-press'а на карточке.
+  const handleWeightPointerDown = (e) => {
+    e.stopPropagation() // ⚠️ останавливаем перед всем остальным
     if (!exercise_id) return
+
+    // Отменяем long-press таймер, если родительский pointerDown успел его запустить
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
-    setDraft(localWeight !== null && localWeight !== undefined ? String(localWeight) : '')
+
+    // Если уже редактируем — повторный тап не нужен, фокус и так в инпуте
+    if (editing) return
+
+    setDraft(String(localWeight))
     setEditing(true)
   }
 
-  const handleWeightPointerDown = (e) => {
+  // Дублируем click для отдельных случаев (на iOS pointerDown иногда подавляется
+  // в overlay-сценариях); двойной вызов безопасен — editing уже true.
+  const handleWeightClick = (e) => {
     e.stopPropagation()
   }
 
@@ -147,7 +156,18 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     setEditing(false)
 
     const trimmed = draft.trim()
-    if (trimmed === '') return
+    if (trimmed === '') {
+      // Пустое значение → возвращаем 0
+      if (localWeight !== 0) {
+        setLocalWeight(0)
+        try {
+          await saveExerciseWeight(exercise_id, 0)
+        } catch (e) {
+          console.error('[ExerciseCard] saveExerciseWeight error:', e)
+        }
+      }
+      return
+    }
 
     const num = parseFloat(trimmed)
     if (isNaN(num) || num < 0) return
@@ -174,32 +194,26 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  const displayWeight = localWeight !== null && localWeight !== undefined ? localWeight : null
-
   return (
     <div
-      onClick={handleClick}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onPointerLeave={handlePointerUp}
+      onClick={handleCardClick}
+      onPointerDown={handleCardPointerDown}
+      onPointerMove={handleCardPointerMove}
+      onPointerUp={handleCardPointerUp}
+      onPointerCancel={handleCardPointerUp}
+      onPointerLeave={handleCardPointerUp}
       style={{
         ...styles.card,
-        // selected — карточка темнее и приглушённая
+        // Базовый фон зависит от состояния (по Figma)
         background: isActive ? '#222222' : '#1C1C1C',
+        cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         WebkitTouchCallout: 'none'
       }}
     >
       {/* === ПРЕВЬЮ === */}
-      <div style={{
-        ...styles.preview,
-        // В состоянии selected — превью в монохроме (как в макете)
-        filter: isActive ? 'grayscale(1)' : 'none',
-        opacity: isActive ? 0.7 : 1
-      }}>
+      <div style={styles.preview}>
         {preview_url ? (
           <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
         ) : (
@@ -208,23 +222,16 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       </div>
 
       {/* === ТЕКСТ === */}
-      <div style={{
-        ...styles.content,
-        opacity: isActive ? 0.5 : 1,
-        transition: 'opacity 0.3s ease'
-      }}>
-        {/* Подгруппа — например "ШИРИНА" */}
+      <div style={styles.content}>
         {subGroupLabel && (
           <div style={styles.subGroupLabel}>{subGroupLabel}</div>
         )}
 
-        {/* Название упражнения */}
         <div style={styles.exerciseName}>
           {exercise_name}
           {is_swapped && <span style={styles.swappedBadge}>заменено</span>}
         </div>
 
-        {/* Подходы — например "3×8-10" */}
         {meta_info && (
           <div style={styles.meta}>{meta_info}</div>
         )}
@@ -232,13 +239,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 
       {/* === ВЕС === */}
       <div
-        style={{
-          ...styles.weightBlock,
-          opacity: isActive ? 0.5 : 1,
-          transition: 'opacity 0.3s ease'
-        }}
-        onClick={handleWeightTap}
+        style={styles.weightBlock}
         onPointerDown={handleWeightPointerDown}
+        onClick={handleWeightClick}
       >
         {editing ? (
           <div style={styles.weightInputWrap}>
@@ -251,18 +254,30 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
               onChange={handleInputChange}
               onBlur={handleInputBlur}
               onKeyDown={handleInputKeyDown}
+              // важно: stopPropagation на инпуте чтобы клики по нему не закрывали редактирование
               onClick={(e) => e.stopPropagation()}
-              placeholder="—"
+              onPointerDown={(e) => e.stopPropagation()}
+              placeholder="0"
               style={styles.weightInput}
             />
           </div>
         ) : (
           <div style={styles.weightValue}>
-            {displayWeight !== null ? displayWeight : '—'}
+            {localWeight}
           </div>
         )}
         <div style={styles.weightUnit}>KG</div>
       </div>
+
+      {/* === ЭФФЕКТ ВЫПОЛНЕНО: blur + grayscale + затемнение 40% ===
+          Один абсолютный слой поверх карточки. Появляется/исчезает плавно. */}
+      <div
+        style={{
+          ...styles.activeOverlay,
+          opacity: isActive ? 1 : 0,
+          pointerEvents: 'none'
+        }}
+      />
 
       {/* === ТОСТ "ГОТОВО, МОЛОДЕЦ" === */}
       {showDoneToast && (
@@ -284,7 +299,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 }
 
 const styles = {
-  // Размеры по Figma: 398×150, но ширина 100% для адаптивности
   card: {
     position: 'relative',
     display: 'flex',
@@ -295,10 +309,10 @@ const styles = {
     width: '100%',
     minHeight: '150px',
     borderRadius: '33px',
-    cursor: 'pointer',
-    transition: 'background 0.3s ease'
+    transition: 'background 0.3s ease',
+    // overflow hidden чтобы оверлей не вылезал за скругления
+    overflow: 'hidden'
   },
-  // Превью — точно по Figma 118×118 с радиусом 33
   preview: {
     flexShrink: 0,
     width: '118px',
@@ -308,8 +322,7 @@ const styles = {
     background: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'filter 0.3s ease, opacity 0.3s ease'
+    justifyContent: 'center'
   },
   previewImg: {
     width: '100%',
@@ -320,7 +333,6 @@ const styles = {
     fontSize: '40px',
     opacity: 0.4
   },
-  // Текстовый блок — flex-grow для занятия всего свободного места
   content: {
     flex: 1,
     minWidth: 0,
@@ -330,7 +342,6 @@ const styles = {
     justifyContent: 'center',
     gap: '7px'
   },
-  // Manrope 800 / 10px / letter-spacing 0.2em
   subGroupLabel: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '10px',
@@ -340,7 +351,6 @@ const styles = {
     color: '#888888',
     textTransform: 'uppercase'
   },
-  // Geist 600 / 14px / line 18
   exerciseName: {
     fontFamily: 'var(--font-geist)',
     fontSize: '14px',
@@ -362,7 +372,6 @@ const styles = {
     borderRadius: '4px',
     letterSpacing: '0.5px'
   },
-  // Manrope 600 / 10px / letter-spacing 0.05em
   meta: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '10px',
@@ -371,7 +380,6 @@ const styles = {
     letterSpacing: '0.05em',
     color: '#888888'
   },
-  // Блок веса — выровнен по центру вертикально, текст вправо
   weightBlock: {
     flexShrink: 0,
     width: '38px',
@@ -381,12 +389,13 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'flex-end',
     gap: '0px',
-    padding: '4px',
-    margin: '-4px',
+    padding: '6px',
+    margin: '-6px',
     borderRadius: '8px',
-    transition: 'opacity 0.3s ease'
+    // Z-index выше чем у оверлея — чтобы вес был тапабельным даже в selected
+    position: 'relative',
+    zIndex: 5
   },
-  // Manrope 800 / 20px / зелёный
   weightValue: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
@@ -396,7 +405,6 @@ const styles = {
     textAlign: 'center',
     color: '#9ED153'
   },
-  // KG — Manrope 800 / 9px / серый
   weightUnit: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
@@ -410,7 +418,7 @@ const styles = {
   weightInputWrap: {
     width: '38px',
     display: 'flex',
-    justifyContent: 'flex-end'
+    justifyContent: 'center'
   },
   weightInput: {
     width: '38px',
@@ -426,6 +434,17 @@ const styles = {
     padding: 0,
     margin: 0,
     caretColor: '#9ED153'
+  },
+  // Эффект выполнено: монохром + затемнение 40% + blur 1.9px одним слоем
+  activeOverlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.4)',
+    backdropFilter: 'grayscale(1) blur(1.9px)',
+    WebkitBackdropFilter: 'grayscale(1) blur(1.9px)',
+    borderRadius: '33px',
+    transition: 'opacity 0.35s ease',
+    zIndex: 3
   },
   doneToast: {
     position: 'absolute',

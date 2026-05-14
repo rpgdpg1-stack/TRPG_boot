@@ -55,8 +55,9 @@
   --press-duration: 120ms;
   --press-ease: cubic-bezier(0.4, 0, 0.6, 1);
 
-  /* Safe-area под Telegram nav */
-  --tg-safe-top: 92px;
+  /* Safe-area под Telegram nav. Увеличено со 92px до 116px —
+     нативные кнопки "Назад" и "⋯" Telegram перекрывали контент. */
+  --tg-safe-top: 116px;
 }
 
 /* ============================================ */
@@ -72,21 +73,6 @@
   user-select: none;
 }
 
-/*
- * КЛЮЧЕВОЙ ФИКС СКРОЛЛА (правильный iOS-feel):
- *
- * html — это самый верхний слой. Когда юзер оттягивает страницу вверх или
- * вниз за её границы, iOS показывает фон именно ЭТОГО элемента (а не body).
- * Раньше там был дефолтный белый/чёрный системный — отсюда полоса.
- *
- * Решение:
- *  1. background на html = var(--color-bg) — чтобы при bounce виден был
- *     наш фон, а не системный
- *  2. overscroll-behavior НЕ ставим в none — bounce сохраняется, юзер
- *     чувствует "эластичность" страницы как в нативных iOS-приложениях
- *  3. -webkit-overflow-scrolling: touch — гладкий momentum-скролл
- *  4. height: 100% на html — чтобы layout правильно распределялся
- */
 html {
   width: 100%;
   height: 100%;
@@ -101,8 +87,6 @@ body {
   color: var(--color-text);
   font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
-
-  /* Гладкий момент-скролл на iOS */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -134,10 +118,6 @@ img, button { -webkit-user-drag: none; }
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--color-bg);
-  /*
-   * Большой нижний отступ — даёт пространство для bounce-эффекта
-   * под таб-баром. Без него при оттягивании вниз был бы виден край.
-   */
   padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 60px);
 }
 
@@ -184,6 +164,26 @@ img, button { -webkit-user-drag: none; }
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* === АНИМАЦИЯ ПЕРЕХОДА МЕЖДУ ДНЯМИ === */
+/* Используется при свайпе/клике стрелок: буква вылетает в одну сторону,
+   приезжает с другой. Чистый iOS-feel. */
+
+.day-letter-slide-in-right {
+  animation: dayLetterInRight 0.32s var(--ease-ios) both;
+}
+.day-letter-slide-in-left {
+  animation: dayLetterInLeft 0.32s var(--ease-ios) both;
+}
+
+@keyframes dayLetterInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes dayLetterInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 /* ============================================ */
