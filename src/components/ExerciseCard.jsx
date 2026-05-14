@@ -1,18 +1,33 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../features/exercises/api'
+import { SUB_GROUP_LABELS } from '../features/programs/labels'
 import { haptic } from '../lib/telegram'
 
 /**
- * Карточка упражнения на экране дня тренировки.
+ * Карточка упражнения — новый дизайн по референсу Figma.
  *
- * Д2: Тап → onTap, isActive → визуальное состояние "выполнено"
- * Д3.1: Тап по полю веса → нативная цифровая клавиатура, автосохранение
- * Д3.2: Long-press 500мс → onLongPress (меню Инфо/Сменить)
+ * Структура (слева направо):
+ *   [Превью 118×118] [Подгруппа / Название / Подходы] [Вес 100 / KG]
+ *
+ * Размеры внутренностей фиксированные (точно как в макете).
+ * Ширина самой карточки — 100% контейнера (адаптивная под экран).
+ *
+ * Состояния:
+ *  - default — обычный вид
+ *  - selected (isActive=true) — карточка приглушена + превью в монохроме
+ *
+ * Жесты:
+ *  - Тап → onTap (родитель активирует/деактивирует)
+ *  - Тап по полю веса → нативная цифровая клавиатура, автосохранение
+ *  - Long-press 500мс → onLongPress (меню Инфо/Сменить)
+ *
+ * Тост "✅ Готово, молодец!" появляется при первой активации.
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
     exercise_id,
     exercise_name,
+    sub_group,
     meta_info,
     preview_url,
     is_swapped,
@@ -25,11 +40,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const [localWeight, setLocalWeight] = useState(user_weight_kg)
   const inputRef = useRef(null)
 
+  // Long-press
   const longPressTimer = useRef(null)
   const longPressFired = useRef(false)
   const pointerStartPos = useRef({ x: 0, y: 0 })
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
+
+  // Подгруппа в виде человекочитаемого подзаголовка ("ШИРИНА" вместо "lats")
+  const subGroupLabel = SUB_GROUP_LABELS[sub_group] || (sub_group || '').toUpperCase()
 
   useEffect(() => {
     setLocalWeight(user_weight_kg)
@@ -90,7 +109,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  const handleClick = (e) => {
+  const handleClick = () => {
     if (editing) return
     if (longPressFired.current) {
       longPressFired.current = false
@@ -167,16 +186,20 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerLeave={handlePointerUp}
       style={{
         ...styles.card,
-        cursor: 'pointer',
-        opacity: isActive ? 0.45 : 1,
-        filter: isActive ? 'grayscale(0.85) blur(0.4px)' : 'none',
-        transition: 'opacity 0.3s ease, filter 0.3s ease',
+        // selected — карточка темнее и приглушённая
+        background: isActive ? '#222222' : '#1C1C1C',
         userSelect: 'none',
         WebkitUserSelect: 'none',
         WebkitTouchCallout: 'none'
       }}
     >
-      <div style={styles.preview}>
+      {/* === ПРЕВЬЮ === */}
+      <div style={{
+        ...styles.preview,
+        // В состоянии selected — превью в монохроме (как в макете)
+        filter: isActive ? 'grayscale(1)' : 'none',
+        opacity: isActive ? 0.7 : 1
+      }}>
         {preview_url ? (
           <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
         ) : (
@@ -184,21 +207,39 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      <div style={styles.content}>
-        <div style={styles.title}>
+      {/* === ТЕКСТ === */}
+      <div style={{
+        ...styles.content,
+        opacity: isActive ? 0.5 : 1,
+        transition: 'opacity 0.3s ease'
+      }}>
+        {/* Подгруппа — например "ШИРИНА" */}
+        {subGroupLabel && (
+          <div style={styles.subGroupLabel}>{subGroupLabel}</div>
+        )}
+
+        {/* Название упражнения */}
+        <div style={styles.exerciseName}>
           {exercise_name}
           {is_swapped && <span style={styles.swappedBadge}>заменено</span>}
         </div>
-        <div style={styles.meta}>{meta_info || ''}</div>
+
+        {/* Подходы — например "3×8-10" */}
+        {meta_info && (
+          <div style={styles.meta}>{meta_info}</div>
+        )}
       </div>
 
+      {/* === ВЕС === */}
       <div
-        style={styles.weightBlock}
+        style={{
+          ...styles.weightBlock,
+          opacity: isActive ? 0.5 : 1,
+          transition: 'opacity 0.3s ease'
+        }}
         onClick={handleWeightTap}
         onPointerDown={handleWeightPointerDown}
       >
-        <div style={styles.weightLabel}>ВЕС</div>
-
         {editing ? (
           <div style={styles.weightInputWrap}>
             <input
@@ -214,16 +255,16 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
               placeholder="—"
               style={styles.weightInput}
             />
-            <span style={styles.weightUnit}>кг</span>
           </div>
         ) : (
           <div style={styles.weightValue}>
             {displayWeight !== null ? displayWeight : '—'}
-            <span style={styles.weightUnit}>кг</span>
           </div>
         )}
+        <div style={styles.weightUnit}>KG</div>
       </div>
 
+      {/* === ТОСТ "ГОТОВО, МОЛОДЕЦ" === */}
       {showDoneToast && (
         <div style={styles.doneToast}>
           ✅ Готово, молодец!
@@ -243,115 +284,148 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 }
 
 const styles = {
+  // Размеры по Figma: 398×150, но ширина 100% для адаптивности
   card: {
     position: 'relative',
     display: 'flex',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
+    padding: '16px',
+    gap: '16px',
     width: '100%',
-    minHeight: '90px'
+    minHeight: '150px',
+    borderRadius: '33px',
+    cursor: 'pointer',
+    transition: 'background 0.3s ease'
   },
+  // Превью — точно по Figma 118×118 с радиусом 33
   preview: {
     flexShrink: 0,
-    width: '64px',
-    height: '64px',
-    borderRadius: '14px',
+    width: '118px',
+    height: '118px',
+    borderRadius: '33px',
     overflow: 'hidden',
-    background: 'rgba(255, 255, 255, 0.04)',
+    background: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    transition: 'filter 0.3s ease, opacity 0.3s ease'
   },
-  previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewPlaceholder: { fontSize: '28px' },
+  previewImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  previewPlaceholder: {
+    fontSize: '40px',
+    opacity: 0.4
+  },
+  // Текстовый блок — flex-grow для занятия всего свободного места
   content: {
     flex: 1,
     minWidth: 0,
+    height: '118px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
-    paddingRight: '4px'
+    justifyContent: 'center',
+    gap: '7px'
   },
-  title: {
+  // Manrope 800 / 10px / letter-spacing 0.2em
+  subGroupLabel: {
     fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 800,
+    lineHeight: '14px',
+    letterSpacing: '0.2em',
+    color: '#888888',
+    textTransform: 'uppercase'
+  },
+  // Geist 600 / 14px / line 18
+  exerciseName: {
+    fontFamily: 'var(--font-geist)',
     fontSize: '14px',
     fontWeight: 600,
-    color: 'var(--color-text)',
-    lineHeight: 1.25,
+    lineHeight: '18px',
+    color: '#F0F0F0',
     display: 'flex',
-    alignItems: 'flex-start',
-    gap: '6px',
-    flexWrap: 'wrap'
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '6px'
   },
   swappedBadge: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '9px',
+    fontWeight: 'normal',
     color: 'var(--color-primary)',
     background: 'rgba(158, 209, 83, 0.12)',
     padding: '2px 6px',
     borderRadius: '4px',
     letterSpacing: '0.5px'
   },
+  // Manrope 600 / 10px / letter-spacing 0.05em
   meta: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.5px'
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 600,
+    lineHeight: '14px',
+    letterSpacing: '0.05em',
+    color: '#888888'
   },
+  // Блок веса — выровнен по центру вертикально, текст вправо
   weightBlock: {
     flexShrink: 0,
+    width: '38px',
+    height: '118px',
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'flex-end',
-    gap: '2px',
-    minWidth: '72px',
-    padding: '8px 6px',
-    margin: '-8px -6px',
-    borderRadius: '8px'
+    gap: '0px',
+    padding: '4px',
+    margin: '-4px',
+    borderRadius: '8px',
+    transition: 'opacity 0.3s ease'
   },
-  weightLabel: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '9px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
+  // Manrope 800 / 20px / зелёный
   weightValue: {
-    fontFamily: 'var(--font-tiny5)',
+    width: '38px',
+    fontFamily: 'var(--font-manrope)',
     fontSize: '20px',
-    color: 'var(--color-primary)',
-    letterSpacing: '0.5px',
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: '3px'
+    fontWeight: 800,
+    lineHeight: '27px',
+    textAlign: 'center',
+    color: '#9ED153'
+  },
+  // KG — Manrope 800 / 9px / серый
+  weightUnit: {
+    width: '38px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '9px',
+    fontWeight: 800,
+    lineHeight: '12px',
+    letterSpacing: '0.05em',
+    textAlign: 'center',
+    color: '#888888'
   },
   weightInputWrap: {
+    width: '38px',
     display: 'flex',
-    alignItems: 'baseline',
-    gap: '3px'
+    justifyContent: 'flex-end'
   },
   weightInput: {
-    width: '52px',
-    fontFamily: 'var(--font-tiny5)',
+    width: '38px',
+    fontFamily: 'var(--font-manrope)',
     fontSize: '20px',
-    color: 'var(--color-primary)',
-    letterSpacing: '0.5px',
+    fontWeight: 800,
+    lineHeight: '27px',
+    color: '#9ED153',
     background: 'transparent',
     border: 'none',
     outline: 'none',
-    textAlign: 'right',
+    textAlign: 'center',
     padding: 0,
     margin: 0,
-    caretColor: 'var(--color-primary)',
-    minWidth: 0
-  },
-  weightUnit: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    color: 'var(--color-text-secondary)',
-    fontWeight: 500
+    caretColor: '#9ED153'
   },
   doneToast: {
     position: 'absolute',
@@ -372,7 +446,6 @@ const styles = {
     pointerEvents: 'none',
     animation: 'doneToastFade 1.5s ease-out forwards',
     zIndex: 10,
-    filter: 'none',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(158, 209, 83, 0.15)'
   }
 }

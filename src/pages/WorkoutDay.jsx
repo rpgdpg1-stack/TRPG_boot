@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
+import { getProgramBySlug } from '../features/programs/registry'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
@@ -19,14 +20,14 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * ПРАВКИ:
- * - Прогресс отжатых упражнений сохраняется в localStorage. Если юзер вышел
- *   и вернулся — продолжает с того же места. Сбрасывается только при явном
- *   завершении тренировки.
- * - Кнопка "ЗАВЕРШИТЬ ТРЕНИРОВКУ" всегда внизу страницы. Неактивна пока не
- *   отжато хотя бы одно упражнение. Юзер может завершить даже не доделав
- *   все упражнения.
- * - Старая логика "отжал все → автоматически модалка" остаётся.
+ * НОВАЯ ШАПКА (по референсу):
+ *  - Стрелки ‹ / › по краям, между ними большая пиксельная буква дня (А/Б/В)
+ *  - Переключение между днями ЦИКЛИЧНОЕ: A→B→C→A→...
+ *  - Стрелки всегда активны
+ *  - Под шапкой подпись "Вчера был день X" (если был) или "Начнём с дня А"
+ *  - Прогресс-бар "1 / 10" с тонкой полосой
+ *
+ * Кнопка "Назад" Telegram возвращает на категорию (минуя удалённый Program.jsx).
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -36,25 +37,38 @@ export default function WorkoutDay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Восстанавливаем прогресс синхронно при первом рендере,
-  // чтобы карточки сразу появились в правильном состоянии без мигания.
+  // Восстанавливаем прогресс синхронно при первом рендере
   const [activeOrderNums, setActiveOrderNums] = useState(() => {
     return new Set(loadWorkoutProgress(programId, day))
   })
 
   const [showFinishedModal, setShowFinishedModal] = useState(false)
-
-  // Состояние модалки: 'idle' | 'saving' | 'error'
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
 
   const [actionSlot, setActionSlot] = useState(null)
   const [infoSlot, setInfoSlot] = useState(null)
 
+  // Программа и список её дней — для навигации стрелками
+  const program = useMemo(() => getProgramBySlug(programId), [programId])
+  const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
+
+  // Куда вести стрелки. Циклично: A→B→C→A
+  const currentDayIdx = days.indexOf(day)
+  const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
+  const nextDay = currentDayIdx < days.length - 1 ? days[currentDayIdx + 1] : days[0]
+
+  // Кнопка "Назад" Telegram — на категорию программы (gym для split)
   useEffect(() => {
-    backButton.setHandler(() => navigate(`/program/${programId}`))
+    const categoryId = program?.category || 'gym'
+    backButton.setHandler(() => navigate(`/category/${categoryId}`))
     lockVerticalSwipes()
-  }, [navigate, programId])
+  }, [navigate, program])
+
+  // Перезагружаем прогресс из localStorage при смене дня (важно для стрелок)
+  useEffect(() => {
+    setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))
+  }, [programId, day])
 
   useEffect(() => {
     let cancelled = false
@@ -66,6 +80,7 @@ export default function WorkoutDay() {
         return
       }
 
+      setLoading(true)
       try {
         const data = await getWorkoutDay(programId, day)
         if (!cancelled) {
@@ -85,10 +100,7 @@ export default function WorkoutDay() {
     return () => { cancelled = true }
   }, [programId, day])
 
-  /**
-   * Каждый раз когда меняется набор отжатых — пишем в localStorage.
-   * Это автосохранение: даже если приложение убьют, состояние не потеряется.
-   */
+  // Автосохранение отжатых упражнений в localStorage
   useEffect(() => {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
@@ -106,7 +118,6 @@ export default function WorkoutDay() {
         next.add(slot.order_num)
         haptic.success()
 
-        // Если отжаты все упражнения — автоматически открываем модалку
         if (slots.length > 0 && next.size === slots.length) {
           setTimeout(() => setShowFinishedModal(true), 600)
         }
@@ -142,20 +153,18 @@ export default function WorkoutDay() {
     })
   }
 
-  /**
-   * Тап по кнопке "ЗАВЕРШИТЬ ТРЕНИРОВКУ".
-   * Просто открываем модалку — реальное сохранение происходит при подтверждении.
-   */
+  // Переключение между днями стрелками
+  const goToDay = (targetDay) => {
+    haptic.light()
+    navigate(`/workout/${programId}/${targetDay}`, { replace: true })
+  }
+
   const handleFinishButtonTap = () => {
     if (activeOrderNums.size === 0) return
     haptic.medium()
     setShowFinishedModal(true)
   }
 
-  /**
-   * Подтверждение в модалке завершения.
-   * При ошибке модалка остаётся открытой с кнопкой "Повторить".
-   */
   const handleConfirmFinish = async () => {
     if (finishStatus === 'saving') return
 
@@ -163,8 +172,6 @@ export default function WorkoutDay() {
     setFinishErrorMsg('')
 
     try {
-      // Сохраняем только реально активированные упражнения (не все 10 если
-      // юзер решил завершить раньше).
       const exerciseIds = slots
         .filter(s => activeOrderNums.has(s.order_num))
         .map(s => s.exercise_id)
@@ -201,17 +208,40 @@ export default function WorkoutDay() {
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
+  // Прогресс заполнения (для тонкой полосы под шапкой)
+  const totalSlots = slots.length || 1
+  const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
+
   return (
     <div className="page page-enter" style={styles.page}>
 
+      {/* === ШАПКА: стрелки + пиксельная буква === */}
       <header style={styles.header}>
-        <h1 style={styles.title}>ДЕНЬ {day}</h1>
-        <div style={styles.subtitle}>
-          {loading
-            ? 'Загрузка...'
-            : `${activeOrderNums.size} / ${slots.length} выполнено`}
-        </div>
+        <button onClick={() => goToDay(prevDay)} style={styles.arrowButton} aria-label="Предыдущий день">
+          <ArrowLeft />
+        </button>
+
+        <div style={styles.dayLetter}>{day}</div>
+
+        <button onClick={() => goToDay(nextDay)} style={styles.arrowButton} aria-label="Следующий день">
+          <ArrowRight />
+        </button>
       </header>
+
+      {/* === ПРОГРЕСС-БАР === */}
+      <div style={styles.progressWrap}>
+        <div style={styles.progressLabel}>
+          {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
+        </div>
+        <div style={styles.progressTrack}>
+          <div
+            style={{
+              ...styles.progressFill,
+              width: `${progressPct}%`
+            }}
+          />
+        </div>
+      </div>
 
       {error && (
         <div style={styles.error}>
@@ -226,11 +256,12 @@ export default function WorkoutDay() {
         </div>
       )}
 
+      {/* === СПИСОК УПРАЖНЕНИЙ === */}
       {!loading && sections.length > 0 && (
         <div style={styles.sectionsWrap}>
           {sections.map((section, sIdx) => (
             <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-              <h2 style={styles.stickyHeader}>
+              <h2 style={styles.muscleHeader}>
                 {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
               </h2>
 
@@ -250,7 +281,7 @@ export default function WorkoutDay() {
         </div>
       )}
 
-      {/* Кнопка ЗАВЕРШИТЬ — всегда внизу, неактивна пока ничего не отжато */}
+      {/* === КНОПКА "ЗАВЕРШИТЬ ТРЕНИРОВКУ" === */}
       {!loading && slots.length > 0 && (
         <div style={styles.bottomBar}>
           <button
@@ -296,6 +327,44 @@ export default function WorkoutDay() {
   )
 }
 
+/**
+ * Пиксельная стрелка влево (как в макете)
+ */
+function ArrowLeft() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+      <g fill="rgba(255,255,255,0.5)">
+        <rect x="12" y="6"  width="2" height="2" />
+        <rect x="10" y="8"  width="2" height="2" />
+        <rect x="8"  y="10" width="2" height="2" />
+        <rect x="6"  y="12" width="2" height="2" />
+        <rect x="8"  y="14" width="2" height="2" />
+        <rect x="10" y="16" width="2" height="2" />
+        <rect x="12" y="18" width="2" height="2" />
+      </g>
+    </svg>
+  )
+}
+
+/**
+ * Пиксельная стрелка вправо
+ */
+function ArrowRight() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+      <g fill="rgba(255,255,255,0.5)">
+        <rect x="10" y="6"  width="2" height="2" />
+        <rect x="12" y="8"  width="2" height="2" />
+        <rect x="14" y="10" width="2" height="2" />
+        <rect x="16" y="12" width="2" height="2" />
+        <rect x="14" y="14" width="2" height="2" />
+        <rect x="12" y="16" width="2" height="2" />
+        <rect x="10" y="18" width="2" height="2" />
+      </g>
+    </svg>
+  )
+}
+
 function groupByMuscleGroup(slots) {
   if (!slots.length) return []
   const sections = []
@@ -312,44 +381,86 @@ function groupByMuscleGroup(slots) {
 
 const styles = {
   page: {
-    // Большой отступ снизу — чтобы контент не залезал под кнопку "Завершить"
-    padding: '16px 16px 120px'
+    padding: '8px 16px 120px'
   },
-  header: { marginBottom: '16px', textAlign: 'center' },
-  title: {
+  // === ШАПКА со стрелками и буквой дня ===
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 8px',
+    marginBottom: '8px'
+  },
+  arrowButton: {
+    background: 'transparent',
+    border: 'none',
+    padding: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'opacity 0.15s ease',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  dayLetter: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '36px',
+    fontSize: '64px',
     color: 'var(--color-primary)',
-    letterSpacing: '4px',
+    letterSpacing: '0',
     lineHeight: 1,
+    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)'
+  },
+  // === ПРОГРЕСС-БАР ===
+  progressWrap: {
+    padding: '0 4px',
+    marginBottom: '20px'
+  },
+  progressLabel: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px',
     marginBottom: '6px'
   },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
+  progressTrack: {
+    width: '100%',
+    height: '4px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: '2px',
+    overflow: 'hidden'
   },
-  sectionsWrap: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  section: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  stickyHeader: {
-    position: 'sticky',
-    top: 'calc(var(--tg-safe-top) - 80px)',
-    zIndex: 10,
+  progressFill: {
+    height: '100%',
+    background: 'var(--color-primary)',
+    borderRadius: '2px',
+    transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
+  },
+  // === СЕКЦИИ С УПРАЖНЕНИЯМИ ===
+  sectionsWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  // Заголовок мышечной группы — пиксельный
+  muscleHeader: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '14px',
+    fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
     fontWeight: 'normal',
-    padding: '8px 4px',
-    margin: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderRadius: '8px'
+    padding: '4px 4px',
+    margin: 0
   },
-  exerciseList: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  exerciseList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
   empty: {
     textAlign: 'center',
     padding: '40px 20px',
@@ -377,16 +488,15 @@ const styles = {
     color: 'var(--color-text-secondary)',
     wordBreak: 'break-word'
   },
-  // Bottom-bar над таб-баром — фиксированный, с лёгким градиентом для разделения
+  // === КНОПКА ЗАВЕРШИТЬ ===
   bottomBar: {
     position: 'fixed',
     left: 0,
     right: 0,
-    // Над таб-баром: tabbar-height + bottom + небольшой gap
     bottom: 'calc(var(--tabbar-height) + var(--tabbar-bottom) + 8px)',
     padding: '8px 16px',
-    background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 30%, var(--color-bg) 100%)',
     paddingTop: '20px',
+    background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 30%, var(--color-bg) 100%)',
     zIndex: 90,
     pointerEvents: 'none'
   },
@@ -404,7 +514,6 @@ const styles = {
     pointerEvents: 'auto',
     transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease'
   },
-  // Когда отжаты все упражнения — кнопка зелёная и заметная
   finishButtonReady: {
     background: 'var(--color-primary)',
     color: '#0D0C0C',

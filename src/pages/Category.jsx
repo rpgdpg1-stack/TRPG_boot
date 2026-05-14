@@ -8,9 +8,8 @@ import ProgramCard from '../components/ProgramCard'
 /**
  * Экран категории — список программ внутри неё.
  *
- * Правка #3: программы для категории берутся из реестра.
- * Чтобы добавить программу — регистрируешь в features/programs/registry.js,
- * указываешь category — и она автоматически появляется тут.
+ * Тап по карточке программы ведёт сразу на день тренировки
+ * (через ProgramCard → /workout/{slug}/{day}).
  */
 
 const CATEGORIES_META = {
@@ -40,8 +39,6 @@ const CATEGORIES_META = {
   }
 }
 
-// Заглушки для категорий где программы ещё не сделаны.
-// Удалить когда появятся реальные программы в registry.
 const PLACEHOLDER_PROGRAMS = {
   cardio: [
     { slug: 'running', title: 'Бег', tags: [], available: false, comingSoon: true },
@@ -63,7 +60,6 @@ export default function Category() {
 
   const meta = CATEGORIES_META[id]
 
-  // Реальные программы из реестра + placeholder'ы для будущих
   const realPrograms = getProgramsByCategory(id)
   const placeholderPrograms = realPrograms.length === 0 ? (PLACEHOLDER_PROGRAMS[id] || []) : []
   const programs = [...realPrograms, ...placeholderPrograms]

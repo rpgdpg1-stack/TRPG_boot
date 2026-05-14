@@ -7,9 +7,9 @@ import DayBadge from './DayBadge'
 /**
  * Карточка программы внутри категории.
  *
- * Г8.3: убрали spawnBurst при тапе.
- * Нативное iOS-style нажатие: haptic + CSS :active scale.
- * Закреп-сердце сохраняет свои хаптики (medium), но без частиц.
+ * Тап → сразу на день тренировки (минуя удалённый экран выбора дня).
+ * Активный день определяется через getActiveDay (цикл A→B→C).
+ * Если пользователь ещё не тренировался — стартуем с дня A.
  */
 export default function ProgramCard({ id, title, tags = [], available = true, comingSoon = false }) {
   const navigate = useNavigate()
@@ -27,10 +27,13 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
     return () => { cancelled = true }
   }, [id])
 
-  const handleCardTap = () => {
+  const handleCardTap = async () => {
     if (!available) return
     haptic.light()
-    setTimeout(() => navigate(`/program/${id}`), 80)
+    // Если getActiveDay вернул null (никогда не тренировался) — стартуем с A.
+    // Иначе — день, рекомендованный логикой цикла.
+    const day = activeDay || 'A'
+    setTimeout(() => navigate(`/workout/${id}/${day}`), 80)
   }
 
   const handlePinTap = async (e) => {
@@ -152,7 +155,6 @@ const styles = {
     width: '100%',
     minHeight: '88px',
     textAlign: 'left'
-    // transition приходит из .press-tile
   },
   pinButton: {
     position: 'absolute',

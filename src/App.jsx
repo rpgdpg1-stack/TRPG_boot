@@ -8,7 +8,6 @@ import ParticlesBg from './components/ParticlesBg'
 
 import Home from './pages/Home'
 import Category from './pages/Category'
-import Program from './pages/Program'
 import WorkoutDay from './pages/WorkoutDay'
 import SwapExercise from './pages/SwapExercise'
 import Progress from './pages/Progress'
@@ -18,15 +17,6 @@ import Settings from './pages/Settings'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth } from './lib/auth'
 
-/**
- * Корневой компонент приложения.
- *
- * Структура роутов:
- *  - / / /category / /program / /workout / /swap — поток тренировки
- *  - /progress — прогресс (вкладка таб-бара)
- *  - /recovery — восстановление (вкладка таб-бара)
- *  - /settings — настройки (доступны через шестерёнку Telegram в шапке)
- */
 export default function App() {
   const [loading, setLoading] = useState(true)
 
@@ -58,7 +48,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/category/:id" element={<Category />} />
-          <Route path="/program/:id" element={<Program />} />
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           <Route path="/progress" element={<Progress />} />
@@ -72,10 +61,6 @@ export default function App() {
   )
 }
 
-/**
- * Контроллер шестерёнки в шапке Telegram.
- * Показывает её на всех экранах кроме самих настроек, ведёт на /settings.
- */
 function SettingsButtonController() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -83,13 +68,8 @@ function SettingsButtonController() {
   useEffect(() => {
     if (location.pathname === '/settings') {
       settingsButton.hide()
-      return
-    }
-
-    settingsButton.show(() => navigate('/settings'))
-
-    return () => {
-      settingsButton.hide()
+    } else {
+      settingsButton.show(() => navigate('/settings'))
     }
   }, [location.pathname, navigate])
 
