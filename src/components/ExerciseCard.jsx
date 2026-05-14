@@ -4,13 +4,31 @@ import { SUB_GROUP_LABELS } from '../features/programs/labels'
 import { haptic } from '../lib/telegram'
 
 /**
- * Карточка упражнения — обновлено по фидбеку:
- *  - Тап по числу веса → клавиатура с первого раза (отдельный pointerDown, минуя long-press)
- *  - Дефолтный вес 0 вместо "—"
- *  - Когда клавиатура открыта → тап по любому месту карточки её закрывает,
- *    но НЕ активирует карточку (handleClick игнорируется пока editing=true)
- *  - При активации (isActive) — оверлей с blur + monochrome + затемнение 40%
- *    появляется как один эффект (по Figma)
+ * Карточка упражнения.
+ *
+ * РЕШЕНИЕ ПРОБЛЕМЫ С iOS И КЛАВИАТУРОЙ:
+ *
+ * На iOS Safari/WebView клавиатура показывается ТОЛЬКО когда .focus() вызван
+ * синхронно внутри обработчика прямого пользовательского жеста (click/touchend).
+ *
+ * Если делать setEditing(true) → React ре-рендерит → useEffect → focus(),
+ * iOS считает это программным фокусом и не открывает клавиатуру — только
+ * выделяет текст в инпуте. Юзеру приходится тапать второй раз.
+ *
+ * Чтобы это исправить — инпут ВСЕГДА в DOM, visibility/opacity переключаются
+ * чисто визуально. Тогда мы можем вызвать input.focus() прямо в обработчике
+ * клика, и iOS открывает клавиатуру с первого раза.
+ *
+ * РЕШЕНИЕ ПРОБЛЕМЫ С ТАПОМ ПО КАРТОЧКЕ ПОСЛЕ РЕДАКТИРОВАНИЯ:
+ *
+ * При тапе по карточке во время редактирования веса:
+ *   1. iOS закрывает клавиатуру → onBlur инпута срабатывает → editing=false
+ *   2. ПОТОМ срабатывает onClick карточки — но editing уже false
+ *      → карточка ошибочно отжимается.
+ *
+ * Решение: используем ref-флаг `justClosedKeyboard` который ставится в onBlur
+ * и держится 300мс. handleCardClick проверяет этот флаг через ref (синхронно!)
+ * и игнорирует клик. После 300мс флаг сбрасывается.
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
@@ -25,12 +43,17 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 
   const [showDoneToast, setShowDoneToast] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-  // Дефолтный вес = 0 (вместо null/прочерка)
+  const [draft, setDraft] = useState('0')
   const [localWeight, setLocalWeight] = useState(
     user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
   )
   const inputRef = useRef(null)
+
+  // === REF-флаги для синхронной проверки в обработчиках клика ===
+  // Стандартный editing-стейт асинхронный, поэтому в onClick карточки он
+  // может показать неактуальное значение. Эти refs обновляются СРАЗУ.
+  const editingRef = useRef(false)
+  const justClosedKeyboardRef = useRef(false)
 
   // Long-press
   const longPressTimer = useRef(null)
@@ -56,25 +79,14 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }, [isActive])
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus()
-        inputRef.current?.select()
-      }, 30)
-      return () => clearTimeout(timer)
-    }
-  }, [editing])
-
-  useEffect(() => {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
     }
   }, [])
 
-  // === ЖЕСТЫ ПО КАРТОЧКЕ (не по весу) ===
+  // === ЖЕСТЫ ПО КАРТОЧКЕ ===
   const handleCardPointerDown = (e) => {
-    // Если редактируем вес — никаких long-press на карточку
-    if (editing) return
+    if (editingRef.current) return
 
     longPressFired.current = false
     pointerStartPos.current = { x: e.clientX, y: e.clientY }
@@ -106,40 +118,64 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardClick = () => {
-    // ВАЖНО: пока редактируем вес — клик по карточке НЕ активирует её.
-    // Тап в этот момент только закрывает клавиатуру (onBlur инпута).
-    if (editing) return
+    // Главные защиты — через REF, не через state.
+    // К моменту onClick state уже мог обновиться (editing=false после blur),
+    // но эти флаги обновляются СИНХРОННО → актуальные.
+
+    // Если только что закрыли клавиатуру (последние 300мс) — игнорируем тап,
+    // он был на закрытие, а не на активацию упражнения.
+    if (justClosedKeyboardRef.current) return
+
+    if (editingRef.current) return
+
     if (longPressFired.current) {
       longPressFired.current = false
       return
     }
+
     if (onTap) onTap(slot)
   }
 
-  // === ТАП ПО ВЕСУ — открывает клавиатуру с первого раза ===
-  // Используем pointerDown (а не click), чтобы реакция была мгновенной
-  // и не пересекалась с логикой long-press'а на карточке.
-  const handleWeightPointerDown = (e) => {
-    e.stopPropagation() // ⚠️ останавливаем перед всем остальным
+  // === ТАП ПО ВЕСУ ===
+  // Используем onClick (не pointerDown) — это критично для iOS:
+  // input.focus() вызванный синхронно из onClick считается жестом
+  // и открывает клавиатуру с первого раза.
+  const handleWeightClick = (e) => {
+    e.stopPropagation()
     if (!exercise_id) return
 
-    // Отменяем long-press таймер, если родительский pointerDown успел его запустить
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
 
-    // Если уже редактируем — повторный тап не нужен, фокус и так в инпуте
-    if (editing) return
+    if (editingRef.current) return // уже редактируем
 
+    // 1. Обновляем ref СИНХРОННО (до setState)
+    editingRef.current = true
+
+    // 2. Готовим черновик
     setDraft(String(localWeight))
+
+    // 3. Меняем state (визуал переключится на следующем рендере)
     setEditing(true)
+
+    // 4. Фокусим инпут СИНХРОННО — он уже в DOM (всегда там) — iOS примет
+    //    это как жест и откроет клавиатуру с первого раза
+    if (inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
   }
 
-  // Дублируем click для отдельных случаев (на iOS pointerDown иногда подавляется
-  // в overlay-сценариях); двойной вызов безопасен — editing уже true.
-  const handleWeightClick = (e) => {
+  // На pointerDown веса — только защита от родительского long-press.
+  // Сам тап обрабатывается в onClick (см. выше).
+  const handleWeightPointerDown = (e) => {
     e.stopPropagation()
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
   }
 
   const handleInputChange = (e) => {
@@ -153,11 +189,20 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleInputBlur = async () => {
+    // Снимаем editing
+    editingRef.current = false
     setEditing(false)
 
+    // Ставим флаг "только что закрыли клавиатуру" на 300мс —
+    // защищает от ложного тапа по карточке, который iOS сейчас сгенерит
+    justClosedKeyboardRef.current = true
+    setTimeout(() => {
+      justClosedKeyboardRef.current = false
+    }, 300)
+
+    // Парсим и сохраняем значение
     const trimmed = draft.trim()
     if (trimmed === '') {
-      // Пустое значение → возвращаем 0
       if (localWeight !== 0) {
         setLocalWeight(0)
         try {
@@ -204,7 +249,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerLeave={handleCardPointerUp}
       style={{
         ...styles.card,
-        // Базовый фон зависит от состояния (по Figma)
         background: isActive ? '#222222' : '#1C1C1C',
         cursor: 'pointer',
         userSelect: 'none',
@@ -212,7 +256,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         WebkitTouchCallout: 'none'
       }}
     >
-      {/* === ПРЕВЬЮ === */}
+      {/* ПРЕВЬЮ */}
       <div style={styles.preview}>
         {preview_url ? (
           <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
@@ -221,7 +265,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      {/* === ТЕКСТ === */}
+      {/* ТЕКСТ */}
       <div style={styles.content}>
         {subGroupLabel && (
           <div style={styles.subGroupLabel}>{subGroupLabel}</div>
@@ -237,40 +281,48 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      {/* === ВЕС === */}
+      {/* ВЕС — инпут ВСЕГДА в DOM, переключаем visibility */}
       <div
         style={styles.weightBlock}
-        onPointerDown={handleWeightPointerDown}
         onClick={handleWeightClick}
+        onPointerDown={handleWeightPointerDown}
       >
-        {editing ? (
-          <div style={styles.weightInputWrap}>
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode="decimal"
-              pattern="[0-9]*"
-              value={draft}
-              onChange={handleInputChange}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              // важно: stopPropagation на инпуте чтобы клики по нему не закрывали редактирование
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              placeholder="0"
-              style={styles.weightInput}
-            />
-          </div>
-        ) : (
-          <div style={styles.weightValue}>
-            {localWeight}
-          </div>
-        )}
+        <div style={styles.weightInputWrap}>
+          {/*
+            Инпут всегда отрендерен. Когда editing=false — он скрыт абсолютно
+            под визуальным числом, не получает кликов (pointerEvents:none).
+            Когда editing=true — становится видимым, число справа скрывается.
+          */}
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*"
+            value={editing ? draft : String(localWeight)}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            readOnly={!editing}
+            tabIndex={editing ? 0 : -1}
+            style={{
+              ...styles.weightInput,
+              opacity: editing ? 1 : 0,
+              pointerEvents: editing ? 'auto' : 'none'
+            }}
+          />
+          {/* Визуальное число поверх инпута, когда не редактируем */}
+          {!editing && (
+            <div style={styles.weightValue}>
+              {localWeight}
+            </div>
+          )}
+        </div>
         <div style={styles.weightUnit}>KG</div>
       </div>
 
-      {/* === ЭФФЕКТ ВЫПОЛНЕНО: blur + grayscale + затемнение 40% ===
-          Один абсолютный слой поверх карточки. Появляется/исчезает плавно. */}
+      {/* Эффект "выполнено": blur + grayscale + затемнение */}
       <div
         style={{
           ...styles.activeOverlay,
@@ -279,7 +331,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         }}
       />
 
-      {/* === ТОСТ "ГОТОВО, МОЛОДЕЦ" === */}
       {showDoneToast && (
         <div style={styles.doneToast}>
           ✅ Готово, молодец!
@@ -310,7 +361,6 @@ const styles = {
     minHeight: '150px',
     borderRadius: '33px',
     transition: 'background 0.3s ease',
-    // overflow hidden чтобы оверлей не вылезал за скругления
     overflow: 'hidden'
   },
   preview: {
@@ -392,9 +442,37 @@ const styles = {
     padding: '6px',
     margin: '-6px',
     borderRadius: '8px',
-    // Z-index выше чем у оверлея — чтобы вес был тапабельным даже в selected
     position: 'relative',
     zIndex: 5
+  },
+  // Обёртка содержит инпут + визуальное число (один поверх другого)
+  weightInputWrap: {
+    position: 'relative',
+    width: '38px',
+    height: '27px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  // Инпут абсолютно позиционирован, всегда в DOM
+  weightInput: {
+    position: 'absolute',
+    inset: 0,
+    width: '38px',
+    height: '27px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '20px',
+    fontWeight: 800,
+    lineHeight: '27px',
+    color: '#9ED153',
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    textAlign: 'center',
+    padding: 0,
+    margin: 0,
+    caretColor: '#9ED153',
+    transition: 'opacity 0.15s ease'
   },
   weightValue: {
     width: '38px',
@@ -415,27 +493,6 @@ const styles = {
     textAlign: 'center',
     color: '#888888'
   },
-  weightInputWrap: {
-    width: '38px',
-    display: 'flex',
-    justifyContent: 'center'
-  },
-  weightInput: {
-    width: '38px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
-    fontWeight: 800,
-    lineHeight: '27px',
-    color: '#9ED153',
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    textAlign: 'center',
-    padding: 0,
-    margin: 0,
-    caretColor: '#9ED153'
-  },
-  // Эффект выполнено: монохром + затемнение 40% + blur 1.9px одним слоем
   activeOverlay: {
     position: 'absolute',
     inset: 0,
