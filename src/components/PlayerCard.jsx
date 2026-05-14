@@ -2,7 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak } from '../lib/storage'
-import { getLevelFromXP, getRankByLevel, getLevelProgress, getXPInCurrentLevel, XP_REWARDS } from '../lib/levels'
+import {
+  getLevelFromXP,
+  getRankByLevel,
+  getLevelProgress,
+  getXPInCurrentLevel,
+  getTotalXPProgress,
+  XP_REWARDS
+} from '../lib/levels'
 import { pluralizeWorkouts } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
@@ -13,8 +20,13 @@ import RanksPopup from './RanksPopup'
 /**
  * Главный блок персонажа на Главной.
  *
- * Тап на аватар → переход в настройки (как в Telegram-приложении тапаешь
- * на свою аватарку в углу чата → попадаешь в свой профиль).
+ * XP-бар:
+ *  - Полоска заполняется по прогрессу внутри текущего уровня (getLevelProgress)
+ *  - Цифры показывают общий счёт мускулов / порог следующего уровня
+ *    (getTotalXPProgress). На уровне 2 с 320 мускулами видно "320 / 600".
+ *
+ * Попап с наградами под баром использует getXPInCurrentLevel — там
+ * "до следующего уровня X 💪" — это разница в рамках текущего уровня.
  */
 export default function PlayerCard() {
   const navigate = useNavigate()
@@ -90,7 +102,12 @@ export default function PlayerCard() {
   const level = getLevelFromXP(xp)
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
-  const { current, needed } = getXPInCurrentLevel(xp)
+
+  // Цифры внутри XP-бара: общий счёт мускулов / порог следующего уровня
+  const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
+
+  // Для попапа с наградами — разница до следующего уровня в рамках текущего
+  const { current: inLevelCurrent, needed: inLevelNeeded } = getXPInCurrentLevel(xp)
 
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
@@ -142,7 +159,6 @@ export default function PlayerCard() {
   return (
     <div style={styles.container}>
 
-      {/* Аватар — теперь это <button>, тап ведёт на настройки */}
       <button
         onClick={handleAvatarTap}
         style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}
@@ -179,8 +195,6 @@ export default function PlayerCard() {
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
 
-      {/* Ранг — кнопка с попапом. data-атрибут нужен RanksPopup'у
-          чтобы корректно вычислить вертикальную позицию попапа под кнопкой. */}
       <div style={styles.rankWrap} data-rank-button-wrap>
         <button
           ref={rankButtonRef}
@@ -200,7 +214,14 @@ export default function PlayerCard() {
 
       <div style={styles.xpBlock}>
         <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
-          <XPBar progress={progress} color={rank.color} current={current} needed={needed} />
+          {/* progress — заполнение полоски (% внутри уровня)
+              current/needed — цифры (общий счёт / порог следующего уровня) */}
+          <XPBar
+            progress={progress}
+            color={rank.color}
+            current={totalCurrent}
+            needed={totalNeeded}
+          />
         </button>
 
         {showXPDetails && (
@@ -219,7 +240,9 @@ export default function PlayerCard() {
             </div>
             <div style={{ ...styles.popupRow, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
               <span>До следующего уровня</span>
-              <span style={{ ...styles.popupValue, color: rank.color }}>{needed - current} 💪</span>
+              <span style={{ ...styles.popupValue, color: rank.color }}>
+                {inLevelNeeded - inLevelCurrent} 💪
+              </span>
             </div>
           </div>
         )}
@@ -300,8 +323,6 @@ const styles = {
     padding: '8px 16px 4px',
     position: 'relative'
   },
-  // Аватар теперь button — отключаем стандартные стили button и оставляем
-  // визуал как был (просто круг с обводкой)
   avatarWrap: {
     position: 'relative',
     marginBottom: '12px',
@@ -310,7 +331,6 @@ const styles = {
     border: 'none',
     padding: 0,
     cursor: 'pointer',
-    // Чтобы при тапе на iOS не было голубого хайлайта
     WebkitTapHighlightColor: 'transparent'
   },
   ring: { position: 'absolute', inset: 0, width: '100%', height: '100%' },

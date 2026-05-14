@@ -21,48 +21,28 @@
 /* ============================================ */
 
 export const RANK_NAMES = [
-  { name: 'НОВОБРАНЕЦ',  color: '#9ED153', rarity: 'common',     emoji: '🟢' },  // ур. 1-3
-  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢' },  // ур. 4-6
-  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },  // ур. 7-9
-  { name: 'БОЕЦ',        color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },  // ур. 10-12
-  { name: 'ВИТЯЗЬ',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },  // ур. 13-15
-  { name: 'ЦЕНТУРИОН',   color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },  // ур. 16-18
-  { name: 'ГЕРАКЛ',      color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },  // ур. 19-21
-  { name: 'ТИТАН',       color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },  // ур. 22-24
-  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴' },  // ур. 25-27
-  { name: 'АХИЛЛ',       color: '#E84545', rarity: 'mythic',     emoji: '🔴' }   // ур. 28-30
+  { name: 'НОВОБРАНЕЦ',  color: '#9ED153', rarity: 'common',     emoji: '🟢' },
+  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢' },
+  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
+  { name: 'БОЕЦ',        color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
+  { name: 'ВИТЯЗЬ',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
+  { name: 'ЦЕНТУРИОН',   color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
+  { name: 'ГЕРАКЛ',      color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
+  { name: 'ТИТАН',       color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
+  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴' },
+  { name: 'АХИЛЛ',       color: '#E84545', rarity: 'mythic',     emoji: '🔴' }
 ]
 
-// БЕССМЕРТНЫЙ — особый, от уровня 31 и далее
 export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', emoji: '🏆' }
 
-/**
- * Уровней внутри одного ранга (для не-бессмертных)
- */
 export const LEVELS_PER_RANK = 3
-
-/**
- * Сколько мускулов нужно для перехода с уровня (N-1) на уровень N.
- */
 export const XP_PER_LEVEL = 300
-
-/**
- * Уровень, с которого начинается БЕССМЕРТНЫЙ.
- * 10 рангов × 3 уровня + 1 = 31
- */
 export const IMMORTAL_START_LEVEL = RANK_NAMES.length * LEVELS_PER_RANK + 1 // = 31
 
 /* ============================================ */
-/* ФУНКЦИИ ПОЛУЧЕНИЯ РАНГА И УРОВНЯ */
+/* ФУНКЦИИ */
 /* ============================================ */
 
-/**
- * Получить ранг и подуровень внутри ранга по числу глобального уровня.
- * Возвращает: { name, color, emoji, rarity, subLevel }
- *
- * subLevel — это "1", "2", "3" внутри ранга (или 1+ для бессмертного).
- * Используется для отображения "НОВОБРАНЕЦ 2".
- */
 export function getRankByLevel(level) {
   if (level >= IMMORTAL_START_LEVEL) {
     return {
@@ -71,41 +51,28 @@ export function getRankByLevel(level) {
     }
   }
 
-  const rankIndex = Math.floor((level - 1) / LEVELS_PER_RANK) // 0,1,2...
-  const subLevel = ((level - 1) % LEVELS_PER_RANK) + 1        // 1,2,3
+  const rankIndex = Math.floor((level - 1) / LEVELS_PER_RANK)
+  const subLevel = ((level - 1) % LEVELS_PER_RANK) + 1
   const rank = RANK_NAMES[rankIndex] || RANK_NAMES[0]
 
   return { ...rank, subLevel }
 }
 
-/**
- * Сколько мускулов нужно чтобы достичь глобального уровня N (накопительно).
- * Уровень 1 → 0, уровень 2 → 300, уровень 3 → 600 ...
- */
 export function xpRequiredForLevel(level) {
   if (level <= 1) return 0
   return (level - 1) * XP_PER_LEVEL
 }
 
-/**
- * Сколько мускулов осталось до следующего уровня
- */
 export function xpToNextLevel(currentXP) {
   const level = getLevelFromXP(currentXP)
   return xpRequiredForLevel(level + 1) - currentXP
 }
 
-/**
- * Получить текущий глобальный уровень по общему количеству мускулов
- */
 export function getLevelFromXP(totalXP) {
   if (totalXP < 0) return 1
   return Math.floor(totalXP / XP_PER_LEVEL) + 1
 }
 
-/**
- * Прогресс до следующего уровня в процентах (0-100)
- */
 export function getLevelProgress(totalXP) {
   const level = getLevelFromXP(totalXP)
   const currentLevelXP = xpRequiredForLevel(level)
@@ -116,7 +83,10 @@ export function getLevelProgress(totalXP) {
 }
 
 /**
- * Мускулы в текущем уровне (для отображения "180/300")
+ * Мускулы в текущем уровне (для отображения "20/300" внутри ТЕКУЩЕГО уровня).
+ * Используется для логики заполнения XP-бара.
+ *
+ * Пример: при totalXP=320 (уровень 2) вернёт { current: 20, needed: 300 }.
  */
 export function getXPInCurrentLevel(totalXP) {
   const level = getLevelFromXP(totalXP)
@@ -128,8 +98,27 @@ export function getXPInCurrentLevel(totalXP) {
   }
 }
 
+/**
+ * Общий прогресс по мускулам (для отображения "320/600" в XP-баре).
+ *
+ * Цифры показывают накопительный общий счёт и порог следующего уровня.
+ * Полоса заполнения бара при этом остаётся "прогресс внутри уровня"
+ * — отдельная функция getLevelProgress.
+ *
+ * Пример: при totalXP=320 (уровень 2, до уровня 3 надо 600) вернёт
+ *   { current: 320, needed: 600 }
+ */
+export function getTotalXPProgress(totalXP) {
+  const level = getLevelFromXP(totalXP)
+  const nextLevelXP = xpRequiredForLevel(level + 1)
+  return {
+    current: Math.max(0, totalXP),
+    needed: nextLevelXP
+  }
+}
+
 /* ============================================ */
-/* НАГРАДЫ В МУСКУЛАХ */
+/* НАГРАДЫ */
 /* ============================================ */
 
 export const XP_REWARDS = {
@@ -142,7 +131,7 @@ export const XP_REWARDS = {
 }
 
 /* ============================================ */
-/* Реэкспорт для совместимости — старые файлы могут импортировать отсюда */
+/* Реэкспорт для совместимости */
 /* ============================================ */
 
 export { pluralizeDays, pluralizeWorkouts } from '../utils/plural'
