@@ -179,8 +179,9 @@ export default function PlayerCard() {
       <div style={styles.name}>{displayName}</div>
       {username && <div style={styles.username}>{username}</div>}
 
-      {/* Ранг — кнопка с попапом */}
-      <div style={styles.rankWrap}>
+      {/* Ранг — кнопка с попапом. data-атрибут нужен RanksPopup'у
+          чтобы корректно вычислить вертикальную позицию попапа под кнопкой. */}
+      <div style={styles.rankWrap} data-rank-button-wrap>
         <button
           ref={rankButtonRef}
           onClick={handleRankTap}
