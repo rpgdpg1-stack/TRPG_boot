@@ -1,16 +1,10 @@
 /**
  * Хранилище данных пользователя.
  *
- * Всё критичное живёт в Supabase:
- * - Мускулы 💪 → users.total_muscles + лог в muscle_history
- * - Недельный стрик → users.weekly_streak + weekly_streak_week
- * - Daily Quests → daily_quests (с защитой от дублей через RPC)
- *
- * В localStorage остаётся только UI-состояние:
- * - Закрепы программ (pinned_programs)
- * - Активный день программы (program:X:last_day)
- *
- * Эти вещи не синхронизируются между устройствами и это ок.
+ * Архитектура:
+ *  - Критичное → Supabase: мускулы, стрик, daily quests, история тренировок
+ *  - UI-состояние → CloudStorage Telegram (синк между устройствами): закрепы, активный день
+ *  - Локально → localStorage: только как быстрый кеш Cloud
  */
 
 import { supabase } from './supabase'
@@ -18,7 +12,8 @@ import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { getLevelFromXP } from './levels'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
-import { localGet, localSet, localRemove } from '../utils/storage'
+import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
+import { localRemove } from '../utils/storage'
 
 /* ============================================ */
 /* ВНУТРЕННИЕ ХЕЛПЕРЫ */
@@ -84,8 +79,6 @@ export async function getUserLevel() {
 /* НЕДЕЛЬНЫЙ СТРИК */
 /* ============================================ */
 
-// getCurrentWeekKey импортирована из utils/dates.js — здесь только реэкспорт
-// для совместимости со старым кодом, который ещё может её импортировать отсюда.
 export { getCurrentWeekKey } from '../utils/dates'
 
 export async function getWeeklyStreak() {
@@ -147,7 +140,7 @@ export async function getTotalWorkouts() {
 }
 
 /* ============================================ */
-/* DAILY QUESTS — только Supabase, никаких localStorage */
+/* DAILY QUESTS */
 /* ============================================ */
 
 export async function getDailyQuests() {
@@ -195,7 +188,6 @@ export async function completeQuest(questId, reward = 20) {
     const u = getCurrentUser()
     if (u) {
       setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
-      // Единое событие — раньше было два (xp-updated + user-updated)
       emit(EVENTS.USER_CHANGED, getCurrentUser())
     }
   }
@@ -209,22 +201,23 @@ export async function completeQuest(questId, reward = 20) {
 }
 
 /* ============================================ */
-/* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ — в localStorage */
+/* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ — теперь через Telegram CloudStorage           */
+/* Синхронизируются между всеми устройствами одного Telegram-аккаунта.   */
 /* ============================================ */
 
 export async function getActiveDay(programId) {
-  const lastCompleted = localGet(`program:${programId}:last_day`)
+  const lastCompleted = await cloudGet(`program:${programId}:last_day`)
   if (!lastCompleted) return null
   const cycle = { 'A': 'B', 'B': 'C', 'C': 'A' }
   return cycle[lastCompleted] || 'A'
 }
 
 export async function setLastCompletedDay(programId, day) {
-  return localSet(`program:${programId}:last_day`, day)
+  return cloudSet(`program:${programId}:last_day`, day)
 }
 
 export async function getPinnedPrograms() {
-  const raw = localGet('pinned_programs')
+  const raw = await cloudGet('pinned_programs')
   if (!raw) return []
   try { return JSON.parse(raw) } catch { return [] }
 }
@@ -238,23 +231,27 @@ export async function togglePin(programId) {
   const idx = pinned.indexOf(programId)
   if (idx === -1) pinned.push(programId)
   else pinned.splice(idx, 1)
-  localSet('pinned_programs', JSON.stringify(pinned))
+  await cloudSet('pinned_programs', JSON.stringify(pinned))
   return idx === -1
 }
 
 /* ============================================ */
-/* СБРОС ВСЕХ ДАННЫХ (для кнопки "Сбросить прогресс") */
+/* СБРОС ВСЕХ ДАННЫХ */
 /* ============================================ */
 
 export async function clearAllData() {
   const userId = getUserId()
 
-  // Чистим локальные мусорные ключи
-  ;['pinned_programs', 'daily_quests', 'weekly_streak', 'dev_telegram_id', 'program:split:last_day'].forEach(localRemove)
+  // Чистим Cloud-ключи (синкается между устройствами)
+  await cloudRemove('pinned_programs')
+  await cloudRemove('program:split:last_day')
+
+  // Чистим локальные UI-ключи которые НЕ в Cloud
+  ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
 
   if (!userId) return
 
-  // Сбрасываем профиль юзера
+  // Сбрасываем профиль юзера в БД
   await supabase.from('users').update({
     total_muscles: 0,
     weekly_streak: 0,
@@ -262,11 +259,9 @@ export async function clearAllData() {
     updated_at: new Date().toISOString()
   }).eq('id', userId)
 
-  // Удаляем историю
   await supabase.from('muscle_history').delete().eq('user_id', userId)
   await supabase.from('daily_quests').delete().eq('user_id', userId)
 
-  // Перечитываем юзера в локальный кеш
   const { data } = await supabase.from('users').select('*').eq('id', userId).single()
   if (data) {
     setCurrentUser(data)

@@ -6,12 +6,8 @@
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
 // Наш фон приложения. Должен совпадать с --color-bg в index.css
-// чтобы между приложением и системным UI Telegram не было видимых "швов".
 const APP_BG = '#0D0C0C'
 
-/**
- * Инициализация — вызвать один раз при старте приложения
- */
 export function initTelegram() {
   if (!tg) {
     console.warn('Telegram WebApp SDK не загружен (вне Телеграма?)')
@@ -29,17 +25,10 @@ export function initTelegram() {
     console.log('requestFullscreen недоступен:', e?.message)
   }
 
-  // Красим системные области Telegram в наш фон — чтобы при bounce-скролле
-  // и в шапке/футере не было видно "другого" чёрного от Telegram-обёртки.
   paintTelegramChrome()
-
   lockVerticalSwipes()
 }
 
-/**
- * Перекрашивает шапку и фон Telegram-обёртки в цвет приложения.
- * Безопасно вызывать многократно — Telegram сам игнорирует если значение то же.
- */
 export function paintTelegramChrome() {
   if (!tg) return
 
@@ -47,28 +36,21 @@ export function paintTelegramChrome() {
     if (typeof tg.setHeaderColor === 'function') {
       tg.setHeaderColor(APP_BG)
     }
-  } catch (e) { /* старая версия SDK — игнор */ }
+  } catch (e) { /* ignore */ }
 
   try {
     if (typeof tg.setBackgroundColor === 'function') {
       tg.setBackgroundColor(APP_BG)
     }
-  } catch (e) { /* старая версия SDK — игнор */ }
+  } catch (e) { /* ignore */ }
 
   try {
-    // Цвет нижней зоны (там где home indicator на iPhone)
     if (typeof tg.setBottomBarColor === 'function') {
       tg.setBottomBarColor(APP_BG)
     }
-  } catch (e) { /* метод появился позже, может отсутствовать */ }
+  } catch (e) { /* ignore */ }
 }
 
-/**
- * Запрещает свайп-вниз для закрытия Mini App.
- *
- * Telegram иногда сбрасывает эту настройку при переходах между страницами,
- * поэтому компоненты могут вызывать её повторно при монтировании.
- */
 export function lockVerticalSwipes() {
   if (!tg) return
 
@@ -115,6 +97,32 @@ export const backButton = {
   }
 }
 
+/**
+ * Управление кнопкой шестерёнки в шапке Telegram (рядом с кнопкой назад).
+ * Показывается на всех экранах и ведёт в настройки приложения.
+ *
+ * Юзер тапнул шестерёнку в любом месте → попал прямо в Settings,
+ * не теряя контекст текущего экрана (можно потом вернуться кнопкой Назад).
+ */
+export const settingsButton = {
+  show: (onClick) => {
+    if (!tg?.SettingsButton) return
+    try {
+      tg.SettingsButton.onClick(onClick)
+      tg.SettingsButton.show()
+    } catch (e) {
+      console.warn('[telegram] SettingsButton not supported:', e?.message)
+    }
+  },
+  hide: () => {
+    if (!tg?.SettingsButton) return
+    try {
+      tg.SettingsButton.hide()
+      tg.SettingsButton.offClick()
+    } catch (e) { /* ignore */ }
+  }
+}
+
 export const mainButton = {
   show: (text, onClick) => {
     if (!tg?.MainButton) return
@@ -127,6 +135,28 @@ export const mainButton = {
     tg.MainButton.hide()
     tg.MainButton.offClick()
   }
+}
+
+/**
+ * Нативный диалог подтверждения Telegram.
+ * Выглядит как системная iOS/Android модалка, более "телеграмно" чем window.confirm().
+ *
+ * Возвращает Promise<boolean>: true если юзер подтвердил, false если отменил.
+ *
+ * Фоллбэк на window.confirm() для случая когда Telegram SDK недоступен (dev в браузере).
+ */
+export function confirm(message) {
+  return new Promise((resolve) => {
+    if (tg && typeof tg.showConfirm === 'function') {
+      try {
+        tg.showConfirm(message, (confirmed) => resolve(!!confirmed))
+        return
+      } catch (e) {
+        console.warn('[telegram] showConfirm error, using fallback:', e?.message)
+      }
+    }
+    resolve(window.confirm(message))
+  })
 }
 
 export function closeApp() {

@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
-import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 
 /**
  * Экран настроек.
  *
- * Г8.3-fix: при монтировании скрываем кнопку "Назад" — корневой экран вкладки.
+ * Использует нативный диалог подтверждения Telegram (tgConfirm) вместо
+ * браузерного window.confirm — выглядит как часть Telegram, единый стиль.
  */
 export default function Settings() {
 
@@ -50,8 +51,8 @@ export default function Settings() {
     haptic.light()
 
     if (item.id === 'debug-reset') {
-      const confirmed = window.confirm(
-        'Сбросить весь прогресс?\n\nУдалятся:\n— Мускулы 💪\n— Недельный стрик\n— Все выполненные квесты\n— История начислений\n\nЭто действие нельзя отменить.'
+      const confirmed = await tgConfirm(
+        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все выполненные квесты, история начислений.\n\nЭто действие нельзя отменить.'
       )
       if (!confirmed) return
 
@@ -60,6 +61,8 @@ export default function Settings() {
         await refreshCurrentUser()
         window.dispatchEvent(new CustomEvent('xp-updated'))
         haptic.success()
+        // Для финального уведомления оставляем window.alert — он короткий
+        // и не блокирует UX. Можно потом заменить на тостер.
         window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
       } catch (err) {
         console.error('[Settings] reset failed:', err)

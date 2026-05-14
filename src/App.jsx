@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
 import ErrorBoundary from './components/layout/ErrorBoundary'
@@ -14,14 +14,20 @@ import SwapExercise from './pages/SwapExercise'
 import Progress from './pages/Progress'
 import Settings from './pages/Settings'
 
-import { initTelegram } from './lib/telegram'
+import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth } from './lib/auth'
 
+/**
+ * Корневой компонент приложения.
+ *
+ * Бизнес-логика:
+ *  - Ждём авторизацию Telegram (Loader)
+ *  - Подключаем глобальную кнопку шестерёнки в шапке Telegram
+ *  - ErrorBoundary ловит любые ошибки в роутах
+ */
 export default function App() {
   const [loading, setLoading] = useState(true)
 
-  // Стартуем auth ОДИН раз и кладём промис в ref —
-  // Loader ждёт именно этот промис, не запускает повторно.
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
     initTelegram()
@@ -40,13 +46,14 @@ export default function App() {
     )
   }
 
-  // ErrorBoundary оборачивает ВСЁ приложение (правка #6).
-  // Если в любом компоненте упадёт исключение — увидим красивый экран,
-  // а не белое пятно.
   return (
     <ErrorBoundary>
       <div className="app">
         <ParticlesBg />
+
+        {/* SettingsButtonController должен быть внутри Routes-контекста,
+            чтобы иметь доступ к useNavigate */}
+        <SettingsButtonController />
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -62,4 +69,33 @@ export default function App() {
       </div>
     </ErrorBoundary>
   )
+}
+
+/**
+ * Контроллер шестерёнки в шапке Telegram.
+ * Показывает её на всех экранах, кроме самих настроек, и ведёт на /settings.
+ *
+ * Вынесен в отдельный компонент, потому что useNavigate работает только
+ * внутри роутера, а Routes монтируется внутри ErrorBoundary в App.
+ */
+function SettingsButtonController() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    // На странице настроек прячем — нет смысла кнопкой ведущей в текущее место
+    if (location.pathname === '/settings') {
+      settingsButton.hide()
+      return
+    }
+
+    settingsButton.show(() => navigate('/settings'))
+
+    return () => {
+      // При размонтировании — снимаем обработчик чтобы не утёк навигатор
+      settingsButton.hide()
+    }
+  }, [location.pathname, navigate])
+
+  return null
 }
