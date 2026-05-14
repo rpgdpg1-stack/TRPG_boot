@@ -6,29 +6,27 @@ import { haptic } from '../lib/telegram'
 /**
  * Карточка упражнения.
  *
- * РЕШЕНИЕ ПРОБЛЕМЫ С iOS И КЛАВИАТУРОЙ:
+ * iOS-FRIENDLY ВВОД ВЕСА:
  *
- * На iOS Safari/WebView клавиатура показывается ТОЛЬКО когда .focus() вызван
- * синхронно внутри обработчика прямого пользовательского жеста (click/touchend).
+ * Инпут ВСЕГДА отрендерен и кликабелен, но прозрачный. Поверх него лежит
+ * визуальное число с pointerEvents:none — клики проваливаются сквозь него
+ * напрямую на инпут.
  *
- * Если делать setEditing(true) → React ре-рендерит → useEffect → focus(),
- * iOS считает это программным фокусом и не открывает клавиатуру — только
- * выделяет текст в инпуте. Юзеру приходится тапать второй раз.
+ * Когда юзер тапает по числу:
+ *   1. Клик попадает в input (поверх лежащий div пропускает клики)
+ *   2. iOS видит "пользовательский тап по input" → ставит фокус → ОТКРЫВАЕТ КЛАВИАТУРУ
+ *   3. onFocus инпута переключает editing=true → визуальное число прячется,
+ *      становится виден сам инпут (с выделенным значением)
  *
- * Чтобы это исправить — инпут ВСЕГДА в DOM, visibility/opacity переключаются
- * чисто визуально. Тогда мы можем вызвать input.focus() прямо в обработчике
- * клика, и iOS открывает клавиатуру с первого раза.
+ * Ключевое: НИКАКОГО readOnly, НИКАКОГО pointer-events:none на инпуте,
+ * НИКАКОГО программного focus() из обработчика клика. Инпут работает
+ * как обычный нативный инпут — iOS сам решает когда открыть клавиатуру.
  *
- * РЕШЕНИЕ ПРОБЛЕМЫ С ТАПОМ ПО КАРТОЧКЕ ПОСЛЕ РЕДАКТИРОВАНИЯ:
- *
- * При тапе по карточке во время редактирования веса:
- *   1. iOS закрывает клавиатуру → onBlur инпута срабатывает → editing=false
- *   2. ПОТОМ срабатывает onClick карточки — но editing уже false
- *      → карточка ошибочно отжимается.
- *
- * Решение: используем ref-флаг `justClosedKeyboard` который ставится в onBlur
- * и держится 300мс. handleCardClick проверяет этот флаг через ref (синхронно!)
- * и игнорирует клик. После 300мс флаг сбрасывается.
+ * Тап по карточке во время редактирования:
+ *   - onBlur инпута срабатывает первым → editing=false + ref-флаг "только что
+ *     закрыли клавиатуру" на 300мс
+ *   - onClick карточки видит ref-флаг → игнорирует тап
+ *   → клавиатура закрывается, карточка не активируется
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
@@ -49,9 +47,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
-  // === REF-флаги для синхронной проверки в обработчиках клика ===
-  // Стандартный editing-стейт асинхронный, поэтому в onClick карточки он
-  // может показать неактуальное значение. Эти refs обновляются СРАЗУ.
+  // REF-флаги для синхронной проверки в onClick карточки
   const editingRef = useRef(false)
   const justClosedKeyboardRef = useRef(false)
 
@@ -118,14 +114,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardClick = () => {
-    // Главные защиты — через REF, не через state.
-    // К моменту onClick state уже мог обновиться (editing=false после blur),
-    // но эти флаги обновляются СИНХРОННО → актуальные.
-
-    // Если только что закрыли клавиатуру (последние 300мс) — игнорируем тап,
-    // он был на закрытие, а не на активацию упражнения.
+    // Игнорируем тап если только что закрыли клавиатуру (защита от ложной активации)
     if (justClosedKeyboardRef.current) return
-
     if (editingRef.current) return
 
     if (longPressFired.current) {
@@ -136,46 +126,19 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (onTap) onTap(slot)
   }
 
-  // === ТАП ПО ВЕСУ ===
-  // Используем onClick (не pointerDown) — это критично для iOS:
-  // input.focus() вызванный синхронно из onClick считается жестом
-  // и открывает клавиатуру с первого раза.
-  const handleWeightClick = (e) => {
-    e.stopPropagation()
-    if (!exercise_id) return
-
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-
-    if (editingRef.current) return // уже редактируем
-
-    // 1. Обновляем ref СИНХРОННО (до setState)
+  // === ИНПУТ ВЕСА ===
+  // onFocus — iOS уже открыл клавиатуру, мы только переключаем визуал
+  const handleInputFocus = () => {
     editingRef.current = true
-
-    // 2. Готовим черновик
+    setEditing(true)
     setDraft(String(localWeight))
 
-    // 3. Меняем state (визуал переключится на следующем рендере)
-    setEditing(true)
-
-    // 4. Фокусим инпут СИНХРОННО — он уже в DOM (всегда там) — iOS примет
-    //    это как жест и откроет клавиатуру с первого раза
-    if (inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }
-
-  // На pointerDown веса — только защита от родительского long-press.
-  // Сам тап обрабатывается в onClick (см. выше).
-  const handleWeightPointerDown = (e) => {
-    e.stopPropagation()
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
+    // Выделяем содержимое — даём iOS немного времени после фокуса
+    setTimeout(() => {
+      try {
+        inputRef.current?.select()
+      } catch (e) { /* ignore */ }
+    }, 10)
   }
 
   const handleInputChange = (e) => {
@@ -189,19 +152,17 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleInputBlur = async () => {
-    // Снимаем editing
     editingRef.current = false
     setEditing(false)
 
-    // Ставим флаг "только что закрыли клавиатуру" на 300мс —
-    // защищает от ложного тапа по карточке, который iOS сейчас сгенерит
+    // Защита от ложного тапа по карточке
     justClosedKeyboardRef.current = true
     setTimeout(() => {
       justClosedKeyboardRef.current = false
     }, 300)
 
-    // Парсим и сохраняем значение
     const trimmed = draft.trim()
+
     if (trimmed === '') {
       if (localWeight !== 0) {
         setLocalWeight(0)
@@ -236,6 +197,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (e.key === 'Enter') {
       e.preventDefault()
       inputRef.current?.blur()
+    }
+  }
+
+  // Останавливаем pointerDown на блоке веса чтобы не запускался long-press карточки
+  const handleWeightPointerDown = (e) => {
+    e.stopPropagation()
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
     }
   }
 
@@ -281,17 +251,18 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      {/* ВЕС — инпут ВСЕГДА в DOM, переключаем visibility */}
+      {/* ВЕС */}
       <div
         style={styles.weightBlock}
-        onClick={handleWeightClick}
         onPointerDown={handleWeightPointerDown}
       >
         <div style={styles.weightInputWrap}>
           {/*
-            Инпут всегда отрендерен. Когда editing=false — он скрыт абсолютно
-            под визуальным числом, не получает кликов (pointerEvents:none).
-            Когда editing=true — становится видимым, число справа скрывается.
+            Инпут ВСЕГДА кликабельный (никакого readOnly, никакого pointerEvents:none).
+            Когда editing=false — он прозрачный (opacity:0), но всё ещё принимает клики.
+            Когда editing=true — становится видимым.
+            iOS открывает клавиатуру когда юзер тапает прямо по инпуту — это
+            работает только если инпут всегда активен.
           */}
           <input
             ref={inputRef}
@@ -300,19 +271,20 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             pattern="[0-9]*"
             value={editing ? draft : String(localWeight)}
             onChange={handleInputChange}
+            onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onKeyDown={handleInputKeyDown}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            readOnly={!editing}
-            tabIndex={editing ? 0 : -1}
             style={{
               ...styles.weightInput,
-              opacity: editing ? 1 : 0,
-              pointerEvents: editing ? 'auto' : 'none'
+              opacity: editing ? 1 : 0
             }}
           />
-          {/* Визуальное число поверх инпута, когда не редактируем */}
+          {/*
+            Визуальное число поверх инпута. pointerEvents:none — клик
+            проваливается сквозь него прямо на инпут под ним.
+          */}
           {!editing && (
             <div style={styles.weightValue}>
               {localWeight}
@@ -322,7 +294,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         <div style={styles.weightUnit}>KG</div>
       </div>
 
-      {/* Эффект "выполнено": blur + grayscale + затемнение */}
+      {/* Эффект "выполнено" */}
       <div
         style={{
           ...styles.activeOverlay,
@@ -445,19 +417,15 @@ const styles = {
     position: 'relative',
     zIndex: 5
   },
-  // Обёртка содержит инпут + визуальное число (один поверх другого)
   weightInputWrap: {
     position: 'relative',
     width: '38px',
-    height: '27px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
+    height: '27px'
   },
-  // Инпут абсолютно позиционирован, всегда в DOM
   weightInput: {
     position: 'absolute',
-    inset: 0,
+    top: 0,
+    left: 0,
     width: '38px',
     height: '27px',
     fontFamily: 'var(--font-manrope)',
@@ -472,16 +440,29 @@ const styles = {
     padding: 0,
     margin: 0,
     caretColor: '#9ED153',
-    transition: 'opacity 0.15s ease'
+    transition: 'opacity 0.12s ease',
+    // НЕ пишем pointer-events:none когда не редактируем — инпут должен
+    // всегда принимать клики, иначе iOS не откроет клавиатуру.
+    // Когда opacity=0 инпут невидим, но всё ещё активен.
+    WebkitAppearance: 'none',
+    appearance: 'none',
+    borderRadius: 0
   },
   weightValue: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     width: '38px',
+    height: '27px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '20px',
     fontWeight: 800,
     lineHeight: '27px',
     textAlign: 'center',
-    color: '#9ED153'
+    color: '#9ED153',
+    // КРИТИЧНО: клик проходит сквозь это число прямо на инпут под ним.
+    // Без этого тап попадал бы на div, а не на input → iOS не открывал бы клавиатуру.
+    pointerEvents: 'none'
   },
   weightUnit: {
     width: '38px',
