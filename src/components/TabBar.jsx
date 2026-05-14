@@ -2,10 +2,12 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Таб-бар — премиум-look (E3):
- * - Полупрозрачный фон с сильным блюром, "стеклянный" эффект
- * - Активная вкладка — тонкое зелёное свечение
- * - "Тренировки" возвращает на главную с любого экрана раздела
+ * Таб-бар — 3 вкладки:
+ * - Прогресс (📊)
+ * - Тренировки (💪) — центральная, ведёт на главную
+ * - Восстановление (🛌) — советы по восстановлению
+ *
+ * Настройки переехали в шестерёнку Telegram в шапке (см. App.jsx).
  */
 export default function TabBar() {
   const location = useLocation()
@@ -36,12 +38,12 @@ export default function TabBar() {
       canTap: !isExactHome
     },
     {
-      id: 'settings',
-      path: '/settings',
-      label: 'Настройки',
-      icon: '⚙️',
-      isActive: location.pathname === '/settings',
-      canTap: location.pathname !== '/settings'
+      id: 'recovery',
+      path: '/recovery',
+      label: 'Восстановление',
+      icon: '🛌',
+      isActive: location.pathname === '/recovery',
+      canTap: location.pathname !== '/recovery'
     }
   ]
 
@@ -98,7 +100,6 @@ const styles = {
     gap: '4px',
     padding: '4px',
     height: 'var(--tabbar-height)',
-    // E3: премиум стекло — сильнее блюр, меньше серого
     background: 'rgba(20, 20, 20, 0.55)',
     backdropFilter: 'blur(32px) saturate(160%)',
     WebkitBackdropFilter: 'blur(32px) saturate(160%)',
@@ -113,7 +114,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '3px',
-    padding: '0 18px',
+    // Чуть меньше padding на каждой кнопке — лейбл "Восстановление" длинный
+    padding: '0 12px',
     minWidth: '78px',
     height: 'calc(var(--tabbar-height) - 8px)',
     borderRadius: 'var(--radius-card)',
@@ -130,6 +132,7 @@ const styles = {
     fontSize: '10px',
     fontWeight: 600,
     letterSpacing: '0.3px',
-    transition: 'color 0.25s ease'
+    transition: 'color 0.25s ease',
+    whiteSpace: 'nowrap'
   }
 }

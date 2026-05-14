@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
@@ -6,15 +7,26 @@ import { refreshCurrentUser } from '../lib/auth'
 /**
  * Экран настроек.
  *
- * Использует нативный диалог подтверждения Telegram (tgConfirm) вместо
- * браузерного window.confirm — выглядит как часть Telegram, единый стиль.
+ * Доступен через шестерёнку Telegram в шапке (см. SettingsButtonController в App.jsx).
+ * При входе показывает кнопку "Назад" в шапке, которая возвращает на предыдущий
+ * экран. То есть если юзер зашёл с дня тренировки — вернётся туда же.
  */
 export default function Settings() {
+  const navigate = useNavigate()
 
   useEffect(() => {
-    backButton.hide()
+    // Кнопка "Назад" в шапке Telegram — возвращает на предыдущий маршрут.
+    // navigate(-1) использует историю React Router, как в браузере.
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
-  }, [])
+
+    // При размонтировании компонента возвращаем стандартное поведение —
+    // на корневых экранах (главная, прогресс, восстановление) кнопка "Назад" скрыта.
+    // App.jsx через SettingsButtonController всё равно перерисует UI шапки правильно.
+    return () => {
+      backButton.hide()
+    }
+  }, [navigate])
 
   const groups = [
     {
@@ -61,8 +73,6 @@ export default function Settings() {
         await refreshCurrentUser()
         window.dispatchEvent(new CustomEvent('xp-updated'))
         haptic.success()
-        // Для финального уведомления оставляем window.alert — он короткий
-        // и не блокирует UX. Можно потом заменить на тостер.
         window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
       } catch (err) {
         console.error('[Settings] reset failed:', err)

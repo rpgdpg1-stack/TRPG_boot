@@ -12,6 +12,7 @@ import Program from './pages/Program'
 import WorkoutDay from './pages/WorkoutDay'
 import SwapExercise from './pages/SwapExercise'
 import Progress from './pages/Progress'
+import Recovery from './pages/Recovery'
 import Settings from './pages/Settings'
 
 import { initTelegram, settingsButton } from './lib/telegram'
@@ -20,10 +21,11 @@ import { ensureAuth } from './lib/auth'
 /**
  * Корневой компонент приложения.
  *
- * Бизнес-логика:
- *  - Ждём авторизацию Telegram (Loader)
- *  - Подключаем глобальную кнопку шестерёнки в шапке Telegram
- *  - ErrorBoundary ловит любые ошибки в роутах
+ * Структура роутов:
+ *  - / / /category / /program / /workout / /swap — поток тренировки
+ *  - /progress — прогресс (вкладка таб-бара)
+ *  - /recovery — восстановление (вкладка таб-бара)
+ *  - /settings — настройки (доступны через шестерёнку Telegram в шапке)
  */
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -51,8 +53,6 @@ export default function App() {
       <div className="app">
         <ParticlesBg />
 
-        {/* SettingsButtonController должен быть внутри Routes-контекста,
-            чтобы иметь доступ к useNavigate */}
         <SettingsButtonController />
 
         <Routes>
@@ -62,6 +62,7 @@ export default function App() {
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
 
@@ -73,17 +74,13 @@ export default function App() {
 
 /**
  * Контроллер шестерёнки в шапке Telegram.
- * Показывает её на всех экранах, кроме самих настроек, и ведёт на /settings.
- *
- * Вынесен в отдельный компонент, потому что useNavigate работает только
- * внутри роутера, а Routes монтируется внутри ErrorBoundary в App.
+ * Показывает её на всех экранах кроме самих настроек, ведёт на /settings.
  */
 function SettingsButtonController() {
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    // На странице настроек прячем — нет смысла кнопкой ведущей в текущее место
     if (location.pathname === '/settings') {
       settingsButton.hide()
       return
@@ -92,7 +89,6 @@ function SettingsButtonController() {
     settingsButton.show(() => navigate('/settings'))
 
     return () => {
-      // При размонтировании — снимаем обработчик чтобы не утёк навигатор
       settingsButton.hide()
     }
   }, [location.pathname, navigate])
