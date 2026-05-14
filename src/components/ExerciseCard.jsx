@@ -482,7 +482,7 @@ const styles = {
     WebkitBackdropFilter: 'grayscale(1) blur(1.9px)',
     borderRadius: '33px',
     transition: 'opacity 0.35s ease',
-    zIndex: 3
+    zIndex: 6
   },
   doneToast: {
     position: 'absolute',
