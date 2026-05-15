@@ -1,11 +1,10 @@
 /**
  * Хранилище данных пользователя.
  *
- * ОБНОВЛЕНИЕ:
- *  - DailyQuests теперь читаются из localStorage для МОМЕНТАЛЬНОГО первого
- *    рендера (убираем моргание на главной). Параллельно идёт фоновый запрос
- *    в БД для синхронизации.
- *  - Добавлена getRecentMuscleHistory — для попапа последних начислений.
+ * setLastCompletedDay теперь "идемпотентна по дню": если сегодня уже было
+ * завершение, повторный вызов с любым day НЕ меняет сохранённый last_day.
+ * Это значит цикл A→B→C сдвигается ровно один раз в сутки, как бы юзер
+ * ни тапал "Завершить тренировку".
  */
 
 import { supabase } from './supabase'
@@ -51,7 +50,6 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
   const u = getCurrentUser()
   if (u) setCurrentUser({ ...u, total_muscles: data })
 
-  // История начислений обновилась — сбросим её кеш
   cacheInvalidate(`muscle-history:${userId}`)
 
   return data
@@ -79,9 +77,6 @@ export async function getUserLevel() {
 
 /**
  * Последние N начислений мускулов — для попапа в PlayerCard.
- * Возвращает массив { amount, source, created_at }.
- *
- * Кешируется на 5 минут, инвалидируется при любом начислении (addXP, completeQuest, finishWorkout).
  */
 export async function getRecentMuscleHistory(limit = 5) {
   const userId = getUserId()
@@ -99,19 +94,18 @@ export async function getRecentMuscleHistory(limit = 5) {
 
     if (error) {
       console.warn('[storage] getRecentMuscleHistory RPC error:', error)
-      // Fallback на прямой SELECT
       const { data: fb, error: fbErr } = await supabase
         .from('muscle_history')
-        .select('amount, source, created_at')
+        .select('amount, source, recorded_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+        .order('recorded_at', { ascending: false })
         .limit(limit)
 
       if (fbErr) {
         console.error('[storage] getRecentMuscleHistory fallback error:', fbErr)
         return []
       }
-      const result = fb || []
+      const result = (fb || []).map(r => ({ amount: r.amount, source: r.source, created_at: r.recorded_at }))
       cacheSet(cacheKey, result, TTL.MEDIUM)
       return result
     }
@@ -190,23 +184,14 @@ export async function getTotalWorkouts() {
 }
 
 /* ============================================ */
-/* DAILY QUESTS — с кешем в localStorage против моргания */
+/* DAILY QUESTS */
 /* ============================================ */
 
-/**
- * Ключ для кеша квестов в localStorage. Привязан к дню чтобы автоматически
- * сбрасывался в новый день — старый ключ остаётся, новый пустой → fresh state.
- */
 function getDailyQuestsCacheKey() {
   const userId = getUserId()
   return userId ? `daily-quests-cache:${userId}:${getTodayKey()}` : null
 }
 
-/**
- * Синхронно вернуть закешированные квесты из localStorage.
- * Если кеша нет — пустой объект. Используется для МОМЕНТАЛЬНОГО первого
- * рендера DailyQuests на главной (без моргания).
- */
 export function getDailyQuestsSync() {
   const key = getDailyQuestsCacheKey()
   if (!key) return {}
@@ -222,9 +207,6 @@ export function getDailyQuestsSync() {
   }
 }
 
-/**
- * Загрузить квесты из БД и обновить локальный кеш.
- */
 export async function getDailyQuests() {
   const userId = getUserId()
   if (!userId) return {}
@@ -237,14 +219,12 @@ export async function getDailyQuests() {
 
   if (error) {
     console.error('[storage] getDailyQuests error:', error)
-    // При ошибке возвращаем хотя бы локальный кеш — лучше чем ничего
     return getDailyQuestsSync()
   }
 
   const result = {}
   for (const row of data || []) result[row.quest_id] = true
 
-  // Обновляем кеш в localStorage
   const key = getDailyQuestsCacheKey()
   if (key) localSet(key, JSON.stringify(result))
 
@@ -278,7 +258,6 @@ export async function completeQuest(questId, reward = 20) {
       setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
       emit(EVENTS.USER_CHANGED, getCurrentUser())
     }
-    // История начислений обновилась
     cacheInvalidate(`muscle-history:${userId}`)
   }
 
@@ -294,6 +273,14 @@ export async function completeQuest(questId, reward = 20) {
 /* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ */
 /* ============================================ */
 
+/**
+ * Какой день рекомендовать сейчас. Берём last_day из CloudStorage и сдвигаем
+ * на следующий по циклу A→B→C→A. Если last_day ещё не записан (юзер ничего
+ * не отжимал) — возвращаем null, дальше код подставит 'A'.
+ *
+ * ВАЖНО: повторное завершение в тот же день НЕ меняет last_day (см. setLastCompletedDay),
+ * поэтому рекомендация остаётся стабильной до полуночи.
+ */
 export async function getActiveDay(programId) {
   const lastCompleted = await cloudGet(`program:${programId}:last_day`)
   if (!lastCompleted) return null
@@ -301,8 +288,33 @@ export async function getActiveDay(programId) {
   return cycle[lastCompleted] || 'A'
 }
 
+/**
+ * Записать какой день был завершён последним. Идемпотентно по дате:
+ *  - Если сегодня уже что-то записано → НИЧЕГО не меняем (повторное завершение
+ *    в тот же день не сдвигает цикл).
+ *  - Если последнее завершение было вчера или раньше (или вообще не было) →
+ *    записываем новый day и сегодняшнюю дату.
+ *
+ * Это даёт ожидаемое поведение: рекомендация на завтра определяется первым
+ * завершением сегодняшнего дня. Все остальные тапы "Завершить" в течение
+ * этого же дня — без эффекта.
+ */
 export async function setLastCompletedDay(programId, day) {
-  return cloudSet(`program:${programId}:last_day`, day)
+  const today = getTodayKey()
+
+  const lastDayDateKey = `program:${programId}:last_day_date`
+  const lastDayKey = `program:${programId}:last_day`
+
+  const previousDate = await cloudGet(lastDayDateKey)
+
+  // Сегодня уже был отмечен какой-то день — игнорируем повторные нажатия.
+  // Цикл сдвинется только после полуночи (следующий getTodayKey).
+  if (previousDate === today) {
+    return
+  }
+
+  await cloudSet(lastDayKey, day)
+  await cloudSet(lastDayDateKey, today)
 }
 
 export async function getPinnedPrograms() {
@@ -333,14 +345,15 @@ export async function clearAllData() {
 
   await cloudRemove('pinned_programs')
   await cloudRemove('program:split:last_day')
+  // Новый ключ — дата последнего завершения. Чистим тоже,
+  // иначе после reset рекомендация поведёт себя странно.
+  await cloudRemove('program:split:last_day_date')
 
   ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
 
-  // Чистим кеш квестов в localStorage
   const questsKey = getDailyQuestsCacheKey()
   if (questsKey) localRemove(questsKey)
 
-  // Чистим in-memory кеш
   cacheInvalidate('')
 
   if (!userId) return
