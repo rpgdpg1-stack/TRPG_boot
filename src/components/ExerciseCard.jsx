@@ -71,8 +71,20 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     )
   }, [user_weight_kg])
 
+  // Тост "Готово, молодец!" показываем ТОЛЬКО когда карточка переходит
+  // из неактивной в активную (т.е. юзер прямо сейчас тапнул).
+  // При первом монтировании (возврат на страницу, карточка уже была активной
+  // из сохранённого состояния) — НЕ показываем, юзер этот тост уже видел.
+  //
+  // Логика: храним предыдущее значение isActive в реф. Тост запускаем только
+  // если было false → стало true. Все остальные кейсы (true → true при первом
+  // рендере, true → false при снятии отметки, false → false) — без тоста.
+  const prevIsActiveRef = useRef(isActive)
   useEffect(() => {
-    if (isActive) {
+    const wasActive = prevIsActiveRef.current
+    prevIsActiveRef.current = isActive
+
+    if (!wasActive && isActive) {
       setShowDoneToast(true)
       const timer = setTimeout(() => setShowDoneToast(false), 1500)
       return () => clearTimeout(timer)
