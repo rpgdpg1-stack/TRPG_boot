@@ -19,8 +19,7 @@ import { haptic } from '../lib/telegram'
  *      становится виден сам инпут (с выделенным значением)
  *
  * Ключевое: НИКАКОГО readOnly, НИКАКОГО pointer-events:none на инпуте,
- * НИКАКОГО программного focus() из обработчика клика. Инпут работает
- * как обычный нативный инпут — iOS сам решает когда открыть клавиатуру.
+ * НИКАКОГО программного focus() из обработчика клика.
  *
  * Тап по карточке во время редактирования:
  *   - onBlur инпута срабатывает первым → editing=false + ref-флаг "только что
@@ -35,7 +34,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     sub_group,
     meta_info,
     preview_url,
-    is_swapped,
     user_weight_kg
   } = slot
 
@@ -47,11 +45,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
-  // REF-флаги для синхронной проверки в onClick карточки
   const editingRef = useRef(false)
   const justClosedKeyboardRef = useRef(false)
 
-  // Long-press
   const longPressTimer = useRef(null)
   const longPressFired = useRef(false)
   const pointerStartPos = useRef({ x: 0, y: 0 })
@@ -80,7 +76,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }, [])
 
-  // === ЖЕСТЫ ПО КАРТОЧКЕ ===
   const handleCardPointerDown = (e) => {
     if (editingRef.current) return
 
@@ -114,7 +109,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardClick = () => {
-    // Игнорируем тап если только что закрыли клавиатуру (защита от ложной активации)
     if (justClosedKeyboardRef.current) return
     if (editingRef.current) return
 
@@ -126,14 +120,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (onTap) onTap(slot)
   }
 
-  // === ИНПУТ ВЕСА ===
-  // onFocus — iOS уже открыл клавиатуру, мы только переключаем визуал
   const handleInputFocus = () => {
     editingRef.current = true
     setEditing(true)
     setDraft(String(localWeight))
 
-    // Выделяем содержимое — даём iOS немного времени после фокуса
     setTimeout(() => {
       try {
         inputRef.current?.select()
@@ -155,7 +146,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     editingRef.current = false
     setEditing(false)
 
-    // Защита от ложного тапа по карточке
     justClosedKeyboardRef.current = true
     setTimeout(() => {
       justClosedKeyboardRef.current = false
@@ -200,7 +190,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  // Останавливаем pointerDown на блоке веса чтобы не запускался long-press карточки
   const handleWeightPointerDown = (e) => {
     e.stopPropagation()
     if (longPressTimer.current) {
@@ -226,7 +215,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         WebkitTouchCallout: 'none'
       }}
     >
-      {/* ПРЕВЬЮ */}
       <div style={styles.preview}>
         {preview_url ? (
           <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
@@ -235,15 +223,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      {/* ТЕКСТ */}
       <div style={styles.content}>
         {subGroupLabel && (
           <div style={styles.subGroupLabel}>{subGroupLabel}</div>
         )}
 
+        {/* Бейдж "заменено" убран — лишний шум, факт замены и так понятен
+            если юзер сам менял упражнение. */}
         <div style={styles.exerciseName}>
           {exercise_name}
-          {is_swapped && <span style={styles.swappedBadge}>заменено</span>}
         </div>
 
         {meta_info && (
@@ -251,19 +239,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         )}
       </div>
 
-      {/* ВЕС */}
       <div
         style={styles.weightBlock}
         onPointerDown={handleWeightPointerDown}
       >
         <div style={styles.weightInputWrap}>
-          {/*
-            Инпут ВСЕГДА кликабельный (никакого readOnly, никакого pointerEvents:none).
-            Когда editing=false — он прозрачный (opacity:0), но всё ещё принимает клики.
-            Когда editing=true — становится видимым.
-            iOS открывает клавиатуру когда юзер тапает прямо по инпуту — это
-            работает только если инпут всегда активен.
-          */}
           <input
             ref={inputRef}
             type="text"
@@ -281,10 +261,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
               opacity: editing ? 1 : 0
             }}
           />
-          {/*
-            Визуальное число поверх инпута. pointerEvents:none — клик
-            проваливается сквозь него прямо на инпут под ним.
-          */}
           {!editing && (
             <div style={styles.weightValue}>
               {localWeight}
@@ -294,7 +270,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         <div style={styles.weightUnit}>KG</div>
       </div>
 
-      {/* Эффект "выполнено" */}
       <div
         style={{
           ...styles.activeOverlay,
@@ -378,21 +353,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 600,
     lineHeight: '18px',
-    color: '#F0F0F0',
-    display: 'flex',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '6px'
-  },
-  swappedBadge: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '9px',
-    fontWeight: 'normal',
-    color: 'var(--color-primary)',
-    background: 'rgba(158, 209, 83, 0.12)',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    letterSpacing: '0.5px'
+    color: '#F0F0F0'
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
@@ -441,9 +402,6 @@ const styles = {
     margin: 0,
     caretColor: '#9ED153',
     transition: 'opacity 0.12s ease',
-    // НЕ пишем pointer-events:none когда не редактируем — инпут должен
-    // всегда принимать клики, иначе iOS не откроет клавиатуру.
-    // Когда opacity=0 инпут невидим, но всё ещё активен.
     WebkitAppearance: 'none',
     appearance: 'none',
     borderRadius: 0
@@ -460,8 +418,6 @@ const styles = {
     lineHeight: '27px',
     textAlign: 'center',
     color: '#9ED153',
-    // КРИТИЧНО: клик проходит сквозь это число прямо на инпут под ним.
-    // Без этого тап попадал бы на div, а не на input → iOS не открывал бы клавиатуру.
     pointerEvents: 'none'
   },
   weightUnit: {

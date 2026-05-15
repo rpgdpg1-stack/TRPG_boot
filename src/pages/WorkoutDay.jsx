@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
-import { getProgramBySlug } from '../features/programs/registry'
+import { getProgramBySlug, getProgramDaySlots } from '../features/programs/registry'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
@@ -20,25 +20,9 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * Архитектура страницы:
- *
- *  ┌────────────────────────────────┐
- *  │  STICKY-ШАПКА                  │ ← position: sticky, top: 0
- *  │  - padding-top = safe-top      │   фон ЗАЛИВАЕТ ВЕСЬ блок,
- *  │  - стрелки + буква + прогресс  │   включая зону под Telegram-навигацией
- *  ├────────────────────────────────┤
- *  │                                │
- *  │  СПИСОК УПРАЖНЕНИЙ             │ ← обычный flow
- *  │  (группы → карточки)           │
- *  │                                │
- *  │  Кнопка "ЗАВЕРШИТЬ"            │ ← обычный блок в конце списка
- *  │                                │   (не fixed — юзер скроллит и видит её)
- *  └────────────────────────────────┘
- *
- * При скролле контента вверх:
- *  - Шапка ОСТАЁТСЯ на месте (sticky)
- *  - Карточки уезжают ПОД неё (z-index шапки выше)
- *  - Фон шапки полностью непрозрачный — карточки не просвечивают
+ * При навигации на /swap/... передаём также defaultExerciseId — это id того
+ * упражнения которое заложено в программу для этого слота. На странице замены
+ * мы подсветим его зелёной обводкой, чтобы юзер мог найти и вернуть базовое.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -59,11 +43,14 @@ export default function WorkoutDay() {
   const [actionSlot, setActionSlot] = useState(null)
   const [infoSlot, setInfoSlot] = useState(null)
 
-  // Направление перехода для анимации буквы дня
   const [slideDir, setSlideDir] = useState('right')
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
+
+  // Слоты программы из кода — нужны чтобы знать default_exercise_id для каждого
+  // order_num. Это лёгкое чтение из памяти, без запросов в БД.
+  const programSlots = useMemo(() => getProgramDaySlots(programId, day), [programId, day])
 
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
@@ -147,12 +134,18 @@ export default function WorkoutDay() {
     const slot = actionSlot
     setActionSlot(null)
 
+    // Находим что было заложено в программу для этого слота — id из data/programs/split.js.
+    // На странице замены подсветим эту карточку зелёной обводкой ("вот базовое от программы").
+    const programSlot = programSlots.find(s => s.order_num === slot.order_num)
+    const defaultExerciseId = programSlot?.default_exercise_id || null
+
     navigate(`/swap/${programId}/${day}/${slot.order_num}`, {
       state: {
         subGroup: slot.sub_group,
         type: slot.type,
         currentExerciseId: slot.exercise_id,
-        currentExerciseName: slot.exercise_name
+        currentExerciseName: slot.exercise_name,
+        defaultExerciseId
       }
     })
   }
@@ -164,7 +157,6 @@ export default function WorkoutDay() {
     navigate(`/workout/${programId}/${targetDay}`, { replace: true })
   }
 
-  // === СВАЙП В ЗОНЕ ШАПКИ ===
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
 
@@ -251,15 +243,8 @@ export default function WorkoutDay() {
   return (
     <div style={styles.page}>
 
-      {/* === STICKY-ШАПКА === */}
-      {/*
-        position: sticky, top: 0 — прибита к верху экрана.
-        padding-top заливает зону под Telegram-навигацией.
-        Фон var(--color-bg) полностью НЕПРОЗРАЧНЫЙ — карточки не просвечивают.
-      */}
       <div style={styles.stickyHeader}>
 
-        {/* Стрелки + буква дня */}
         <div
           style={styles.headerRow}
           onTouchStart={handleHeaderTouchStart}
@@ -293,7 +278,6 @@ export default function WorkoutDay() {
           </button>
         </div>
 
-        {/* Прогресс */}
         <div style={styles.progressWrap}>
           <div style={styles.progressLabel}>
             {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
@@ -309,7 +293,6 @@ export default function WorkoutDay() {
         </div>
       </div>
 
-      {/* === ТЕЛО — список упражнений === */}
       <div style={styles.body}>
 
         {error && (
@@ -349,12 +332,6 @@ export default function WorkoutDay() {
           </div>
         )}
 
-        {/* === КНОПКА "ЗАВЕРШИТЬ ТРЕНИРОВКУ" — в конце списка === */}
-        {/*
-          Обычный блок в потоке, не fixed. Юзер пролистывает все упражнения,
-          видит кнопку в самом низу и нажимает.
-          Это эмоционально другая логика: "точно проверил всё — теперь завершаю".
-        */}
         {!loading && slots.length > 0 && (
           <div style={styles.finishWrap}>
             <button
@@ -400,8 +377,6 @@ export default function WorkoutDay() {
     </div>
   )
 }
-
-// ===== Пиксельные иконки =====
 
 function ArrowLeft() {
   return (
@@ -466,20 +441,11 @@ function groupByMuscleGroup(slots) {
 }
 
 const styles = {
-  // Страница — БЕЗ верхнего padding'а. Верхний отступ заберёт sticky-шапка.
-  // Нижний padding — для отступа кнопки от низа экрана (нет таб-бара).
   page: {
     padding: '0 16px 40px',
     minHeight: '100vh',
     minHeight: '100dvh'
   },
-
-  // === STICKY-ШАПКА ===
-  // top: 0 — прибита к верху ВИДИМОЙ области страницы.
-  // padding-top: var(--tg-safe-top) — заливает зону под Telegram-навигацией
-  // тем же фоном что у страницы → карточки не просвечивают при скролле.
-  // marginLeft/Right с минусами — компенсация padding'а страницы чтобы
-  // фон шапки растянулся на ВСЮ ширину экрана.
   stickyHeader: {
     position: 'sticky',
     top: 0,
@@ -492,7 +458,6 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -526,7 +491,6 @@ const styles = {
     textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
     display: 'inline-block'
   },
-
   progressWrap: {
     padding: '0 4px'
   },
@@ -550,9 +514,6 @@ const styles = {
     borderRadius: '2px',
     transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
-
-  // === ТЕЛО ===
-  // Стартует сразу под sticky-шапкой. Никаких отрицательных margin'ов.
   body: {
     paddingTop: '20px'
   },
@@ -607,8 +568,6 @@ const styles = {
     color: 'var(--color-text-secondary)',
     wordBreak: 'break-word'
   },
-
-  // === КНОПКА "ЗАВЕРШИТЬ" — в конце списка как обычный блок ===
   finishWrap: {
     marginTop: '28px',
     paddingTop: '8px'

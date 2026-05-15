@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { isPinned, togglePin, getActiveDay } from '../lib/storage'
-import DayBadge from './DayBadge'
 
 /**
  * Карточка программы внутри категории.
  *
- * Тап → сразу на день тренировки (минуя удалённый экран выбора дня).
- * Активный день определяется через getActiveDay (цикл A→B→C).
- * Если пользователь ещё не тренировался — стартуем с дня A.
+ * Внизу карточки — пиксельная строка "Дни: A B C", где буква текущего дня
+ * подсвечена основным цветом и крупнее, остальные буквы серые. "Дни:" — серым.
+ * Это короче и понятнее чем отдельный квадратик "СЕГОДНЯ".
+ *
+ * Тап → сразу на день тренировки. Активный день из getActiveDay
+ * (цикл A→B→C). Если юзер ещё не тренировался — стартуем с A.
  */
 export default function ProgramCard({ id, title, tags = [], available = true, comingSoon = false }) {
   const navigate = useNavigate()
@@ -30,8 +32,6 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
   const handleCardTap = async () => {
     if (!available) return
     haptic.light()
-    // Если getActiveDay вернул null (никогда не тренировался) — стартуем с A.
-    // Иначе — день, рекомендованный логикой цикла.
     const day = activeDay || 'A'
     setTimeout(() => navigate(`/workout/${id}/${day}`), 80)
   }
@@ -42,6 +42,11 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
     const newState = await togglePin(id)
     setPinned(newState)
   }
+
+  // Жёстко зафиксированный список дней программы. Если в будущем сделаем
+  // программы с другим набором (например только A/B) — будем читать из registry.
+  const allDays = ['A', 'B', 'C']
+  const today = activeDay || 'A'
 
   return (
     <div
@@ -74,10 +79,32 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         </div>
       )}
 
-      {activeDay && available && (
-        <div style={styles.dayBadgeWrap}>
-          <DayBadge day={activeDay} size={32} />
-          <div style={styles.dayLabel}>СЕГОДНЯ</div>
+      {/*
+        Пиксельная строка дней. Показывается только для доступных программ
+        (там где есть смысл говорить "сегодня день B"). Текущий день
+        зелёный и крупнее, остальные серые. Слово "Дни:" тоже серое.
+      */}
+      {available && (
+        <div style={styles.daysRow}>
+          <span style={styles.daysLabel}>Дни:</span>
+          <div style={styles.daysList}>
+            {allDays.map(d => {
+              const isToday = d === today
+              return (
+                <span
+                  key={d}
+                  style={{
+                    ...styles.dayLetter,
+                    color: isToday ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.35)',
+                    fontSize: isToday ? '18px' : '13px',
+                    textShadow: isToday ? '0 0 6px rgba(158, 209, 83, 0.4)' : 'none'
+                  }}
+                >
+                  {d}
+                </span>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -149,7 +176,7 @@ function getTagColor(tag) {
 const styles = {
   card: {
     position: 'relative',
-    padding: '18px 16px',
+    padding: '18px 16px 14px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
@@ -178,7 +205,13 @@ const styles = {
     marginBottom: '8px',
     paddingRight: '40px'
   },
-  tags: { display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' },
+  tags: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: '12px'
+  },
   tag: {
     display: 'inline-block',
     padding: '3px 8px',
@@ -199,19 +232,31 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
   },
-  dayBadgeWrap: {
-    position: 'absolute',
-    bottom: '12px',
-    right: '14px',
+  // Строка "Дни: A B C" — пиксельный шрифт, ровная базовая линия.
+  // Когда буква дня крупнее (текущий день) — alignItems: 'baseline'
+  // выравнивает её по нижней линии вместе с серыми буквами.
+  daysRow: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '3px'
+    alignItems: 'baseline',
+    gap: '10px',
+    paddingTop: '2px'
   },
-  dayLabel: {
+  daysLabel: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '9px',
-    color: 'var(--color-primary)',
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.35)',
     letterSpacing: '1px'
+  },
+  // Сами буквы A B C — равные промежутки между ними дают моноширинный вид.
+  daysList: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '14px'
+  },
+  dayLetter: {
+    fontFamily: 'var(--font-tiny5)',
+    letterSpacing: '0',
+    lineHeight: 1,
+    transition: 'color 0.3s ease, font-size 0.3s ease'
   }
 }

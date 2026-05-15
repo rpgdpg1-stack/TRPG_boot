@@ -6,8 +6,13 @@ import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../f
 /**
  * Полноэкранная страница замены упражнения.
  *
- * URL: /swap/:programId/:day/:orderNum (programId = slug, например 'split')
- * Передаём через location.state: { subGroup, type, currentExerciseId }
+ * URL: /swap/:programId/:day/:orderNum
+ * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId }
+ *
+ * defaultExerciseId — это упражнение которое заложено в программу для этого
+ * слота. Если оно отличается от текущего (юзер свапнул на что-то своё),
+ * на этой странице мы подсветим его зелёной обводкой + бейджем "ОТ ПРОГРАММЫ"
+ * и поставим первым в списке альтернатив, чтобы было легко вернуться к базовому.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -15,7 +20,7 @@ export default function SwapExercise() {
   const location = useLocation()
 
   const stateData = location.state || {}
-  const { subGroup, type, currentExerciseId, currentExerciseName } = stateData
+  const { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId } = stateData
 
   const [allExercises, setAllExercises] = useState([])
   const [currentExercise, setCurrentExercise] = useState(null)
@@ -45,7 +50,14 @@ export default function SwapExercise() {
 
         if (cancelled) return
 
+        // Сортировка: сначала default (рекомендованное от программы) если оно
+        // в этой подгруппе и не совпадает с текущим, потом всё остальное по priority.
         const sorted = (alternatives || []).slice().sort((a, b) => {
+          // Если есть defaultExerciseId и он не равен текущему — пин его наверх
+          if (defaultExerciseId && defaultExerciseId !== currentExerciseId) {
+            if (a.id === defaultExerciseId) return -1
+            if (b.id === defaultExerciseId) return 1
+          }
           const pa = a.priority ?? 99
           const pb = b.priority ?? 99
           if (pa !== pb) return pa - pb
@@ -63,7 +75,7 @@ export default function SwapExercise() {
 
     load()
     return () => { cancelled = true }
-  }, [subGroup, type, currentExerciseId, currentExerciseName])
+  }, [subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId])
 
   const handleSelect = (exerciseId) => {
     haptic.light()
@@ -76,10 +88,6 @@ export default function SwapExercise() {
 
     setSaving(true)
     try {
-      // saveExerciseSwap внутри по-прежнему ожидает programId как dbId.
-      // НО на следующем этапе мы переведём её на slug. Пока передаём slug —
-      // если у тебя в БД старые записи с dbId, они продолжат работать,
-      // а новые свапы пойдут со slug. Чистая миграция случится в Блоке 4.
       const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId)
       if (ok) {
         haptic.success()
@@ -97,6 +105,14 @@ export default function SwapExercise() {
   }
 
   const alternatives = allExercises.filter(e => e.id !== currentExerciseId)
+
+  // Показываем "ОТ ПРОГРАММЫ" только если default действительно отличается
+  // от текущего. Если юзер ничего не менял (current == default) — рекомендованное
+  // и есть текущее, бейджу негде быть.
+  const shouldHighlightDefault = !!(
+    defaultExerciseId &&
+    defaultExerciseId !== currentExerciseId
+  )
 
   if (!subGroup || !type) {
     return (
@@ -129,6 +145,7 @@ export default function SwapExercise() {
               exercise={currentExercise}
               isSelected={selectedId === currentExercise.id}
               isCurrent={true}
+              isDefault={false}
               onTap={() => handleSelect(currentExercise.id)}
             />
           </div>
@@ -150,6 +167,7 @@ export default function SwapExercise() {
                     exercise={ex}
                     isSelected={selectedId === ex.id}
                     isCurrent={false}
+                    isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
                     onTap={() => handleSelect(ex.id)}
                   />
                 ))}
@@ -178,16 +196,42 @@ export default function SwapExercise() {
   )
 }
 
-function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
+/**
+ * Карточка упражнения в списке.
+ *
+ * isCurrent — это текущее выбранное (в блоке "ТЕКУЩЕЕ")
+ * isDefault — это рекомендованное программой (зелёная обводка + бейдж).
+ * isSelected — на нём сейчас стоит радио-точка (юзер выбрал).
+ *
+ * isDefault и isSelected — независимые штуки. Если default выбран — он и обведён,
+ * и точка стоит. Если выбрали что-то другое — default остаётся обведённым
+ * (как маркер базового), а точка переезжает на выбранное.
+ */
+function ExerciseRow({ exercise, isSelected, isCurrent, isDefault, onTap }) {
+  // Цвет обводки. Приоритет: selected > default > none.
+  // Если карточка одновременно selected и default — рисуем сплошную зелёную
+  // (selected важнее визуально, а default видно по бейджу).
+  let borderColor = 'transparent'
+  if (isSelected) {
+    borderColor = 'var(--color-primary)'
+  } else if (isDefault) {
+    borderColor = 'rgba(158, 209, 83, 0.55)'
+  }
+
+  let background = 'var(--color-card)'
+  if (isSelected) {
+    background = 'rgba(158, 209, 83, 0.10)'
+  } else if (isCurrent) {
+    background = 'rgba(255, 255, 255, 0.04)'
+  } else if (isDefault) {
+    background = 'rgba(158, 209, 83, 0.05)'
+  }
+
   return (
     <button onClick={onTap} className="press-tile" style={{
       ...rowStyles.row,
-      borderColor: isSelected ? 'var(--color-primary)' : 'transparent',
-      background: isSelected
-        ? 'rgba(158, 209, 83, 0.10)'
-        : isCurrent
-          ? 'rgba(255, 255, 255, 0.04)'
-          : 'var(--color-card)'
+      borderColor,
+      background
     }}>
       <div style={rowStyles.preview}>
         {exercise.preview_url ? (
@@ -198,7 +242,12 @@ function ExerciseRow({ exercise, isSelected, isCurrent, onTap }) {
       </div>
 
       <div style={rowStyles.content}>
-        <div style={rowStyles.name}>{exercise.name}</div>
+        <div style={rowStyles.nameRow}>
+          <div style={rowStyles.name}>{exercise.name}</div>
+          {isDefault && (
+            <span style={rowStyles.defaultBadge}>ОТ ПРОГРАММЫ</span>
+          )}
+        </div>
         {exercise.meta_info && (
           <div style={rowStyles.meta}>{exercise.meta_info}</div>
         )}
@@ -344,12 +393,30 @@ const rowStyles = {
     flexDirection: 'column',
     gap: '3px'
   },
+  // Имя + бейдж "ОТ ПРОГРАММЫ" в одной строке.
+  // Если имя длинное и бейдж не помещается — flexWrap отправит его на новую строку.
+  nameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap'
+  },
   name: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 600,
     color: 'var(--color-text)',
     lineHeight: 1.25
+  },
+  defaultBadge: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '9px',
+    color: 'var(--color-primary)',
+    background: 'rgba(158, 209, 83, 0.15)',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    letterSpacing: '1px',
+    whiteSpace: 'nowrap'
   },
   meta: {
     fontFamily: 'var(--font-tiny5)',
