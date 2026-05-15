@@ -5,6 +5,7 @@ import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { getProgramBySlug, getProgramDaySlots } from '../features/programs/registry'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import {
@@ -312,9 +313,12 @@ export default function WorkoutDay() {
           <div style={styles.sectionsWrap}>
             {sections.map((section, sIdx) => (
               <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-                <h2 style={styles.muscleHeader}>
-                  {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-                </h2>
+  <h2 style={{
+    ...styles.muscleHeader,
+    color: getMuscleGroupColors(section.muscleGroup).accent
+  }}>
+    {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+  </h2>
 
                 <div style={styles.exerciseList}>
                   {section.slots.map(slot => (

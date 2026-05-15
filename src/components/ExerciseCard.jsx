@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../features/exercises/api'
-import { SUB_GROUP_LABELS } from '../features/programs/labels'
+import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
 import {
   markWeightEditingStarted,
@@ -11,29 +12,26 @@ import {
 /**
  * Карточка упражнения.
  *
- * iOS-FRIENDLY ВВОД ВЕСА:
- * Инпут всегда отрендерен и кликабелен (но прозрачный), визуальное число
- * лежит поверх с pointerEvents:none — клик проваливается на инпут, iOS открывает
- * клавиатуру естественным образом.
+ * НОВЫЙ ВИЗУАЛ (правка от 15.05.2026):
+ *  - Сверху картинка слева, справа — название упражнения крупно.
+ *  - Под названием — два тега: цветной тег группы мышц (Спина / Грудь / ...)
+ *    в цвете группы, и серый тег подгруппы (Ширина / Бицепс / ...).
+ *  - Под тегами — серая подпись подходов (3×8-10).
+ *  - Справа цифра веса в АКЦЕНТНОМ цвете группы (не зелёная как раньше).
  *
- * ГЛОБАЛЬНАЯ ЗАЩИТА ОТ ЛОЖНОЙ АКТИВАЦИИ:
- * Когда любая карточка редактирует вес, ВСЕ карточки игнорируют тапы
- * (через shouldIgnoreCardTap из weight-editing-state). Раньше защита была
- * локальной — соседняя карточка ничего не знала о клавиатуре в чужой карточке
- * и активировалась по случайному тапу.
- *
- * Теперь:
- *  - onFocus инпута → markWeightEditingStarted() → ВСЕ карточки в режиме "игнор"
- *  - onBlur инпута → markWeightEditingEnded() → ещё 300мс игнора, потом норма
- *  - handleCardClick проверяет shouldIgnoreCardTap() → гасит тап если надо
- *
- * Поведение для юзера: открыл клавиатуру для веса → тап по ЛЮБОЙ карточке
- * (своей или соседней) просто закрывает клавиатуру, никаких активаций.
+ * Что СОХРАНЕНО без изменений:
+ *  - long-press → onLongPress(slot) для меню "Инфо / Сменить"
+ *  - tap → onTap(slot) для отметки выполнено / не выполнено
+ *  - isActive → затемнение карточки + тост "Готово, молодец!"
+ *  - ввод веса через прозрачный инпут поверх цифры (iOS-friendly)
+ *  - глобальная защита от ложных активаций при открытой клавиатуре
+ *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
     exercise_id,
     exercise_name,
+    muscle_group,
     sub_group,
     meta_info,
     preview_url,
@@ -48,9 +46,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
-  // Только ЛОКАЛЬНЫЙ флаг — для проверок внутри карточки (например, не запускать
-  // long-press пока юзер сам в моей клавиатуре). Защита тапов по соседним
-  // карточкам — через глобальный shouldIgnoreCardTap.
   const editingRef = useRef(false)
 
   const longPressTimer = useRef(null)
@@ -59,7 +54,16 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
-  const subGroupLabel = SUB_GROUP_LABELS[sub_group] || (sub_group || '').toUpperCase()
+  // Цвета группы мышц — тег + акцент для цифры веса
+  const colors = getMuscleGroupColors(muscle_group)
+
+  // Названия для тегов. Группу пишем как "Спина" (с заглавной),
+  // подгруппу — как в SUB_GROUP_LABELS, но тоже приводим к виду "Ширина".
+  const groupLabelRaw = MUSCLE_GROUP_LABELS[muscle_group] || (muscle_group || '').toUpperCase()
+  const subGroupLabelRaw = SUB_GROUP_LABELS[sub_group] || (sub_group || '').toUpperCase()
+
+  const groupLabel = toTitleCase(groupLabelRaw)
+  const subGroupLabel = toTitleCase(subGroupLabelRaw)
 
   useEffect(() => {
     setLocalWeight(
@@ -82,12 +86,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }, [])
 
   const handleCardPointerDown = (e) => {
-    // Если у меня самого открыта клавиатура — не запускаем long-press,
-    // это всё равно "клавиатурный" тап.
     if (editingRef.current) return
-
-    // Если где-то ещё открыта клавиатура — тоже не запускаем long-press,
-    // юзер просто хочет закрыть её тапом мимо.
     if (shouldIgnoreCardTap()) return
 
     longPressFired.current = false
@@ -120,9 +119,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardClick = () => {
-    // ГЛОБАЛЬНАЯ проверка — клавиатура где-то открыта или только что закрылась?
-    // Если да — гасим тап. Это работает для ВСЕХ карточек, не только для той
-    // у которой редактировался вес.
     if (shouldIgnoreCardTap()) return
     if (editingRef.current) return
 
@@ -138,9 +134,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     editingRef.current = true
     setEditing(true)
     setDraft(String(localWeight))
-
-    // Глобально объявляем: я редактирую вес, все остальные карточки —
-    // игнорите тапы.
     markWeightEditingStarted()
 
     setTimeout(() => {
@@ -163,10 +156,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const handleInputBlur = async () => {
     editingRef.current = false
     setEditing(false)
-
-    // Глобально: редактирование закончилось. Внутри функции взводится таймстамп,
-    // и в течение 300мс ВСЕ карточки продолжают игнорировать тапы (защита от
-    // фантомного click который iOS присылает после blur).
     markWeightEditingEnded()
 
     const trimmed = draft.trim()
@@ -243,14 +232,26 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       </div>
 
       <div style={styles.content}>
-        {subGroupLabel && (
-          <div style={styles.subGroupLabel}>{subGroupLabel}</div>
-        )}
-
+        {/* 1. Название упражнения — сверху, крупно */}
         <div style={styles.exerciseName}>
           {exercise_name}
         </div>
 
+        {/* 2. Два тега в ряд: цветной тег группы + серый тег подгруппы */}
+        <div style={styles.tagsRow}>
+          {groupLabel && (
+            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
+              {groupLabel}
+            </span>
+          )}
+          {subGroupLabel && (
+            <span style={{ ...styles.tag, ...styles.tagSecondary }}>
+              {subGroupLabel}
+            </span>
+          )}
+        </div>
+
+        {/* 3. Подходы — серой подписью под тегами */}
         {meta_info && (
           <div style={styles.meta}>{meta_info}</div>
         )}
@@ -275,11 +276,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             onPointerDown={(e) => e.stopPropagation()}
             style={{
               ...styles.weightInput,
+              color: colors.accent,
+              caretColor: colors.accent,
               opacity: editing ? 1 : 0
             }}
           />
           {!editing && (
-            <div style={styles.weightValue}>
+            <div style={{ ...styles.weightValue, color: colors.accent }}>
               {localWeight}
             </div>
           )}
@@ -311,6 +314,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       `}</style>
     </div>
   )
+}
+
+/**
+ * "СПИНА" → "Спина", "БИЦЕПС БЕДРА" → "Бицепс бедра".
+ * Локальный хелпер — наружу выносить пока незачем.
+ */
+function toTitleCase(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {
@@ -347,6 +359,7 @@ const styles = {
     fontSize: '40px',
     opacity: 0.4
   },
+  // Текстовая колонка: название сверху, теги, подходы внизу
   content: {
     flex: 1,
     minWidth: 0,
@@ -354,30 +367,46 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: '7px'
-  },
-  subGroupLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 800,
-    lineHeight: '14px',
-    letterSpacing: '0.2em',
-    color: '#888888',
-    textTransform: 'uppercase'
+    gap: '8px'
   },
   exerciseName: {
     fontFamily: 'var(--font-geist)',
-    fontSize: '14px',
-    fontWeight: 600,
-    lineHeight: '18px',
+    fontSize: '15px',
+    fontWeight: 700,
+    lineHeight: '19px',
     color: '#F0F0F0'
+  },
+  // Ряд из двух тегов: группа (цветная) + подгруппа (серая)
+  tagsRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '6px',
+    flexWrap: 'wrap'
+  },
+  tag: {
+    display: 'inline-block',
+    padding: '3px 10px',
+    borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.3px',
+    lineHeight: '15px',
+    whiteSpace: 'nowrap'
+  },
+  // Серый тег подгруппы — фон полупрозрачный, текст приглушённый
+  tagSecondary: {
+    background: 'rgba(255, 255, 255, 0.08)',
+    color: '#A0A0A0',
+    fontWeight: 600
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 600,
+    fontSize: '11px',
+    fontWeight: 500,
     lineHeight: '14px',
-    letterSpacing: '0.05em',
+    letterSpacing: '0.03em',
     color: '#888888'
   },
   weightBlock: {
@@ -410,14 +439,12 @@ const styles = {
     fontSize: '20px',
     fontWeight: 800,
     lineHeight: '27px',
-    color: '#9ED153',
     background: 'transparent',
     border: 'none',
     outline: 'none',
     textAlign: 'center',
     padding: 0,
     margin: 0,
-    caretColor: '#9ED153',
     transition: 'opacity 0.12s ease',
     WebkitAppearance: 'none',
     appearance: 'none',
@@ -434,7 +461,6 @@ const styles = {
     fontWeight: 800,
     lineHeight: '27px',
     textAlign: 'center',
-    color: '#9ED153',
     pointerEvents: 'none'
   },
   weightUnit: {
