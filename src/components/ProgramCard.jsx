@@ -6,13 +6,28 @@ import { isPinned, togglePin, getActiveDay } from '../lib/storage'
 /**
  * Карточка программы внутри категории.
  *
- * Внизу карточки — пиксельная строка "Дни: A B C", где буква текущего дня
- * подсвечена основным цветом и крупнее, остальные буквы серые. "Дни:" — серым.
- * Это короче и понятнее чем отдельный квадратик "СЕГОДНЯ".
+ * Визуально похожа на карточки категорий на главной: эмодзи слева,
+ * текст справа. Внизу — пиксельная строка дней и тег зала/дома.
  *
- * Тап → сразу на день тренировки. Активный день из getActiveDay
- * (цикл A→B→C). Если юзер ещё не тренировался — стартуем с A.
+ * Структура:
+ *   [эмодзи] [Сплит]                    [♡]
+ *            День: A B C
+ *            Зал
+ *
+ * При тапе ведём на день тренировки. Если у юзера ещё нет завершений
+ * (activeDay === null) — открываем день A по умолчанию, а в карточке
+ * все буквы дней показываем серыми (как в категориях ещё ничего не выбрано).
  */
+
+// Сопоставление слага программы и эмодзи. Когда добавим вторую программу,
+// просто допишем сюда строчку — никакой логики менять не надо.
+const PROGRAM_EMOJI = {
+  split: '🏋️'
+}
+
+// Дефолт если в карте нет — карточка не должна ломаться даже для незнакомой программы
+const DEFAULT_EMOJI = '💪'
+
 export default function ProgramCard({ id, title, tags = [], available = true, comingSoon = false }) {
   const navigate = useNavigate()
   const [pinned, setPinned] = useState(false)
@@ -43,10 +58,19 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
     setPinned(newState)
   }
 
-  // Жёстко зафиксированный список дней программы. Если в будущем сделаем
-  // программы с другим набором (например только A/B) — будем читать из registry.
+  // Жёстко зафиксированный список дней. Когда появятся программы с другим
+  // набором (A/B без C) — будем читать из registry. Пока одна программа,
+  // нет смысла усложнять.
   const allDays = ['A', 'B', 'C']
-  const today = activeDay || 'A'
+  const hasRecommendation = !!activeDay
+
+  // "Сплит" → "Сплит" (первая заглавная, остальные строчные).
+  // toLowerCase + первая буква в верхний регистр.
+  const formattedTitle = title
+    ? title.charAt(0).toUpperCase() + title.slice(1).toLowerCase()
+    : ''
+
+  const emoji = PROGRAM_EMOJI[id] || DEFAULT_EMOJI
 
   return (
     <div
@@ -58,6 +82,7 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         cursor: available ? 'pointer' : 'default'
       }}
     >
+      {/* Сердечко-закрепление в правом верхнем углу */}
       <button
         onClick={handlePinTap}
         style={styles.pinButton}
@@ -66,52 +91,53 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         <HeartIcon filled={pinned} />
       </button>
 
-      <div style={styles.title}>{title}</div>
+      {/* Эмодзи слева — отдельной колонкой по высоте всего блока, как на главной */}
+      <span style={styles.emoji}>{emoji}</span>
 
-      {tags.length > 0 && (
-        <div style={styles.tags}>
-          {tags.map(tag => (
-            <span key={tag} style={{ ...styles.tag, background: getTagColor(tag) }}>
-              {tag.toUpperCase()}
-            </span>
-          ))}
-          {comingSoon && <span style={styles.soonTag}>СКОРО</span>}
-        </div>
-      )}
+      {/* Правая колонка: название → дни → тег */}
+      <div style={styles.content}>
+        <div style={styles.title}>{formattedTitle}</div>
 
-      {/*
-        Пиксельная строка дней. Показывается только для доступных программ
-        (там где есть смысл говорить "сегодня день B"). Текущий день
-        зелёный и крупнее, остальные серые. Слово "Дни:" тоже серое.
-      */}
-{available && (
-        <div style={styles.daysRow}>
-          <span style={styles.daysLabel}>Дни:</span>
-          <div style={styles.daysList}>
-            {allDays.map(d => {
-              // hasRecommendation — был ли уже хоть один завершённый день.
-              // Если нет (новый юзер / только что сделан сброс цикла) — все
-              // буквы серые одинакового размера. Подсвечивание появится после
-              // первого завершения.
-              const hasRecommendation = !!activeDay
-              const isToday = hasRecommendation && d === activeDay
+        {available && (
+          <div style={styles.daysRow}>
+            <span style={styles.daysLabel}>День:</span>
+            <div style={styles.daysList}>
+              {allDays.map(d => {
+                const isToday = hasRecommendation && d === activeDay
+                return (
+                  <span
+                    key={d}
+                    style={{
+                      ...styles.dayLetter,
+                      // Активная буква — зелёная и с лёгким свечением. Размер
+                      // НЕ меняем — иначе строка прыгает при смене активного дня.
+                      color: isToday ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.35)',
+                      textShadow: isToday ? '0 0 6px rgba(158, 209, 83, 0.4)' : 'none'
+                    }}
+                  >
+                    {d}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Теги: "Зал" → "Зал" (как title), цветная плашка */}
+        {tags.length > 0 && (
+          <div style={styles.tags}>
+            {tags.map(tag => {
+              const formattedTag = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
               return (
-                <span
-                  key={d}
-                  style={{
-                    ...styles.dayLetter,
-                    color: isToday ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.35)',
-                    fontSize: isToday ? '18px' : '13px',
-                    textShadow: isToday ? '0 0 6px rgba(158, 209, 83, 0.4)' : 'none'
-                  }}
-                >
-                  {d}
+                <span key={tag} style={{ ...styles.tag, background: getTagColor(tag) }}>
+                  {formattedTag}
                 </span>
               )
             })}
+            {comingSoon && <span style={styles.soonTag}>Скоро</span>}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -179,14 +205,38 @@ function getTagColor(tag) {
 }
 
 const styles = {
+  // Корневая карточка — горизонтальный flex (эмодзи слева, контент справа),
+  // как у категорий на главной странице. Высота не фиксируем — пусть
+  // подстраивается под содержимое.
   card: {
     position: 'relative',
-    padding: '18px 16px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '16px 18px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '88px',
+    minHeight: '100px',
     textAlign: 'left'
+  },
+  // Эмодзи — крупный, как на категориях главной (там 34px). Ширина
+  // фиксированная чтобы все карточки выровнялись по левому краю текста.
+  emoji: {
+    fontSize: '34px',
+    lineHeight: 1,
+    flexShrink: 0,
+    width: '48px',
+    textAlign: 'center'
+  },
+  // Правая колонка: название → дни → тег. Все элементы выровнены по левому краю.
+  content: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    paddingRight: '36px' // место под сердечко справа, чтобы текст не залезал
   },
   pinButton: {
     position: 'absolute',
@@ -202,66 +252,70 @@ const styles = {
     zIndex: 2,
     padding: 0
   },
+  // Название "Сплит" — Manrope, обычный регистр (заглавная только первая буква
+  // делается в коде через formattedTitle). Размер на уровне категорий главной.
   title: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: 700,
     color: 'var(--color-text)',
-    marginBottom: '8px',
-    paddingRight: '40px'
+    letterSpacing: '0.3px',
+    lineHeight: 1.1
   },
-  tags: {
-    display: 'flex',
-    gap: '6px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginBottom: '12px'
-  },
-  tag: {
-    display: 'inline-block',
-    padding: '3px 8px',
-    borderRadius: '6px',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '10px',
-    color: 'var(--color-bg)',
-    letterSpacing: '1px',
-    fontWeight: 600
-  },
-  soonTag: {
-    display: 'inline-block',
-    padding: '3px 8px',
-    background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '6px',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '10px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
-  },
-  // Строка "Дни: A B C" — пиксельный шрифт, ровная базовая линия.
-  // Когда буква дня крупнее (текущий день) — alignItems: 'baseline'
-  // выравнивает её по нижней линии вместе с серыми буквами.
+  // Строка "День: A B C" — пиксельный шрифт, чуть крупнее предыдущей версии.
   daysRow: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: '10px',
-    paddingTop: '2px'
+    gap: '10px'
   },
   daysLabel: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
+    fontSize: '14px',
     color: 'rgba(255, 255, 255, 0.35)',
     letterSpacing: '1px'
   },
-  // Сами буквы A B C — равные промежутки между ними дают моноширинный вид.
   daysList: {
     display: 'flex',
     alignItems: 'baseline',
     gap: '14px'
   },
+  // Размер букв — одинаковый для всех (активная отличается только цветом
+  // и свечением). Так строка не прыгает при смене дня.
   dayLetter: {
     fontFamily: 'var(--font-tiny5)',
+    fontSize: '17px',
     letterSpacing: '0',
     lineHeight: 1,
-    transition: 'color 0.3s ease, font-size 0.3s ease'
+    transition: 'color 0.3s ease, text-shadow 0.3s ease'
+  },
+  // Теги "Зал" / "Дом" / "Улица" — на собственной строке снизу. Маленькая
+  // цветная плашка. Текст обычный, не Tiny5, потому что пиксельный шрифт
+  // на коротких словах в нижнем регистре выглядит грязно.
+  tags: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+    alignItems: 'center'
+  },
+  tag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    borderRadius: '6px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'var(--color-bg)',
+    letterSpacing: '0.3px'
+  },
+  soonTag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: '6px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.3px'
   }
 }
