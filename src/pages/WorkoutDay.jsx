@@ -447,7 +447,6 @@ function groupByMuscleGroup(slots) {
 const styles = {
   page: {
     padding: '0 16px 40px',
-    minHeight: '100vh',
     minHeight: '100dvh'
   },
   stickyHeader: {
