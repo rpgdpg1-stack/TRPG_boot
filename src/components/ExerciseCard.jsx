@@ -2,30 +2,33 @@ import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { SUB_GROUP_LABELS } from '../features/programs/labels'
 import { haptic } from '../lib/telegram'
+import {
+  markWeightEditingStarted,
+  markWeightEditingEnded,
+  shouldIgnoreCardTap
+} from '../lib/weight-editing-state'
 
 /**
  * Карточка упражнения.
  *
  * iOS-FRIENDLY ВВОД ВЕСА:
+ * Инпут всегда отрендерен и кликабелен (но прозрачный), визуальное число
+ * лежит поверх с pointerEvents:none — клик проваливается на инпут, iOS открывает
+ * клавиатуру естественным образом.
  *
- * Инпут ВСЕГДА отрендерен и кликабелен, но прозрачный. Поверх него лежит
- * визуальное число с pointerEvents:none — клики проваливаются сквозь него
- * напрямую на инпут.
+ * ГЛОБАЛЬНАЯ ЗАЩИТА ОТ ЛОЖНОЙ АКТИВАЦИИ:
+ * Когда любая карточка редактирует вес, ВСЕ карточки игнорируют тапы
+ * (через shouldIgnoreCardTap из weight-editing-state). Раньше защита была
+ * локальной — соседняя карточка ничего не знала о клавиатуре в чужой карточке
+ * и активировалась по случайному тапу.
  *
- * Когда юзер тапает по числу:
- *   1. Клик попадает в input (поверх лежащий div пропускает клики)
- *   2. iOS видит "пользовательский тап по input" → ставит фокус → ОТКРЫВАЕТ КЛАВИАТУРУ
- *   3. onFocus инпута переключает editing=true → визуальное число прячется,
- *      становится виден сам инпут (с выделенным значением)
+ * Теперь:
+ *  - onFocus инпута → markWeightEditingStarted() → ВСЕ карточки в режиме "игнор"
+ *  - onBlur инпута → markWeightEditingEnded() → ещё 300мс игнора, потом норма
+ *  - handleCardClick проверяет shouldIgnoreCardTap() → гасит тап если надо
  *
- * Ключевое: НИКАКОГО readOnly, НИКАКОГО pointer-events:none на инпуте,
- * НИКАКОГО программного focus() из обработчика клика.
- *
- * Тап по карточке во время редактирования:
- *   - onBlur инпута срабатывает первым → editing=false + ref-флаг "только что
- *     закрыли клавиатуру" на 300мс
- *   - onClick карточки видит ref-флаг → игнорирует тап
- *   → клавиатура закрывается, карточка не активируется
+ * Поведение для юзера: открыл клавиатуру для веса → тап по ЛЮБОЙ карточке
+ * (своей или соседней) просто закрывает клавиатуру, никаких активаций.
  */
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
   const {
@@ -45,8 +48,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
+  // Только ЛОКАЛЬНЫЙ флаг — для проверок внутри карточки (например, не запускать
+  // long-press пока юзер сам в моей клавиатуре). Защита тапов по соседним
+  // карточкам — через глобальный shouldIgnoreCardTap.
   const editingRef = useRef(false)
-  const justClosedKeyboardRef = useRef(false)
 
   const longPressTimer = useRef(null)
   const longPressFired = useRef(false)
@@ -77,7 +82,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }, [])
 
   const handleCardPointerDown = (e) => {
+    // Если у меня самого открыта клавиатура — не запускаем long-press,
+    // это всё равно "клавиатурный" тап.
     if (editingRef.current) return
+
+    // Если где-то ещё открыта клавиатура — тоже не запускаем long-press,
+    // юзер просто хочет закрыть её тапом мимо.
+    if (shouldIgnoreCardTap()) return
 
     longPressFired.current = false
     pointerStartPos.current = { x: e.clientX, y: e.clientY }
@@ -109,7 +120,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardClick = () => {
-    if (justClosedKeyboardRef.current) return
+    // ГЛОБАЛЬНАЯ проверка — клавиатура где-то открыта или только что закрылась?
+    // Если да — гасим тап. Это работает для ВСЕХ карточек, не только для той
+    // у которой редактировался вес.
+    if (shouldIgnoreCardTap()) return
     if (editingRef.current) return
 
     if (longPressFired.current) {
@@ -124,6 +138,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     editingRef.current = true
     setEditing(true)
     setDraft(String(localWeight))
+
+    // Глобально объявляем: я редактирую вес, все остальные карточки —
+    // игнорите тапы.
+    markWeightEditingStarted()
 
     setTimeout(() => {
       try {
@@ -146,10 +164,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     editingRef.current = false
     setEditing(false)
 
-    justClosedKeyboardRef.current = true
-    setTimeout(() => {
-      justClosedKeyboardRef.current = false
-    }, 300)
+    // Глобально: редактирование закончилось. Внутри функции взводится таймстамп,
+    // и в течение 300мс ВСЕ карточки продолжают игнорировать тапы (защита от
+    // фантомного click который iOS присылает после blur).
+    markWeightEditingEnded()
 
     const trimmed = draft.trim()
 
@@ -198,7 +216,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-return (
+  return (
     <div
       onClick={handleCardClick}
       onPointerDown={handleCardPointerDown}
@@ -229,8 +247,6 @@ return (
           <div style={styles.subGroupLabel}>{subGroupLabel}</div>
         )}
 
-        {/* Бейдж "заменено" убран — лишний шум, факт замены и так понятен
-            если юзер сам менял упражнение. */}
         <div style={styles.exerciseName}>
           {exercise_name}
         </div>

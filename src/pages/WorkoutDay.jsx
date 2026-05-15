@@ -352,7 +352,7 @@ export default function WorkoutDay() {
 
       {actionSlot && (
         <ExerciseActionMenu
-          exerciseName={actionSlot.exercise_name}
+          slot={actionSlot}
           onInfo={handleMenuInfo}
           onSwap={handleMenuSwap}
           onClose={() => setActionSlot(null)}
