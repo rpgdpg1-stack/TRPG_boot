@@ -19,17 +19,16 @@ import RanksPopup from './RanksPopup'
 /**
  * Главный блок персонажа на Главной.
  *
- * ОБНОВЛЕНИЕ XP-popup:
- *  Раньше показывалась таблица "за что сколько мускулов" — это статичная
- *  справка, мало кому нужная. Теперь показываем:
- *   - Последние 3 начисления (что свежее — выше)
- *   - Разделитель
- *   - "До следующего ранга «Новобранец 2» X 💪" — мотивация
+ * Popup под XP-баром:
+ *  - Последние 3 начисления (что свежее — выше). Сортировка по времени
+ *    плюс по id, чтобы события с одинаковой секундой шли в правильном порядке.
+ *  - Разделитель
+ *  - Прогресс до следующего ранга
  *
- *  Источник данных — таблица muscle_history через getRecentMuscleHistory.
+ *  Все строки имеют ОДИНАКОВУЮ структуру: слева текст, справа "+N 💪".
+ *  Это даёт визуальное единообразие — глаз не прыгает.
  */
 
-// Человекочитаемые названия источников начисления для попапа
 const SOURCE_LABELS = {
   workout: 'Тренировка',
   quest:   'Дневной буст',
@@ -86,8 +85,9 @@ export default function PlayerCard() {
     }
   }, [])
 
-  // Обновляем историю каждый раз когда юзер открывает попап
-  // (на случай если что-то начислилось пока попап был закрыт)
+  // Обновляем историю каждый раз при открытии попапа — чтобы видеть
+  // самые свежие начисления (вдруг кто-то завершил тренировку и закрыл попап
+  // до того как изменилось состояние родителя).
   useEffect(() => {
     if (showXPDetails) {
       getRecentMuscleHistory(3).then(setRecentHistory)
@@ -133,7 +133,6 @@ export default function PlayerCard() {
   const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
   const { current: inLevelCurrent, needed: inLevelNeeded } = getXPInCurrentLevel(xp)
 
-  // Имя СЛЕДУЮЩЕГО ранга — "До «Новобранец 2» X 💪"
   const nextRank = getRankByLevel(level + 1)
   const remainingToNext = Math.max(0, inLevelNeeded - inLevelCurrent)
 
@@ -253,7 +252,6 @@ export default function PlayerCard() {
         {showXPDetails && (
           <div ref={xpPopupRef} style={styles.popup}>
 
-            {/* Заголовок последних начислений */}
             <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
 
             {recentHistory.length === 0 ? (
@@ -264,23 +262,26 @@ export default function PlayerCard() {
             ) : (
               <div style={styles.popupHistoryList}>
                 {recentHistory.map((row, idx) => (
-                  <div key={idx} style={styles.popupHistoryRow}>
-                    <span style={styles.popupHistoryAmount}>+{row.amount} 💪</span>
-                    <span style={styles.popupHistoryLabel}>{formatSourceLabel(row.source)}</span>
+                  <div key={idx} style={styles.popupRow}>
+                    <span style={styles.popupLabel}>
+                      {formatSourceLabel(row.source)}
+                    </span>
+                    <span style={styles.popupAmount}>
+                      +{row.amount} 💪
+                    </span>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Разделитель */}
             <div style={styles.popupDivider} />
 
-            {/* Прогресс до следующего ранга */}
+            {/* Строка "до следующего ранга" — та же структура: текст слева, мускулы справа */}
             <div style={styles.popupRow}>
-              <span style={styles.popupNextLabel}>
+              <span style={styles.popupLabel}>
                 До «{nextRank.name} {nextRank.subLevel}»
               </span>
-              <span style={{ ...styles.popupValue, color: rank.color }}>
+              <span style={{ ...styles.popupAmount, color: rank.color }}>
                 {remainingToNext} 💪
               </span>
             </div>
@@ -442,7 +443,6 @@ const styles = {
     zIndex: 50,
     animation: 'popupShowHide 6.4s ease-out forwards'
   },
-  // Заголовок секции "ПОСЛЕДНИЕ НАЧИСЛЕНИЯ"
   popupSectionTitle: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '11px',
@@ -451,32 +451,38 @@ const styles = {
     marginBottom: '8px',
     paddingLeft: '2px'
   },
-  // Список последних начислений
   popupHistoryList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
-    marginBottom: '4px'
+    gap: '4px'
   },
-  popupHistoryRow: {
+  // ЕДИНАЯ структура строки: текст слева, "+N 💪" справа.
+  // Используется и для истории начислений, и для "до следующего ранга".
+  popupRow: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '10px',
     padding: '4px 2px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px'
+    gap: '10px'
   },
-  popupHistoryAmount: {
+  popupLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text)',
+    fontWeight: 500,
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
+  },
+  popupAmount: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
-    minWidth: '58px',
-    flexShrink: 0
-  },
-  popupHistoryLabel: {
-    color: 'var(--color-text)',
-    flex: 1
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
   },
   popupEmpty: {
     fontFamily: 'var(--font-manrope)',
@@ -486,28 +492,10 @@ const styles = {
     padding: '8px 4px',
     lineHeight: 1.5
   },
-  // Тонкая разделительная черта между историей и "до следующего ранга"
   popupDivider: {
     height: '1px',
     background: 'rgba(255, 255, 255, 0.08)',
     margin: '8px 0'
-  },
-  popupRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    padding: '2px 0'
-  },
-  popupNextLabel: {
-    color: 'var(--color-text)',
-    fontWeight: 600
-  },
-  popupValue: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
-    letterSpacing: '1px'
   },
   streakWrap: { position: 'relative', marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   streakRow: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent' },
