@@ -2,17 +2,22 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
+import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { getMuscleGroupColors } from '../features/programs/colors'
 
 /**
  * Полноэкранная страница замены упражнения.
  *
  * URL: /swap/:programId/:day/:orderNum
- * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId }
+ * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * defaultExerciseId — это упражнение которое заложено в программу для этого
- * слота. Если оно отличается от текущего (юзер свапнул на что-то своё),
- * на этой странице мы подсветим его зелёной обводкой + бейджем "ОТ ПРОГРАММЫ"
- * и поставим первым в списке альтернатив, чтобы было легко вернуться к базовому.
+ * defaultExerciseId — упражнение от программы (если юзер свапнул на своё —
+ * подсветим его зелёной обводкой + бейджем "ОТ ПРОГРАММЫ").
+ * muscleGroup — нужна для цвета тега в карточках альтернатив.
+ *
+ * Визуально: шапка опущена под системные кнопки Telegram (var(--tg-safe-top)),
+ * карточки в стиле новой ExerciseCard — название сверху, цветной тег группы
+ * + серый тег подгруппы под ним.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -20,7 +25,14 @@ export default function SwapExercise() {
   const location = useLocation()
 
   const stateData = location.state || {}
-  const { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId } = stateData
+  const {
+    subGroup,
+    type,
+    currentExerciseId,
+    currentExerciseName,
+    defaultExerciseId,
+    muscleGroup
+  } = stateData
 
   const [allExercises, setAllExercises] = useState([])
   const [currentExercise, setCurrentExercise] = useState(null)
@@ -50,10 +62,7 @@ export default function SwapExercise() {
 
         if (cancelled) return
 
-        // Сортировка: сначала default (рекомендованное от программы) если оно
-        // в этой подгруппе и не совпадает с текущим, потом всё остальное по priority.
         const sorted = (alternatives || []).slice().sort((a, b) => {
-          // Если есть defaultExerciseId и он не равен текущему — пин его наверх
           if (defaultExerciseId && defaultExerciseId !== currentExerciseId) {
             if (a.id === defaultExerciseId) return -1
             if (b.id === defaultExerciseId) return 1
@@ -106,9 +115,6 @@ export default function SwapExercise() {
 
   const alternatives = allExercises.filter(e => e.id !== currentExerciseId)
 
-  // Показываем "ОТ ПРОГРАММЫ" только если default действительно отличается
-  // от текущего. Если юзер ничего не менял (current == default) — рекомендованное
-  // и есть текущее, бейджу негде быть.
   const shouldHighlightDefault = !!(
     defaultExerciseId &&
     defaultExerciseId !== currentExerciseId
@@ -143,6 +149,7 @@ export default function SwapExercise() {
             <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
             <ExerciseRow
               exercise={currentExercise}
+              muscleGroup={muscleGroup}
               isSelected={selectedId === currentExercise.id}
               isCurrent={true}
               isDefault={false}
@@ -165,6 +172,7 @@ export default function SwapExercise() {
                   <ExerciseRow
                     key={ex.id}
                     exercise={ex}
+                    muscleGroup={muscleGroup}
                     isSelected={selectedId === ex.id}
                     isCurrent={false}
                     isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
@@ -199,18 +207,22 @@ export default function SwapExercise() {
 /**
  * Карточка упражнения в списке.
  *
- * isCurrent — это текущее выбранное (в блоке "ТЕКУЩЕЕ")
- * isDefault — это рекомендованное программой (зелёная обводка + бейдж).
- * isSelected — на нём сейчас стоит радио-точка (юзер выбрал).
+ * В НОВОМ ДИЗАЙНЕ (как в ExerciseCard и ExerciseActionMenu):
+ *  - сверху название упражнения
+ *  - ниже ряд тегов: цветной тег группы мышц + серый тег подгруппы
+ *  - снизу серая подпись подходов (meta_info)
+ *  - справа radio-кружок для выбора
  *
- * isDefault и isSelected — независимые штуки. Если default выбран — он и обведён,
- * и точка стоит. Если выбрали что-то другое — default остаётся обведённым
- * (как маркер базового), а точка переезжает на выбранное.
+ * isCurrent — это текущее выбранное упражнение в блоке "ТЕКУЩЕЕ"
+ * isDefault — это рекомендованное программой (зелёная обводка + бейдж "ОТ ПРОГРАММЫ")
+ * isSelected — на нём сейчас стоит радио-точка (юзер выбрал)
+ *
+ * muscleGroup приходит снаружи (со страницы тренировки), а не из самого
+ * exercise — потому что в выдаче getExercisesForSubgroup у объектов нет
+ * поля muscle_group (есть только sub_group и type). Подгруппа однозначно
+ * определяет группу, поэтому передаём её один раз для всей страницы.
  */
-function ExerciseRow({ exercise, isSelected, isCurrent, isDefault, onTap }) {
-  // Цвет обводки. Приоритет: selected > default > none.
-  // Если карточка одновременно selected и default — рисуем сплошную зелёную
-  // (selected важнее визуально, а default видно по бейджу).
+function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, onTap }) {
   let borderColor = 'transparent'
   if (isSelected) {
     borderColor = 'var(--color-primary)'
@@ -227,6 +239,11 @@ function ExerciseRow({ exercise, isSelected, isCurrent, isDefault, onTap }) {
     background = 'rgba(158, 209, 83, 0.05)'
   }
 
+  // Цвета и подписи тегов — те же что в большой карточке
+  const colors = getMuscleGroupColors(muscleGroup)
+  const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[muscleGroup] || (muscleGroup || ''))
+  const subGroupLabel = toTitleCase(SUB_GROUP_LABELS[exercise.sub_group] || (exercise.sub_group || ''))
+
   return (
     <button onClick={onTap} className="press-tile" style={{
       ...rowStyles.row,
@@ -242,12 +259,29 @@ function ExerciseRow({ exercise, isSelected, isCurrent, isDefault, onTap }) {
       </div>
 
       <div style={rowStyles.content}>
+        {/* 1. Название + бейдж "ОТ ПРОГРАММЫ" если применимо */}
         <div style={rowStyles.nameRow}>
           <div style={rowStyles.name}>{exercise.name}</div>
           {isDefault && (
             <span style={rowStyles.defaultBadge}>ОТ ПРОГРАММЫ</span>
           )}
         </div>
+
+        {/* 2. Теги: цветной (группа) + серый (подгруппа) */}
+        <div style={rowStyles.tagsRow}>
+          {groupLabel && (
+            <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF' }}>
+              {groupLabel}
+            </span>
+          )}
+          {subGroupLabel && (
+            <span style={{ ...rowStyles.tag, ...rowStyles.tagSecondary }}>
+              {subGroupLabel}
+            </span>
+          )}
+        </div>
+
+        {/* 3. Подходы — снизу серой подписью */}
         {exercise.meta_info && (
           <div style={rowStyles.meta}>{exercise.meta_info}</div>
         )}
@@ -265,10 +299,19 @@ function ExerciseRow({ exercise, isSelected, isCurrent, isDefault, onTap }) {
   )
 }
 
+function toTitleCase(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
 const styles = {
+  // Опущено под системные кнопки Telegram — как в WorkoutDay (через --tg-safe-top)
   page: {
-    padding: '16px 16px 100px',
-    minHeight: '100vh'
+    paddingTop: 'var(--tg-safe-top)',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    paddingBottom: '100px',
+    minHeight: '100dvh'
   },
   header: {
     marginBottom: '20px',
@@ -364,37 +407,36 @@ const rowStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '10px 12px',
+    padding: '12px',
     background: 'var(--color-card)',
     border: '2px solid transparent',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '76px',
+    minHeight: '90px',
     textAlign: 'left',
     transition: 'background 0.2s ease, border-color 0.2s ease'
   },
   preview: {
     flexShrink: 0,
-    width: '56px',
-    height: '56px',
-    borderRadius: '12px',
+    width: '64px',
+    height: '64px',
+    borderRadius: '14px',
     overflow: 'hidden',
-    background: 'rgba(255, 255, 255, 0.04)',
+    background: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewPlaceholder: { fontSize: '24px' },
+  previewPlaceholder: { fontSize: '28px', opacity: 0.4 },
   content: {
     flex: 1,
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '3px'
+    gap: '5px'
   },
-  // Имя + бейдж "ОТ ПРОГРАММЫ" в одной строке.
-  // Если имя длинное и бейдж не помещается — flexWrap отправит его на новую строку.
+  // Имя + бейдж "ОТ ПРОГРАММЫ" в одной строке (бейдж переносится если не помещается)
   nameRow: {
     display: 'flex',
     alignItems: 'center',
@@ -402,11 +444,11 @@ const rowStyles = {
     flexWrap: 'wrap'
   },
   name: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: 'var(--color-text)',
-    lineHeight: 1.25
+    fontFamily: 'var(--font-geist)',
+    fontSize: '13px',
+    fontWeight: 700,
+    lineHeight: '16px',
+    color: 'var(--color-text)'
   },
   defaultBadge: {
     fontFamily: 'var(--font-tiny5)',
@@ -418,11 +460,37 @@ const rowStyles = {
     letterSpacing: '1px',
     whiteSpace: 'nowrap'
   },
+  // Те же правила что в action-menu — компактные теги
+  tagsRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '5px',
+    flexWrap: 'wrap'
+  },
+  tag: {
+    display: 'inline-block',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 700,
+    letterSpacing: '0.2px',
+    lineHeight: '13px',
+    whiteSpace: 'nowrap'
+  },
+  tagSecondary: {
+    background: 'rgba(255, 255, 255, 0.08)',
+    color: '#A0A0A0',
+    fontWeight: 600
+  },
   meta: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.5px'
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 500,
+    letterSpacing: '0.03em',
+    color: '#888888',
+    lineHeight: '13px'
   },
   radio: {
     flexShrink: 0,

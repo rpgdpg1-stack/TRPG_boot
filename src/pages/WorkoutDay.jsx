@@ -146,7 +146,8 @@ export default function WorkoutDay() {
         type: slot.type,
         currentExerciseId: slot.exercise_id,
         currentExerciseName: slot.exercise_name,
-        defaultExerciseId
+        defaultExerciseId,
+        muscleGroup: slot.muscle_group
       }
     })
   }
