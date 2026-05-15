@@ -1,18 +1,16 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
-import { clearAllData } from '../lib/storage'
+import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 
 /**
  * Экран настроек.
  *
- * Доступен через шестерёнку Telegram в шапке и через тап на аватар на главной.
- *
- * При входе показывает кнопку "Назад" в шапке, которая возвращает на
- * предыдущий маршрут React Router. Cleanup НЕ скрывает кнопку — пусть
- * следующая страница сама решит что с ней делать (она это сделает через
- * свой useEffect при маунте).
+ * В группе СИСТЕМА два пункта-обнулялки:
+ *  - "Сбросить порядок дней" — стирает только цикл A/B/C для программы СПЛИТ,
+ *    мускулы и стрик не трогает. Юзер сам выберет с какого дня начать заново.
+ *  - "Сбросить прогресс" — полный обнул всего.
  */
 export default function Settings() {
   const navigate = useNavigate()
@@ -20,9 +18,6 @@ export default function Settings() {
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
-    // Никакого cleanup для backButton — иначе будет мерцание между unmount
-    // Settings и mount следующей страницы. Следующая страница сама поставит
-    // правильный handler или спрячет кнопку.
   }, [navigate])
 
   const groups = [
@@ -51,7 +46,8 @@ export default function Settings() {
         { id: 'feedback',      icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
         { id: 'gift',          icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
         { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' },
-        { id: 'debug-reset',   icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик' }
+        { id: 'debug-reset-days', icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново' },
+        { id: 'debug-reset',      icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик' }
       ]
     }
   ]
@@ -59,6 +55,27 @@ export default function Settings() {
   const handleSectionTap = async (item) => {
     haptic.light()
 
+    // Лёгкий сброс: только цикл A/B/C, без потери прогресса
+    if (item.id === 'debug-reset-days') {
+      const confirmed = await tgConfirm(
+        'Сбросить порядок дней?\n\nПрогресс, мускулы и стрик НЕ пострадают.\n\nПосле сброса все три буквы дней станут серыми — выберешь сам с какого дня хочешь начать.'
+      )
+      if (!confirmed) return
+
+      try {
+        // Сбрасываем для всех программ которые могут появиться. Пока одна — СПЛИТ.
+        await resetProgramDayCycle('split')
+        haptic.success()
+        window.alert('Порядок дней сброшен. Перезайди в приложение чтобы увидеть изменения.')
+      } catch (err) {
+        console.error('[Settings] reset days failed:', err)
+        haptic.error()
+        window.alert('Не удалось сбросить порядок дней. Проверь подключение.')
+      }
+      return
+    }
+
+    // Тяжёлый сброс: всё подчистую
     if (item.id === 'debug-reset') {
       const confirmed = await tgConfirm(
         'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все выполненные квесты, история начислений.\n\nЭто действие нельзя отменить.'
@@ -87,28 +104,34 @@ export default function Settings() {
         <section key={group.title} style={{ ...styles.group, marginTop: idx === 0 ? '8px' : '24px' }}>
           <h3 style={styles.groupTitle}>{group.title}</h3>
           <div style={styles.items}>
-            {group.items.map(item => (
-              <button
-                key={item.id}
-                onClick={() => handleSectionTap(item)}
-                style={{
-                  ...styles.itemCard,
-                  ...(item.id === 'debug-reset' ? styles.itemCardDanger : {})
-                }}
-              >
-                <span style={styles.itemIcon}>{item.icon}</span>
-                <div style={styles.itemContent}>
-                  <div style={{
-                    ...styles.itemTitle,
-                    color: item.id === 'debug-reset' ? '#FF8C42' : 'var(--color-text)'
-                  }}>
-                    {item.title}
+            {group.items.map(item => {
+              const isDanger = item.id === 'debug-reset'
+              const isWarning = item.id === 'debug-reset-days'
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSectionTap(item)}
+                  style={{
+                    ...styles.itemCard,
+                    ...(isDanger ? styles.itemCardDanger : {}),
+                    ...(isWarning ? styles.itemCardWarning : {})
+                  }}
+                >
+                  <span style={styles.itemIcon}>{item.icon}</span>
+                  <div style={styles.itemContent}>
+                    <div style={{
+                      ...styles.itemTitle,
+                      color: isDanger ? '#FF8C42' : isWarning ? '#FFD700' : 'var(--color-text)'
+                    }}>
+                      {item.title}
+                    </div>
+                    <div style={styles.itemSubtitle}>{item.subtitle}</div>
                   </div>
-                  <div style={styles.itemSubtitle}>{item.subtitle}</div>
-                </div>
-                <span style={styles.itemArrow}>›</span>
-              </button>
-            ))}
+                  <span style={styles.itemArrow}>›</span>
+                </button>
+              )
+            })}
           </div>
         </section>
       ))}
@@ -122,7 +145,10 @@ const styles = {
   groupTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '11px', color: 'var(--color-text-secondary)', letterSpacing: '2px', fontWeight: 'normal', marginBottom: '10px', paddingLeft: '16px' },
   items: { display: 'flex', flexDirection: 'column', gap: '6px' },
   itemCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 18px', background: 'var(--color-card)', borderRadius: 'var(--radius-small)', width: '100%', textAlign: 'left', minHeight: '52px', transition: 'background 0.15s ease' },
+  // Сброс прогресса — оранжевый, "опасное" действие
   itemCardDanger: { background: 'rgba(255, 140, 66, 0.06)', border: '1px solid rgba(255, 140, 66, 0.2)' },
+  // Сброс порядка дней — жёлтый, "осторожное" действие (мягче чем danger)
+  itemCardWarning: { background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.18)' },
   itemIcon: { fontSize: '20px', width: '28px', textAlign: 'center' },
   itemContent: { flex: 1, minWidth: 0 },
   itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, marginBottom: '1px' },

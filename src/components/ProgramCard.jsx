@@ -84,12 +84,17 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
         (там где есть смысл говорить "сегодня день B"). Текущий день
         зелёный и крупнее, остальные серые. Слово "Дни:" тоже серое.
       */}
-      {available && (
+{available && (
         <div style={styles.daysRow}>
-          <span style={styles.daysLabel}>День:</span>
+          <span style={styles.daysLabel}>Дни:</span>
           <div style={styles.daysList}>
             {allDays.map(d => {
-              const isToday = d === today
+              // hasRecommendation — был ли уже хоть один завершённый день.
+              // Если нет (новый юзер / только что сделан сброс цикла) — все
+              // буквы серые одинакового размера. Подсвечивание появится после
+              // первого завершения.
+              const hasRecommendation = !!activeDay
+              const isToday = hasRecommendation && d === activeDay
               return (
                 <span
                   key={d}

@@ -1,10 +1,13 @@
 /**
  * Хранилище данных пользователя.
  *
- * setLastCompletedDay теперь "идемпотентна по дню": если сегодня уже было
- * завершение, повторный вызов с любым day НЕ меняет сохранённый last_day.
- * Это значит цикл A→B→C сдвигается ровно один раз в сутки, как бы юзер
- * ни тапал "Завершить тренировку".
+ * setLastCompletedDay идемпотентна по дате: повторное завершение в тот же
+ * день не сдвигает цикл. Дату читаем синхронно из localStorage чтобы
+ * избежать гонок с Cloud.
+ *
+ * resetProgramDayCycle — отдельный сброс ТОЛЬКО порядка дней A/B/C.
+ * Не трогает мускулы, стрик, историю — полезно когда юзер хочет сменить
+ * стартовую точку цикла без потери прогресса.
  */
 
 import { supabase } from './supabase'
@@ -75,9 +78,6 @@ export async function getUserLevel() {
   return getLevelFromXP(await getTotalXP())
 }
 
-/**
- * Последние N начислений мускулов — для попапа в PlayerCard.
- */
 export async function getRecentMuscleHistory(limit = 5) {
   const userId = getUserId()
   if (!userId) return []
@@ -274,12 +274,9 @@ export async function completeQuest(questId, reward = 20) {
 /* ============================================ */
 
 /**
- * Какой день рекомендовать сейчас. Берём last_day из CloudStorage и сдвигаем
- * на следующий по циклу A→B→C→A. Если last_day ещё не записан (юзер ничего
- * не отжимал) — возвращаем null, дальше код подставит 'A'.
- *
- * ВАЖНО: повторное завершение в тот же день НЕ меняет last_day (см. setLastCompletedDay),
- * поэтому рекомендация остаётся стабильной до полуночи.
+ * Какой день рекомендовать сейчас. Сдвиг last_day → следующий по циклу.
+ * Если last_day отсутствует (юзер ничего не отжимал или только что сбросил
+ * порядок) — возвращаем null. UI с этим null правильно покажет "все буквы серые".
  */
 export async function getActiveDay(programId) {
   const lastCompleted = await cloudGet(`program:${programId}:last_day`)
@@ -290,14 +287,10 @@ export async function getActiveDay(programId) {
 
 /**
  * Записать какой день был завершён последним. Идемпотентно по дате:
- *  - Если сегодня уже что-то записано → НИЧЕГО не меняем (повторное завершение
- *    в тот же день не сдвигает цикл).
- *  - Если последнее завершение было вчера или раньше (или вообще не было) →
- *    записываем новый day и сегодняшнюю дату.
+ *  - Если сегодня уже записано → ничего не делаем.
+ *  - Иначе → пишем новый day и сегодняшнюю дату.
  *
- * Это даёт ожидаемое поведение: рекомендация на завтра определяется первым
- * завершением сегодняшнего дня. Все остальные тапы "Завершить" в течение
- * этого же дня — без эффекта.
+ * Дату читаем СИНХРОННО через localGet — никаких гонок с Cloud.
  */
 export async function setLastCompletedDay(programId, day) {
   const today = getTodayKey()
@@ -305,11 +298,6 @@ export async function setLastCompletedDay(programId, day) {
   const lastDayDateKey = `program:${programId}:last_day_date`
   const lastDayKey = `program:${programId}:last_day`
 
-  // Читаем дату последнего завершения СИНХРОННО из localStorage —
-  // без cloudGet, чтобы избежать гонок (cloud может вернуть устаревшее
-  // значение если предыдущая запись ещё не долетела до Cloud).
-  // Cloud-синк всё равно происходит через cloudSet ниже, между устройствами
-  // дата согласуется.
   const previousDateRaw = localGet(lastDayDateKey)
   const previousDate = previousDateRaw ? String(previousDateRaw).trim() : null
 
@@ -321,8 +309,6 @@ export async function setLastCompletedDay(programId, day) {
     willSkip: previousDate === today
   })
 
-  // Сегодня уже был отмечен какой-то день — игнорируем повторные нажатия.
-  // Цикл сдвинется только после полуночи (следующий getTodayKey).
   if (previousDate === today) {
     return
   }
@@ -331,6 +317,21 @@ export async function setLastCompletedDay(programId, day) {
   await cloudSet(lastDayDateKey, today)
 
   console.log('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
+}
+
+/**
+ * Сбросить ТОЛЬКО порядок дней программы — мускулы, стрик и история остаются.
+ *
+ * После этого:
+ *  - getActiveDay вернёт null → ProgramCard покажет все буквы серыми
+ *  - первое же завершение тренировки задаст новую точку отсчёта
+ *
+ * Использование: кнопка "Сбросить порядок дней" в настройках для случая когда
+ * юзер хочет начать новую неделю с другого дня (например, не с A, а с B).
+ */
+export async function resetProgramDayCycle(programId) {
+  await cloudRemove(`program:${programId}:last_day`)
+  await cloudRemove(`program:${programId}:last_day_date`)
 }
 
 export async function getPinnedPrograms() {
@@ -361,8 +362,6 @@ export async function clearAllData() {
 
   await cloudRemove('pinned_programs')
   await cloudRemove('program:split:last_day')
-  // Новый ключ — дата последнего завершения. Чистим тоже,
-  // иначе после reset рекомендация поведёт себя странно.
   await cloudRemove('program:split:last_day_date')
 
   ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
