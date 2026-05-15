@@ -1,20 +1,14 @@
 /**
  * Работа с упражнениями: альтернативы, веса, свапы.
  *
- * RPC функции в Supabase:
- *   - api_get_all_exercises      → все упражнения
- *   - api_get_user_weights       → веса пользователя
- *   - api_save_user_weight       → сохранить вес
- *   - api_get_user_swaps         → свапы пользователя
- *   - api_save_user_swap         → сохранить свап
- *
- * ВАЖНО: saveExerciseSwap принимает slug (например 'split'),
- * внутри конвертирует в dbId (например 'prog_001') для запроса в БД.
+ * ОБНОВЛЕНИЕ: при сохранении свапа или веса инвалидируем соответствующие
+ * куски кеша, чтобы следующее открытие дня показало актуальные данные.
  */
 
 import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
+import { cacheInvalidate } from '../../lib/cache'
 
 export async function getExercisesForSubgroup(subGroup, type) {
   try {
@@ -53,9 +47,7 @@ export async function getExerciseById(exerciseId) {
 }
 
 /**
- * Сохранить замену упражнения.
- *
- * @param {string} programSlug - slug из URL ('split'), внутри → dbId ('prog_001')
+ * Сохранить замену упражнения. После успеха инвалидирует кеши свапов и дней.
  */
 export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
   const user = getCurrentUser()
@@ -64,7 +56,6 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
     return false
   }
 
-  // Конвертация slug → dbId для запросов к БД
   const program = getProgramBySlug(programSlug)
   if (!program) {
     console.error('[exercises] saveExerciseSwap: unknown program slug:', programSlug)
@@ -74,7 +65,8 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
 
   console.log('[exercises] saveExerciseSwap:', { dbId, day, orderNum, exerciseId, userId: user.id })
 
-  // Попытка через RPC
+  let success = false
+
   try {
     const { error } = await supabase.rpc('api_save_user_swap', {
       p_user_id: user.id,
@@ -84,35 +76,48 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
       p_exercise_id: exerciseId
     })
     if (!error) {
-      console.log('[exercises] saveExerciseSwap: RPC success')
-      return true
+      success = true
+    } else {
+      console.warn('[exercises] saveExerciseSwap RPC error:', error)
     }
-    console.warn('[exercises] saveExerciseSwap RPC error:', error)
   } catch (e) {
     console.warn('[exercises] saveExerciseSwap RPC exception:', e)
   }
 
-  // Фоллбэк: прямой upsert
-  const { error } = await supabase.from('user_exercise_swaps').upsert({
-    user_id: user.id,
-    program_id: dbId,
-    day,
-    order_num: orderNum,
-    exercise_id: exerciseId,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id,program_id,day,order_num' })
+  if (!success) {
+    const { error } = await supabase.from('user_exercise_swaps').upsert({
+      user_id: user.id,
+      program_id: dbId,
+      day,
+      order_num: orderNum,
+      exercise_id: exerciseId,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,program_id,day,order_num' })
 
-  if (error) {
-    console.error('[exercises] saveExerciseSwap upsert error:', error)
-    return false
+    if (error) {
+      console.error('[exercises] saveExerciseSwap upsert error:', error)
+      return false
+    }
+    success = true
   }
-  console.log('[exercises] saveExerciseSwap: upsert success')
-  return true
+
+  // Инвалидируем кеши: и свапы, и собранные дни
+  if (success) {
+    cacheInvalidate(`user-swaps:${user.id}:${dbId}:`)
+    cacheInvalidate(`workout-day:${user.id}:${programSlug}:`)
+  }
+
+  return success
 }
 
+/**
+ * Сохранить вес. Инвалидируем кеш весов и кеш всех дней (вес влияет на отображение).
+ */
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
+
+  let success = false
 
   try {
     const { error } = await supabase.rpc('api_save_user_weight', {
@@ -120,19 +125,28 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
       p_exercise_id: exerciseId,
       p_weight_kg: weightKg
     })
-    if (!error) return true
+    if (!error) success = true
   } catch (e) {}
 
-  const { error } = await supabase.from('user_exercise_weights').upsert({
-    user_id: user.id,
-    exercise_id: exerciseId,
-    weight_kg: weightKg,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'user_id,exercise_id' })
+  if (!success) {
+    const { error } = await supabase.from('user_exercise_weights').upsert({
+      user_id: user.id,
+      exercise_id: exerciseId,
+      weight_kg: weightKg,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,exercise_id' })
 
-  if (error) {
-    console.error('[exercises] saveExerciseWeight error:', error)
-    return false
+    if (error) {
+      console.error('[exercises] saveExerciseWeight error:', error)
+      return false
+    }
+    success = true
   }
-  return true
+
+  if (success) {
+    cacheInvalidate(`user-weights:${user.id}`)
+    cacheInvalidate(`workout-day:${user.id}:`)
+  }
+
+  return success
 }

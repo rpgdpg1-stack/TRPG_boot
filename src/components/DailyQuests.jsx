@@ -1,17 +1,23 @@
 import { useEffect, useState, useRef } from 'react'
 import { haptic } from '../lib/telegram'
-import { getDailyQuests, completeQuest } from '../lib/storage'
+import { getDailyQuests, getDailyQuestsSync, completeQuest } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import PixelCheckbox from './PixelCheckbox'
 
 /**
- * Дневной буст — 3 ежедневных квеста по 20 💪 каждый.
+ * Дневной буст — 3 ежедневных квеста по 20 мускулов.
  *
- * Заголовок "ДНЕВНОЙ БУСТ" живёт в Home.jsx снаружи блока.
+ * ОБНОВЛЕНИЕ: моментальный первый рендер из localStorage.
  *
- * Когда все 3 буста собраны — список квестов плавно исчезает через opacity,
- * а на его место появляется компактный текст "Все бусты собраны...".
- * Контейнер сам подстраивается под содержимое — без жёстких maxHeight.
+ * Раньше: маунт → запрос в БД → пока запрос идёт показываем "ничего не выполнено"
+ *         → ответ приходит → если все выполнены, схлопываемся в "Все бусты собраны"
+ *         → юзер видит МОРГАНИЕ.
+ *
+ * Теперь: маунт → getDailyQuestsSync() из localStorage СИНХРОННО → корректный
+ *         первый рендер → параллельно фоновый getDailyQuests() из БД → если
+ *         состояние совпало (обычный случай) ничего не меняется. Если БД
+ *         отдала что-то новое — обновляем без моргания, т.к. меняются конкретные
+ *         квесты, а не весь блок.
  */
 
 const DEMO_QUESTS = [
@@ -21,13 +27,15 @@ const DEMO_QUESTS = [
 ]
 
 export default function DailyQuests() {
-  const [completed, setCompleted] = useState({})
+  // Первый рендер берётся из localStorage синхронно — без моргания
+  const [completed, setCompleted] = useState(() => getDailyQuestsSync())
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
 
   const lastTapRef = useRef({})
 
   useEffect(() => {
+    // Фоновая синхронизация с БД
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
     loadQuests()
 
@@ -68,7 +76,6 @@ export default function DailyQuests() {
   return (
     <div style={styles.container}>
 
-      {/* Когда все собраны — показываем только текст. Если нет — список квестов. */}
       {allDone ? (
         <div style={styles.allDoneText}>
           Все бусты на сегодня собраны.<br />

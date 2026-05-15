@@ -1,10 +1,11 @@
 /**
  * Хранилище данных пользователя.
  *
- * Архитектура:
- *  - Критичное → Supabase: мускулы, стрик, daily quests, история тренировок
- *  - UI-состояние → CloudStorage Telegram (синк между устройствами): закрепы, активный день
- *  - Локально → localStorage: только как быстрый кеш Cloud
+ * ОБНОВЛЕНИЕ:
+ *  - DailyQuests теперь читаются из localStorage для МОМЕНТАЛЬНОГО первого
+ *    рендера (убираем моргание на главной). Параллельно идёт фоновый запрос
+ *    в БД для синхронизации.
+ *  - Добавлена getRecentMuscleHistory — для попапа последних начислений.
  */
 
 import { supabase } from './supabase'
@@ -13,18 +14,15 @@ import { EVENTS, emit } from './events'
 import { getLevelFromXP } from './levels'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
 import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
-import { localRemove } from '../utils/storage'
-
-/* ============================================ */
-/* ВНУТРЕННИЕ ХЕЛПЕРЫ */
-/* ============================================ */
+import { localGet, localSet, localRemove } from '../utils/storage'
+import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 
 function getUserId() {
   return getCurrentUser()?.id || null
 }
 
 /* ============================================ */
-/* МУСКУЛЫ 💪 */
+/* МУСКУЛЫ */
 /* ============================================ */
 
 export async function getTotalXP() {
@@ -52,6 +50,10 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
 
   const u = getCurrentUser()
   if (u) setCurrentUser({ ...u, total_muscles: data })
+
+  // История начислений обновилась — сбросим её кеш
+  cacheInvalidate(`muscle-history:${userId}`)
+
   return data
 }
 
@@ -73,6 +75,54 @@ export async function setTotalXP(value) {
 
 export async function getUserLevel() {
   return getLevelFromXP(await getTotalXP())
+}
+
+/**
+ * Последние N начислений мускулов — для попапа в PlayerCard.
+ * Возвращает массив { amount, source, created_at }.
+ *
+ * Кешируется на 5 минут, инвалидируется при любом начислении (addXP, completeQuest, finishWorkout).
+ */
+export async function getRecentMuscleHistory(limit = 5) {
+  const userId = getUserId()
+  if (!userId) return []
+
+  const cacheKey = `muscle-history:${userId}:${limit}`
+  const cached = cacheGet(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase.rpc('api_get_recent_muscle_history', {
+      p_user_id: userId,
+      p_limit: limit
+    })
+
+    if (error) {
+      console.warn('[storage] getRecentMuscleHistory RPC error:', error)
+      // Fallback на прямой SELECT
+      const { data: fb, error: fbErr } = await supabase
+        .from('muscle_history')
+        .select('amount, source, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (fbErr) {
+        console.error('[storage] getRecentMuscleHistory fallback error:', fbErr)
+        return []
+      }
+      const result = fb || []
+      cacheSet(cacheKey, result, TTL.MEDIUM)
+      return result
+    }
+
+    const result = data || []
+    cacheSet(cacheKey, result, TTL.MEDIUM)
+    return result
+  } catch (e) {
+    console.error('[storage] getRecentMuscleHistory exception:', e)
+    return []
+  }
 }
 
 /* ============================================ */
@@ -121,7 +171,7 @@ export async function addWorkoutToWeek() {
 }
 
 /* ============================================ */
-/* СОВМЕСТИМОСТЬ — старые экраны */
+/* СОВМЕСТИМОСТЬ */
 /* ============================================ */
 
 export async function getStreak() { return getWeeklyStreak() }
@@ -140,9 +190,41 @@ export async function getTotalWorkouts() {
 }
 
 /* ============================================ */
-/* DAILY QUESTS */
+/* DAILY QUESTS — с кешем в localStorage против моргания */
 /* ============================================ */
 
+/**
+ * Ключ для кеша квестов в localStorage. Привязан к дню чтобы автоматически
+ * сбрасывался в новый день — старый ключ остаётся, новый пустой → fresh state.
+ */
+function getDailyQuestsCacheKey() {
+  const userId = getUserId()
+  return userId ? `daily-quests-cache:${userId}:${getTodayKey()}` : null
+}
+
+/**
+ * Синхронно вернуть закешированные квесты из localStorage.
+ * Если кеша нет — пустой объект. Используется для МОМЕНТАЛЬНОГО первого
+ * рендера DailyQuests на главной (без моргания).
+ */
+export function getDailyQuestsSync() {
+  const key = getDailyQuestsCacheKey()
+  if (!key) return {}
+
+  const raw = localGet(key)
+  if (!raw) return {}
+
+  try {
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Загрузить квесты из БД и обновить локальный кеш.
+ */
 export async function getDailyQuests() {
   const userId = getUserId()
   if (!userId) return {}
@@ -155,11 +237,17 @@ export async function getDailyQuests() {
 
   if (error) {
     console.error('[storage] getDailyQuests error:', error)
-    return {}
+    // При ошибке возвращаем хотя бы локальный кеш — лучше чем ничего
+    return getDailyQuestsSync()
   }
 
   const result = {}
   for (const row of data || []) result[row.quest_id] = true
+
+  // Обновляем кеш в localStorage
+  const key = getDailyQuestsCacheKey()
+  if (key) localSet(key, JSON.stringify(result))
+
   return result
 }
 
@@ -190,6 +278,8 @@ export async function completeQuest(questId, reward = 20) {
       setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
       emit(EVENTS.USER_CHANGED, getCurrentUser())
     }
+    // История начислений обновилась
+    cacheInvalidate(`muscle-history:${userId}`)
   }
 
   const completed = await getDailyQuests()
@@ -201,8 +291,7 @@ export async function completeQuest(questId, reward = 20) {
 }
 
 /* ============================================ */
-/* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ — теперь через Telegram CloudStorage           */
-/* Синхронизируются между всеми устройствами одного Telegram-аккаунта.   */
+/* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ */
 /* ============================================ */
 
 export async function getActiveDay(programId) {
@@ -242,16 +331,20 @@ export async function togglePin(programId) {
 export async function clearAllData() {
   const userId = getUserId()
 
-  // Чистим Cloud-ключи (синкается между устройствами)
   await cloudRemove('pinned_programs')
   await cloudRemove('program:split:last_day')
 
-  // Чистим локальные UI-ключи которые НЕ в Cloud
   ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
+
+  // Чистим кеш квестов в localStorage
+  const questsKey = getDailyQuestsCacheKey()
+  if (questsKey) localRemove(questsKey)
+
+  // Чистим in-memory кеш
+  cacheInvalidate('')
 
   if (!userId) return
 
-  // Сбрасываем профиль юзера в БД
   await supabase.from('users').update({
     total_muscles: 0,
     weekly_streak: 0,

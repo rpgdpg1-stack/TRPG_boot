@@ -1,14 +1,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
-import { getTotalXP, getWeeklyStreak } from '../lib/storage'
+import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory } from '../lib/storage'
 import {
   getLevelFromXP,
   getRankByLevel,
   getLevelProgress,
   getXPInCurrentLevel,
-  getTotalXPProgress,
-  XP_REWARDS
+  getTotalXPProgress
 } from '../lib/levels'
 import { pluralizeWorkouts } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
@@ -20,20 +19,35 @@ import RanksPopup from './RanksPopup'
 /**
  * Главный блок персонажа на Главной.
  *
- * XP-бар:
- *  - Полоска заполняется по прогрессу внутри текущего уровня (getLevelProgress)
- *  - Цифры показывают общий счёт мускулов / порог следующего уровня
- *    (getTotalXPProgress). На уровне 2 с 320 мускулами видно "320 / 600".
+ * ОБНОВЛЕНИЕ XP-popup:
+ *  Раньше показывалась таблица "за что сколько мускулов" — это статичная
+ *  справка, мало кому нужная. Теперь показываем:
+ *   - Последние 3 начисления (что свежее — выше)
+ *   - Разделитель
+ *   - "До следующего ранга «Новобранец 2» X 💪" — мотивация
  *
- * Попап с наградами под баром использует getXPInCurrentLevel — там
- * "до следующего уровня X 💪" — это разница в рамках текущего уровня.
+ *  Источник данных — таблица muscle_history через getRecentMuscleHistory.
  */
+
+// Человекочитаемые названия источников начисления для попапа
+const SOURCE_LABELS = {
+  workout: 'Тренировка',
+  quest:   'Дневной буст',
+  streak:  'Бонус за серию',
+  manual:  'Начисление'
+}
+
+function formatSourceLabel(source) {
+  return SOURCE_LABELS[source] || 'Начисление'
+}
+
 export default function PlayerCard() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState(null)
   const [xp, setXP] = useState(0)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
+  const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showStreakHint, setShowStreakHint] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
@@ -50,9 +64,14 @@ export default function PlayerCard() {
     setUser(getUser())
 
     const loadData = () => {
-      Promise.all([getTotalXP(), getWeeklyStreak()]).then(([xpVal, streak]) => {
+      Promise.all([
+        getTotalXP(),
+        getWeeklyStreak(),
+        getRecentMuscleHistory(3)
+      ]).then(([xpVal, streak, history]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
+        setRecentHistory(history)
       })
     }
 
@@ -66,6 +85,14 @@ export default function PlayerCard() {
       offChanged()
     }
   }, [])
+
+  // Обновляем историю каждый раз когда юзер открывает попап
+  // (на случай если что-то начислилось пока попап был закрыт)
+  useEffect(() => {
+    if (showXPDetails) {
+      getRecentMuscleHistory(3).then(setRecentHistory)
+    }
+  }, [showXPDetails])
 
   useEffect(() => {
     if (!showXPDetails && !showStreakHint) return
@@ -87,7 +114,7 @@ export default function PlayerCard() {
 
   useEffect(() => {
     if (showXPDetails) {
-      xpAutoCloseTimer.current = setTimeout(() => setShowXPDetails(false), 4000)
+      xpAutoCloseTimer.current = setTimeout(() => setShowXPDetails(false), 6000)
     }
     return () => { if (xpAutoCloseTimer.current) clearTimeout(xpAutoCloseTimer.current) }
   }, [showXPDetails])
@@ -103,11 +130,12 @@ export default function PlayerCard() {
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
 
-  // Цифры внутри XP-бара: общий счёт мускулов / порог следующего уровня
   const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
-
-  // Для попапа с наградами — разница до следующего уровня в рамках текущего
   const { current: inLevelCurrent, needed: inLevelNeeded } = getXPInCurrentLevel(xp)
+
+  // Имя СЛЕДУЮЩЕГО ранга — "До «Новобранец 2» X 💪"
+  const nextRank = getRankByLevel(level + 1)
+  const remainingToNext = Math.max(0, inLevelNeeded - inLevelCurrent)
 
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
@@ -214,8 +242,6 @@ export default function PlayerCard() {
 
       <div style={styles.xpBlock}>
         <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
-          {/* progress — заполнение полоски (% внутри уровня)
-              current/needed — цифры (общий счёт / порог следующего уровня) */}
           <XPBar
             progress={progress}
             color={rank.color}
@@ -226,22 +252,36 @@ export default function PlayerCard() {
 
         {showXPDetails && (
           <div ref={xpPopupRef} style={styles.popup}>
+
+            {/* Заголовок последних начислений */}
+            <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
+
+            {recentHistory.length === 0 ? (
+              <div style={styles.popupEmpty}>
+                Пока пусто.<br />
+                Выполни буст или тренировку, чтобы заработать первые мускулы.
+              </div>
+            ) : (
+              <div style={styles.popupHistoryList}>
+                {recentHistory.map((row, idx) => (
+                  <div key={idx} style={styles.popupHistoryRow}>
+                    <span style={styles.popupHistoryAmount}>+{row.amount} 💪</span>
+                    <span style={styles.popupHistoryLabel}>{formatSourceLabel(row.source)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Разделитель */}
+            <div style={styles.popupDivider} />
+
+            {/* Прогресс до следующего ранга */}
             <div style={styles.popupRow}>
-              <span>За тренировку</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.WORKOUT_COMPLETE} 💪</span>
-            </div>
-            <div style={styles.popupRow}>
-              <span>За серию (3 дня)</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_3DAYS} 💪</span>
-            </div>
-            <div style={styles.popupRow}>
-              <span>За серию (7 дней)</span>
-              <span style={styles.popupValue}>+{XP_REWARDS.STREAK_BONUS_7DAYS} 💪</span>
-            </div>
-            <div style={{ ...styles.popupRow, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
-              <span>До следующего уровня</span>
+              <span style={styles.popupNextLabel}>
+                До «{nextRank.name} {nextRank.subLevel}»
+              </span>
               <span style={{ ...styles.popupValue, color: rank.color }}>
-                {inLevelNeeded - inLevelCurrent} 💪
+                {remainingToNext} 💪
               </span>
             </div>
           </div>
@@ -277,8 +317,8 @@ export default function PlayerCard() {
       <style>{`
         @keyframes popupShowHide {
           0%   { opacity: 0; transform: translateY(-6px); }
-          6%   { opacity: 1; transform: translateY(0); }
-          94%  { opacity: 1; transform: translateY(0); }
+          4%   { opacity: 1; transform: translateY(0); }
+          96%  { opacity: 1; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(-4px); }
         }
         @keyframes popupShowHideCentered {
@@ -398,19 +438,77 @@ const styles = {
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '20px',
-    padding: '14px 16px',
+    padding: '14px 16px 12px',
     zIndex: 50,
-    animation: 'popupShowHide 4.4s ease-out forwards'
+    animation: 'popupShowHide 6.4s ease-out forwards'
+  },
+  // Заголовок секции "ПОСЛЕДНИЕ НАЧИСЛЕНИЯ"
+  popupSectionTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px',
+    marginBottom: '8px',
+    paddingLeft: '2px'
+  },
+  // Список последних начислений
+  popupHistoryList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    marginBottom: '4px'
+  },
+  popupHistoryRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '4px 2px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px'
+  },
+  popupHistoryAmount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px',
+    minWidth: '58px',
+    flexShrink: 0
+  },
+  popupHistoryLabel: {
+    color: 'var(--color-text)',
+    flex: 1
+  },
+  popupEmpty: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    padding: '8px 4px',
+    lineHeight: 1.5
+  },
+  // Тонкая разделительная черта между историей и "до следующего ранга"
+  popupDivider: {
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    margin: '8px 0'
   },
   popupRow: {
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'center',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    padding: '4px 0'
+    padding: '2px 0'
   },
-  popupValue: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-primary)', letterSpacing: '1px' },
+  popupNextLabel: {
+    color: 'var(--color-text)',
+    fontWeight: 600
+  },
+  popupValue: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px'
+  },
   streakWrap: { position: 'relative', marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   streakRow: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent' },
   streakPopup: {
