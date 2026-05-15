@@ -198,7 +198,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  return (
+return (
     <div
       onClick={handleCardClick}
       onPointerDown={handleCardPointerDown}
@@ -206,6 +206,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerUp={handleCardPointerUp}
       onPointerCancel={handleCardPointerUp}
       onPointerLeave={handleCardPointerUp}
+      className="press-exercise-card"
       style={{
         ...styles.card,
         background: isActive ? '#222222' : '#1C1C1C',

@@ -55,8 +55,7 @@
   --press-duration: 120ms;
   --press-ease: cubic-bezier(0.4, 0, 0.6, 1);
 
-  /* Safe-area под Telegram nav. Увеличено со 92px до 116px —
-     нативные кнопки "Назад" и "⋯" Telegram перекрывали контент. */
+  /* Safe-area под Telegram nav. */
   --tg-safe-top: 116px;
 }
 
@@ -128,7 +127,7 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* ============================================ */
-/* PRESS-эффект */
+/* PRESS-эффект (универсальный) */
 /* ============================================ */
 
 .press-tile {
@@ -142,6 +141,35 @@ img, button { -webkit-user-drag: none; }
 .press-tile:active {
   transform: scale(var(--press-scale));
   transition: transform 60ms var(--press-ease);
+}
+
+/* ============================================ */
+/* PRESS-эффект для карточек упражнений */
+/* ============================================ */
+
+/*
+  У карточки упражнения уже есть свой transition на background (3 свойства
+  одновременно — для смены состояния isActive). Поэтому добавляем transform
+  через отдельный класс, не ломая существующее.
+
+  При тапе:
+   - scale 0.98 (чуть слабее чем у press-tile — карточки крупные, перебор смотрится плохо)
+   - 70мс на нажатие (быстро ощущается), 150мс на возврат (мягко отпускается)
+
+  При скролле палец двигается до отпускания → браузер сам отменяет :active,
+  никаких "залипаний" не будет. Это родное поведение CSS, не надо ничего делать.
+*/
+.press-exercise-card {
+  transition:
+    transform 150ms var(--press-ease),
+    background 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+.press-exercise-card:active {
+  transform: scale(0.98);
+  transition: transform 70ms var(--press-ease);
 }
 
 /* ============================================ */
@@ -167,8 +195,6 @@ img, button { -webkit-user-drag: none; }
 }
 
 /* === АНИМАЦИЯ ПЕРЕХОДА МЕЖДУ ДНЯМИ === */
-/* Используется при свайпе/клике стрелок: буква вылетает в одну сторону,
-   приезжает с другой. Чистый iOS-feel. */
 
 .day-letter-slide-in-right {
   animation: dayLetterInRight 0.32s var(--ease-ios) both;

@@ -86,7 +86,7 @@ export default function ProgramCard({ id, title, tags = [], available = true, co
       */}
       {available && (
         <div style={styles.daysRow}>
-          <span style={styles.daysLabel}>Дни:</span>
+          <span style={styles.daysLabel}>День:</span>
           <div style={styles.daysList}>
             {allDays.map(d => {
               const isToday = d === today
