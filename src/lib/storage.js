@@ -305,7 +305,21 @@ export async function setLastCompletedDay(programId, day) {
   const lastDayDateKey = `program:${programId}:last_day_date`
   const lastDayKey = `program:${programId}:last_day`
 
-  const previousDate = await cloudGet(lastDayDateKey)
+  // Читаем дату последнего завершения СИНХРОННО из localStorage —
+  // без cloudGet, чтобы избежать гонок (cloud может вернуть устаревшее
+  // значение если предыдущая запись ещё не долетела до Cloud).
+  // Cloud-синк всё равно происходит через cloudSet ниже, между устройствами
+  // дата согласуется.
+  const previousDateRaw = localGet(lastDayDateKey)
+  const previousDate = previousDateRaw ? String(previousDateRaw).trim() : null
+
+  console.log('[setLastCompletedDay] called:', {
+    programId,
+    day,
+    today,
+    previousDate,
+    willSkip: previousDate === today
+  })
 
   // Сегодня уже был отмечен какой-то день — игнорируем повторные нажатия.
   // Цикл сдвинется только после полуночи (следующий getTodayKey).
@@ -315,6 +329,8 @@ export async function setLastCompletedDay(programId, day) {
 
   await cloudSet(lastDayKey, day)
   await cloudSet(lastDayDateKey, today)
+
+  console.log('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
 }
 
 export async function getPinnedPrograms() {
