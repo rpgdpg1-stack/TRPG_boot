@@ -386,8 +386,16 @@ const styles = {
     letterSpacing: '2px',
     paddingLeft: '4px'
   },
-  // Список альтернатив — обычный блок в потоке, скроллится со страницей
+  // Список альтернатив — растянут на ту же ширину что и stickyTop
+  // (margin -16px + padding 16px по бокам). Без этого список оказывается
+  // в "узкой" зоне внутри page.paddingLeft/Right, и карточки визуально
+  // обрезаются по краям при первом открытии страницы.
+  // paddingTop: 16px — зазор между заголовком "АЛЬТЕРНАТИВЫ" и первой карточкой.
   alternativesList: {
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
     paddingTop: '16px'
   },
   altList: {
