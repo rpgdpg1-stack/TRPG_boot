@@ -11,12 +11,19 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * Шапка — sticky, как на странице дня тренировки (WorkoutDay). Один и тот же
- * paddingTop у шапки + paddingTop у тела страницы, чтобы при любом количестве
- * карточек (4 или 20) визуальная высота шапки была одинаковой, без пустоты сверху.
+ * Архитектура шапки — копия WorkoutDay:
+ *  - position: sticky + top: 0 → шапка прилипает к верху при скролле
+ *  - paddingTop: var(--tg-safe-top) → отступ под системные кнопки Telegram
+ *    (то же значение что используется на странице дня тренировки — проверено)
+ *  - background: var(--color-bg) → шапка непрозрачная, контент под ней
+ *    не просвечивает при скролле
  *
- * Нижняя кнопка "СМЕНИТЬ" фиксирована к низу экрана. На /swap/... таб-бар скрыт,
- * поэтому отступ снизу простой — без учёта таб-бара.
+ * Тело страницы (body) НЕ дублирует отступ сверху — шапка sticky занимает
+ * место в потоке, поэтому первая карточка ("ТЕКУЩЕЕ") идёт сразу под ней
+ * с нормальным зазором.
+ *
+ * Нижняя кнопка "СМЕНИТЬ" фиксирована к низу экрана. На /swap/... таб-бар
+ * скрыт, поэтому отступ снизу простой — без учёта таб-бара.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -121,7 +128,7 @@ export default function SwapExercise() {
 
   if (!subGroup || !type) {
     return (
-      <div className="page page-enter" style={styles.page}>
+      <div style={styles.page}>
         <div style={styles.errorBlock}>
           Открой замену через карточку упражнения<br />
           (долгое нажатие → Сменить)
@@ -133,8 +140,9 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      {/* Sticky-шапка по принципу WorkoutDay: фиксированный отступ сверху,
-          одинаковый при любом количестве карточек на странице. */}
+      {/* Sticky-шапка по образу WorkoutDay: paddingTop var(--tg-safe-top)
+          — это проверенное значение, под которым уже корректно отображается
+          контент на странице дня тренировки. */}
       <header style={styles.stickyHeader}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
@@ -309,23 +317,27 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы здесь, вертикальный paddingBottom — под фиксированную кнопку
+  // Страница: горизонтальные отступы здесь, paddingBottom — под фиксированную кнопку.
+  // ВАЖНО: paddingTop НЕ ставим — он на шапке.
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Sticky-шапка по образу WorkoutDay: всегда одна и та же высота,
-  // прилипает к верху при скролле, контент сверху расширен на горизонтальные
-  // отступы страницы (margin -16px + padding 16px).
+  // Sticky-шапка — точная копия принципа из WorkoutDay.
+  // paddingTop: var(--tg-safe-top) (116px) — то же значение что в WorkoutDay.stickyHeader,
+  // оно проверено и корректно опускает контент под системные кнопки Telegram.
+  // marginLeft/Right -16px + paddingLeft/Right 16px — стандартный приём
+  // "вырастить sticky на всю ширину поверх горизонтального padding страницы".
+  // paddingBottom: 20px — это зазор между шапкой и первой карточкой ("ТЕКУЩЕЕ").
   stickyHeader: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: '50px',
-    paddingBottom: '14px',
+    paddingTop: 'var(--tg-safe-top)',
+    paddingBottom: '20px',
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
@@ -347,11 +359,8 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
-  // Тело страницы — с верхним отступом от шапки. Этот отступ одинаковый
-  // независимо от количества карточек, поэтому пустоты сверху не будет.
-  body: {
-    paddingTop: '20px'
-  },
+  // Тело — БЕЗ paddingTop. Шапка sticky уже даёт нужный отступ через свой paddingBottom.
+  body: {},
   loading: {
     textAlign: 'center',
     padding: '40px 20px',
@@ -389,6 +398,7 @@ const styles = {
   },
   errorBlock: {
     padding: '40px 20px',
+    paddingTop: 'calc(var(--tg-safe-top) + 40px)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
