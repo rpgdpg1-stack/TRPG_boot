@@ -11,15 +11,21 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * Архитектура:
- *  - Шапка sticky (top: 0) — при скролле прилипает к верху экрана.
- *    paddingTop: var(--tg-safe-top) опускает заголовок под кнопки Telegram.
- *    paddingBottom: 16px — внутренний зазор шапки до её границы.
- *  - Первый блок контента (currentBlock) имеет marginTop: 8px — это
- *    гарантированный воздух между шапкой и первой карточкой "ТЕКУЩЕЕ".
- *    Работает И при малом контенте (без скролла), И при большом (со скроллом).
- *  - Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
- *    не ждёт ответа БД — раньше из-за этого блок мог не появиться вообще.
+ * АРХИТЕКТУРА:
+ *
+ * К верху экрана прилипает ЕДИНЫЙ закреплённый блок (stickyTop):
+ *   1. Шапка "СМЕНИТЬ УПРАЖНЕНИЕ" + подзаголовок
+ *   2. Заголовок "ТЕКУЩЕЕ" + карточка текущего упражнения
+ *   3. Заголовок "АЛЬТЕРНАТИВЫ (N)"
+ *
+ * Скроллятся только карточки альтернатив ниже.
+ *
+ * Реализация: один <div style={position: sticky, top: 0}> на всё это,
+ * с непрозрачным фоном --color-bg. При скролле он остаётся приклеенным
+ * к верху экрана, альтернативы уезжают под него.
+ *
+ * Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
+ * не ждёт ответа БД — карточка появляется сразу при открытии страницы.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -147,33 +153,36 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      {/* Sticky-шапка: top: 0, прилипает к верху при скролле */}
-      <header style={styles.stickyHeader}>
-        <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
-        <div style={styles.subtitle}>Похожие на текущее</div>
-      </header>
+      {/* Единый sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
+          При скролле остаётся приклеенным к верху, альтернативы уезжают под него. */}
+      <div style={styles.stickyTop}>
 
-      {currentForRender && (
-        // Первый блок контента — marginTop: 8px даёт гарантированный
-        // зазор между шапкой и карточкой "ТЕКУЩЕЕ".
-        <div style={{ ...styles.currentBlock, marginTop: '8px' }}>
-          <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-          <ExerciseRow
-            exercise={currentForRender}
-            muscleGroup={muscleGroup}
-            isSelected={selectedId === currentForRender.id}
-            isCurrent={true}
-            isDefault={false}
-            onTap={() => handleSelect(currentForRender.id)}
-          />
-        </div>
-      )}
+        <header style={styles.header}>
+          <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
+          <div style={styles.subtitle}>Похожие на текущее</div>
+        </header>
 
-      <div style={styles.alternativesBlock}>
-        <div style={styles.sectionLabel}>
+        {currentForRender && (
+          <div style={styles.currentBlock}>
+            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+            <ExerciseRow
+              exercise={currentForRender}
+              muscleGroup={muscleGroup}
+              isSelected={selectedId === currentForRender.id}
+              isCurrent={true}
+              isDefault={false}
+              onTap={() => handleSelect(currentForRender.id)}
+            />
+          </div>
+        )}
+
+        <div style={styles.alternativesHeader}>
           АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
         </div>
+      </div>
 
+      {/* Скроллящаяся часть: список альтернатив */}
+      <div style={styles.alternativesList}>
         {loading ? (
           <div style={styles.loading}>Загрузка...</div>
         ) : alternatives.length === 0 ? (
@@ -315,29 +324,32 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку.
-  // paddingTop НЕ ставим — он на шапке.
+  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку "СМЕНИТЬ".
+  // paddingTop НЕ ставим — он внутри sticky-блока.
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Sticky-шапка. paddingTop: var(--tg-safe-top) — отступ под кнопки Telegram.
-  // paddingBottom: 16px — внутренний зазор шапки до её нижней границы.
-  // margin/padding -16px/+16px по бокам — стандартный приём растянуть sticky
-  // на всю ширину поверх горизонтального padding страницы.
-  stickyHeader: {
+  // ЕДИНЫЙ sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
+  // Растягиваем на всю ширину поверх горизонтального padding страницы
+  // (margin -16px + padding 16px). Фон --color-bg непрозрачный, чтобы
+  // альтернативы уезжали ПОД блок при скролле, не просвечивая.
+  stickyTop: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '16px',
+    paddingBottom: '12px',
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
-    paddingRight: '16px',
+    paddingRight: '16px'
+  },
+  header: {
+    marginBottom: '20px',
     textAlign: 'center'
   },
   title: {
@@ -355,18 +367,8 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
-  loading: {
-    textAlign: 'center',
-    padding: '24px 20px',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px'
-  },
   currentBlock: {
-    marginBottom: '20px'
-  },
-  alternativesBlock: {
-    marginBottom: '20px'
+    marginBottom: '16px'
   },
   sectionLabel: {
     fontFamily: 'var(--font-tiny5)',
@@ -376,10 +378,29 @@ const styles = {
     marginBottom: '8px',
     paddingLeft: '4px'
   },
+  // Заголовок "АЛЬТЕРНАТИВЫ (N)" — внутри sticky-блока, не уезжает при скролле
+  alternativesHeader: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px',
+    paddingLeft: '4px'
+  },
+  // Список альтернатив — обычный блок в потоке, скроллится со страницей
+  alternativesList: {
+    paddingTop: '8px'
+  },
   altList: {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px'
+  },
+  loading: {
+    textAlign: 'center',
+    padding: '24px 20px',
+    color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px'
   },
   empty: {
     padding: '20px',
