@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
@@ -11,24 +11,15 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * АРХИТЕКТУРА ШАПКИ И ЗАЗОРА:
+ * Архитектура — простая и проверенная (как в самой первой версии):
+ *  - Шапка — обычный блок (не sticky, не fixed) с paddingTop под кнопки Telegram
+ *  - Контент идёт ПОСЛЕ шапки в обычном потоке документа
+ *  - При скролле шапка уезжает вверх вместе с контентом — это нормально
  *
- * Шапка fixed (зафиксирована к верху экрана) — она НИКОГДА не уезжает при
- * скролле и не занимает место в потоке документа.
- *
- * Тело страницы имеет marginTop равный РЕАЛЬНОЙ высоте шапки, измеренной
- * через ResizeObserver. Это гарантирует что первая карточка ("ТЕКУЩЕЕ")
- * всегда начинается ровно под шапкой, без наложения и без огромной пустоты.
- *
- * Раньше пробовали sticky — но тогда при первом открытии (без скролла)
- * sticky элемент занимает в потоке столько места сколько надо его контенту,
- * а карточки идут СРАЗУ под ним без зазора, и при скролле уезжают ПОД него
- * (sticky закрывает их сверху). Юзер видит, что карточка "вылезает из-под шапки"
- * только при скролле — это и был тот баг про который ты говорил.
- *
- * С fixed + marginTop карточка всегда отделена от шапки на её точную высоту,
- * и при скролле карточки прокручиваются под непрозрачную шапку — она их
- * корректно перекрывает фоном --color-bg.
+ * Бывшая проблема "ТЕКУЩЕЕ не видно при малом контенте" была НЕ про вёрстку,
+ * а про логику: блок не рендерился если currentExercise из БД был null.
+ * Чинится через currentForRender (см. ниже) — собираем объект из state
+ * мгновенно, не ждём БД.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -50,28 +41,6 @@ export default function SwapExercise() {
   const [selectedId, setSelectedId] = useState(currentExerciseId || null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-
-  // Реф на шапку + измеренная высота. Без useState body не перерендерится
-  // при изменении размера, поэтому храним в state.
-  const headerRef = useRef(null)
-  const [headerHeight, setHeaderHeight] = useState(0)
-
-  // Измеряем высоту шапки после маунта и пере-измеряем при ресайзах
-  // (например при повороте устройства или смене safe-area).
-  useEffect(() => {
-    const headerEl = headerRef.current
-    if (!headerEl) return
-
-    const updateHeight = () => {
-      setHeaderHeight(headerEl.offsetHeight)
-    }
-
-    updateHeight()
-
-    const ro = new ResizeObserver(updateHeight)
-    ro.observe(headerEl)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
@@ -178,57 +147,51 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      {/* Fixed-шапка: всегда на одной высоте у верха экрана. */}
-      <header ref={headerRef} style={styles.fixedHeader}>
+      <header style={styles.header}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
       </header>
 
-      {/* Тело: marginTop = высоте шапки + небольшой зазор. Гарантирует,
-          что первая карточка идёт сразу под шапкой, не под ней. */}
-      <div style={{ ...styles.body, marginTop: headerHeight ? `${headerHeight + 8}px` : '180px' }}>
+      {currentForRender && (
+        <div style={styles.currentBlock}>
+          <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+          <ExerciseRow
+            exercise={currentForRender}
+            muscleGroup={muscleGroup}
+            isSelected={selectedId === currentForRender.id}
+            isCurrent={true}
+            isDefault={false}
+            onTap={() => handleSelect(currentForRender.id)}
+          />
+        </div>
+      )}
 
-        {currentForRender && (
-          <div style={styles.currentBlock}>
-            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-            <ExerciseRow
-              exercise={currentForRender}
-              muscleGroup={muscleGroup}
-              isSelected={selectedId === currentForRender.id}
-              isCurrent={true}
-              isDefault={false}
-              onTap={() => handleSelect(currentForRender.id)}
-            />
+      <div style={styles.alternativesBlock}>
+        <div style={styles.sectionLabel}>
+          АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
+        </div>
+
+        {loading ? (
+          <div style={styles.loading}>Загрузка...</div>
+        ) : alternatives.length === 0 ? (
+          <div style={styles.empty}>
+            Альтернатив для этой подгруппы пока нет
+          </div>
+        ) : (
+          <div style={styles.altList}>
+            {alternatives.map(ex => (
+              <ExerciseRow
+                key={ex.id}
+                exercise={ex}
+                muscleGroup={muscleGroup}
+                isSelected={selectedId === ex.id}
+                isCurrent={false}
+                isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
+                onTap={() => handleSelect(ex.id)}
+              />
+            ))}
           </div>
         )}
-
-        <div style={styles.alternativesBlock}>
-          <div style={styles.sectionLabel}>
-            АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
-          </div>
-
-          {loading ? (
-            <div style={styles.loading}>Загрузка...</div>
-          ) : alternatives.length === 0 ? (
-            <div style={styles.empty}>
-              Альтернатив для этой подгруппы пока нет
-            </div>
-          ) : (
-            <div style={styles.altList}>
-              {alternatives.map(ex => (
-                <ExerciseRow
-                  key={ex.id}
-                  exercise={ex}
-                  muscleGroup={muscleGroup}
-                  isSelected={selectedId === ex.id}
-                  isCurrent={false}
-                  isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
-                  onTap={() => handleSelect(ex.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <div style={styles.bottomBar}>
@@ -349,27 +312,20 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку.
+  // Страница: paddingTop под кнопки Telegram, горизонтальные отступы,
+  // paddingBottom — место под фиксированную кнопку "СМЕНИТЬ".
   page: {
+    paddingTop: 'var(--tg-safe-top)',
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Шапка — fixed к верху экрана. Растягиваем на всю ширину (left/right: 0).
-  // Фон --color-bg непрозрачный, поэтому при скролле карточки уезжают ПОД неё
-  // и не просвечивают.
-  fixedHeader: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-    background: 'var(--color-bg)',
-    paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '14px',
-    paddingLeft: '16px',
-    paddingRight: '16px',
+  // Шапка — обычный блок. Заголовок и подзаголовок. Под кнопками Telegram
+  // (за счёт page.paddingTop). При скролле уезжает вверх вместе со всем
+  // контентом — это нормально, не баг.
+  header: {
+    marginBottom: '20px',
     textAlign: 'center'
   },
   title: {
@@ -387,8 +343,6 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
-  // body.marginTop вычисляется динамически — см. инлайн стиль выше
-  body: {},
   loading: {
     textAlign: 'center',
     padding: '24px 20px',
