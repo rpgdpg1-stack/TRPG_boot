@@ -11,15 +11,15 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * Архитектура — простая и проверенная (как в самой первой версии):
- *  - Шапка — обычный блок (не sticky, не fixed) с paddingTop под кнопки Telegram
- *  - Контент идёт ПОСЛЕ шапки в обычном потоке документа
- *  - При скролле шапка уезжает вверх вместе с контентом — это нормально
- *
- * Бывшая проблема "ТЕКУЩЕЕ не видно при малом контенте" была НЕ про вёрстку,
- * а про логику: блок не рендерился если currentExercise из БД был null.
- * Чинится через currentForRender (см. ниже) — собираем объект из state
- * мгновенно, не ждём БД.
+ * Архитектура:
+ *  - Шапка sticky (top: 0) — при скролле прилипает к верху экрана.
+ *    paddingTop: var(--tg-safe-top) опускает заголовок под кнопки Telegram.
+ *    paddingBottom: 16px — внутренний зазор шапки до её границы.
+ *  - Первый блок контента (currentBlock) имеет marginTop: 8px — это
+ *    гарантированный воздух между шапкой и первой карточкой "ТЕКУЩЕЕ".
+ *    Работает И при малом контенте (без скролла), И при большом (со скроллом).
+ *  - Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
+ *    не ждёт ответа БД — раньше из-за этого блок мог не появиться вообще.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -147,13 +147,16 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      <header style={styles.header}>
+      {/* Sticky-шапка: top: 0, прилипает к верху при скролле */}
+      <header style={styles.stickyHeader}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
       </header>
 
       {currentForRender && (
-        <div style={styles.currentBlock}>
+        // Первый блок контента — marginTop: 8px даёт гарантированный
+        // зазор между шапкой и карточкой "ТЕКУЩЕЕ".
+        <div style={{ ...styles.currentBlock, marginTop: '8px' }}>
           <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
           <ExerciseRow
             exercise={currentForRender}
@@ -312,20 +315,29 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: paddingTop под кнопки Telegram, горизонтальные отступы,
-  // paddingBottom — место под фиксированную кнопку "СМЕНИТЬ".
+  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку.
+  // paddingTop НЕ ставим — он на шапке.
   page: {
-    paddingTop: 'var(--tg-safe-top)',
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Шапка — обычный блок. Заголовок и подзаголовок. Под кнопками Telegram
-  // (за счёт page.paddingTop). При скролле уезжает вверх вместе со всем
-  // контентом — это нормально, не баг.
-  header: {
-    marginBottom: '20px',
+  // Sticky-шапка. paddingTop: var(--tg-safe-top) — отступ под кнопки Telegram.
+  // paddingBottom: 16px — внутренний зазор шапки до её нижней границы.
+  // margin/padding -16px/+16px по бокам — стандартный приём растянуть sticky
+  // на всю ширину поверх горизонтального padding страницы.
+  stickyHeader: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 30,
+    background: 'var(--color-bg)',
+    paddingTop: 'var(--tg-safe-top)',
+    paddingBottom: '16px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
     textAlign: 'center'
   },
   title: {
