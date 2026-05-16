@@ -14,13 +14,16 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * Архитектура шапки — копия WorkoutDay:
  *  - position: sticky + top: 0 → шапка прилипает к верху при скролле
  *  - paddingTop: var(--tg-safe-top) → отступ под системные кнопки Telegram
- *    (то же значение что используется на странице дня тренировки — проверено)
- *  - background: var(--color-bg) → шапка непрозрачная, контент под ней
- *    не просвечивает при скролле
+ *  - background: var(--color-bg) → шапка непрозрачная, контент при скролле
+ *    не просвечивает сквозь неё
  *
- * Тело страницы (body) НЕ дублирует отступ сверху — шапка sticky занимает
- * место в потоке, поэтому первая карточка ("ТЕКУЩЕЕ") идёт сразу под ней
- * с нормальным зазором.
+ * ВАЖНО про зазор между шапкой и первой карточкой:
+ *  Зазор живёт на ТЕЛЕ страницы (body.paddingTop), а не на шапке.
+ *  Шапка sticky занимает в потоке ровно высоту своего контента
+ *  (paddingTop + контент + paddingBottom). Если paddingBottom у шапки 20px,
+ *  то первая карточка прилипает к шапке снизу на расстояние 20px — это мало,
+ *  карточка визуально "из-под" шапки. Поэтому делаем явный paddingTop: 28px
+ *  у body — гарантированный зазор всегда, и при скролле, и без скролла.
  *
  * Нижняя кнопка "СМЕНИТЬ" фиксирована к низу экрана. На /swap/... таб-бар
  * скрыт, поэтому отступ снизу простой — без учёта таб-бара.
@@ -140,14 +143,16 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      {/* Sticky-шапка по образу WorkoutDay: paddingTop var(--tg-safe-top)
-          — это проверенное значение, под которым уже корректно отображается
-          контент на странице дня тренировки. */}
+      {/* Sticky-шапка. Высота одинаковая всегда: var(--tg-safe-top) сверху,
+          контент, 12px снизу. Не трогаем — она уже работает корректно. */}
       <header style={styles.stickyHeader}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
       </header>
 
+      {/* body.paddingTop даёт зазор между шапкой и первой карточкой.
+          Этот зазор работает И когда есть скролл (карточка не лезет под шапку),
+          И когда скролла нет (карточка не прилипает вплотную к шапке). */}
       <div style={styles.body}>
 
         {loading && (
@@ -318,26 +323,23 @@ function toTitleCase(str) {
 
 const styles = {
   // Страница: горизонтальные отступы здесь, paddingBottom — под фиксированную кнопку.
-  // ВАЖНО: paddingTop НЕ ставим — он на шапке.
+  // paddingTop НЕ ставим — он на шапке.
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Sticky-шапка — точная копия принципа из WorkoutDay.
-  // paddingTop: var(--tg-safe-top) (116px) — то же значение что в WorkoutDay.stickyHeader,
-  // оно проверено и корректно опускает контент под системные кнопки Telegram.
-  // marginLeft/Right -16px + paddingLeft/Right 16px — стандартный приём
-  // "вырастить sticky на всю ширину поверх горизонтального padding страницы".
-  // paddingBottom: 20px — это зазор между шапкой и первой карточкой ("ТЕКУЩЕЕ").
+  // Sticky-шапка — НЕ ТРОГАЕМ. Высота: var(--tg-safe-top) + контент + 12px снизу.
+  // Этот блок уже работает корректно — заголовок под кнопками Telegram, шапка
+  // одинаковой высоты при любом контенте.
   stickyHeader: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '20px',
+    paddingBottom: '12px',
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
@@ -359,8 +361,13 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
-  // Тело — БЕЗ paddingTop. Шапка sticky уже даёт нужный отступ через свой paddingBottom.
-  body: {},
+  // ИСПРАВЛЕНИЕ: paddingTop у body. Это зазор между шапкой и первой карточкой.
+  // 28px = 8px (мелкий зазор сразу под шапкой) + 20px (отступ "ТЕКУЩЕЕ" от шапки).
+  // Без этого первая карточка прилипала вплотную к низу sticky-шапки и казалась
+  // спрятанной — особенно когда упражнений мало и страница не скроллится.
+  body: {
+    paddingTop: '28px'
+  },
   loading: {
     textAlign: 'center',
     padding: '40px 20px',
