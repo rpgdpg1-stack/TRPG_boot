@@ -307,13 +307,22 @@ function toTitleCase(str) {
 const styles = {
   // Опущено под системные кнопки Telegram — как в WorkoutDay (через --tg-safe-top)
   page: {
-    paddingTop: 'var(--tg-safe-top)',
     paddingLeft: '16px',
     paddingRight: '16px',
-    paddingBottom: '100px',
+    paddingBottom: '140px',
     minHeight: '100dvh'
   },
   header: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 30,
+    background: 'var(--color-bg)',
+    paddingTop: 'var(--tg-safe-top)',
+    paddingBottom: '16px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
     marginBottom: '20px',
     textAlign: 'center'
   },
@@ -380,8 +389,8 @@ const styles = {
     bottom: '0',
     left: '0',
     right: '0',
-    padding: '12px 16px calc(var(--tabbar-height) + var(--tabbar-bottom) + 12px)',
-    background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 40%)',
+    padding: '24px 16px 20px',
+    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.85) 30%, var(--color-bg) 70%)',
     zIndex: 50,
     pointerEvents: 'none'
   },
