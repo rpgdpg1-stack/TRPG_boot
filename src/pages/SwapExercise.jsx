@@ -388,7 +388,7 @@ const styles = {
   },
   // Список альтернатив — обычный блок в потоке, скроллится со страницей
   alternativesList: {
-    paddingTop: '8px'
+    paddingTop: '16px'
   },
   altList: {
     display: 'flex',
