@@ -11,13 +11,12 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * defaultExerciseId — упражнение от программы (если юзер свапнул на своё —
- * подсветим его зелёной обводкой + бейджем "ОТ ПРОГРАММЫ").
- * muscleGroup — нужна для цвета тега в карточках альтернатив.
+ * Шапка — sticky, как на странице дня тренировки (WorkoutDay). Один и тот же
+ * paddingTop у шапки + paddingTop у тела страницы, чтобы при любом количестве
+ * карточек (4 или 20) визуальная высота шапки была одинаковой, без пустоты сверху.
  *
- * Визуально: шапка опущена под системные кнопки Telegram (var(--tg-safe-top)),
- * карточки в стиле новой ExerciseCard — название сверху, цветной тег группы
- * + серый тег подгруппы под ним.
+ * Нижняя кнопка "СМЕНИТЬ" фиксирована к низу экрана. На /swap/... таб-бар скрыт,
+ * поэтому отступ снизу простой — без учёта таб-бара.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -132,58 +131,63 @@ export default function SwapExercise() {
   }
 
   return (
-    <div className="page page-enter" style={styles.page}>
+    <div style={styles.page}>
 
-      <header style={styles.header}>
+      {/* Sticky-шапка по принципу WorkoutDay: фиксированный отступ сверху,
+          одинаковый при любом количестве карточек на странице. */}
+      <header style={styles.stickyHeader}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
       </header>
 
-      {loading && (
-        <div style={styles.loading}>Загрузка...</div>
-      )}
+      <div style={styles.body}>
 
-      {!loading && currentExercise && (
-        <>
-          <div style={styles.currentBlock}>
-            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-            <ExerciseRow
-              exercise={currentExercise}
-              muscleGroup={muscleGroup}
-              isSelected={selectedId === currentExercise.id}
-              isCurrent={true}
-              isDefault={false}
-              onTap={() => handleSelect(currentExercise.id)}
-            />
-          </div>
+        {loading && (
+          <div style={styles.loading}>Загрузка...</div>
+        )}
 
-          <div style={styles.alternativesBlock}>
-            <div style={styles.sectionLabel}>
-              АЛЬТЕРНАТИВЫ {alternatives.length > 0 && `(${alternatives.length})`}
+        {!loading && currentExercise && (
+          <>
+            <div style={styles.currentBlock}>
+              <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+              <ExerciseRow
+                exercise={currentExercise}
+                muscleGroup={muscleGroup}
+                isSelected={selectedId === currentExercise.id}
+                isCurrent={true}
+                isDefault={false}
+                onTap={() => handleSelect(currentExercise.id)}
+              />
             </div>
 
-            {alternatives.length === 0 ? (
-              <div style={styles.empty}>
-                Альтернатив для этой подгруппы пока нет
+            <div style={styles.alternativesBlock}>
+              <div style={styles.sectionLabel}>
+                АЛЬТЕРНАТИВЫ {alternatives.length > 0 && `(${alternatives.length})`}
               </div>
-            ) : (
-              <div style={styles.altList}>
-                {alternatives.map(ex => (
-                  <ExerciseRow
-                    key={ex.id}
-                    exercise={ex}
-                    muscleGroup={muscleGroup}
-                    isSelected={selectedId === ex.id}
-                    isCurrent={false}
-                    isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
-                    onTap={() => handleSelect(ex.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+
+              {alternatives.length === 0 ? (
+                <div style={styles.empty}>
+                  Альтернатив для этой подгруппы пока нет
+                </div>
+              ) : (
+                <div style={styles.altList}>
+                  {alternatives.map(ex => (
+                    <ExerciseRow
+                      key={ex.id}
+                      exercise={ex}
+                      muscleGroup={muscleGroup}
+                      isSelected={selectedId === ex.id}
+                      isCurrent={false}
+                      isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
+                      onTap={() => handleSelect(ex.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       {!loading && (
         <div style={styles.bottomBar}>
@@ -305,25 +309,27 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Опущено под системные кнопки Telegram — как в WorkoutDay (через --tg-safe-top)
+  // Страница: горизонтальные отступы здесь, вертикальный paddingBottom — под фиксированную кнопку
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  header: {
+  // Sticky-шапка по образу WorkoutDay: всегда одна и та же высота,
+  // прилипает к верху при скролле, контент сверху расширен на горизонтальные
+  // отступы страницы (margin -16px + padding 16px).
+  stickyHeader: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: '70px',
-    paddingBottom: '16px',
+    paddingTop: '50px',
+    paddingBottom: '14px',
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px',
-    marginBottom: '20px',
     textAlign: 'center'
   },
   title: {
@@ -340,6 +346,11 @@ const styles = {
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
+  },
+  // Тело страницы — с верхним отступом от шапки. Этот отступ одинаковый
+  // независимо от количества карточек, поэтому пустоты сверху не будет.
+  body: {
+    paddingTop: '20px'
   },
   loading: {
     textAlign: 'center',
