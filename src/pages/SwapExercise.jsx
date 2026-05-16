@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
@@ -11,22 +11,24 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * Архитектура шапки — копия WorkoutDay:
- *  - position: sticky + top: 0 → шапка прилипает к верху при скролле
- *  - paddingTop: var(--tg-safe-top) → отступ под системные кнопки Telegram
- *  - background: var(--color-bg) → шапка непрозрачная, контент при скролле
- *    не просвечивает сквозь неё
+ * АРХИТЕКТУРА ШАПКИ И ЗАЗОРА:
  *
- * ВАЖНО про зазор между шапкой и первой карточкой:
- *  Зазор живёт на ТЕЛЕ страницы (body.paddingTop), а не на шапке.
- *  Шапка sticky занимает в потоке ровно высоту своего контента
- *  (paddingTop + контент + paddingBottom). Если paddingBottom у шапки 20px,
- *  то первая карточка прилипает к шапке снизу на расстояние 20px — это мало,
- *  карточка визуально "из-под" шапки. Поэтому делаем явный paddingTop: 28px
- *  у body — гарантированный зазор всегда, и при скролле, и без скролла.
+ * Шапка fixed (зафиксирована к верху экрана) — она НИКОГДА не уезжает при
+ * скролле и не занимает место в потоке документа.
  *
- * Нижняя кнопка "СМЕНИТЬ" фиксирована к низу экрана. На /swap/... таб-бар
- * скрыт, поэтому отступ снизу простой — без учёта таб-бара.
+ * Тело страницы имеет marginTop равный РЕАЛЬНОЙ высоте шапки, измеренной
+ * через ResizeObserver. Это гарантирует что первая карточка ("ТЕКУЩЕЕ")
+ * всегда начинается ровно под шапкой, без наложения и без огромной пустоты.
+ *
+ * Раньше пробовали sticky — но тогда при первом открытии (без скролла)
+ * sticky элемент занимает в потоке столько места сколько надо его контенту,
+ * а карточки идут СРАЗУ под ним без зазора, и при скролле уезжают ПОД него
+ * (sticky закрывает их сверху). Юзер видит, что карточка "вылезает из-под шапки"
+ * только при скролле — это и был тот баг про который ты говорил.
+ *
+ * С fixed + marginTop карточка всегда отделена от шапки на её точную высоту,
+ * и при скролле карточки прокручиваются под непрозрачную шапку — она их
+ * корректно перекрывает фоном --color-bg.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -48,6 +50,28 @@ export default function SwapExercise() {
   const [selectedId, setSelectedId] = useState(currentExerciseId || null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Реф на шапку + измеренная высота. Без useState body не перерендерится
+  // при изменении размера, поэтому храним в state.
+  const headerRef = useRef(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
+
+  // Измеряем высоту шапки после маунта и пере-измеряем при ресайзах
+  // (например при повороте устройства или смене safe-area).
+  useEffect(() => {
+    const headerEl = headerRef.current
+    if (!headerEl) return
+
+    const updateHeight = () => {
+      setHeaderHeight(headerEl.offsetHeight)
+    }
+
+    updateHeight()
+
+    const ro = new ResizeObserver(updateHeight)
+    ro.observe(headerEl)
+    return () => ro.disconnect()
+  }, [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
@@ -83,7 +107,7 @@ export default function SwapExercise() {
         })
 
         setAllExercises(sorted)
-        setCurrentExercise(currentEx || { id: currentExerciseId, name: currentExerciseName || '—' })
+        setCurrentExercise(currentEx)
         setLoading(false)
       } catch (e) {
         console.error('[SwapExercise] load error:', e)
@@ -140,83 +164,86 @@ export default function SwapExercise() {
     )
   }
 
+  // Объект "текущего упражнения" для отрисовки. Если БД ещё не ответила —
+  // собираем из state со страницы тренировки, чтобы карточка появилась
+  // мгновенно. Когда придёт ответ — заменим на полный объект.
+  const currentForRender = currentExercise || (currentExerciseId ? {
+    id: currentExerciseId,
+    name: currentExerciseName || '—',
+    sub_group: subGroup,
+    preview_url: null,
+    meta_info: null
+  } : null)
+
   return (
     <div style={styles.page}>
 
-      {/* Sticky-шапка. Высота одинаковая всегда: var(--tg-safe-top) сверху,
-          контент, 12px снизу. Не трогаем — она уже работает корректно. */}
-      <header style={styles.stickyHeader}>
+      {/* Fixed-шапка: всегда на одной высоте у верха экрана. */}
+      <header ref={headerRef} style={styles.fixedHeader}>
         <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
         <div style={styles.subtitle}>Похожие на текущее</div>
       </header>
 
-      {/* body.paddingTop даёт зазор между шапкой и первой карточкой.
-          Этот зазор работает И когда есть скролл (карточка не лезет под шапку),
-          И когда скролла нет (карточка не прилипает вплотную к шапке). */}
-      <div style={styles.body}>
+      {/* Тело: marginTop = высоте шапки + небольшой зазор. Гарантирует,
+          что первая карточка идёт сразу под шапкой, не под ней. */}
+      <div style={{ ...styles.body, marginTop: headerHeight ? `${headerHeight + 8}px` : '180px' }}>
 
-        {loading && (
-          <div style={styles.loading}>Загрузка...</div>
+        {currentForRender && (
+          <div style={styles.currentBlock}>
+            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+            <ExerciseRow
+              exercise={currentForRender}
+              muscleGroup={muscleGroup}
+              isSelected={selectedId === currentForRender.id}
+              isCurrent={true}
+              isDefault={false}
+              onTap={() => handleSelect(currentForRender.id)}
+            />
+          </div>
         )}
 
-        {!loading && currentExercise && (
-          <>
-            <div style={styles.currentBlock}>
-              <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-              <ExerciseRow
-                exercise={currentExercise}
-                muscleGroup={muscleGroup}
-                isSelected={selectedId === currentExercise.id}
-                isCurrent={true}
-                isDefault={false}
-                onTap={() => handleSelect(currentExercise.id)}
-              />
-            </div>
+        <div style={styles.alternativesBlock}>
+          <div style={styles.sectionLabel}>
+            АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
+          </div>
 
-            <div style={styles.alternativesBlock}>
-              <div style={styles.sectionLabel}>
-                АЛЬТЕРНАТИВЫ {alternatives.length > 0 && `(${alternatives.length})`}
-              </div>
-
-              {alternatives.length === 0 ? (
-                <div style={styles.empty}>
-                  Альтернатив для этой подгруппы пока нет
-                </div>
-              ) : (
-                <div style={styles.altList}>
-                  {alternatives.map(ex => (
-                    <ExerciseRow
-                      key={ex.id}
-                      exercise={ex}
-                      muscleGroup={muscleGroup}
-                      isSelected={selectedId === ex.id}
-                      isCurrent={false}
-                      isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
-                      onTap={() => handleSelect(ex.id)}
-                    />
-                  ))}
-                </div>
-              )}
+          {loading ? (
+            <div style={styles.loading}>Загрузка...</div>
+          ) : alternatives.length === 0 ? (
+            <div style={styles.empty}>
+              Альтернатив для этой подгруппы пока нет
             </div>
-          </>
-        )}
+          ) : (
+            <div style={styles.altList}>
+              {alternatives.map(ex => (
+                <ExerciseRow
+                  key={ex.id}
+                  exercise={ex}
+                  muscleGroup={muscleGroup}
+                  isSelected={selectedId === ex.id}
+                  isCurrent={false}
+                  isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
+                  onTap={() => handleSelect(ex.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {!loading && (
-        <div style={styles.bottomBar}>
-          <button
-            onClick={handleConfirm}
-            disabled={!selectedId || selectedId === currentExerciseId || saving}
-            style={{
-              ...styles.confirmButton,
-              opacity: (!selectedId || selectedId === currentExerciseId || saving) ? 0.4 : 1,
-              cursor: (!selectedId || selectedId === currentExerciseId || saving) ? 'default' : 'pointer'
-            }}
-          >
-            {saving ? 'Сохранение...' : 'СМЕНИТЬ'}
-          </button>
-        </div>
-      )}
+      <div style={styles.bottomBar}>
+        <button
+          onClick={handleConfirm}
+          disabled={!selectedId || selectedId === currentExerciseId || saving || loading}
+          style={{
+            ...styles.confirmButton,
+            opacity: (!selectedId || selectedId === currentExerciseId || saving || loading) ? 0.4 : 1,
+            cursor: (!selectedId || selectedId === currentExerciseId || saving || loading) ? 'default' : 'pointer'
+          }}
+        >
+          {saving ? 'Сохранение...' : 'СМЕНИТЬ'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -322,26 +349,25 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы здесь, paddingBottom — под фиксированную кнопку.
-  // paddingTop НЕ ставим — он на шапке.
+  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку.
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
   },
-  // Sticky-шапка — НЕ ТРОГАЕМ. Высота: var(--tg-safe-top) + контент + 12px снизу.
-  // Этот блок уже работает корректно — заголовок под кнопками Telegram, шапка
-  // одинаковой высоты при любом контенте.
-  stickyHeader: {
-    position: 'sticky',
+  // Шапка — fixed к верху экрана. Растягиваем на всю ширину (left/right: 0).
+  // Фон --color-bg непрозрачный, поэтому при скролле карточки уезжают ПОД неё
+  // и не просвечивают.
+  fixedHeader: {
+    position: 'fixed',
     top: 0,
+    left: 0,
+    right: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '12px',
-    marginLeft: '-16px',
-    marginRight: '-16px',
+    paddingBottom: '14px',
     paddingLeft: '16px',
     paddingRight: '16px',
     textAlign: 'center'
@@ -361,16 +387,11 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
-  // ИСПРАВЛЕНИЕ: paddingTop у body. Это зазор между шапкой и первой карточкой.
-  // 28px = 8px (мелкий зазор сразу под шапкой) + 20px (отступ "ТЕКУЩЕЕ" от шапки).
-  // Без этого первая карточка прилипала вплотную к низу sticky-шапки и казалась
-  // спрятанной — особенно когда упражнений мало и страница не скроллится.
-  body: {
-    paddingTop: '28px'
-  },
+  // body.marginTop вычисляется динамически — см. инлайн стиль выше
+  body: {},
   loading: {
     textAlign: 'center',
-    padding: '40px 20px',
+    padding: '24px 20px',
     color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px'
