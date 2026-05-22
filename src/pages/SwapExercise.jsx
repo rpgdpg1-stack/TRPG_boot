@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
@@ -11,25 +11,25 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * АРХИТЕКТУРА:
+ * АРХИТЕКТУРА (простая flex-вёрстка, без sticky):
  *
- * К верху экрана прилипает ЕДИНЫЙ закреплённый блок (stickyTop):
- *   1. Шапка "СМЕНИТЬ УПРАЖНЕНИЕ" + подзаголовок
- *   2. Заголовок "ТЕКУЩЕЕ" + карточка текущего упражнения
- *   3. Заголовок "АЛЬТЕРНАТИВЫ (N)"
+ * Структура page (вертикальный flex):
+ *   [header: СМЕНИТЬ УПРАЖНЕНИЕ + Похожие на текущее]
+ *   [currentBlock: ТЕКУЩЕЕ + карточка]
+ *   [alternativesHeader: АЛЬТЕРНАТИВЫ (N)]
+ *   [alternativesList: список карточек, занимает остаток места]
+ *   [fixed bottomBar: кнопка СМЕНИТЬ]
  *
- * Под ним — скроллящийся список альтернатив.
+ * Все блоки идут в обычном потоке документа сверху вниз — никаких
+ * sticky, никаких fixed (кроме нижней кнопки), никаких отрицательных
+ * margin'ов. Это значит:
+ *   - При первом открытии всё видно сразу как нарисовано
+ *   - При скролле всё уезжает вверх (если карточек много)
+ *   - Никакого "контент под шапкой" не может быть в принципе
  *
- * Из-за того что у stickyTop отрицательные marginLeft/Right (растягиваем на
- * всю ширину поверх горизонтального padding страницы), следующий элемент
- * в потоке (alternativesList) при первом рендере мог визуально оказаться
- * частично под sticky-блоком — первая карточка обрезалась сверху, юзеру
- * приходилось скроллить чтобы её увидеть.
- *
- * РЕШЕНИЕ: измеряем реальную высоту stickyTop через ResizeObserver и
- * проставляем её как paddingTop у alternativesList. Так первая карточка
- * всегда оказывается ниже sticky-блока ровно на его высоту + небольшой
- * зазор. Работает И при малом контенте (нет скролла), И при большом.
+ * Раньше пробовали sticky/fixed с расчётом высоты — это создавало баги
+ * (контент уезжал под шапку или непредсказуемо обрезался). Простой
+ * поток документа надёжнее.
  *
  * Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
  * не ждёт ответа БД.
@@ -54,12 +54,6 @@ export default function SwapExercise() {
   const [selectedId, setSelectedId] = useState(currentExerciseId || null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-
-  // Реф и измеренная высота закреплённой шапки.
-  // Используется для отступа alternativesList — гарантия что первая карточка
-  // не окажется под sticky-блоком при первом открытии страницы.
-  const stickyRef = useRef(null)
-  const [stickyHeight, setStickyHeight] = useState(0)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
@@ -106,22 +100,6 @@ export default function SwapExercise() {
     load()
     return () => { cancelled = true }
   }, [subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId])
-
-  // Меряем высоту sticky-блока. ResizeObserver сработает и на маунте,
-  // и при ресайзе (поворот экрана, изменение safe-area).
-  // Перезамеряем когда меняются данные внутри блока — название текущего
-  // упражнения может быть длинным и переноситься на 2 строки, что меняет высоту.
-  useEffect(() => {
-    const el = stickyRef.current
-    if (!el) return
-
-    const update = () => setStickyHeight(el.offsetHeight)
-    update()
-
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [currentExercise, currentExerciseName, loading])
 
   const handleSelect = (exerciseId) => {
     haptic.light()
@@ -182,41 +160,30 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      {/* Единый sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
-          Измеряется через stickyRef для расчёта отступа списка. */}
-      <div ref={stickyRef} style={styles.stickyTop}>
+      <header style={styles.header}>
+        <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
+        <div style={styles.subtitle}>Похожие на текущее</div>
+      </header>
 
-        <header style={styles.header}>
-          <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
-          <div style={styles.subtitle}>Похожие на текущее</div>
-        </header>
-
-        {currentForRender && (
-          <div style={styles.currentBlock}>
-            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-            <ExerciseRow
-              exercise={currentForRender}
-              muscleGroup={muscleGroup}
-              isSelected={selectedId === currentForRender.id}
-              isCurrent={true}
-              isDefault={false}
-              onTap={() => handleSelect(currentForRender.id)}
-            />
-          </div>
-        )}
-
-        <div style={styles.alternativesHeader}>
-          АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
+      {currentForRender && (
+        <div style={styles.currentBlock}>
+          <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+          <ExerciseRow
+            exercise={currentForRender}
+            muscleGroup={muscleGroup}
+            isSelected={selectedId === currentForRender.id}
+            isCurrent={true}
+            isDefault={false}
+            onTap={() => handleSelect(currentForRender.id)}
+          />
         </div>
+      )}
+
+      <div style={styles.alternativesHeader}>
+        АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
       </div>
 
-      {/* Скроллящаяся часть. paddingTop задаём через инлайн стиль,
-          равный высоте sticky-блока + 12px зазор. Гарантия что первая
-          карточка всегда видна сразу после sticky, не под ней. */}
-      <div style={{
-        ...styles.alternativesList,
-        paddingTop: stickyHeight ? `${stickyHeight + 12}px` : '300px'
-      }}>
+      <div style={styles.alternativesList}>
         {loading ? (
           <div style={styles.loading}>Загрузка...</div>
         ) : alternatives.length === 0 ? (
@@ -292,7 +259,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
     background = 'rgba(158, 209, 83, 0.05)'
   }
 
-  // Цвета и подписи тегов — те же что в большой карточке
   const colors = getMuscleGroupColors(muscleGroup)
   const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[muscleGroup] || (muscleGroup || ''))
   const subGroupLabel = toTitleCase(SUB_GROUP_LABELS[exercise.sub_group] || (exercise.sub_group || ''))
@@ -312,7 +278,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
       </div>
 
       <div style={rowStyles.content}>
-        {/* 1. Название + бейдж "ОТ ПРОГРАММЫ" если применимо */}
         <div style={rowStyles.nameRow}>
           <div style={rowStyles.name}>{exercise.name}</div>
           {isDefault && (
@@ -320,7 +285,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
           )}
         </div>
 
-        {/* 2. Теги: цветной (группа) + серый (подгруппа) */}
         <div style={rowStyles.tagsRow}>
           {groupLabel && (
             <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF' }}>
@@ -334,7 +298,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
           )}
         </div>
 
-        {/* 3. Подходы — снизу серой подписью */}
         {exercise.meta_info && (
           <div style={rowStyles.meta}>{exercise.meta_info}</div>
         )}
@@ -358,28 +321,14 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы, paddingBottom — под фиксированную кнопку "СМЕНИТЬ".
-  // paddingTop НЕ ставим — он внутри sticky-блока.
+  // Страница: обычный поток сверху вниз. paddingTop под кнопки Telegram,
+  // paddingBottom под фиксированную кнопку "СМЕНИТЬ".
   page: {
+    paddingTop: 'var(--tg-safe-top)',
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
-  },
-  // ЕДИНЫЙ sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
-  // Растянут на всю ширину поверх горизонтального padding страницы
-  // (margin -16px + padding 16px). Фон --color-bg непрозрачный.
-  stickyTop: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 30,
-    background: 'var(--color-bg)',
-    paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '12px',
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
   },
   header: {
     marginBottom: '20px',
@@ -401,7 +350,7 @@ const styles = {
     letterSpacing: '2px'
   },
   currentBlock: {
-    marginBottom: '16px'
+    marginBottom: '20px'
   },
   sectionLabel: {
     fontFamily: 'var(--font-tiny5)',
@@ -416,21 +365,10 @@ const styles = {
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    paddingLeft: '4px'
+    paddingLeft: '4px',
+    marginBottom: '8px'
   },
-  // Список альтернатив. paddingTop задаётся ИНЛАЙН (см. JSX выше) —
-  // равен высоте stickyTop + зазор. Это то что физически опускает
-  // первую карточку ниже sticky-блока, чтобы она не пряталась под ним
-  // при первом открытии страницы.
-  //
-  // Растягиваем на всю ширину тем же приёмом что и stickyTop — иначе
-  // ширины блоков рассинхронизированы и карточки могут визуально обрезаться.
-  alternativesList: {
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
-  },
+  alternativesList: {},
   altList: {
     display: 'flex',
     flexDirection: 'column',
