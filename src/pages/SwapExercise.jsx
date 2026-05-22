@@ -58,9 +58,20 @@ export default function SwapExercise() {
   }, [])
 
   useEffect(() => {
-    backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
+    // При нажатии "Назад" — возвращаемся на день, передаём order_num карточки
+    // с которой пришли, но БЕЗ флага wasSwapped. Это нужно WorkoutDay чтобы
+    // проскроллить к нужной карточке и сделать лёгкий press-эффект — без
+    // зелёной анимации (она только при реальной смене).
+    backButton.setHandler(() => {
+      navigate(`/workout/${programId}/${day}`, {
+        state: {
+          returnedFromOrderNum: parseInt(orderNum, 10),
+          wasSwapped: false
+        }
+      })
+    })
     lockVerticalSwipes()
-  }, [navigate, programId, day])
+  }, [navigate, programId, day, orderNum])
 
   useEffect(() => {
     let cancelled = false
@@ -117,7 +128,15 @@ export default function SwapExercise() {
       const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId)
       if (ok) {
         haptic.success()
-        navigate(`/workout/${programId}/${day}`)
+        // Передаём в state информацию для WorkoutDay:
+        //   returnedFromOrderNum — к какой карточке проскроллить
+        //   wasSwapped: true — играть анимацию "стрелки змейкой" + press-эффект
+        navigate(`/workout/${programId}/${day}`, {
+          state: {
+            returnedFromOrderNum: parseInt(orderNum, 10),
+            wasSwapped: true
+          }
+        })
       } else {
         haptic.error()
         setSaving(false)

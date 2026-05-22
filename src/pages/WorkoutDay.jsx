@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
@@ -21,13 +21,22 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * При навигации на /swap/... передаём также defaultExerciseId — это id того
- * упражнения которое заложено в программу для этого слота. На странице замены
- * мы подсветим его зелёной обводкой, чтобы юзер мог найти и вернуть базовое.
+ * НОВОЕ — возврат с экрана замены упражнения:
+ *  - location.state.returnedFromOrderNum — order_num карточки откуда пришли
+ *  - location.state.wasSwapped — было ли реально сохранено новое упражнение
+ *
+ * Когда юзер возвращается:
+ *  1. Скроллим к нужной карточке (scrollIntoView с центрированием)
+ *  2. Ставим лёгкий press-эффект (scale 0.97 → 1) — визуальная подсказка
+ *     "вот эта карточка, с которой ты ушёл"
+ *  3. Если wasSwapped === true → дополнительно играет анимация двух
+ *     зелёных стрелок которые двигаются от боков карточки к её верху
+ *     (как "змейка") — индикатор что упражнение обновилось
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
@@ -46,11 +55,18 @@ export default function WorkoutDay() {
 
   const [slideDir, setSlideDir] = useState('right')
 
+  // НОВОЕ: реакция на возврат с экрана замены
+  // pressedOrderNum — какая карточка играет press-эффект (scale 0.97 → 1)
+  // swappedOrderNum — какая карточка играет анимацию стрелок "произошла замена"
+  const [pressedOrderNum, setPressedOrderNum] = useState(null)
+  const [swappedOrderNum, setSwappedOrderNum] = useState(null)
+
+  // Реф на карточки: order_num → DOM-обёртка (div). Нужно для scrollIntoView.
+  const cardRefs = useRef(new Map())
+
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
-  // Слоты программы из кода — нужны чтобы знать default_exercise_id для каждого
-  // order_num. Это лёгкое чтение из памяти, без запросов в БД.
   const programSlots = useMemo(() => getProgramDaySlots(programId, day), [programId, day])
 
   const currentDayIdx = days.indexOf(day)
@@ -101,6 +117,48 @@ export default function WorkoutDay() {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
 
+  // НОВОЕ: реакция на возврат с экрана замены упражнения.
+  // Срабатывает после того как карточки отрендерены (slots не пустой).
+  // Скроллит к карточке, ставит press-эффект, и если был swap — играет анимацию стрелок.
+  useEffect(() => {
+    if (loading) return
+    if (!slots.length) return
+
+    const stateData = location.state || {}
+    const returnedFrom = stateData.returnedFromOrderNum
+    const wasSwapped = stateData.wasSwapped
+
+    if (returnedFrom == null) return
+
+    // Даём React успеть отрисовать карточки. requestAnimationFrame ×2 —
+    // надёжный приём: первый кадр компонент маунтится, второй кадр он уже
+    // в DOM с реальными размерами и можно к нему скроллить.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const cardEl = cardRefs.current.get(returnedFrom)
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+
+        // Лёгкий press-эффект на 350мс
+        setPressedOrderNum(returnedFrom)
+        setTimeout(() => setPressedOrderNum(null), 350)
+
+        // Анимация стрелок — только если реально была смена
+        if (wasSwapped) {
+          setSwappedOrderNum(returnedFrom)
+          // Анимация длится 1200мс — после этого убираем её
+          setTimeout(() => setSwappedOrderNum(null), 1200)
+        }
+      })
+    })
+
+    // Чистим state из истории чтобы при следующих re-render'ах не повторялось
+    // (например, при свайпе между днями). replace: true чтобы не плодить
+    // запись в истории навигации.
+    navigate(location.pathname, { replace: true, state: null })
+  }, [loading, slots.length, location.state, location.pathname, navigate])
+
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
     if (actionSlot || infoSlot) return
@@ -135,8 +193,6 @@ export default function WorkoutDay() {
     const slot = actionSlot
     setActionSlot(null)
 
-    // Находим что было заложено в программу для этого слота — id из data/programs/split.js.
-    // На странице замены подсветим эту карточку зелёной обводкой ("вот базовое от программы").
     const programSlot = programSlots.find(s => s.order_num === slot.order_num)
     const defaultExerciseId = programSlot?.default_exercise_id || null
 
@@ -314,23 +370,42 @@ export default function WorkoutDay() {
           <div style={styles.sectionsWrap}>
             {sections.map((section, sIdx) => (
               <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-  <h2 style={{
-    ...styles.muscleHeader,
-    color: getMuscleGroupColors(section.muscleGroup).accent
-  }}>
-    {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-  </h2>
+                <h2 style={{
+                  ...styles.muscleHeader,
+                  color: getMuscleGroupColors(section.muscleGroup).accent
+                }}>
+                  {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+                </h2>
 
                 <div style={styles.exerciseList}>
-                  {section.slots.map(slot => (
-                    <ExerciseCard
-                      key={`${slot.order_num}-${slot.exercise_id}`}
-                      slot={slot}
-                      isActive={activeOrderNums.has(slot.order_num)}
-                      onTap={handleCardTap}
-                      onLongPress={handleCardLongPress}
-                    />
-                  ))}
+                  {section.slots.map(slot => {
+                    const isPressed = pressedOrderNum === slot.order_num
+                    const isSwapped = swappedOrderNum === slot.order_num
+                    return (
+                      <div
+                        key={`${slot.order_num}-${slot.exercise_id}`}
+                        ref={(el) => {
+                          if (el) cardRefs.current.set(slot.order_num, el)
+                          else cardRefs.current.delete(slot.order_num)
+                        }}
+                        style={{
+                          position: 'relative',
+                          transform: isPressed ? 'scale(0.97)' : 'scale(1)',
+                          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                      >
+                        <ExerciseCard
+                          slot={slot}
+                          isActive={activeOrderNums.has(slot.order_num)}
+                          onTap={handleCardTap}
+                          onLongPress={handleCardLongPress}
+                        />
+
+                        {/* Анимация "змейка" двух стрелок — только при wasSwapped */}
+                        {isSwapped && <SwapAnimationOverlay />}
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             ))}
@@ -381,6 +456,107 @@ export default function WorkoutDay() {
       )}
     </div>
   )
+}
+
+/**
+ * Анимация двух зелёных стрелок-"змейки" поверх карточки при успешной смене
+ * упражнения. Две стрелки появляются по бокам карточки и плывут к верх-центру,
+ * затем плавно исчезают. Длится ~1200мс.
+ *
+ * Реализация: absolute SVG поверх карточки, pointer-events: none чтобы
+ * не мешать тапам по карточке.
+ */
+function SwapAnimationOverlay() {
+  return (
+    <div style={overlayStyles.wrap} aria-hidden="true">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        style={overlayStyles.svg}
+      >
+        <defs>
+          <marker
+            id="arrowhead-left"
+            markerWidth="6"
+            markerHeight="6"
+            refX="3"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L6,3 L0,6 Z" fill="var(--color-primary)" />
+          </marker>
+          <marker
+            id="arrowhead-right"
+            markerWidth="6"
+            markerHeight="6"
+            refX="3"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L6,3 L0,6 Z" fill="var(--color-primary)" />
+          </marker>
+        </defs>
+
+        {/* Левая стрелка: от центра-низа карточки до верха-центра */}
+        <path
+          d="M 30,90 Q 5,50 50,10"
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="120"
+          strokeDashoffset="120"
+          markerEnd="url(#arrowhead-left)"
+          style={{
+            filter: 'drop-shadow(0 0 4px rgba(158, 209, 83, 0.6))',
+            animation: 'swapArrowDraw 1.2s ease-out forwards'
+          }}
+        />
+
+        {/* Правая стрелка: симметрично с другой стороны */}
+        <path
+          d="M 70,90 Q 95,50 50,10"
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="120"
+          strokeDashoffset="120"
+          markerEnd="url(#arrowhead-right)"
+          style={{
+            filter: 'drop-shadow(0 0 4px rgba(158, 209, 83, 0.6))',
+            animation: 'swapArrowDraw 1.2s ease-out forwards',
+            animationDelay: '0.08s'
+          }}
+        />
+      </svg>
+
+      <style>{`
+        @keyframes swapArrowDraw {
+          0%   { stroke-dashoffset: 120; opacity: 0; }
+          20%  { opacity: 1; }
+          70%  { stroke-dashoffset: 0; opacity: 1; }
+          100% { stroke-dashoffset: 0; opacity: 0; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+const overlayStyles = {
+  wrap: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    zIndex: 10,
+    borderRadius: '33px',
+    overflow: 'visible'
+  },
+  svg: {
+    width: '100%',
+    height: '100%',
+    overflow: 'visible'
+  }
 }
 
 function ArrowLeft() {
