@@ -11,25 +11,20 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  * URL: /swap/:programId/:day/:orderNum
  * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
  *
- * АРХИТЕКТУРА (простая flex-вёрстка, без sticky):
+ * АРХИТЕКТУРА:
  *
- * Структура page (вертикальный flex):
- *   [header: СМЕНИТЬ УПРАЖНЕНИЕ + Похожие на текущее]
- *   [currentBlock: ТЕКУЩЕЕ + карточка]
- *   [alternativesHeader: АЛЬТЕРНАТИВЫ (N)]
- *   [alternativesList: список карточек, занимает остаток места]
- *   [fixed bottomBar: кнопка СМЕНИТЬ]
+ * К верху прилипает ЕДИНЫЙ sticky-блок:
+ *   - Шапка "СМЕНИТЬ УПРАЖНЕНИЕ"
+ *   - Блок "ТЕКУЩЕЕ" с карточкой
+ *   - Заголовок "АЛЬТЕРНАТИВЫ (N)"
  *
- * Все блоки идут в обычном потоке документа сверху вниз — никаких
- * sticky, никаких fixed (кроме нижней кнопки), никаких отрицательных
- * margin'ов. Это значит:
- *   - При первом открытии всё видно сразу как нарисовано
- *   - При скролле всё уезжает вверх (если карточек много)
- *   - Никакого "контент под шапкой" не может быть в принципе
+ * Ниже него скроллящийся список альтернативных карточек.
  *
- * Раньше пробовали sticky/fixed с расчётом высоты — это создавало баги
- * (контент уезжал под шапку или непредсказуемо обрезался). Простой
- * поток документа надёжнее.
+ * ВАЖНО про автоскролл:
+ * Раньше на разных открытиях страница вела себя по-разному — иногда
+ * заголовок "СМЕНИТЬ УПРАЖНЕНИЕ" уезжал под системные кнопки Telegram.
+ * Причина — браузер/Telegram webview восстанавливал позицию скролла из
+ * предыдущей сессии. Лечится: window.scrollTo(0, 0) при маунте страницы.
  *
  * Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
  * не ждёт ответа БД.
@@ -54,6 +49,13 @@ export default function SwapExercise() {
   const [selectedId, setSelectedId] = useState(currentExerciseId || null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // ВАЖНО: сбрасываем скролл в начало при каждом открытии страницы.
+  // Без этого Telegram webview может восстановить позицию скролла из
+  // прошлой сессии, и юзер увидит заголовок ушедшим наверх под кнопки.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
@@ -160,29 +162,35 @@ export default function SwapExercise() {
   return (
     <div style={styles.page}>
 
-      <header style={styles.header}>
-        <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
-        <div style={styles.subtitle}>Похожие на текущее</div>
-      </header>
+      {/* Единый sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ */}
+      <div style={styles.stickyTop}>
 
-      {currentForRender && (
-        <div style={styles.currentBlock}>
-          <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
-          <ExerciseRow
-            exercise={currentForRender}
-            muscleGroup={muscleGroup}
-            isSelected={selectedId === currentForRender.id}
-            isCurrent={true}
-            isDefault={false}
-            onTap={() => handleSelect(currentForRender.id)}
-          />
+        <header style={styles.header}>
+          <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
+          <div style={styles.subtitle}>Похожие на текущее</div>
+        </header>
+
+        {currentForRender && (
+          <div style={styles.currentBlock}>
+            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+            <ExerciseRow
+              exercise={currentForRender}
+              muscleGroup={muscleGroup}
+              isSelected={selectedId === currentForRender.id}
+              isCurrent={true}
+              isDefault={false}
+              onTap={() => handleSelect(currentForRender.id)}
+            />
+          </div>
+        )}
+
+        <div style={styles.alternativesHeader}>
+          АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
         </div>
-      )}
-
-      <div style={styles.alternativesHeader}>
-        АЛЬТЕРНАТИВЫ {!loading && alternatives.length > 0 && `(${alternatives.length})`}
       </div>
 
+      {/* Скроллящийся список альтернатив. paddingTop даёт зазор от
+          заголовка АЛЬТЕРНАТИВЫ (он в sticky-блоке) до первой карточки. */}
       <div style={styles.alternativesList}>
         {loading ? (
           <div style={styles.loading}>Загрузка...</div>
@@ -224,24 +232,6 @@ export default function SwapExercise() {
   )
 }
 
-/**
- * Карточка упражнения в списке.
- *
- * В НОВОМ ДИЗАЙНЕ (как в ExerciseCard и ExerciseActionMenu):
- *  - сверху название упражнения
- *  - ниже ряд тегов: цветной тег группы мышц + серый тег подгруппы
- *  - снизу серая подпись подходов (meta_info)
- *  - справа radio-кружок для выбора
- *
- * isCurrent — это текущее выбранное упражнение в блоке "ТЕКУЩЕЕ"
- * isDefault — это рекомендованное программой (зелёная обводка + бейдж "ОТ ПРОГРАММЫ")
- * isSelected — на нём сейчас стоит радио-точка (юзер выбрал)
- *
- * muscleGroup приходит снаружи (со страницы тренировки), а не из самого
- * exercise — потому что в выдаче getExercisesForSubgroup у объектов нет
- * поля muscle_group (есть только sub_group и type). Подгруппа однозначно
- * определяет группу, поэтому передаём её один раз для всей страницы.
- */
 function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, onTap }) {
   let borderColor = 'transparent'
   if (isSelected) {
@@ -321,14 +311,27 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: обычный поток сверху вниз. paddingTop под кнопки Telegram,
-  // paddingBottom под фиксированную кнопку "СМЕНИТЬ".
+  // Страница: горизонтальные отступы, paddingBottom — под fixed кнопку "СМЕНИТЬ"
   page: {
-    paddingTop: 'var(--tg-safe-top)',
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '140px',
     minHeight: '100dvh'
+  },
+  // Единый sticky-блок. Растянут на всю ширину поверх горизонтального
+  // padding'а страницы (margin -16px + padding 16px). Фон --color-bg
+  // непрозрачный — карточки альтернатив при скролле уезжают под него.
+  stickyTop: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 30,
+    background: 'var(--color-bg)',
+    paddingTop: 'var(--tg-safe-top)',
+    paddingBottom: '12px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px'
   },
   header: {
     marginBottom: '20px',
@@ -350,7 +353,7 @@ const styles = {
     letterSpacing: '2px'
   },
   currentBlock: {
-    marginBottom: '20px'
+    marginBottom: '16px'
   },
   sectionLabel: {
     fontFamily: 'var(--font-tiny5)',
@@ -365,10 +368,13 @@ const styles = {
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    paddingLeft: '4px',
-    marginBottom: '8px'
+    paddingLeft: '4px'
   },
-  alternativesList: {},
+  // Список альтернатив. paddingTop: 16px — зазор между заголовком
+  // "АЛЬТЕРНАТИВЫ" (в sticky-блоке) и первой карточкой.
+  alternativesList: {
+    paddingTop: '16px'
+  },
   altList: {
     display: 'flex',
     flexDirection: 'column',
