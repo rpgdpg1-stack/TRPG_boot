@@ -159,8 +159,8 @@ export default function WorkoutDay() {
 
           if (wasSwapped) {
             setSwappedOrderNum(returnedFrom)
-            // Длительность: 2.4с основная + 1.2с задержка второй стрелки
-            setTimeout(() => setSwappedOrderNum(null), 3800)
+            // Длительность: 2.4с анимация + 200мс запас
+            setTimeout(() => setSwappedOrderNum(null), 2600)
           }
         }, 60)
       })
@@ -474,23 +474,17 @@ export default function WorkoutDay() {
 }
 
 /**
- * Анимация "змейки" — два зелёных сегмента идут по контуру карточки
- * по часовой стрелке, на конце каждого — треугольный наконечник как у
- * классической стрелки. Второй сегмент стартует когда первый прошёл
- * примерно половину пути — образуется эффект двух стрелок, идущих
- * друг за другом с равным интервалом.
+ * Анимация "змейки" — один зелёный сегмент-полоса проходит по контуру
+ * карточки по часовой стрелке ровно один круг и исчезает.
  *
  * Геометрия:
  *  - SVG растягивается под реальные размеры карточки (preserveAspectRatio="none")
  *  - rx/ry углов = 33px — совпадает с border-radius карточки
  *  - Путь стартует с середины верхней грани (12 часов) и идёт по часовой
- *  - vectorEffect="non-scaling-stroke" — толщина 3px и наконечник не растягиваются
+ *  - vectorEffect="non-scaling-stroke" — толщина линии 3px остаётся постоянной
  *
- * Скорость: 2.4с на полный цикл (раньше было 1.4с — слишком быстро).
- * Вторая стрелка стартует через 1.2с (половина цикла).
- *
- * Наконечник — SVG marker с треугольником, orient="auto" поворачивает
- * его по направлению движения сегмента.
+ * Скорость: 2.4с на полный круг, плавный easing.
+ * Один проход, без повторов и без второй стрелки.
  */
 function SwapAnimationOverlay() {
   const W = 700
@@ -511,7 +505,7 @@ function SwapAnimationOverlay() {
   `.trim()
 
   const PERIMETER = 2 * (W + H) - 8 * R + 2 * Math.PI * R
-  const SEGMENT = PERIMETER * 0.14   // длина видимого сегмента (14% от периметра)
+  const SEGMENT = PERIMETER * 0.14
 
   return (
     <div style={overlayStyles.wrap} aria-hidden="true">
@@ -520,23 +514,6 @@ function SwapAnimationOverlay() {
         preserveAspectRatio="none"
         style={overlayStyles.svg}
       >
-        <defs>
-          {/* Треугольный наконечник стрелки. orient="auto" поворачивает
-              его по касательной к пути в точке окончания сегмента. */}
-          <marker
-            id="snake-arrowhead"
-            markerWidth="6"
-            markerHeight="6"
-            refX="5"
-            refY="3"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M 0 0 L 6 3 L 0 6 Z" fill="var(--color-primary)" />
-          </marker>
-        </defs>
-
-        {/* Стрелка 1: стартует сразу */}
         <path
           d={path}
           fill="none"
@@ -544,28 +521,10 @@ function SwapAnimationOverlay() {
           strokeWidth="3"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
-          markerEnd="url(#snake-arrowhead)"
           style={{
             strokeDasharray: `${SEGMENT} ${PERIMETER}`,
             filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
             animation: 'snakeRun 2.4s cubic-bezier(0.45, 0, 0.55, 1) forwards'
-          }}
-        />
-
-        {/* Стрелка 2: стартует через 1.2с (половина цикла) — догоняет место первой */}
-        <path
-          d={path}
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
-          markerEnd="url(#snake-arrowhead)"
-          style={{
-            strokeDasharray: `${SEGMENT} ${PERIMETER}`,
-            filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
-            animation: 'snakeRun 2.4s cubic-bezier(0.45, 0, 0.55, 1) 1.2s forwards',
-            opacity: 0
           }}
         />
       </svg>
