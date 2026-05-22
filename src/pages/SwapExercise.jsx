@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
@@ -18,14 +18,21 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  *   2. Заголовок "ТЕКУЩЕЕ" + карточка текущего упражнения
  *   3. Заголовок "АЛЬТЕРНАТИВЫ (N)"
  *
- * Скроллятся только карточки альтернатив ниже.
+ * Под ним — скроллящийся список альтернатив.
  *
- * Реализация: один <div style={position: sticky, top: 0}> на всё это,
- * с непрозрачным фоном --color-bg. При скролле он остаётся приклеенным
- * к верху экрана, альтернативы уезжают под него.
+ * Из-за того что у stickyTop отрицательные marginLeft/Right (растягиваем на
+ * всю ширину поверх горизонтального padding страницы), следующий элемент
+ * в потоке (alternativesList) при первом рендере мог визуально оказаться
+ * частично под sticky-блоком — первая карточка обрезалась сверху, юзеру
+ * приходилось скроллить чтобы её увидеть.
+ *
+ * РЕШЕНИЕ: измеряем реальную высоту stickyTop через ResizeObserver и
+ * проставляем её как paddingTop у alternativesList. Так первая карточка
+ * всегда оказывается ниже sticky-блока ровно на его высоту + небольшой
+ * зазор. Работает И при малом контенте (нет скролла), И при большом.
  *
  * Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
- * не ждёт ответа БД — карточка появляется сразу при открытии страницы.
+ * не ждёт ответа БД.
  */
 export default function SwapExercise() {
   const { programId, day, orderNum } = useParams()
@@ -47,6 +54,12 @@ export default function SwapExercise() {
   const [selectedId, setSelectedId] = useState(currentExerciseId || null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Реф и измеренная высота закреплённой шапки.
+  // Используется для отступа alternativesList — гарантия что первая карточка
+  // не окажется под sticky-блоком при первом открытии страницы.
+  const stickyRef = useRef(null)
+  const [stickyHeight, setStickyHeight] = useState(0)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(`/workout/${programId}/${day}`))
@@ -93,6 +106,22 @@ export default function SwapExercise() {
     load()
     return () => { cancelled = true }
   }, [subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId])
+
+  // Меряем высоту sticky-блока. ResizeObserver сработает и на маунте,
+  // и при ресайзе (поворот экрана, изменение safe-area).
+  // Перезамеряем когда меняются данные внутри блока — название текущего
+  // упражнения может быть длинным и переноситься на 2 строки, что меняет высоту.
+  useEffect(() => {
+    const el = stickyRef.current
+    if (!el) return
+
+    const update = () => setStickyHeight(el.offsetHeight)
+    update()
+
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [currentExercise, currentExerciseName, loading])
 
   const handleSelect = (exerciseId) => {
     haptic.light()
@@ -154,8 +183,8 @@ export default function SwapExercise() {
     <div style={styles.page}>
 
       {/* Единый sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
-          При скролле остаётся приклеенным к верху, альтернативы уезжают под него. */}
-      <div style={styles.stickyTop}>
+          Измеряется через stickyRef для расчёта отступа списка. */}
+      <div ref={stickyRef} style={styles.stickyTop}>
 
         <header style={styles.header}>
           <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
@@ -181,8 +210,13 @@ export default function SwapExercise() {
         </div>
       </div>
 
-      {/* Скроллящаяся часть: список альтернатив */}
-      <div style={styles.alternativesList}>
+      {/* Скроллящаяся часть. paddingTop задаём через инлайн стиль,
+          равный высоте sticky-блока + 12px зазор. Гарантия что первая
+          карточка всегда видна сразу после sticky, не под ней. */}
+      <div style={{
+        ...styles.alternativesList,
+        paddingTop: stickyHeight ? `${stickyHeight + 12}px` : '300px'
+      }}>
         {loading ? (
           <div style={styles.loading}>Загрузка...</div>
         ) : alternatives.length === 0 ? (
@@ -333,9 +367,8 @@ const styles = {
     minHeight: '100dvh'
   },
   // ЕДИНЫЙ sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ.
-  // Растягиваем на всю ширину поверх горизонтального padding страницы
-  // (margin -16px + padding 16px). Фон --color-bg непрозрачный, чтобы
-  // альтернативы уезжали ПОД блок при скролле, не просвечивая.
+  // Растянут на всю ширину поверх горизонтального padding страницы
+  // (margin -16px + padding 16px). Фон --color-bg непрозрачный.
   stickyTop: {
     position: 'sticky',
     top: 0,
@@ -378,7 +411,6 @@ const styles = {
     marginBottom: '8px',
     paddingLeft: '4px'
   },
-  // Заголовок "АЛЬТЕРНАТИВЫ (N)" — внутри sticky-блока, не уезжает при скролле
   alternativesHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '11px',
@@ -386,17 +418,18 @@ const styles = {
     letterSpacing: '2px',
     paddingLeft: '4px'
   },
-  // Список альтернатив — растянут на ту же ширину что и stickyTop
-  // (margin -16px + padding 16px по бокам). Без этого список оказывается
-  // в "узкой" зоне внутри page.paddingLeft/Right, и карточки визуально
-  // обрезаются по краям при первом открытии страницы.
-  // paddingTop: 16px — зазор между заголовком "АЛЬТЕРНАТИВЫ" и первой карточкой.
+  // Список альтернатив. paddingTop задаётся ИНЛАЙН (см. JSX выше) —
+  // равен высоте stickyTop + зазор. Это то что физически опускает
+  // первую карточку ниже sticky-блока, чтобы она не пряталась под ним
+  // при первом открытии страницы.
+  //
+  // Растягиваем на всю ширину тем же приёмом что и stickyTop — иначе
+  // ширины блоков рассинхронизированы и карточки могут визуально обрезаться.
   alternativesList: {
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
-    paddingRight: '16px',
-    paddingTop: '16px'
+    paddingRight: '16px'
   },
   altList: {
     display: 'flex',
@@ -489,7 +522,6 @@ const rowStyles = {
     flexDirection: 'column',
     gap: '5px'
   },
-  // Имя + бейдж "ОТ ПРОГРАММЫ" в одной строке (бейдж переносится если не помещается)
   nameRow: {
     display: 'flex',
     alignItems: 'center',
@@ -513,7 +545,6 @@ const rowStyles = {
     letterSpacing: '1px',
     whiteSpace: 'nowrap'
   },
-  // Те же правила что в action-menu — компактные теги
   tagsRow: {
     display: 'flex',
     flexDirection: 'row',
