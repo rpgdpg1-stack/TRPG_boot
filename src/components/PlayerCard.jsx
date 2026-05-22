@@ -12,7 +12,6 @@ import {
 import { pluralizeWorkouts } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
-import { refreshCurrentUser } from '../lib/auth'
 import XPBar from './XPBar'
 import RanksPopup from './RanksPopup'
 
@@ -81,7 +80,6 @@ export default function PlayerCard() {
     }
 
     loadData()
-    refreshCurrentUser().then(loadData).catch(() => {})
 
     const offReady = on(EVENTS.USER_READY, loadData)
     const offChanged = on(EVENTS.USER_CHANGED, loadData)
