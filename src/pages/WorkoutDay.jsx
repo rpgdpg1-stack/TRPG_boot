@@ -57,8 +57,11 @@ export default function WorkoutDay() {
 
   // pressedOrderNum — карточка играет лёгкий press-эффект (scale 0.97 → 1)
   // swappedOrderNum — карточка играет анимацию "змейки" (стрелки по контуру)
+  // isReturning — на время возврата с swap прячем контент чтобы скрыть
+  //               моргание при скролле к дальней карточке
   const [pressedOrderNum, setPressedOrderNum] = useState(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
+  const [isReturning, setIsReturning] = useState(false)
 
   // Реф на DOM-обёртки карточек: order_num → div. Нужно для scrollIntoView.
   const cardRefs = useRef(new Map())
@@ -118,6 +121,13 @@ export default function WorkoutDay() {
 
   // Реакция на возврат с экрана замены упражнения.
   // Срабатывает после рендера карточек (slots не пустой, loading закончился).
+  //
+  // Как убираем "моргание" при скролле к дальней карточке:
+  //   1. До скролла — прячем ВЕСЬ контент дня через opacity 0 (isReturning=true)
+  //   2. Скроллим к карточке (мгновенно, без анимации езды)
+  //   3. Через 60мс снимаем isReturning → контент плавно проявляется fade-in 220мс
+  // В итоге юзер видит: пустой фон → готовая позиция с нужной карточкой,
+  // без рывка прокрутки.
   useEffect(() => {
     if (loading) return
     if (!slots.length) return
@@ -128,25 +138,31 @@ export default function WorkoutDay() {
 
     if (returnedFrom == null) return
 
+    // Прячем контент до скролла — это маскирует моргание перерисовки
+    setIsReturning(true)
+
     // requestAnimationFrame ×2 — даём React дорисовать карточки в DOM.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const cardEl = cardRefs.current.get(returnedFrom)
         if (cardEl) {
-          // behavior: 'auto' — мгновенный скролл, без анимации езды.
           cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
         }
 
-        // Лёгкий press-эффект на 350мс
-        setPressedOrderNum(returnedFrom)
-        setTimeout(() => setPressedOrderNum(null), 350)
+        // Чуть-чуть ждём после скролла и плавно показываем контент
+        setTimeout(() => {
+          setIsReturning(false)
 
-        // Анимация змейки — только если реально была смена упражнения
-        if (wasSwapped) {
-          setSwappedOrderNum(returnedFrom)
-          // Длительность: 1.4с основная анимация + 0.3с задержка второй стрелки
-          setTimeout(() => setSwappedOrderNum(null), 1700)
-        }
+          // Press-эффект и анимация змейки запускаем уже на видимом контенте
+          setPressedOrderNum(returnedFrom)
+          setTimeout(() => setPressedOrderNum(null), 350)
+
+          if (wasSwapped) {
+            setSwappedOrderNum(returnedFrom)
+            // Длительность: 2.4с основная + 1.2с задержка второй стрелки
+            setTimeout(() => setSwappedOrderNum(null), 3800)
+          }
+        }, 60)
       })
     })
 
@@ -347,7 +363,11 @@ export default function WorkoutDay() {
         </div>
       </div>
 
-      <div style={styles.body}>
+      <div style={{
+        ...styles.body,
+        opacity: isReturning ? 0 : 1,
+        transition: isReturning ? 'none' : 'opacity 0.22s ease-out'
+      }}>
 
         {error && (
           <div style={styles.error}>
@@ -454,19 +474,23 @@ export default function WorkoutDay() {
 }
 
 /**
- * Анимация "змейки" — два зелёных сегмента-лоадера обходят контур карточки
- * по часовой стрелке. Второй идёт за первым с задержкой 0.3с, образуя
- * эффект двойной полоски-загрузки.
+ * Анимация "змейки" — два зелёных сегмента идут по контуру карточки
+ * по часовой стрелке, на конце каждого — треугольный наконечник как у
+ * классической стрелки. Второй сегмент стартует когда первый прошёл
+ * примерно половину пути — образуется эффект двух стрелок, идущих
+ * друг за другом с равным интервалом.
  *
  * Геометрия:
  *  - SVG растягивается под реальные размеры карточки (preserveAspectRatio="none")
  *  - rx/ry углов = 33px — совпадает с border-radius карточки
  *  - Путь стартует с середины верхней грани (12 часов) и идёт по часовой
- *  - vectorEffect="non-scaling-stroke" — толщина линии 3px остаётся постоянной
- *    при любом растяжении SVG
+ *  - vectorEffect="non-scaling-stroke" — толщина 3px и наконечник не растягиваются
  *
- * stroke-dasharray делает видимым только сегмент в 18% длины периметра.
- * stroke-dashoffset → -PERIMETER за 1.4с создаёт эффект бегущей точки.
+ * Скорость: 2.4с на полный цикл (раньше было 1.4с — слишком быстро).
+ * Вторая стрелка стартует через 1.2с (половина цикла).
+ *
+ * Наконечник — SVG marker с треугольником, orient="auto" поворачивает
+ * его по направлению движения сегмента.
  */
 function SwapAnimationOverlay() {
   const W = 700
@@ -487,6 +511,7 @@ function SwapAnimationOverlay() {
   `.trim()
 
   const PERIMETER = 2 * (W + H) - 8 * R + 2 * Math.PI * R
+  const SEGMENT = PERIMETER * 0.14   // длина видимого сегмента (14% от периметра)
 
   return (
     <div style={overlayStyles.wrap} aria-hidden="true">
@@ -495,6 +520,23 @@ function SwapAnimationOverlay() {
         preserveAspectRatio="none"
         style={overlayStyles.svg}
       >
+        <defs>
+          {/* Треугольный наконечник стрелки. orient="auto" поворачивает
+              его по касательной к пути в точке окончания сегмента. */}
+          <marker
+            id="snake-arrowhead"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5"
+            refY="3"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M 0 0 L 6 3 L 0 6 Z" fill="var(--color-primary)" />
+          </marker>
+        </defs>
+
+        {/* Стрелка 1: стартует сразу */}
         <path
           d={path}
           fill="none"
@@ -502,13 +544,15 @@ function SwapAnimationOverlay() {
           strokeWidth="3"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
+          markerEnd="url(#snake-arrowhead)"
           style={{
-            strokeDasharray: `${PERIMETER * 0.18} ${PERIMETER}`,
+            strokeDasharray: `${SEGMENT} ${PERIMETER}`,
             filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
-            animation: 'snakeRun 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards'
+            animation: 'snakeRun 2.4s cubic-bezier(0.45, 0, 0.55, 1) forwards'
           }}
         />
 
+        {/* Стрелка 2: стартует через 1.2с (половина цикла) — догоняет место первой */}
         <path
           d={path}
           fill="none"
@@ -516,10 +560,11 @@ function SwapAnimationOverlay() {
           strokeWidth="3"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
+          markerEnd="url(#snake-arrowhead)"
           style={{
-            strokeDasharray: `${PERIMETER * 0.18} ${PERIMETER}`,
+            strokeDasharray: `${SEGMENT} ${PERIMETER}`,
             filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
-            animation: 'snakeRun 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards',
+            animation: 'snakeRun 2.4s cubic-bezier(0.45, 0, 0.55, 1) 1.2s forwards',
             opacity: 0
           }}
         />
@@ -528,8 +573,8 @@ function SwapAnimationOverlay() {
       <style>{`
         @keyframes snakeRun {
           0%   { stroke-dashoffset: 0; opacity: 0; }
-          10%  { opacity: 1; }
-          85%  { opacity: 1; }
+          8%   { opacity: 1; }
+          88%  { opacity: 1; }
           100% { stroke-dashoffset: -${PERIMETER}; opacity: 0; }
         }
       `}</style>
