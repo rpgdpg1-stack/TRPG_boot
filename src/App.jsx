@@ -12,6 +12,7 @@ import WorkoutDay from './pages/WorkoutDay'
 import SwapExercise from './pages/SwapExercise'
 import Progress from './pages/Progress'
 import Recovery from './pages/Recovery'
+import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 
 import { initTelegram, settingsButton } from './lib/telegram'
@@ -51,6 +52,9 @@ export default function App() {
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/profile" element={<Profile />} />
+          {/* Recovery остаётся доступным по прямой ссылке — открывается из Профиля.
+              Из таб-бара убрали (теперь там Профиль), но роут жив. */}
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

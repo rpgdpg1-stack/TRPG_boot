@@ -19,14 +19,20 @@ import RanksPopup from './RanksPopup'
 /**
  * Главный блок персонажа на Главной.
  *
- * Popup под XP-баром:
- *  - Последние 3 начисления (что свежее — выше). Сортировка по времени
- *    плюс по id, чтобы события с одинаковой секундой шли в правильном порядке.
+ * Макет (горизонтальный):
+ *   [АВАТАР 100px]   Дмитрий @rpgdpg
+ *                    Новобранец III
+ *                    [XP-БАР]
+ *
+ *   Ниже отдельной строкой по центру под всем блоком: 🔥🔥🔥 (серия)
+ *
+ * Аватар 100px без кольца прогресса (раньше было 140px с кольцом — место
+ * сейчас занимает горизонтальный XP-бар, кольцо дублировало бы инфу).
+ *
+ * Попап под XP-баром:
+ *  - Последние 3 начисления (что свежее — выше)
  *  - Разделитель
  *  - Прогресс до следующего ранга
- *
- *  Все строки имеют ОДИНАКОВУЮ структуру: слева текст, справа "+N 💪".
- *  Это даёт визуальное единообразие — глаз не прыгает.
  */
 
 const SOURCE_LABELS = {
@@ -85,9 +91,6 @@ export default function PlayerCard() {
     }
   }, [])
 
-  // Обновляем историю каждый раз при открытии попапа — чтобы видеть
-  // самые свежие начисления (вдруг кто-то завершил тренировку и закрыл попап
-  // до того как изменилось состояние родителя).
   useEffect(() => {
     if (showXPDetails) {
       getRecentMuscleHistory(3).then(setRecentHistory)
@@ -178,117 +181,108 @@ export default function PlayerCard() {
   const totalFlames = weeklyStreak >= 4 ? 4 : 3
   const filledFlames = Math.min(weeklyStreak, totalFlames)
 
-  const avatarSize = 140
-  const avatarInnerSize = 124
-  const ringR = 66
-  const ringCircumference = 2 * Math.PI * ringR
-
   return (
     <div style={styles.container}>
 
-      <button
-        onClick={handleAvatarTap}
-        style={{ ...styles.avatarWrap, width: avatarSize, height: avatarSize }}
-        aria-label="Открыть настройки"
-      >
-        <svg style={styles.ring} viewBox={`0 0 ${avatarSize} ${avatarSize}`} xmlns="http://www.w3.org/2000/svg">
-          <circle cx={avatarSize/2} cy={avatarSize/2} r={ringR} fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="3" />
-          <circle
-            cx={avatarSize/2} cy={avatarSize/2} r={ringR}
-            fill="none"
-            stroke={rank.color}
-            strokeWidth="3"
-            strokeLinecap="butt"
-            strokeDasharray={`${(progress / 100) * ringCircumference} ${ringCircumference}`}
-            transform={`rotate(-90 ${avatarSize/2} ${avatarSize/2})`}
-            style={{
-              filter: `drop-shadow(0 0 4px ${rank.color})`,
-              transition: 'stroke-dasharray 0.6s ease, stroke 0.4s ease'
-            }}
-          />
-        </svg>
+      {/* Горизонтальный блок: аватар слева, инфо справа */}
+      <div style={styles.mainRow}>
 
-        <div style={{ ...styles.avatarInner, width: avatarInnerSize, height: avatarInnerSize }}>
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt="" style={styles.avatarImg} />
-          ) : (
-            <div style={styles.avatarPlaceholder}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-      </button>
-
-      <div style={styles.name}>{displayName}</div>
-      {username && <div style={styles.username}>{username}</div>}
-
-      <div style={styles.rankWrap} data-rank-button-wrap>
         <button
-          ref={rankButtonRef}
-          onClick={handleRankTap}
-          style={{ ...styles.rank, color: rank.color }}
+          onClick={handleAvatarTap}
+          style={styles.avatarWrap}
+          aria-label="Открыть настройки"
         >
-          {rank.emoji} {rank.name} {rank.subLevel}
-        </button>
-
-        {showRanks && (
-          <RanksPopup
-            currentLevel={level}
-            onClose={() => setShowRanks(false)}
-          />
-        )}
-      </div>
-
-      <div style={styles.xpBlock}>
-        <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
-          <XPBar
-            progress={progress}
-            color={rank.color}
-            current={totalCurrent}
-            needed={totalNeeded}
-          />
-        </button>
-
-        {showXPDetails && (
-          <div ref={xpPopupRef} style={styles.popup}>
-
-            <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
-
-            {recentHistory.length === 0 ? (
-              <div style={styles.popupEmpty}>
-                Пока пусто.<br />
-                Выполни буст или тренировку, чтобы заработать первые мускулы.
-              </div>
+          <div style={styles.avatarInner}>
+            {user?.photo_url ? (
+              <img src={user.photo_url} alt="" style={styles.avatarImg} />
             ) : (
-              <div style={styles.popupHistoryList}>
-                {recentHistory.map((row, idx) => (
-                  <div key={idx} style={styles.popupRow}>
-                    <span style={styles.popupLabel}>
-                      {formatSourceLabel(row.source)}
-                    </span>
-                    <span style={styles.popupAmount}>
-                      +{row.amount} 💪
-                    </span>
-                  </div>
-                ))}
+              <div style={styles.avatarPlaceholder}>
+                {displayName.charAt(0).toUpperCase()}
               </div>
             )}
-
-            <div style={styles.popupDivider} />
-
-            {/* Строка "до следующего ранга" — та же структура: текст слева, мускулы справа */}
-            <div style={styles.popupRow}>
-              <span style={styles.popupLabel}>
-                До «{nextRank.name} {nextRank.subLevel}»
-              </span>
-              <span style={{ ...styles.popupAmount, color: rank.color }}>
-                {remainingToNext} 💪
-              </span>
-            </div>
           </div>
-        )}
+        </button>
+
+        <div style={styles.infoColumn}>
+
+          {/* Имя + ник в одной строке */}
+          <div style={styles.nameRow}>
+            <span style={styles.name}>{displayName}</span>
+            {username && <span style={styles.username}>{username}</span>}
+          </div>
+
+          {/* Ранг — кликабельный, открывает список рангов */}
+          <div style={styles.rankWrap} data-rank-button-wrap>
+            <button
+              ref={rankButtonRef}
+              onClick={handleRankTap}
+              style={{ ...styles.rank, color: rank.color }}
+            >
+              {rank.emoji} {rank.name} {rank.subLevel}
+            </button>
+
+            {showRanks && (
+              <RanksPopup
+                currentLevel={level}
+                onClose={() => setShowRanks(false)}
+              />
+            )}
+          </div>
+
+          {/* XP-бар */}
+          <div style={styles.xpBlock}>
+            <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
+              <XPBar
+                progress={progress}
+                color={rank.color}
+                current={totalCurrent}
+                needed={totalNeeded}
+              />
+            </button>
+
+            {showXPDetails && (
+              <div ref={xpPopupRef} style={styles.popup}>
+
+                <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
+
+                {recentHistory.length === 0 ? (
+                  <div style={styles.popupEmpty}>
+                    Пока пусто.<br />
+                    Выполни буст или тренировку, чтобы заработать первые мускулы.
+                  </div>
+                ) : (
+                  <div style={styles.popupHistoryList}>
+                    {recentHistory.map((row, idx) => (
+                      <div key={idx} style={styles.popupRow}>
+                        <span style={styles.popupLabel}>
+                          {formatSourceLabel(row.source)}
+                        </span>
+                        <span style={styles.popupAmount}>
+                          +{row.amount} 💪
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={styles.popupDivider} />
+
+                <div style={styles.popupRow}>
+                  <span style={styles.popupLabel}>
+                    До «{nextRank.name} {nextRank.subLevel}»
+                  </span>
+                  <span style={{ ...styles.popupAmount, color: rank.color }}>
+                    {remainingToNext} 💪
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Серия — отдельно ниже всего блока, по центру.
+          Слева пиксельная подпись "СЕРИЯ:", справа огоньки. */}
       <div style={styles.streakWrap}>
         <button
           ref={streakButtonRef}
@@ -296,9 +290,12 @@ export default function PlayerCard() {
           style={styles.streakRow}
           aria-label="Серия тренировок"
         >
-          {Array.from({ length: totalFlames }).map((_, i) => (
-            <FlameIcon key={i} lit={i < filledFlames} />
-          ))}
+          <span style={styles.streakLabel}>СЕРИЯ:</span>
+          <div style={styles.flamesRow}>
+            {Array.from({ length: totalFlames }).map((_, i) => (
+              <FlameIcon key={i} lit={i < filledFlames} />
+            ))}
+          </div>
         </button>
 
         {showStreakHint && (
@@ -360,29 +357,36 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    padding: '8px 16px 4px',
-    position: 'relative'
-  },
-  avatarWrap: {
+    padding: '8px 4px 4px',
     position: 'relative',
-    marginBottom: '12px',
+    gap: '16px'
+  },
+  // Горизонтальный ряд: аватар + инфо
+  mainRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  // Аватар — 100x100, без кольца прогресса
+  avatarWrap: {
+    width: '100px',
+    height: '100px',
     flexShrink: 0,
     background: 'transparent',
     border: 'none',
     padding: 0,
     cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
+    WebkitTapHighlightColor: 'transparent',
+    position: 'relative'
   },
-  ring: { position: 'absolute', inset: 0, width: '100%', height: '100%' },
   avatarInner: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
+    width: '100%',
+    height: '100%',
     borderRadius: '50%',
     overflow: 'hidden',
-    background: 'var(--color-card)'
+    background: 'var(--color-card)',
+    border: '2px solid rgba(255, 255, 255, 0.08)'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
@@ -392,42 +396,55 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '52px',
+    fontSize: '38px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
   },
+  // Правая колонка с инфо — имя/ник, ранг, XP-бар
+  infoColumn: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    justifyContent: 'center'
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '6px',
+    flexWrap: 'wrap'
+  },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '22px',
+    fontSize: '18px',
     fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.1
   },
   username: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    marginBottom: '12px'
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)'
   },
   rankWrap: {
     position: 'relative',
     display: 'flex',
-    justifyContent: 'center'
+    alignItems: 'flex-start'
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
+    fontSize: '12px',
     letterSpacing: '1.5px',
-    padding: '4px 10px',
+    padding: '2px 0',
     background: 'transparent',
     border: 'none',
     cursor: 'pointer'
   },
   xpBlock: {
     width: '100%',
-    maxWidth: '320px',
     position: 'relative',
-    marginTop: '12px'
+    marginTop: '2px'
   },
   xpBarButton: { width: '100%', padding: 0, background: 'transparent' },
   popup: {
@@ -456,8 +473,6 @@ const styles = {
     flexDirection: 'column',
     gap: '4px'
   },
-  // ЕДИНАЯ структура строки: текст слева, "+N 💪" справа.
-  // Используется и для истории начислений, и для "до следующего ранга".
   popupRow: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -497,8 +512,31 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.08)',
     margin: '8px 0'
   },
-  streakWrap: { position: 'relative', marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  streakRow: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'transparent' },
+  // Серия — отдельный блок ниже всего, по центру
+  streakWrap: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+  streakRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '6px 12px',
+    background: 'transparent'
+  },
+  streakLabel: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px'
+  },
+  flamesRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
   streakPopup: {
     position: 'absolute',
     top: 'calc(100% + 6px)',

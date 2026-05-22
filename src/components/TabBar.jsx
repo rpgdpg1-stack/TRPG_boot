@@ -2,11 +2,14 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Таб-бар — 3 вкладки: Прогресс / Тренировки / Восстановление.
+ * Таб-бар — 3 вкладки: Статистика / Тренировки / Профиль.
+ *
+ * Восстановление (Recovery) перенесено внутрь профиля — оно будет доступно
+ * из настроек профиля (страницу пока не переделываем, но из таб-бара убрали).
  *
  * НЕ показывается на экранах тренировки (/workout/...) и замены упражнения
  * (/swap/...) — там юзеру нужен фокус, таб-бар отвлекает и закрывает
- * нижнюю кнопку "Завершить тренировку".
+ * нижнюю кнопку.
  */
 export default function TabBar() {
   const location = useLocation()
@@ -28,7 +31,7 @@ export default function TabBar() {
     {
       id: 'progress',
       path: '/progress',
-      label: 'Прогресс',
+      label: 'Статистика',
       icon: '📊',
       isActive: location.pathname === '/progress',
       canTap: location.pathname !== '/progress'
@@ -42,12 +45,12 @@ export default function TabBar() {
       canTap: !isExactHome
     },
     {
-      id: 'recovery',
-      path: '/recovery',
-      label: 'Восстановление',
-      icon: '🛌',
-      isActive: location.pathname === '/recovery',
-      canTap: location.pathname !== '/recovery'
+      id: 'profile',
+      path: '/profile',
+      label: 'Профиль',
+      icon: '👤',
+      isActive: location.pathname === '/profile',
+      canTap: location.pathname !== '/profile'
     }
   ]
 

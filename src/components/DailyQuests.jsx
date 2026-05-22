@@ -7,17 +7,9 @@ import PixelCheckbox from './PixelCheckbox'
 /**
  * Дневной буст — 3 ежедневных квеста по 20 мускулов.
  *
- * ОБНОВЛЕНИЕ: моментальный первый рендер из localStorage.
- *
- * Раньше: маунт → запрос в БД → пока запрос идёт показываем "ничего не выполнено"
- *         → ответ приходит → если все выполнены, схлопываемся в "Все бусты собраны"
- *         → юзер видит МОРГАНИЕ.
- *
- * Теперь: маунт → getDailyQuestsSync() из localStorage СИНХРОННО → корректный
- *         первый рендер → параллельно фоновый getDailyQuests() из БД → если
- *         состояние совпало (обычный случай) ничего не меняется. Если БД
- *         отдала что-то новое — обновляем без моргания, т.к. меняются конкретные
- *         квесты, а не весь блок.
+ * Компактнее: уменьшены padding'ы строк и контейнера.
+ * Когда все 3 квеста выполнены — показывается короткое сообщение
+ * "+60 💪 получено / ✔ Все задания выполнены" компактным блоком.
  */
 
 const DEMO_QUESTS = [
@@ -26,8 +18,9 @@ const DEMO_QUESTS = [
   { id: 'stretch', title: 'Растяжка 10 мин',  xp: 20 }
 ]
 
+const TOTAL_QUEST_REWARD = DEMO_QUESTS.reduce((sum, q) => sum + q.xp, 0)
+
 export default function DailyQuests() {
-  // Первый рендер берётся из localStorage синхронно — без моргания
   const [completed, setCompleted] = useState(() => getDailyQuestsSync())
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
@@ -35,7 +28,6 @@ export default function DailyQuests() {
   const lastTapRef = useRef({})
 
   useEffect(() => {
-    // Фоновая синхронизация с БД
     const loadQuests = () => { getDailyQuests().then(setCompleted) }
     loadQuests()
 
@@ -49,7 +41,7 @@ export default function DailyQuests() {
 
   const allDone = DEMO_QUESTS.every(q => completed[q.id])
 
-  const handleQuestPointerDown = async (quest, e) => {
+  const handleQuestPointerDown = async (quest) => {
     const now = Date.now()
     if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
     lastTapRef.current[quest.id] = now
@@ -77,9 +69,10 @@ export default function DailyQuests() {
     <div style={styles.container}>
 
       {allDone ? (
-        <div style={styles.allDoneText}>
-          Все бусты на сегодня собраны.<br />
-          Возвращайся завтра — будут новые.
+        // Компактное сообщение о выполнении: две строки, плотно
+        <div style={styles.allDoneBlock}>
+          <div style={styles.allDoneReward}>+{TOTAL_QUEST_REWARD} 💪 получено</div>
+          <div style={styles.allDoneCheck}>✔ Все задания выполнены</div>
         </div>
       ) : (
         <div style={styles.list}>
@@ -92,7 +85,7 @@ export default function DailyQuests() {
               <button
                 key={quest.id}
                 data-quest-row
-                onPointerDown={(e) => handleQuestPointerDown(quest, e)}
+                onPointerDown={() => handleQuestPointerDown(quest)}
                 disabled={isDone}
                 style={{
                   ...styles.questRow,
@@ -102,7 +95,7 @@ export default function DailyQuests() {
                 }}
               >
                 <div style={styles.checkboxWrap}>
-                  <PixelCheckbox checked={isDone} size={22} />
+                  <PixelCheckbox checked={isDone} size={20} />
                 </div>
 
                 <span style={{
@@ -147,9 +140,10 @@ export default function DailyQuests() {
 }
 
 const styles = {
+  // Контейнер компактнее: padding 8x14 (было 12x16)
   container: {
     position: 'relative',
-    padding: '12px 16px',
+    padding: '8px 14px',
     background: 'rgba(255, 255, 255, 0.02)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
@@ -157,30 +151,31 @@ const styles = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '2px'
   },
+  // Строка квеста компактнее: padding 6x6 (было 10x8), gap 10 (было 12)
   questRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '10px 8px',
+    gap: '10px',
+    padding: '6px 6px',
     background: 'transparent',
     width: '100%',
     textAlign: 'left',
     transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: 'none'
   },
   checkboxWrap: {
     position: 'relative',
     flexShrink: 0,
-    width: '22px',
-    height: '22px'
+    width: '20px',
+    height: '20px'
   },
   questText: {
     flex: 1,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: 500,
     transition: 'color 0.3s ease, text-decoration 0.3s ease'
   },
@@ -192,7 +187,7 @@ const styles = {
   },
   rewardBadge: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
+    fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
@@ -211,12 +206,25 @@ const styles = {
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  allDoneText: {
+  // Компактный блок "всё выполнено"
+  allDoneBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 4px'
+  },
+  allDoneReward: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '14px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px',
+    textShadow: '0 0 6px rgba(158, 209, 83, 0.3)'
+  },
+  allDoneCheck: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: '12px',
     color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.5,
-    padding: '14px 8px'
+    fontWeight: 500
   }
 }
