@@ -21,17 +21,17 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * НОВОЕ — возврат с экрана замены упражнения:
+ * Возврат с экрана замены упражнения:
  *  - location.state.returnedFromOrderNum — order_num карточки откуда пришли
  *  - location.state.wasSwapped — было ли реально сохранено новое упражнение
  *
  * Когда юзер возвращается:
- *  1. Скроллим к нужной карточке (scrollIntoView с центрированием)
- *  2. Ставим лёгкий press-эффект (scale 0.97 → 1) — визуальная подсказка
- *     "вот эта карточка, с которой ты ушёл"
- *  3. Если wasSwapped === true → дополнительно играет анимация двух
- *     зелёных стрелок которые двигаются от боков карточки к её верху
- *     (как "змейка") — индикатор что упражнение обновилось
+ *  1. Скроллим к нужной карточке МГНОВЕННО (behavior: 'auto') — без езды
+ *     снизу-вверх. Юзер видит сразу нужную позицию страницы.
+ *  2. Press-эффект (scale 0.97 → 1) — визуальная подсказка "вот эта карточка".
+ *  3. Если wasSwapped === true → играет анимация "змейки" — два зелёных
+ *     сегмента идут друг за другом по контуру карточки по часовой стрелке,
+ *     обходят полный круг и исчезают. Эффект лоадера.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -55,13 +55,12 @@ export default function WorkoutDay() {
 
   const [slideDir, setSlideDir] = useState('right')
 
-  // НОВОЕ: реакция на возврат с экрана замены
-  // pressedOrderNum — какая карточка играет press-эффект (scale 0.97 → 1)
-  // swappedOrderNum — какая карточка играет анимацию стрелок "произошла замена"
+  // pressedOrderNum — карточка играет лёгкий press-эффект (scale 0.97 → 1)
+  // swappedOrderNum — карточка играет анимацию "змейки" (стрелки по контуру)
   const [pressedOrderNum, setPressedOrderNum] = useState(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
 
-  // Реф на карточки: order_num → DOM-обёртка (div). Нужно для scrollIntoView.
+  // Реф на DOM-обёртки карточек: order_num → div. Нужно для scrollIntoView.
   const cardRefs = useRef(new Map())
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -117,9 +116,8 @@ export default function WorkoutDay() {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
 
-  // НОВОЕ: реакция на возврат с экрана замены упражнения.
-  // Срабатывает после того как карточки отрендерены (slots не пустой).
-  // Скроллит к карточке, ставит press-эффект, и если был swap — играет анимацию стрелок.
+  // Реакция на возврат с экрана замены упражнения.
+  // Срабатывает после рендера карточек (slots не пустой, loading закончился).
   useEffect(() => {
     if (loading) return
     if (!slots.length) return
@@ -130,32 +128,30 @@ export default function WorkoutDay() {
 
     if (returnedFrom == null) return
 
-    // Даём React успеть отрисовать карточки. requestAnimationFrame ×2 —
-    // надёжный приём: первый кадр компонент маунтится, второй кадр он уже
-    // в DOM с реальными размерами и можно к нему скроллить.
+    // requestAnimationFrame ×2 — даём React дорисовать карточки в DOM.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const cardEl = cardRefs.current.get(returnedFrom)
         if (cardEl) {
-          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          // behavior: 'auto' — мгновенный скролл, без анимации езды.
+          cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
         }
 
         // Лёгкий press-эффект на 350мс
         setPressedOrderNum(returnedFrom)
         setTimeout(() => setPressedOrderNum(null), 350)
 
-        // Анимация стрелок — только если реально была смена
+        // Анимация змейки — только если реально была смена упражнения
         if (wasSwapped) {
           setSwappedOrderNum(returnedFrom)
-          // Анимация длится 1200мс — после этого убираем её
-          setTimeout(() => setSwappedOrderNum(null), 1200)
+          // Длительность: 1.4с основная анимация + 0.3с задержка второй стрелки
+          setTimeout(() => setSwappedOrderNum(null), 1700)
         }
       })
     })
 
-    // Чистим state из истории чтобы при следующих re-render'ах не повторялось
-    // (например, при свайпе между днями). replace: true чтобы не плодить
-    // запись в истории навигации.
+    // Чистим state из истории чтобы при последующих re-render'ах (например
+    // при свайпе между днями) повтор не сработал.
     navigate(location.pathname, { replace: true, state: null })
   }, [loading, slots.length, location.state, location.pathname, navigate])
 
@@ -401,7 +397,6 @@ export default function WorkoutDay() {
                           onLongPress={handleCardLongPress}
                         />
 
-                        {/* Анимация "змейка" двух стрелок — только при wasSwapped */}
                         {isSwapped && <SwapAnimationOverlay />}
                       </div>
                     )
@@ -459,84 +454,83 @@ export default function WorkoutDay() {
 }
 
 /**
- * Анимация двух зелёных стрелок-"змейки" поверх карточки при успешной смене
- * упражнения. Две стрелки появляются по бокам карточки и плывут к верх-центру,
- * затем плавно исчезают. Длится ~1200мс.
+ * Анимация "змейки" — два зелёных сегмента-лоадера обходят контур карточки
+ * по часовой стрелке. Второй идёт за первым с задержкой 0.3с, образуя
+ * эффект двойной полоски-загрузки.
  *
- * Реализация: absolute SVG поверх карточки, pointer-events: none чтобы
- * не мешать тапам по карточке.
+ * Геометрия:
+ *  - SVG растягивается под реальные размеры карточки (preserveAspectRatio="none")
+ *  - rx/ry углов = 33px — совпадает с border-radius карточки
+ *  - Путь стартует с середины верхней грани (12 часов) и идёт по часовой
+ *  - vectorEffect="non-scaling-stroke" — толщина линии 3px остаётся постоянной
+ *    при любом растяжении SVG
+ *
+ * stroke-dasharray делает видимым только сегмент в 18% длины периметра.
+ * stroke-dashoffset → -PERIMETER за 1.4с создаёт эффект бегущей точки.
  */
 function SwapAnimationOverlay() {
+  const W = 700
+  const H = 150
+  const R = 33
+
+  const path = `
+    M ${W / 2} 0
+    H ${W - R}
+    A ${R} ${R} 0 0 1 ${W} ${R}
+    V ${H - R}
+    A ${R} ${R} 0 0 1 ${W - R} ${H}
+    H ${R}
+    A ${R} ${R} 0 0 1 0 ${H - R}
+    V ${R}
+    A ${R} ${R} 0 0 1 ${R} 0
+    Z
+  `.trim()
+
+  const PERIMETER = 2 * (W + H) - 8 * R + 2 * Math.PI * R
+
   return (
     <div style={overlayStyles.wrap} aria-hidden="true">
       <svg
-        viewBox="0 0 100 100"
+        viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         style={overlayStyles.svg}
       >
-        <defs>
-          <marker
-            id="arrowhead-left"
-            markerWidth="6"
-            markerHeight="6"
-            refX="3"
-            refY="3"
-            orient="auto"
-          >
-            <path d="M0,0 L6,3 L0,6 Z" fill="var(--color-primary)" />
-          </marker>
-          <marker
-            id="arrowhead-right"
-            markerWidth="6"
-            markerHeight="6"
-            refX="3"
-            refY="3"
-            orient="auto"
-          >
-            <path d="M0,0 L6,3 L0,6 Z" fill="var(--color-primary)" />
-          </marker>
-        </defs>
-
-        {/* Левая стрелка: от центра-низа карточки до верха-центра */}
         <path
-          d="M 30,90 Q 5,50 50,10"
+          d={path}
           fill="none"
           stroke="var(--color-primary)"
-          strokeWidth="2"
+          strokeWidth="3"
           strokeLinecap="round"
-          strokeDasharray="120"
-          strokeDashoffset="120"
-          markerEnd="url(#arrowhead-left)"
+          vectorEffect="non-scaling-stroke"
           style={{
-            filter: 'drop-shadow(0 0 4px rgba(158, 209, 83, 0.6))',
-            animation: 'swapArrowDraw 1.2s ease-out forwards'
+            strokeDasharray: `${PERIMETER * 0.18} ${PERIMETER}`,
+            filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
+            animation: 'snakeRun 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards'
           }}
         />
 
-        {/* Правая стрелка: симметрично с другой стороны */}
         <path
-          d="M 70,90 Q 95,50 50,10"
+          d={path}
           fill="none"
           stroke="var(--color-primary)"
-          strokeWidth="2"
+          strokeWidth="3"
           strokeLinecap="round"
-          strokeDasharray="120"
-          strokeDashoffset="120"
-          markerEnd="url(#arrowhead-right)"
+          vectorEffect="non-scaling-stroke"
           style={{
-            filter: 'drop-shadow(0 0 4px rgba(158, 209, 83, 0.6))',
-            animation: 'swapArrowDraw 1.2s ease-out forwards',
-            animationDelay: '0.08s'
+            strokeDasharray: `${PERIMETER * 0.18} ${PERIMETER}`,
+            filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
+            animation: 'snakeRun 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards',
+            opacity: 0
           }}
         />
       </svg>
 
       <style>{`
-        @keyframes swapArrowDraw {
-          0%   { stroke-dashoffset: 120; opacity: 0; }
-          20%  { opacity: 1; }
-          70%  { stroke-dashoffset: 0; opacity: 1; }
-          100% { stroke-dashoffset: 0; opacity: 0; }
+        @keyframes snakeRun {
+          0%   { stroke-dashoffset: 0; opacity: 0; }
+          10%  { opacity: 1; }
+          85%  { opacity: 1; }
+          100% { stroke-dashoffset: -${PERIMETER}; opacity: 0; }
         }
       `}</style>
     </div>
@@ -548,9 +542,7 @@ const overlayStyles = {
     position: 'absolute',
     inset: 0,
     pointerEvents: 'none',
-    zIndex: 10,
-    borderRadius: '33px',
-    overflow: 'visible'
+    zIndex: 10
   },
   svg: {
     width: '100%',
