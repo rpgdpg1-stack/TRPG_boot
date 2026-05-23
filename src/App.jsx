@@ -14,6 +14,7 @@ import Progress from './pages/Progress'
 import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
+import Leaderboard from './pages/Leaderboard'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth } from './lib/auth'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           {/* Recovery остаётся доступным по прямой ссылке — открывается из Профиля.
               Из таб-бара убрали (теперь там Профиль), но роут жив. */}
           <Route path="/recovery" element={<Recovery />} />
