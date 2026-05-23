@@ -6,6 +6,8 @@ import ErrorBoundary from './components/layout/ErrorBoundary'
 import TabBar from './components/TabBar'
 import ParticlesBg from './components/ParticlesBg'
 import LeagueBadgeModal from './components/rewards/LeagueBadgeModal'
+import SeasonEndModal from './components/rewards/SeasonEndModal'
+import NewSeasonModal from './components/rewards/NewSeasonModal'
 
 import Home from './pages/Home'
 import Category from './pages/Category'
@@ -18,8 +20,10 @@ import Settings from './pages/Settings'
 import Leaderboard from './pages/Leaderboard'
 
 import { initTelegram, settingsButton } from './lib/telegram'
-import { ensureAuth } from './lib/auth'
+import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown } from './lib/rewards'
+import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
+import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
 
 export default function App() {
@@ -85,74 +89,133 @@ function SettingsButtonController() {
 }
 
 /**
- * Контроллер показа наград.
+ * Контроллер очереди наград и сезонных событий.
  *
- * После авторизации проверяет: есть ли невыданные награды у юзера.
- * Если есть — показывает модалки по одной.
+ * Показывает модалки одну за другой в фиксированном порядке:
+ *  1. Значки лиг (LeagueBadgeModal) — отсортированы по возрастанию ранга
+ *  2. Сезонные рамки (SeasonEndModal) — за прошлые сезоны
+ *  3. Приветствие нового сезона (NewSeasonModal) — если сменился сезон
  *
- * Если за раз несколько значков (юзер перепрыгнул через лиги) —
- * показываем подряд: закрыл первую → сразу следующая → и т.д.
+ * Каждая модалка имеет свой onConfirm:
+ *  - badge/frame: помечается shown_to_user=true в БД через markRewardShown
+ *  - new season: пишется в users.last_seen_season ключ текущего сезона
  *
- * Также подписывается на USER_CHANGED — после finish workout мог появиться
- * новый значок, проверяем заново.
- *
- * Сезонные рамки (frames) пока НЕ показываем здесь — для них будет
- * отдельная модалка SeasonEndModal с другим визуалом (следующая порция).
+ * Перезагрузка очереди — по USER_CHANGED (после тренировки могли выдать новый
+ * значок, потому что add_muscles в RPC вызывает grant_league_badge_if_new).
  */
 function RewardsQueueController() {
-  const [pendingBadges, setPendingBadges] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  // queue — массив элементов { type, payload } которые надо показать по очереди
+  // type: 'badge' | 'frame' | 'new_season'
+  const [queue, setQueue] = useState([])
 
-  // Загружаем pending награды один раз после auth и потом по USER_CHANGED
   useEffect(() => {
     let cancelled = false
 
-    const loadPending = async () => {
-      const { badges } = await getPendingRewards()
-      if (cancelled) return
-      if (badges && badges.length > 0) {
-        // Сортируем по rank_index возрастающе — показываем сначала младшую
-        // лигу, потом старшие (так логичнее ощущается прогрессия)
-        const sorted = [...badges].sort((a, b) => a.rank_index - b.rank_index)
-        setPendingBadges(sorted)
-        setCurrentIndex(0)
+    const buildQueue = async () => {
+      const items = []
+
+      // 1. Значки лиг (badges)
+      const { badges, frames } = await getPendingRewards()
+      if (badges?.length) {
+        const sortedBadges = [...badges].sort((a, b) => a.rank_index - b.rank_index)
+        for (const b of sortedBadges) items.push({ type: 'badge', payload: b })
       }
+
+      // 2. Сезонные рамки (frames)
+      if (frames?.length) {
+        const sortedFrames = [...frames].sort((a, b) => a.place - b.place)
+        for (const f of sortedFrames) items.push({ type: 'frame', payload: f })
+      }
+
+      // 3. Приветствие нового сезона — если last_seen_season не совпадает
+      // с текущим ключом сезона. Юзера читаем свежий, не из стейта.
+      const user = getCurrentUser()
+      const currentSeason = getCurrentSeason()
+      if (user && user.last_seen_season !== currentSeason.key) {
+        items.push({
+          type: 'new_season',
+          payload: {
+            season: currentSeason,
+            daysLeft: getDaysUntilSeasonEnd()
+          }
+        })
+      }
+
+      if (!cancelled) setQueue(items)
     }
 
-    // Слушаем сразу — на момент монтирования юзер уже авторизован
-    loadPending()
+    buildQueue()
 
-    const offChanged = on(EVENTS.USER_CHANGED, loadPending)
+    const offChanged = on(EVENTS.USER_CHANGED, buildQueue)
     return () => {
       cancelled = true
       offChanged()
     }
   }, [])
 
+  // Закрытие текущей модалки → удаление первого элемента из очереди.
+  // Для каждого типа своя логика отметки "показано".
   const handleConfirm = async () => {
-    const current = pendingBadges[currentIndex]
+    const current = queue[0]
     if (!current) return
 
-    // Помечаем показанной в БД, не ждём ответа — UX важнее
-    markRewardShown(current.id, 'badge')
-
-    // Следующая модалка или закрытие
-    if (currentIndex + 1 < pendingBadges.length) {
-      setCurrentIndex(currentIndex + 1)
-    } else {
-      setPendingBadges([])
-      setCurrentIndex(0)
+    if (current.type === 'badge') {
+      markRewardShown(current.payload.id, 'badge')
+    } else if (current.type === 'frame') {
+      markRewardShown(current.payload.id, 'frame')
+    } else if (current.type === 'new_season') {
+      // Обновляем last_seen_season в БД — на следующем заходе модалка не покажется
+      const user = getCurrentUser()
+      if (user) {
+        const newKey = current.payload.season.key
+        try {
+          await supabase
+            .from('users')
+            .update({ last_seen_season: newKey })
+            .eq('id', user.id)
+          setCurrentUser({ ...user, last_seen_season: newKey })
+        } catch (e) {
+          console.warn('[App] update last_seen_season failed:', e?.message)
+        }
+      }
     }
+
+    setQueue(prev => prev.slice(1))
   }
 
-  const current = pendingBadges[currentIndex]
+  const current = queue[0]
   if (!current) return null
 
-  return (
-    <LeagueBadgeModal
-      key={current.id}
-      rankIndex={current.rank_index}
-      onConfirm={handleConfirm}
-    />
-  )
+  if (current.type === 'badge') {
+    return (
+      <LeagueBadgeModal
+        key={`badge-${current.payload.id}`}
+        rankIndex={current.payload.rank_index}
+        onConfirm={handleConfirm}
+      />
+    )
+  }
+
+  if (current.type === 'frame') {
+    return (
+      <SeasonEndModal
+        key={`frame-${current.payload.id}`}
+        reward={current.payload}
+        onConfirm={handleConfirm}
+      />
+    )
+  }
+
+  if (current.type === 'new_season') {
+    return (
+      <NewSeasonModal
+        key="new-season"
+        season={current.payload.season}
+        daysLeft={current.payload.daysLeft}
+        onConfirm={handleConfirm}
+      />
+    )
+  }
+
+  return null
 }
