@@ -11,6 +11,7 @@
 import { supabase } from './supabase'
 import { getUser as getTelegramUser } from './telegram'
 import { EVENTS, emit } from './events'
+import { getStartParamReferralCode, acceptReferral } from './friends'
 
 let currentUser = null
 let authPromise = null
@@ -72,6 +73,28 @@ export async function ensureAuth() {
     authState = 'ok'
     console.log('[auth] Authorized as:', currentUser)
     emit(EVENTS.USER_READY, currentUser)
+
+    // Проверяем start_param — если юзер пришёл по реф-ссылке, добавляем
+    // отправителя в друзья. Делаем это после emit USER_READY чтобы UI
+    // уже показал главную страницу, а добавление в друзья случилось в фоне.
+    // Не блокируем return — пусть выполнится асинхронно без задержки старта.
+    const refCode = getStartParamReferralCode()
+    if (refCode) {
+      console.log('[auth] referral code detected:', refCode)
+      acceptReferral(refCode).then(result => {
+        if (result.success) {
+          console.log('[auth] friend added via referral')
+          // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
+          // место в рейтинге на главной
+          emit(EVENTS.USER_CHANGED, currentUser)
+        } else {
+          console.warn('[auth] referral failed:', result.error)
+        }
+      }).catch(err => {
+        console.warn('[auth] referral exception:', err)
+      })
+    }
+
     return currentUser
   })()
 
