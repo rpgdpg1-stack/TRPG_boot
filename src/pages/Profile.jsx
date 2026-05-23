@@ -3,23 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts } from '../lib/storage'
 import { getLevelFromXP, getRankByLevel } from '../lib/levels'
+import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 
 /**
  * Экран "Профиль" — личный кабинет юзера.
  *
- * Сейчас MVP-набросок: аватар крупно, имя/ник, ранг, основные цифры,
- * и список разделов которые ведут в подэкраны (заглушки на будущее).
+ * Структура:
+ *  - Шапка: аватар, имя, ник, ранг
+ *  - Карточки статистики (мускулы, серия, тренировок)
+ *  - Кнопка "Пригласить друга" — открывает Telegram share с реф-ссылкой
+ *  - Разделы: Рейтинг, Награды, Личные данные, Замеры тела и т.д.
  *
- * Разделы:
- *  - Личные данные (пол/рост/возраст)
- *  - Замеры тела (вес, объёмы, фото-прогресс)
- *  - Цель (что хочешь достичь)
- *  - Достижения (ачивки)
- *  - Восстановление (советы по сну, питанию, мышцам — переехало сюда из таб-бара)
- *  - Настройки приложения
- *
- * Этот файл — стартовая точка. Подэкраны добавим позже.
+ * Рейтинг ведёт на /leaderboard (готово), Награды — на /rewards (готово).
+ * Остальные разделы — заглушки на будущее.
  */
 export default function Profile() {
   const navigate = useNavigate()
@@ -57,7 +54,7 @@ export default function Profile() {
 
   const sections = [
     { id: 'leaderboard',  icon: '🏆', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
-    { id: 'rewards',      icon: '🛡️', title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки' },
+    { id: 'rewards',      icon: '🛡️', title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки',   path: '/rewards' },
     { id: 'personal',     icon: '👤', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст' },
     { id: 'measurements', icon: '📏', title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото' },
     { id: 'goal',         icon: '🎯', title: 'Цель',           subtitle: 'Что хочешь достичь' },
@@ -71,7 +68,11 @@ export default function Profile() {
     if (section.path) {
       navigate(section.path)
     }
-    // Для разделов без path — позже сделаем заглушку
+  }
+
+  const handleInviteTap = async () => {
+    haptic.medium()
+    await shareReferralLink()
   }
 
   return (
@@ -111,6 +112,20 @@ export default function Profile() {
           <div style={styles.statLabel}>ТРЕНИРОВОК</div>
         </div>
       </div>
+
+      {/* Кнопка "Пригласить друга" — единая CTA-полоса */}
+      <button
+        onClick={handleInviteTap}
+        style={styles.inviteButton}
+        className="press-tile"
+      >
+        <span style={styles.inviteIcon}>👥</span>
+        <div style={styles.inviteContent}>
+          <div style={styles.inviteTitle}>Пригласить друга</div>
+          <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>
+        </div>
+        <span style={styles.inviteArrow}>›</span>
+      </button>
 
       {/* Разделы */}
       <div style={styles.sections}>
@@ -186,7 +201,7 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '8px',
-    marginBottom: '20px'
+    marginBottom: '16px'
   },
   statBox: {
     padding: '14px 8px',
@@ -211,6 +226,48 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '1.5px',
     fontWeight: 600
+  },
+  // Кнопка "Пригласить друга" — выделенная CTA-полоса с лёгким зелёным акцентом
+  inviteButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '14px 20px',
+    background: 'rgba(158, 209, 83, 0.08)',
+    border: '1px solid rgba(158, 209, 83, 0.25)',
+    borderRadius: 'var(--radius-small)',
+    marginBottom: '20px',
+    minHeight: '64px',
+    textAlign: 'left'
+  },
+  inviteIcon: {
+    fontSize: '22px',
+    width: '32px',
+    textAlign: 'center',
+    flexShrink: 0
+  },
+  inviteContent: {
+    flex: 1,
+    minWidth: 0
+  },
+  inviteTitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '15px',
+    fontWeight: 700,
+    color: 'var(--color-primary)',
+    marginBottom: '2px'
+  },
+  inviteSubtitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)'
+  },
+  inviteArrow: {
+    fontSize: '18px',
+    color: 'var(--color-primary)',
+    flexShrink: 0,
+    opacity: 0.7
   },
   sections: {
     display: 'flex',

@@ -18,6 +18,7 @@ import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Leaderboard from './pages/Leaderboard'
+import Rewards from './pages/Rewards'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/rewards" element={<Rewards />} />
         </Routes>
 
         <TabBar />
