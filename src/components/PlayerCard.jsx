@@ -9,6 +9,7 @@ import {
   getXPInCurrentLevel,
   getTotalXPProgress
 } from '../lib/levels'
+import { getMyFriendsPlace } from '../lib/leaderboard'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
@@ -50,6 +51,7 @@ export default function PlayerCard() {
   const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
+  const [friendsPlace, setFriendsPlace] = useState(1)
 
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
@@ -64,11 +66,13 @@ export default function PlayerCard() {
       Promise.all([
         getTotalXP(),
         getWeeklyStreak(),
-        getRecentMuscleHistory(3)
-      ]).then(([xpVal, streak, history]) => {
+        getRecentMuscleHistory(3),
+        getMyFriendsPlace()
+      ]).then(([xpVal, streak, history, place]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
         setRecentHistory(history)
+        setFriendsPlace(place)
       })
     }
 
@@ -136,6 +140,12 @@ export default function PlayerCard() {
     setShowXPDetails(false)
   }
 
+  // Тап по месту 🏆 #N — открыть страницу рейтинга на табе "Друзья"
+  const handlePlaceTap = () => {
+    haptic.light()
+    navigate('/leaderboard?tab=friends')
+  }
+
   // Тап по огоньку: лёгкий haptic + искорки если стрик 3+.
   // Никаких попапов с пояснениями — UI и так читается с одного взгляда.
   const handleStreakTap = (e) => {
@@ -189,6 +199,15 @@ export default function PlayerCard() {
               style={{ ...styles.rank, color: rank.color }}
             >
               {rank.emoji} {rank.name} {rank.subLevel}
+            </button>
+
+            {/* Место среди друзей — клик ведёт на рейтинг */}
+            <button
+              onClick={handlePlaceTap}
+              style={styles.friendsPlaceButton}
+              aria-label="Открыть рейтинг друзей"
+            >
+              🏆 #{friendsPlace}
             </button>
 
             {showRanks && (
@@ -475,7 +494,9 @@ const styles = {
   rankWrap: {
     position: 'relative',
     display: 'flex',
-    alignItems: 'flex-start'
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '2px'
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
@@ -485,6 +506,22 @@ const styles = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer'
+  },
+  // Место среди друзей — отдельная кнопка справа от ранга,
+  // тап ведёт на /leaderboard. Не на отдельной строке, а в одну
+  // с рангом — чтобы занять минимум места и быть рядом с рангом-родителем.
+  friendsPlaceButton: {
+    marginLeft: '10px',
+    padding: '2px 8px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    letterSpacing: '1px',
+    color: 'var(--color-text)',
+    cursor: 'pointer',
+    transition: 'background 0.2s ease, border-color 0.2s ease'
   },
   // Ряд под рангом: XP-бар занимает всё, огонёк + цифра справа
   bottomRow: {

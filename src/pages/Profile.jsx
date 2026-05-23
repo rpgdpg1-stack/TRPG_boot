@@ -56,11 +56,13 @@ export default function Profile() {
   const username = user?.username ? `@${user.username}` : ''
 
   const sections = [
+    { id: 'leaderboard',  icon: '🏆', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
+    { id: 'rewards',      icon: '🛡️', title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки' },
     { id: 'personal',     icon: '👤', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст' },
     { id: 'measurements', icon: '📏', title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото' },
     { id: 'goal',         icon: '🎯', title: 'Цель',           subtitle: 'Что хочешь достичь' },
     { id: 'achievements', icon: '🏆', title: 'Достижения',     subtitle: 'Ачивки и значки' },
-    { id: 'recovery',     icon: '🛌', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
+    { id: 'recovery',     icon: '🛌', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
     { id: 'settings',     icon: '⚙️', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
   ]
 
