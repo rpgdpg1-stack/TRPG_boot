@@ -289,6 +289,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
   // Инвалидируем кеши которые могли измениться после тренировки
   cacheInvalidate('workout-day:')
   cacheInvalidate(`muscle-history:${user.id}`)
+  // Лидерборд тоже сбрасываем — мускулы изменились, место могло поменяться,
+  // и мог появиться новый значок лиги (RPC выдаёт его автоматически)
+  cacheInvalidate(`leaderboard-friends:${user.id}`)
+  cacheInvalidate(`leaderboard-league:${user.id}`)
+  cacheInvalidate(`my-friend-place:${user.id}`)
 
   emit(EVENTS.USER_CHANGED, getCurrentUser())
 
