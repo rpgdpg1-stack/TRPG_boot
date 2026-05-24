@@ -1,0 +1,23 @@
+name: Supabase keepalive
+
+on:
+  schedule:
+    # Понедельник и четверг 09:00 UTC = 12:00 МСК
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch: # ручной запуск кнопкой
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          curl -fsS -X PATCH "$URL/rest/v1/heartbeat?id=eq.1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_ping\": \"$(date -u +%FT%TZ)\"}"
