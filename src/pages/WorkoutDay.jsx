@@ -15,7 +15,6 @@ import {
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
-import ExerciseInfoModal from '../components/ExerciseInfoModal'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 
 /**
@@ -51,7 +50,6 @@ export default function WorkoutDay() {
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
 
   const [actionSlot, setActionSlot] = useState(null)
-  const [infoSlot, setInfoSlot] = useState(null)
 
   const [slideDir, setSlideDir] = useState('right')
 
@@ -173,7 +171,7 @@ export default function WorkoutDay() {
 
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
-    if (actionSlot || infoSlot) return
+    if (actionSlot) return
 
     setActiveOrderNums(prev => {
       const next = new Set(prev)
@@ -197,7 +195,12 @@ export default function WorkoutDay() {
     if (!actionSlot) return
     const slot = actionSlot
     setActionSlot(null)
-    setTimeout(() => setInfoSlot(slot), 100)
+    // Переходим на полноэкранную страницу информации.
+    // Передаём returnTo, чтобы кнопка "Назад" в Telegram вернула на текущий день тренировки.
+    navigate(`/exercise/${slot.exercise_id}`, {
+      state: { returnTo: `/workout/${programId}/${day}` }
+    })
+  }
   }
 
   const handleMenuSwap = () => {
@@ -451,13 +454,6 @@ export default function WorkoutDay() {
           onInfo={handleMenuInfo}
           onSwap={handleMenuSwap}
           onClose={() => setActionSlot(null)}
-        />
-      )}
-
-      {infoSlot && (
-        <ExerciseInfoModal
-          exerciseName={infoSlot.exercise_name}
-          onClose={() => setInfoSlot(null)}
         />
       )}
 

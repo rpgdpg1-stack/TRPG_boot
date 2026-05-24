@@ -19,6 +19,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Leaderboard from './pages/Leaderboard'
 import Rewards from './pages/Rewards'
+import ExerciseInfo from './pages/ExerciseInfo'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/exercise/:id" element={<ExerciseInfo />} />
         </Routes>
 
         <TabBar />

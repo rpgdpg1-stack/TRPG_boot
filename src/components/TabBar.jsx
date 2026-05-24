@@ -18,7 +18,8 @@ export default function TabBar() {
   // Прячем таб-бар на экранах тренировки и замены упражнений
   const isHiddenOnPath =
     location.pathname.startsWith('/workout') ||
-    location.pathname.startsWith('/swap')
+    location.pathname.startsWith('/swap') ||
+    location.pathname.startsWith('/exercise')
 
   if (isHiddenOnPath) return null
 
