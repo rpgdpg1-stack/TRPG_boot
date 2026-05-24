@@ -1,19 +1,10 @@
 /**
  * Логика загрузки и завершения тренировки.
  *
- * ОБНОВЛЕНИЕ: добавлен кеш на уровне модуля + предзагрузка соседних дней.
+ * finishWorkout теперь читает new_badge_rank_index из RPC и эмитит
+ * BADGE_EARNED → модалка значка появится сразу после тапа "Завершить".
  *
- * Стратегия кеширования:
- *  - api_get_all_exercises  → TTL.SESSION (24ч) — упражнения почти не меняются
- *  - api_get_user_swaps     → TTL.LONG (1ч), инвалидируется при saveExerciseSwap
- *  - api_get_user_weights   → TTL.LONG (1ч), инвалидируется при saveExerciseWeight
- *  - готовый getWorkoutDay  → TTL.MEDIUM (5мин), инвалидируется при свапах/весах
- *
- * При открытии любого дня запускается prefetchNeighbourDays — следующий и
- * предыдущий день начинают грузиться в фоне через requestIdleCallback,
- * чтобы свайп между днями был мгновенным.
- *
- * Slug в URL ↔ dbId в БД конвертируется через registry.
+ * Кеш и prefetch — без изменений.
  */
 
 import { supabase } from '../../lib/supabase'
@@ -23,9 +14,6 @@ import { getCurrentWeekKey } from '../../utils/dates'
 import { getProgramBySlug, getProgramDaySlots } from './registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib/cache'
 
-/**
- * Загрузить все упражнения. Кешируется на сессию.
- */
 async function loadAllExercises() {
   const cacheKey = 'exercises:all'
   const cached = cacheGet(cacheKey)
@@ -63,9 +51,6 @@ async function loadAllExercises() {
   return exercises
 }
 
-/**
- * Загрузить свапы юзера для конкретного дня. Кешируется на час.
- */
 async function loadUserSwaps(userId, dbId, day) {
   const cacheKey = `user-swaps:${userId}:${dbId}:${day}`
   const cached = cacheGet(cacheKey)
@@ -89,10 +74,6 @@ async function loadUserSwaps(userId, dbId, day) {
   return swapsByOrder
 }
 
-/**
- * Загрузить веса юзера для всех упражнений. Кешируется на час.
- * Хранится одним блобом потому что api_get_user_weights отдаёт все веса сразу.
- */
 async function loadUserWeights(userId) {
   const cacheKey = `user-weights:${userId}`
   const cached = cacheGet(cacheKey)
@@ -114,10 +95,6 @@ async function loadUserWeights(userId) {
   return weightsByEx
 }
 
-/**
- * Сборка дня тренировки из закешированных кусков.
- * Сам результат тоже кешируется на 5 минут для повторных открытий того же дня.
- */
 export async function getWorkoutDay(programSlug, day) {
   const user = getCurrentUser()
   if (!user) {
@@ -132,20 +109,16 @@ export async function getWorkoutDay(programSlug, day) {
   }
   const dbId = program.dbId
 
-  // 1. Проверяем итоговый кеш дня
   const dayCacheKey = `workout-day:${user.id}:${programSlug}:${day}`
   const cachedDay = cacheGet(dayCacheKey)
   if (cachedDay) {
-    // Запускаем prefetch соседних дней — пусть тоже греются в фоне
     schedulePrefetch(programSlug, day, user.id)
     return cachedDay
   }
 
-  // 2. Слоты программы — из кода
   const slotsRaw = getProgramDaySlots(programSlug, day)
   if (!slotsRaw.length) return []
 
-  // 3. Параллельная загрузка всех зависимостей (с кешем)
   const [swapsByOrder, exercises, weightsByEx] = await Promise.all([
     loadUserSwaps(user.id, dbId, day),
     loadAllExercises(),
@@ -155,7 +128,6 @@ export async function getWorkoutDay(programSlug, day) {
   const exById = {}
   for (const e of exercises) exById[e.id] = e
 
-  // 4. Собираем результат
   const result = slotsRaw.map(slot => {
     let exerciseId = swapsByOrder[slot.order_num]
     let isSwapped = !!exerciseId
@@ -191,16 +163,11 @@ export async function getWorkoutDay(programSlug, day) {
 
   cacheSet(dayCacheKey, result, TTL.MEDIUM)
 
-  // 5. Прелоадим соседние дни в фоне
   schedulePrefetch(programSlug, day, user.id)
 
   return result
 }
 
-/**
- * Предзагрузить соседние дни (предыдущий и следующий) в фоне.
- * Запускается через requestIdleCallback — не блокирует UI.
- */
 function schedulePrefetch(programSlug, currentDay, userId) {
   const program = getProgramBySlug(programSlug)
   if (!program) return
@@ -216,10 +183,9 @@ function schedulePrefetch(programSlug, currentDay, userId) {
 
   for (const d of neighbours) {
     const key = `workout-day:${userId}:${programSlug}:${d}`
-    if (cacheGet(key)) continue // уже в кеше
+    if (cacheGet(key)) continue
 
     runWhenIdle(() => {
-      // Тихо грузим — не делаем await, не показываем спиннер
       getWorkoutDay(programSlug, d).catch(e => {
         console.warn('[programs] prefetch failed for day', d, e?.message)
       })
@@ -227,10 +193,6 @@ function schedulePrefetch(programSlug, currentDay, userId) {
   }
 }
 
-/**
- * Инвалидировать кеш дня (или всех дней программы).
- * Вызывается при смене упражнения или изменении веса.
- */
 export function invalidateWorkoutDayCache(programSlug = null) {
   if (programSlug) {
     cacheInvalidate(`workout-day:`)
@@ -241,6 +203,10 @@ export function invalidateWorkoutDayCache(programSlug = null) {
 
 /**
  * Завершить тренировку — атомарная RPC.
+ *
+ * RPC api_finish_workout теперь возвращает дополнительное поле
+ * new_badge_rank_index. Если значок выдан — эмитим BADGE_EARNED, и
+ * App.jsx покажет модалку сразу (поверх главной куда ведёт навигация).
  */
 export async function finishWorkout(programSlug, day, exerciseIds, reward = 150) {
   console.log('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
@@ -286,16 +252,21 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
     weekly_streak_week: getCurrentWeekKey()
   })
 
-  // Инвалидируем кеши которые могли измениться после тренировки
   cacheInvalidate('workout-day:')
   cacheInvalidate(`muscle-history:${user.id}`)
-  // Лидерборд тоже сбрасываем — мускулы изменились, место могло поменяться,
-  // и мог появиться новый значок лиги (RPC выдаёт его автоматически)
   cacheInvalidate(`leaderboard-friends:${user.id}`)
   cacheInvalidate(`leaderboard-league:${user.id}`)
   cacheInvalidate(`my-friend-place:${user.id}`)
 
   emit(EVENTS.USER_CHANGED, getCurrentUser())
+
+  // Новый значок лиги выдан прямо сейчас → шлём событие.
+  // App.jsx подхватит и покажет модалку поверх главной (куда уже
+  // ведёт навигация после успешного завершения).
+  if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
+    console.log('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
+    emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
+  }
 
   return {
     workoutId: result.workout_id,

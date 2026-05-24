@@ -1,16 +1,19 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
-import { clearAllData, resetProgramDayCycle } from '../lib/storage'
+import { clearAllData, resetProgramDayCycle, devResetBadgesOnly } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 
 /**
  * Экран настроек.
  *
- * В группе СИСТЕМА два пункта-обнулялки:
- *  - "Сбросить порядок дней" — стирает только цикл A/B/C для программы СПЛИТ,
- *    мускулы и стрик не трогает. Юзер сам выберет с какого дня начать заново.
- *  - "Сбросить прогресс" — полный обнул всего.
+ * В группе СИСТЕМА три пункта-обнулялки:
+ *  - "Сбросить порядок дней" — стирает только цикл A/B/C
+ *  - "Сбросить значки лиг" (DEV) — удаляет league_badges юзера, мускулы остаются
+ *  - "Сбросить прогресс" — полный обнул
+ *
+ * Сброс значков нужен для теста модалок: набил мускулы → сбросил значки →
+ * получил +X мускулов → ловишь модалку прямо в момент пересечения порога.
  */
 export default function Settings() {
   const navigate = useNavigate()
@@ -46,8 +49,9 @@ export default function Settings() {
         { id: 'feedback',      icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
         { id: 'gift',          icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
         { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' },
-        { id: 'debug-reset-days', icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново' },
-        { id: 'debug-reset',      icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик' }
+        { id: 'debug-reset-days',    icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново' },
+        { id: 'debug-reset-badges',  icon: '🏅', title: 'Сбросить значки лиг',  subtitle: 'DEV · для теста модалок' },
+        { id: 'debug-reset',         icon: '🧹', title: 'Сбросить прогресс',    subtitle: 'Обнулить мускулы, квесты, стрик' }
       ]
     }
   ]
@@ -55,7 +59,6 @@ export default function Settings() {
   const handleSectionTap = async (item) => {
     haptic.light()
 
-    // Лёгкий сброс: только цикл A/B/C, без потери прогресса
     if (item.id === 'debug-reset-days') {
       const confirmed = await tgConfirm(
         'Сбросить порядок дней?\n\nПрогресс, мускулы и стрик НЕ пострадают.\n\nПосле сброса все три буквы дней станут серыми — выберешь сам с какого дня хочешь начать.'
@@ -63,7 +66,6 @@ export default function Settings() {
       if (!confirmed) return
 
       try {
-        // Сбрасываем для всех программ которые могут появиться. Пока одна — СПЛИТ.
         await resetProgramDayCycle('split')
         haptic.success()
         window.alert('Порядок дней сброшен. Перезайди в приложение чтобы увидеть изменения.')
@@ -75,10 +77,33 @@ export default function Settings() {
       return
     }
 
-    // Тяжёлый сброс: всё подчистую
+    // Дев-сброс ТОЛЬКО значков лиг — для теста модалок
+    if (item.id === 'debug-reset-badges') {
+      const confirmed = await tgConfirm(
+        'Сбросить значки лиг?\n\nЭто dev-инструмент для тестов модалок.\nМускулы, стрик и история начислений НЕ пострадают — только удалятся все полученные значки.\n\nПри следующем тапе квеста модалка значка появится снова.'
+      )
+      if (!confirmed) return
+
+      try {
+        const ok = await devResetBadgesOnly()
+        if (ok) {
+          haptic.success()
+          window.alert('Значки сброшены. Тапни любой квест или заверши тренировку — должна появиться модалка значка той лиги в которой ты сейчас.')
+        } else {
+          haptic.error()
+          window.alert('Не удалось сбросить значки. Проверь подключение.')
+        }
+      } catch (err) {
+        console.error('[Settings] reset badges failed:', err)
+        haptic.error()
+        window.alert('Не удалось сбросить значки. Проверь подключение.')
+      }
+      return
+    }
+
     if (item.id === 'debug-reset') {
       const confirmed = await tgConfirm(
-        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все выполненные квесты, история начислений.\n\nЭто действие нельзя отменить.'
+        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все выполненные квесты, история начислений и значки лиг.\n\nЭто действие нельзя отменить.'
       )
       if (!confirmed) return
 
@@ -106,7 +131,7 @@ export default function Settings() {
           <div style={styles.items}>
             {group.items.map(item => {
               const isDanger = item.id === 'debug-reset'
-              const isWarning = item.id === 'debug-reset-days'
+              const isWarning = item.id === 'debug-reset-days' || item.id === 'debug-reset-badges'
 
               return (
                 <button
@@ -145,9 +170,7 @@ const styles = {
   groupTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '11px', color: 'var(--color-text-secondary)', letterSpacing: '2px', fontWeight: 'normal', marginBottom: '10px', paddingLeft: '16px' },
   items: { display: 'flex', flexDirection: 'column', gap: '6px' },
   itemCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 18px', background: 'var(--color-card)', borderRadius: 'var(--radius-small)', width: '100%', textAlign: 'left', minHeight: '52px', transition: 'background 0.15s ease' },
-  // Сброс прогресса — оранжевый, "опасное" действие
   itemCardDanger: { background: 'rgba(255, 140, 66, 0.06)', border: '1px solid rgba(255, 140, 66, 0.2)' },
-  // Сброс порядка дней — жёлтый, "осторожное" действие (мягче чем danger)
   itemCardWarning: { background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.18)' },
   itemIcon: { fontSize: '20px', width: '28px', textAlign: 'center' },
   itemContent: { flex: 1, minWidth: 0 },

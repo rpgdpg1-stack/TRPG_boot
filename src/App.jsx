@@ -40,9 +40,6 @@ export default function App() {
     })
   }
 
-  // После авторизации — фоновая проверка нужен ли сброс сезона.
-  // Это страховка на случай если pg_cron пропустил запуск (Supabase free tier
-  // засыпает при простое). Защита от двойного срабатывания — на стороне БД.
   useEffect(() => {
     let cancelled = false
     authPromiseRef.current?.then(user => {
@@ -106,59 +103,51 @@ function SettingsButtonController() {
 /**
  * Контроллер очереди наград и сезонных событий.
  *
- * Показывает модалки одну за другой в фиксированном порядке:
+ * Очередь модалок (показываются по одной):
  *  1. Значки лиг (LeagueBadgeModal) — отсортированы по возрастанию ранга
  *  2. Сезонные рамки (SeasonEndModal) — за прошлые сезоны
  *  3. Приветствие нового сезона (NewSeasonModal) — если сменился сезон
  *
- * Каждая модалка имеет свой onConfirm:
- *  - badge/frame: помечается shown_to_user=true в БД через markRewardShown
- *  - new season: пишется в users.last_seen_season ключ текущего сезона
+ * Источники значков:
+ *  - getPendingRewards() при старте — накопленные за прошлые сессии
+ *  - событие BADGE_EARNED — свежевыданный значок ПРЯМО СЕЙЧАС, добавляется
+ *    в очередь моментально, чтобы модалка появилась без перезахода
  *
- * Перезагрузка очереди — по USER_CHANGED (после тренировки могли выдать новый
- * значок, потому что add_muscles в RPC вызывает grant_league_badge_if_new).
+ * Дедупликация: при добавлении значка через BADGE_EARNED проверяем что
+ * такого rank_index ещё нет в очереди (защита от дублей если событие
+ * прилетит дважды). Также не добавляем если модалка такого rank_index
+ * уже показывается (queue[0]).
  *
- * ВАЖНО (правка): для новых юзеров (last_seen_season = NULL) — модалку
- * NewSeasonModal НЕ показываем. Вместо этого тихо проставляем текущий сезон
- * в БД, чтобы при первом сбросе сезона модалка появилась корректно.
- * Раньше она вылазила при первом же заходе любого юзера ("ДОБРО ПОЖАЛОВАТЬ
- * в Весну 2026") — неуместно для онбординга.
+ * Для новых юзеров (last_seen_season = NULL) модалку NewSeasonModal НЕ
+ * показываем — тихо проставляем текущий сезон в БД.
  */
 function RewardsQueueController() {
-  // queue — массив элементов { type, payload } которые надо показать по очереди
-  // type: 'badge' | 'frame' | 'new_season'
   const [queue, setQueue] = useState([])
 
+  // Базовая загрузка очереди — стартовая + при USER_CHANGED.
+  // Свежие значки догружаются через отдельный эффект на BADGE_EARNED.
   useEffect(() => {
     let cancelled = false
 
     const buildQueue = async () => {
       const items = []
 
-      // 1. Значки лиг (badges)
       const { badges, frames } = await getPendingRewards()
       if (badges?.length) {
         const sortedBadges = [...badges].sort((a, b) => a.rank_index - b.rank_index)
         for (const b of sortedBadges) items.push({ type: 'badge', payload: b })
       }
 
-      // 2. Сезонные рамки (frames)
       if (frames?.length) {
         const sortedFrames = [...frames].sort((a, b) => a.place - b.place)
         for (const f of sortedFrames) items.push({ type: 'frame', payload: f })
       }
 
-      // 3. Приветствие нового сезона — только для юзеров которые УЖЕ видели
-      // хотя бы один прошлый сезон. У нового юзера last_seen_season = NULL —
-      // тихо проставим текущий сезон, чтобы первая модалка показалась только
-      // после первого реального сезонного сброса.
       const user = getCurrentUser()
       const currentSeason = getCurrentSeason()
 
       if (user && currentSeason) {
         if (user.last_seen_season === null || user.last_seen_season === undefined) {
-          // Первый заход новенького — модалку НЕ показываем,
-          // просто синхронизируем last_seen_season с текущим сезоном.
           try {
             await supabase
               .from('users')
@@ -169,7 +158,6 @@ function RewardsQueueController() {
             console.warn('[App] silent last_seen_season init failed:', e?.message)
           }
         } else if (user.last_seen_season !== currentSeason.key) {
-          // Сезон сменился по сравнению с предыдущим заходом — показываем модалку
           items.push({
             type: 'new_season',
             payload: {
@@ -192,8 +180,56 @@ function RewardsQueueController() {
     }
   }, [])
 
-  // Закрытие текущей модалки → удаление первого элемента из очереди.
-  // Для каждого типа своя логика отметки "показано".
+  // Подписка на свежевыданные значки. Когда юзер только что пересёк порог —
+  // добавляем значок в начало очереди (после текущего показываемого),
+  // чтобы модалка появилась моментально.
+  useEffect(() => {
+    const handler = async (evt) => {
+      const rankIndex = evt?.detail?.rank_index
+      if (rankIndex === null || rankIndex === undefined) return
+
+      console.log('[App] BADGE_EARNED received, rank_index =', rankIndex)
+
+      // Получаем актуальный id записи из БД, чтобы потом markRewardShown
+      // сработал по правильному id. Запись уже создана RPC, ищем её.
+      const user = getCurrentUser()
+      if (!user) return
+
+      try {
+        const { data, error } = await supabase
+          .from('league_badges')
+          .select('id, rank_index')
+          .eq('user_id', user.id)
+          .eq('rank_index', rankIndex)
+          .single()
+
+        if (error || !data) {
+          console.warn('[App] could not find badge record after BADGE_EARNED:', error)
+          return
+        }
+
+        setQueue(prev => {
+          // Дедупликация: уже есть такой значок в очереди?
+          const alreadyQueued = prev.some(
+            it => it.type === 'badge' && it.payload.rank_index === rankIndex
+          )
+          if (alreadyQueued) return prev
+
+          // Вставляем сразу после текущего (если он показывается), иначе в начало.
+          // Это даёт эффект "значок появился моментально, но плавно ждёт
+          // если что-то уже на экране".
+          const newItem = { type: 'badge', payload: { id: data.id, rank_index: rankIndex } }
+          if (prev.length === 0) return [newItem]
+          return [prev[0], newItem, ...prev.slice(1)]
+        })
+      } catch (e) {
+        console.warn('[App] BADGE_EARNED handler exception:', e?.message)
+      }
+    }
+
+    return on(EVENTS.BADGE_EARNED, handler)
+  }, [])
+
   const handleConfirm = async () => {
     const current = queue[0]
     if (!current) return
@@ -203,7 +239,6 @@ function RewardsQueueController() {
     } else if (current.type === 'frame') {
       markRewardShown(current.payload.id, 'frame')
     } else if (current.type === 'new_season') {
-      // Обновляем last_seen_season в БД — на следующем заходе модалка не покажется
       const user = getCurrentUser()
       if (user) {
         const newKey = current.payload.season.key

@@ -1,13 +1,8 @@
 /**
  * Хранилище данных пользователя.
  *
- * setLastCompletedDay идемпотентна по дате: повторное завершение в тот же
- * день не сдвигает цикл. Дату читаем синхронно из localStorage чтобы
- * избежать гонок с Cloud.
- *
- * resetProgramDayCycle — отдельный сброс ТОЛЬКО порядка дней A/B/C.
- * Не трогает мускулы, стрик, историю — полезно когда юзер хочет сменить
- * стартовую точку цикла без потери прогресса.
+ * addXP и completeQuest теперь читают new_badge_rank_index из RPC.
+ * Если значок выдан — эмитят BADGE_EARNED → модалка появляется сразу.
  */
 
 import { supabase } from './supabase'
@@ -31,6 +26,13 @@ export async function getTotalXP() {
   return getCurrentUser()?.total_muscles || 0
 }
 
+/**
+ * Начислить мускулы. add_muscles теперь возвращает TABLE с двумя полями:
+ *   total_muscles — новое общее число мускулов
+ *   new_badge_rank_index — rank_index выданного значка или NULL
+ *
+ * Если значок выдан — эмитим BADGE_EARNED чтобы App.jsx показал модалку сразу.
+ */
 export async function addXP(amount, source = 'quest', sourceId = null) {
   const userId = getUserId()
   if (!userId) {
@@ -50,12 +52,22 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
     return getCurrentUser()?.total_muscles || 0
   }
 
+  // RPC теперь отдаёт массив объектов (TABLE), а не скаляр. Берём первый.
+  const row = Array.isArray(data) ? data[0] : data
+  const newTotal = row?.total_muscles ?? 0
+  const newBadgeRank = row?.new_badge_rank_index ?? null
+
   const u = getCurrentUser()
-  if (u) setCurrentUser({ ...u, total_muscles: data })
+  if (u) setCurrentUser({ ...u, total_muscles: newTotal })
 
   cacheInvalidate(`muscle-history:${userId}`)
 
-  return data
+  if (newBadgeRank !== null && newBadgeRank !== undefined) {
+    console.log('[storage] new badge earned via addXP, rank_index =', newBadgeRank)
+    emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
+  }
+
+  return newTotal
 }
 
 export async function setTotalXP(value) {
@@ -231,6 +243,12 @@ export async function getDailyQuests() {
   return result
 }
 
+/**
+ * Выполнить квест. complete_daily_quest теперь возвращает 3 поля:
+ *   was_new, new_total_muscles, new_badge_rank_index.
+ *
+ * Если значок выдан (new_badge_rank_index != null) — эмитим BADGE_EARNED.
+ */
 export async function completeQuest(questId, reward = 20) {
   const userId = getUserId()
   if (!userId) {
@@ -251,6 +269,7 @@ export async function completeQuest(questId, reward = 20) {
   }
 
   const result = data?.[0] || data || {}
+  const newBadgeRank = result.new_badge_rank_index ?? null
 
   if (result.was_new && result.new_total_muscles !== undefined) {
     const u = getCurrentUser()
@@ -259,6 +278,11 @@ export async function completeQuest(questId, reward = 20) {
       emit(EVENTS.USER_CHANGED, getCurrentUser())
     }
     cacheInvalidate(`muscle-history:${userId}`)
+  }
+
+  if (newBadgeRank !== null && newBadgeRank !== undefined) {
+    console.log('[storage] new badge earned via quest, rank_index =', newBadgeRank)
+    emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
   }
 
   const completed = await getDailyQuests()
@@ -273,11 +297,6 @@ export async function completeQuest(questId, reward = 20) {
 /* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ */
 /* ============================================ */
 
-/**
- * Какой день рекомендовать сейчас. Сдвиг last_day → следующий по циклу.
- * Если last_day отсутствует (юзер ничего не отжимал или только что сбросил
- * порядок) — возвращаем null. UI с этим null правильно покажет "все буквы серые".
- */
 export async function getActiveDay(programId) {
   const lastCompleted = await cloudGet(`program:${programId}:last_day`)
   if (!lastCompleted) return null
@@ -285,13 +304,6 @@ export async function getActiveDay(programId) {
   return cycle[lastCompleted] || 'A'
 }
 
-/**
- * Записать какой день был завершён последним. Идемпотентно по дате:
- *  - Если сегодня уже записано → ничего не делаем.
- *  - Иначе → пишем новый day и сегодняшнюю дату.
- *
- * Дату читаем СИНХРОННО через localGet — никаких гонок с Cloud.
- */
 export async function setLastCompletedDay(programId, day) {
   const today = getTodayKey()
 
@@ -319,16 +331,6 @@ export async function setLastCompletedDay(programId, day) {
   console.log('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
 }
 
-/**
- * Сбросить ТОЛЬКО порядок дней программы — мускулы, стрик и история остаются.
- *
- * После этого:
- *  - getActiveDay вернёт null → ProgramCard покажет все буквы серыми
- *  - первое же завершение тренировки задаст новую точку отсчёта
- *
- * Использование: кнопка "Сбросить порядок дней" в настройках для случая когда
- * юзер хочет начать новую неделю с другого дня (например, не с A, а с B).
- */
 export async function resetProgramDayCycle(programId) {
   await cloudRemove(`program:${programId}:last_day`)
   await cloudRemove(`program:${programId}:last_day_date`)
@@ -354,7 +356,7 @@ export async function togglePin(programId) {
 }
 
 /* ============================================ */
-/* СБРОС ВСЕХ ДАННЫХ */
+/* СБРОС ДАННЫХ */
 /* ============================================ */
 
 export async function clearAllData() {
@@ -383,9 +385,36 @@ export async function clearAllData() {
   await supabase.from('muscle_history').delete().eq('user_id', userId)
   await supabase.from('daily_quests').delete().eq('user_id', userId)
 
+  // Сбрасываем и значки — чтобы при следующем тапе квеста
+  // снова появилась модалка Новобранца (или той лиги до которой ты быстро добежишь).
+  await supabase.from('league_badges').delete().eq('user_id', userId)
+
   const { data } = await supabase.from('users').select('*').eq('id', userId).single()
   if (data) {
     setCurrentUser(data)
     emit(EVENTS.USER_CHANGED, data)
+  }
+}
+
+/**
+ * Дев-сброс ТОЛЬКО значков лиг. Не трогает мускулы, стрик, историю.
+ * Используется кнопкой в настройках чтобы тестировать модалки на одном аккаунте.
+ */
+export async function devResetBadgesOnly() {
+  const userId = getUserId()
+  if (!userId) return false
+
+  try {
+    const { error } = await supabase.rpc('api_dev_reset_user_badges', {
+      p_user_id: userId
+    })
+    if (error) {
+      console.error('[storage] devResetBadgesOnly RPC error:', error)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error('[storage] devResetBadgesOnly exception:', e)
+    return false
   }
 }
