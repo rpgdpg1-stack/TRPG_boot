@@ -26,6 +26,7 @@ import { getPendingRewards, markRewardShown } from './lib/rewards'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
+import { checkAndResetSeasonIfNeeded } from './lib/season-reset'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -38,6 +39,18 @@ export default function App() {
       return null
     })
   }
+
+  // После авторизации — фоновая проверка нужен ли сброс сезона.
+  // Это страховка на случай если pg_cron пропустил запуск (Supabase free tier
+  // засыпает при простое). Защита от двойного срабатывания — на стороне БД.
+  useEffect(() => {
+    let cancelled = false
+    authPromiseRef.current?.then(user => {
+      if (cancelled || !user) return
+      checkAndResetSeasonIfNeeded()
+    })
+    return () => { cancelled = true }
+  }, [])
 
   if (loading) {
     return (
@@ -104,6 +117,12 @@ function SettingsButtonController() {
  *
  * Перезагрузка очереди — по USER_CHANGED (после тренировки могли выдать новый
  * значок, потому что add_muscles в RPC вызывает grant_league_badge_if_new).
+ *
+ * ВАЖНО (правка): для новых юзеров (last_seen_season = NULL) — модалку
+ * NewSeasonModal НЕ показываем. Вместо этого тихо проставляем текущий сезон
+ * в БД, чтобы при первом сбросе сезона модалка появилась корректно.
+ * Раньше она вылазила при первом же заходе любого юзера ("ДОБРО ПОЖАЛОВАТЬ
+ * в Весну 2026") — неуместно для онбординга.
  */
 function RewardsQueueController() {
   // queue — массив элементов { type, payload } которые надо показать по очереди
@@ -129,18 +148,36 @@ function RewardsQueueController() {
         for (const f of sortedFrames) items.push({ type: 'frame', payload: f })
       }
 
-      // 3. Приветствие нового сезона — если last_seen_season не совпадает
-      // с текущим ключом сезона. Юзера читаем свежий, не из стейта.
+      // 3. Приветствие нового сезона — только для юзеров которые УЖЕ видели
+      // хотя бы один прошлый сезон. У нового юзера last_seen_season = NULL —
+      // тихо проставим текущий сезон, чтобы первая модалка показалась только
+      // после первого реального сезонного сброса.
       const user = getCurrentUser()
       const currentSeason = getCurrentSeason()
-      if (user && user.last_seen_season !== currentSeason.key) {
-        items.push({
-          type: 'new_season',
-          payload: {
-            season: currentSeason,
-            daysLeft: getDaysUntilSeasonEnd()
+
+      if (user && currentSeason) {
+        if (user.last_seen_season === null || user.last_seen_season === undefined) {
+          // Первый заход новенького — модалку НЕ показываем,
+          // просто синхронизируем last_seen_season с текущим сезоном.
+          try {
+            await supabase
+              .from('users')
+              .update({ last_seen_season: currentSeason.key })
+              .eq('id', user.id)
+            setCurrentUser({ ...user, last_seen_season: currentSeason.key })
+          } catch (e) {
+            console.warn('[App] silent last_seen_season init failed:', e?.message)
           }
-        })
+        } else if (user.last_seen_season !== currentSeason.key) {
+          // Сезон сменился по сравнению с предыдущим заходом — показываем модалку
+          items.push({
+            type: 'new_season',
+            payload: {
+              season: currentSeason,
+              daysLeft: getDaysUntilSeasonEnd()
+            }
+          })
+        }
       }
 
       if (!cancelled) setQueue(items)
