@@ -201,7 +201,6 @@ export default function WorkoutDay() {
       state: { returnTo: `/workout/${programId}/${day}` }
     })
   }
-  }
 
   const handleMenuSwap = () => {
     if (!actionSlot) return
