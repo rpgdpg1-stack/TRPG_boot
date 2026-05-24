@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getAllUserRewards } from '../lib/rewards'
-import { getAllLeagues, getLeagueByRankIndex } from '../lib/leagues'
+import { getAllLeagues, getLeagueByRankIndex, getLeagueByMuscles } from '../lib/leagues'
+import { getCurrentUser } from '../lib/auth'
 import LeagueBadgeIcon from '../components/LeagueBadgeIcon'
 
 /**
@@ -10,12 +11,16 @@ import LeagueBadgeIcon from '../components/LeagueBadgeIcon'
  *  1. Значки лиг — сетка 4 в ряд, открытые цветные, неоткрытые серые с замочком
  *  2. Сезонные рамки — горизонтальный список карточек со всеми накопленными
  *
- * Активная рамка (active_frame_id) пока НЕ реализована визуально на аватаре —
- * только хранится в БД. Когда будем подключать рамку к аватару — сделаем
- * отдельной фичей. Сейчас просто отображаем коллекцию.
+ * Логика "открытости" значка:
+ *  - Если запись есть в league_badges (БД) — значок открыт
+ *  - Если текущая лига юзера ВЫШЕ этого rank_index — значок тоже считаем открытым
+ *    (этап пройден, юзер давно за ним). При этом запись в БД не создаём —
+ *    grant_league_badge_if_new в Supabase создаёт записи только при пересечении
+ *    конкретного порога во время начисления мускулов. Старые "забытые" этапы
+ *    мы просто визуально подсвечиваем как открытые.
  *
- * Тап по значку лиги — попап с описанием лиги (минимальный).
- * Тап по рамке — попап с её описанием (когда получил, какое место).
+ * Тап по значку лиги — попап с описанием.
+ * Тап по рамке — попап с её описанием.
  */
 export default function Rewards() {
   const navigate = useNavigate()
@@ -23,7 +28,7 @@ export default function Rewards() {
   const [loading, setLoading] = useState(true)
   const [badges, setBadges] = useState([])
   const [frames, setFrames] = useState([])
-  const [popup, setPopup] = useState(null) // { kind: 'badge'|'frame', data }
+  const [popup, setPopup] = useState(null)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -41,13 +46,33 @@ export default function Rewards() {
     return () => { cancelled = true }
   }, [])
 
-  // Все лиги от 1 до 10 (Новобранец 0 пропускаем — он у всех "по умолчанию")
-  const allLeagues = getAllLeagues().slice(1)
-  const earnedRankIndexes = new Set(badges.map(b => b.rank_index))
+  // ВСЕ лиги, включая Новобранца (rank_index = 0)
+  const allLeagues = getAllLeagues()
+
+  // Текущая лига юзера — нужна чтобы автоматом подсвечивать как открытые
+  // все лиги ниже текущей (этапы пройдены, даже если значки в БД не записаны).
+  const user = getCurrentUser()
+  const currentRankIndex = user ? getLeagueByMuscles(user.total_muscles || 0).rankIndex : 0
+
+  // Множество rank_index которые у юзера РЕАЛЬНО получены (есть запись в league_badges)
+  const earnedFromDb = new Set(badges.map(b => b.rank_index))
+
+  // Функция: считать ли значок открытым.
+  // Открыт если есть запись в БД ИЛИ текущая лига юзера ВЫШЕ этого ранга.
+  // Текущая лига (rankIndex === currentRankIndex) тоже считается открытой —
+  // ты её достиг и в ней находишься.
+  const isBadgeUnlocked = (rankIndex) => {
+    if (earnedFromDb.has(rankIndex)) return true
+    if (rankIndex <= currentRankIndex) return true
+    return false
+  }
+
+  // Сколько значков всего открыто (для подписи "N из M открыто")
+  const openedCount = allLeagues.filter(l => isBadgeUnlocked(l.rankIndex)).length
 
   const handleBadgeTap = (rankIndex, isLocked) => {
     haptic.light()
-    setPopup({ kind: 'badge', data: { rankIndex, isLocked } })
+    setPopup({ kind: 'badge', data: { rankIndex, isLocked, isCurrent: rankIndex === currentRankIndex } })
   }
 
   const handleFrameTap = (frame) => {
@@ -70,12 +95,13 @@ export default function Rewards() {
           {/* Секция: значки лиг */}
           <div style={styles.sectionHeader}>ЗНАЧКИ ЛИГ</div>
           <div style={styles.subSectionInfo}>
-            {earnedRankIndexes.size} из {allLeagues.length} открыто
+            {openedCount} из {allLeagues.length} открыто
           </div>
 
           <div style={styles.badgesGrid}>
             {allLeagues.map(league => {
-              const isLocked = !earnedRankIndexes.has(league.rankIndex)
+              const unlocked = isBadgeUnlocked(league.rankIndex)
+              const isLocked = !unlocked
               return (
                 <button
                   key={league.rankIndex}
@@ -145,7 +171,6 @@ export default function Rewards() {
         </>
       )}
 
-      {/* Попап с описанием награды */}
       {popup && (
         <RewardPopup popup={popup} onClose={() => setPopup(null)} />
       )}
@@ -159,6 +184,20 @@ function RewardPopup({ popup, onClose }) {
   let content
   if (kind === 'badge') {
     const league = getLeagueByRankIndex(data.rankIndex)
+
+    // Текст в попапе зависит от состояния:
+    //  - закрыт (lock) — мотивирующий текст "достигни лигу"
+    //  - открыт и это твоя ТЕКУЩАЯ лига — "ты в ней сейчас"
+    //  - открыт и ты её прошёл — "этап пройден"
+    let description
+    if (data.isLocked) {
+      description = `Открой при первом достижении лиги ${league.name}. Останется навсегда.`
+    } else if (data.isCurrent) {
+      description = 'Это твоя текущая лига. Значок останется с тобой даже после сброса сезона.'
+    } else {
+      description = `Этап пройден. Когда-то ты достиг лиги ${league.name} — значок останется навсегда.`
+    }
+
     content = (
       <>
         <LeagueBadgeIcon rankIndex={data.rankIndex} size={96} isLocked={data.isLocked} showGlow={!data.isLocked} />
@@ -166,14 +205,11 @@ function RewardPopup({ popup, onClose }) {
           {league.name.toUpperCase()}
         </div>
         <div style={popupStyles.text}>
-          {data.isLocked
-            ? `Открой при первом достижении лиги ${league.name}. Останется навсегда.`
-            : 'Ты достиг этой лиги. Значок останется с тобой даже после сброса сезона.'}
+          {description}
         </div>
       </>
     )
   } else {
-    // frame
     const league = getLeagueByRankIndex(data.rank_index)
     const medal = data.place === 1 ? '🥇' : data.place === 2 ? '🥈' : '🥉'
     content = (
@@ -310,20 +346,31 @@ const styles = {
 
 const popupStyles = {
   overlay: {
-    position: 'fixed', inset: 0,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 9999, padding: '20px',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '20px',
     animation: 'rewardPopupFade 0.2s ease-out forwards'
   },
   modal: {
-    width: '100%', maxWidth: '320px',
+    width: '100%',
+    maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '24px',
     padding: '28px 22px 18px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
     gap: '12px',
     animation: 'rewardPopupIn 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'

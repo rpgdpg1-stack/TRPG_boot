@@ -13,21 +13,25 @@ import LeaderboardRow from '../components/LeaderboardRow'
  * Экран рейтинга.
  *
  * Два таба сверху: Друзья / Лига.
- * Таб переключается тапом, активный таб подсвечивается зелёной полоской снизу.
+ *
+ * Таб "Лига" в формате: ЛИГА (СПОРТСМЕН)
+ *   - когда активен — "(СПОРТСМЕН)" цветом лиги
+ *   - когда неактивен — всё серым
+ *
+ * Под табами — подпись с количеством игроков:
+ *   - Друзья: "В друзьях N" (не считая самого юзера)
+ *   - Лига: "В лиге N игроков"
  *
  * Список ниже:
  *  - Друзья: топ по мускулам среди друзей юзера (включая его самого)
  *  - Лига: топ-100 внутри текущей лиги юзера
  *
- * ВАЖНО (правка): если сервер вернул пустой список или ответ без самого юзера —
- * фронт собирает строку из getCurrentUser() и показывает юзера как #1. Это значит:
- *  - в табе Друзья даже без приглашённых юзер видит себя в рейтинге
- *  - в табе Лига при пустом ответе юзер тоже всегда виден
- * Аватарка, имя и мускулы берутся актуальными из getCurrentUser().
- *
- * Если в Друзья только сам юзер — снизу всё равно показываем CTA "Пригласить друга".
+ * Если сервер вернул пусто или без юзера — фронт собирает строку из
+ * getCurrentUser() и показывает юзера как #1.
  *
  * Подсказка по правилам — кнопка-инфо ℹ️ в шапке справа.
+ * Модалка правил рендерится через position: fixed на уровне всего viewport,
+ * чтобы центрироваться независимо от padding'ов страницы.
  */
 
 const TAB_FRIENDS = 'friends'
@@ -46,13 +50,9 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true)
   const [showRules, setShowRules] = useState(false)
 
-  // Текущий юзер — нужен для определения "моя лига" в шапке таба Лига,
-  // для определения свой ли это юзер в строке и для построения fallback-строки
-  // когда сервер вернул пусто.
   const user = getCurrentUser()
   const myLeague = user ? getLeagueByMuscles(user.total_muscles || 0) : null
 
-  // Текущий сезон + сколько до конца — отображается в шапке
   const season = getCurrentSeason()
   const daysLeft = getDaysUntilSeasonEnd()
   const endDateStr = formatSeasonEndDate()
@@ -62,8 +62,6 @@ export default function Leaderboard() {
     lockVerticalSwipes()
   }, [navigate])
 
-  // Загружаем данные при смене таба. Кеш в самом API живёт 30 сек,
-  // так что переключение туда-сюда не дёргает сеть.
   useEffect(() => {
     let cancelled = false
 
@@ -88,8 +86,6 @@ export default function Leaderboard() {
     return () => { cancelled = true }
   }, [activeTab])
 
-  // Перезагрузка данных когда юзер заработал мускулы в фоне (например,
-  // выполнил квест с другой страницы). USER_CHANGED шлётся из storage.js.
   useEffect(() => {
     const reload = () => {
       if (activeTab === TAB_FRIENDS) getFriendsLeaderboard().then(setFriendsRows)
@@ -114,9 +110,6 @@ export default function Leaderboard() {
     await shareReferralLink()
   }
 
-  // Собрать fallback-строку из текущего юзера. Используется когда сервер
-  // вернул пусто или забыл включить самого юзера в ответ.
-  // Формат совпадает с тем что возвращает RPC, чтобы LeaderboardRow ничего не заметил.
   const buildSelfRow = () => {
     if (!user) return null
     const muscles = user.total_muscles || 0
@@ -133,10 +126,6 @@ export default function Leaderboard() {
     }
   }
 
-  // Гарантирует, что в массиве строк присутствует сам юзер.
-  // Если сервер не вернул юзера — добавляем его строкой и переставляем place
-  // (юзер с большими мускулами = выше). Если сервер не вернул вообще ничего —
-  // отдаём массив из одной строки [self].
   const ensureSelfInRows = (rows) => {
     const self = buildSelfRow()
     if (!self) return rows
@@ -145,12 +134,10 @@ export default function Leaderboard() {
       return [self]
     }
 
-    // Уже есть — возвращаем как есть
     if (rows.some(r => r.is_me || r.user_id === self.user_id)) {
       return rows
     }
 
-    // Юзера нет — добавим и пересортируем
     const merged = [...rows, self].sort((a, b) => {
       if (b.total_muscles !== a.total_muscles) return b.total_muscles - a.total_muscles
       return a.user_id - b.user_id
@@ -159,25 +146,28 @@ export default function Leaderboard() {
     return merged
   }
 
-  // Какие строки показывать в текущем табе (с гарантией присутствия себя)
   const rows = activeTab === TAB_FRIENDS
     ? ensureSelfInRows(friendsRows)
     : ensureSelfInRows(leagueData.rows)
 
-  // Показываем CTA "Пригласить друга" в Друзьях когда юзер один сам с собой.
-  // Условие: в табе друзей, ровно одна строка, и она про самого юзера.
+  // Счётчик друзей — не считаем самого юзера. То есть это число РЕАЛЬНО
+  // приглашённых друзей, а не размер списка.
+  const friendsCount = Math.max(0, rows.length - 1)
+
   const showInviteCTA = activeTab === TAB_FRIENDS && rows.length === 1 && rows[0]?.is_me
 
-  // Для шапки таба Лига показываем общее число — даже если сервер вернул 0,
-  // юзер физически один в лиге уже сам, так что подменим на 1.
   const leagueTotalDisplay = activeTab === TAB_LEAGUE
     ? Math.max(leagueData.totalInLeague || 0, rows.length)
     : 0
 
+  // Цвет лиги для таба "Лига" — берём из myLeague когда есть. Если юзера
+  // ещё нет (не должно случаться, но на всякий) — fallback на серый.
+  const leagueColor = myLeague?.color || 'var(--color-text-secondary)'
+  const leagueNameForTab = myLeague ? myLeague.name.toUpperCase() : ''
+
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка: заголовок + кнопка-инфо */}
       <header style={styles.header}>
         <div style={styles.titleRow}>
           <h1 style={styles.title}>РЕЙТИНГ</h1>
@@ -195,7 +185,7 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      {/* Табы — Друзья / Лига */}
+      {/* Табы — Друзья / Лига (СПОРТСМЕН) */}
       <div style={styles.tabsRow}>
         <button
           onClick={() => handleTabTap(TAB_FRIENDS)}
@@ -212,23 +202,39 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_LEAGUE)}
           style={{
             ...styles.tab,
+            // Базовый цвет таба — зелёный когда активен, серый когда нет.
+            // Цвет конкретной лиги в скобках задаётся отдельно через span ниже.
             color: activeTab === TAB_LEAGUE ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          {myLeague ? `ЛИГА ${myLeague.name.toUpperCase()}` : 'ЛИГА'}
+          ЛИГА
+          {leagueNameForTab && (
+            <>
+              {' '}
+              <span style={{
+                color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
+                transition: 'color 0.25s ease'
+              }}>
+                ({leagueNameForTab})
+              </span>
+            </>
+          )}
           {activeTab === TAB_LEAGUE && <div style={styles.tabUnderline} />}
         </button>
       </div>
 
-      {/* Доп. инфа под табом — показываем сколько в лиге игроков */}
-      {activeTab === TAB_LEAGUE && !loading && leagueTotalDisplay > 0 && (
+      {/* Доп. инфа под табом */}
+      {!loading && activeTab === TAB_LEAGUE && leagueTotalDisplay > 0 && (
         <div style={styles.subInfo}>
           В лиге {leagueTotalDisplay} {pluralPlayers(leagueTotalDisplay)}
         </div>
       )}
+      {!loading && activeTab === TAB_FRIENDS && !showInviteCTA && (
+        <div style={styles.subInfo}>
+          В друзьях {friendsCount}
+        </div>
+      )}
 
-      {/* Список. При loading показываем "Загрузка...", иначе — строки.
-          Пустого состояния больше не показываем — сам юзер всегда виден. */}
       <div style={styles.listWrap}>
         {loading ? (
           <div style={styles.empty}>Загрузка...</div>
@@ -245,7 +251,6 @@ export default function Leaderboard() {
         )}
       </div>
 
-      {/* CTA "Пригласить друга" если в табе Друзья пусто кроме самого юзера */}
       {showInviteCTA && !loading && (
         <div style={styles.inviteBlock}>
           <div style={styles.inviteEmoji}>👥</div>
@@ -260,8 +265,6 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Кнопка пригласить всегда внизу в табе Друзья (если уже есть друзья).
-          В табе Лига кнопки нет — приглашать в общую лигу нелогично. */}
       {activeTab === TAB_FRIENDS && !showInviteCTA && !loading && (
         <div style={styles.bottomInvite}>
           <button onClick={handleInviteTap} style={styles.inviteButtonSecondary}>
@@ -270,7 +273,8 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Модалка с правилами */}
+      {/* Модалка с правилами — вынесена на уровень компонента,
+          использует position: fixed для центрирования по viewport */}
       {showRules && <RulesModal onClose={() => setShowRules(false)} season={season} />}
     </div>
   )
@@ -278,6 +282,10 @@ export default function Leaderboard() {
 
 /**
  * Модалка-объяснялка правил рейтинга. Открывается по кнопке ℹ️.
+ *
+ * Центрирование: overlay имеет position: fixed + inset: 0 + flex centering.
+ * fixed позиционирует относительно viewport, а не родителя — поэтому
+ * никакие padding'и страницы не мешают.
  */
 function RulesModal({ onClose, season }) {
   return (
@@ -511,9 +519,15 @@ const styles = {
 }
 
 const modalStyles = {
+  // position: fixed гарантирует центрирование относительно viewport,
+  // независимо от padding'ов родителя. inset: 0 + flex centering
+  // ставит модалку строго по центру экрана.
   overlay: {
     position: 'fixed',
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     background: 'rgba(13, 12, 12, 0.85)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
