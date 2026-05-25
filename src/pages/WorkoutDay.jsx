@@ -20,17 +20,25 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 /**
  * Экран дня тренировки.
  *
- * Возврат с экрана замены упражнения:
+ * Возврат с экранов "Сменить упражнение" и "Информация":
  *  - location.state.returnedFromOrderNum — order_num карточки откуда пришли
- *  - location.state.wasSwapped — было ли реально сохранено новое упражнение
+ *  - location.state.wasSwapped — true только для swap при реальной смене
+ *  - location.state.scrollY — сохранённая позиция скролла страницы дня
  *
- * Когда юзер возвращается:
- *  1. Скроллим к нужной карточке МГНОВЕННО (behavior: 'auto') — без езды
- *     снизу-вверх. Юзер видит сразу нужную позицию страницы.
- *  2. Press-эффект (scale 0.97 → 1) — визуальная подсказка "вот эта карточка".
- *  3. Если wasSwapped === true → играет анимация "змейки" — два зелёных
- *     сегмента идут друг за другом по контуру карточки по часовой стрелке,
- *     обходят полный круг и исчезают. Эффект лоадера.
+ * Эффекты при возврате (для ОБОИХ экранов — Инфо и Swap):
+ *  1. Восстанавливаем точную позицию скролла (НЕ центрируем карточку).
+ *     Так юзер не теряет контекст — страница ровно там же где была.
+ *  2. Press-эффект (scale 0.97 → 1) на карточке откуда уходил.
+ *  3. Зелёная обводка-подсветка карточки которая плавно затухает за ~1.5с —
+ *     визуальный маркер "вот эту ты нажимал и сюда вернулся".
+ *  4. Дополнительно для swap при wasSwapped=true: анимация "змейки" по
+ *     контуру карточки (стрелки бегут по часовой стрелке один круг).
+ *
+ * Почему scrollY вместо scrollIntoView({block:'center'}):
+ *   Раньше swap центрировал карточку, а Инфо вообще не запускал эффекты —
+ *   и от этого получалось разное поведение: swap прыгал по странице,
+ *   Инфо тихо возвращался куда было. Теперь оба сценария ведут себя
+ *   одинаково — возврат на ту же позицию скролла.
  */
 export default function WorkoutDay() {
   const { programId, day } = useParams()
@@ -53,15 +61,16 @@ export default function WorkoutDay() {
 
   const [slideDir, setSlideDir] = useState('right')
 
-  // pressedOrderNum — карточка играет лёгкий press-эффект (scale 0.97 → 1)
-  // swappedOrderNum — карточка играет анимацию "змейки" (стрелки по контуру)
-  // isReturning — на время возврата с swap прячем контент чтобы скрыть
-  //               моргание при скролле к дальней карточке
+  // Эффекты возврата с других экранов:
+  //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
+  //   glowedOrderNum  — карточка светится зелёной обводкой и плавно гаснет
+  //   swappedOrderNum — карточка играет анимацию "змейки" (только swap)
+  //   isReturning     — на время скролла прячем контент чтобы скрыть рывок
   const [pressedOrderNum, setPressedOrderNum] = useState(null)
+  const [glowedOrderNum, setGlowedOrderNum] = useState(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
   const [isReturning, setIsReturning] = useState(false)
 
-  // Реф на DOM-обёртки карточек: order_num → div. Нужно для scrollIntoView.
   const cardRefs = useRef(new Map())
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -117,15 +126,16 @@ export default function WorkoutDay() {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
 
-  // Реакция на возврат с экрана замены упражнения.
+  // Реакция на возврат с экранов "Сменить" и "Инфо".
   // Срабатывает после рендера карточек (slots не пустой, loading закончился).
   //
-  // Как убираем "моргание" при скролле к дальней карточке:
-  //   1. До скролла — прячем ВЕСЬ контент дня через opacity 0 (isReturning=true)
-  //   2. Скроллим к карточке (мгновенно, без анимации езды)
-  //   3. Через 60мс снимаем isReturning → контент плавно проявляется fade-in 220мс
-  // В итоге юзер видит: пустой фон → готовая позиция с нужной карточкой,
-  // без рывка прокрутки.
+  // Алгоритм:
+  //   1. Прячем body через opacity 0 — скрываем рывок прокрутки
+  //   2. Восстанавливаем точную позицию scrollY (как было перед уходом)
+  //   3. Через 60мс плавно показываем body (fade-in 220мс)
+  //   4. Запускаем эффекты: press + glow (+ swap-snake если wasSwapped)
+  //
+  // Очищаем state из истории чтобы при свайпе между днями повтор не сработал.
   useEffect(() => {
     if (loading) return
     if (!slots.length) return
@@ -133,39 +143,44 @@ export default function WorkoutDay() {
     const stateData = location.state || {}
     const returnedFrom = stateData.returnedFromOrderNum
     const wasSwapped = stateData.wasSwapped
+    const savedScrollY = stateData.scrollY
 
     if (returnedFrom == null) return
 
-    // Прячем контент до скролла — это маскирует моргание перерисовки
     setIsReturning(true)
 
-    // requestAnimationFrame ×2 — даём React дорисовать карточки в DOM.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const cardEl = cardRefs.current.get(returnedFrom)
-        if (cardEl) {
-          cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
+        // Восстанавливаем точную позицию скролла. Если savedScrollY не было
+        // (например юзер пришёл из другой точки), скроллим к карточке центром
+        // как раньше — мягкий fallback чтобы карточка точно нашлась.
+        if (typeof savedScrollY === 'number') {
+          window.scrollTo({ top: savedScrollY, left: 0, behavior: 'auto' })
+        } else {
+          const cardEl = cardRefs.current.get(returnedFrom)
+          if (cardEl) cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
         }
 
-        // Чуть-чуть ждём после скролла и плавно показываем контент
         setTimeout(() => {
           setIsReturning(false)
 
-          // Press-эффект и анимация змейки запускаем уже на видимом контенте
+          // Press-эффект и зелёное свечение — оба запускаются на той же
+          // карточке. Press короткий (350мс), glow подольше (~1500мс).
           setPressedOrderNum(returnedFrom)
           setTimeout(() => setPressedOrderNum(null), 350)
 
+          setGlowedOrderNum(returnedFrom)
+          setTimeout(() => setGlowedOrderNum(null), 1600)
+
+          // Анимация змейки — только для реальной смены упражнения
           if (wasSwapped) {
             setSwappedOrderNum(returnedFrom)
-            // Длительность: 2.4с анимация + 200мс запас
             setTimeout(() => setSwappedOrderNum(null), 2600)
           }
         }, 60)
       })
     })
 
-    // Чистим state из истории чтобы при последующих re-render'ах (например
-    // при свайпе между днями) повтор не сработал.
     navigate(location.pathname, { replace: true, state: null })
   }, [loading, slots.length, location.state, location.pathname, navigate])
 
@@ -191,17 +206,29 @@ export default function WorkoutDay() {
     setActionSlot(slot)
   }
 
+  /**
+   * Переход на страницу Инфо. Сохраняем текущий scrollY в state, чтобы
+   * при возврате восстановить позицию скролла точь-в-точь. ReturnedFromOrderNum
+   * передаём в state на путь возврата — он будет прочитан в state.returnTo
+   * на ExerciseInfo, и оттуда переотправлен в WorkoutDay при backButton.
+   */
   const handleMenuInfo = () => {
     if (!actionSlot) return
     const slot = actionSlot
     setActionSlot(null)
-    // Переходим на полноэкранную страницу информации.
-    // Передаём returnTo, чтобы кнопка "Назад" в Telegram вернула на текущий день тренировки.
     navigate(`/exercise/${slot.exercise_id}`, {
-      state: { returnTo: `/workout/${programId}/${day}` }
+      state: {
+        returnTo: `/workout/${programId}/${day}`,
+        returnedFromOrderNum: slot.order_num,
+        scrollY: window.scrollY
+      }
     })
   }
 
+  /**
+   * Переход на страницу Сменить. Аналогично Инфо — сохраняем scrollY,
+   * чтобы возврат был на ту же позицию (а не центрирование карточки).
+   */
   const handleMenuSwap = () => {
     if (!actionSlot) return
     const slot = actionSlot
@@ -217,7 +244,8 @@ export default function WorkoutDay() {
         currentExerciseId: slot.exercise_id,
         currentExerciseName: slot.exercise_name,
         defaultExerciseId,
-        muscleGroup: slot.muscle_group
+        muscleGroup: slot.muscle_group,
+        scrollY: window.scrollY
       }
     })
   }
@@ -398,6 +426,7 @@ export default function WorkoutDay() {
                 <div style={styles.exerciseList}>
                   {section.slots.map(slot => {
                     const isPressed = pressedOrderNum === slot.order_num
+                    const isGlowed = glowedOrderNum === slot.order_num
                     const isSwapped = swappedOrderNum === slot.order_num
                     return (
                       <div
@@ -418,6 +447,11 @@ export default function WorkoutDay() {
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
                         />
+
+                        {/* Зелёная подсветка-обводка — индикатор "вот эту ты
+                            нажимал и сюда вернулся". Плавно появляется и гаснет.
+                            Радиус 33px совпадает с border-radius карточки. */}
+                        {isGlowed && <ReturnGlow />}
 
                         {isSwapped && <SwapAnimationOverlay />}
                       </div>
@@ -469,17 +503,56 @@ export default function WorkoutDay() {
 }
 
 /**
+ * Зелёная обводка-подсветка вокруг карточки — индикатор возврата.
+ *
+ * Поведение:
+ *  - Появляется быстро (~150мс)
+ *  - Держится ~600мс на полную яркость
+ *  - Плавно гаснет до 0 (~800мс)
+ *  - Полное время ~1.5с
+ *
+ * Технически: абсолютно позиционированный div на инсете -1px чтобы
+ * обводка выходила за края карточки на пиксель (как у featured карточки
+ * "СИЛОВАЯ" на главной). Border + box-shadow дают двойное свечение —
+ * чёткий контур + мягкое сияние вокруг.
+ *
+ * pointerEvents: none — клики проходят сквозь, карточка остаётся тапабельной.
+ * border-radius 33px = радиус карточки, иначе обводка не повторит форму.
+ */
+function ReturnGlow() {
+  return (
+    <div style={glowStyles.wrap} aria-hidden="true">
+      <style>{`
+        @keyframes returnGlowFade {
+          0%   { opacity: 0; }
+          15%  { opacity: 1; }
+          55%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+const glowStyles = {
+  wrap: {
+    position: 'absolute',
+    top: -1,
+    left: -1,
+    right: -1,
+    bottom: -1,
+    borderRadius: '34px',
+    border: '1.5px solid var(--color-primary)',
+    boxShadow: '0 0 18px rgba(158, 209, 83, 0.45), inset 0 0 14px rgba(158, 209, 83, 0.10)',
+    pointerEvents: 'none',
+    animation: 'returnGlowFade 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+    zIndex: 9
+  }
+}
+
+/**
  * Анимация "змейки" — один зелёный сегмент-полоса проходит по контуру
  * карточки по часовой стрелке ровно один круг и исчезает.
- *
- * Геометрия:
- *  - SVG растягивается под реальные размеры карточки (preserveAspectRatio="none")
- *  - rx/ry углов = 33px — совпадает с border-radius карточки
- *  - Путь стартует с середины верхней грани (12 часов) и идёт по часовой
- *  - vectorEffect="non-scaling-stroke" — толщина линии 3px остаётся постоянной
- *
- * Скорость: 2.4с на полный круг, плавный easing.
- * Один проход, без повторов и без второй стрелки.
  */
 function SwapAnimationOverlay() {
   const W = 700

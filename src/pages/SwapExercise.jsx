@@ -66,7 +66,10 @@ export default function SwapExercise() {
       navigate(`/workout/${programId}/${day}`, {
         state: {
           returnedFromOrderNum: parseInt(orderNum, 10),
-          wasSwapped: false
+          wasSwapped: false,
+          // Прокидываем scrollY обратно. WorkoutDay восстановит ровно ту
+          // позицию страницы, с которой юзер ушёл на смену упражнения.
+          scrollY: location.state?.scrollY
         }
       })
     })
@@ -130,11 +133,13 @@ export default function SwapExercise() {
         haptic.success()
         // Передаём в state информацию для WorkoutDay:
         //   returnedFromOrderNum — к какой карточке проскроллить
-        //   wasSwapped: true — играть анимацию "стрелки змейкой" + press-эффект
+        //   wasSwapped: true — играть анимацию "стрелки змейкой" + press + glow
+        //   scrollY — восстановить позицию страницы откуда ушёл
         navigate(`/workout/${programId}/${day}`, {
           state: {
             returnedFromOrderNum: parseInt(orderNum, 10),
-            wasSwapped: true
+            wasSwapped: true,
+            scrollY: location.state?.scrollY
           }
         })
       } else {

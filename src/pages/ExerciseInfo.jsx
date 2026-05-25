@@ -37,19 +37,31 @@ export default function ExerciseInfo() {
   const [loading, setLoading] = useState(true)
 
   // Куда вести "Назад". Если на эту страницу пришли с экрана тренировки,
-  // ExerciseActionMenu передал returnTo в state. Если перешли напрямую
-  // (например по ссылке) — falls back на navigate(-1).
+  // ExerciseActionMenu передал в state: returnTo, returnedFromOrderNum, scrollY.
+  // При возврате прокидываем эти данные обратно — WorkoutDay по ним
+  // восстановит позицию скролла и проиграет эффекты (press + glow).
   const returnTo = location.state?.returnTo || null
+  const returnedFromOrderNum = location.state?.returnedFromOrderNum ?? null
+  const savedScrollY = location.state?.scrollY
 
   useEffect(() => {
     backButton.setHandler(() => {
-      if (returnTo) navigate(returnTo)
-      else navigate(-1)
+      if (returnTo) {
+        navigate(returnTo, {
+          state: {
+            returnedFromOrderNum,
+            wasSwapped: false,
+            scrollY: savedScrollY
+          }
+        })
+      } else {
+        navigate(-1)
+      }
     })
     lockVerticalSwipes()
     // При маунте сразу прокрутка вверх — на случай если webview сохранил позицию
     window.scrollTo(0, 0)
-  }, [navigate, returnTo])
+  }, [navigate, returnTo, returnedFromOrderNum, savedScrollY])
 
   useEffect(() => {
     let cancelled = false
