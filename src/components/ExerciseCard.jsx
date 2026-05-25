@@ -148,6 +148,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     setDraft(String(localWeight))
     markWeightEditingStarted()
 
+    // Лёгкий тап — "ты начал ввод веса". Без него юзер не понимает
+    // отреагировал ли инпут на тап (особенно когда клавиатура iOS открывается
+    // с задержкой 200-300мс).
+    haptic.light()
+
     setTimeout(() => {
       try {
         inputRef.current?.select()
@@ -172,11 +177,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 
     const trimmed = draft.trim()
 
+    // Стерли всё → ставим 0. Если вес и так был 0 — нечего сохранять и
+    // нечего пиликать (юзер открыл инпут случайно).
     if (trimmed === '') {
       if (localWeight !== 0) {
         setLocalWeight(0)
         try {
           await saveExerciseWeight(exercise_id, 0)
+          // Успешно сохранили обнуление — вибрируем как "записал"
+          haptic.success()
         } catch (e) {
           console.error('[ExerciseCard] saveExerciseWeight error:', e)
         }
@@ -185,18 +194,26 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
 
     const num = parseFloat(trimmed)
+    // Невалидный ввод — молча выходим без вибро, чтобы не сбивать с толку
     if (isNaN(num) || num < 0) return
 
     const clamped = Math.max(0, Math.min(500, num))
     const rounded = Math.round(clamped * 2) / 2
 
+    // Вес не изменился (ввёл то же что было) — не пиликаем, иначе будет
+    // ложный фидбек "что-то сохранил" хотя по факту ничего не произошло.
     if (rounded === localWeight) return
 
     setLocalWeight(rounded)
 
     try {
       const ok = await saveExerciseWeight(exercise_id, rounded)
-      if (!ok) console.warn('[ExerciseCard] saveExerciseWeight returned false')
+      if (ok) {
+        // Реально сохранили новый вес — успешный пиликов как подтверждение
+        haptic.success()
+      } else {
+        console.warn('[ExerciseCard] saveExerciseWeight returned false')
+      }
     } catch (e) {
       console.error('[ExerciseCard] saveExerciseWeight error:', e)
     }
