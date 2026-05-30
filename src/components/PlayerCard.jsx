@@ -53,11 +53,22 @@ export default function PlayerCard() {
   const [showRanks, setShowRanks] = useState(false)
   const [friendsPlace, setFriendsPlace] = useState(1)
 
+  // Состояние попапа над огоньком стрика. Логика повторных тапов:
+  //  - первый тап на огонёк → показываем попап (showStreakPopup=true)
+  //  - последующие тапы пока попап виден → не трогаем его, играем только
+  //    искорки/пульс. Юзер видит "ага, тап засчитан, но попап тот же".
+  //  - попап сам исчезает после streakAutoCloseTimer (CSS-анимация 6с)
+  //  - после исчезновения следующий тап снова покажет
+  // Без этого попап моргал бы при частых тапах: появился-исчез-появился.
+  const [showStreakPopup, setShowStreakPopup] = useState(false)
+
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
   const rankButtonRef = useRef(null)
   const streakButtonRef = useRef(null)
+  const streakPopupRef = useRef(null)
   const xpAutoCloseTimer = useRef(null)
+  const streakAutoCloseTimer = useRef(null)
 
   useEffect(() => {
     setUser(getUser())
@@ -110,6 +121,30 @@ export default function PlayerCard() {
     return () => { if (xpAutoCloseTimer.current) clearTimeout(xpAutoCloseTimer.current) }
   }, [showXPDetails])
 
+  // Автозакрытие попапа стрика через 6 секунд. Тайминг такой же как у XP-попапа
+  // — для визуальной консистентности интерфейса.
+  useEffect(() => {
+    if (showStreakPopup) {
+      streakAutoCloseTimer.current = setTimeout(() => setShowStreakPopup(false), 6000)
+    }
+    return () => { if (streakAutoCloseTimer.current) clearTimeout(streakAutoCloseTimer.current) }
+  }, [showStreakPopup])
+
+  // Закрытие попапа стрика при клике вне. Слушатель ставим только когда попап
+  // открыт — чтобы не висеть подписанным постоянно.
+  // Клик по самому огоньку (streakButtonRef) пропускаем — он сам решит
+  // что делать в handleStreakTap (играть только искорки, попап не трогать).
+  useEffect(() => {
+    if (!showStreakPopup) return
+    const handleOutside = (e) => {
+      if (streakButtonRef.current?.contains(e.target)) return
+      if (streakPopupRef.current?.contains(e.target)) return
+      setShowStreakPopup(false)
+    }
+    document.addEventListener('pointerdown', handleOutside)
+    return () => document.removeEventListener('pointerdown', handleOutside)
+  }, [showStreakPopup])
+
   const level = getLevelFromXP(xp)
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
@@ -146,8 +181,11 @@ export default function PlayerCard() {
     navigate('/leaderboard?tab=friends')
   }
 
-  // Тап по огоньку: лёгкий haptic + искорки если стрик 3+.
-  // Никаких попапов с пояснениями — UI и так читается с одного взгляда.
+  // Тап по огоньку: haptic + искорки если стрик 3+ + попап.
+  // Попап показываем ТОЛЬКО если он сейчас не отображается. Если уже виден —
+  // юзер видит свои тапы через искорки/пульс, но попап не перезапускается
+  // (иначе моргал бы при частых тапах). Когда дослужит свои 6 секунд и
+  // исчезнет — следующий тап его снова покажет.
   const handleStreakTap = (e) => {
     haptic.light()
     if (weeklyStreak >= 3) {
@@ -155,6 +193,13 @@ export default function PlayerCard() {
       const x = rect.left + rect.width / 2
       const y = rect.top + rect.height / 2
       spawnFireSparks(x, y)
+    }
+    // Открываем попап только если он сейчас не открыт.
+    // Закрываем другие попапы чтобы не накладывались.
+    if (!showStreakPopup) {
+      setShowStreakPopup(true)
+      setShowXPDetails(false)
+      setShowRanks(false)
     }
   }
 
@@ -279,6 +324,26 @@ export default function PlayerCard() {
               <StreakFlame streak={weeklyStreak} />
               <span style={styles.streakCount}>x{weeklyStreak}</span>
             </button>
+
+            {/* Попап со сводкой по стрику. Появляется при тапе на огонёк,
+                автоматически закрывается через ~6с (CSS-анимация popupShowHide).
+                Позиционирован абсолютно от bottomRow — снизу под огоньком. */}
+            {showStreakPopup && (
+              <div ref={streakPopupRef} style={styles.streakPopup}>
+                <div style={styles.streakPopupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
+                <div style={styles.streakPopupRow}>
+                  <StreakFlame streak={weeklyStreak} />
+                  <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
+                </div>
+                <div style={styles.streakPopupHint}>
+                  {weeklyStreak === 0
+                    ? 'Заверши тренировку чтобы зажечь огонёк'
+                    : weeklyStreak < 4
+                      ? `${4 - weeklyStreak} до максимума недели`
+                      : 'Максимум этой недели'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -627,5 +692,64 @@ const styles = {
     height: '1px',
     background: 'rgba(255, 255, 255, 0.08)',
     margin: '8px 0'
+  },
+  // Попап стрика. Позиционирован абсолютно справа под огоньком — там же где
+  // живёт кнопка-стрик внутри bottomRow. Использует ту же CSS-анимацию
+  // popupShowHide что и XP-попап (6.4с: появление 4% времени → пауза → угасание),
+  // чтобы внешний и внутренний таймаут совпадали и юзер не успевал тапать в
+  // "невидимый" попап.
+  streakPopup: {
+    position: 'absolute',
+    // Правый край — там же где сам огонёк. Сдвигаемся под него.
+    right: 0,
+    top: 'calc(100% + 8px)',
+    minWidth: '200px',
+    maxWidth: 'calc(100vw - 32px)',
+    background: 'rgba(34, 34, 34, 0.95)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 140, 66, 0.20)',
+    borderRadius: '20px',
+    padding: '12px 14px 10px',
+    zIndex: 50,
+    animation: 'popupShowHide 6.4s ease-out forwards',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 140, 66, 0.1)'
+  },
+  streakPopupTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '10px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1.5px',
+    textAlign: 'center',
+    whiteSpace: 'nowrap'
+  },
+  // Ряд с огоньком и крупной цифрой "x3". Огонёк рендерим заново через
+  // <StreakFlame /> чтобы получить ту же графику с искорками — у юзера
+  // не должно быть ощущения что это что-то отдельное от его огонька наверху.
+  streakPopupRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '2px 0'
+  },
+  streakPopupCount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '22px',
+    color: '#FFFFFF',
+    letterSpacing: '1px',
+    lineHeight: 1,
+    textShadow: '0 0 6px rgba(255, 140, 66, 0.6)'
+  },
+  streakPopupHint: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    fontWeight: 500,
+    marginTop: '2px'
   }
 }
