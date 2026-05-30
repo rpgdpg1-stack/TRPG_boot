@@ -13,7 +13,8 @@ import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
 import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
-
+import { clearQueue } from './offline-queue'
+import { pcacheClear } from './persistent-cache'
 function getUserId() {
   return getCurrentUser()?.id || null
 }
@@ -372,6 +373,12 @@ export async function clearAllData() {
   if (questsKey) localRemove(questsKey)
 
   cacheInvalidate('')
+
+  // Оффлайн-инфраструктура: чистим очередь несинканутых операций и
+  // persistent-кеш дней/весов/упражнений. Иначе после сброса прогресса
+  // старые операции могут уехать в БД при следующем синке.
+  clearQueue()
+  pcacheClear()
 
   if (!userId) return
 
