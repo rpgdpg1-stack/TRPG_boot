@@ -16,7 +16,7 @@
 
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
 
-export default function LeaderboardRow({ row, isMe }) {
+export default function LeaderboardRow({ row, isMe, showHandle = true }) {
   const {
     first_name,
     username,
@@ -71,7 +71,7 @@ export default function LeaderboardRow({ row, isMe }) {
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
           <span style={styles.name}>{displayName}</span>
-          {handleStr && <span style={styles.handle}>{handleStr}</span>}
+          {showHandle && handleStr && <span style={styles.handle}>{handleStr}</span>}
         </div>
         <div style={{ ...styles.rank, color: rank.color }}>
           {rank.name} {rank.subLevel}

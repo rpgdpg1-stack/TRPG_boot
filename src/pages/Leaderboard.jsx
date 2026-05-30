@@ -245,6 +245,10 @@ export default function Leaderboard() {
                 key={row.user_id}
                 row={row}
                 isMe={row.is_me}
+                // В табе Лига скрываем @username — там собраны незнакомые юзеры
+                // одной лиги, никнеймы не несут смысла и захламляют строку.
+                // В табе Друзья оставляем, чтобы можно было отличить однофамильцев.
+                showHandle={activeTab === TAB_FRIENDS}
               />
             ))}
           </div>
