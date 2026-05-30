@@ -21,19 +21,19 @@
 /* ============================================ */
 
 export const RANK_NAMES = [
-  { name: 'НОВОБРАНЕЦ',  color: '#9ED153', rarity: 'common',     emoji: '🟢' },
-  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢' },
-  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
-  { name: 'БОЕЦ',        color: '#3FA2F7', rarity: 'rare',       emoji: '🔵' },
-  { name: 'ВИТЯЗЬ',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
-  { name: 'ЦЕНТУРИОН',   color: '#B47BFF', rarity: 'epic',       emoji: '🟣' },
-  { name: 'ГЕРАКЛ',      color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
-  { name: 'ТИТАН',       color: '#FF8C42', rarity: 'legendary',  emoji: '🟠' },
-  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴' },
-  { name: 'АХИЛЛ',       color: '#E84545', rarity: 'mythic',     emoji: '🔴' }
+  { name: 'НОВИЧОК',     color: '#9ED153', rarity: 'common',     emoji: '🟢', icon: 'rookie' },
+  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢', icon: 'sportsman' },
+  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵', icon: 'athlete' },
+  { name: 'ТРЕНЕР',      color: '#3FA2F7', rarity: 'rare',       emoji: '🔵', icon: 'coach' },
+  { name: 'МАШИНА',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣', icon: 'machine' },
+  { name: 'ЭЛИТА',       color: '#B47BFF', rarity: 'epic',       emoji: '🟣', icon: 'elite' },
+  { name: 'ЧЕМПИОН',     color: '#FF8C42', rarity: 'legendary',  emoji: '🟠', icon: 'champion' },
+  { name: 'Х3 ЧЕМПИОН',  color: '#FF8C42', rarity: 'legendary',  emoji: '🟠', icon: 'x3-champion' },
+  { name: 'ТИТАН',       color: '#E84545', rarity: 'mythic',     emoji: '🔴', icon: 'titan' },
+  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴', icon: 'legend' }
 ]
 
-export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', emoji: '🏆' }
+export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', emoji: '🏆', icon: 'immortal' }
 
 export const LEVELS_PER_RANK = 3
 export const XP_PER_LEVEL = 300
