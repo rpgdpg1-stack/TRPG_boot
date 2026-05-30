@@ -21,19 +21,19 @@
 /* ============================================ */
 
 export const RANK_NAMES = [
-  { name: 'НОВИЧОК',     color: '#9ED153', rarity: 'common',     emoji: '🟢', icon: 'rookie' },
-  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     emoji: '🟢', icon: 'sportsman' },
-  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       emoji: '🔵', icon: 'athlete' },
-  { name: 'ТРЕНЕР',      color: '#3FA2F7', rarity: 'rare',       emoji: '🔵', icon: 'coach' },
-  { name: 'МАШИНА',      color: '#B47BFF', rarity: 'epic',       emoji: '🟣', icon: 'machine' },
-  { name: 'ЭЛИТА',       color: '#B47BFF', rarity: 'epic',       emoji: '🟣', icon: 'elite' },
-  { name: 'ЧЕМПИОН',     color: '#FF8C42', rarity: 'legendary',  emoji: '🟠', icon: 'champion' },
-  { name: 'Х3 ЧЕМПИОН',  color: '#FF8C42', rarity: 'legendary',  emoji: '🟠', icon: 'x3-champion' },
-  { name: 'ТИТАН',       color: '#E84545', rarity: 'mythic',     emoji: '🔴', icon: 'titan' },
-  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     emoji: '🔴', icon: 'legend' }
+  { name: 'НОВИЧОК',     color: '#9ED153', rarity: 'common',     icon: 'rookie' },
+  { name: 'СПОРТСМЕН',   color: '#9ED153', rarity: 'common',     icon: 'sportsman' },
+  { name: 'АТЛЕТ',       color: '#3FA2F7', rarity: 'rare',       icon: 'athlete' },
+  { name: 'ТРЕНЕР',      color: '#3FA2F7', rarity: 'rare',       icon: 'coach' },
+  { name: 'МАШИНА',      color: '#B47BFF', rarity: 'epic',       icon: 'machine' },
+  { name: 'ЭЛИТА',       color: '#B47BFF', rarity: 'epic',       icon: 'elite' },
+  { name: 'ЧЕМПИОН',     color: '#FF8C42', rarity: 'legendary',  icon: 'champion' },
+  { name: 'Х3 ЧЕМПИОН',  color: '#FF8C42', rarity: 'legendary',  icon: 'x3-champion' },
+  { name: 'ТИТАН',       color: '#E84545', rarity: 'mythic',     icon: 'titan' },
+  { name: 'ЛЕГЕНДА',     color: '#E84545', rarity: 'mythic',     icon: 'legend' }
 ]
 
-export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', emoji: '🏆', icon: 'immortal' }
+export const IMMORTAL = { name: 'БЕССМЕРТНЫЙ', color: '#FFD700', rarity: 'godlike', icon: 'immortal' }
 
 export const LEVELS_PER_RANK = 3
 export const XP_PER_LEVEL = 300

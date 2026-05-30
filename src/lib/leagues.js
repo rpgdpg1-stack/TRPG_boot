@@ -28,7 +28,6 @@ export function getLeagueByRankIndex(rankIndex) {
     return {
       rankIndex: IMMORTAL_RANK_INDEX,
       name: IMMORTAL.name,
-      emoji: IMMORTAL.emoji,
       color: IMMORTAL.color,
       isImmortal: true,
       minMuscles: IMMORTAL_RANK_INDEX * LEVELS_PER_RANK * XP_PER_LEVEL, // 9000
@@ -43,7 +42,6 @@ export function getLeagueByRankIndex(rankIndex) {
   return {
     rankIndex,
     name: rank.name,
-    emoji: rank.emoji,
     color: rank.color,
     isImmortal: false,
     minMuscles,
