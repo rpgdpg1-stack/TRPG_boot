@@ -28,6 +28,9 @@ import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
 import { checkAndResetSeasonIfNeeded } from './lib/season-reset'
+import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
+import { syncQueue } from './lib/sync-engine'
+import OfflineBanner from './components/OfflineBanner'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -35,6 +38,7 @@ export default function App() {
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
     initTelegram()
+    startNetworkMonitor() // запускаем детектор сети как можно раньше
     authPromiseRef.current = ensureAuth().catch(err => {
       console.error('[App] ensureAuth failed:', err)
       return null
@@ -46,8 +50,23 @@ export default function App() {
     authPromiseRef.current?.then(user => {
       if (cancelled || !user) return
       checkAndResetSeasonIfNeeded()
+      // После авторизации — пробуем разгрести очередь (вдруг с прошлого
+      // раза остались несинканутые операции и сеть уже есть).
+      syncQueue()
     })
-    return () => { cancelled = true }
+
+    // Когда сеть возвращается — запускаем синк очереди.
+    const offNet = onNetworkChange((isOnline) => {
+      if (isOnline) {
+        console.log('[App] сеть вернулась → запускаем syncQueue')
+        syncQueue()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      offNet()
+    }
   }, [])
 
   if (loading) {
@@ -62,6 +81,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="app">
+        <OfflineBanner />
         <ParticlesBg />
 
         <SettingsButtonController />
