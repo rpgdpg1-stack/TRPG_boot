@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { RANK_NAMES, IMMORTAL, IMMORTAL_START_LEVEL, LEVELS_PER_RANK, XP_PER_LEVEL } from '../lib/levels'
+import RankIcon from './RankIcon'
 
 /**
  * Попап со всеми рангами.
@@ -119,7 +120,7 @@ export default function RanksPopup({ currentLevel, onClose }) {
 }
 
 function RankRow({ row }) {
-  const { rank, state, filledDots, xpRange } = row
+  const { idx, rank, state, filledDots, xpRange } = row
   const isPassed = state === 'passed'
   const isCurrent = state === 'current'
 
@@ -133,7 +134,7 @@ function RankRow({ row }) {
       background: isCurrent ? `${rank.color}15` : 'transparent',
       borderColor: isCurrent ? `${rank.color}40` : 'transparent'
     }}>
-      <span style={styles.emoji}>{rank.emoji}</span>
+      <span style={styles.emoji}><RankIcon rankIndex={idx} size={14} color={nameColor} /></span>
       <span style={{ ...styles.rankName, color: nameColor }}>{rank.name}</span>
       <span style={styles.dots}>
         {Array.from({ length: 3 }).map((_, i) => (
@@ -156,7 +157,7 @@ function ImmortalRow({ row }) {
       background: isCurrent ? `${rank.color}18` : 'transparent',
       borderColor: isCurrent ? `${rank.color}50` : 'rgba(255,215,0,0.15)'
     }}>
-      <span style={styles.emoji}>{rank.emoji}</span>
+      <span style={styles.emoji}><RankIcon rankIndex={RANK_NAMES.length} size={14} color={isCurrent ? rank.color : 'rgba(255,255,255,0.25)'} /></span>
       <span style={{
         ...styles.rankName,
         color: isCurrent ? rank.color : 'var(--color-text)',

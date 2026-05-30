@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts } from '../lib/storage'
 import { getLevelFromXP, getRankByLevel } from '../lib/levels'
+import RankIcon from '../components/RankIcon'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 
@@ -92,8 +93,9 @@ export default function Profile() {
 
         <div style={styles.name}>{displayName}</div>
         {username && <div style={styles.username}>{username}</div>}
-        <div style={{ ...styles.rank, color: rank.color }}>
-          {rank.emoji} {rank.name} {rank.subLevel}
+        <div style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+          <RankIcon level={level} size={14} />
+          {rank.name} {rank.subLevel}
         </div>
       </header>
 

@@ -15,6 +15,7 @@
  */
 
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
+import RankIcon from './RankIcon'
 
 export default function LeaderboardRow({ row, isMe, showHandle = true }) {
   const {
@@ -73,7 +74,8 @@ export default function LeaderboardRow({ row, isMe, showHandle = true }) {
           <span style={styles.name}>{displayName}</span>
           {showHandle && handleStr && <span style={styles.handle}>{handleStr}</span>}
         </div>
-        <div style={{ ...styles.rank, color: rank.color }}>
+        <div style={{ ...styles.rank, color: rank.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <RankIcon level={level} size={11} />
           {rank.name} {rank.subLevel}
         </div>
       </div>

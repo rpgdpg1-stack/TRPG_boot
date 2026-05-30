@@ -14,6 +14,7 @@ import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
 import RanksPopup from './RanksPopup'
+import RankIcon from './RankIcon'
 
 /**
  * Главный блок персонажа на Главной.
@@ -241,9 +242,10 @@ export default function PlayerCard() {
             <button
               ref={rankButtonRef}
               onClick={handleRankTap}
-              style={{ ...styles.rank, color: rank.color }}
+              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}
             >
-              {rank.emoji} {rank.name} {rank.subLevel}
+              <RankIcon level={level} size={14} />
+              {rank.name} {rank.subLevel}
             </button>
 
             {/* Место среди друзей — клик ведёт на рейтинг */}
