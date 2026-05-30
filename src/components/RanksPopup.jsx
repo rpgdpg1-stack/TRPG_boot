@@ -134,7 +134,7 @@ function RankRow({ row }) {
       background: isCurrent ? `${rank.color}15` : 'transparent',
       borderColor: isCurrent ? `${rank.color}40` : 'transparent'
     }}>
-      <span style={styles.emoji}><RankIcon rankIndex={idx} size={14} color={nameColor} /></span>
+      <span style={{ ...styles.emoji, opacity: isPassed ? 0.4 : 1 }}><RankIcon rankIndex={idx} size={14} color={rank.color} /></span>
       <span style={{ ...styles.rankName, color: nameColor }}>{rank.name}</span>
       <span style={styles.dots}>
         {Array.from({ length: 3 }).map((_, i) => (
