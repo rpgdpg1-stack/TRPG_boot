@@ -56,6 +56,7 @@ export default function WorkoutDay() {
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
+  const [finishedOffline, setFinishedOffline] = useState(false)
 
   const [actionSlot, setActionSlot] = useState(null)
 
@@ -303,13 +304,27 @@ export default function WorkoutDay() {
         .map(s => s.exercise_id)
         .filter(Boolean)
 
-      const reward = XP_REWARDS.WORKOUT_COMPLETE
+     const reward = XP_REWARDS.WORKOUT_COMPLETE
       const result = await finishWorkout(programId, day, exerciseIds, reward)
 
       if (!result) {
         setFinishStatus('error')
         setFinishErrorMsg('Проверь подключение к интернету и попробуй ещё раз.')
         haptic.error()
+        return
+      }
+
+      // Оффлайн-завершение: тренировка ушла в очередь, синканётся при сети.
+      // Прогресс галочек тоже чистим (тренировка считается завершённой локально),
+      // день фиксируем в цикле A/B/C. Показываем спец-сообщение в модалке.
+      if (result.offline) {
+        await setLastCompletedDay(programId, day)
+        clearWorkoutProgress(programId, day)
+        haptic.warning()
+        setFinishedOffline(true)
+        setFinishStatus('idle')
+        // Не уходим с экрана сразу — модалка покажет "сохранено локально",
+        // юзер сам нажмёт ОК и уйдёт на главную.
         return
       }
 
@@ -495,7 +510,17 @@ export default function WorkoutDay() {
           reward={XP_REWARDS.WORKOUT_COMPLETE}
           status={finishStatus}
           errorMsg={finishErrorMsg}
-          onConfirm={handleConfirmFinish}
+          offline={finishedOffline}
+          onConfirm={() => {
+            // Если завершили оффлайн — кнопка ОК просто уводит на главную
+            if (finishedOffline) {
+              setShowFinishedModal(false)
+              setFinishedOffline(false)
+              navigate('/')
+              return
+            }
+            handleConfirmFinish()
+          }}
         />
       )}
     </div>

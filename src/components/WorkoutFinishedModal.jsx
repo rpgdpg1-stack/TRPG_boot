@@ -16,7 +16,7 @@ import { useEffect, useRef } from 'react'
  * @param errorMsg  - текст ошибки если status === 'error'
  * @param onConfirm - вызывается при тапе на ОК/Повторить
  */
-export default function WorkoutFinishedModal({ reward = 150, status = 'idle', errorMsg = '', onConfirm }) {
+export default function WorkoutFinishedModal({ reward = 150, status = 'idle', errorMsg = '', offline = false, onConfirm }) {
   const sceneRef = useRef(null)
 
   // Спавним пиксельные искорки из огонька (как у горящих огоньков стрика)
@@ -68,7 +68,11 @@ export default function WorkoutFinishedModal({ reward = 150, status = 'idle', er
   const isSaving = status === 'saving'
   const isError = status === 'error'
 
-  const titleText = isError ? 'НЕ УДАЛОСЬ СОХРАНИТЬ' : 'ТРЕНИРОВКА ЗАВЕРШЕНА'
+  const titleText = isError
+    ? 'НЕ УДАЛОСЬ СОХРАНИТЬ'
+    : offline
+      ? 'СОХРАНЕНО ЛОКАЛЬНО'
+      : 'ТРЕНИРОВКА ЗАВЕРШЕНА'
   const buttonText = isSaving
     ? 'СОХРАНЕНИЕ...'
     : isError
@@ -89,21 +93,26 @@ export default function WorkoutFinishedModal({ reward = 150, status = 'idle', er
 
         {/* Огонёк со спаунящимися искрами */}
         <div ref={sceneRef} style={styles.scene}>
-          <div style={styles.flame}>{isError ? '⚠️' : '🔥'}</div>
+          <div style={styles.flame}>{isError ? '⚠️' : offline ? '📵' : '🔥'}</div>
         </div>
 
         {/* Заголовок */}
         <div style={{
           ...styles.title,
-          color: isError ? '#FF8C42' : 'var(--color-text)'
+          color: isError ? '#FF8C42' : offline ? '#FF8C42' : 'var(--color-text)'
         }}>
           {titleText}
         </div>
 
-        {/* В норме — бейдж награды. При ошибке — сообщение */}
+        {/* Ошибка → сообщение. Оффлайн → пояснение. Норма → бейдж награды. */}
         {isError ? (
           <div style={styles.errorMessage}>
             {errorMsg || 'Проверь подключение к интернету и попробуй ещё раз.'}
+          </div>
+        ) : offline ? (
+          <div style={styles.errorMessage}>
+            Тренировка сохранена на телефоне.<br />
+            +{reward} 💪 начислятся автоматически, как только появится интернет.
           </div>
         ) : (
           <div style={styles.rewardBadge}>+{reward} 💪</div>
