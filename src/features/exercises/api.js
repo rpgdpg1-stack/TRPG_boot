@@ -1,14 +1,22 @@
 /**
  * Работа с упражнениями: альтернативы, веса, свапы.
  *
- * ОБНОВЛЕНИЕ: при сохранении свапа или веса инвалидируем соответствующие
- * куски кеша, чтобы следующее открытие дня показало актуальные данные.
+ * ОФФЛАЙН: при отсутствии сети saveExerciseWeight / saveExerciseSwap пишут
+ * операцию в offline-queue и возвращают true (сохранено локально). sync-engine
+ * отправит в Supabase когда сеть вернётся. Локальный persistent-cache веса
+ * обновляем сразу, чтобы при перезапуске без сети показывался свежий вес.
  */
 
 import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheInvalidate } from '../../lib/cache'
+import { isOnline } from '../../lib/network-status'
+import {
+  enqueue,
+  weightDedupKey,
+  swapDedupKey
+} from '../../lib/offline-queue'
 
 export async function getExercisesForSubgroup(subGroup, type) {
   try {
@@ -47,7 +55,9 @@ export async function getExerciseById(exerciseId) {
 }
 
 /**
- * Сохранить замену упражнения. После успеха инвалидирует кеши свапов и дней.
+ * Сохранить замену упражнения.
+ * ОФФЛАЙН → кладём в очередь, возвращаем true (засинкается позже).
+ * ОНЛАЙН → шлём в Supabase, при успехе инвалидируем кеши.
  */
 export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
   const user = getCurrentUser()
@@ -62,6 +72,22 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
     return false
   }
   const dbId = program.dbId
+
+  // ОФФЛАЙН: в очередь и выходим. Кеши дней инвалидируем чтобы при
+  // повторном открытии дня подтянулся новый свап (он уже в очереди,
+  // а отображение свапа фронт берёт из своего состояния).
+  if (!isOnline()) {
+    enqueue('swap', {
+      program_id: dbId,
+      day,
+      order_num: orderNum,
+      exercise_id: exerciseId
+    }, swapDedupKey(dbId, day, orderNum))
+
+    cacheInvalidate(`workout-day:${user.id}:${programSlug}:`)
+    console.log('[exercises] swap сохранён ОФФЛАЙН в очередь')
+    return true
+  }
 
   console.log('[exercises] saveExerciseSwap:', { dbId, day, orderNum, exerciseId, userId: user.id })
 
@@ -111,11 +137,26 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
 }
 
 /**
- * Сохранить вес. Инвалидируем кеш весов и кеш всех дней (вес влияет на отображение).
+ * Сохранить вес.
+ * ОФФЛАЙН → кладём в очередь, возвращаем true. ОНЛАЙН → в Supabase.
  */
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
+
+  // ОФФЛАЙН: в очередь и выходим. Инвалидируем кеш весов и дней чтобы
+  // при пересборке дня вес взялся из свежих данных (после синка).
+  if (!isOnline()) {
+    enqueue('weight', {
+      exercise_id: exerciseId,
+      weight_kg: weightKg
+    }, weightDedupKey(exerciseId))
+
+    cacheInvalidate(`user-weights:${user.id}`)
+    cacheInvalidate(`workout-day:${user.id}:`)
+    console.log('[exercises] вес сохранён ОФФЛАЙН в очередь:', exerciseId, weightKg)
+    return true
+  }
 
   let success = false
 

@@ -1,10 +1,13 @@
 /**
  * Логика загрузки и завершения тренировки.
  *
- * finishWorkout теперь читает new_badge_rank_index из RPC и эмитит
- * BADGE_EARNED → модалка значка появится сразу после тапа "Завершить".
- *
- * Кеш и prefetch — без изменений.
+ * ОФФЛАЙН:
+ *  - getWorkoutDay: второй уровень кеша (persistent-cache в localStorage).
+ *    Память → localStorage → сеть. Без сети день открывается из localStorage
+ *    (можно зайти в зале с нуля после перезапуска Telegram).
+ *  - finishWorkout: без сети кладёт завершение в очередь (с моментом завершения
+ *    в createdAt) и возвращает { offline: true }. sync-engine отправит позже
+ *    с правильным p_finished_at.
  */
 
 import { supabase } from '../../lib/supabase'
@@ -13,12 +16,35 @@ import { EVENTS, emit } from '../../lib/events'
 import { getCurrentWeekKey } from '../../utils/dates'
 import { getProgramBySlug, getProgramDaySlots } from './registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib/cache'
+import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
+import { isOnline } from '../../lib/network-status'
+import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 
 async function loadAllExercises() {
   const cacheKey = 'exercises:all'
   const cached = cacheGet(cacheKey)
   if (cached) return cached
 
+  // Persistent-кеш — переживает перезапуск, нужен для оффлайна
+  const pcached = pcacheGet(cacheKey)
+  if (pcached) {
+    cacheSet(cacheKey, pcached, TTL.SESSION)
+    // Если онлайн — в фоне обновим из сети (не блокируя)
+    if (isOnline()) {
+      runWhenIdle(() => refreshAllExercises())
+    }
+    return pcached
+  }
+
+  return refreshAllExercises()
+}
+
+/**
+ * Перечитать все упражнения из сети и записать в оба кеша.
+ * Вынесено отдельно чтобы звать и напрямую, и из фонового обновления.
+ */
+async function refreshAllExercises() {
+  const cacheKey = 'exercises:all'
   let exercises = []
 
   try {
@@ -46,6 +72,7 @@ async function loadAllExercises() {
 
   if (exercises.length) {
     cacheSet(cacheKey, exercises, TTL.SESSION)
+    pcacheSet(cacheKey, exercises) // в persistent на 7 дней
   }
 
   return exercises
@@ -55,6 +82,11 @@ async function loadUserSwaps(userId, dbId, day) {
   const cacheKey = `user-swaps:${userId}:${dbId}:${day}`
   const cached = cacheGet(cacheKey)
   if (cached) return cached
+
+  const pcached = pcacheGet(cacheKey)
+  if (pcached && !isOnline()) {
+    return pcached
+  }
 
   let swapsByOrder = {}
   try {
@@ -68,9 +100,12 @@ async function loadUserSwaps(userId, dbId, day) {
     }
   } catch (e) {
     console.warn('[programs] swaps fetch failed:', e?.message)
+    // Сеть упала — пробуем persistent
+    if (pcached) return pcached
   }
 
   cacheSet(cacheKey, swapsByOrder, TTL.LONG)
+  pcacheSet(cacheKey, swapsByOrder)
   return swapsByOrder
 }
 
@@ -78,6 +113,11 @@ async function loadUserWeights(userId) {
   const cacheKey = `user-weights:${userId}`
   const cached = cacheGet(cacheKey)
   if (cached) return cached
+
+  const pcached = pcacheGet(cacheKey)
+  if (pcached && !isOnline()) {
+    return pcached
+  }
 
   let weightsByEx = {}
   try {
@@ -89,9 +129,11 @@ async function loadUserWeights(userId) {
     }
   } catch (e) {
     console.warn('[programs] weights fetch failed:', e?.message)
+    if (pcached) return pcached
   }
 
   cacheSet(cacheKey, weightsByEx, TTL.LONG)
+  pcacheSet(cacheKey, weightsByEx)
   return weightsByEx
 }
 
@@ -114,6 +156,13 @@ export async function getWorkoutDay(programSlug, day) {
   if (cachedDay) {
     schedulePrefetch(programSlug, day, user.id)
     return cachedDay
+  }
+
+  // Persistent-кеш собранного дня: без сети отдаём его сразу (зал, перезапуск)
+  const pcachedDay = pcacheGet(dayCacheKey)
+  if (pcachedDay && !isOnline()) {
+    cacheSet(dayCacheKey, pcachedDay, TTL.MEDIUM)
+    return pcachedDay
   }
 
   const slotsRaw = getProgramDaySlots(programSlug, day)
@@ -162,6 +211,7 @@ export async function getWorkoutDay(programSlug, day) {
   })
 
   cacheSet(dayCacheKey, result, TTL.MEDIUM)
+  pcacheSet(dayCacheKey, result) // переживает перезапуск для оффлайна
 
   schedulePrefetch(programSlug, day, user.id)
 
@@ -202,11 +252,15 @@ export function invalidateWorkoutDayCache(programSlug = null) {
 }
 
 /**
- * Завершить тренировку — атомарная RPC.
+ * Завершить тренировку.
  *
- * RPC api_finish_workout теперь возвращает дополнительное поле
- * new_badge_rank_index. Если значок выдан — эмитим BADGE_EARNED, и
- * App.jsx покажет модалку сразу (поверх главной куда ведёт навигация).
+ * ОФФЛАЙН: кладём в очередь с finishDedupKey (program|day|дата), createdAt
+ * операции = момент завершения. Возвращаем { offline: true } — WorkoutDay
+ * покажет "сохранено локально, синканётся". Локально обновляем стрик/мускулы
+ * оптимистично НЕ делаем (чтобы не было расхождений — реальные цифры придут
+ * при синке от сервера).
+ *
+ * ОНЛАЙН: как раньше — атомарная RPC, BADGE_EARNED при выдаче значка.
  */
 export async function finishWorkout(programSlug, day, exerciseIds, reward = 150) {
   console.log('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
@@ -223,6 +277,26 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
     return null
   }
   const dbId = program.dbId
+
+  // ОФФЛАЙН: в очередь, выходим с флагом offline.
+  if (!isOnline()) {
+    const finishedAt = new Date().toISOString()
+    enqueue('finish', {
+      program_id: dbId,
+      day,
+      exercise_ids: exerciseIds,
+      reward
+    }, finishDedupKey(dbId, day, finishedAt))
+
+    console.log('[programs] finishWorkout сохранён ОФФЛАЙН в очередь')
+    return {
+      offline: true,
+      workoutId: null,
+      newTotalMuscles: user.total_muscles || 0,
+      newWeeklyStreak: user.weekly_streak || 0,
+      alreadyCompletedToday: false
+    }
+  }
 
   const { data, error } = await supabase.rpc('api_finish_workout', {
     p_user_id: user.id,
@@ -260,15 +334,13 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
 
   emit(EVENTS.USER_CHANGED, getCurrentUser())
 
-  // Новый значок лиги выдан прямо сейчас → шлём событие.
-  // App.jsx подхватит и покажет модалку поверх главной (куда уже
-  // ведёт навигация после успешного завершения).
   if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
     console.log('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
     emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
   }
 
   return {
+    offline: false,
     workoutId: result.workout_id,
     newTotalMuscles: result.new_total_muscles,
     newWeeklyStreak: result.new_weekly_streak,
