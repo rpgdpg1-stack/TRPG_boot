@@ -1,21 +1,22 @@
 /**
- * Значок лиги — круглая медалька с эмодзи лиги.
+ * Значок лиги — круглая медалька с ИКОНКОЙ РАНГА (SVG) внутри.
+ *
+ * Лига = ранг, поэтому показываем ту же иконку что и везде (RankIcon),
+ * а не эмодзи. Цвет фона/обводки = цвет лиги, иконка внутри тоже в цвет лиги
+ * (для locked — серая палитра + замочек).
  *
  * Используется:
- *  - в модалке "Ты вошёл в лигу N!" (большой размер)
- *  - в профиле в галерее наград (средний)
- *  - на странице рейтинга рядом с именем юзера (маленький)
- *  - возможно на главной рядом с рангом (маленький)
+ *  - страница Наград (сетка значков + сезонные рамки)
+ *  - модалка LeagueBadgeModal (новая лига)
+ *  - модалка SeasonEndModal (итоги сезона)
  *
- * Цвет фона и обводки = цвет лиги. Эмодзи — из leagues.js.
- * Размер варьируется через size (px) — единственный параметр который влияет
- * на габариты, всё внутри масштабируется автоматически.
+ * Размер варьируется через size (px) — иконка внутри = 55% от size.
  *
- * isLocked — отображает значок в "запертом" виде (серым, с замочком).
- * Для будущей галереи наград где не все ещё открыты.
+ * isLocked — "запертый" вид: серый, иконка приглушена, замочек в углу.
  */
 
 import { getLeagueByRankIndex } from '../lib/leagues'
+import RankIcon from './RankIcon'
 
 export default function LeagueBadgeIcon({
   rankIndex,
@@ -25,9 +26,9 @@ export default function LeagueBadgeIcon({
 }) {
   const league = getLeagueByRankIndex(rankIndex)
 
-  // Размер шрифта эмодзи = 55% от размера значка — выверено визуально
-  const emojiSize = Math.round(size * 0.55)
-  // Толщина обводки тоже скейлится: 2px на 48px значке = ~4% размера
+  // Размер иконки = 55% от значка (как раньше у эмодзи — выверено визуально)
+  const iconSize = Math.round(size * 0.55)
+  // Толщина обводки скейлится: 2px на 48px значке = ~4% размера
   const borderWidth = Math.max(2, Math.round(size * 0.04))
 
   // Цвета: основной цвет лиги + полупрозрачный фон того же цвета.
@@ -36,6 +37,9 @@ export default function LeagueBadgeIcon({
   const bgColor = isLocked
     ? 'rgba(255,255,255,0.04)'
     : `${league.color}22` // 22 = ~13% альфа
+
+  // Цвет иконки: в цвет лиги, для locked — серый приглушённый
+  const iconColor = isLocked ? 'rgba(255,255,255,0.35)' : league.color
 
   return (
     <div
@@ -50,8 +54,6 @@ export default function LeagueBadgeIcon({
         justifyContent: 'center',
         position: 'relative',
         flexShrink: 0,
-        // Лёгкое внешнее свечение цветом лиги — придаёт значку "вес".
-        // Отключаем для locked и при showGlow=false.
         boxShadow: !isLocked && showGlow
           ? `0 0 ${Math.round(size * 0.25)}px ${league.color}40, inset 0 0 ${Math.round(size * 0.15)}px ${league.color}30`
           : 'none',
@@ -60,16 +62,17 @@ export default function LeagueBadgeIcon({
       aria-label={`Лига ${league.name}`}
     >
       <span style={{
-        fontSize: `${emojiSize}px`,
-        lineHeight: 1,
-        filter: isLocked ? 'grayscale(1) opacity(0.4)' : 'none',
-        userSelect: 'none'
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: isLocked ? 0.4 : 1,
+        lineHeight: 0
       }}>
-        {league.emoji}
+        <RankIcon rankIndex={rankIndex} size={iconSize} color={iconColor} />
       </span>
 
       {isLocked && (
-        // Замочек поверх — крошечный, в правом нижнем углу
+        // Замочек поверх — в правом нижнем углу
         <span style={{
           position: 'absolute',
           right: '-2px',
