@@ -6,6 +6,7 @@ import { getLevelFromXP, getRankByLevel } from '../lib/levels'
 import RankIcon from '../components/RankIcon'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран "Профиль" — личный кабинет юзера.
@@ -54,15 +55,15 @@ export default function Profile() {
   const username = user?.username ? `@${user.username}` : ''
 
   const sections = [
-    { id: 'leaderboard',  icon: '🏆', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
-    { id: 'rewards',      icon: '🛡️', title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки',   path: '/rewards' },
-    { id: 'personal',     icon: '👤', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст' },
-    { id: 'measurements', icon: '📏', title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото' },
-    { id: 'goal',         icon: '🎯', title: 'Цель',           subtitle: 'Что хочешь достичь' },
-    { id: 'achievements', icon: '🏆', title: 'Достижения',     subtitle: 'Ачивки и значки' },
-    { id: 'recovery',     icon: '🛌', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
-    { id: 'settings',     icon: '⚙️', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
-  ]
+  { id: 'leaderboard',  icon: 'ui:leaderboard', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
+  { id: 'rewards',      icon: 'ui:rewards',     title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки',   path: '/rewards' },
+  { id: 'personal',     icon: '👤',             title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст' },
+  { id: 'measurements', icon: '📏',             title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото' },
+  { id: 'goal',         icon: '🎯',             title: 'Цель',           subtitle: 'Что хочешь достичь' },
+  { id: 'achievements', icon: '🏆',             title: 'Достижения',     subtitle: 'Ачивки и значки' },
+  { id: 'recovery',     icon: '🛌',             title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
+  { id: 'settings',     icon: 'ui:settings',    title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+]
 
   const handleSectionTap = (section) => {
     haptic.light()
@@ -121,7 +122,7 @@ export default function Profile() {
         style={styles.inviteButton}
         className="press-tile"
       >
-        <span style={styles.inviteIcon}>👥</span>
+        <UiIcon name="invite" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
         <div style={styles.inviteContent}>
           <div style={styles.inviteTitle}>Пригласить друга</div>
           <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>
@@ -138,7 +139,16 @@ export default function Profile() {
             className="press-tile"
             style={styles.sectionCard}
           >
-            <span style={styles.sectionIcon}>{section.icon}</span>
+            {section.icon.startsWith('ui:') ? (
+  <UiIcon
+    name={section.icon.slice(3)}
+    size={22}
+    color="var(--color-text)"
+    style={{ width: '32px', height: '22px' }}
+  />
+) : (
+  <span style={styles.sectionIcon}>{section.icon}</span>
+)}
             <div style={styles.sectionContent}>
               <div style={styles.sectionTitle}>{section.title}</div>
               <div style={styles.sectionSubtitle}>{section.subtitle}</div>

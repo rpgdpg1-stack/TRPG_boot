@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData, resetProgramDayCycle, devResetBadgesOnly } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран настроек.
