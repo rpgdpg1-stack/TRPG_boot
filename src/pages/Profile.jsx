@@ -122,7 +122,7 @@ export default function Profile() {
         style={styles.inviteButton}
         className="press-tile"
       >
-        <UiIcon name="invite" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
+        <UiIcon name="invite-friend" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
         <div style={styles.inviteContent}>
           <div style={styles.inviteTitle}>Пригласить друга</div>
           <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>

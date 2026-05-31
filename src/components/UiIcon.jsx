@@ -1,35 +1,49 @@
 /**
  * Универсальный рендер UI-иконок из src/assets/ui/.
  *
- * Иконки лежат как SVG с currentColor / монохромные. Чтобы красить их в
- * произвольный цвет без правки самого файла — используем CSS-маску:
- * SVG подгружается как URL и применяется как mask-image к div'у.
- * Цвет берётся из background-color → можно красить через color prop.
+ * Иконки — SVG с currentColor / монохромные. Красим через CSS-маску:
+ * SVG подгружается как URL и применяется как mask-image. Цвет берётся
+ * из background-color → можно перекрашивать через color prop.
  *
- * Размер по умолчанию 22px (как у эмодзи которые они заменяют — те шли
- * fontSize: 22px в Profile/Settings). Можно переопределить через size.
+ * Размер по умолчанию 22px (как у эмодзи которые они заменяют).
+ *
+ * ВАЖНО: используем import.meta.glob('eager: true') чтобы Vite собрал
+ * все SVG в папке assets/ui/ автоматически. Так если какой-то файл
+ * переименовали или забыли — билд не падает, просто иконка не покажется.
  *
  * Использование:
  *   <UiIcon name="settings" size={22} color="var(--color-primary)" />
- *
- * Если иконка name не найдена — рендерится пустой span (не падаем).
  */
 
-import inviteUrl     from '../assets/ui/invite.svg'
-import settingsUrl   from '../assets/ui/settings.svg'
-import rewardsUrl    from '../assets/ui/rewards.svg'
-import leaderboardUrl from '../assets/ui/leaderboard.svg'
+// import.meta.glob возвращает объект { '/src/assets/ui/invite.svg': '/assets/invite-abc123.svg', ... }
+// eager: true — модули резолвятся сразу, не лениво (нам нужны URL сразу при рендере).
+// query: '?url' — Vite вернёт URL файла, а не его содержимое.
+const ICON_MODULES = import.meta.glob('../assets/ui/*.svg', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+})
 
-const ICONS = {
-  invite:      inviteUrl,
-  settings:    settingsUrl,
-  rewards:     rewardsUrl,
-  leaderboard: leaderboardUrl
+// Превращаем { '/src/assets/ui/invite.svg': '/assets/invite-abc123.svg' }
+// в { invite: '/assets/invite-abc123.svg' } — удобный поиск по короткому имени.
+const ICONS = {}
+for (const path in ICON_MODULES) {
+  const filename = path.split('/').pop()           // 'invite.svg'
+  const name = filename.replace(/\.svg$/i, '')     // 'invite'
+  ICONS[name] = ICON_MODULES[path]
 }
 
 export default function UiIcon({ name, size = 22, color = 'currentColor', style }) {
   const url = ICONS[name]
-  if (!url) return <span style={{ width: size, height: size, display: 'inline-block', ...style }} />
+
+  if (!url) {
+    // Иконка не найдена — рендерим пустой spacer того же размера, чтобы
+    // вёрстка не прыгала. В консоли пишем предупреждение для отладки.
+    if (import.meta.env.DEV) {
+      console.warn(`[UiIcon] icon "${name}" not found. Available: ${Object.keys(ICONS).join(', ')}`)
+    }
+    return <span style={{ width: size, height: size, display: 'inline-block', ...style }} />
+  }
 
   return (
     <span
