@@ -114,8 +114,10 @@ export default function Home() {
 
       {/* Избранное */}
       <div style={styles.sectionHeaderRow}>
-        <span style={styles.sectionHeader}>ИЗБРАННОЕ</span>
-        <PixelHeart filled={favorites.length > 0} size={16} />
+        <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
+        <span style={{ display: 'inline-flex', marginTop: '-1px' }}>
+          <PixelHeart filled={favorites.length > 0} size={15} />
+        </span>
       </div>
       {!favLoaded ? (
         // Пока грузится — короткий скелетон карточки (не чёрный пустой блок и
@@ -326,7 +328,7 @@ const styles = {
   sectionHeaderRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     marginTop: '20px',
     marginBottom: '12px',
     paddingLeft: '4px'

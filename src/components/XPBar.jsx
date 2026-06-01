@@ -9,11 +9,14 @@ import MuscleIcon from './MuscleIcon'
  * Полоса сплошная (без сегментов), с заполнением и свечением.
  * Цифры справа внутри полосы.
  */
-export default function XPBar({ progress = 0, color = '#9ED153', current = 0, needed = 300 }) {
+export default function XPBar({ progress = 0, color = '#9ED153', current = 0, needed = 300, flexTrigger = 0 }) {
   return (
     <div style={styles.wrapper}>
-      {/* Иконка-валюта (бицепс) — в цвет текущего ранга */}
-      <span style={styles.icon}><MuscleIcon size={20} color={color} /></span>
+      {/* Иконка-валюта (бицепс) — бежевая. Анимация: сама раз в 15 сек (flex),
+          и разово при тапе на прогресс-бар (flexTrigger из PlayerCard). */}
+      <span style={styles.icon}>
+        <MuscleIcon size={26} flex={true} flexTrigger={flexTrigger} />
+      </span>
 
       {/* Сама полоса */}
       <div style={styles.track}>
@@ -46,6 +49,8 @@ const styles = {
     gap: '8px',
     width: '100%'
   },
+  // (gap 8px совпадает с gap кнопки ранга — иконка ранга и бицепс XP-бара
+  //  на одной вертикали, текст ранга и полоса прогресса начинаются одинаково)
   icon: {
     fontSize: '20px',
     lineHeight: 1,

@@ -67,6 +67,9 @@ export default function PlayerCard() {
   // Без этого попап моргал бы при частых тапах: появился-исчез-появился.
   const [showStreakPopup, setShowStreakPopup] = useState(false)
 
+  // Счётчик для триггера "сжатия" бицепса в XP-баре при тапе на прогресс-бар.
+  const [muscleFlexTick, setMuscleFlexTick] = useState(0)
+
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
   const rankButtonRef = useRef(null)
@@ -170,6 +173,7 @@ export default function PlayerCard() {
 
   const handleXPTap = () => {
     haptic.light()
+    setMuscleFlexTick(t => t + 1) // бицепс "сжимается" на тап
     setShowXPDetails(prev => !prev)
     setShowRanks(false)
   }
@@ -246,9 +250,9 @@ export default function PlayerCard() {
             <button
               ref={rankButtonRef}
               onClick={handleRankTap}
-              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
-              <RankIcon level={level} size={14} />
+              <RankIcon level={level} size={26} />
               {rank.name} {rank.subLevel}
             </button>
 
@@ -279,6 +283,7 @@ export default function PlayerCard() {
                   color={rank.color}
                   current={totalCurrent}
                   needed={totalNeeded}
+                  flexTrigger={muscleFlexTick}
                 />
               </button>
 
@@ -503,8 +508,8 @@ const styles = {
   },
   // Аватар-обёртка (кнопка)
   avatarWrap: {
-    width: '100px',
-    height: '100px',
+    width: '115px',
+    height: '115px',
     flexShrink: 0,
     background: 'transparent',
     border: 'none',
@@ -571,7 +576,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
+    fontSize: '17px',
     letterSpacing: '1.5px',
     padding: '2px 0',
     background: 'transparent',

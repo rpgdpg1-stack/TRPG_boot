@@ -208,13 +208,12 @@ export default function Leaderboard() {
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-            ЛИГА
+            ЛИГА:
             {leagueNameForTab && myLeague && (
               <>
-                {' ('}
                 <RankIcon
                   rankIndex={myLeague.rankIndex}
-                  size={13}
+                  size={15}
                   color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
                 />
                 <span style={{
@@ -223,7 +222,6 @@ export default function Leaderboard() {
                 }}>
                   {leagueNameForTab}
                 </span>
-                {')'}
               </>
             )}
           </span>
