@@ -116,7 +116,7 @@ export default function WorkoutFinishedModal({ reward = 150, status = 'idle', er
             +{reward} <MuscleIcon size={16} earned={true} /> начислятся автоматически, как только появится интернет.
           </div>
         ) : (
-          <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} /></div>
+          <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} flexTrigger={1} /></div>
         )}
 
         {/* Кнопка действия */}
