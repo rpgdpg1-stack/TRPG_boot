@@ -15,7 +15,6 @@ import RankIcon from './RankIcon'
  */
 export default function RanksPopup({ currentLevel, onClose }) {
   const popupRef = useRef(null)
-  const autoCloseTimer = useRef(null)
 
   // Координата top для fixed-попапа — позиция "под кнопкой ранга"
   const [topPx, setTopPx] = useState(null)
@@ -37,13 +36,7 @@ export default function RanksPopup({ currentLevel, onClose }) {
     }
   }, [])
 
-  // Авто-закрытие через 4 сек
-  useEffect(() => {
-    autoCloseTimer.current = setTimeout(() => onClose(), 4000)
-    return () => {
-      if (autoCloseTimer.current) clearTimeout(autoCloseTimer.current)
-    }
-  }, [onClose])
+  
 
   // Закрытие по клику вне попапа
   useEffect(() => {
@@ -102,24 +95,22 @@ export default function RanksPopup({ currentLevel, onClose }) {
     >
       <div style={styles.list}>
         {rows.map(row => (
-          <RankRow key={row.idx} row={row} />
+          <RankRow key={row.idx} row={row} onClose={onClose} />
         ))}
-        <ImmortalRow row={immortalRow} />
+        <ImmortalRow row={immortalRow} onClose={onClose} />
       </div>
 
       <style>{`
         @keyframes ranksPopupShow {
           0%   { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.96); }
-          8%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-          92%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-4px) scale(0.98); }
+          100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
       `}</style>
     </div>
   )
 }
 
-function RankRow({ row }) {
+function RankRow({ row, onClose }) {
   const { idx, rank, state, filledDots, xpRange } = row
   const isPassed = state === 'passed'
   const isCurrent = state === 'current'
@@ -129,11 +120,15 @@ function RankRow({ row }) {
   const xpColor = isCurrent ? rank.color : 'var(--color-text-secondary)'
 
   return (
-    <div style={{
-      ...styles.row,
-      background: isCurrent ? `${rank.color}15` : 'transparent',
-      borderColor: isCurrent ? `${rank.color}40` : 'transparent'
-    }}>
+    <div
+      onClick={onClose}
+      style={{
+        ...styles.row,
+        background: isCurrent ? `${rank.color}15` : 'transparent',
+        borderColor: isCurrent ? `${rank.color}40` : 'transparent',
+        cursor: 'pointer'
+      }}
+    >
       <span style={{ ...styles.emoji, opacity: isPassed ? 0.4 : 1 }}><RankIcon rankIndex={idx} size={14} color={rank.color} /></span>
       <span style={{ ...styles.rankName, color: nameColor }}>{rank.name}</span>
       <span style={styles.dots}>
@@ -146,17 +141,21 @@ function RankRow({ row }) {
   )
 }
 
-function ImmortalRow({ row }) {
+function ImmortalRow({ row, onClose }) {
   const { rank, state, subLevel } = row
   const isCurrent = state === 'current'
 
   return (
-    <div style={{
-      ...styles.row,
-      ...styles.immortalRow,
-      background: isCurrent ? `${rank.color}18` : 'transparent',
-      borderColor: isCurrent ? `${rank.color}50` : 'rgba(255,215,0,0.15)'
-    }}>
+    <div
+      onClick={onClose}
+      style={{
+        ...styles.row,
+        ...styles.immortalRow,
+        background: isCurrent ? `${rank.color}18` : 'transparent',
+        borderColor: isCurrent ? `${rank.color}50` : 'rgba(255,215,0,0.15)',
+        cursor: 'pointer'
+      }}
+    >
       <span style={styles.emoji}><RankIcon rankIndex={RANK_NAMES.length} size={14} color={isCurrent ? rank.color : 'rgba(255,255,255,0.25)'} /></span>
       <span style={{
         ...styles.rankName,
@@ -197,7 +196,7 @@ const styles = {
     padding: '10px',
     zIndex: 60,
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)',
-    animation: 'ranksPopupShow 4.4s ease-out forwards'
+    animation: 'ranksPopupShow 0.2s ease-out forwards'
   },
   list: {
     display: 'flex',
