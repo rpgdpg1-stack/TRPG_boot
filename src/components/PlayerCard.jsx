@@ -70,6 +70,9 @@ export default function PlayerCard() {
   // Счётчик для триггера "сжатия" бицепса в XP-баре при тапе на прогресс-бар.
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
 
+  // Тик для "pop"-анимации иконки ранга при тапе по рангу.
+  const [rankPopTick, setRankPopTick] = useState(0)
+
   const xpButtonRef = useRef(null)
   const xpPopupRef = useRef(null)
   const rankButtonRef = useRef(null)
@@ -180,6 +183,7 @@ export default function PlayerCard() {
 
   const handleRankTap = () => {
     haptic.light()
+    setRankPopTick(t => t + 1) // лёгкий "pop" иконки ранга
     setShowRanks(prev => !prev)
     setShowXPDetails(false)
   }
@@ -252,7 +256,15 @@ export default function PlayerCard() {
               onClick={handleRankTap}
               style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
-              <RankIcon level={level} size={26} />
+              <span
+                key={`rankpop-${rankPopTick}`}
+                style={{
+                  display: 'inline-flex',
+                  animation: rankPopTick ? 'rankIconPop 0.4s ease-out' : 'none'
+                }}
+              >
+                <RankIcon level={level} size={26} />
+              </span>
               {rank.name} {rank.subLevel}
             </button>
 
@@ -369,6 +381,11 @@ export default function PlayerCard() {
         @keyframes flameIdleFlicker {
           0%, 100% { transform: scale(1); }
           50%      { transform: scale(1.06); }
+        }
+        @keyframes rankIconPop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.22); }
+          100% { transform: scale(1); }
         }
         @keyframes flameSparkRise {
           0%   { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
@@ -508,8 +525,8 @@ const styles = {
   },
   // Аватар-обёртка (кнопка)
   avatarWrap: {
-    width: '115px',
-    height: '115px',
+    width: '100px',
+    height: '100px',
     flexShrink: 0,
     background: 'transparent',
     border: 'none',
@@ -576,7 +593,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '17px',
+    fontSize: '15px',
     letterSpacing: '1.5px',
     padding: '2px 0',
     background: 'transparent',
