@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
+import MuscleIcon from './MuscleIcon'
 
 /**
  * Таб-бар — 3 вкладки: Статистика / Тренировки / Профиль.
@@ -15,6 +17,9 @@ import UiIcon from './UiIcon'
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Тик для разового "флекса" бицепса на кнопке Тренировки при каждом нажатии.
+  const [muscleFlexTick, setMuscleFlexTick] = useState(0)
 
   // Прячем таб-бар на экранах тренировки и замены упражнений
   const isHiddenOnPath =
@@ -57,8 +62,10 @@ export default function TabBar() {
   ]
 
   const handleTap = (tab) => {
-    if (!tab.canTap) return
     haptic.light()
+    // Бицепс флексит при каждом тапе на "Тренировки" (даже если уже активна).
+    if (tab.id === 'workouts') setMuscleFlexTick(t => t + 1)
+    if (!tab.canTap) return
     navigate(tab.path)
   }
 
@@ -84,7 +91,13 @@ export default function TabBar() {
             opacity: tab.isActive ? 1 : 0.45,
             filter: tab.isActive ? 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.4))' : 'none'
           }}>
-            {tab.iconName ? (
+            {tab.id === 'workouts' ? (
+              <MuscleIcon
+                size={24}
+                color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+                flexTrigger={muscleFlexTick}
+              />
+            ) : tab.iconName ? (
               <UiIcon
                 name={tab.iconName}
                 size={24}

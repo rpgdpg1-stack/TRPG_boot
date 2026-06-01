@@ -16,16 +16,17 @@ import UiIcon from './UiIcon'
 export default function MuscleIcon({ size = 16, color, earned = true, flex = false, flexTrigger = 0, style }) {
   const finalColor = color || (earned ? '#FADFBE' : 'var(--color-text-secondary)')
 
-  // Ключ для разового проигрывания при смене flexTrigger — пересоздаёт span,
-  // CSS-анимация запускается заново.
+  // Анимация "флекса" — та же что на лоадере (flexBiceps): лёгкий поворот,
+  // подъём и увеличение. flex=true → зацикленно раз в 15 сек. flexTrigger
+  // (меняется при тапе) → разовое проигрывание.
   return (
     <span
       key={`flex-${flexTrigger}`}
       style={{
         display: 'inline-flex',
-        transformOrigin: 'center 70%',
+        transformOrigin: '60% 85%',
         animation: flexTrigger
-          ? 'muscleFlexOnce 0.5s ease-in-out'
+          ? 'muscleFlexOnce 0.7s ease-in-out'
           : flex
             ? 'muscleFlexLoop 15s ease-in-out infinite'
             : 'none',
@@ -34,16 +35,16 @@ export default function MuscleIcon({ size = 16, color, earned = true, flex = fal
     >
       <UiIcon name="muscles" size={size} color={finalColor} />
       <style>{`
-        @keyframes muscleFlexLoop {
-          0%, 92%, 100% { transform: scale(1); }
-          95%  { transform: scale(0.82) translateY(1px); }
-          98%  { transform: scale(1.04); }
-        }
         @keyframes muscleFlexOnce {
-          0%   { transform: scale(1); }
-          45%  { transform: scale(0.82) translateY(1px); }
-          75%  { transform: scale(1.05); }
-          100% { transform: scale(1); }
+          0%   { transform: rotate(0deg) scale(1); }
+          45%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
+          55%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
+          100% { transform: rotate(0deg) scale(1); }
+        }
+        @keyframes muscleFlexLoop {
+          0%, 88%, 100% { transform: rotate(0deg) scale(1); }
+          93%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
+          96%  { transform: rotate(-6deg) translateY(-2px) scale(1.06); }
         }
       `}</style>
     </span>

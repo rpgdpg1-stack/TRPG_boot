@@ -184,7 +184,7 @@ export default function DailyQuests() {
                     {quest.title}
                   </span>
                   <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    +{quest.xp} <MuscleIcon size={12} earned={true} />
+                    +{quest.xp} <MuscleIcon size={15} earned={true} />
                   </span>
                 </div>
               ))}
@@ -232,7 +232,7 @@ export default function DailyQuests() {
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    +{quest.xp} <MuscleIcon size={12} earned={isDone} />
+                    +{quest.xp} <MuscleIcon size={15} earned={isDone} />
                   </span>
 
                   {reward && (

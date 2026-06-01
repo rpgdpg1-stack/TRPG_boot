@@ -105,7 +105,7 @@ export default function Profile() {
       <div style={styles.statsRow}>
         <div style={styles.statBox}>
           <div style={{ ...styles.statValue, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-            {stats.xp} <MuscleIcon size={14} earned={true} />
+            {stats.xp} <MuscleIcon size={17} earned={true} />
           </div>
           <div style={styles.statLabel}>МУСКУЛЫ</div>
         </div>
