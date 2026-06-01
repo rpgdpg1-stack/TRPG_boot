@@ -24,6 +24,8 @@ import ExerciseInfo from './pages/ExerciseInfo'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown } from './lib/rewards'
+import { loadFavoritesEntries, getActiveDay } from './lib/storage'
+import { getProgramBySlug } from './features/programs/registry'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
@@ -53,6 +55,14 @@ export default function App() {
       // После авторизации — пробуем разгрести очередь (вдруг с прошлого
       // раза остались несинканутые операции и сеть уже есть).
       syncQueue()
+      // Предзагружаем избранное в кеш, чтобы на главной карточка появилась
+      // сразу вместе с остальным контентом, без мигания.
+      loadFavoritesEntries(async (slug) => {
+        const prog = getProgramBySlug(slug)
+        if (!prog) return null
+        const activeDay = await getActiveDay(slug)
+        return { prog, activeDay }
+      }).catch(() => {})
     })
 
     // Когда сеть возвращается — запускаем синк очереди.

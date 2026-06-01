@@ -3,13 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
-import { getFavoritePrograms, getActiveDay } from '../lib/storage'
+import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesCache } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
-
-// Кеш избранного в памяти модуля — переживает уход/возврат на главную внутри
-// сессии. При повторном входе показываем сразу из кеша (без чёрного экрана),
-// в фоне тихо обновляем. Сбрасывается только при перезапуске приложения.
-let favoritesCache = null
 
 /**
  * Главная — Тренировки.
@@ -24,9 +19,9 @@ let favoritesCache = null
  */
 export default function Home() {
   const navigate = useNavigate()
-  const [favorites, setFavorites] = useState(() => favoritesCache || []) // { prog, categoryId }
+  const [favorites, setFavorites] = useState(() => getFavoritesEntriesCache() || []) // { prog, categoryId }
   const [favIdx, setFavIdx] = useState(0)        // текущий слайд
-  const [favLoaded, setFavLoaded] = useState(() => favoritesCache !== null) // загружено?
+  const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesCache() !== null) // загружено?
 
   useEffect(() => {
     backButton.hide()
@@ -35,21 +30,16 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false
-    getFavoritePrograms().then(async favMap => {
+    loadFavoritesEntries(async (slug) => {
+      const prog = getProgramBySlug(slug)
+      if (!prog) return null
+      const activeDay = await getActiveDay(slug)
+      return { prog, activeDay }
+    }).then(entries => {
       if (cancelled) return
-      const entries = []
-      for (const [categoryId, slug] of Object.entries(favMap)) {
-        const prog = getProgramBySlug(slug)
-        if (!prog) continue
-        const activeDay = await getActiveDay(slug)
-        entries.push({ prog, categoryId, activeDay })
-      }
-      if (!cancelled) {
-        favoritesCache = entries
-        setFavorites(entries)
-        setFavIdx(prev => Math.min(prev, Math.max(0, entries.length - 1)))
-        setFavLoaded(true)
-      }
+      setFavorites(entries)
+      setFavIdx(prev => Math.min(prev, Math.max(0, entries.length - 1)))
+      setFavLoaded(true)
     })
     return () => { cancelled = true }
   }, [])

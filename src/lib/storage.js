@@ -395,6 +395,37 @@ export async function isFavorite(categoryId, programSlug) {
   return favorites[categoryId] === programSlug
 }
 
+// Кеш собранного избранного в памяти модуля — переживает уход/возврат на
+// главную и предзагружается при старте приложения (App.jsx), чтобы карточка
+// не моргала. Сбрасывается при перезапуске мини-аппа.
+let favoritesEntriesCache = null
+
+/**
+ * Синхронно вернуть кеш собранного избранного (или null если ещё не грузили).
+ * Используется Home для мгновенного старта без чёрного экрана.
+ */
+export function getFavoritesEntriesCache() {
+  return favoritesEntriesCache
+}
+
+/**
+ * Собрать полные данные избранного: для каждой категории берём slug,
+ * подтягиваем программу и её активный день. Кешируем результат.
+ *
+ * buildProgramEntry — колбэк (slug) => { prog, activeDay }, передаётся из Home
+ * чтобы не тащить registry-зависимости в storage.
+ */
+export async function loadFavoritesEntries(buildProgramEntry) {
+  const favMap = await getFavoritePrograms()
+  const entries = []
+  for (const [categoryId, slug] of Object.entries(favMap)) {
+    const built = await buildProgramEntry(slug)
+    if (built) entries.push({ ...built, categoryId })
+  }
+  favoritesEntriesCache = entries
+  return entries
+}
+
 /* ============================================ */
 /* СБРОС ДАННЫХ */
 /* ============================================ */
