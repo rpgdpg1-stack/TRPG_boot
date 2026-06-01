@@ -161,7 +161,7 @@ export default function PlayerCard() {
 
   const handleAvatarTap = () => {
     haptic.light()
-    navigate('/settings')
+    navigate('/profile')
   }
 
   const handleXPTap = () => {
@@ -212,7 +212,7 @@ export default function PlayerCard() {
         <button
           onClick={handleAvatarTap}
           style={styles.avatarWrap}
-          aria-label="Открыть настройки"
+          aria-label="Открыть профиль"
         >
           {/* Внутренний div красит рамку под цвет ранга. Меняем через
               borderColor на стиль, чтобы переход цвета был плавным при смене ранга. */}
