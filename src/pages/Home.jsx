@@ -111,10 +111,6 @@ export default function Home() {
         <PlayerCard />
       </div>
 
-      {/* Заголовок дневного буста — снаружи блока */}
-      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
-      <DailyQuests />
-
       {/* Избранное */}
       <div style={styles.sectionHeader}>ИЗБРАННОЕ 💚</div>
       {!favLoaded ? (
@@ -167,6 +163,10 @@ export default function Home() {
           )}
         </div>
       )}
+
+      {/* Дневной буст — теперь под избранным */}
+      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
+      <DailyQuests />
 
       {/* Заголовок разделов — такой же стиль */}
       <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
