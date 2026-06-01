@@ -143,6 +143,16 @@ img, button { -webkit-user-drag: none; }
   transition: transform 60ms var(--press-ease);
 }
 
+/* Строка в сгруппированной карточке (как в Telegram): без scale,
+   при нажатии — серая подсветка фона. */
+.tg-row {
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tg-row:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 /* ============================================ */
 /* PRESS-эффект для карточек упражнений */
 /* ============================================ */

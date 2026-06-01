@@ -6,6 +6,7 @@ import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import PixelHeart from '../components/PixelHeart'
+import UiIcon from '../components/UiIcon'
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
 function buildFavSync(slug, activeDay) {
@@ -59,43 +60,39 @@ export default function Home() {
   const categories = [
     {
       id: 'gym',
-      icon: '🏋️',
-      title: 'СИЛОВАЯ',
+      iconName: 'power',
+      title: 'Силовая',
       subtitle: '1 программа: Сплит',
       color: 'var(--color-primary)',
       available: true,
-      comingSoon: false,
-      featured: false
+      comingSoon: false
     },
     {
       id: 'cardio',
-      icon: '🏃',
-      title: 'КАРДИО',
-      subtitle: 'БЕГ · HIIT',
+      iconName: 'cardio',
+      title: 'Кардио',
+      subtitle: 'Бег · HIIT',
       color: 'var(--cat-cardio)',
       available: true,
-      comingSoon: true,
-      featured: false
+      comingSoon: true
     },
     {
       id: 'pool',
-      icon: '🏊',
-      title: 'ПЛАВАНИЕ',
-      subtitle: 'ВОДНЫЕ ТРЕНИРОВКИ',
+      iconName: 'swimming',
+      title: 'Плавание',
+      subtitle: 'Водные тренировки',
       color: 'var(--cat-pool)',
       available: true,
-      comingSoon: true,
-      featured: false
+      comingSoon: true
     },
     {
       id: 'stretch',
-      icon: '🧘',
-      title: 'РАСТЯЖКА',
-      subtitle: 'ЙОГА · ПИЛАТЕС',
+      iconName: 'stretching',
+      title: 'Растяжка',
+      subtitle: 'Йога · Пилатес',
       color: 'var(--cat-stretch)',
       available: true,
-      comingSoon: true,
-      featured: false
+      comingSoon: true
     }
   ]
 
@@ -180,29 +177,29 @@ export default function Home() {
       {/* Заголовок разделов — такой же стиль */}
       <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
 
-      <div style={styles.cards}>
-        {categories.map(cat => (
+      {/* Разделы — единая сгруппированная карточка (как в Telegram):
+          строки внутри одного блока, разделители между ними, серая
+          подсветка строки при нажатии вместо press-scale. */}
+      <div style={styles.categoryGroup}>
+        {categories.map((cat, idx) => (
           <button
             key={cat.id}
             onClick={() => handleCategoryTap(cat)}
-            className="press-tile"
+            className="tg-row"
             style={{
-              ...styles.categoryCard,
-              ...(cat.featured ? styles.categoryCardFeatured : {})
+              ...styles.categoryRow,
+              borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
             }}
           >
-            <span style={styles.categoryIcon}>{cat.icon}</span>
+            <span style={styles.categoryIcon}>
+              <UiIcon name={cat.iconName} size={26} color={cat.color} />
+            </span>
 
             <div style={styles.categoryContent}>
-              <div style={{
-                ...styles.categoryTitle,
-                color: cat.featured ? cat.color : 'var(--color-text)'
-              }}>
-                {cat.title}
-              </div>
+              <div style={styles.categoryTitle}>{cat.title}</div>
               <div style={styles.categorySubtitle}>
                 {cat.subtitle}
-                {cat.comingSoon && <span style={styles.soonTag}>СКОРО</span>}
+                {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
               </div>
             </div>
 
@@ -338,33 +335,38 @@ const styles = {
     verticalAlign: 'middle',
     marginRight: '6px'
   },
-  cards: {
+  // Единая карточка-группа разделов
+  categoryGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
-  },
-  categoryCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '0 16px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
+  },
+  // Строка раздела внутри группы. Скругления у группы, строки прямые.
+  // Первая/последняя строка получают скругление автоматически через overflow.
+  categoryRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '0 18px',
+    background: 'transparent',
     width: '100%',
-    height: '72px',
+    height: '68px',
     textAlign: 'left',
-    opacity: 0.85
+    border: 'none'
   },
-  categoryCardFeatured: {
-    height: '84px',
-    opacity: 1,
-    border: '1px solid rgba(158, 209, 83, 0.4)',
-    boxShadow: '0 0 20px rgba(158, 209, 83, 0.18), inset 0 0 30px rgba(158, 209, 83, 0.05)'
+  categoryIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    flexShrink: 0,
+    width: '34px'
   },
-  categoryIcon: { fontSize: '28px', lineHeight: 1, flexShrink: 0, width: '42px', textAlign: 'center' },
-  categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' },
-  categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.5px', lineHeight: 1.1 },
-  categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '8px' },
+  categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
+  categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
+  categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' },
   soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-tiny5)', fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
   categoryArrow: { fontSize: '24px', color: 'var(--color-text-secondary)', flexShrink: 0 },
 
