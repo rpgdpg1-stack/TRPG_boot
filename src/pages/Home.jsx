@@ -264,7 +264,8 @@ const favCardStyles = {
     width: '100%',
     minHeight: '100px',
     cursor: 'pointer',
-    border: '1px solid rgba(158, 209, 83, 0.2)'
+    border: '1px solid rgba(158, 209, 83, 0.4)',
+    boxShadow: '0 0 20px rgba(158, 209, 83, 0.18), inset 0 0 30px rgba(158, 209, 83, 0.05)'
   },
   emoji: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
   content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
