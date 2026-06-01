@@ -114,15 +114,16 @@ export default function Home() {
       <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
       <DailyQuests />
 
-      {/* Избранные тренировки */}
-      <div style={styles.sectionHeader}>ИЗБРАННЫЕ ТРЕНИРОВКИ ❤️</div>
+      {/* Избранное */}
+      <div style={styles.sectionHeader}>ИЗБРАННОЕ 💚</div>
       {!favLoaded ? (
-        // Пока грузится — пустой блок-плейсхолдер высотой карточки, чтобы
-        // не моргала заглушка "добавь избранное" перед появлением программы.
-        <div style={{ minHeight: '100px' }} />
+        // Пока грузится — короткий скелетон карточки (не чёрный пустой блок и
+        // не заглушка). Так на первом старте нет ни мигания заглушкой, ни
+        // проваливания вёрстки.
+        <div style={styles.favSkeleton} />
       ) : favorites.length === 0 ? (
         <div style={styles.favEmpty}>
-          Поставь ❤️ на программу внутри категории — она появится здесь
+          Поставь 💚 на программу внутри категории — она появится здесь
         </div>
       ) : (
         <div style={styles.favSlider}>
@@ -166,8 +167,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Заголовок тренировок — такой же стиль */}
-      <div style={styles.sectionHeader}>ТРЕНИРОВКИ</div>
+      {/* Заголовок разделов — такой же стиль */}
+      <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
 
       <div style={styles.cards}>
         {categories.map(cat => (
@@ -320,22 +321,22 @@ const styles = {
   categoryCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    padding: '0 18px',
+    gap: '12px',
+    padding: '0 16px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    height: '92px',
+    height: '72px',
     textAlign: 'left',
     opacity: 0.85
   },
   categoryCardFeatured: {
-    height: '110px',
+    height: '84px',
     opacity: 1,
     border: '1px solid rgba(158, 209, 83, 0.4)',
     boxShadow: '0 0 20px rgba(158, 209, 83, 0.18), inset 0 0 30px rgba(158, 209, 83, 0.05)'
   },
-  categoryIcon: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
+  categoryIcon: { fontSize: '28px', lineHeight: 1, flexShrink: 0, width: '42px', textAlign: 'center' },
   categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' },
   categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.5px', lineHeight: 1.1 },
   categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '8px' },
@@ -352,6 +353,12 @@ const styles = {
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.5
+  },
+  favSkeleton: {
+    minHeight: '100px',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    opacity: 0.4
   },
   favSlider: {
     display: 'flex',

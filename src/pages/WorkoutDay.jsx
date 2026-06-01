@@ -261,7 +261,12 @@ export default function WorkoutDay() {
     if (targetDay === day) return
     haptic.light()
     setSlideDir(direction === 'next' ? 'right' : 'left')
-    navigate(`/workout/${programId}/${targetDay}`, { replace: true })
+    // Пробрасываем fromHome дальше, чтобы после переключения дней кнопка
+    // "Назад" всё ещё вела на главную (если зашли из избранного).
+    navigate(`/workout/${programId}/${targetDay}`, {
+      replace: true,
+      state: location.state?.fromHome ? { fromHome: true } : null
+    })
   }
 
   const touchStartX = useRef(null)
