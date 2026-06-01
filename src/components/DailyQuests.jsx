@@ -47,7 +47,18 @@ export default function DailyQuests() {
   const containerRef = useRef(null)
 
   useEffect(() => {
-    const loadQuests = () => { getDailyQuests().then(setCompleted) }
+    const loadQuests = () => {
+      getDailyQuests().then(result => {
+        // Не перетираем уже показанное синхронное состояние пустым объектом
+        // (если сеть вернула пусто, а локально что-то было) — иначе моргнёт.
+        setCompleted(prev => {
+          const prevDone = Object.keys(prev).length
+          const nextDone = Object.keys(result).length
+          if (nextDone === 0 && prevDone > 0) return prev
+          return result
+        })
+      })
+    }
     loadQuests()
 
     const offReady = on(EVENTS.USER_READY, loadQuests)

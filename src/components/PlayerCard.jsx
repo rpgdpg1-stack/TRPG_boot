@@ -10,6 +10,7 @@ import {
   getTotalXPProgress
 } from '../lib/levels'
 import { getMyFriendsPlace } from '../lib/leaderboard'
+import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
@@ -46,8 +47,10 @@ function formatSourceLabel(source) {
 export default function PlayerCard() {
   const navigate = useNavigate()
 
-  const [user, setUser] = useState(null)
-  const [xp, setXP] = useState(0)
+  // Стартуем сразу из текущего юзера (он уже авторизован к моменту главной),
+  // чтобы рамка ранга не моргала дефолтным зелёным Новичком пока грузится XP.
+  const [user, setUser] = useState(() => getUser())
+  const [xp, setXP] = useState(() => getCurrentUser()?.total_muscles || 0)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)

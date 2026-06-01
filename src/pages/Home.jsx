@@ -21,6 +21,7 @@ export default function Home() {
   const navigate = useNavigate()
   const [favorites, setFavorites] = useState([]) // массив { prog, categoryId }
   const [favIdx, setFavIdx] = useState(0)        // текущий слайд
+  const [favLoaded, setFavLoaded] = useState(false) // загрузка завершена?
 
   useEffect(() => {
     backButton.hide()
@@ -41,6 +42,7 @@ export default function Home() {
       if (!cancelled) {
         setFavorites(entries)
         setFavIdx(0)
+        setFavLoaded(true)
       }
     })
     return () => { cancelled = true }
@@ -108,7 +110,11 @@ export default function Home() {
 
       {/* Избранные тренировки */}
       <div style={styles.sectionHeader}>ИЗБРАННЫЕ ТРЕНИРОВКИ ❤️</div>
-      {favorites.length === 0 ? (
+      {!favLoaded ? (
+        // Пока грузится — пустой блок-плейсхолдер высотой карточки, чтобы
+        // не моргала заглушка "добавь избранное" перед появлением программы.
+        <div style={{ minHeight: '100px' }} />
+      ) : favorites.length === 0 ? (
         <div style={styles.favEmpty}>
           Поставь ❤️ на программу внутри категории — она появится здесь
         </div>
