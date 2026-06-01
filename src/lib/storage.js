@@ -409,6 +409,48 @@ export function getFavoritesEntriesCache() {
 }
 
 /**
+ * СИНХРОННАЯ сборка избранного напрямую из localStorage (без await/CloudStorage).
+ *
+ * Зачем: cloudSet дублирует favorite_programs и program:{slug}:last_day в
+ * localStorage. Значит при любом запуске кроме самого первого данные уже есть
+ * локально и читаются мгновенно. Это даёт картинку без мигания — карточка
+ * появляется сразу вместе с остальной главной.
+ *
+ * buildProgramEntrySync — синхронный колбэк (slug, activeDay) => { prog, activeDay }.
+ * Возвращает массив entries или null если в localStorage ничего нет.
+ */
+export function getFavoritesEntriesSync(buildProgramEntrySync) {
+  // Если уже есть собранный кеш в памяти — отдаём его (самый быстрый путь)
+  if (favoritesEntriesCache !== null) return favoritesEntriesCache
+
+  const raw = localGet(FAVORITES_KEY)
+  if (!raw) return null
+
+  let favMap
+  try {
+    favMap = JSON.parse(raw)
+    if (typeof favMap !== 'object' || favMap === null) return null
+  } catch {
+    return null
+  }
+
+  const entries = []
+  for (const [categoryId, slug] of Object.entries(favMap)) {
+    // Активный день читаем синхронно из localStorage (cloudSet туда пишет).
+    const lastDay = localGet(`program:${slug}:last_day`)
+    const cycle = { A: 'B', B: 'C', C: 'A' }
+    const activeDay = lastDay ? (cycle[lastDay] || 'A') : null
+
+    const built = buildProgramEntrySync(slug, activeDay)
+    if (built) entries.push({ ...built, categoryId })
+  }
+
+  // Кладём в кеш памяти — дальше уже будет отдаваться мгновенно
+  favoritesEntriesCache = entries
+  return entries
+}
+
+/**
  * Собрать полные данные избранного: для каждой категории берём slug,
  * подтягиваем программу и её активный день. Кешируем результат.
  *

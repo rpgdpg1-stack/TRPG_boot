@@ -3,8 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
-import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesCache } from '../lib/storage'
+import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
+
+// Синхронная сборка избранного из localStorage для мгновенного первого рендера.
+function buildFavSync(slug, activeDay) {
+  const prog = getProgramBySlug(slug)
+  if (!prog) return null
+  return { prog, activeDay }
+}
 
 /**
  * Главная — Тренировки.
@@ -19,15 +26,19 @@ import { getProgramBySlug } from '../features/programs/registry'
  */
 export default function Home() {
   const navigate = useNavigate()
-  const [favorites, setFavorites] = useState(() => getFavoritesEntriesCache() || []) // { prog, categoryId }
+  // Стартуем синхронно из localStorage — карточка избранного появляется сразу
+  // вместе со всей главной, без мигания скелетоном.
+  const [favorites, setFavorites] = useState(() => getFavoritesEntriesSync(buildFavSync) || [])
   const [favIdx, setFavIdx] = useState(0)        // текущий слайд
-  const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesCache() !== null) // загружено?
+  const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesSync(buildFavSync) !== null)
 
   useEffect(() => {
     backButton.hide()
     lockVerticalSwipes()
   }, [])
 
+  // Фоновое обновление: после синхронного старта тихо перечитываем из
+  // CloudStorage (вдруг избранное менялось с другого устройства).
   useEffect(() => {
     let cancelled = false
     loadFavoritesEntries(async (slug) => {
