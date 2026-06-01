@@ -7,6 +7,7 @@ import RankIcon from '../components/RankIcon'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from '../components/UiIcon'
+import MuscleIcon from '../components/MuscleIcon'
 
 /**
  * Экран "Профиль" — личный кабинет юзера.
@@ -103,7 +104,9 @@ export default function Profile() {
       {/* Быстрые цифры */}
       <div style={styles.statsRow}>
         <div style={styles.statBox}>
-          <div style={styles.statValue}>{stats.xp}</div>
+          <div style={{ ...styles.statValue, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            {stats.xp} <MuscleIcon size={14} earned={true} />
+          </div>
           <div style={styles.statLabel}>МУСКУЛЫ</div>
         </div>
         <div style={styles.statBox}>

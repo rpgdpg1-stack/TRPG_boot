@@ -16,6 +16,7 @@ import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
 import RanksPopup from './RanksPopup'
 import RankIcon from './RankIcon'
+import MuscleIcon from './MuscleIcon'
 
 /**
  * Главный блок персонажа на Главной.
@@ -299,7 +300,7 @@ export default function PlayerCard() {
                             {formatSourceLabel(row.source)}
                           </span>
                           <span style={styles.popupAmount}>
-                            +{row.amount} 💪
+                            +{row.amount} <MuscleIcon size={12} earned={true} />
                           </span>
                         </div>
                       ))}
@@ -312,8 +313,8 @@ export default function PlayerCard() {
                     <span style={styles.popupLabel}>
                       До «{nextRank.name} {nextRank.subLevel}»
                     </span>
-                    <span style={{ ...styles.popupAmount, color: rank.color }}>
-                      {remainingToNext} 💪
+                    <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      {remainingToNext} <MuscleIcon size={12} color={rank.color} />
                     </span>
                   </div>
                 </div>

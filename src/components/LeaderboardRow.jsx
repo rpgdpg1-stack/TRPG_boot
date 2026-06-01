@@ -16,6 +16,7 @@
 
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
 import RankIcon from './RankIcon'
+import MuscleIcon from './MuscleIcon'
 
 export default function LeaderboardRow({ row, isMe, showHandle = true }) {
   const {
@@ -81,8 +82,8 @@ export default function LeaderboardRow({ row, isMe, showHandle = true }) {
       </div>
 
       {/* Мускулы справа — пиксельным шрифтом, в цвет ранга */}
-      <div style={{ ...styles.muscles, color: rank.color }}>
-        {total_muscles} 💪
+      <div style={{ ...styles.muscles, color: rank.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {total_muscles} <MuscleIcon size={12} color={rank.color} />
       </div>
     </div>
   )

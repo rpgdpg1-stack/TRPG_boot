@@ -1,18 +1,19 @@
+import MuscleIcon from './MuscleIcon'
+
 /**
- * XP-бар (для мускулов 💪).
+ * XP-бар (для мускулов).
  *
  * Структура:
- * [💪]  ▓▓▓▓▓░░░░░░ 180/300
+ * [бицепс]  ▓▓▓▓▓░░░░░░ 180/300
  *
- * Слева эмодзи бицепса (потом заменишь на иконку).
  * Полоса сплошная (без сегментов), с заполнением и свечением.
  * Цифры справа внутри полосы.
  */
 export default function XPBar({ progress = 0, color = '#9ED153', current = 0, needed = 300 }) {
   return (
     <div style={styles.wrapper}>
-      {/* Иконка-валюта (бицепс). Потом заменим на SVG */}
-      <span style={styles.icon}>💪</span>
+      {/* Иконка-валюта (бицепс) — в цвет текущего ранга */}
+      <span style={styles.icon}><MuscleIcon size={20} color={color} /></span>
 
       {/* Сама полоса */}
       <div style={styles.track}>

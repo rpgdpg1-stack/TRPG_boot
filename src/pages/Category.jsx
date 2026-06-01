@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory } from '../features/programs/registry'
+import PixelHeart from '../components/PixelHeart'
 import ProgramCard from '../components/ProgramCard'
 
 /**
@@ -183,7 +184,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
         style={{ ...cardStyles.favButton, opacity: prog.available ? 1 : 0.4 }}
         aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
       >
-        <HeartIcon filled={isFav} />
+        <PixelHeart filled={isFav} size={22} />
       </button>
 
       <span style={cardStyles.emoji}>{emoji}</span>

@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
+import UiIcon from './UiIcon'
 
 /**
  * Таб-бар — 3 вкладки: Статистика / Тренировки / Профиль.
@@ -41,7 +42,7 @@ export default function TabBar() {
       id: 'workouts',
       path: '/',
       label: 'Тренировки',
-      icon: '💪',
+      iconName: 'muscles',
       isActive: isWorkoutSection,
       canTap: !isExactHome
     },
@@ -49,7 +50,7 @@ export default function TabBar() {
       id: 'profile',
       path: '/profile',
       label: 'Профиль',
-      icon: '👤',
+      iconName: 'profile',
       isActive: location.pathname === '/profile',
       canTap: location.pathname !== '/profile'
     }
@@ -83,7 +84,15 @@ export default function TabBar() {
             opacity: tab.isActive ? 1 : 0.45,
             filter: tab.isActive ? 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.4))' : 'none'
           }}>
-            {tab.icon}
+            {tab.iconName ? (
+              <UiIcon
+                name={tab.iconName}
+                size={24}
+                color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+              />
+            ) : (
+              tab.icon
+            )}
           </span>
           <span style={{
             ...styles.label,

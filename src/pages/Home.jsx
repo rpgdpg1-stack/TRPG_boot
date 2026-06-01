@@ -5,6 +5,7 @@ import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
+import PixelHeart from '../components/PixelHeart'
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
 function buildFavSync(slug, activeDay) {
@@ -112,7 +113,10 @@ export default function Home() {
       </div>
 
       {/* Избранное */}
-      <div style={styles.sectionHeader}>ИЗБРАННОЕ 💚</div>
+      <div style={styles.sectionHeaderRow}>
+        <span style={styles.sectionHeader}>ИЗБРАННОЕ</span>
+        <PixelHeart filled={favorites.length > 0} size={16} />
+      </div>
       {!favLoaded ? (
         // Пока грузится — короткий скелетон карточки (не чёрный пустой блок и
         // не заглушка). Так на первом старте нет ни мигания заглушкой, ни
@@ -120,7 +124,10 @@ export default function Home() {
         <div style={styles.favSkeleton} />
       ) : favorites.length === 0 ? (
         <div style={styles.favEmpty}>
-          Поставь 💚 на программу внутри категории — она появится здесь
+          <span style={styles.favEmptyHeartWrap}>
+            <PixelHeart filled={false} size={18} />
+          </span>
+          Поставь сердце на программу внутри категории — она появится здесь
         </div>
       ) : (
         <div style={styles.favSlider}>
@@ -305,7 +312,7 @@ const styles = {
     paddingTop: '4px',
     paddingBottom: '20px'
   },
-  // Единый стиль для двух заголовков "ДНЕВНОЙ БУСТ" и "ТРЕНИРОВКИ"
+  // Единый стиль для заголовков секций
   sectionHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
@@ -314,6 +321,20 @@ const styles = {
     marginTop: '20px',
     marginBottom: '12px',
     paddingLeft: '4px'
+  },
+  // Заголовок с иконкой справа (Избранное + сердце)
+  sectionHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '20px',
+    marginBottom: '12px',
+    paddingLeft: '4px'
+  },
+  favEmptyHeartWrap: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
+    marginRight: '6px'
   },
   cards: {
     display: 'flex',
