@@ -84,10 +84,16 @@ export default function WorkoutDay() {
   const nextDay = currentDayIdx < days.length - 1 ? days[currentDayIdx + 1] : days[0]
 
   useEffect(() => {
+    // Если пришли из избранного на главной (state.fromHome) — кнопка "Назад"
+    // ведёт на главную. Иначе как обычно — в категорию программы.
+    const fromHome = location.state?.fromHome === true
     const categoryId = program?.category || 'gym'
-    backButton.setHandler(() => navigate(`/category/${categoryId}`))
+    backButton.setHandler(() => {
+      if (fromHome) navigate('/')
+      else navigate(`/category/${categoryId}`)
+    })
     lockVerticalSwipes()
-  }, [navigate, program])
+  }, [navigate, program, location.state])
 
   useEffect(() => {
     setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))

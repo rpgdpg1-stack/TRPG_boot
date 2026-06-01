@@ -131,7 +131,9 @@ export default function Home() {
             onTap={() => {
               haptic.light()
               const day = favorites[favIdx].activeDay || 'A'
-              setTimeout(() => navigate(`/workout/${favorites[favIdx].prog.slug}/${day}`), 80)
+              setTimeout(() => navigate(`/workout/${favorites[favIdx].prog.slug}/${day}`, {
+                state: { fromHome: true }
+              }), 80)
             }}
           />
           {favorites.length > 1 && (
