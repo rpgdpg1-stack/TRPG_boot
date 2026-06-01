@@ -6,6 +6,11 @@ import DailyQuests from '../components/DailyQuests'
 import { getFavoritePrograms, getActiveDay } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 
+// Кеш избранного в памяти модуля — переживает уход/возврат на главную внутри
+// сессии. При повторном входе показываем сразу из кеша (без чёрного экрана),
+// в фоне тихо обновляем. Сбрасывается только при перезапуске приложения.
+let favoritesCache = null
+
 /**
  * Главная — Тренировки.
  *
@@ -19,9 +24,9 @@ import { getProgramBySlug } from '../features/programs/registry'
  */
 export default function Home() {
   const navigate = useNavigate()
-  const [favorites, setFavorites] = useState([]) // массив { prog, categoryId }
+  const [favorites, setFavorites] = useState(() => favoritesCache || []) // { prog, categoryId }
   const [favIdx, setFavIdx] = useState(0)        // текущий слайд
-  const [favLoaded, setFavLoaded] = useState(false) // загрузка завершена?
+  const [favLoaded, setFavLoaded] = useState(() => favoritesCache !== null) // загружено?
 
   useEffect(() => {
     backButton.hide()
@@ -40,8 +45,9 @@ export default function Home() {
         entries.push({ prog, categoryId, activeDay })
       }
       if (!cancelled) {
+        favoritesCache = entries
         setFavorites(entries)
-        setFavIdx(0)
+        setFavIdx(prev => Math.min(prev, Math.max(0, entries.length - 1)))
         setFavLoaded(true)
       }
     })
