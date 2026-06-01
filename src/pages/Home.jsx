@@ -63,7 +63,7 @@ export default function Home() {
       color: 'var(--color-primary)',
       available: true,
       comingSoon: false,
-      featured: true
+      featured: false
     },
     {
       id: 'cardio',
