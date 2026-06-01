@@ -38,10 +38,14 @@ export default function RanksPopup({ currentLevel, onClose }) {
 
   
 
-  // Закрытие по клику вне попапа
+  // Закрытие по клику вне попапа.
+  // Тап по самой кнопке ранга (родитель с data-rank-button-wrap) игнорируем —
+  // её обрабатывает handleRankTap в PlayerCard (он и закроет попап). Иначе
+  // получалось двойное срабатывание: этот хендлер закрывал, а тогл открывал снова.
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (popupRef.current?.contains(e.target)) return
+      if (e.target.closest?.('[data-rank-button-wrap]')) return
       onClose()
     }
     document.addEventListener('pointerdown', handleOutsideClick)

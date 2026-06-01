@@ -172,11 +172,7 @@ export default function PlayerCard() {
 
   const handleRankTap = () => {
     haptic.light()
-    // Если попап уже открыт — не трогаем (закрытие сделает обработчик клика
-    // вне попапа в RanksPopup). Иначе будет двойное срабатывание: клик-вне
-    // закроет, а этот тогл откроет обратно.
-    if (showRanks) return
-    setShowRanks(true)
+    setShowRanks(prev => !prev)
     setShowXPDetails(false)
   }
 
