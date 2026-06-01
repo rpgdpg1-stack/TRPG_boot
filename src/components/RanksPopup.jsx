@@ -160,7 +160,7 @@ function ImmortalRow({ row, onClose }) {
         cursor: 'pointer'
       }}
     >
-      <span style={styles.emoji}><RankIcon rankIndex={RANK_NAMES.length} size={14} color={isCurrent ? rank.color : 'rgba(255,255,255,0.25)'} /></span>
+      <span style={styles.emoji}><RankIcon rankIndex={RANK_NAMES.length} size={14} color={rank.color} /></span>
       <span style={{
         ...styles.rankName,
         color: isCurrent ? rank.color : 'var(--color-text)',

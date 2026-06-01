@@ -8,6 +8,7 @@ import { shareReferralLink } from '../lib/friends'
 import { getCurrentSeason, getDaysUntilSeasonEnd, formatSeasonEndDate } from '../utils/season'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
+import RankIcon from '../components/RankIcon'
 
 /**
  * Экран рейтинга.
@@ -191,10 +192,11 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_FRIENDS)}
           style={{
             ...styles.tab,
+            ...styles.tabLeague,
             color: activeTab === TAB_FRIENDS ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          ДРУЗЬЯ
+          <span>ДРУЗЬЯ</span>
           {activeTab === TAB_FRIENDS && <div style={styles.tabUnderline} />}
         </button>
 
@@ -202,22 +204,25 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_LEAGUE)}
           style={{
             ...styles.tab,
-            // Базовый цвет таба — зелёный когда активен, серый когда нет.
-            // Цвет конкретной лиги в скобках задаётся отдельно через span ниже.
+            ...styles.tabLeague,
             color: activeTab === TAB_LEAGUE ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          ЛИГА
-          {leagueNameForTab && (
-            <>
-              {' '}
+          <span>ЛИГА</span>
+          {leagueNameForTab && myLeague && (
+            <span style={styles.tabLeagueName}>
+              <RankIcon
+                rankIndex={myLeague.rankIndex}
+                size={13}
+                color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
+              />
               <span style={{
                 color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
                 transition: 'color 0.25s ease'
               }}>
-                ({leagueNameForTab})
+                {leagueNameForTab}
               </span>
-            </>
+            </span>
           )}
           {activeTab === TAB_LEAGUE && <div style={styles.tabUnderline} />}
         </button>
@@ -431,6 +436,20 @@ const styles = {
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
+  },
+  // Таб лиги двухстрочный: "ЛИГА" сверху, иконка+название снизу
+  tabLeague: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px'
+  },
+  tabLeagueName: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '12px',
+    letterSpacing: '1px'
   },
   tabUnderline: {
     position: 'absolute',
