@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import MuscleIcon from './MuscleIcon'
 
 /**
  * Модалка завершения тренировки.
@@ -112,10 +113,10 @@ export default function WorkoutFinishedModal({ reward = 150, status = 'idle', er
         ) : offline ? (
           <div style={styles.errorMessage}>
             Тренировка сохранена на телефоне.<br />
-            +{reward} 💪 начислятся автоматически, как только появится интернет.
+            +{reward} <MuscleIcon size={16} earned={true} /> начислятся автоматически, как только появится интернет.
           </div>
         ) : (
-          <div style={styles.rewardBadge}>+{reward} 💪</div>
+          <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} /></div>
         )}
 
         {/* Кнопка действия */}

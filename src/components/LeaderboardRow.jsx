@@ -83,7 +83,7 @@ export default function LeaderboardRow({ row, isMe, showHandle = true }) {
 
       {/* Мускулы справа — число в цвет ранга + бежевый бицепс */}
       <div style={{ ...styles.muscles, color: rank.color, display: 'flex', alignItems: 'center', gap: '5px' }}>
-        {total_muscles} <MuscleIcon size={15} earned={true} />
+        {total_muscles} <MuscleIcon size={18} earned={true} />
       </div>
     </div>
   )

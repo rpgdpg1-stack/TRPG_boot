@@ -93,14 +93,14 @@ export default function TabBar() {
           }}>
             {tab.id === 'workouts' ? (
               <MuscleIcon
-                size={24}
+                size={32}
                 color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
                 flexTrigger={muscleFlexTick}
               />
             ) : tab.iconName ? (
               <UiIcon
                 name={tab.iconName}
-                size={24}
+                size={32}
                 color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
               />
             ) : (
@@ -152,7 +152,7 @@ const styles = {
     border: 'none'
   },
   icon: {
-    fontSize: '22px',
+    fontSize: '30px',
     lineHeight: 1,
     transition: 'opacity 0.25s ease, filter 0.25s ease'
   },

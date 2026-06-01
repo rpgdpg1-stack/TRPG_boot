@@ -305,7 +305,7 @@ export default function PlayerCard() {
                             {formatSourceLabel(row.source)}
                           </span>
                           <span style={{ ...styles.popupAmount, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            +{row.amount} <MuscleIcon size={16} earned={true} />
+                            +{row.amount} <MuscleIcon size={18} earned={true} />
                           </span>
                         </div>
                       ))}
@@ -319,7 +319,7 @@ export default function PlayerCard() {
                       До «{nextRank.name} {nextRank.subLevel}»
                     </span>
                     <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      {remainingToNext} <MuscleIcon size={16} color={rank.color} />
+                      {remainingToNext} <MuscleIcon size={18} earned={true} />
                     </span>
                   </div>
                 </div>

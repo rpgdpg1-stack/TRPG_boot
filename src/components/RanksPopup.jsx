@@ -142,7 +142,7 @@ function RankRow({ row, onClose }) {
         ))}
       </span>
       <span style={{ ...styles.xp, color: xpColor, opacity: isPassed ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-        {xpRange} <MuscleIcon size={15} earned={isCurrent || isPassed} />
+        {xpRange} <MuscleIcon size={18} earned={isCurrent || isPassed} />
       </span>
     </div>
   )

@@ -156,7 +156,7 @@ export default function DailyQuests() {
             onPointerCancel={() => { pointerStartRef.current = null }}
             style={styles.allDoneBlock}
           >
-            <div style={{ ...styles.allDoneReward, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>+{TOTAL_QUEST_REWARD} <MuscleIcon size={13} earned={true} /> получено</div>
+            <div style={{ ...styles.allDoneReward, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>+{TOTAL_QUEST_REWARD} <MuscleIcon size={18} earned={true} /> получено</div>
             <div style={styles.allDoneCheck}>✔ Все задания выполнены</div>
 
             {/* Стрелочка вниз / вверх. Поворачиваем через transform, плавно. */}
@@ -184,7 +184,7 @@ export default function DailyQuests() {
                     {quest.title}
                   </span>
                   <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    +{quest.xp} <MuscleIcon size={15} earned={true} />
+                    +{quest.xp} <MuscleIcon size={18} earned={true} />
                   </span>
                 </div>
               ))}
@@ -232,12 +232,12 @@ export default function DailyQuests() {
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    +{quest.xp} <MuscleIcon size={15} earned={isDone} />
+                    +{quest.xp} <MuscleIcon size={18} earned={isDone} />
                   </span>
 
                   {reward && (
                     <span key={reward.key} style={styles.floatingReward}>
-                      +{reward.xp} <MuscleIcon size={13} earned={true} />
+                      +{reward.xp} <MuscleIcon size={18} earned={true} />
                     </span>
                   )}
                 </div>
