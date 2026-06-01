@@ -357,6 +357,45 @@ export async function togglePin(programId) {
 }
 
 /* ============================================ */
+/* ИЗБРАННЫЕ ПРОГРАММЫ (одна на категорию)      */
+/* ============================================ */
+
+const FAVORITES_KEY = 'favorite_programs'
+
+export async function getFavoritePrograms() {
+  const raw = await cloudGet(FAVORITES_KEY)
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch { return {} }
+}
+
+export async function getFavoriteProgramByCategory(categoryId) {
+  const favorites = await getFavoritePrograms()
+  return favorites[categoryId] || null
+}
+
+export async function toggleFavoriteProgram(categoryId, programSlug) {
+  const favorites = await getFavoritePrograms()
+  const current = favorites[categoryId]
+  if (current === programSlug) {
+    delete favorites[categoryId]
+    await cloudSet(FAVORITES_KEY, JSON.stringify(favorites))
+    return false
+  } else {
+    favorites[categoryId] = programSlug
+    await cloudSet(FAVORITES_KEY, JSON.stringify(favorites))
+    return true
+  }
+}
+
+export async function isFavorite(categoryId, programSlug) {
+  const favorites = await getFavoritePrograms()
+  return favorites[categoryId] === programSlug
+}
+
+/* ============================================ */
 /* СБРОС ДАННЫХ */
 /* ============================================ */
 
@@ -364,6 +403,7 @@ export async function clearAllData() {
   const userId = getUserId()
 
   await cloudRemove('pinned_programs')
+  await cloudRemove(FAVORITES_KEY)
   await cloudRemove('program:split:last_day')
   await cloudRemove('program:split:last_day_date')
 

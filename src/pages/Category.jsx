@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
-import { getPinnedPrograms } from '../lib/storage'
+import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 
@@ -56,7 +56,7 @@ const PLACEHOLDER_PROGRAMS = {
 export default function Category() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [pinnedIds, setPinnedIds] = useState([])
+  const [favoriteSlug, setFavoriteSlug] = useState(null)
 
   const meta = CATEGORIES_META[id]
 
@@ -70,8 +70,18 @@ export default function Category() {
   }, [navigate])
 
   useEffect(() => {
-    getPinnedPrograms().then(setPinnedIds)
-  }, [])
+    let cancelled = false
+    getFavoriteProgramByCategory(id).then(slug => {
+      if (!cancelled) setFavoriteSlug(slug)
+    })
+    return () => { cancelled = true }
+  }, [id])
+
+  const handleFavoriteTap = async (programSlug) => {
+    haptic.medium()
+    const nowFav = await toggleFavoriteProgram(id, programSlug)
+    setFavoriteSlug(nowFav ? programSlug : null)
+  }
 
   const handleCreateTap = () => {
     haptic.light()
@@ -85,14 +95,6 @@ export default function Category() {
     )
   }
 
-  const sortedPrograms = [...programs].sort((a, b) => {
-    const aPinned = pinnedIds.includes(a.slug)
-    const bPinned = pinnedIds.includes(b.slug)
-    if (aPinned && !bPinned) return -1
-    if (!aPinned && bPinned) return 1
-    return 0
-  })
-
   return (
     <div className="page page-enter" style={styles.page}>
 
@@ -102,14 +104,12 @@ export default function Category() {
       </header>
 
       <div style={styles.programs}>
-        {sortedPrograms.map(prog => (
-          <ProgramCard
+        {programs.map(prog => (
+          <ProgramCardWithFav
             key={prog.slug}
-            id={prog.slug}
-            title={prog.title}
-            tags={prog.tags}
-            available={prog.available}
-            comingSoon={prog.comingSoon}
+            prog={prog}
+            isFav={favoriteSlug === prog.slug}
+            onFavTap={() => handleFavoriteTap(prog.slug)}
           />
         ))}
       </div>
@@ -137,4 +137,256 @@ const styles = {
   },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
+}
+
+const PROGRAM_EMOJI = { split: '🏋️' }
+const DEFAULT_EMOJI = '💪'
+
+function ProgramCardWithFav({ prog, isFav, onFavTap }) {
+  const navigate = useNavigate()
+  const [activeDay, setActiveDay] = useState(null)
+
+  useEffect(() => {
+    if (!prog.available) return
+    let cancelled = false
+    getActiveDay(prog.slug).then(d => {
+      if (!cancelled) setActiveDay(d)
+    })
+    return () => { cancelled = true }
+  }, [prog.slug, prog.available])
+
+  const handleCardTap = () => {
+    if (!prog.available) return
+    haptic.light()
+    const day = activeDay || 'A'
+    setTimeout(() => navigate(`/workout/${prog.slug}/${day}`), 80)
+  }
+
+  const allDays = ['A', 'B', 'C']
+  const formattedTitle = prog.title
+    ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
+    : ''
+  const emoji = PROGRAM_EMOJI[prog.slug] || DEFAULT_EMOJI
+
+  return (
+    <div
+      onClick={handleCardTap}
+      className={prog.available ? 'press-tile' : ''}
+      style={{
+        ...cardStyles.card,
+        opacity: prog.available ? 1 : 0.55,
+        cursor: prog.available ? 'pointer' : 'default'
+      }}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); if (prog.available) onFavTap() }}
+        style={{ ...cardStyles.favButton, opacity: prog.available ? 1 : 0.4 }}
+        aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+      >
+        <HeartIcon filled={isFav} />
+      </button>
+
+      <span style={cardStyles.emoji}>{emoji}</span>
+
+      <div style={cardStyles.content}>
+        <div style={cardStyles.cardTitle}>{formattedTitle}</div>
+
+        {prog.available && (
+          <div style={cardStyles.daysRow}>
+            <span style={cardStyles.daysLabel}>День:</span>
+            <div style={cardStyles.daysList}>
+              {allDays.map(d => {
+                const isToday = !!activeDay && d === activeDay
+                return (
+                  <span key={d} style={{
+                    ...cardStyles.dayLetter,
+                    color: isToday ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.35)',
+                    textShadow: isToday ? '0 0 6px rgba(158, 209, 83, 0.4)' : 'none'
+                  }}>
+                    {d}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {prog.tags && prog.tags.length > 0 && (
+          <div style={cardStyles.tags}>
+            {prog.tags.map(tag => {
+              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+              return (
+                <span key={tag} style={{ ...cardStyles.tag, background: getTagColor(tag) }}>
+                  {ft}
+                </span>
+              )
+            })}
+            {prog.comingSoon && <span style={cardStyles.soonTag}>Скоро</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function HeartIcon({ filled }) {
+  const color = filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.3)'
+  if (filled) {
+    return (
+      <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+        <rect x="2" y="3" width="3" height="2" fill={color} />
+        <rect x="11" y="3" width="3" height="2" fill={color} />
+        <rect x="1" y="5" width="5" height="2" fill={color} />
+        <rect x="10" y="5" width="5" height="2" fill={color} />
+        <rect x="6" y="5" width="4" height="2" fill={color} />
+        <rect x="1" y="7" width="14" height="2" fill={color} />
+        <rect x="2" y="9" width="12" height="2" fill={color} />
+        <rect x="3" y="11" width="10" height="1" fill={color} />
+        <rect x="4" y="12" width="8" height="1" fill={color} />
+        <rect x="5" y="13" width="6" height="1" fill={color} />
+        <rect x="6" y="14" width="4" height="1" fill={color} />
+        <rect x="7" y="15" width="2" height="1" fill={color} />
+      </svg>
+    )
+  }
+  return (
+    <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+      <rect x="2" y="3" width="3" height="1" fill={color} />
+      <rect x="11" y="3" width="3" height="1" fill={color} />
+      <rect x="1" y="4" width="1" height="1" fill={color} />
+      <rect x="5" y="4" width="1" height="1" fill={color} />
+      <rect x="10" y="4" width="1" height="1" fill={color} />
+      <rect x="14" y="4" width="1" height="1" fill={color} />
+      <rect x="1" y="5" width="1" height="2" fill={color} />
+      <rect x="14" y="5" width="1" height="2" fill={color} />
+      <rect x="6" y="5" width="1" height="1" fill={color} />
+      <rect x="9" y="5" width="1" height="1" fill={color} />
+      <rect x="7" y="6" width="2" height="1" fill={color} />
+      <rect x="1" y="7" width="1" height="1" fill={color} />
+      <rect x="14" y="7" width="1" height="1" fill={color} />
+      <rect x="2" y="8" width="1" height="1" fill={color} />
+      <rect x="13" y="8" width="1" height="1" fill={color} />
+      <rect x="3" y="9" width="1" height="1" fill={color} />
+      <rect x="12" y="9" width="1" height="1" fill={color} />
+      <rect x="3" y="10" width="1" height="1" fill={color} />
+      <rect x="12" y="10" width="1" height="1" fill={color} />
+      <rect x="4" y="11" width="1" height="1" fill={color} />
+      <rect x="11" y="11" width="1" height="1" fill={color} />
+      <rect x="5" y="12" width="1" height="1" fill={color} />
+      <rect x="10" y="12" width="1" height="1" fill={color} />
+      <rect x="6" y="13" width="1" height="1" fill={color} />
+      <rect x="9" y="13" width="1" height="1" fill={color} />
+      <rect x="7" y="14" width="2" height="1" fill={color} />
+    </svg>
+  )
+}
+
+function getTagColor(tag) {
+  const t = tag.toLowerCase()
+  if (t === 'зал') return 'var(--tag-gym)'
+  if (t === 'дом') return 'var(--tag-home)'
+  if (t === 'улица') return 'var(--tag-outdoor)'
+  return 'var(--color-text-secondary)'
+}
+
+const cardStyles = {
+  card: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '16px 18px',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    width: '100%',
+    minHeight: '100px',
+    textAlign: 'left'
+  },
+  favButton: {
+    position: 'absolute',
+    top: '14px',
+    right: '14px',
+    width: '28px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    transition: 'transform 0.15s ease',
+    zIndex: 2,
+    padding: 0
+  },
+  emoji: {
+    fontSize: '34px',
+    lineHeight: 1,
+    flexShrink: 0,
+    width: '48px',
+    textAlign: 'center'
+  },
+  content: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    paddingRight: '36px'
+  },
+  cardTitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '18px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    letterSpacing: '0.3px',
+    lineHeight: 1.1
+  },
+  daysRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '10px'
+  },
+  daysLabel: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '14px',
+    color: 'rgba(255, 255, 255, 0.35)',
+    letterSpacing: '1px'
+  },
+  daysList: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '14px'
+  },
+  dayLetter: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '17px',
+    lineHeight: 1,
+    transition: 'color 0.3s ease, text-shadow 0.3s ease'
+  },
+  tags: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+    alignItems: 'center'
+  },
+  tag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    borderRadius: '6px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'var(--color-bg)',
+    letterSpacing: '0.3px'
+  },
+  soonTag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: '6px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.3px'
+  }
 }

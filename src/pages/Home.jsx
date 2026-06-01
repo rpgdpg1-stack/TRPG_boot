@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import { useEffect, useState } from 'react'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
+import { getFavoritePrograms, getActiveDay } from '../lib/storage'
+import { getProgramBySlug } from '../features/programs/registry'
 
 /**
  * Главная — Тренировки.
@@ -17,10 +20,31 @@ import DailyQuests from '../components/DailyQuests'
  */
 export default function Home() {
   const navigate = useNavigate()
+  const [favorites, setFavorites] = useState([]) // массив { prog, categoryId }
+  const [favIdx, setFavIdx] = useState(0)        // текущий слайд
 
   useEffect(() => {
     backButton.hide()
     lockVerticalSwipes()
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getFavoritePrograms().then(async favMap => {
+      if (cancelled) return
+      const entries = []
+      for (const [categoryId, slug] of Object.entries(favMap)) {
+        const prog = getProgramBySlug(slug)
+        if (!prog) continue
+        const activeDay = await getActiveDay(slug)
+        entries.push({ prog, categoryId, activeDay })
+      }
+      if (!cancelled) {
+        setFavorites(entries)
+        setFavIdx(0)
+      }
+    })
+    return () => { cancelled = true }
   }, [])
 
   const categories = [
@@ -83,6 +107,52 @@ export default function Home() {
       <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
       <DailyQuests />
 
+      {/* Избранные тренировки */}
+      <div style={styles.sectionHeader}>ИЗБРАННЫЕ ТРЕНИРОВКИ ❤️</div>
+      {favorites.length === 0 ? (
+        <div style={styles.favEmpty}>
+          Поставь ❤️ на программу внутри категории — она появится здесь
+        </div>
+      ) : (
+        <div style={styles.favSlider}>
+          <FavCard
+            entry={favorites[favIdx]}
+            onTap={() => {
+              haptic.light()
+              const day = favorites[favIdx].activeDay || 'A'
+              setTimeout(() => navigate(`/workout/${favorites[favIdx].prog.slug}/${day}`), 80)
+            }}
+          />
+          {favorites.length > 1 && (
+            <div style={styles.favDots}>
+              {favorites.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => { haptic.light(); setFavIdx(i) }}
+                  style={{
+                    ...styles.favDot,
+                    background: i === favIdx ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
+                    width: i === favIdx ? '16px' : '6px'
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {favorites.length > 1 && (
+            <div style={styles.favArrows}>
+              <button
+                onClick={() => { haptic.light(); setFavIdx(i => (i - 1 + favorites.length) % favorites.length) }}
+                style={styles.favArrowBtn}
+              >‹</button>
+              <button
+                onClick={() => { haptic.light(); setFavIdx(i => (i + 1) % favorites.length) }}
+                style={styles.favArrowBtn}
+              >›</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Заголовок тренировок — такой же стиль */}
       <div style={styles.sectionHeader}>ТРЕНИРОВКИ</div>
 
@@ -118,6 +188,94 @@ export default function Home() {
       </div>
     </div>
   )
+}
+
+const PROGRAM_EMOJI = { split: '🏋️' }
+
+function FavCard({ entry, onTap }) {
+  if (!entry) return null
+  const { prog, activeDay } = entry
+  const allDays = ['A', 'B', 'C']
+  const formattedTitle = prog.title
+    ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
+    : ''
+  const emoji = PROGRAM_EMOJI[prog.slug] || '💪'
+
+  return (
+    <div onClick={onTap} className="press-tile" style={favCardStyles.card}>
+      <span style={favCardStyles.emoji}>{emoji}</span>
+      <div style={favCardStyles.content}>
+        <div style={favCardStyles.title}>{formattedTitle}</div>
+        <div style={favCardStyles.daysRow}>
+          <span style={favCardStyles.daysLabel}>День:</span>
+          <div style={favCardStyles.daysList}>
+            {allDays.map(d => {
+              const isToday = !!activeDay && d === activeDay
+              return (
+                <span key={d} style={{
+                  ...favCardStyles.dayLetter,
+                  color: isToday ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
+                  textShadow: isToday ? '0 0 6px rgba(158,209,83,0.4)' : 'none'
+                }}>
+                  {d}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+        {prog.tags && prog.tags.length > 0 && (
+          <div style={favCardStyles.tags}>
+            {prog.tags.map(tag => {
+              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+              const bg = tag.toLowerCase() === 'зал' ? 'var(--tag-gym)'
+                       : tag.toLowerCase() === 'дом' ? 'var(--tag-home)'
+                       : 'var(--tag-outdoor)'
+              return <span key={tag} style={{ ...favCardStyles.tag, background: bg }}>{ft}</span>
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const favCardStyles = {
+  card: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '16px 18px',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    width: '100%',
+    minHeight: '100px',
+    cursor: 'pointer',
+    border: '1px solid rgba(158, 209, 83, 0.2)'
+  },
+  emoji: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
+  content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
+  title: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '18px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    letterSpacing: '0.3px',
+    lineHeight: 1.1
+  },
+  daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  daysLabel: { fontFamily: 'var(--font-tiny5)', fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
+  daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
+  dayLetter: { fontFamily: 'var(--font-tiny5)', fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
+  tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  tag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    borderRadius: '6px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'var(--color-bg)'
+  }
 }
 
 const styles = {
@@ -169,5 +327,52 @@ const styles = {
   categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.5px', lineHeight: 1.1 },
   categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '8px' },
   soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-tiny5)', fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
-  categoryArrow: { fontSize: '24px', color: 'var(--color-text-secondary)', flexShrink: 0 }
+  categoryArrow: { fontSize: '24px', color: 'var(--color-text-secondary)', flexShrink: 0 },
+
+  favEmpty: {
+    padding: '16px 18px',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px dashed rgba(255,255,255,0.1)',
+    borderRadius: 'var(--radius-card)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    lineHeight: 1.5
+  },
+  favSlider: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  favDots: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  favDot: {
+    height: '6px',
+    borderRadius: '3px',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    transition: 'width 0.25s ease, background 0.25s ease'
+  },
+  favArrows: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '8px'
+  },
+  favArrowBtn: {
+    flex: 1,
+    padding: '10px',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '14px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '22px',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer'
+  }
 }
