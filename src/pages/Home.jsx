@@ -1,7 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
-import { useEffect, useState } from 'react'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getFavoritePrograms, getActiveDay } from '../lib/storage'
