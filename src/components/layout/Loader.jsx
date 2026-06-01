@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import UiIcon from '../UiIcon'
 
 /**
  * Стартовый экран загрузки.
@@ -76,7 +77,9 @@ export default function Loader({ onFinish, readyPromise }) {
   return (
     <div style={styles.container}>
       <div ref={sceneRef} style={styles.scene}>
-        <div style={styles.biceps} role="img" aria-label="biceps">💪</div>
+        <div style={styles.biceps} role="img" aria-label="biceps">
+          <UiIcon name="muscles" size={77} color="#FADFBE" />
+        </div>
         <div style={styles.plusOne}>+1</div>
       </div>
 
@@ -138,8 +141,6 @@ const styles = {
     display: 'block',
     animation: 'flexBiceps 1.8s ease-in-out infinite',
     transformOrigin: '60% 85%',
-    filter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
-    WebkitFilter: 'sepia(0.25) saturate(0.85) brightness(1.05) contrast(1.02)',
     position: 'relative',
     zIndex: 2
   },
