@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RANK_NAMES, IMMORTAL, IMMORTAL_START_LEVEL, LEVELS_PER_RANK, XP_PER_LEVEL } from '../lib/levels'
 import RankIcon from './RankIcon'
+import MuscleIcon from './MuscleIcon'
 
 /**
  * Попап со всеми рангами.
@@ -140,7 +141,9 @@ function RankRow({ row, onClose }) {
           <span key={i} style={{ ...styles.dot, color: i < filledDots ? dotColor : 'rgba(255,255,255,0.15)' }}>●</span>
         ))}
       </span>
-      <span style={{ ...styles.xp, color: xpColor, opacity: isPassed ? 0.5 : 1 }}>{xpRange} 💪</span>
+      <span style={{ ...styles.xp, color: xpColor, opacity: isPassed ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+        {xpRange} <MuscleIcon size={11} earned={isCurrent || isPassed} />
+      </span>
     </div>
   )
 }

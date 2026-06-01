@@ -12,6 +12,6 @@ import UiIcon from './UiIcon'
  * earned (bool) — короткий способ выбрать зелёный/серый без ручного color.
  */
 export default function MuscleIcon({ size = 16, color, earned = true, style }) {
-  const finalColor = color || (earned ? 'var(--color-primary)' : 'var(--color-text-secondary)')
+  const finalColor = color || (earned ? '#FADFBE' : 'var(--color-text-secondary)')
   return <UiIcon name="muscles" size={size} color={finalColor} style={style} />
 }

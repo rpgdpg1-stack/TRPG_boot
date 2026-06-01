@@ -9,6 +9,7 @@ import { getCurrentSeason, getDaysUntilSeasonEnd, formatSeasonEndDate } from '..
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
 import RankIcon from '../components/RankIcon'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран рейтинга.
@@ -192,11 +193,10 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_FRIENDS)}
           style={{
             ...styles.tab,
-            ...styles.tabLeague,
             color: activeTab === TAB_FRIENDS ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          <span>ДРУЗЬЯ</span>
+          ДРУЗЬЯ
           {activeTab === TAB_FRIENDS && <div style={styles.tabUnderline} />}
         </button>
 
@@ -204,26 +204,29 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_LEAGUE)}
           style={{
             ...styles.tab,
-            ...styles.tabLeague,
             color: activeTab === TAB_LEAGUE ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          <span>ЛИГА</span>
-          {leagueNameForTab && myLeague && (
-            <span style={styles.tabLeagueName}>
-              <RankIcon
-                rankIndex={myLeague.rankIndex}
-                size={13}
-                color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
-              />
-              <span style={{
-                color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
-                transition: 'color 0.25s ease'
-              }}>
-                {leagueNameForTab}
-              </span>
-            </span>
-          )}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+            ЛИГА
+            {leagueNameForTab && myLeague && (
+              <>
+                {' ('}
+                <RankIcon
+                  rankIndex={myLeague.rankIndex}
+                  size={13}
+                  color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
+                />
+                <span style={{
+                  color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
+                  transition: 'color 0.25s ease'
+                }}>
+                  {leagueNameForTab}
+                </span>
+                {')'}
+              </>
+            )}
+          </span>
           {activeTab === TAB_LEAGUE && <div style={styles.tabUnderline} />}
         </button>
       </div>
@@ -262,13 +265,14 @@ export default function Leaderboard() {
 
       {showInviteCTA && !loading && (
         <div style={styles.inviteBlock}>
-          <div style={styles.inviteEmoji}>👥</div>
+          <div style={styles.inviteEmoji}><UiIcon name="invite-friend" size={40} color="var(--color-primary)" /></div>
           <div style={styles.inviteTitle}>Друзей пока нет</div>
           <div style={styles.inviteSubtitle}>
             Пригласи друзей через Telegram, соревнуйтесь<br />
             кто больше прокачается за сезон
           </div>
-          <button onClick={handleInviteTap} style={styles.inviteButton}>
+          <button onClick={handleInviteTap} style={{ ...styles.inviteButton, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <UiIcon name="invite-friend" size={16} color="#0D0C0C" />
             ПРИГЛАСИТЬ ДРУГА
           </button>
         </div>
@@ -276,8 +280,9 @@ export default function Leaderboard() {
 
       {activeTab === TAB_FRIENDS && !showInviteCTA && !loading && (
         <div style={styles.bottomInvite}>
-          <button onClick={handleInviteTap} style={styles.inviteButtonSecondary}>
-            👥 Пригласить ещё друга
+          <button onClick={handleInviteTap} style={{ ...styles.inviteButtonSecondary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <UiIcon name="invite-friend" size={16} color="var(--color-primary)" />
+            Пригласить ещё друга
           </button>
         </div>
       )}
@@ -437,20 +442,7 @@ const styles = {
     overflow: 'hidden',
     textOverflow: 'ellipsis'
   },
-  // Таб лиги двухстрочный: "ЛИГА" сверху, иконка+название снизу
-  tabLeague: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '4px'
-  },
-  tabLeagueName: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    fontSize: '12px',
-    letterSpacing: '1px'
-  },
+  
   tabUnderline: {
     position: 'absolute',
     left: '20%',
