@@ -308,7 +308,7 @@ const favCardStyles = {
 
 const styles = {
   page: {
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    paddingTop: 0,
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '24px'
@@ -320,7 +320,9 @@ const styles = {
     top: 0,
     zIndex: 20,
     background: 'var(--color-bg)',
-    paddingTop: '4px',
+    // Верхний отступ под системную панель Telegram теперь здесь, а не на
+    // page — чтобы блок сразу прилипал на своё место без "пробега" вверх.
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
     paddingBottom: '12px'
   },
   // Скроллящаяся часть. Отступ сверху не нужен — его даёт paddingBottom
