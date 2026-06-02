@@ -104,10 +104,14 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Игрок — без sticky, скроллится со всем контентом */}
-      <div style={styles.playerSection}>
+      {/* Игрок — закреплён сверху (sticky). Плашки аватара и XP/стрик
+          не уезжают при скролле, остальное листается под ними. */}
+      <div style={styles.playerSticky}>
         <PlayerCard />
       </div>
+
+      {/* Скроллящийся контент под закреплённым игроком */}
+      <div style={styles.scrollSection}>
 
       {/* Дневной буст */}
       <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
@@ -206,6 +210,8 @@ export default function Home() {
             <div style={styles.categoryArrow}>›</div>
           </button>
         ))}
+      </div>
+
       </div>
     </div>
   )
@@ -307,9 +313,20 @@ const styles = {
     paddingRight: '16px',
     paddingBottom: '24px'
   },
-  playerSection: {
+  // Закреплённый блок игрока сверху. Фон страницы, чтобы контент при
+  // скролле уезжал под него без просвета.
+  playerSticky: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    background: 'var(--color-bg)',
     paddingTop: '4px',
-    paddingBottom: '20px'
+    paddingBottom: '12px'
+  },
+  // Скроллящаяся часть. Отступ сверху не нужен — его даёт paddingBottom
+  // у playerSticky (12px = как gap между плашками внутри PlayerCard).
+  scrollSection: {
+    position: 'relative'
   },
   // Единый стиль для заголовков секций
   sectionHeader: {
