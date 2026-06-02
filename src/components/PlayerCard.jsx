@@ -529,10 +529,13 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.015)',
     borderRadius: 'var(--radius-card)'
   },
-  // Обёртка нижнего ряда (XP + стрик) на всю ширину с отступами от краёв
+  // Плашка нижнего ряда (XP + стрик) — как верхняя плашка, фон чуть светлее
+  // (ближе к карточке дейли-буста), скругления, без обводки.
   bottomRowWrap: {
     position: 'relative',
-    padding: '0 6px'
+    padding: '12px 14px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 'var(--radius-card)'
   },
   // Аватар-обёртка (кнопка)
   avatarWrap: {

@@ -38,14 +38,14 @@ export default function MuscleIcon({ size = 16, color, earned = true, flex = fal
       <style>{`
         @keyframes muscleFlexOnce {
           0%   { transform: rotate(0deg) scale(1); }
-          45%  { transform: rotate(9deg) scale(1.05); }
-          55%  { transform: rotate(9deg) scale(1.05); }
+          45%  { transform: rotate(9deg) scale(1.22); }
+          55%  { transform: rotate(9deg) scale(1.22); }
           100% { transform: rotate(0deg) scale(1); }
         }
         @keyframes muscleFlexLoop {
           0%, 88%, 100% { transform: rotate(0deg) scale(1); }
-          93%  { transform: rotate(9deg) scale(1.05); }
-          96%  { transform: rotate(9deg) scale(1.05); }
+          93%  { transform: rotate(9deg) scale(1.22); }
+          96%  { transform: rotate(9deg) scale(1.22); }
         }
       `}</style>
     </span>

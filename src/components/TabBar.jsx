@@ -20,6 +20,8 @@ export default function TabBar() {
 
   // Тик для разового "флекса" бицепса на кнопке Тренировки при каждом нажатии.
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
+  // Тик для "pop"-увеличения иконки профиля при тапе.
+  const [profilePopTick, setProfilePopTick] = useState(0)
 
   // Прячем таб-бар на экранах тренировки и замены упражнений
   const isHiddenOnPath =
@@ -63,14 +65,22 @@ export default function TabBar() {
 
   const handleTap = (tab) => {
     haptic.light()
-    // Бицепс флексит при каждом тапе на "Тренировки" (даже если уже активна).
+    // Анимации при каждом тапе (даже если вкладка уже активна).
     if (tab.id === 'workouts') setMuscleFlexTick(t => t + 1)
+    if (tab.id === 'profile') setProfilePopTick(t => t + 1)
     if (!tab.canTap) return
     navigate(tab.path)
   }
 
   return (
     <nav style={styles.tabbar}>
+      <style>{`
+        @keyframes tabIconPop {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.28); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
       {tabs.map(tab => (
         <button
           key={tab.id}
@@ -97,6 +107,20 @@ export default function TabBar() {
                 color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
                 flexTrigger={muscleFlexTick}
               />
+            ) : tab.id === 'profile' ? (
+              <span
+                key={`profilepop-${profilePopTick}`}
+                style={{
+                  display: 'inline-flex',
+                  animation: profilePopTick ? 'tabIconPop 0.4s ease-out' : 'none'
+                }}
+              >
+                <UiIcon
+                  name="profile"
+                  size={32}
+                  color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+                />
+              </span>
             ) : tab.iconName ? (
               <UiIcon
                 name={tab.iconName}
@@ -154,6 +178,10 @@ const styles = {
   icon: {
     fontSize: '30px',
     lineHeight: 1,
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transition: 'opacity 0.25s ease, filter 0.25s ease'
   },
   label: {
