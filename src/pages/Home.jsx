@@ -109,10 +109,14 @@ export default function Home() {
         <PlayerCard />
       </div>
 
+      {/* Дневной буст */}
+      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
+      <DailyQuests />
+
       {/* Избранное */}
       <div style={styles.sectionHeaderRow}>
         <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
-        <span style={{ display: 'inline-flex', marginTop: '-1px' }}>
+        <span style={{ display: 'inline-flex', marginLeft: '-2px', marginTop: '1px' }}>
           <PixelHeart filled={favorites.length > 0} size={15} />
         </span>
       </div>
@@ -169,10 +173,6 @@ export default function Home() {
           )}
         </div>
       )}
-
-      {/* Дневной буст — теперь под избранным */}
-      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
-      <DailyQuests />
 
       {/* Заголовок разделов — такой же стиль */}
       <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
@@ -350,7 +350,6 @@ const styles = {
     alignItems: 'center',
     gap: '14px',
     padding: '0 18px',
-    background: 'transparent',
     width: '100%',
     height: '68px',
     textAlign: 'left',
