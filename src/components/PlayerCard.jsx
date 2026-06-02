@@ -48,11 +48,15 @@ function formatSourceLabel(source) {
 export default function PlayerCard() {
   const navigate = useNavigate()
 
-  // Стартуем сразу из текущего юзера (он уже авторизован к моменту главной),
-  // чтобы рамка ранга не моргала дефолтным зелёным Новичком пока грузится XP.
-  const [user, setUser] = useState(() => getUser())
+  // Стартуем из кешированного юзера (auth.js поднимает его из localStorage),
+  // чтобы данные показались сразу — без мигания Новичком и без зависания
+  // при плохой сети. getUser() (Telegram SDK) как запасной источник фото/имени.
+  const [user, setUser] = useState(() => getCurrentUser() || getUser())
   const [xp, setXP] = useState(() => getCurrentUser()?.total_muscles || 0)
-  const [weeklyStreak, setWeeklyStreak] = useState(0)
+  const [weeklyStreak, setWeeklyStreak] = useState(() => {
+    const u = getCurrentUser()
+    return u?.weekly_streak || 0
+  })
   const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
@@ -82,7 +86,9 @@ export default function PlayerCard() {
   const streakAutoCloseTimer = useRef(null)
 
   useEffect(() => {
-    setUser(getUser())
+    // Telegram-данные (фото/имя) если есть — иначе остаётся кешированный юзер.
+    const tgUser = getUser()
+    if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
 
     const loadData = () => {
       Promise.all([

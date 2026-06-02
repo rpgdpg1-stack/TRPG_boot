@@ -12,13 +12,33 @@ import { supabase } from './supabase'
 import { getUser as getTelegramUser } from './telegram'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
+import { localGet, localSet } from '../utils/storage'
 
-let currentUser = null
+const CACHED_USER_KEY = 'cached-user'
+
+// При старте сразу поднимаем последнего известного юзера из localStorage,
+// чтобы UI показал актуальные данные (мускулы, ранг) мгновенно, даже без
+// сети — без мигания дефолтным Новичком.
+let currentUser = (() => {
+  const raw = localGet(CACHED_USER_KEY)
+  if (!raw) return null
+  try { return JSON.parse(raw) } catch { return null }
+})()
+
 let authPromise = null
 let authState = 'pending' // 'pending' | 'no-telegram' | 'ok' | 'error'
 
 export function getCurrentUser() {
   return currentUser
+}
+
+/**
+ * Сохранить юзера в localStorage (кеш для мгновенного старта без мигания).
+ */
+function cacheUser(user) {
+  if (user) {
+    localSet(CACHED_USER_KEY, JSON.stringify(user))
+  }
 }
 
 export function getAuthState() {
@@ -33,7 +53,6 @@ export async function ensureAuth() {
 
   authPromise = (async () => {
     const tgUser = getTelegramUser()
-    const devMode = localStorage.getItem('dev_mode') === 'true'
 
     let telegramId, firstName, username, photoUrl
 
@@ -43,15 +62,11 @@ export async function ensureAuth() {
       username = tgUser.username || null
       photoUrl = tgUser.photo_url || null
       console.log('[auth] Telegram user found:', telegramId)
-    } else if (devMode) {
-      telegramId = 999999999
-      firstName = 'Dev User'
-      username = null
-      photoUrl = null
-      console.log('[auth] Dev mode active, using fixed dev ID:', telegramId)
     } else {
+      // Нет данных Telegram — вход невозможен (dev-режим убран).
+      // Веб-вход через почту появится позже как отдельный провайдер.
       authState = 'no-telegram'
-      console.warn('[auth] Telegram user data not available. Open through Telegram or enable dev mode.')
+      console.warn('[auth] Telegram user data not available. Open through Telegram.')
       return null
     }
 
@@ -70,6 +85,7 @@ export async function ensureAuth() {
     }
 
     currentUser = data
+    cacheUser(currentUser)
     authState = 'ok'
     console.log('[auth] Authorized as:', currentUser)
     emit(EVENTS.USER_READY, currentUser)
@@ -119,6 +135,7 @@ export async function refreshCurrentUser() {
   }
 
   currentUser = data
+  cacheUser(currentUser)
   emit(EVENTS.USER_CHANGED, currentUser)
   return currentUser
 }
@@ -128,5 +145,6 @@ export async function refreshCurrentUser() {
  */
 export function setCurrentUser(user) {
   currentUser = user
+  cacheUser(currentUser)
   emit(EVENTS.USER_CHANGED, currentUser)
 }
