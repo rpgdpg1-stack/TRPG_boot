@@ -219,15 +219,15 @@ export default function PlayerCard() {
   return (
     <div style={styles.container}>
 
-      <div style={styles.mainRow}>
+      {/* Верхняя плашка: аватар + имя/ранг/рейтинг, полупрозрачный фон,
+          скругления, без обводки. Контент по центру относительно аватара. */}
+      <div style={styles.topPanel}>
 
         <button
           onClick={handleAvatarTap}
           style={styles.avatarWrap}
           aria-label="Открыть профиль"
         >
-          {/* Внутренний div красит рамку под цвет ранга. Меняем через
-              borderColor на стиль, чтобы переход цвета был плавным при смене ранга. */}
           <div style={{
             ...styles.avatarInner,
             borderColor: rank.color,
@@ -268,7 +268,6 @@ export default function PlayerCard() {
               {rank.name} {rank.subLevel}
             </button>
 
-            {/* Место среди друзей — клик ведёт на рейтинг */}
             <button
               onClick={handlePlaceTap}
               style={styles.friendsPlaceButton}
@@ -284,9 +283,11 @@ export default function PlayerCard() {
               />
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Ряд: XP-бар + огонёк со стриком в одной строке.
-              XP-бар занимает оставшееся место (flex 1), огонёк фиксированной ширины справа. */}
+      {/* Нижний ряд: XP-бар на всю ширину + огонёк-стрик справа */}
+      <div style={styles.bottomRowWrap}>
           <div style={styles.bottomRow}>
             <div style={styles.xpBlock}>
               <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
@@ -368,7 +369,6 @@ export default function PlayerCard() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       <style>{`
@@ -515,13 +515,24 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     padding: '8px 4px 4px',
-    position: 'relative'
+    position: 'relative',
+    gap: '12px'
   },
-  mainRow: {
+  // Верхняя плашка: полупрозрачный фон, скругления, без обводки.
+  // Чуть прозрачнее чем карточка дейли-квеста.
+  topPanel: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '16px'
+    gap: '16px',
+    padding: '12px 14px',
+    background: 'rgba(255, 255, 255, 0.015)',
+    borderRadius: 'var(--radius-card)'
+  },
+  // Обёртка нижнего ряда (XP + стрик) на всю ширину с отступами от краёв
+  bottomRowWrap: {
+    position: 'relative',
+    padding: '0 6px'
   },
   // Аватар-обёртка (кнопка)
   avatarWrap: {
@@ -564,7 +575,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignSelf: 'center'
   },
   nameRow: {
     display: 'flex',
@@ -616,13 +628,12 @@ const styles = {
     cursor: 'pointer',
     transition: 'background 0.2s ease, border-color 0.2s ease'
   },
-  // Ряд под рангом: XP-бар занимает всё, огонёк + цифра справа
+  // Ряд: XP-бар занимает всё, огонёк + цифра справа. На всю ширину.
   bottomRow: {
     width: '100%',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginTop: '2px'
+    gap: '10px'
   },
   xpBlock: {
     flex: 1,
