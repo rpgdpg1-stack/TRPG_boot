@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory } from '../features/programs/registry'
+import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 import ProgramCard from '../components/ProgramCard'
 
@@ -199,7 +200,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
         {prog.available && prog.kind === 'swim' && (
           <div style={cardStyles.daysRow}>
             <span style={cardStyles.daysLabel}>
-              {prog.data.durationMin} мин · {prog.data.blocks.reduce((s, b) => s + b.swims.reduce((x, w) => x + w.meters, 0), 0)} м
+              {prog.data.durationMin} мин · {swimTotalMeters()} м
             </span>
           </div>
         )}

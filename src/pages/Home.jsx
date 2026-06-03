@@ -5,6 +5,7 @@ import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
+import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 import UiIcon from '../components/UiIcon'
 
@@ -243,7 +244,7 @@ function FavCard({ entry, onTap }) {
         {prog.kind === 'swim' ? (
           <div style={favCardStyles.daysRow}>
             <span style={favCardStyles.daysLabel}>
-              {prog.data.durationMin} мин · {prog.data.blocks.reduce((s, b) => s + b.swims.reduce((x, w) => x + w.meters, 0), 0)} м
+              {prog.data.durationMin} мин · {swimTotalMeters()} м
             </span>
           </div>
         ) : (
