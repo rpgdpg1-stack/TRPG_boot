@@ -2,22 +2,30 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
-import { getLeagueByMuscles } from '../lib/leagues'
+import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
+import { backupUser, getUserPublicProfile, BACKUP_BONUS } from '../lib/backups'
 import { getCurrentSeason, getDaysUntilSeasonEnd, formatSeasonEndDate } from '../utils/season'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
 import ProfileHeader from '../components/ProfileHeader'
+import BackupSentToast from '../components/rewards/BackupSentToast'
 import RankIcon from '../components/RankIcon'
 import UiIcon from '../components/UiIcon'
+import MuscleIcon from '../components/MuscleIcon'
 
 /**
  * Экран рейтинга.
  *
- * Тап по строке открывает модалку с профилем игрока (ProfileHeader в режиме
- * просмотра): крупный аватар, ранг, место, мускулы. Логин телеги скрыт,
- * капсулы без попапов — только визуал.
+ * Тап по строке → модалка профиля игрока (ProfileHeader в режиме просмотра):
+ * крупный аватар, ранг, место, мускулы, последняя тренировка (серым).
+ * Логин телеги скрыт, капсулы без попапов.
+ *
+ * Внизу модалки для ЧУЖОГО игрока — кнопка "Подстраховать +100 💪".
+ * После успеха — BackupSentToast (+20 тебе за поддержку).
+ *
+ * У строк рейтинга аватар обведён рамкой в цвет лиги (rank_index).
  */
 
 const TAB_FRIENDS = 'friends'
@@ -35,6 +43,7 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true)
   const [showRules, setShowRules] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState(null)
+  const [sentToast, setSentToast] = useState(null) // { targetName } | null
 
   const user = getCurrentUser()
   const myLeague = user ? getLeagueByMuscles(user.total_muscles || 0) : null
@@ -99,6 +108,11 @@ export default function Leaderboard() {
   const handleRowTap = (row) => {
     haptic.light()
     setSelectedProfile(row)
+  }
+
+  const handleBackupDone = (targetName) => {
+    setSelectedProfile(null)
+    setSentToast({ targetName })
   }
 
   const buildSelfRow = () => {
@@ -269,36 +283,104 @@ export default function Leaderboard() {
       {showRules && <RulesModal onClose={() => setShowRules(false)} season={season} />}
 
       {selectedProfile && (
-        <ProfileModal row={selectedProfile} onClose={() => setSelectedProfile(null)} />
+        <ProfileModal
+          row={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+          onBackupDone={handleBackupDone}
+        />
+      )}
+
+      {sentToast && (
+        <BackupSentToast
+          targetName={sentToast.targetName}
+          bonus={BACKUP_BONUS}
+          onConfirm={() => setSentToast(null)}
+        />
       )}
     </div>
   )
 }
 
 /**
- * Модалка профиля игрока из рейтинга. Показывает ProfileHeader в режиме
- * просмотра: логин скрыт, капсулы без попапов. Для чужих юзеров известны
- * только мускулы и место — серия/тренировки показываются как «—».
+ * Модалка профиля игрока из рейтинга. ProfileHeader в режиме просмотра.
+ * Подгружает публичный профиль (последняя тренировка, стрик).
+ * Для чужого игрока — кнопка "Подстраховать".
  */
-function ProfileModal({ row, onClose }) {
-  const user = {
+function ProfileModal({ row, onClose, onBackupDone }) {
+  const me = getCurrentUser()
+  const isSelf = me && row.user_id === me.id
+
+  const [pub, setPub] = useState(null)
+  const [backupState, setBackupState] = useState('idle') // 'idle' | 'sending' | 'done' | 'already'
+
+  useEffect(() => {
+    let cancelled = false
+    getUserPublicProfile(row.user_id).then(data => {
+      if (!cancelled) setPub(data)
+    })
+    return () => { cancelled = true }
+  }, [row.user_id])
+
+  const userObj = {
     first_name: row.first_name,
     username: row.username,
     photo_url: row.photo_url
   }
 
+  const handleBackup = async () => {
+    if (backupState !== 'idle') return
+    haptic.medium()
+    setBackupState('sending')
+
+    const result = await backupUser(row.user_id)
+    if (result.success) {
+      haptic.success()
+      onBackupDone?.(row.first_name || 'Игрок')
+    } else if (result.error === 'already_today') {
+      setBackupState('already')
+    } else {
+      haptic.error()
+      setBackupState('idle')
+      window.alert('Не удалось подстраховать. Проверь подключение.')
+    }
+  }
+
+  const buttonText = backupState === 'sending' ? 'ОТПРАВКА...'
+                   : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
+                   : null
+
   return (
     <div style={profileModalStyles.overlay} onClick={onClose}>
       <div style={profileModalStyles.inner} onClick={(e) => e.stopPropagation()}>
         <ProfileHeader
-          user={user}
+          user={userObj}
           xp={row.total_muscles || 0}
-          streak={null}
+          streak={pub?.weekly_streak ?? null}
           totalWorkouts={null}
           friendsPlace={row.place}
+          lastWorkout={pub?.last_workout || null}
           interactive={false}
           showUsername={false}
         />
+
+        {/* Кнопка подстраховки — только для чужого игрока */}
+        {!isSelf && (
+          backupState === 'idle' ? (
+            <button onClick={handleBackup} style={profileModalStyles.backupButton}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                Подстраховать +100 <MuscleIcon size={16} earned={true} />
+              </span>
+            </button>
+          ) : (
+            <button
+              disabled
+              style={{ ...profileModalStyles.backupButton, ...profileModalStyles.backupButtonDisabled }}
+            >
+              {buttonText}
+            </button>
+          )
+        )}
+
         <button onClick={onClose} style={profileModalStyles.close}>ЗАКРЫТЬ</button>
       </div>
 
@@ -333,6 +415,14 @@ function RulesModal({ onClose, season }) {
           <div style={modalStyles.sectionText}>
             В конце сезона мускулы сбрасываются до начала твоей текущей лиги.
             Лига не понижается — ты остаёшься на своём ранге.
+          </div>
+        </div>
+
+        <div style={modalStyles.section}>
+          <div style={modalStyles.sectionTitle}>ПОДСТРАХОВКА</div>
+          <div style={modalStyles.sectionText}>
+            Открой профиль игрока и подстрахуй его — ему +100, тебе +20 за
+            поддержку. Одного игрока можно поддержать раз в сутки.
           </div>
         </div>
 
@@ -566,6 +656,28 @@ const profileModalStyles = {
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
+  backupButton: {
+    width: '100%',
+    padding: '14px',
+    background: 'var(--color-primary)',
+    color: '#0D0C0C',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '1px',
+    borderRadius: '14px',
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+  },
+  backupButtonDisabled: {
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: 'var(--color-text-secondary)',
+    boxShadow: 'none',
+    cursor: 'default',
+    letterSpacing: '0.5px',
+    fontSize: '12px'
+  },
   close: {
     width: '100%',
     padding: '14px',
@@ -601,6 +713,8 @@ const modalStyles = {
   modal: {
     width: '100%',
     maxWidth: '340px',
+    maxHeight: '85vh',
+    overflowY: 'auto',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '24px',

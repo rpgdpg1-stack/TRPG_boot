@@ -15,6 +15,7 @@
  */
 
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
+import { getLeagueByRankIndex } from '../lib/leagues'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
 
@@ -62,8 +63,13 @@ export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) 
         )}
       </div>
 
-      {/* Аватар — мини-версия. Квадрат 40x40, скругление 12 — мягче чем у больших карточек */}
-      <div style={styles.avatarWrap}>
+      {/* Аватар — мини-версия. Квадрат 40x40, скругление 12.
+          Рамка в цвет лиги (rank_index) — по дефолту рамка лиги, позже сюда
+          подставим выбранную в наградах сезонную рамку. */}
+      <div style={{
+        ...styles.avatarWrap,
+        borderColor: getLeagueByRankIndex(level >= 31 ? 10 : Math.floor((level - 1) / 3)).color
+      }}>
         {photo_url ? (
           <img src={photo_url} alt="" style={styles.avatarImg} draggable={false} />
         ) : (
@@ -128,7 +134,8 @@ const styles = {
     overflow: 'hidden',
     background: 'var(--color-card)',
     flexShrink: 0,
-    border: '1px solid rgba(255, 255, 255, 0.08)'
+    border: '2px solid',
+    transition: 'border-color 0.3s ease'
   },
   avatarImg: {
     width: '100%',

@@ -32,10 +32,12 @@ import StreakFlame from './StreakFlame'
  */
 
 const SOURCE_LABELS = {
-  workout: 'Тренировка',
-  quest:   'Дневной буст',
-  streak:  'Бонус за серию',
-  manual:  'Начисление'
+  workout:      'Тренировка',
+  quest:        'Дневной буст',
+  streak:       'Бонус за серию',
+  backup:       'Подстраховка',
+  backup_bonus: 'Поддержка друга',
+  manual:       'Начисление'
 }
 
 function formatSourceLabel(source) {

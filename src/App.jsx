@@ -8,6 +8,7 @@ import ParticlesBg from './components/ParticlesBg'
 import LeagueBadgeModal from './components/rewards/LeagueBadgeModal'
 import SeasonEndModal from './components/rewards/SeasonEndModal'
 import NewSeasonModal from './components/rewards/NewSeasonModal'
+import BackupReceivedModal from './components/rewards/BackupReceivedModal'
 
 import Home from './pages/Home'
 import Category from './pages/Category'
@@ -23,6 +24,7 @@ import ExerciseInfo from './pages/ExerciseInfo'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown } from './lib/rewards'
+import { getPendingBackups, markBackupsShown } from './lib/backups'
 import { loadFavoritesEntries, getActiveDay } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
@@ -163,6 +165,13 @@ function RewardsQueueController() {
     const buildQueue = async () => {
       const items = []
 
+      // Подстраховки — первыми (приятная новость "тебя поддержали" сразу).
+      // Все невыданные показываем ОДНОЙ модалкой-списком (BackupReceivedModal).
+      const pendingBackups = await getPendingBackups()
+      if (pendingBackups?.length) {
+        items.push({ type: 'backups', payload: pendingBackups })
+      }
+
       const { badges, frames } = await getPendingRewards()
       if (badges?.length) {
         const sortedBadges = [...badges].sort((a, b) => a.rank_index - b.rank_index)
@@ -265,7 +274,10 @@ function RewardsQueueController() {
     const current = queue[0]
     if (!current) return
 
-    if (current.type === 'badge') {
+    if (current.type === 'backups') {
+      const ids = current.payload.map(b => b.id)
+      markBackupsShown(ids)
+    } else if (current.type === 'badge') {
       markRewardShown(current.payload.id, 'badge')
     } else if (current.type === 'frame') {
       markRewardShown(current.payload.id, 'frame')
@@ -290,6 +302,16 @@ function RewardsQueueController() {
 
   const current = queue[0]
   if (!current) return null
+
+  if (current.type === 'backups') {
+    return (
+      <BackupReceivedModal
+        key="backups"
+        items={current.payload}
+        onConfirm={handleConfirm}
+      />
+    )
+  }
 
   if (current.type === 'badge') {
     return (
