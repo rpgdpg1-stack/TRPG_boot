@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts } from '../lib/storage'
 import { getLevelFromXP, getRankByLevel } from '../lib/levels'
+import { getMyFriendsPlace } from '../lib/leaderboard'
+import { getCurrentUser } from '../lib/auth'
 import RankIcon from '../components/RankIcon'
+import RanksPopup from '../components/RanksPopup'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from '../components/UiIcon'
@@ -24,8 +27,12 @@ import MuscleIcon from '../components/MuscleIcon'
 export default function Profile() {
   const navigate = useNavigate()
 
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => getCurrentUser() || getUser())
   const [stats, setStats] = useState({ xp: 0, streak: 0, totalWorkouts: 0 })
+  const [friendsPlace, setFriendsPlace] = useState(1)
+  const [showRanks, setShowRanks] = useState(false)
+  const [rankPopTick, setRankPopTick] = useState(0)
+  const rankButtonRef = useRef(null)
 
   useEffect(() => {
     backButton.hide()
@@ -33,12 +40,15 @@ export default function Profile() {
   }, [])
 
   useEffect(() => {
-    setUser(getUser())
+    const tgUser = getUser()
+    if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
 
     const loadStats = () => {
-      Promise.all([getTotalXP(), getWeeklyStreak(), getTotalWorkouts()]).then(([xp, streak, totalWorkouts]) => {
-        setStats({ xp, streak, totalWorkouts })
-      })
+      Promise.all([getTotalXP(), getWeeklyStreak(), getTotalWorkouts(), getMyFriendsPlace()])
+        .then(([xp, streak, totalWorkouts, place]) => {
+          setStats({ xp, streak, totalWorkouts })
+          setFriendsPlace(place)
+        })
     }
     loadStats()
 
@@ -54,6 +64,17 @@ export default function Profile() {
   const rank = getRankByLevel(level)
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
+
+  const handleRankTap = () => {
+    haptic.light()
+    setRankPopTick(t => t + 1)
+    setShowRanks(prev => !prev)
+  }
+
+  const handlePlaceTap = () => {
+    haptic.light()
+    navigate('/leaderboard?tab=friends')
+  }
 
   const sections = [
   { id: 'leaderboard',  icon: 'ui:leaderboard', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
@@ -81,25 +102,67 @@ export default function Profile() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка профиля */}
-      <header style={styles.header}>
+      {/* Шапка профиля — как на главной: плашка аватар + имя/ник + ранг + место */}
+      <div style={styles.topPanel}>
         <div style={styles.avatarWrap}>
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt="" style={styles.avatarImg} />
-          ) : (
-            <div style={styles.avatarPlaceholder}>
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div style={{
+            ...styles.avatarInner,
+            borderColor: rank.color,
+            boxShadow: `0 0 12px ${rank.color}33`
+          }}>
+            {user?.photo_url ? (
+              <img src={user.photo_url} alt="" style={styles.avatarImg} />
+            ) : (
+              <div style={styles.avatarPlaceholder}>
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div style={styles.name}>{displayName}</div>
-        {username && <div style={styles.username}>{username}</div>}
-        <div style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-          <RankIcon level={level} size={14} />
-          {rank.name} {rank.subLevel}
+        <div style={styles.infoColumn}>
+          <div style={styles.nameRow}>
+            <span style={styles.name}>{displayName}</span>
+            {username && <span style={styles.username}>{username}</span>}
+          </div>
+
+          <div style={styles.rankWrap} data-rank-button-wrap>
+            <button
+              ref={rankButtonRef}
+              onClick={handleRankTap}
+              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <span
+                key={`rankpop-${rankPopTick}`}
+                style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopProfile 0.4s ease-out' : 'none' }}
+              >
+                <RankIcon level={level} size={26} />
+              </span>
+              {rank.name} {rank.subLevel}
+            </button>
+
+            <button
+              onClick={handlePlaceTap}
+              style={styles.friendsPlaceButton}
+              aria-label="Открыть рейтинг друзей"
+            >
+              🏆 #{friendsPlace}
+            </button>
+
+            {showRanks && (
+              <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
+            )}
+          </div>
         </div>
-      </header>
+
+        <style>{`
+          @keyframes rankIconPopProfile {
+            0%   { transform: scale(1); }
+            40%  { transform: scale(1.22); }
+            100% { transform: scale(1); }
+          }
+        `}</style>
+      </div>
 
       {/* Быстрые цифры */}
       <div style={styles.statsRow}>
@@ -166,22 +229,33 @@ export default function Profile() {
 
 const styles = {
   page: {},
-  header: {
+  // Верхняя плашка — копия главной: аватар слева, инфо справа
+  topPanel: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: '4px',
+    gap: '16px',
+    padding: '12px 14px',
     marginTop: '8px',
-    marginBottom: '20px'
+    marginBottom: '20px',
+    background: 'rgba(255, 255, 255, 0.015)',
+    borderRadius: 'var(--radius-card)',
+    position: 'relative'
   },
   avatarWrap: {
-    width: '96px',
-    height: '96px',
-    borderRadius: '50%',
+    width: '100px',
+    height: '100px',
+    flexShrink: 0,
+    position: 'relative'
+  },
+  avatarInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '33px',
     overflow: 'hidden',
     background: 'var(--color-card)',
-    border: '2px solid rgba(255, 255, 255, 0.08)',
-    marginBottom: '8px'
+    border: '2px solid',
+    transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
@@ -191,26 +265,64 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '36px',
+    fontSize: '38px',
     color: 'var(--color-primary)'
+  },
+  infoColumn: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    justifyContent: 'center',
+    alignSelf: 'center'
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '6px',
+    flexWrap: 'wrap'
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.1
   },
   username: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: '12px',
     color: 'var(--color-text-secondary)'
+  },
+  rankWrap: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '2px'
   },
   rank: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
+    fontSize: '15px',
     letterSpacing: '1.5px',
-    marginTop: '4px'
+    padding: '2px 0',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer'
+  },
+  friendsPlaceButton: {
+    marginLeft: '10px',
+    padding: '2px 8px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    letterSpacing: '1px',
+    color: 'var(--color-text)',
+    cursor: 'pointer',
+    transition: 'background 0.2s ease, border-color 0.2s ease'
   },
   statsRow: {
     display: 'grid',
