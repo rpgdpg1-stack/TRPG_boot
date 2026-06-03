@@ -157,8 +157,9 @@ export default function TabBar() {
             )}
           </span>
           {tab.id === 'rating' ? (
-            // #N — отдельный span БЕЗ styles.label, чтобы родительский цвет
-            // ничего не перебивал. Серый при неактиве, зелёный при активе.
+            // #N — отдельный span БЕЗ styles.label. Серый (#888) при неактиве,
+            // зелёный при активе. rgba(255,255,255,0.5) читался почти белым,
+            // поэтому используем настоящий серый --color-text-secondary.
             <span style={{
               fontFamily: 'var(--font-tiny5)',
               fontSize: '10px',
@@ -166,7 +167,7 @@ export default function TabBar() {
               letterSpacing: '0.5px',
               whiteSpace: 'nowrap',
               transition: 'color 0.25s ease',
-              color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+              color: tab.isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)'
             }}>
               #{friendsPlace}
             </span>
