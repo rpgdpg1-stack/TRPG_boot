@@ -2,23 +2,16 @@
  * Реестр программ — единственное место где живёт связь
  * "URL-slug ↔ ID в БД ↔ модуль с данными".
  *
- * Правка #3: раньше slug ("split") и dbId ("prog_001") путались между собой
- * в URL и в коде. Если бы добавилась вторая программа — баги были бы гарантированы.
- *
- * Теперь правило простое:
- *   - В URL'ах живёт slug: /program/split, /workout/split/A
- *   - В коде и БД живёт dbId: prog_001
- *   - Связь slug↔dbId — ТОЛЬКО тут
- *
- * Когда добавляешь новую программу — добавляешь сюда одну запись,
- * и она автоматически становится доступна везде.
+ * kind: тип программы. 'swim' — плавание (своя страница /swim/:slug, нет дней
+ * A/B/C). Силовая kind не задаёт (трактуется как обычная по дням).
  */
 
 import { SPLIT_PROGRAM } from '../../data/programs/split'
+import { SWIM_PROGRAM } from '../../data/programs/swim'
 
 /**
  * Список всех программ.
- * slug — для URL, dbId — для базы, data — структура дней.
+ * slug — для URL, dbId — для базы, data — структура дней/блоков.
  */
 export const PROGRAMS = [
   {
@@ -30,18 +23,18 @@ export const PROGRAMS = [
     available: true,
     comingSoon: false,
     data: SPLIT_PROGRAM
+  },
+  {
+    slug: 'swim',
+    dbId: 'swim_001',
+    title: 'ЗАПЛЫВ',
+    tags: ['бассейн'],
+    category: 'pool',
+    kind: 'swim',
+    available: true,
+    comingSoon: false,
+    data: SWIM_PROGRAM
   }
-  // Добавлять новые программы сюда. Например:
-  // {
-  //   slug: 'fullbody-ab',
-  //   dbId: 'prog_002',
-  //   title: 'FULL BODY A/B',
-  //   tags: ['зал', 'дом'],
-  //   category: 'gym',
-  //   available: true,
-  //   comingSoon: false,
-  //   data: FULLBODY_AB_PROGRAM
-  // }
 ]
 
 /**
@@ -75,10 +68,10 @@ export function getProgramsByCategory(categoryId) {
 
 /**
  * Получить слоты дня программы по slug.
- * Используется в страницах WorkoutDay.
+ * Используется в страницах WorkoutDay (силовая). Для плавания не применяется.
  */
 export function getProgramDaySlots(slug, day) {
   const program = getProgramBySlug(slug)
   if (!program) return []
-  return program.data.days[day] || []
+  return program.data.days?.[day] || []
 }

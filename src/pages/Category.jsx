@@ -28,7 +28,7 @@ const CATEGORIES_META = {
   },
   pool: {
     title: 'ПЛАВАНИЕ',
-    subtitle: 'СКОРО',
+    subtitle: 'ВЫБЕРИ ПРОГРАММУ',
     color: 'var(--cat-pool)',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
@@ -140,7 +140,7 @@ const styles = {
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
 
-const PROGRAM_EMOJI = { split: '🏋️' }
+const PROGRAM_EMOJI = { split: '🏋️', swim: '🏊' }
 const DEFAULT_EMOJI = '💪'
 
 function ProgramCardWithFav({ prog, isFav, onFavTap }) {
@@ -159,6 +159,10 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
   const handleCardTap = () => {
     if (!prog.available) return
     haptic.light()
+    if (prog.kind === 'swim') {
+      setTimeout(() => navigate(`/swim/${prog.slug}`), 80)
+      return
+    }
     const day = activeDay || 'A'
     setTimeout(() => navigate(`/workout/${prog.slug}/${day}`), 80)
   }
@@ -192,7 +196,14 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
       <div style={cardStyles.content}>
         <div style={cardStyles.cardTitle}>{formattedTitle}</div>
 
-        {prog.available && (
+        {prog.available && prog.kind === 'swim' && (
+          <div style={cardStyles.daysRow}>
+            <span style={cardStyles.daysLabel}>
+              {prog.data.durationMin} мин · {prog.data.blocks.reduce((s, b) => s + b.swims.reduce((x, w) => x + w.meters, 0), 0)} м
+            </span>
+          </div>
+        )}
+        {prog.available && prog.kind !== 'swim' && (
           <div style={cardStyles.daysRow}>
             <span style={cardStyles.daysLabel}>День:</span>
             <div style={cardStyles.daysList}>

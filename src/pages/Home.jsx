@@ -80,10 +80,10 @@ export default function Home() {
       id: 'pool',
       iconName: 'swimming',
       title: 'Плавание',
-      subtitle: 'Водные тренировки',
+      subtitle: '1 программа: Заплыв',
       color: 'var(--cat-pool)',
       available: true,
-      comingSoon: true
+      comingSoon: false
     },
     {
       id: 'stretch',
@@ -142,8 +142,15 @@ export default function Home() {
             entry={favorites[favIdx]}
             onTap={() => {
               haptic.light()
-              const day = favorites[favIdx].activeDay || 'A'
-              setTimeout(() => navigate(`/workout/${favorites[favIdx].prog.slug}/${day}`, {
+              const fav = favorites[favIdx]
+              if (fav.prog.kind === 'swim') {
+                setTimeout(() => navigate(`/swim/${fav.prog.slug}`, {
+                  state: { fromHome: true }
+                }), 80)
+                return
+              }
+              const day = fav.activeDay || 'A'
+              setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, {
                 state: { fromHome: true }
               }), 80)
             }}
@@ -217,7 +224,7 @@ export default function Home() {
   )
 }
 
-const PROGRAM_EMOJI = { split: '🏋️' }
+const PROGRAM_EMOJI = { split: '🏋️', swim: '🏊' }
 
 function FavCard({ entry, onTap }) {
   if (!entry) return null
@@ -233,23 +240,31 @@ function FavCard({ entry, onTap }) {
       <span style={favCardStyles.emoji}>{emoji}</span>
       <div style={favCardStyles.content}>
         <div style={favCardStyles.title}>{formattedTitle}</div>
-        <div style={favCardStyles.daysRow}>
-          <span style={favCardStyles.daysLabel}>День:</span>
-          <div style={favCardStyles.daysList}>
-            {allDays.map(d => {
-              const isToday = !!activeDay && d === activeDay
-              return (
-                <span key={d} style={{
-                  ...favCardStyles.dayLetter,
-                  color: isToday ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
-                  textShadow: isToday ? '0 0 6px rgba(158,209,83,0.4)' : 'none'
-                }}>
-                  {d}
-                </span>
-              )
-            })}
+        {prog.kind === 'swim' ? (
+          <div style={favCardStyles.daysRow}>
+            <span style={favCardStyles.daysLabel}>
+              {prog.data.durationMin} мин · {prog.data.blocks.reduce((s, b) => s + b.swims.reduce((x, w) => x + w.meters, 0), 0)} м
+            </span>
           </div>
-        </div>
+        ) : (
+          <div style={favCardStyles.daysRow}>
+            <span style={favCardStyles.daysLabel}>День:</span>
+            <div style={favCardStyles.daysList}>
+              {allDays.map(d => {
+                const isToday = !!activeDay && d === activeDay
+                return (
+                  <span key={d} style={{
+                    ...favCardStyles.dayLetter,
+                    color: isToday ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
+                    textShadow: isToday ? '0 0 6px rgba(158,209,83,0.4)' : 'none'
+                  }}>
+                    {d}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {prog.tags && prog.tags.length > 0 && (
           <div style={favCardStyles.tags}>
             {prog.tags.map(tag => {
