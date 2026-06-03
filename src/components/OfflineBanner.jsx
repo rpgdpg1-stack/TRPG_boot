@@ -2,19 +2,23 @@ import { useEffect, useState, useRef } from 'react'
 import { isOnline, onNetworkChange } from '../lib/network-status'
 import { getQueueSize } from '../lib/offline-queue'
 import { SYNC_EVENTS, onSyncEvent } from '../lib/sync-engine'
+import UiIcon from './UiIcon'
 
 /**
- * Плашка статуса сети и синхронизации.
+ * Пилюля статуса сети и синхронизации.
+ *
+ * Аккуратная капсула по центру над контентом (не плашка на всю ширину).
+ * Внутри: наша SVG-иконка (цветная) + текст. Цветом меняется ТОЛЬКО иконка,
+ * сама пилюля — нейтральная серо-тёмная.
  *
  * Состояния (приоритет сверху вниз):
- *  - syncing → "🔄 Синхронизация..."
- *  - justSynced → "✅ Синхронизировано N" (показывается ~2.5с и прячется)
- *  - offline → "📵 Офлайн — изменения сохранятся и отправятся позже"
- *  - online + пустая очередь → ничего (баннер скрыт)
+ *  - syncing    → cloud_sync,  иконка синяя,    "Синхронизация"
+ *  - justSynced → cloud_done,  иконка зелёная,  "Синхронизировано N" (~2.5с)
+ *  - offline    → network_off, иконка красная,  "Офлайн" (+ счётчик очереди)
+ *  - online + пустая очередь → ничего (пилюля скрыта)
  *
- * Позиционируется fixed сверху, поверх sticky-шапок (zIndex высокий).
- * Сама подписывается на network-status и sync-engine — родителю не нужно
- * ничего прокидывать, просто отрендерить <OfflineBanner /> один раз.
+ * Позиционируется fixed по центру сверху, с отступом 16px от системной зоны
+ * Telegram — одинаково на всех экранах. zIndex ниже модалок, выше шапок.
  */
 export default function OfflineBanner() {
   const [online, setOnline] = useState(isOnline())
@@ -27,7 +31,6 @@ export default function OfflineBanner() {
   useEffect(() => {
     const offNet = onNetworkChange((isOn) => {
       setOnline(isOn)
-      // При смене статуса обновляем счётчик очереди
       setPendingCount(getQueueSize())
     })
 
@@ -50,7 +53,6 @@ export default function OfflineBanner() {
     const offFailed = onSyncEvent(SYNC_EVENTS.FAILED, (detail) => {
       setSyncing(false)
       setPendingCount(getQueueSize())
-      // Часть могла уйти — если что-то синканулось, покажем коротко
       const n = detail?.synced || 0
       if (n > 0) {
         setJustSyncedCount(n)
@@ -68,36 +70,58 @@ export default function OfflineBanner() {
     }
   }, [])
 
-  // Решаем что показывать
-  let content = null
-  let bg = 'rgba(255, 140, 66, 0.95)' // оранжевый по умолчанию (оффлайн)
+  // Определяем что показывать: иконка (имя SVG), её цвет и текст.
+  let iconName = null
+  let iconColor = null
+  let text = null
+  let spin = false
 
   if (syncing) {
-    content = '🔄 Синхронизация...'
-    bg = 'rgba(63, 162, 247, 0.95)' // синий
+    iconName = 'cloud_sync'
+    iconColor = '#3FA2F7'   // синий
+    text = 'Синхронизация'
+    spin = true
   } else if (justSyncedCount !== null) {
-    content = `✅ Синхронизировано: ${justSyncedCount}`
-    bg = 'rgba(158, 209, 83, 0.95)' // зелёный
+    iconName = 'cloud_done'
+    iconColor = '#9ED153'   // зелёный
+    text = `Синхронизировано: ${justSyncedCount}`
   } else if (!online) {
-    content = pendingCount > 0
-      ? `📵 Офлайн · ${pendingCount} ${pluralChanges(pendingCount)} ждёт отправки`
-      : '📵 Офлайн · изменения сохранятся локально'
-    bg = 'rgba(255, 140, 66, 0.95)' // оранжевый
+    iconName = 'network_off'
+    iconColor = '#E84545'   // красный
+    text = pendingCount > 0
+      ? `Офлайн · ${pendingCount} ${pluralChanges(pendingCount)}`
+      : 'Офлайн'
   }
 
-  // Нечего показывать — баннер скрыт полностью (не занимает место)
-  if (!content) return null
+  // Нечего показывать — пилюля скрыта полностью
+  if (!iconName) return null
 
   return (
-    <div style={{ ...styles.banner, background: bg }} aria-live="polite">
-      <span style={styles.text}>{content}</span>
+    <div style={styles.wrap} aria-live="polite">
+      <div style={styles.pill}>
+        <span style={{
+          ...styles.iconWrap,
+          animation: spin ? 'offlineIconSpin 1.2s linear infinite' : 'none'
+        }}>
+          <UiIcon name={iconName} size={16} color={iconColor} />
+        </span>
+        <span style={styles.text}>{text}</span>
+      </div>
+
+      <style>{`
+        @keyframes offlinePillIn {
+          0%   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes offlineIconSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
 
-/**
- * "1 изменение", "2 изменения", "5 изменений"
- */
 function pluralChanges(n) {
   const last = n % 10
   const lastTwo = n % 100
@@ -108,28 +132,45 @@ function pluralChanges(n) {
 }
 
 const styles = {
-  banner: {
+  // Контейнер во всю ширину, центрирует пилюлю. fixed сверху, отступ 16px
+  // от системной зоны Telegram — одинаково на всех экранах.
+  wrap: {
     position: 'fixed',
-    top: 0,
+    top: 'calc(env(safe-area-inset-top) + 16px)',
     left: 0,
     right: 0,
-    zIndex: 9998, // ниже модалок (9999/10000), выше sticky-шапок (30) и частиц (200 — но баннер сверху по позиции)
     display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',  // пилюля не перехватывает тапы по контенту под ней
+    zIndex: 9998
+  },
+  // Сама пилюля — нейтральная серо-тёмная с блюром, цветная только иконка.
+  pill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '7px 14px 7px 11px',
+    background: 'rgba(34, 34, 34, 0.92)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '999px',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+    animation: 'offlinePillIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+  },
+  iconWrap: {
+    display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '8px 16px',
-    paddingTop: 'max(8px, env(safe-area-inset-top))',
-    minHeight: '34px',
-    transition: 'background 0.3s ease',
-    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)'
+    lineHeight: 0,
+    flexShrink: 0
   },
   text: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
     fontWeight: 700,
-    color: '#0D0C0C',
+    color: 'var(--color-text)',
     letterSpacing: '0.3px',
-    textAlign: 'center',
-    lineHeight: 1.3
+    whiteSpace: 'nowrap'
   }
 }
