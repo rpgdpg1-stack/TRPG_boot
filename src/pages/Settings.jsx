@@ -8,13 +8,15 @@ import UiIcon from '../components/UiIcon'
 /**
  * Экран настроек.
  *
- * В группе СИСТЕМА три пункта-обнулялки:
- *  - "Сбросить порядок дней" — стирает только цикл A/B/C
- *  - "Сбросить значки лиг" (DEV) — удаляет league_badges юзера, мускулы остаются
- *  - "Сбросить прогресс" — полный обнул
+ * Разделы сгруппированы по смыслу (как РАЗДЕЛЫ на главной): заголовок секции +
+ * единая карточка со строками, разделители между строками, серая подсветка
+ * строки при тапе/скролле (className="tg-row").
  *
- * Сброс значков нужен для теста модалок: набил мускулы → сбросил значки →
- * получил +X мускулов → ловишь модалку прямо в момент пересечения порога.
+ * Группа СБРОС — обнулялки:
+ *  - "Сбросить порядок дней" — стирает только цикл A/B/C
+ *  - "Сбросить значки лиг" (DEV) — удаляет league_badges, мускулы остаются
+ *  - "Сбросить прогресс" — полный обнул
+ * У них цветной заголовок (жёлтый/оранжевый) как маркер опасного действия.
  */
 export default function Settings() {
   const navigate = useNavigate()
@@ -26,17 +28,27 @@ export default function Settings() {
 
   const groups = [
     {
-      title: 'СИСТЕМА',
+      title: 'ОСНОВНОЕ',
       items: [
         { id: 'library',       icon: '📚', title: 'Справочник упражнений', subtitle: 'База с техникой и видео' },
         { id: 'notifications', icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
-        { id: 'support',       icon: '💬', title: 'Поддержка',             subtitle: 'Написать в отдел заботы' },
-        { id: 'feedback',      icon: '💡', title: 'Идеи и предложения',    subtitle: 'Помоги улучшить приложение' },
-        { id: 'gift',          icon: '🎁', title: 'Подарить сертификат',   subtitle: 'Скоро' },
-        { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' },
-        { id: 'debug-reset-days',    icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново' },
-        { id: 'debug-reset-badges',  icon: '🏅', title: 'Сбросить значки лиг',  subtitle: 'DEV · для теста модалок' },
-        { id: 'debug-reset',         icon: '🧹', title: 'Сбросить прогресс',    subtitle: 'Обнулить мускулы, квесты, стрик' }
+        { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' }
+      ]
+    },
+    {
+      title: 'ПОДДЕРЖКА',
+      items: [
+        { id: 'support',  icon: '💬', title: 'Поддержка',           subtitle: 'Написать в отдел заботы' },
+        { id: 'feedback', icon: '💡', title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение' },
+        { id: 'gift',     icon: '🎁', title: 'Подарить сертификат', subtitle: 'Скоро' }
+      ]
+    },
+    {
+      title: 'СБРОС',
+      items: [
+        { id: 'debug-reset-days',   icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново',          tone: 'warning' },
+        { id: 'debug-reset-badges', icon: '🏅', title: 'Сбросить значки лиг',   subtitle: 'DEV · для теста модалок',           tone: 'warning' },
+        { id: 'debug-reset',        icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик',   tone: 'danger' }
       ]
     }
   ]
@@ -107,41 +119,47 @@ export default function Settings() {
     }
   }
 
+  // Цвет заголовка строки по тону (опасные действия)
+  const titleColor = (tone) =>
+    tone === 'danger' ? '#FF8C42'
+    : tone === 'warning' ? '#FFD700'
+    : 'var(--color-text)'
+
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {groups.map((group, idx) => (
-        <section key={group.title} style={{ ...styles.group, marginTop: idx === 0 ? '8px' : '24px' }}>
-          <h3 style={styles.groupTitle}>{group.title}</h3>
-          <div style={styles.items}>
-            {group.items.map(item => {
-              const isDanger = item.id === 'debug-reset'
-              const isWarning = item.id === 'debug-reset-days' || item.id === 'debug-reset-badges'
+      {groups.map((group, gIdx) => (
+        <section key={group.title}>
+          <div style={{
+            ...styles.groupTitle,
+            marginTop: gIdx === 0 ? '8px' : '24px'
+          }}>
+            {group.title}
+          </div>
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleSectionTap(item)}
-                  style={{
-                    ...styles.itemCard,
-                    ...(isDanger ? styles.itemCardDanger : {}),
-                    ...(isWarning ? styles.itemCardWarning : {})
-                  }}
-                >
-                  <span style={styles.itemIcon}>{item.icon}</span>
-                  <div style={styles.itemContent}>
-                    <div style={{
-                      ...styles.itemTitle,
-                      color: isDanger ? '#FF8C42' : isWarning ? '#FFD700' : 'var(--color-text)'
-                    }}>
-                      {item.title}
-                    </div>
-                    <div style={styles.itemSubtitle}>{item.subtitle}</div>
+          <div style={styles.groupCard}>
+            {group.items.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={() => handleSectionTap(item)}
+                className="tg-row"
+                style={{
+                  ...styles.row,
+                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+                }}
+              >
+                <span style={styles.rowIcon}>{item.icon}</span>
+
+                <div style={styles.rowContent}>
+                  <div style={{ ...styles.rowTitle, color: titleColor(item.tone) }}>
+                    {item.title}
                   </div>
-                  <span style={styles.itemArrow}>›</span>
-                </button>
-              )
-            })}
+                  <div style={styles.rowSubtitle}>{item.subtitle}</div>
+                </div>
+
+                <span style={styles.rowArrow}>›</span>
+              </button>
+            ))}
           </div>
         </section>
       ))}
@@ -151,15 +169,57 @@ export default function Settings() {
 
 const styles = {
   page: {},
-  group: {},
-  groupTitle: { fontFamily: 'var(--font-tiny5)', fontSize: '11px', color: 'var(--color-text-secondary)', letterSpacing: '2px', fontWeight: 'normal', marginBottom: '10px', paddingLeft: '16px' },
-  items: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  itemCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 18px', background: 'var(--color-card)', borderRadius: 'var(--radius-small)', width: '100%', textAlign: 'left', minHeight: '52px', transition: 'background 0.15s ease' },
-  itemCardDanger: { background: 'rgba(255, 140, 66, 0.06)', border: '1px solid rgba(255, 140, 66, 0.2)' },
-  itemCardWarning: { background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.18)' },
-  itemIcon: { fontSize: '20px', width: '28px', textAlign: 'center' },
-  itemContent: { flex: 1, minWidth: 0 },
-  itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, marginBottom: '1px' },
-  itemSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '10px', color: 'var(--color-text-secondary)' },
-  itemArrow: { fontSize: '18px', color: 'var(--color-text-secondary)', flexShrink: 0 }
+  // === Группы (как РАЗДЕЛЫ на главной) ===
+  groupTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '3px',
+    marginBottom: '12px',
+    paddingLeft: '4px'
+  },
+  groupCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
+  },
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '14px 18px',
+    width: '100%',
+    minHeight: '60px',
+    textAlign: 'left',
+    background: 'transparent',
+    border: 'none'
+  },
+  rowIcon: {
+    fontSize: '20px',
+    width: '28px',
+    textAlign: 'center',
+    flexShrink: 0
+  },
+  rowContent: {
+    flex: 1,
+    minWidth: 0
+  },
+  rowTitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '15px',
+    fontWeight: 600,
+    marginBottom: '2px'
+  },
+  rowSubtitle: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)'
+  },
+  rowArrow: {
+    fontSize: '18px',
+    color: 'var(--color-text-secondary)',
+    flexShrink: 0
+  }
 }

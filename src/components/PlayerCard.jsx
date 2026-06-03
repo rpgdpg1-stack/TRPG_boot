@@ -520,7 +520,10 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    padding: '8px 4px 4px',
+    // Горизонтальный отступ 0 — чтобы плашки игрока начинались ровно на 16px
+    // от краёв (как везде), а не на 20px. Раньше тут было 4px и блоки визуально
+    // отступали сильнее чем на других экранах.
+    padding: '8px 0 4px',
     position: 'relative',
     gap: '12px'
   },

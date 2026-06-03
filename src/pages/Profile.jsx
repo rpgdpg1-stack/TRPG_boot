@@ -19,10 +19,11 @@ import MuscleIcon from '../components/MuscleIcon'
  *  - Шапка: аватар, имя, ник, ранг
  *  - Карточки статистики (мускулы, серия, тренировок)
  *  - Кнопка "Пригласить друга" — открывает Telegram share с реф-ссылкой
- *  - Разделы: Рейтинг, Награды, Личные данные, Замеры тела и т.д.
+ *  - Разделы СГРУППИРОВАНЫ по смыслу (как на главной): заголовок секции +
+ *    единая карточка со строками, разделители между строками, серая подсветка
+ *    строки при тапе/скролле (className="tg-row").
  *
- * Рейтинг ведёт на /leaderboard (готово), Награды — на /rewards (готово).
- * Остальные разделы — заглушки на будущее.
+ * Рейтинг ведёт на /leaderboard, Награды — на /rewards. Остальные — заглушки.
  */
 export default function Profile() {
   const navigate = useNavigate()
@@ -76,21 +77,38 @@ export default function Profile() {
     navigate('/leaderboard?tab=friends')
   }
 
-  const sections = [
-  { id: 'leaderboard',  icon: 'ui:leaderboard', title: 'Рейтинг',        subtitle: 'Друзья · Лига · Сезон',         path: '/leaderboard' },
-  { id: 'rewards',      icon: 'ui:rewards',     title: 'Награды',        subtitle: 'Значки лиг · Сезонные рамки',   path: '/rewards' },
-  { id: 'personal',     icon: '👤',             title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст' },
-  { id: 'measurements', icon: '📏',             title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото' },
-  { id: 'goal',         icon: '🎯',             title: 'Цель',           subtitle: 'Что хочешь достичь' },
-  { id: 'achievements', icon: '🏆',             title: 'Достижения',     subtitle: 'Ачивки и значки' },
-  { id: 'recovery',     icon: '🛌',             title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
-  { id: 'settings',     icon: 'ui:settings',    title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
-]
+  // Разделы сгруппированы по смыслу. Каждая группа → заголовок + единая
+  // карточка со строками (как РАЗДЕЛЫ на главной).
+  const sectionGroups = [
+    {
+      title: 'СОРЕВНОВАНИЕ',
+      items: [
+        { id: 'leaderboard',  icon: 'ui:leaderboard', title: 'Рейтинг',     subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
+        { id: 'rewards',      icon: 'ui:rewards',     title: 'Награды',     subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' },
+        { id: 'achievements', icon: '🏆',             title: 'Достижения',  subtitle: 'Ачивки и значки' }
+      ]
+    },
+    {
+      title: 'ТЕЛО',
+      items: [
+        { id: 'personal',     icon: '👤', title: 'Личные данные', subtitle: 'Пол · Рост · Возраст' },
+        { id: 'measurements', icon: '📏', title: 'Замеры тела',   subtitle: 'Вес · Объёмы · Фото' },
+        { id: 'goal',         icon: '🎯', title: 'Цель',          subtitle: 'Что хочешь достичь' }
+      ]
+    },
+    {
+      title: 'ЕЩЁ',
+      items: [
+        { id: 'recovery', icon: '🛌',          title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
+        { id: 'settings', icon: 'ui:settings', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+      ]
+    }
+  ]
 
-  const handleSectionTap = (section) => {
+  const handleSectionTap = (item) => {
     haptic.light()
-    if (section.path) {
-      navigate(section.path)
+    if (item.path) {
+      navigate(item.path)
     }
   }
 
@@ -196,44 +214,55 @@ export default function Profile() {
         <span style={styles.inviteArrow}>›</span>
       </button>
 
-      {/* Разделы */}
-      <div style={styles.sections}>
-        {sections.map(section => (
-          <button
-            key={section.id}
-            onClick={() => handleSectionTap(section)}
-            className="press-tile"
-            style={styles.sectionCard}
-          >
-            {section.icon.startsWith('ui:') ? (
-  <UiIcon
-    name={section.icon.slice(3)}
-    size={22}
-    color="var(--color-text)"
-    style={{ width: '32px', height: '22px' }}
-  />
-) : (
-  <span style={styles.sectionIcon}>{section.icon}</span>
-)}
-            <div style={styles.sectionContent}>
-              <div style={styles.sectionTitle}>{section.title}</div>
-              <div style={styles.sectionSubtitle}>{section.subtitle}</div>
-            </div>
-            <span style={styles.sectionArrow}>›</span>
-          </button>
-        ))}
-      </div>
+      {/* Разделы — сгруппированы по смыслу, единая карточка на группу */}
+      {sectionGroups.map((group, gIdx) => (
+        <section key={group.title}>
+          <div style={{
+            ...styles.groupTitle,
+            marginTop: gIdx === 0 ? '4px' : '20px'
+          }}>
+            {group.title}
+          </div>
+
+          <div style={styles.groupCard}>
+            {group.items.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={() => handleSectionTap(item)}
+                className="tg-row"
+                style={{
+                  ...styles.row,
+                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+                }}
+              >
+                {item.icon.startsWith('ui:') ? (
+                  <UiIcon
+                    name={item.icon.slice(3)}
+                    size={22}
+                    color="var(--color-text)"
+                    style={{ width: '32px', height: '22px' }}
+                  />
+                ) : (
+                  <span style={styles.rowIcon}>{item.icon}</span>
+                )}
+
+                <div style={styles.rowContent}>
+                  <div style={styles.rowTitle}>{item.title}</div>
+                  <div style={styles.rowSubtitle}>{item.subtitle}</div>
+                </div>
+
+                <span style={styles.rowArrow}>›</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }
 
 const styles = {
-  // Верхний отступ как у playerSticky на главной (Home.jsx), чтобы блок
-  // с аватаром начинался на той же высоте и переход между вкладками был плавным.
-  // Горизонтальные отступы и нижний padding остаются из CSS-класса .page.
-  page: {
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)'
-  },
+  page: {},
   // Верхняя плашка — копия главной: аватар слева, инфо справа
   topPanel: {
     display: 'flex',
@@ -369,7 +398,7 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.08)',
     border: '1px solid rgba(158, 209, 83, 0.25)',
     borderRadius: 'var(--radius-small)',
-    marginBottom: '20px',
+    marginBottom: '4px',
     minHeight: '64px',
     textAlign: 'left'
   },
@@ -401,46 +430,61 @@ const styles = {
     flexShrink: 0,
     opacity: 0.7
   },
-  sections: {
+
+  // === Группы разделов (как РАЗДЕЛЫ на главной) ===
+  groupTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '3px',
+    marginBottom: '12px',
+    paddingLeft: '4px'
+  },
+  // Единая карточка-группа. Скругления у группы, строки внутри прямые,
+  // overflow hidden даёт скруглённые углы первой/последней строке.
+  groupCard: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
   },
-  sectionCard: {
+  // Строка раздела. Фон прозрачный (его даёт groupCard), при тапе .tg-row
+  // подсвечивает серым. Разделитель — borderTop у всех кроме первой.
+  row: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '14px 20px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)',
+    padding: '14px 18px',
     width: '100%',
+    minHeight: '64px',
     textAlign: 'left',
-    minHeight: '60px',
+    background: 'transparent',
     border: 'none'
   },
-  sectionIcon: {
+  rowIcon: {
     fontSize: '22px',
     width: '32px',
     textAlign: 'center',
     flexShrink: 0
   },
-  sectionContent: {
+  rowContent: {
     flex: 1,
     minWidth: 0
   },
-  sectionTitle: {
+  rowTitle: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',
     fontWeight: 600,
     color: 'var(--color-text)',
     marginBottom: '2px'
   },
-  sectionSubtitle: {
+  rowSubtitle: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)'
   },
-  sectionArrow: {
+  rowArrow: {
     fontSize: '18px',
     color: 'var(--color-text-secondary)',
     flexShrink: 0
