@@ -228,7 +228,12 @@ export default function Profile() {
 }
 
 const styles = {
-  page: {},
+  // Верхний отступ как у playerSticky на главной (Home.jsx), чтобы блок
+  // с аватаром начинался на той же высоте и переход между вкладками был плавным.
+  // Горизонтальные отступы и нижний padding остаются из CSS-класса .page.
+  page: {
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)'
+  },
   // Верхняя плашка — копия главной: аватар слева, инфо справа
   topPanel: {
     display: 'flex',
