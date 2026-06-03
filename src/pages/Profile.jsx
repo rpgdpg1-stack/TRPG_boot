@@ -27,15 +27,29 @@ export default function Profile() {
   // мускулы и стрик показались сразу — без мигания "Новичок 0" перед загрузкой.
   const [stats, setStats] = useState(() => {
     const u = getCurrentUser()
+    let cachedTotal = 0
+    try {
+      const raw = localStorage.getItem('profile-total-workouts')
+      if (raw != null) cachedTotal = parseInt(raw, 10) || 0
+    } catch { /* ignore */ }
     return {
       xp: u?.total_muscles || 0,
       streak: u?.weekly_streak || 0,
-      totalWorkouts: 0
+      totalWorkouts: cachedTotal
     }
   })
   const [friendsPlace, setFriendsPlace] = useState(1)
   const [recentHistory, setRecentHistory] = useState([])
-  const [recentWorkouts, setRecentWorkouts] = useState([])
+  // Стартуем из localStorage-кеша — число тренировок и последняя тренировка
+  // не лежат в getCurrentUser(), поэтому кешируем их отдельно, чтобы при
+  // повторных заходах не мигало пустое значение → загруженное.
+  const [recentWorkouts, setRecentWorkouts] = useState(() => {
+    try {
+      const raw = localStorage.getItem('profile-recent-workouts')
+      const parsed = raw ? JSON.parse(raw) : null
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
+  })
 
   useEffect(() => {
     backButton.hide()
@@ -59,6 +73,11 @@ export default function Profile() {
         setFriendsPlace(place)
         setRecentHistory(history)
         setRecentWorkouts(workouts)
+        // Кешируем для мгновенного показа при следующих заходах (без мигания)
+        try {
+          localStorage.setItem('profile-total-workouts', String(totalWorkouts))
+          localStorage.setItem('profile-recent-workouts', JSON.stringify(workouts || []))
+        } catch { /* ignore */ }
       })
     }
     loadStats()
