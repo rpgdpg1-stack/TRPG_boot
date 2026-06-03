@@ -1,0 +1,529 @@
+import { useEffect, useRef, useState } from 'react'
+import { haptic } from '../lib/telegram'
+import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
+import { getProgramByDbId } from '../features/programs/registry'
+import RankIcon from './RankIcon'
+import RanksPopup from './RanksPopup'
+import StreakFlame from './StreakFlame'
+import MuscleIcon from './MuscleIcon'
+
+/**
+ * Карточка-шапка профиля. Переиспользуется в двух местах:
+ *  - на странице Профиль (interactive=true): капсулы тапаются → попапы,
+ *    ранг тапается → список рангов, место ведёт в рейтинг
+ *  - в модалке из Рейтинга/Лиги (interactive=false): только визуал, без
+ *    попапов, логин телеги скрыт (showUsername=false)
+ *
+ * Макет:
+ *   [ КРУПНЫЙ АВАТАР ]   ← по центру, рамка в цвет ранга (актив. рамка)
+ *   Имя              @логин
+ *   🏅 Атлет 2          🏆 #1
+ *   Последняя тренировка — 12 мая
+ *   [Мускулы] [Серия] [Тренировок]   ← капсулы радиусом 33
+ *
+ * Данные капсул:
+ *   xp / streak / totalWorkouts. Если streak/totalWorkouts === null
+ *   (нет данных о чужом юзере в рейтинге) — показываем «—».
+ */
+
+const SOURCE_LABELS = {
+  workout: 'Тренировка',
+  quest:   'Дневной буст',
+  streak:  'Бонус за серию',
+  manual:  'Начисление'
+}
+
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`
+}
+
+function programTitle(dbId) {
+  const p = getProgramByDbId(dbId)
+  if (!p) return 'Тренировка'
+  return p.title.charAt(0).toUpperCase() + p.title.slice(1).toLowerCase()
+}
+
+export default function ProfileHeader({
+  user,
+  xp = 0,
+  streak = null,
+  totalWorkouts = null,
+  friendsPlace = 1,
+  lastWorkout = null,        // { finished_at, program_id, day } | null
+  recentHistory = [],
+  recentWorkouts = [],
+  interactive = false,
+  showUsername = true,
+  onPlaceTap = null
+}) {
+  const [showRanks, setShowRanks] = useState(false)
+  const [rankPopTick, setRankPopTick] = useState(0)
+  const [activePopup, setActivePopup] = useState(null) // 'muscles' | 'streak' | 'workouts' | null
+  const pillsRef = useRef(null)
+
+  const level = getLevelFromXP(xp)
+  const rank = getRankByLevel(level)
+  const displayName = user?.first_name || 'ATHLETE'
+  const username = user?.username ? `@${user.username}` : ''
+
+  const { current, needed } = getXPInCurrentLevel(xp)
+  const nextRank = getRankByLevel(level + 1)
+  const remainingToNext = Math.max(0, needed - current)
+
+  // Попапы — только в интерактивном режиме. Автозакрытие 6с + тап вне плашки.
+  useEffect(() => {
+    if (!interactive || !activePopup) return
+    const t = setTimeout(() => setActivePopup(null), 6000)
+    const onOutside = (e) => {
+      if (pillsRef.current?.contains(e.target)) return
+      setActivePopup(null)
+    }
+    document.addEventListener('pointerdown', onOutside)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('pointerdown', onOutside)
+    }
+  }, [interactive, activePopup])
+
+  const handleRankTap = () => {
+    if (!interactive) return
+    haptic.light()
+    setRankPopTick(t => t + 1)
+    setShowRanks(prev => !prev)
+    setActivePopup(null)
+  }
+
+  const togglePopup = (which) => {
+    if (!interactive) return
+    haptic.light()
+    setShowRanks(false)
+    setActivePopup(prev => (prev === which ? null : which))
+  }
+
+  const handlePlace = () => {
+    if (onPlaceTap) onPlaceTap()
+  }
+
+  const streakHint = streak === 0
+    ? 'Заверши тренировку чтобы зажечь огонёк'
+    : streak < 4
+      ? `${4 - streak} до максимума недели`
+      : 'Максимум этой недели'
+
+  const lastWorkoutText = lastWorkout
+    ? `Последняя тренировка — ${fmtDate(lastWorkout.finished_at)}`
+    : null
+
+  return (
+    <div style={styles.card}>
+
+      {/* Крупный аватар по центру, рамка в цвет ранга (= активная рамка) */}
+      <div style={{
+        ...styles.avatarInner,
+        borderColor: rank.color,
+        boxShadow: `0 0 16px ${rank.color}40`
+      }}>
+        {user?.photo_url ? (
+          <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
+        ) : (
+          <div style={styles.avatarPlaceholder}>
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      {/* Имя слева, логин справа */}
+      <div style={styles.nameRow}>
+        <span style={styles.name}>{displayName}</span>
+        {showUsername && username && <span style={styles.username}>{username}</span>}
+      </div>
+
+      {/* Ранг слева, место справа */}
+      <div style={styles.rankRow} data-rank-button-wrap>
+        <button
+          onClick={handleRankTap}
+          style={{
+            ...styles.rank,
+            color: rank.color,
+            cursor: interactive ? 'pointer' : 'default'
+          }}
+        >
+          <span
+            key={`rankpop-${rankPopTick}`}
+            style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopHeader 0.4s ease-out' : 'none' }}
+          >
+            <RankIcon level={level} size={24} />
+          </span>
+          {rank.name} {rank.subLevel}
+        </button>
+
+        {onPlaceTap ? (
+          <button onClick={handlePlace} style={styles.placeButton} aria-label="Открыть рейтинг">
+            🏆 #{friendsPlace}
+          </button>
+        ) : (
+          <span style={styles.placeStatic}>🏆 #{friendsPlace}</span>
+        )}
+
+        {interactive && showRanks && (
+          <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
+        )}
+      </div>
+
+      {/* Последняя тренировка — серым */}
+      {lastWorkoutText && (
+        <div style={styles.lastWorkout}>{lastWorkoutText}</div>
+      )}
+
+      {/* Капсулы */}
+      <div ref={pillsRef} style={styles.pills}>
+        <button
+          onClick={() => togglePopup('muscles')}
+          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+        >
+          <div style={{ ...styles.pillValue, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            {xp} <MuscleIcon size={15} earned={true} />
+          </div>
+          <div style={styles.pillLabel}>МУСКУЛЫ</div>
+        </button>
+
+        <button
+          onClick={() => togglePopup('streak')}
+          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+        >
+          <div style={styles.pillValue}>🔥 {streak ?? '—'}</div>
+          <div style={styles.pillLabel}>СЕРИЯ</div>
+        </button>
+
+        <button
+          onClick={() => togglePopup('workouts')}
+          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+        >
+          <div style={styles.pillValue}>{totalWorkouts ?? '—'}</div>
+          <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
+        </button>
+
+        {/* Попап МУСКУЛЫ */}
+        {interactive && activePopup === 'muscles' && (
+          <div style={styles.popup}>
+            <div style={styles.popupTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
+            {recentHistory.length === 0 ? (
+              <div style={styles.popupEmpty}>
+                Пока пусто.<br />Выполни буст или тренировку, чтобы заработать первые мускулы.
+              </div>
+            ) : (
+              <div style={styles.popupList}>
+                {recentHistory.map((row, idx) => (
+                  <div key={idx} style={styles.popupRow}>
+                    <span style={styles.popupLabel}>{SOURCE_LABELS[row.source] || 'Начисление'}</span>
+                    <span style={{ ...styles.popupAmount, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      +{row.amount} <MuscleIcon size={16} earned={true} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={styles.popupDivider} />
+            <div style={styles.popupRow}>
+              <span style={styles.popupLabel}>До «{nextRank.name} {nextRank.subLevel}»</span>
+              <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {remainingToNext} <MuscleIcon size={16} earned={true} />
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Попап СЕРИЯ */}
+        {interactive && activePopup === 'streak' && (
+          <div style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+              <StreakFlame streak={streak || 0} />
+              <span style={styles.streakCount}>x{streak || 0}</span>
+            </div>
+            <div style={styles.popupHint}>{streakHint}</div>
+          </div>
+        )}
+
+        {/* Попап ТРЕНИРОВКИ */}
+        {interactive && activePopup === 'workouts' && (
+          <div style={styles.popup}>
+            <div style={styles.popupTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
+            {recentWorkouts.length === 0 ? (
+              <div style={styles.popupEmpty}>
+                Пока нет завершённых тренировок.<br />Заверши первую — она появится здесь.
+              </div>
+            ) : (
+              <div style={styles.popupList}>
+                {recentWorkouts.map((w, idx) => (
+                  <div key={idx} style={styles.popupRow}>
+                    <span style={styles.popupLabel}>{programTitle(w.program_id)} · День {w.day}</span>
+                    <span style={styles.popupDate}>{fmtDate(w.finished_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={styles.popupDivider} />
+            <div style={styles.popupRow}>
+              <span style={styles.popupLabel}>Всего тренировок</span>
+              <span style={{ ...styles.popupAmount, color: rank.color }}>{totalWorkouts ?? 0}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes rankIconPopHeader {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.22); }
+          100% { transform: scale(1); }
+        }
+        @keyframes popupShowHide {
+          0%   { opacity: 0; transform: translateY(-6px); }
+          4%   { opacity: 1; transform: translateY(0); }
+          96%  { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-4px); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+const AVATAR_SIZE = 140
+
+const styles = {
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: '12px',
+    padding: '22px 18px 18px',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    width: '100%'
+  },
+  // Аватар по центру, рамка в цвет ранга (активная рамка)
+  avatarInner: {
+    width: `${AVATAR_SIZE}px`,
+    height: `${AVATAR_SIZE}px`,
+    alignSelf: 'center',
+    borderRadius: '33px',
+    overflow: 'hidden',
+    background: 'var(--color-bg)',
+    border: '3px solid',
+    transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
+  },
+  avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '52px',
+    color: 'var(--color-primary)'
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: '8px',
+    padding: '0 2px'
+  },
+  name: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '20px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    lineHeight: 1.1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0
+  },
+  username: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    flexShrink: 0
+  },
+  rankRow: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+    padding: '0 2px'
+  },
+  rank: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '15px',
+    letterSpacing: '1.5px',
+    padding: '2px 0',
+    background: 'transparent',
+    border: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    minWidth: 0
+  },
+  placeButton: {
+    flexShrink: 0,
+    padding: '3px 10px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    color: 'var(--color-text)',
+    cursor: 'pointer',
+    transition: 'background 0.2s ease, border-color 0.2s ease'
+  },
+  placeStatic: {
+    flexShrink: 0,
+    padding: '3px 10px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    color: 'var(--color-text)'
+  },
+  lastWorkout: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    padding: '0 2px',
+    marginTop: '-4px'
+  },
+  // Три капсулы радиусом 33
+  pills: {
+    position: 'relative',
+    display: 'flex',
+    gap: '8px',
+    marginTop: '2px'
+  },
+  pill: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    padding: '12px 6px',
+    background: 'rgba(0, 0, 0, 0.4)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '33px',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  pillValue: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '15px',
+    color: 'var(--color-primary)',
+    letterSpacing: '0.5px',
+    lineHeight: 1,
+    whiteSpace: 'nowrap'
+  },
+  pillLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '9px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px',
+    fontWeight: 600
+  },
+  // Попап над капсулами
+  popup: {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    left: 0, right: 0,
+    background: 'rgba(28, 28, 28, 0.97)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '20px',
+    padding: '14px 16px 12px',
+    zIndex: 50,
+    animation: 'popupShowHide 6.4s ease-out forwards',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)'
+  },
+  popupTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px',
+    marginBottom: '8px',
+    paddingLeft: '2px'
+  },
+  popupList: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  popupRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '4px 2px',
+    gap: '10px'
+  },
+  popupLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text)',
+    fontWeight: 500,
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
+  },
+  popupAmount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
+  },
+  popupDate: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.5px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
+  },
+  popupEmpty: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    padding: '8px 4px',
+    lineHeight: 1.5
+  },
+  popupDivider: {
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    margin: '8px 0'
+  },
+  popupHint: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    fontWeight: 500
+  },
+  streakCount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '22px',
+    color: '#FFFFFF',
+    letterSpacing: '1px',
+    lineHeight: 1,
+    textShadow: '0 0 6px rgba(255, 140, 66, 0.6)'
+  }
+}

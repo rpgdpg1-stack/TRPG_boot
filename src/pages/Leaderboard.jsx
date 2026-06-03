@@ -2,38 +2,22 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
-import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
+import { getLeagueByMuscles } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { getCurrentSeason, getDaysUntilSeasonEnd, formatSeasonEndDate } from '../utils/season'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
+import ProfileHeader from '../components/ProfileHeader'
 import RankIcon from '../components/RankIcon'
 import UiIcon from '../components/UiIcon'
 
 /**
  * Экран рейтинга.
  *
- * Два таба сверху: Друзья / Лига.
- *
- * Таб "Лига" в формате: ЛИГА (СПОРТСМЕН)
- *   - когда активен — "(СПОРТСМЕН)" цветом лиги
- *   - когда неактивен — всё серым
- *
- * Под табами — подпись с количеством игроков:
- *   - Друзья: "В друзьях N" (не считая самого юзера)
- *   - Лига: "В лиге N игроков"
- *
- * Список ниже:
- *  - Друзья: топ по мускулам среди друзей юзера (включая его самого)
- *  - Лига: топ-100 внутри текущей лиги юзера
- *
- * Если сервер вернул пусто или без юзера — фронт собирает строку из
- * getCurrentUser() и показывает юзера как #1.
- *
- * Подсказка по правилам — кнопка-инфо ℹ️ в шапке справа.
- * Модалка правил рендерится через position: fixed на уровне всего viewport,
- * чтобы центрироваться независимо от padding'ов страницы.
+ * Тап по строке открывает модалку с профилем игрока (ProfileHeader в режиме
+ * просмотра): крупный аватар, ранг, место, мускулы. Логин телеги скрыт,
+ * капсулы без попапов — только визуал.
  */
 
 const TAB_FRIENDS = 'friends'
@@ -43,7 +27,6 @@ export default function Leaderboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  // Стартовый таб берём из URL ?tab=friends|league. Дефолт — friends.
   const initialTab = searchParams.get('tab') === TAB_LEAGUE ? TAB_LEAGUE : TAB_FRIENDS
   const [activeTab, setActiveTab] = useState(initialTab)
 
@@ -51,6 +34,7 @@ export default function Leaderboard() {
   const [leagueData, setLeagueData] = useState({ rows: [], totalInLeague: 0 })
   const [loading, setLoading] = useState(true)
   const [showRules, setShowRules] = useState(false)
+  const [selectedProfile, setSelectedProfile] = useState(null)
 
   const user = getCurrentUser()
   const myLeague = user ? getLeagueByMuscles(user.total_muscles || 0) : null
@@ -112,6 +96,11 @@ export default function Leaderboard() {
     await shareReferralLink()
   }
 
+  const handleRowTap = (row) => {
+    haptic.light()
+    setSelectedProfile(row)
+  }
+
   const buildSelfRow = () => {
     if (!user) return null
     const muscles = user.total_muscles || 0
@@ -152,8 +141,6 @@ export default function Leaderboard() {
     ? ensureSelfInRows(friendsRows)
     : ensureSelfInRows(leagueData.rows)
 
-  // Счётчик друзей — не считаем самого юзера. То есть это число РЕАЛЬНО
-  // приглашённых друзей, а не размер списка.
   const friendsCount = Math.max(0, rows.length - 1)
 
   const showInviteCTA = activeTab === TAB_FRIENDS && rows.length === 1 && rows[0]?.is_me
@@ -162,8 +149,6 @@ export default function Leaderboard() {
     ? Math.max(leagueData.totalInLeague || 0, rows.length)
     : 0
 
-  // Цвет лиги для таба "Лига" — берём из myLeague когда есть. Если юзера
-  // ещё нет (не должно случаться, но на всякий) — fallback на серый.
   const leagueColor = myLeague?.color || 'var(--color-text-secondary)'
   const leagueNameForTab = myLeague ? myLeague.name.toUpperCase() : ''
 
@@ -187,7 +172,6 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      {/* Табы — Друзья / Лига (СПОРТСМЕН) */}
       <div style={styles.tabsRow}>
         <button
           onClick={() => handleTabTap(TAB_FRIENDS)}
@@ -229,7 +213,6 @@ export default function Leaderboard() {
         </button>
       </div>
 
-      {/* Доп. инфа под табом */}
       {!loading && activeTab === TAB_LEAGUE && leagueTotalDisplay > 0 && (
         <div style={styles.subInfo}>
           В лиге {leagueTotalDisplay} {pluralPlayers(leagueTotalDisplay)}
@@ -251,10 +234,8 @@ export default function Leaderboard() {
                 key={row.user_id}
                 row={row}
                 isMe={row.is_me}
-                // В табе Лига скрываем @username — там собраны незнакомые юзеры
-                // одной лиги, никнеймы не несут смысла и захламляют строку.
-                // В табе Друзья оставляем, чтобы можно было отличить однофамильцев.
                 showHandle={activeTab === TAB_FRIENDS}
+                onTap={handleRowTap}
               />
             ))}
           </div>
@@ -285,20 +266,53 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Модалка с правилами — вынесена на уровень компонента,
-          использует position: fixed для центрирования по viewport */}
       {showRules && <RulesModal onClose={() => setShowRules(false)} season={season} />}
+
+      {selectedProfile && (
+        <ProfileModal row={selectedProfile} onClose={() => setSelectedProfile(null)} />
+      )}
     </div>
   )
 }
 
 /**
- * Модалка-объяснялка правил рейтинга. Открывается по кнопке ℹ️.
- *
- * Центрирование: overlay имеет position: fixed + inset: 0 + flex centering.
- * fixed позиционирует относительно viewport, а не родителя — поэтому
- * никакие padding'и страницы не мешают.
+ * Модалка профиля игрока из рейтинга. Показывает ProfileHeader в режиме
+ * просмотра: логин скрыт, капсулы без попапов. Для чужих юзеров известны
+ * только мускулы и место — серия/тренировки показываются как «—».
  */
+function ProfileModal({ row, onClose }) {
+  const user = {
+    first_name: row.first_name,
+    username: row.username,
+    photo_url: row.photo_url
+  }
+
+  return (
+    <div style={profileModalStyles.overlay} onClick={onClose}>
+      <div style={profileModalStyles.inner} onClick={(e) => e.stopPropagation()}>
+        <ProfileHeader
+          user={user}
+          xp={row.total_muscles || 0}
+          streak={null}
+          totalWorkouts={null}
+          friendsPlace={row.place}
+          interactive={false}
+          showUsername={false}
+        />
+        <button onClick={onClose} style={profileModalStyles.close}>ЗАКРЫТЬ</button>
+      </div>
+
+      <style>{`
+        @keyframes profileModalOverlay { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes profileModalPanel {
+          0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 function RulesModal({ onClose, season }) {
   return (
     <div style={modalStyles.overlay} onClick={onClose}>
@@ -440,7 +454,6 @@ const styles = {
     overflow: 'hidden',
     textOverflow: 'ellipsis'
   },
-  
   tabUnderline: {
     position: 'absolute',
     left: '20%',
@@ -531,10 +544,44 @@ const styles = {
   }
 }
 
+const profileModalStyles = {
+  overlay: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(13, 12, 12, 0.88)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '20px',
+    animation: 'profileModalOverlay 0.25s ease-out forwards'
+  },
+  inner: {
+    width: '100%',
+    maxWidth: '340px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+  },
+  close: {
+    width: '100%',
+    padding: '14px',
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 700,
+    letterSpacing: '1.5px',
+    borderRadius: '14px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    cursor: 'pointer'
+  }
+}
+
 const modalStyles = {
-  // position: fixed гарантирует центрирование относительно viewport,
-  // независимо от padding'ов родителя. inset: 0 + flex centering
-  // ставит модалку строго по центру экрана.
   overlay: {
     position: 'fixed',
     top: 0,

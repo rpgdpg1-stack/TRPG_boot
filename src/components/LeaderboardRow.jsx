@@ -18,7 +18,7 @@ import { getRankByLevel, getLevelFromXP } from '../lib/levels'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
 
-export default function LeaderboardRow({ row, isMe, showHandle = true }) {
+export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) {
   const {
     first_name,
     username,
@@ -43,11 +43,15 @@ export default function LeaderboardRow({ row, isMe, showHandle = true }) {
                    : null
 
   return (
-    <div style={{
-      ...styles.row,
-      background: isMe ? 'rgba(158, 209, 83, 0.10)' : 'transparent',
-      border: isMe ? '1px solid rgba(158, 209, 83, 0.35)' : '1px solid rgba(255, 255, 255, 0.04)'
-    }}>
+    <div
+      onClick={() => onTap?.(row)}
+      className="tg-row"
+      style={{
+        ...styles.row,
+        background: isMe ? 'rgba(158, 209, 83, 0.10)' : 'transparent',
+        border: isMe ? '1px solid rgba(158, 209, 83, 0.35)' : '1px solid rgba(255, 255, 255, 0.04)',
+        cursor: onTap ? 'pointer' : 'default'
+      }}>
 
       {/* Место — слева, фиксированной ширины чтобы аватары выровнялись по колонке */}
       <div style={styles.placeWrap}>
