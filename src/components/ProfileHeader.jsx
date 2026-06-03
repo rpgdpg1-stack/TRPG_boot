@@ -174,10 +174,9 @@ export default function ProfileHeader({
         )}
       </div>
 
-      {/* Последняя тренировка — серым */}
-      {lastWorkoutText && (
-        <div style={styles.lastWorkout}>{lastWorkoutText}</div>
-      )}
+      {/* Последняя тренировка — серым. Контейнер всегда занимает место
+          (минимальная высота), чтобы появление текста не сдвигало капсулы. */}
+      <div style={styles.lastWorkout}>{lastWorkoutText || ''}</div>
 
       {/* Капсулы */}
       <div ref={pillsRef} style={styles.pills}>
@@ -402,7 +401,8 @@ const styles = {
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     padding: '0 2px',
-    marginTop: '-4px'
+    marginTop: '-4px',
+    minHeight: '14px'  // резерв под строку — текст не сдвигает капсулы при появлении
   },
   // Три капсулы радиусом 33
   pills: {

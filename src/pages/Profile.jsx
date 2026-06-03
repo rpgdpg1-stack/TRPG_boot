@@ -23,7 +23,16 @@ export default function Profile() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState(() => getCurrentUser() || getUser())
-  const [stats, setStats] = useState({ xp: 0, streak: 0, totalWorkouts: 0 })
+  // Стартуем из кешированного юзера (как PlayerCard на главной), чтобы ранг,
+  // мускулы и стрик показались сразу — без мигания "Новичок 0" перед загрузкой.
+  const [stats, setStats] = useState(() => {
+    const u = getCurrentUser()
+    return {
+      xp: u?.total_muscles || 0,
+      streak: u?.weekly_streak || 0,
+      totalWorkouts: 0
+    }
+  })
   const [friendsPlace, setFriendsPlace] = useState(1)
   const [recentHistory, setRecentHistory] = useState([])
   const [recentWorkouts, setRecentWorkouts] = useState([])
@@ -113,7 +122,7 @@ export default function Profile() {
           streak={stats.streak}
           totalWorkouts={stats.totalWorkouts}
           friendsPlace={friendsPlace}
-          lastWorkout={recentWorkouts[0] || null}
+          lastWorkout={recentWorkouts.length > 0 ? recentWorkouts[0] : null}
           recentHistory={recentHistory}
           recentWorkouts={recentWorkouts}
           interactive={true}
@@ -181,7 +190,12 @@ export default function Profile() {
 }
 
 const styles = {
-  page: {},
+  // Верхний отступ как у playerSticky на главной (tg-safe-top − 24px),
+  // чтобы блок аватара в профиле начинался на той же высоте.
+  // Лево/право/низ остаются из класса .page.
+  page: {
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)'
+  },
   headerWrap: {
     marginTop: '8px',
     marginBottom: '20px'

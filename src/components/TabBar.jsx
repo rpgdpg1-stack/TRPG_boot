@@ -161,11 +161,11 @@ export default function TabBar() {
             color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
           }}>
             {tab.id === 'rating' ? (
-              // #N наследует цвет родительского лейбла: серый при неактиве,
-              // зелёный при активе — как «Тренировки»/«Профиль».
+              // #N: серый при неактиве, зелёный при активе — как остальные лейблы.
               <span style={{
                 fontFamily: 'var(--font-tiny5)',
-                letterSpacing: '0.5px'
+                letterSpacing: '0.5px',
+                color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
               }}>
                 #{friendsPlace}
               </span>
