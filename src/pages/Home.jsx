@@ -262,6 +262,13 @@ function FavCard({ entry, onTap }) {
           </div>
         )}
       </div>
+
+      {/* Пиксельная кнопка-тег "Начать" справа — заполняет пустоту,
+          даёт явный call-to-action. Тап по ней = тап по карточке (onTap). */}
+      <div style={favCardStyles.startTag}>
+        НАЧАТЬ
+        <span style={favCardStyles.startArrow}>›</span>
+      </div>
     </div>
   )
 }
@@ -303,6 +310,29 @@ const favCardStyles = {
     fontSize: '11px',
     fontWeight: 700,
     color: 'var(--color-bg)'
+  },
+  // Пиксельная кнопка-тег "Начать" справа в карточке избранного.
+  startTag: {
+    flexShrink: 0,
+    alignSelf: 'center',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '2px',
+    padding: '8px 12px',
+    background: 'rgba(158, 209, 83, 0.12)',
+    border: '1px solid rgba(158, 209, 83, 0.35)',
+    borderRadius: '12px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    color: 'var(--color-primary)',
+    boxShadow: '0 0 12px rgba(158, 209, 83, 0.1)'
+  },
+  startArrow: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '15px',
+    lineHeight: 1,
+    marginTop: '-1px'
   }
 }
 
