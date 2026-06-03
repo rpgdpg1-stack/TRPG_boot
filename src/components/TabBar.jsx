@@ -7,26 +7,24 @@ import { getMyFriendsPlace } from '../lib/leaderboard'
 import { EVENTS, on } from '../lib/events'
 
 /**
- * Таб-бар — 3 вкладки: Статистика / Тренировки / Профиль.
+ * Таб-бар — 3 вкладки: Рейтинг / Тренировки / Профиль.
  *
- * Восстановление (Recovery) перенесено внутрь профиля — оно будет доступно
- * из настроек профиля (страницу пока не переделываем, но из таб-бара убрали).
+ * Цвета:
+ *  - Тренировки: иконка бицепса бежевая при активе, лейбл зелёный
+ *  - Рейтинг: иконка кубка золотая при активе; #N серый при неактиве,
+ *    зелёный при активе (наследует цвет лейбла — как «Тренировки»/«Профиль»)
+ *  - Профиль: иконка БЕЛАЯ при активе, лейбл зелёный
  *
- * НЕ показывается на экранах тренировки (/workout/...) и замены упражнения
- * (/swap/...) — там юзеру нужен фокус, таб-бар отвлекает и закрывает
- * нижнюю кнопку.
+ * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
+ * и инфо упражнения (/exercise/...).
  */
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  // Тик для разового "флекса" бицепса на кнопке Тренировки при каждом нажатии.
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
-  // Тик для "pop"-увеличения иконки профиля при тапе.
   const [profilePopTick, setProfilePopTick] = useState(0)
-  // Тик для "pop" кубка рейтинга при тапе.
   const [ratingPopTick, setRatingPopTick] = useState(0)
-  // Место среди друзей для бейджа #N на вкладке рейтинга.
   const [friendsPlace, setFriendsPlace] = useState(1)
 
   useEffect(() => {
@@ -37,7 +35,6 @@ export default function TabBar() {
     return () => { offReady(); offChanged() }
   }, [])
 
-  // Прячем таб-бар на экранах тренировки и замены упражнений
   const isHiddenOnPath =
     location.pathname.startsWith('/workout') ||
     location.pathname.startsWith('/swap') ||
@@ -79,7 +76,6 @@ export default function TabBar() {
 
   const handleTap = (tab) => {
     haptic.light()
-    // Анимации при каждом тапе (даже если вкладка уже активна).
     if (tab.id === 'workouts') setMuscleFlexTick(t => t + 1)
     if (tab.id === 'profile') setProfilePopTick(t => t + 1)
     if (tab.id === 'rating') setRatingPopTick(t => t + 1)
@@ -133,7 +129,7 @@ export default function TabBar() {
                 <UiIcon
                   name="profile"
                   size={32}
-                  color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+                  color={tab.isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
             ) : tab.id === 'rating' ? (
@@ -165,10 +161,11 @@ export default function TabBar() {
             color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
           }}>
             {tab.id === 'rating' ? (
+              // #N наследует цвет родительского лейбла: серый при неактиве,
+              // зелёный при активе — как «Тренировки»/«Профиль».
               <span style={{
                 fontFamily: 'var(--font-tiny5)',
-                letterSpacing: '0.5px',
-                color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+                letterSpacing: '0.5px'
               }}>
                 #{friendsPlace}
               </span>

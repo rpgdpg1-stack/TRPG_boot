@@ -1,39 +1,70 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
-import { getTotalXP, getWeeklyStreak, getTotalWorkouts } from '../lib/storage'
-import { getLevelFromXP, getRankByLevel } from '../lib/levels'
+import { getTotalXP, getWeeklyStreak, getTotalWorkouts, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
+import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
 import { getMyFriendsPlace } from '../lib/leaderboard'
+import { getProgramByDbId } from '../features/programs/registry'
 import { getCurrentUser } from '../lib/auth'
 import RankIcon from '../components/RankIcon'
 import RanksPopup from '../components/RanksPopup'
+import StreakFlame from '../components/StreakFlame'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from '../components/UiIcon'
 import MuscleIcon from '../components/MuscleIcon'
 
 /**
- * Экран "Профиль" — личный кабинет юзера.
+ * Экран "Профиль".
  *
- * Структура:
- *  - Шапка: аватар, имя, ник, ранг
- *  - Карточки статистики (мускулы, серия, тренировок)
- *  - Кнопка "Пригласить друга" — открывает Telegram share с реф-ссылкой
- *  - Разделы СГРУППИРОВАНЫ по смыслу (как на главной): заголовок секции +
- *    единая карточка со строками, разделители между строками, серая подсветка
- *    строки при тапе/скролле (className="tg-row").
+ * Шапка повторяет главную «один в один»: тот же sticky-приём, аватар начинается
+ * на той же высоте. Вместо XP-бара — три пилюли (Мускулы / Серия / Тренировок)
+ * в плашке того же цвета что и бар на главной. По тапу каждая открывает попап:
+ *  - Мускулы → последние начисления + сколько до следующего ранга
+ *  - Серия   → огонёк + подсказка (как на главной)
+ *  - Тренировок → даты последних 3 тренировок + всего
  *
- * Рейтинг ведёт на /leaderboard, Награды — на /rewards. Остальные — заглушки.
+ * Ниже — сгруппированные по смыслу разделы (заголовок + единая карточка,
+ * разделители, серая подсветка .tg-row).
  */
+
+const SOURCE_LABELS = {
+  workout: 'Тренировка',
+  quest:   'Дневной буст',
+  streak:  'Бонус за серию',
+  manual:  'Начисление'
+}
+
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+
+function fmtWorkoutDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`
+}
+
+function programTitle(dbId) {
+  const p = getProgramByDbId(dbId)
+  if (!p) return 'Тренировка'
+  return p.title.charAt(0).toUpperCase() + p.title.slice(1).toLowerCase()
+}
+
 export default function Profile() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState(() => getCurrentUser() || getUser())
   const [stats, setStats] = useState({ xp: 0, streak: 0, totalWorkouts: 0 })
   const [friendsPlace, setFriendsPlace] = useState(1)
+  const [recentHistory, setRecentHistory] = useState([])
+  const [recentWorkouts, setRecentWorkouts] = useState([])
+
   const [showRanks, setShowRanks] = useState(false)
   const [rankPopTick, setRankPopTick] = useState(0)
+  // Какой попап над пилюлями открыт: null | 'muscles' | 'streak' | 'workouts'
+  const [activePopup, setActivePopup] = useState(null)
+
   const rankButtonRef = useRef(null)
+  const pillsRef = useRef(null)
 
   useEffect(() => {
     backButton.hide()
@@ -45,11 +76,19 @@ export default function Profile() {
     if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
 
     const loadStats = () => {
-      Promise.all([getTotalXP(), getWeeklyStreak(), getTotalWorkouts(), getMyFriendsPlace()])
-        .then(([xp, streak, totalWorkouts, place]) => {
-          setStats({ xp, streak, totalWorkouts })
-          setFriendsPlace(place)
-        })
+      Promise.all([
+        getTotalXP(),
+        getWeeklyStreak(),
+        getTotalWorkouts(),
+        getMyFriendsPlace(),
+        getRecentMuscleHistory(3),
+        getRecentWorkouts(3)
+      ]).then(([xp, streak, totalWorkouts, place, history, workouts]) => {
+        setStats({ xp, streak, totalWorkouts })
+        setFriendsPlace(place)
+        setRecentHistory(history)
+        setRecentWorkouts(workouts)
+      })
     }
     loadStats()
 
@@ -61,15 +100,35 @@ export default function Profile() {
     }
   }, [])
 
+  // Автозакрытие попапа через 6с + закрытие по тапу вне плашки пилюль.
+  useEffect(() => {
+    if (!activePopup) return
+    const t = setTimeout(() => setActivePopup(null), 6000)
+    const onOutside = (e) => {
+      if (pillsRef.current?.contains(e.target)) return
+      setActivePopup(null)
+    }
+    document.addEventListener('pointerdown', onOutside)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('pointerdown', onOutside)
+    }
+  }, [activePopup])
+
   const level = getLevelFromXP(stats.xp)
   const rank = getRankByLevel(level)
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
 
+  const { current: inLevelCurrent, needed: inLevelNeeded } = getXPInCurrentLevel(stats.xp)
+  const nextRank = getRankByLevel(level + 1)
+  const remainingToNext = Math.max(0, inLevelNeeded - inLevelCurrent)
+
   const handleRankTap = () => {
     haptic.light()
     setRankPopTick(t => t + 1)
     setShowRanks(prev => !prev)
+    setActivePopup(null)
   }
 
   const handlePlaceTap = () => {
@@ -77,15 +136,18 @@ export default function Profile() {
     navigate('/leaderboard?tab=friends')
   }
 
-  // Разделы сгруппированы по смыслу. Каждая группа → заголовок + единая
-  // карточка со строками (как РАЗДЕЛЫ на главной).
+  const togglePopup = (which) => {
+    haptic.light()
+    setShowRanks(false)
+    setActivePopup(prev => (prev === which ? null : which))
+  }
+
   const sectionGroups = [
     {
-      title: 'СОРЕВНОВАНИЕ',
+      title: 'ДОСТИЖЕНИЯ',
       items: [
-        { id: 'leaderboard',  icon: 'ui:leaderboard', title: 'Рейтинг',     subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
-        { id: 'rewards',      icon: 'ui:rewards',     title: 'Награды',     subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' },
-        { id: 'achievements', icon: '🏆',             title: 'Достижения',  subtitle: 'Ачивки и значки' }
+        { id: 'leaderboard', icon: 'ui:leaderboard', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
+        { id: 'rewards',     icon: 'ui:rewards',     title: 'Награды', subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' }
       ]
     },
     {
@@ -107,9 +169,7 @@ export default function Profile() {
 
   const handleSectionTap = (item) => {
     haptic.light()
-    if (item.path) {
-      navigate(item.path)
-    }
+    if (item.path) navigate(item.path)
   }
 
   const handleInviteTap = async () => {
@@ -117,58 +177,156 @@ export default function Profile() {
     await shareReferralLink()
   }
 
+  const streakHint = stats.streak === 0
+    ? 'Заверши тренировку чтобы зажечь огонёк'
+    : stats.streak < 4
+      ? `${4 - stats.streak} до максимума недели`
+      : 'Максимум этой недели'
+
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка профиля — как на главной: плашка аватар + имя/ник + ранг + место */}
-      <div style={styles.topPanel}>
-        <div style={styles.avatarWrap}>
-          <div style={{
-            ...styles.avatarInner,
-            borderColor: rank.color,
-            boxShadow: `0 0 12px ${rank.color}33`
-          }}>
-            {user?.photo_url ? (
-              <img src={user.photo_url} alt="" style={styles.avatarImg} />
-            ) : (
-              <div style={styles.avatarPlaceholder}>
-                {displayName.charAt(0).toUpperCase()}
+      {/* Закреплённая шапка — тот же приём что playerSticky на главной */}
+      <div style={styles.playerSticky}>
+        <div style={styles.playerInner}>
+
+          {/* Плашка аватар + имя/ник + ранг + место */}
+          <div style={styles.topPanel}>
+            <div style={styles.avatarWrap}>
+              <div style={{
+                ...styles.avatarInner,
+                borderColor: rank.color,
+                boxShadow: `0 0 12px ${rank.color}33`
+              }}>
+                {user?.photo_url ? (
+                  <img src={user.photo_url} alt="" style={styles.avatarImg} />
+                ) : (
+                  <div style={styles.avatarPlaceholder}>
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={styles.infoColumn}>
+              <div style={styles.nameRow}>
+                <span style={styles.name}>{displayName}</span>
+                {username && <span style={styles.username}>{username}</span>}
+              </div>
+
+              <div style={styles.rankWrap} data-rank-button-wrap>
+                <button
+                  ref={rankButtonRef}
+                  onClick={handleRankTap}
+                  style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <span
+                    key={`rankpop-${rankPopTick}`}
+                    style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopProfile 0.4s ease-out' : 'none' }}
+                  >
+                    <RankIcon level={level} size={26} />
+                  </span>
+                  {rank.name} {rank.subLevel}
+                </button>
+
+                <button
+                  onClick={handlePlaceTap}
+                  style={styles.friendsPlaceButton}
+                  aria-label="Открыть рейтинг друзей"
+                >
+                  🏆 #{friendsPlace}
+                </button>
+
+                {showRanks && (
+                  <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Плашка с тремя пилюлями — на месте XP-бара главной */}
+          <div ref={pillsRef} style={styles.pillsPanel}>
+            <button onClick={() => togglePopup('muscles')} style={styles.pill}>
+              <div style={{ ...styles.pillValue, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                {stats.xp} <MuscleIcon size={15} earned={true} />
+              </div>
+              <div style={styles.pillLabel}>МУСКУЛЫ</div>
+            </button>
+
+            <button onClick={() => togglePopup('streak')} style={styles.pill}>
+              <div style={styles.pillValue}>🔥 {stats.streak}</div>
+              <div style={styles.pillLabel}>СЕРИЯ</div>
+            </button>
+
+            <button onClick={() => togglePopup('workouts')} style={styles.pill}>
+              <div style={styles.pillValue}>{stats.totalWorkouts}</div>
+              <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
+            </button>
+
+            {/* Попап над пилюлями */}
+            {activePopup === 'muscles' && (
+              <div style={styles.popup}>
+                <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
+                {recentHistory.length === 0 ? (
+                  <div style={styles.popupEmpty}>
+                    Пока пусто.<br />Выполни буст или тренировку, чтобы заработать первые мускулы.
+                  </div>
+                ) : (
+                  <div style={styles.popupList}>
+                    {recentHistory.map((row, idx) => (
+                      <div key={idx} style={styles.popupRow}>
+                        <span style={styles.popupLabel}>{SOURCE_LABELS[row.source] || 'Начисление'}</span>
+                        <span style={{ ...styles.popupAmount, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          +{row.amount} <MuscleIcon size={16} earned={true} />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={styles.popupDivider} />
+                <div style={styles.popupRow}>
+                  <span style={styles.popupLabel}>До «{nextRank.name} {nextRank.subLevel}»</span>
+                  <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {remainingToNext} <MuscleIcon size={16} earned={true} />
+                  </span>
+                </div>
               </div>
             )}
-          </div>
-        </div>
 
-        <div style={styles.infoColumn}>
-          <div style={styles.nameRow}>
-            <span style={styles.name}>{displayName}</span>
-            {username && <span style={styles.username}>{username}</span>}
-          </div>
+            {activePopup === 'streak' && (
+              <div style={{ ...styles.popup, alignItems: 'center', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={styles.popupSectionTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+                  <StreakFlame streak={stats.streak} />
+                  <span style={styles.streakCount}>x{stats.streak}</span>
+                </div>
+                <div style={styles.streakHint}>{streakHint}</div>
+              </div>
+            )}
 
-          <div style={styles.rankWrap} data-rank-button-wrap>
-            <button
-              ref={rankButtonRef}
-              onClick={handleRankTap}
-              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-            >
-              <span
-                key={`rankpop-${rankPopTick}`}
-                style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopProfile 0.4s ease-out' : 'none' }}
-              >
-                <RankIcon level={level} size={26} />
-              </span>
-              {rank.name} {rank.subLevel}
-            </button>
-
-            <button
-              onClick={handlePlaceTap}
-              style={styles.friendsPlaceButton}
-              aria-label="Открыть рейтинг друзей"
-            >
-              🏆 #{friendsPlace}
-            </button>
-
-            {showRanks && (
-              <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
+            {activePopup === 'workouts' && (
+              <div style={styles.popup}>
+                <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
+                {recentWorkouts.length === 0 ? (
+                  <div style={styles.popupEmpty}>
+                    Пока нет завершённых тренировок.<br />Заверши первую — она появится здесь.
+                  </div>
+                ) : (
+                  <div style={styles.popupList}>
+                    {recentWorkouts.map((w, idx) => (
+                      <div key={idx} style={styles.popupRow}>
+                        <span style={styles.popupLabel}>{programTitle(w.program_id)} · День {w.day}</span>
+                        <span style={styles.popupDate}>{fmtWorkoutDate(w.finished_at)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={styles.popupDivider} />
+                <div style={styles.popupRow}>
+                  <span style={styles.popupLabel}>Всего тренировок</span>
+                  <span style={{ ...styles.popupAmount, color: rank.color }}>{stats.totalWorkouts}</span>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -179,28 +337,16 @@ export default function Profile() {
             40%  { transform: scale(1.22); }
             100% { transform: scale(1); }
           }
+          @keyframes popupShowHide {
+            0%   { opacity: 0; transform: translateY(-6px); }
+            4%   { opacity: 1; transform: translateY(0); }
+            96%  { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-4px); }
+          }
         `}</style>
       </div>
 
-      {/* Быстрые цифры */}
-      <div style={styles.statsRow}>
-        <div style={styles.statBox}>
-          <div style={{ ...styles.statValue, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-            {stats.xp} <MuscleIcon size={18} earned={true} />
-          </div>
-          <div style={styles.statLabel}>МУСКУЛЫ</div>
-        </div>
-        <div style={styles.statBox}>
-          <div style={styles.statValue}>🔥 {stats.streak}</div>
-          <div style={styles.statLabel}>СЕРИЯ</div>
-        </div>
-        <div style={styles.statBox}>
-          <div style={styles.statValue}>{stats.totalWorkouts}</div>
-          <div style={styles.statLabel}>ТРЕНИРОВОК</div>
-        </div>
-      </div>
-
-      {/* Кнопка "Пригласить друга" — единая CTA-полоса */}
+      {/* Кнопка "Пригласить друга" */}
       <button
         onClick={handleInviteTap}
         style={styles.inviteButton}
@@ -217,10 +363,7 @@ export default function Profile() {
       {/* Разделы — сгруппированы по смыслу, единая карточка на группу */}
       {sectionGroups.map((group, gIdx) => (
         <section key={group.title}>
-          <div style={{
-            ...styles.groupTitle,
-            marginTop: gIdx === 0 ? '4px' : '20px'
-          }}>
+          <div style={{ ...styles.groupTitle, marginTop: gIdx === 0 ? '0' : '20px' }}>
             {group.title}
           </div>
 
@@ -262,16 +405,37 @@ export default function Profile() {
 }
 
 const styles = {
-  page: {},
-  // Верхняя плашка — копия главной: аватар слева, инфо справа
+  // paddingTop 0 — нейтрализуем верхний отступ .page, его даёт playerSticky
+  // (как на главной). Лево/право/низ (16/16/24) остаются из класса .page.
+  page: {
+    paddingTop: 0
+  },
+  // Закреплённая шапка — копия playerSticky главной (Home.jsx)
+  playerSticky: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    background: 'var(--color-bg)',
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    paddingBottom: '12px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px'
+  },
+  // Внутренний контейнер — аналог container в PlayerCard (gap между плашками)
+  playerInner: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '8px 0 4px',
+    gap: '12px'
+  },
   topPanel: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: '16px',
     padding: '12px 14px',
-    marginTop: '8px',
-    marginBottom: '20px',
     background: 'rgba(255, 255, 255, 0.015)',
     borderRadius: 'var(--radius-card)',
     position: 'relative'
@@ -358,37 +522,140 @@ const styles = {
     cursor: 'pointer',
     transition: 'background 0.2s ease, border-color 0.2s ease'
   },
-  statsRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+
+  // === Плашка с пилюлями (вместо XP-бара) ===
+  pillsPanel: {
+    position: 'relative',
+    display: 'flex',
     gap: '8px',
-    marginBottom: '16px'
+    padding: '12px 14px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 'var(--radius-card)'
   },
-  statBox: {
-    padding: '14px 8px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    textAlign: 'center',
-    minHeight: '70px',
+  pill: {
+    flex: 1,
+    minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'center'
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '3px',
+    padding: '8px 6px',
+    // Тот же тёмный фон + обводка что у дорожки XP-бара на главной
+    background: 'rgba(0, 0, 0, 0.4)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
-  statValue: {
+  pillValue: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '16px',
+    fontSize: '15px',
     color: 'var(--color-primary)',
-    letterSpacing: '1px',
-    marginBottom: '4px'
+    letterSpacing: '0.5px',
+    lineHeight: 1,
+    whiteSpace: 'nowrap'
   },
-  statLabel: {
+  pillLabel: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '9px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '1.5px',
+    letterSpacing: '1px',
     fontWeight: 600
   },
-  // Кнопка "Пригласить друга" — выделенная CTA-полоса с лёгким зелёным акцентом
+
+  // === Попап над пилюлями (как у главной) ===
+  popup: {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    left: 0, right: 0,
+    background: 'rgba(34, 34, 34, 0.95)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '20px',
+    padding: '14px 16px 12px',
+    zIndex: 50,
+    animation: 'popupShowHide 6.4s ease-out forwards'
+  },
+  popupSectionTitle: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px',
+    marginBottom: '8px',
+    paddingLeft: '2px'
+  },
+  popupList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  popupRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '4px 2px',
+    gap: '10px'
+  },
+  popupLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text)',
+    fontWeight: 500,
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
+  },
+  popupAmount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    color: 'var(--color-primary)',
+    letterSpacing: '1px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
+  },
+  popupDate: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.5px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
+  },
+  popupEmpty: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    padding: '8px 4px',
+    lineHeight: 1.5
+  },
+  popupDivider: {
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    margin: '8px 0'
+  },
+  streakCount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '22px',
+    color: '#FFFFFF',
+    letterSpacing: '1px',
+    lineHeight: 1,
+    textShadow: '0 0 6px rgba(255, 140, 66, 0.6)'
+  },
+  streakHint: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    fontWeight: 500
+  },
+
+  // Кнопка "Пригласить друга". marginTop 4 — отступ от sticky-шапки,
+  // marginBottom 20 — нормальный отступ до первого заголовка раздела.
   inviteButton: {
     width: '100%',
     display: 'flex',
@@ -398,7 +665,8 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.08)',
     border: '1px solid rgba(158, 209, 83, 0.25)',
     borderRadius: 'var(--radius-small)',
-    marginBottom: '4px',
+    marginTop: '4px',
+    marginBottom: '20px',
     minHeight: '64px',
     textAlign: 'left'
   },
@@ -440,8 +708,6 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  // Единая карточка-группа. Скругления у группы, строки внутри прямые,
-  // overflow hidden даёт скруглённые углы первой/последней строке.
   groupCard: {
     display: 'flex',
     flexDirection: 'column',
@@ -449,8 +715,6 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
-  // Строка раздела. Фон прозрачный (его даёт groupCard), при тапе .tg-row
-  // подсвечивает серым. Разделитель — borderTop у всех кроме первой.
   row: {
     display: 'flex',
     alignItems: 'center',

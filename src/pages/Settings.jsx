@@ -8,15 +8,13 @@ import UiIcon from '../components/UiIcon'
 /**
  * Экран настроек.
  *
- * Разделы сгруппированы по смыслу (как РАЗДЕЛЫ на главной): заголовок секции +
- * единая карточка со строками, разделители между строками, серая подсветка
- * строки при тапе/скролле (className="tg-row").
+ * Сверху — шапка с иконкой настроек и заголовком «НАСТРОЙКИ» (чтобы понимать
+ * на какой странице находишься).
  *
- * Группа СБРОС — обнулялки:
- *  - "Сбросить порядок дней" — стирает только цикл A/B/C
- *  - "Сбросить значки лиг" (DEV) — удаляет league_badges, мускулы остаются
- *  - "Сбросить прогресс" — полный обнул
- * У них цветной заголовок (жёлтый/оранжевый) как маркер опасного действия.
+ * Разделы сгруппированы по смыслу (как РАЗДЕЛЫ на главной): заголовок + единая
+ * карточка со строками, разделители, серая подсветка .tg-row.
+ *
+ * Группа СБРОС — обнулялки (цветной заголовок строки как маркер опасности).
  */
 export default function Settings() {
   const navigate = useNavigate()
@@ -46,9 +44,9 @@ export default function Settings() {
     {
       title: 'СБРОС',
       items: [
-        { id: 'debug-reset-days',   icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново',          tone: 'warning' },
-        { id: 'debug-reset-badges', icon: '🏅', title: 'Сбросить значки лиг',   subtitle: 'DEV · для теста модалок',           tone: 'warning' },
-        { id: 'debug-reset',        icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик',   tone: 'danger' }
+        { id: 'debug-reset-days',   icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново',        tone: 'warning' },
+        { id: 'debug-reset-badges', icon: '🏅', title: 'Сбросить значки лиг',   subtitle: 'DEV · для теста модалок',         tone: 'warning' },
+        { id: 'debug-reset',        icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик', tone: 'danger' }
       ]
     }
   ]
@@ -74,7 +72,6 @@ export default function Settings() {
       return
     }
 
-    // Дев-сброс ТОЛЬКО значков лиг — для теста модалок
     if (item.id === 'debug-reset-badges') {
       const confirmed = await tgConfirm(
         'Сбросить значки лиг?\n\nЭто dev-инструмент для тестов модалок.\nМускулы, стрик и история начислений НЕ пострадают — только удалятся все полученные значки.\n\nПри следующем тапе квеста модалка значка появится снова.'
@@ -119,7 +116,6 @@ export default function Settings() {
     }
   }
 
-  // Цвет заголовка строки по тону (опасные действия)
   const titleColor = (tone) =>
     tone === 'danger' ? '#FF8C42'
     : tone === 'warning' ? '#FFD700'
@@ -128,12 +124,15 @@ export default function Settings() {
   return (
     <div className="page page-fade" style={styles.page}>
 
+      {/* Шапка страницы: иконка + заголовок */}
+      <header style={styles.header}>
+        <UiIcon name="settings" size={26} color="var(--color-primary)" />
+        <h1 style={styles.title}>НАСТРОЙКИ</h1>
+      </header>
+
       {groups.map((group, gIdx) => (
         <section key={group.title}>
-          <div style={{
-            ...styles.groupTitle,
-            marginTop: gIdx === 0 ? '8px' : '24px'
-          }}>
+          <div style={{ ...styles.groupTitle, marginTop: gIdx === 0 ? '4px' : '24px' }}>
             {group.title}
           </div>
 
@@ -169,7 +168,22 @@ export default function Settings() {
 
 const styles = {
   page: {},
-  // === Группы (как РАЗДЕЛЫ на главной) ===
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    marginTop: '8px',
+    marginBottom: '20px'
+  },
+  title: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '32px',
+    color: 'var(--color-primary)',
+    letterSpacing: '3px',
+    lineHeight: 1,
+    margin: 0
+  },
   groupTitle: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',

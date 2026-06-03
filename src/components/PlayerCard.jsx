@@ -17,6 +17,7 @@ import XPBar from './XPBar'
 import RanksPopup from './RanksPopup'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
+import StreakFlame from './StreakFlame'
 
 /**
  * Главный блок персонажа на Главной.
@@ -26,12 +27,8 @@ import MuscleIcon from './MuscleIcon'
  *                              Ранг (цветной)
  *                              [💪 XP-бар  🔥 x2]
  *
- * Аватарка теперь квадратная (border-radius 33px как у карточек),
- * рамка красится в цвет текущего ранга — визуально подчёркивает уровень.
- *
- * Серия переехала в один ряд с XP-баром: огонёк + пиксельная цифра x{N}.
- * Размер огонька растёт со стриком — x0 серый, дальше всё ярче и больше.
- * Никаких "СЕРИЯ:" и пояснений снаружи — компактно и читаемо.
+ * StreakFlame вынесен в отдельный компонент (src/components/StreakFlame.jsx) —
+ * используется и тут, и в попапе серии на странице профиля.
  */
 
 const SOURCE_LABELS = {
@@ -48,9 +45,6 @@ function formatSourceLabel(source) {
 export default function PlayerCard() {
   const navigate = useNavigate()
 
-  // Стартуем из кешированного юзера (auth.js поднимает его из localStorage),
-  // чтобы данные показались сразу — без мигания Новичком и без зависания
-  // при плохой сети. getUser() (Telegram SDK) как запасной источник фото/имени.
   const [user, setUser] = useState(() => getCurrentUser() || getUser())
   const [xp, setXP] = useState(() => getCurrentUser()?.total_muscles || 0)
   const [weeklyStreak, setWeeklyStreak] = useState(() => {
@@ -62,19 +56,8 @@ export default function PlayerCard() {
   const [showRanks, setShowRanks] = useState(false)
   const [friendsPlace, setFriendsPlace] = useState(1)
 
-  // Состояние попапа над огоньком стрика. Логика повторных тапов:
-  //  - первый тап на огонёк → показываем попап (showStreakPopup=true)
-  //  - последующие тапы пока попап виден → не трогаем его, играем только
-  //    искорки/пульс. Юзер видит "ага, тап засчитан, но попап тот же".
-  //  - попап сам исчезает после streakAutoCloseTimer (CSS-анимация 6с)
-  //  - после исчезновения следующий тап снова покажет
-  // Без этого попап моргал бы при частых тапах: появился-исчез-появился.
   const [showStreakPopup, setShowStreakPopup] = useState(false)
-
-  // Счётчик для триггера "сжатия" бицепса в XP-баре при тапе на прогресс-бар.
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
-
-  // Тик для "pop"-анимации иконки ранга при тапе по рангу.
   const [rankPopTick, setRankPopTick] = useState(0)
 
   const xpButtonRef = useRef(null)
@@ -86,7 +69,6 @@ export default function PlayerCard() {
   const streakAutoCloseTimer = useRef(null)
 
   useEffect(() => {
-    // Telegram-данные (фото/имя) если есть — иначе остаётся кешированный юзер.
     const tgUser = getUser()
     if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
 
@@ -138,8 +120,6 @@ export default function PlayerCard() {
     return () => { if (xpAutoCloseTimer.current) clearTimeout(xpAutoCloseTimer.current) }
   }, [showXPDetails])
 
-  // Автозакрытие попапа стрика через 6 секунд. Тайминг такой же как у XP-попапа
-  // — для визуальной консистентности интерфейса.
   useEffect(() => {
     if (showStreakPopup) {
       streakAutoCloseTimer.current = setTimeout(() => setShowStreakPopup(false), 6000)
@@ -147,10 +127,6 @@ export default function PlayerCard() {
     return () => { if (streakAutoCloseTimer.current) clearTimeout(streakAutoCloseTimer.current) }
   }, [showStreakPopup])
 
-  // Закрытие попапа стрика при клике вне. Слушатель ставим только когда попап
-  // открыт — чтобы не висеть подписанным постоянно.
-  // Клик по самому огоньку (streakButtonRef) пропускаем — он сам решит
-  // что делать в handleStreakTap (играть только искорки, попап не трогать).
   useEffect(() => {
     if (!showStreakPopup) return
     const handleOutside = (e) => {
@@ -182,29 +158,23 @@ export default function PlayerCard() {
 
   const handleXPTap = () => {
     haptic.light()
-    setMuscleFlexTick(t => t + 1) // бицепс "сжимается" на тап
+    setMuscleFlexTick(t => t + 1)
     setShowXPDetails(prev => !prev)
     setShowRanks(false)
   }
 
   const handleRankTap = () => {
     haptic.light()
-    setRankPopTick(t => t + 1) // лёгкий "pop" иконки ранга
+    setRankPopTick(t => t + 1)
     setShowRanks(prev => !prev)
     setShowXPDetails(false)
   }
 
-  // Тап по месту 🏆 #N — открыть страницу рейтинга на табе "Друзья"
   const handlePlaceTap = () => {
     haptic.light()
     navigate('/leaderboard?tab=friends')
   }
 
-  // Тап по огоньку: haptic + искорки если стрик 3+ + попап.
-  // Попап показываем ТОЛЬКО если он сейчас не отображается. Если уже виден —
-  // юзер видит свои тапы через искорки/пульс, но попап не перезапускается
-  // (иначе моргал бы при частых тапах). Когда дослужит свои 6 секунд и
-  // исчезнет — следующий тап его снова покажет.
   const handleStreakTap = (e) => {
     haptic.light()
     if (weeklyStreak >= 3) {
@@ -213,8 +183,6 @@ export default function PlayerCard() {
       const y = rect.top + rect.height / 2
       spawnFireSparks(x, y)
     }
-    // Открываем попап только если он сейчас не открыт.
-    // Закрываем другие попапы чтобы не накладывались.
     if (!showStreakPopup) {
       setShowStreakPopup(true)
       setShowXPDetails(false)
@@ -225,8 +193,6 @@ export default function PlayerCard() {
   return (
     <div style={styles.container}>
 
-      {/* Верхняя плашка: аватар + имя/ранг/рейтинг, полупрозрачный фон,
-          скругления, без обводки. Контент по центру относительно аватара. */}
       <div style={styles.topPanel}>
 
         <button
@@ -292,7 +258,6 @@ export default function PlayerCard() {
         </div>
       </div>
 
-      {/* Нижний ряд: XP-бар на всю ширину + огонёк-стрик справа */}
       <div style={styles.bottomRowWrap}>
           <div style={styles.bottomRow}>
             <div style={styles.xpBlock}>
@@ -355,9 +320,6 @@ export default function PlayerCard() {
               <span style={styles.streakCount}>x{weeklyStreak}</span>
             </button>
 
-            {/* Попап со сводкой по стрику. Появляется при тапе на огонёк,
-                автоматически закрывается через ~6с (CSS-анимация popupShowHide).
-                Позиционирован абсолютно от bottomRow — снизу под огоньком. */}
             {showStreakPopup && (
               <div ref={streakPopupRef} style={styles.streakPopup}>
                 <div style={styles.streakPopupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
@@ -384,134 +346,12 @@ export default function PlayerCard() {
           96%  { opacity: 1; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(-4px); }
         }
-        @keyframes flameIdleFlicker {
-          0%, 100% { transform: scale(1); }
-          50%      { transform: scale(1.06); }
-        }
         @keyframes rankIconPop {
           0%   { transform: scale(1); }
           40%  { transform: scale(1.22); }
           100% { transform: scale(1); }
         }
-        @keyframes flameSparkRise {
-          0%   { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
-          20%  { opacity: 1; }
-          100% { opacity: 0; transform: translate(calc(-50% + var(--sx, 0px)), var(--sy, -14px)) scale(0.4); }
-        }
       `}</style>
-    </div>
-  )
-}
-
-/**
- * Огонёк серии с динамическим размером и поведением:
- *  - x0: серый контур, маленький, без анимаций
- *  - x1: загорается (полноцветный), маленький
- *  - x2: средний
- *  - x3: больше + лёгкое мерцание + редкие искорки
- *  - x4+: максимальный размер + постоянные искорки
- *
- * Размеры подобраны так, чтобы даже на x4 огонёк не ломал высоту строки
- * с XP-баром (XPBar внутри ~28px высотой).
- */
-function StreakFlame({ streak }) {
-  // Размер svg иконки по стрику. На x0 минимум, дальше растёт ступенями.
-  const size = streak >= 4 ? 32
-             : streak >= 3 ? 28
-             : streak >= 2 ? 24
-             : streak >= 1 ? 22
-             : 20
-
-  const lit = streak >= 1
-  const animated = streak >= 3       // мерцание
-  const showSparks = streak >= 3     // искорки (одна на x3, две на x4+)
-
-  return (
-    <div style={{
-      position: 'relative',
-      width: size,
-      height: size,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0
-    }}>
-      {lit ? (
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{
-            filter: 'drop-shadow(0 0 4px rgba(255, 140, 66, 0.6))',
-            animation: animated ? 'flameIdleFlicker 1.4s ease-in-out infinite' : 'none',
-            transformOrigin: 'center bottom'
-          }}
-        >
-          <defs>
-            <linearGradient id="flameGradHeader" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#FFD700" />
-              <stop offset="50%" stopColor="#FF8C42" />
-              <stop offset="100%" stopColor="#E84545" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M12 2 C 8 6, 6 9, 6 13 C 6 17, 9 21, 12 21 C 15 21, 18 17, 18 13 C 18 10, 16 8, 14 7 C 14 9, 13 10, 12 10 C 12 7, 13 5, 12 2 Z"
-            fill="url(#flameGradHeader)"
-          />
-        </svg>
-      ) : (
-        // x0: серый контур, никаких анимаций
-        <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M12 2 C 8 6, 6 9, 6 13 C 6 17, 9 21, 12 21 C 15 21, 18 17, 18 13 C 18 10, 16 8, 14 7 C 14 9, 13 10, 12 10 C 12 7, 13 5, 12 2 Z"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.25)"
-            strokeWidth="1.5"
-          />
-        </svg>
-      )}
-
-      {/* Постоянные искорки над огоньком. Используем CSS-переменные --sx/--sy
-          чтобы каждая искра летела по своей траектории. */}
-      {showSparks && (
-        <>
-          <span
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: 0,
-              width: 3,
-              height: 3,
-              background: '#FFD700',
-              boxShadow: '0 0 4px #FFD700',
-              borderRadius: 1,
-              pointerEvents: 'none',
-              '--sx': '-3px',
-              '--sy': '-16px',
-              animation: 'flameSparkRise 1.6s ease-out infinite'
-            }}
-          />
-          {streak >= 4 && (
-            <span
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: 0,
-                width: 2,
-                height: 2,
-                background: '#FF8C42',
-                boxShadow: '0 0 3px #FF8C42',
-                borderRadius: 1,
-                pointerEvents: 'none',
-                '--sx': '4px',
-                '--sy': '-14px',
-                animation: 'flameSparkRise 1.4s ease-out 0.6s infinite'
-              }}
-            />
-          )}
-        </>
-      )}
     </div>
   )
 }
@@ -520,15 +360,12 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    // Горизонтальный отступ 0 — чтобы плашки игрока начинались ровно на 16px
-    // от краёв (как везде), а не на 20px. Раньше тут было 4px и блоки визуально
-    // отступали сильнее чем на других экранах.
+    // Горизонтальный отступ 0 — плашки игрока ровно на 16px от краёв (как везде),
+    // а не на 20px как было раньше при padding 4px по бокам.
     padding: '8px 0 4px',
     position: 'relative',
     gap: '12px'
   },
-  // Верхняя плашка: полупрозрачный фон, скругления, без обводки.
-  // Чуть прозрачнее чем карточка дейли-квеста.
   topPanel: {
     display: 'flex',
     flexDirection: 'row',
@@ -538,15 +375,12 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.015)',
     borderRadius: 'var(--radius-card)'
   },
-  // Плашка нижнего ряда (XP + стрик) — как верхняя плашка, фон чуть светлее
-  // (ближе к карточке дейли-буста), скругления, без обводки.
   bottomRowWrap: {
     position: 'relative',
     padding: '12px 14px',
     background: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 'var(--radius-card)'
   },
-  // Аватар-обёртка (кнопка)
   avatarWrap: {
     width: '100px',
     height: '100px',
@@ -558,15 +392,13 @@ const styles = {
     WebkitTapHighlightColor: 'transparent',
     position: 'relative'
   },
-  // Внутренний контейнер аватара: КВАДРАТ с радиусом 33px (как карточки).
-  // Рамка крашется в цвет ранга — стиль borderColor приходит из JSX.
   avatarInner: {
     width: '100%',
     height: '100%',
     borderRadius: '33px',
     overflow: 'hidden',
     background: 'var(--color-card)',
-    border: '2px solid',  // цвет задаётся динамически из JSX через rank.color
+    border: '2px solid',
     transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
@@ -624,9 +456,6 @@ const styles = {
     border: 'none',
     cursor: 'pointer'
   },
-  // Место среди друзей — отдельная кнопка справа от ранга,
-  // тап ведёт на /leaderboard. Не на отдельной строке, а в одну
-  // с рангом — чтобы занять минимум места и быть рядом с рангом-родителем.
   friendsPlaceButton: {
     marginLeft: '10px',
     padding: '2px 8px',
@@ -640,7 +469,6 @@ const styles = {
     cursor: 'pointer',
     transition: 'background 0.2s ease, border-color 0.2s ease'
   },
-  // Ряд: XP-бар занимает всё, огонёк + цифра справа. На всю ширину.
   bottomRow: {
     width: '100%',
     display: 'flex',
@@ -653,10 +481,6 @@ const styles = {
     position: 'relative'
   },
   xpBarButton: { width: '100%', padding: 0, background: 'transparent' },
-  // Кнопка-обёртка огонька со счётчиком. Без фона, без рамки.
-  // Высота примерно соответствует XP-бару (~28px) — на x0/x1/x2 огонёк
-  // помещается ровно; на x3/x4 чуть выступает вверх, но overflow visible
-  // оставляем — огонёк и должен "торчать", это часть характера.
   streakButton: {
     flexShrink: 0,
     display: 'flex',
@@ -670,7 +494,6 @@ const styles = {
     minWidth: '52px',
     justifyContent: 'flex-start'
   },
-  // Пиксельный счётчик стрика — стиль "x0", "x1", ...
   streakCount: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '14px',
@@ -744,18 +567,9 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.08)',
     margin: '8px 0'
   },
-  // Попап стрика. Позиционирован абсолютно справа под огоньком — там же где
-  // живёт кнопка-стрик внутри bottomRow. Использует ту же CSS-анимацию
-  // popupShowHide что и XP-попап (6.4с: появление 4% времени → пауза → угасание),
-  // чтобы внешний и внутренний таймаут совпадали и юзер не успевал тапать в
-  // "невидимый" попап.
   streakPopup: {
     position: 'absolute',
-    // Правый край — там же где сам огонёк. Сдвигаемся под него.
     right: 0,
-    // Выравниваем с XP-попапом. bottomRow выше xpBlock (из-за крупного
-    // огонька), поэтому считаем top не от 100% ряда, а от центра + половина
-    // высоты XP-бара (20px) + 8px зазор = центр ряда + 18px.
     top: 'calc(50% + 18px)',
     minWidth: '200px',
     maxWidth: 'calc(100vw - 32px)',
@@ -781,9 +595,6 @@ const styles = {
     textAlign: 'center',
     whiteSpace: 'nowrap'
   },
-  // Ряд с огоньком и крупной цифрой "x3". Огонёк рендерим заново через
-  // <StreakFlame /> чтобы получить ту же графику с искорками — у юзера
-  // не должно быть ощущения что это что-то отдельное от его огонька наверху.
   streakPopupRow: {
     display: 'flex',
     alignItems: 'center',

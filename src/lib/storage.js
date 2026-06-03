@@ -196,6 +196,24 @@ export async function getTotalWorkouts() {
   return count || 0
 }
 
+/**
+ * Последние N завершённых тренировок — для попапа на странице профиля.
+ * Возвращает массив { finished_at, program_id, day }, свежие сверху.
+ */
+export async function getRecentWorkouts(limit = 3) {
+  const userId = getUserId()
+  if (!userId) return []
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('finished_at, program_id, day')
+    .eq('user_id', userId)
+    .not('finished_at', 'is', null)
+    .order('finished_at', { ascending: false })
+    .limit(limit)
+  if (error) { console.error('[storage] getRecentWorkouts error:', error); return [] }
+  return data || []
+}
+
 /* ============================================ */
 /* DAILY QUESTS */
 /* ============================================ */
