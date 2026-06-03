@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExerciseVideo from './ExerciseVideo'
+import UiIcon from './UiIcon'
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -81,12 +82,16 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
         {/* Кнопки действий */}
         <div style={styles.actionsBlock}>
           <button onClick={onInfo} style={styles.actionButton}>
-            <span style={styles.actionIcon}>ℹ️</span>
+            <span style={styles.actionIcon}>
+              <UiIcon name="info" size={20} color="#3FA2F7" />
+            </span>
             <span style={styles.actionLabel}>Инфо</span>
           </button>
 
           <button onClick={onSwap} style={styles.actionButton}>
-            <span style={styles.actionIcon}>🔄</span>
+            <span style={styles.actionIcon}>
+              <UiIcon name="change" size={20} color="#FF8C42" />
+            </span>
             <span style={styles.actionLabel}>Сменить</span>
           </button>
         </div>
@@ -135,7 +140,7 @@ const styles = {
     maxWidth: '360px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
+    borderRadius: '33px',
     padding: '14px 14px 12px',
     display: 'flex',
     flexDirection: 'column',
