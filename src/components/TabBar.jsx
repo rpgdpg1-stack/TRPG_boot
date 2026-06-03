@@ -156,23 +156,28 @@ export default function TabBar() {
               tab.icon
             )}
           </span>
-          <span style={{
-            ...styles.label,
-            color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
-          }}>
-            {tab.id === 'rating' ? (
-              // #N: серый при неактиве, зелёный при активе — как остальные лейблы.
-              <span style={{
-                fontFamily: 'var(--font-tiny5)',
-                letterSpacing: '0.5px',
-                color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
-              }}>
-                #{friendsPlace}
-              </span>
-            ) : (
-              tab.label
-            )}
-          </span>
+          {tab.id === 'rating' ? (
+            // #N — отдельный span БЕЗ styles.label, чтобы родительский цвет
+            // ничего не перебивал. Серый при неактиве, зелёный при активе.
+            <span style={{
+              fontFamily: 'var(--font-tiny5)',
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap',
+              transition: 'color 0.25s ease',
+              color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+            }}>
+              #{friendsPlace}
+            </span>
+          ) : (
+            <span style={{
+              ...styles.label,
+              color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+            }}>
+              {tab.label}
+            </span>
+          )}
         </button>
       ))}
     </nav>
