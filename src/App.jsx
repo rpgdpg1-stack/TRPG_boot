@@ -13,7 +13,6 @@ import Home from './pages/Home'
 import Category from './pages/Category'
 import WorkoutDay from './pages/WorkoutDay'
 import SwapExercise from './pages/SwapExercise'
-import Progress from './pages/Progress'
 import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
@@ -102,7 +101,7 @@ export default function App() {
           <Route path="/category/:id" element={<Category />} />
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
-          <Route path="/progress" element={<Progress />} />
+          
           <Route path="/profile" element={<Profile />} />
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />

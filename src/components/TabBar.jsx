@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
 import MuscleIcon from './MuscleIcon'
+import { getMyFriendsPlace } from '../lib/leaderboard'
+import { EVENTS, on } from '../lib/events'
 
 /**
  * Таб-бар — 3 вкладки: Статистика / Тренировки / Профиль.
@@ -22,6 +24,18 @@ export default function TabBar() {
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
   // Тик для "pop"-увеличения иконки профиля при тапе.
   const [profilePopTick, setProfilePopTick] = useState(0)
+  // Тик для "pop" кубка рейтинга при тапе.
+  const [ratingPopTick, setRatingPopTick] = useState(0)
+  // Место среди друзей для бейджа #N на вкладке рейтинга.
+  const [friendsPlace, setFriendsPlace] = useState(1)
+
+  useEffect(() => {
+    const load = () => { getMyFriendsPlace().then(setFriendsPlace) }
+    load()
+    const offReady = on(EVENTS.USER_READY, load)
+    const offChanged = on(EVENTS.USER_CHANGED, load)
+    return () => { offReady(); offChanged() }
+  }, [])
 
   // Прячем таб-бар на экранах тренировки и замены упражнений
   const isHiddenOnPath =
@@ -38,12 +52,12 @@ export default function TabBar() {
 
   const tabs = [
     {
-      id: 'progress',
-      path: '/progress',
-      label: 'Статистика',
-      icon: '📊',
-      isActive: location.pathname === '/progress',
-      canTap: location.pathname !== '/progress'
+      id: 'rating',
+      path: '/leaderboard?tab=friends',
+      label: 'Рейтинг',
+      iconName: 'leaderboard',
+      isActive: location.pathname === '/leaderboard',
+      canTap: location.pathname !== '/leaderboard'
     },
     {
       id: 'workouts',
@@ -68,6 +82,7 @@ export default function TabBar() {
     // Анимации при каждом тапе (даже если вкладка уже активна).
     if (tab.id === 'workouts') setMuscleFlexTick(t => t + 1)
     if (tab.id === 'profile') setProfilePopTick(t => t + 1)
+    if (tab.id === 'rating') setRatingPopTick(t => t + 1)
     if (!tab.canTap) return
     navigate(tab.path)
   }
@@ -104,7 +119,7 @@ export default function TabBar() {
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
-                color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+                color={tab.isActive ? '#FADFBE' : 'rgba(255,255,255,0.5)'}
                 flexTrigger={muscleFlexTick}
               />
             ) : tab.id === 'profile' ? (
@@ -121,6 +136,20 @@ export default function TabBar() {
                   color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
+            ) : tab.id === 'rating' ? (
+              <span
+                key={`ratingpop-${ratingPopTick}`}
+                style={{
+                  display: 'inline-flex',
+                  animation: ratingPopTick ? 'tabIconPop 0.4s ease-out' : 'none'
+                }}
+              >
+                <UiIcon
+                  name="leaderboard"
+                  size={32}
+                  color={tab.isActive ? '#FFD700' : 'rgba(255,255,255,0.5)'}
+                />
+              </span>
             ) : tab.iconName ? (
               <UiIcon
                 name={tab.iconName}
@@ -135,7 +164,17 @@ export default function TabBar() {
             ...styles.label,
             color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
           }}>
-            {tab.label}
+            {tab.id === 'rating' ? (
+              <span style={{
+                fontFamily: 'var(--font-tiny5)',
+                letterSpacing: '0.5px',
+                color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+              }}>
+                #{friendsPlace}
+              </span>
+            ) : (
+              tab.label
+            )}
           </span>
         </button>
       ))}
