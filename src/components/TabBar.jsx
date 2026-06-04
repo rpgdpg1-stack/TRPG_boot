@@ -107,8 +107,7 @@ export default function TabBar() {
         >
           <span style={{
             ...styles.icon,
-            opacity: tab.isActive ? 1 : 0.45,
-            filter: tab.isActive ? 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.4))' : 'none'
+            opacity: tab.isActive ? 1 : 0.45
           }}>
             {tab.id === 'workouts' ? (
               <MuscleIcon
@@ -224,7 +223,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'opacity 0.25s ease, filter 0.25s ease'
+    transition: 'opacity 0.25s ease'
   },
   label: {
     fontFamily: 'var(--font-manrope)',
