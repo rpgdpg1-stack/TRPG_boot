@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
@@ -358,7 +359,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
                    : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
                    : null
 
-  return (
+  return createPortal(
     <div style={profileModalStyles.overlay} onClick={onClose}>
       <div style={profileModalStyles.inner} onClick={(e) => e.stopPropagation()}>
         <ProfileHeader
@@ -400,12 +401,13 @@ function ProfileModal({ row, onClose, onBackupDone }) {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   )
 }
 
 function RulesModal({ onClose, season }) {
-  return (
+  return createPortal(
     <div style={modalStyles.overlay} onClick={onClose}>
       <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={modalStyles.icon}>🏆</div>
@@ -455,7 +457,8 @@ function RulesModal({ onClose, season }) {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -680,6 +683,7 @@ const profileModalStyles = {
     // таб-бар, прокрутка внутри оверлея если контент высокий.
     padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
   inner: {
@@ -746,6 +750,7 @@ const modalStyles = {
     // Низ с запасом под таб-бар, прокрутка внутри оверлея.
     padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },
   modal: {

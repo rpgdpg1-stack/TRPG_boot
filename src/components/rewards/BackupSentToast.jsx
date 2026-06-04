@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import MuscleIcon from '../MuscleIcon'
 
 /**
@@ -49,7 +50,7 @@ export default function BackupSentToast({ targetName, bonus = 20, onConfirm }) {
     return () => { isActive = false; clearInterval(interval) }
   }, [])
 
-  return (
+  return createPortal(
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div ref={sceneRef} style={styles.scene}>
@@ -77,7 +78,8 @@ export default function BackupSentToast({ targetName, bonus = 20, onConfirm }) {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   )
 }
 
