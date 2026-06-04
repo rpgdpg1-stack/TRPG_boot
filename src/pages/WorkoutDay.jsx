@@ -512,7 +512,16 @@ export default function WorkoutDay() {
           slot={actionSlot}
           onInfo={handleMenuInfo}
           onSwap={handleMenuSwap}
-          onClose={() => setActionSlot(null)}
+          onClose={() => {
+            const orderNum = actionSlot.order_num
+            setActionSlot(null)
+            // Тот же эффект что при возврате с Инфо/Смены: лёгкий press
+            // + зелёная подсветка-обводка карточки которую долго тапнули.
+            setPressedOrderNum(orderNum)
+            setTimeout(() => setPressedOrderNum(null), 350)
+            setGlowedOrderNum(orderNum)
+            setTimeout(() => setGlowedOrderNum(null), 1600)
+          }}
         />
       )}
 
