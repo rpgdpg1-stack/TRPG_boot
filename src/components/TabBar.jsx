@@ -214,7 +214,7 @@ const styles = {
     padding: '0 12px',
     minWidth: '78px',
     height: 'calc(var(--tabbar-height) - 9px)',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: '27px',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
   },
