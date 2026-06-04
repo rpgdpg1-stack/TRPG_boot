@@ -50,7 +50,6 @@ export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) 
       style={{
         ...styles.row,
         background: isMe ? 'rgba(158, 209, 83, 0.10)' : 'transparent',
-        border: isMe ? '1px solid rgba(158, 209, 83, 0.35)' : '1px solid rgba(255, 255, 255, 0.04)',
         cursor: onTap ? 'pointer' : 'default'
       }}>
 
@@ -104,8 +103,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    padding: '10px 12px',
-    borderRadius: '14px',
+    padding: '12px 14px',
     transition: 'background 0.2s ease'
   },
   // Колонка места — фиксированной ширины, чтобы аватары

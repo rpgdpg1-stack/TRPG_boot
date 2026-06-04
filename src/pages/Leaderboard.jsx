@@ -192,6 +192,7 @@ export default function Leaderboard() {
           onClick={() => handleTabTap(TAB_FRIENDS)}
           style={{
             ...styles.tab,
+            background: activeTab === TAB_FRIENDS ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
             color: activeTab === TAB_FRIENDS ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
@@ -203,13 +204,13 @@ export default function Leaderboard() {
             />
           </span>
           <span style={styles.tabLabel}>ДРУЗЬЯ</span>
-          {activeTab === TAB_FRIENDS && <div style={styles.tabUnderline} />}
         </button>
 
         <button
           onClick={() => handleTabTap(TAB_LEAGUE)}
           style={{
             ...styles.tab,
+            background: activeTab === TAB_LEAGUE ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
             color: activeTab === TAB_LEAGUE ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
@@ -233,7 +234,6 @@ export default function Leaderboard() {
               </span>
             )}
           </span>
-          {activeTab === TAB_LEAGUE && <div style={styles.tabUnderline} />}
         </button>
       </div>
 
@@ -253,14 +253,18 @@ export default function Leaderboard() {
           <div style={styles.empty}>Загрузка...</div>
         ) : (
           <div style={styles.list}>
-            {rows.map(row => (
-              <LeaderboardRow
+            {rows.map((row, idx) => (
+              <div
                 key={row.user_id}
-                row={row}
-                isMe={row.is_me}
-                showHandle={activeTab === TAB_FRIENDS}
-                onTap={handleRowTap}
-              />
+                style={idx === 0 ? undefined : styles.rowDivider}
+              >
+                <LeaderboardRow
+                  row={row}
+                  isMe={row.is_me}
+                  showHandle={activeTab === TAB_FRIENDS}
+                  onTap={handleRowTap}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -411,7 +415,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
           )
         )}
 
-        <button onClick={onClose} style={profileModalStyles.close}>ЗАКРЫТЬ</button>
+        <button onClick={onClose} className="press-tile" style={profileModalStyles.close}>ЗАКРЫТЬ</button>
       </div>
 
       <style>{`
@@ -556,11 +560,14 @@ const styles = {
     color: 'var(--color-text-secondary)',
     fontWeight: 500
   },
+  // Капсула-переключатель: серая подложка под активным сегментом
   tabsRow: {
     display: 'flex',
-    gap: '0',
+    gap: '4px',
     marginBottom: '16px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+    padding: '4px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 'var(--radius-card)'
   },
   tab: {
     flex: 1,
@@ -569,13 +576,13 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: '6px',
-    padding: '12px 8px',
-    background: 'transparent',
+    padding: '10px 8px',
     border: 'none',
+    borderRadius: '26px',
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
     letterSpacing: '2px',
-    transition: 'color 0.25s ease',
+    transition: 'color 0.25s ease, background 0.25s ease',
     cursor: 'pointer',
     position: 'relative',
     whiteSpace: 'nowrap',
@@ -601,16 +608,7 @@ const styles = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap'
   },
-  tabUnderline: {
-    position: 'absolute',
-    left: '20%',
-    right: '20%',
-    bottom: 0,
-    height: '2px',
-    background: 'var(--color-primary)',
-    borderRadius: '1px 1px 0 0',
-    boxShadow: '0 0 8px var(--color-primary)'
-  },
+  
   subInfo: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
@@ -625,7 +623,13 @@ const styles = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px'
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
+  },
+  // Разделитель между строками — тонкая линия сверху у всех кроме первой
+  rowDivider: {
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)'
   },
   empty: {
     textAlign: 'center',
