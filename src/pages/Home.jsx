@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
@@ -6,8 +6,13 @@ import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
+import { cloudGet, cloudSet } from '../lib/cloud-storage'
+import { localGet, localSet } from '../utils/storage'
 import PixelHeart from '../components/PixelHeart'
 import UiIcon from '../components/UiIcon'
+
+// Ключ последней пролистанной избранной программы (синкается между устройствами)
+const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
 function buildFavSync(slug, activeDay) {
@@ -16,32 +21,42 @@ function buildFavSync(slug, activeDay) {
   return { prog, activeDay }
 }
 
+// Найти индекс избранного по сохранённому slug. -1 → 0.
+function indexBySlug(entries, slug) {
+  if (!slug) return 0
+  const i = entries.findIndex(e => e.prog.slug === slug)
+  return i >= 0 ? i : 0
+}
+
 /**
  * Главная — Тренировки.
  *
- * ПРАВКИ:
- * - Убран sticky-блок с PlayerCard. PlayerCard теперь скроллится вместе с контентом,
- *   что устраняет торможение и обрезку карточек категорий при свайпе вверх.
- * - Заголовок "ДНЕВНОЙ БУСТ" вынесен из компонента DailyQuests наружу —
- *   симметрия с заголовком "ТРЕНИРОВКИ".
- *
- * Структура страницы линейная: PlayerCard → буст → тренировки.
+ * Избранное: карусель программ. Листается СВАЙПОМ влево/вправо (с вибро),
+ * снизу точки-индикаторы (зелёные, с анимацией ширины). Последняя пролистанная
+ * карточка запоминается (localStorage + Telegram CloudStorage), поэтому при
+ * перезаходе/входе с другого устройства показывается именно она.
  */
 export default function Home() {
   const navigate = useNavigate()
-  // Стартуем синхронно из localStorage — карточка избранного появляется сразу
-  // вместе со всей главной, без мигания скелетоном.
-  const [favorites, setFavorites] = useState(() => getFavoritesEntriesSync(buildFavSync) || [])
-  const [favIdx, setFavIdx] = useState(0)        // текущий слайд
+
+  const initialFavs = getFavoritesEntriesSync(buildFavSync) || []
+  const savedSlug = localGet(FAV_LAST_SLUG_KEY)
+
+  const [favorites, setFavorites] = useState(initialFavs)
+  const [favIdx, setFavIdx] = useState(() => indexBySlug(initialFavs, savedSlug))
   const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesSync(buildFavSync) !== null)
+
+  // Состояние свайпа: стартовая X и флаг "только что свайпнули" (чтобы
+  // подавить ложный тап-навигацию по карточке после свайпа).
+  const swipeRef = useRef({ x: null, swiped: false })
 
   useEffect(() => {
     backButton.hide()
     lockVerticalSwipes()
   }, [])
 
-  // Фоновое обновление: после синхронного старта тихо перечитываем из
-  // CloudStorage (вдруг избранное менялось с другого устройства).
+  // Фоновое обновление: после синхронного старта перечитываем из CloudStorage
+  // (вдруг избранное / последний слайд менялись с другого устройства).
   useEffect(() => {
     let cancelled = false
     loadFavoritesEntries(async (slug) => {
@@ -49,14 +64,68 @@ export default function Home() {
       if (!prog) return null
       const activeDay = await getActiveDay(slug)
       return { prog, activeDay }
-    }).then(entries => {
+    }).then(async entries => {
       if (cancelled) return
       setFavorites(entries)
-      setFavIdx(prev => Math.min(prev, Math.max(0, entries.length - 1)))
-      setFavLoaded(true)
+      // Свежий сохранённый слайд из облака (приоритетнее локального)
+      let slug = null
+      try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
+      if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
+      const idx = indexBySlug(entries, slug)
+      if (!cancelled) {
+        setFavIdx(Math.min(idx, Math.max(0, entries.length - 1)))
+        setFavLoaded(true)
+      }
     })
     return () => { cancelled = true }
   }, [])
+
+  // Перейти к слайду i и запомнить его slug (локально + в облако).
+  const goFav = (i) => {
+    setFavIdx(i)
+    const slug = favorites[i]?.prog?.slug
+    if (slug) {
+      localSet(FAV_LAST_SLUG_KEY, slug)
+      cloudSet(FAV_LAST_SLUG_KEY, slug)
+    }
+  }
+
+  const handleFavTouchStart = (e) => {
+    swipeRef.current.x = e.touches[0].clientX
+    swipeRef.current.swiped = false
+  }
+
+  const handleFavTouchEnd = (e) => {
+    const startX = swipeRef.current.x
+    swipeRef.current.x = null
+    if (startX === null || favorites.length < 2) return
+
+    const dx = e.changedTouches[0].clientX - startX
+    if (Math.abs(dx) < 50) return // это тап, не свайп
+
+    swipeRef.current.swiped = true
+    haptic.light()
+    if (dx < 0) {
+      goFav((favIdx + 1) % favorites.length)
+    } else {
+      goFav((favIdx - 1 + favorites.length) % favorites.length)
+    }
+    // Сбрасываем флаг чуть позже, чтобы onClick карточки успел его увидеть
+    setTimeout(() => { swipeRef.current.swiped = false }, 120)
+  }
+
+  const handleFavOpen = () => {
+    if (swipeRef.current.swiped) return // был свайп — не открываем
+    haptic.light()
+    const fav = favorites[favIdx]
+    if (!fav) return
+    if (fav.prog.kind === 'swim') {
+      setTimeout(() => navigate(`/swim/${fav.prog.slug}`, { state: { fromHome: true } }), 80)
+      return
+    }
+    const day = fav.activeDay || 'A'
+    setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, { state: { fromHome: true } }), 80)
+  }
 
   const categories = [
     {
@@ -105,13 +174,12 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Игрок — закреплён сверху (sticky). Плашки аватара и XP/стрик
-          не уезжают при скролле, остальное листается под ними. */}
+      {/* Игрок — закреплён сверху (sticky). */}
       <div style={styles.playerSticky}>
         <PlayerCard />
       </div>
 
-      {/* Скроллящийся контент под закреплённым игроком */}
+      {/* Скроллящийся контент */}
       <div style={styles.scrollSection}>
 
       {/* Дневной буст */}
@@ -126,9 +194,6 @@ export default function Home() {
         </span>
       </div>
       {!favLoaded ? (
-        // Пока грузится — короткий скелетон карточки (не чёрный пустой блок и
-        // не заглушка). Так на первом старте нет ни мигания заглушкой, ни
-        // проваливания вёрстки.
         <div style={styles.favSkeleton} />
       ) : favorites.length === 0 ? (
         <div style={styles.favEmpty}>
@@ -139,29 +204,19 @@ export default function Home() {
         </div>
       ) : (
         <div style={styles.favSlider}>
-          <FavCard
-            entry={favorites[favIdx]}
-            onTap={() => {
-              haptic.light()
-              const fav = favorites[favIdx]
-              if (fav.prog.kind === 'swim') {
-                setTimeout(() => navigate(`/swim/${fav.prog.slug}`, {
-                  state: { fromHome: true }
-                }), 80)
-                return
-              }
-              const day = fav.activeDay || 'A'
-              setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, {
-                state: { fromHome: true }
-              }), 80)
-            }}
-          />
+          <div
+            onTouchStart={handleFavTouchStart}
+            onTouchEnd={handleFavTouchEnd}
+            style={styles.favSwipeArea}
+          >
+            <FavCard entry={favorites[favIdx]} onTap={handleFavOpen} />
+          </div>
           {favorites.length > 1 && (
             <div style={styles.favDots}>
               {favorites.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => { haptic.light(); setFavIdx(i) }}
+                  onClick={() => { haptic.light(); goFav(i) }}
                   style={{
                     ...styles.favDot,
                     background: i === favIdx ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
@@ -171,27 +226,12 @@ export default function Home() {
               ))}
             </div>
           )}
-          {favorites.length > 1 && (
-            <div style={styles.favArrows}>
-              <button
-                onClick={() => { haptic.light(); setFavIdx(i => (i - 1 + favorites.length) % favorites.length) }}
-                style={styles.favArrowBtn}
-              >‹</button>
-              <button
-                onClick={() => { haptic.light(); setFavIdx(i => (i + 1) % favorites.length) }}
-                style={styles.favArrowBtn}
-              >›</button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Заголовок разделов — такой же стиль */}
+      {/* Разделы */}
       <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
 
-      {/* Разделы — единая сгруппированная карточка (как в Telegram):
-          строки внутри одного блока, разделители между ними, серая
-          подсветка строки при нажатии вместо press-scale. */}
       <div style={styles.categoryGroup}>
         {categories.map((cat, idx) => (
           <button
@@ -241,6 +281,7 @@ function FavCard({ entry, onTap }) {
       <span style={favCardStyles.emoji}>{emoji}</span>
       <div style={favCardStyles.content}>
         <div style={favCardStyles.title}>{formattedTitle}</div>
+
         {prog.kind === 'swim' ? (
           <div style={favCardStyles.daysRow}>
             <span style={favCardStyles.daysLabel}>
@@ -266,12 +307,15 @@ function FavCard({ entry, onTap }) {
             </div>
           </div>
         )}
+
         {prog.tags && prog.tags.length > 0 && (
           <div style={favCardStyles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              const bg = tag.toLowerCase() === 'зал' ? 'var(--tag-gym)'
-                       : tag.toLowerCase() === 'дом' ? 'var(--tag-home)'
+              const t = tag.toLowerCase()
+              const bg = t === 'зал' ? 'var(--tag-gym)'
+                       : t === 'дом' ? 'var(--tag-home)'
+                       : t === 'бассейн' ? 'var(--cat-pool)'
                        : 'var(--tag-outdoor)'
               return <span key={tag} style={{ ...favCardStyles.tag, background: bg }}>{ft}</span>
             })}
@@ -279,8 +323,6 @@ function FavCard({ entry, onTap }) {
         )}
       </div>
 
-      {/* Пиксельная кнопка-тег "Начать" справа — заполняет пустоту,
-          даёт явный call-to-action. Тап по ней = тап по карточке (onTap). */}
       <div style={favCardStyles.startTag}>
         НАЧАТЬ
         <span style={favCardStyles.startArrow}>›</span>
@@ -327,7 +369,6 @@ const favCardStyles = {
     fontWeight: 700,
     color: 'var(--color-bg)'
   },
-  // Пиксельная кнопка-тег "Начать" справа в карточке избранного.
   startTag: {
     flexShrink: 0,
     alignSelf: 'center',
@@ -359,31 +400,21 @@ const styles = {
     paddingRight: '16px',
     paddingBottom: '24px'
   },
-  // Закреплённый блок игрока сверху. Фон страницы, чтобы контент при
-  // скролле уезжал под него без просвета.
   playerSticky: {
     position: 'sticky',
     top: 0,
     zIndex: 20,
     background: 'var(--color-bg)',
-    // Верхний отступ под системную панель Telegram теперь здесь, а не на
-    // page — чтобы блок сразу прилипал на своё место без "пробега" вверх.
     paddingTop: 'calc(var(--tg-safe-top) - 24px)',
     paddingBottom: '12px',
-    // Растягиваем фон на всю ширину экрана: компенсируем горизонтальный
-    // padding страницы (-16px по краям) и возвращаем его как внутренний,
-    // чтобы контент плашек остался на месте, а тёмный фон закрывал края.
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Скроллящаяся часть. Отступ сверху не нужен — его даёт paddingBottom
-  // у playerSticky (12px = как gap между плашками внутри PlayerCard).
   scrollSection: {
     position: 'relative'
   },
-  // Единый стиль для заголовков секций
   sectionHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
@@ -393,7 +424,6 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  // Заголовок с иконкой справа (Избранное + сердце)
   sectionHeaderRow: {
     display: 'flex',
     alignItems: 'center',
@@ -407,7 +437,6 @@ const styles = {
     verticalAlign: 'middle',
     marginRight: '6px'
   },
-  // Единая карточка-группа разделов
   categoryGroup: {
     display: 'flex',
     flexDirection: 'column',
@@ -415,8 +444,6 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
-  // Строка раздела внутри группы. Скругления у группы, строки прямые.
-  // Первая/последняя строка получают скругление автоматически через overflow.
   categoryRow: {
     display: 'flex',
     alignItems: 'center',
@@ -463,6 +490,11 @@ const styles = {
     flexDirection: 'column',
     gap: '10px'
   },
+  // Зона свайпа вокруг карточки. touchAction: pan-y — вертикальный скролл
+  // страницы работает, горизонтальные жесты ловим мы.
+  favSwipeArea: {
+    touchAction: 'pan-y'
+  },
   favDots: {
     display: 'flex',
     justifyContent: 'center',
@@ -476,21 +508,5 @@ const styles = {
     padding: 0,
     cursor: 'pointer',
     transition: 'width 0.25s ease, background 0.25s ease'
-  },
-  favArrows: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '8px'
-  },
-  favArrowBtn: {
-    flex: 1,
-    padding: '10px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '14px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '22px',
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer'
   }
 }

@@ -149,6 +149,7 @@ function getTagColor(tag) {
   if (t === 'зал') return 'var(--tag-gym)'
   if (t === 'дом') return 'var(--tag-home)'
   if (t === 'улица') return 'var(--tag-outdoor)'
+  if (t === 'бассейн') return 'var(--cat-pool)'
   return 'var(--color-text-secondary)'
 }
 
