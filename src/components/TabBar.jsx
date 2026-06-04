@@ -213,7 +213,7 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 10px)',
+    height: 'calc(var(--tabbar-height) - 9px)',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
