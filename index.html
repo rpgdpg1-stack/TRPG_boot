@@ -11,6 +11,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
+    <!-- Явно говорим системе что тема тёмная. Без этого iOS первый кадр
+         рисует клавиатуру в светлом translucent-виде (с блюром), а потом
+         перерисовывает в тёмную — отсюда моргание фона клавиатуры. -->
+    <meta name="color-scheme" content="dark" />
+
     <title>RPG Training</title>
 
     <!-- Telegram Web App SDK -->
@@ -27,7 +32,7 @@
     <!-- Цвет фона страницы ставим из CSS-переменной сразу, до загрузки JS,
          чтобы при медленном интернете не было белой вспышки. -->
     <style>
-      html, body { background: #0D0C0C; }
+      html, body { background: #0D0C0C; color-scheme: dark; }
     </style>
   </head>
   <body>
