@@ -113,14 +113,15 @@ export default function TabBar() {
               <MuscleIcon
                 size={32}
                 color={tab.isActive ? '#FADFBE' : 'rgba(255,255,255,0.5)'}
-                flexTrigger={muscleFlexTick}
+                flexTrigger={tab.isActive ? muscleFlexTick : 0}
               />
             ) : tab.id === 'profile' ? (
               <span
                 key={`profilepop-${profilePopTick}`}
                 style={{
                   display: 'inline-flex',
-                  animation: profilePopTick ? 'tabIconPop 0.4s ease-out' : 'none'
+                  transformOrigin: 'center center',
+                  animation: (profilePopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
                 }}
               >
                 <UiIcon
@@ -134,7 +135,8 @@ export default function TabBar() {
                 key={`ratingpop-${ratingPopTick}`}
                 style={{
                   display: 'inline-flex',
-                  animation: ratingPopTick ? 'tabIconPop 0.4s ease-out' : 'none'
+                  transformOrigin: 'center center',
+                  animation: (ratingPopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
                 }}
               >
                 <UiIcon
