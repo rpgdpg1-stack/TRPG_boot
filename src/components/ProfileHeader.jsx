@@ -64,6 +64,7 @@ export default function ProfileHeader({
   const [showRanks, setShowRanks] = useState(false)
   const [rankPopTick, setRankPopTick] = useState(0)
   const [activePopup, setActivePopup] = useState(null) // 'muscles' | 'streak' | 'workouts' | null
+  const [muscleFlexTick, setMuscleFlexTick] = useState(0)
   const pillsRef = useRef(null)
 
   const level = getLevelFromXP(xp)
@@ -101,6 +102,7 @@ export default function ProfileHeader({
   const togglePopup = (which) => {
     if (!interactive) return
     haptic.light()
+    if (which === 'muscles') setMuscleFlexTick(t => t + 1)
     setShowRanks(false)
     setActivePopup(prev => (prev === which ? null : which))
   }
@@ -193,8 +195,8 @@ export default function ProfileHeader({
           onClick={() => togglePopup('muscles')}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
-          <div style={{ ...styles.pillValue, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            {xp} <MuscleIcon size={15} earned={true} />
+          <div style={{ ...styles.statValue, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            {xp} <MuscleIcon size={26} earned={true} flex={true} flexTrigger={muscleFlexTick} />
           </div>
           <div style={styles.pillLabel}>МУСКУЛЫ</div>
         </button>
@@ -203,7 +205,10 @@ export default function ProfileHeader({
           onClick={() => togglePopup('streak')}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
-          <div style={styles.pillValue}>🔥 {streak ?? '—'}</div>
+          <div style={styles.statFlameRow}>
+            <StreakFlame streak={streak || 0} />
+            <span style={styles.statCount}>x{streak ?? 0}</span>
+          </div>
           <div style={styles.pillLabel}>СЕРИЯ</div>
         </button>
 
@@ -211,7 +216,7 @@ export default function ProfileHeader({
           onClick={() => togglePopup('workouts')}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
-          <div style={styles.pillValue}>{totalWorkouts ?? '—'}</div>
+          <div style={{ ...styles.statValue, color: 'var(--color-text)' }}>{totalWorkouts ?? '—'}</div>
           <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
         </button>
 
@@ -310,7 +315,8 @@ const styles = {
     alignItems: 'stretch',
     gap: '12px',
     padding: '22px 18px 18px',
-    background: 'var(--color-card)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)',
     width: '100%'
   },
@@ -444,6 +450,33 @@ const styles = {
     letterSpacing: '0.5px',
     lineHeight: 1,
     whiteSpace: 'nowrap'
+  },
+  // Крупная цифра в блоке статистики (мускулы/тренировки) — размер как у
+  // счётчика стрика, чтобы все три ячейки были визуально на одной высоте.
+  statValue: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '22px',
+    letterSpacing: '0.5px',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+    minHeight: '32px',
+    display: 'inline-flex',
+    alignItems: 'center'
+  },
+  // Ряд "огонёк + xN" в ячейке серии — как на главной
+  statFlameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    minHeight: '32px'
+  },
+  statCount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '22px',
+    color: '#FFFFFF',
+    letterSpacing: '1px',
+    lineHeight: 1,
+    textShadow: '0 0 4px rgba(0, 0, 0, 0.8)'
   },
   pillLabel: {
     fontFamily: 'var(--font-manrope)',

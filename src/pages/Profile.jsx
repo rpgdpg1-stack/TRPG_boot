@@ -94,8 +94,8 @@ export default function Profile() {
     {
       title: 'ДОСТИЖЕНИЯ',
       items: [
-        { id: 'leaderboard', icon: 'ui:leaderboard', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
-        { id: 'rewards',     icon: 'ui:rewards',     title: 'Награды', subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' }
+        { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
+        { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' }
       ]
     },
     {
@@ -110,7 +110,7 @@ export default function Profile() {
       title: 'ЕЩЁ',
       items: [
         { id: 'recovery', icon: '🛌',          title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
-        { id: 'settings', icon: 'ui:settings', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
     }
   ]
@@ -210,7 +210,7 @@ export default function Profile() {
                   <UiIcon
                     name={item.icon.slice(3)}
                     size={22}
-                    color="var(--color-text)"
+                    color={item.iconColor || 'var(--color-text)'}
                     style={{ width: '32px', height: '22px' }}
                   />
                 ) : (
