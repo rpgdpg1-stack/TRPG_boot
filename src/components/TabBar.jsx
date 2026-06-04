@@ -193,7 +193,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '6px',
+    padding: '4px',
     height: 'var(--tabbar-height)',
     // iOS-стекло как в Telegram: сильный блюр + насыщенность, фон
     // полупрозрачный чтобы контент под баром размывался и просвечивал.
@@ -213,18 +213,19 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 12px)',
+    height: 'calc(var(--tabbar-height) - 8px)',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
   },
   icon: {
-    fontSize: '30px',
-    lineHeight: 1,
+    width: '32px',
     height: '32px',
+    lineHeight: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     transition: 'opacity 0.25s ease'
   },
   label: {
