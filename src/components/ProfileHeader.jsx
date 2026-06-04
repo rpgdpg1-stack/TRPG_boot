@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
 import { getProgramByDbId } from '../features/programs/registry'
+import { formatRelative, formatRelativeWithDate } from '../utils/history'
 import RankIcon from './RankIcon'
 import RanksPopup from './RanksPopup'
 import StreakFlame from './StreakFlame'
@@ -114,8 +115,15 @@ export default function ProfileHeader({
       ? `${4 - streak} до максимума недели`
       : 'Максимум этой недели'
 
-  const lastWorkoutText = lastWorkout
-    ? `Последняя тренировка — ${fmtDate(lastWorkout.finished_at)}`
+  // Своя страница (interactive) — показываем относительный формат + дату.
+  // Чужой профиль из рейтинга — только относительный ("3 дня назад" / "Очень давно").
+  const lastWorkoutWhen = lastWorkout
+    ? (interactive
+        ? formatRelativeWithDate(lastWorkout.finished_at)
+        : formatRelative(lastWorkout.finished_at))
+    : null
+  const lastWorkoutText = lastWorkoutWhen
+    ? `Последняя тренировка — ${lastWorkoutWhen}`
     : null
 
   return (

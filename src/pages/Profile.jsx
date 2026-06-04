@@ -7,6 +7,7 @@ import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
+import HistoryRow from '../components/HistoryRow'
 import UiIcon from '../components/UiIcon'
 
 /**
@@ -14,10 +15,9 @@ import UiIcon from '../components/UiIcon'
  *
  * Верх — компонент ProfileHeader (тот же что и в модалке рейтинга): крупный
  * аватар с рамкой ранга, имя/логин, ранг/место, капсулы с попапами.
- * Закрепления (sticky) нет — страница скроллится целиком.
  *
- * Ниже — приглашение друга + сгруппированные разделы (заголовок + единая
- * карточка, разделители, серая подсветка .tg-row — как РАЗДЕЛЫ на главной).
+ * Ниже — приглашение друга → История (превью 3 + «Показать все») →
+ * сгруппированные разделы (как РАЗДЕЛЫ на главной).
  */
 export default function Profile() {
   const navigate = useNavigate()
@@ -164,10 +164,34 @@ export default function Profile() {
         <span style={styles.inviteArrow}>›</span>
       </button>
 
+      {/* История — превью 3 + «Показать все» */}
+      <div style={styles.historyHeaderRow}>
+        <span style={styles.groupTitle}>ИСТОРИЯ</span>
+        {recentWorkouts.length > 0 && (
+          <button
+            onClick={() => { haptic.light(); navigate('/history') }}
+            style={styles.showAllBtn}
+          >
+            Показать все ›
+          </button>
+        )}
+      </div>
+      {recentWorkouts.length === 0 ? (
+        <div style={styles.historyEmpty}>
+          Здесь появятся твои завершённые тренировки
+        </div>
+      ) : (
+        <div style={styles.groupCard}>
+          {recentWorkouts.map((w, i) => (
+            <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
+          ))}
+        </div>
+      )}
+
       {/* Разделы — сгруппированы по смыслу */}
-      {sectionGroups.map((group, gIdx) => (
+      {sectionGroups.map((group) => (
         <section key={group.title}>
-          <div style={{ ...styles.groupTitle, marginTop: gIdx === 0 ? '0' : '20px' }}>
+          <div style={{ ...styles.groupTitle, marginTop: '20px' }}>
             {group.title}
           </div>
 
@@ -211,7 +235,6 @@ export default function Profile() {
 const styles = {
   // Верхний отступ как у playerSticky на главной (tg-safe-top − 24px),
   // чтобы блок аватара в профиле начинался на той же высоте.
-  // Лево/право/низ остаются из класса .page.
   page: {
     paddingTop: 'calc(var(--tg-safe-top) - 24px)'
   },
@@ -256,6 +279,36 @@ const styles = {
     color: 'var(--color-primary)',
     flexShrink: 0,
     opacity: 0.7
+  },
+
+  // === История ===
+  historyHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '12px'
+  },
+  showAllBtn: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--color-primary)',
+    background: 'transparent',
+    border: 'none',
+    padding: '4px 4px',
+    cursor: 'pointer',
+    letterSpacing: '0.3px'
+  },
+  historyEmpty: {
+    padding: '16px 18px',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px dashed rgba(255,255,255,0.1)',
+    borderRadius: 'var(--radius-card)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    lineHeight: 1.5
   },
 
   // === Группы разделов (как РАЗДЕЛЫ на главной) ===
