@@ -683,14 +683,15 @@ const styles = {
     justifyContent: 'center'
   },
   inviteButtonSecondary: {
-    padding: '10px 20px',
+    width: '100%',
+    padding: '16px',
     background: 'rgba(158, 209, 83, 0.08)',
     color: 'var(--color-primary)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '12px',
+    borderRadius: '20px',
     border: '1px solid rgba(158, 209, 83, 0.25)'
   }
 }
@@ -725,7 +726,7 @@ const profileModalStyles = {
   },
   backupButton: {
     width: '100%',
-    padding: '14px',
+    padding: '16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -738,7 +739,7 @@ const profileModalStyles = {
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '1px',
-    borderRadius: '14px',
+    borderRadius: '20px',
     border: '1px solid rgba(158, 209, 83, 0.35)',
     cursor: 'pointer',
     boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
@@ -753,14 +754,14 @@ const profileModalStyles = {
   },
   close: {
     width: '100%',
-    padding: '14px',
+    padding: '16px',
     background: 'rgba(255, 255, 255, 0.06)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 700,
     letterSpacing: '1.5px',
-    borderRadius: '14px',
+    borderRadius: '20px',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     cursor: 'pointer'
   }
@@ -835,14 +836,14 @@ const modalStyles = {
   closeButton: {
     width: '100%',
     marginTop: '10px',
-    padding: '12px',
+    padding: '16px',
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '12px',
+    borderRadius: '20px',
     border: 'none'
   }
 }
