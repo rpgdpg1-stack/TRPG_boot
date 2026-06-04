@@ -578,7 +578,7 @@ const styles = {
     gap: '6px',
     padding: '10px 8px',
     border: 'none',
-    borderRadius: '26px',
+    borderRadius: '29px',
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
     letterSpacing: '2px',
