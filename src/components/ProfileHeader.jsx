@@ -455,7 +455,7 @@ const styles = {
   // счётчика стрика, чтобы все три ячейки были визуально на одной высоте.
   statValue: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '22px',
+    fontSize: '20px',
     letterSpacing: '0.5px',
     lineHeight: 1,
     whiteSpace: 'nowrap',
@@ -472,7 +472,7 @@ const styles = {
   },
   statCount: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '22px',
+    fontSize: '20px',
     color: '#FFFFFF',
     letterSpacing: '1px',
     lineHeight: 1,

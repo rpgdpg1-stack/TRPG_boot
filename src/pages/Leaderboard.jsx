@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
@@ -322,6 +322,8 @@ function ProfileModal({ row, onClose, onBackupDone }) {
 
   const [pub, setPub] = useState(null)
   const [backupState, setBackupState] = useState('idle') // 'idle' | 'sending' | 'done' | 'already'
+  const [bicepsTick, setBicepsTick] = useState(0)
+  const bicepsTimers = useRef([])
 
   useEffect(() => {
     let cancelled = false
@@ -330,6 +332,24 @@ function ProfileModal({ row, onClose, onBackupDone }) {
     })
     return () => { cancelled = true }
   }, [row.user_id])
+
+  // Анимация бицепса на кнопке "Подстраховать": первый флекс через 3с после
+  // открытия, дальше зацикленно каждые 5с. Чистим таймеры при размонтировании.
+  useEffect(() => {
+    const start = setTimeout(() => {
+      setBicepsTick(t => t + 1)
+      const interval = setInterval(() => setBicepsTick(t => t + 1), 5000)
+      bicepsTimers.current.push(interval)
+    }, 3000)
+    bicepsTimers.current.push(start)
+    return () => {
+      bicepsTimers.current.forEach(id => {
+        clearTimeout(id)
+        clearInterval(id)
+      })
+      bicepsTimers.current = []
+    }
+  }, [])
 
   const userObj = {
     first_name: row.first_name,
@@ -376,9 +396,9 @@ function ProfileModal({ row, onClose, onBackupDone }) {
         {/* Кнопка подстраховки — только для чужого игрока */}
         {!isSelf && (
           backupState === 'idle' ? (
-            <button onClick={handleBackup} style={profileModalStyles.backupButton}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                Подстраховать +100 <MuscleIcon size={16} earned={true} />
+            <button onClick={handleBackup} className="press-tile" style={profileModalStyles.backupButton}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
               </span>
             </button>
           ) : (
@@ -702,16 +722,22 @@ const profileModalStyles = {
   backupButton: {
     width: '100%',
     padding: '14px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Приглушённо-зелёный с блюром — не кричит яркой заливкой.
+    background: 'rgba(158, 209, 83, 0.16)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    color: 'var(--color-primary)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '1px',
     borderRadius: '14px',
-    border: 'none',
+    border: '1px solid rgba(158, 209, 83, 0.35)',
     cursor: 'pointer',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+    boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
   },
   backupButtonDisabled: {
     background: 'rgba(255, 255, 255, 0.06)',
