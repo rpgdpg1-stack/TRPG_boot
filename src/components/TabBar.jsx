@@ -101,9 +101,7 @@ export default function TabBar() {
             background: tab.isActive
               ? 'rgba(158, 209, 83, 0.10)'
               : 'transparent',
-            boxShadow: tab.isActive
-              ? 'inset 0 0 0 1px rgba(158, 209, 83, 0.25)'
-              : 'none',
+            boxShadow: 'none',
             cursor: tab.canTap ? 'pointer' : 'default'
           }}
         >
