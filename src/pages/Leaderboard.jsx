@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
+import { getTotalWorkouts } from '../lib/storage'
 import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
@@ -321,6 +322,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
   const isSelf = me && row.user_id === me.id
 
   const [pub, setPub] = useState(null)
+  const [myWorkouts, setMyWorkouts] = useState(null)
   const [backupState, setBackupState] = useState('idle') // 'idle' | 'sending' | 'done' | 'already'
 
   useEffect(() => {
@@ -328,8 +330,14 @@ function ProfileModal({ row, onClose, onBackupDone }) {
     getUserPublicProfile(row.user_id).then(data => {
       if (!cancelled) setPub(data)
     })
+    // Если открыли СВОЙ профиль — подтянем число тренировок (для чужих не грузим).
+    if (isSelf) {
+      getTotalWorkouts().then(n => {
+        if (!cancelled) setMyWorkouts(n)
+      })
+    }
     return () => { cancelled = true }
-  }, [row.user_id])
+  }, [row.user_id, isSelf])
 
   const userObj = {
     first_name: row.first_name,
@@ -366,7 +374,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
           user={userObj}
           xp={row.total_muscles || 0}
           streak={pub?.weekly_streak ?? null}
-          totalWorkouts={null}
+          totalWorkouts={isSelf ? myWorkouts : null}
           friendsPlace={row.place}
           lastWorkout={pub?.last_workout || null}
           interactive={false}
@@ -414,10 +422,14 @@ function RulesModal({ onClose, season }) {
         <div style={modalStyles.title}>КАК ЭТО РАБОТАЕТ</div>
 
         <div style={modalStyles.section}>
-          <div style={modalStyles.sectionTitle}>СЕЗОН — 3 МЕСЯЦА</div>
+          <div style={modalStyles.sectionTitle}>СЕЗОНЫ</div>
           <div style={modalStyles.sectionText}>
-            Сейчас идёт {season.emoji} {season.name}. Сезоны сменяются 1-го числа
-            марта, июня, сентября и декабря в 03:00 МСК.
+            Сезон длится 3 месяца и сменяется 1-го числа в 03:00 МСК.
+            В году 4 сезона:<br />
+            🌞 Лето — 1.06–1.09<br />
+            🍂 Осень — 1.09–1.12<br />
+            ❄️ Зима — 1.12–1.03<br />
+            🌸 Весна — 1.03–1.06
           </div>
         </div>
 
