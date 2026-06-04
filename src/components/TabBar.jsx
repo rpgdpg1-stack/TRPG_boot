@@ -192,7 +192,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '4px',
+    padding: '8px',
     height: 'var(--tabbar-height)',
     background: 'rgba(20, 20, 20, 0.55)',
     backdropFilter: 'blur(32px) saturate(160%)',
@@ -210,7 +210,7 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 8px)',
+    height: 'calc(var(--tabbar-height) - 16px)',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
