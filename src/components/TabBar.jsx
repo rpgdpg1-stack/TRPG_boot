@@ -192,14 +192,16 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '8px',
+    padding: '6px',
     height: 'var(--tabbar-height)',
-    background: 'rgba(20, 20, 20, 0.55)',
-    backdropFilter: 'blur(32px) saturate(160%)',
-    WebkitBackdropFilter: 'blur(32px) saturate(160%)',
+    // iOS-стекло как в Telegram: сильный блюр + насыщенность, фон
+    // полупрозрачный чтобы контент под баром размывался и просвечивал.
+    background: 'rgba(28, 28, 30, 0.72)',
+    backdropFilter: 'blur(40px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
     borderRadius: 'var(--radius-card)',
-    border: '1px solid rgba(255, 255, 255, 0.04)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
     zIndex: 100
   },
   tab: {
@@ -210,7 +212,7 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 16px)',
+    height: 'calc(var(--tabbar-height) - 12px)',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
