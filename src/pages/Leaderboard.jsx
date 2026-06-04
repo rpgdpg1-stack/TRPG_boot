@@ -173,7 +173,7 @@ export default function Leaderboard() {
         <div style={styles.titleRow}>
           <h1 style={styles.title}>РЕЙТИНГ</h1>
           <button onClick={handleInfoTap} style={styles.infoButton} aria-label="Правила">
-            <span style={styles.infoIcon}>ℹ️</span>
+            <UiIcon name="info" size={22} color="#3FA2F7" />
           </button>
         </div>
         <div style={styles.seasonRow}>
@@ -510,10 +510,7 @@ const styles = {
     justifyContent: 'center',
     cursor: 'pointer'
   },
-  infoIcon: {
-    fontSize: '20px',
-    opacity: 0.7
-  },
+  
   seasonRow: {
     marginTop: '8px',
     display: 'flex',
@@ -737,10 +734,13 @@ const modalStyles = {
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '20px',
+    // Отступ сверху как у страниц (от края до первой карточки) — модалка
+    // не уезжает под телеграмовские кнопки (закрыть / три точки).
+    padding: 'var(--tg-safe-top) 20px 20px',
+    overflowY: 'auto',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },
   modal: {

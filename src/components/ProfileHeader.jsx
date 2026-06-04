@@ -199,8 +199,6 @@ export default function ProfileHeader({
           <div style={styles.pillLabel}>МУСКУЛЫ</div>
         </button>
 
-        <div style={styles.statDivider} />
-
         <button
           onClick={() => togglePopup('streak')}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
@@ -208,8 +206,6 @@ export default function ProfileHeader({
           <div style={styles.pillValue}>🔥 {streak ?? '—'}</div>
           <div style={styles.pillLabel}>СЕРИЯ</div>
         </button>
-
-        <div style={styles.statDivider} />
 
         <button
           onClick={() => togglePopup('workouts')}
@@ -440,14 +436,7 @@ const styles = {
     border: 'none',
     WebkitTapHighlightColor: 'transparent'
   },
-  // Тонкий серый вертикальный разделитель между ячейками
-  statDivider: {
-    width: '1px',
-    alignSelf: 'center',
-    height: '32px',
-    background: 'rgba(255, 255, 255, 0.10)',
-    flexShrink: 0
-  },
+  
   pillValue: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '15px',
