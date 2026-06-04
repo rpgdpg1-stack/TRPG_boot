@@ -672,15 +672,20 @@ const profileModalStyles = {
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '20px',
+    // Старт сверху на той же высоте что и инфо-модалка — профили
+    // (свой/чужой) больше не прыгают по вертикали. Низ с запасом под
+    // таб-бар, прокрутка внутри оверлея если контент высокий.
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
+    overflowY: 'auto',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
   inner: {
     width: '100%',
     maxWidth: '340px',
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
@@ -737,17 +742,16 @@ const modalStyles = {
     alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
-    // Отступ сверху как у страниц (от края до первой карточки) — модалка
-    // не уезжает под телеграмовские кнопки (закрыть / три точки).
-    padding: 'var(--tg-safe-top) 20px 20px',
+    // Старт сверху на той же высоте что и профили — единое положение.
+    // Низ с запасом под таб-бар, прокрутка внутри оверлея.
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },
   modal: {
     width: '100%',
     maxWidth: '340px',
-    maxHeight: '85vh',
-    overflowY: 'auto',
+    flexShrink: 0,
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '24px',
