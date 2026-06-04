@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
-import { getTotalWorkouts } from '../lib/storage'
 import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
@@ -322,7 +321,6 @@ function ProfileModal({ row, onClose, onBackupDone }) {
   const isSelf = me && row.user_id === me.id
 
   const [pub, setPub] = useState(null)
-  const [myWorkouts, setMyWorkouts] = useState(null)
   const [backupState, setBackupState] = useState('idle') // 'idle' | 'sending' | 'done' | 'already'
 
   useEffect(() => {
@@ -330,14 +328,8 @@ function ProfileModal({ row, onClose, onBackupDone }) {
     getUserPublicProfile(row.user_id).then(data => {
       if (!cancelled) setPub(data)
     })
-    // Если открыли СВОЙ профиль — подтянем число тренировок (для чужих не грузим).
-    if (isSelf) {
-      getTotalWorkouts().then(n => {
-        if (!cancelled) setMyWorkouts(n)
-      })
-    }
     return () => { cancelled = true }
-  }, [row.user_id, isSelf])
+  }, [row.user_id])
 
   const userObj = {
     first_name: row.first_name,
@@ -374,7 +366,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
           user={userObj}
           xp={row.total_muscles || 0}
           streak={pub?.weekly_streak ?? null}
-          totalWorkouts={isSelf ? myWorkouts : null}
+          totalWorkouts={pub?.total_workouts ?? null}
           friendsPlace={row.place}
           lastWorkout={pub?.last_workout || null}
           interactive={false}
