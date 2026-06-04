@@ -193,7 +193,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '4px',
+    padding: '3px',
     height: 'var(--tabbar-height)',
     // iOS-стекло как в Telegram: сильный блюр + насыщенность, фон
     // полупрозрачный чтобы контент под баром размывался и просвечивал.
