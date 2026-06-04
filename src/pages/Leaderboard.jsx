@@ -6,7 +6,7 @@ import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { backupUser, getUserPublicProfile, BACKUP_BONUS } from '../lib/backups'
-import { getCurrentSeason, getDaysUntilSeasonEnd, formatSeasonEndDate } from '../utils/season'
+import { getCurrentSeason, getDaysUntilSeasonEnd, getNextSeason } from '../utils/season'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
 import ProfileHeader from '../components/ProfileHeader'
@@ -49,8 +49,8 @@ export default function Leaderboard() {
   const myLeague = user ? getLeagueByMuscles(user.total_muscles || 0) : null
 
   const season = getCurrentSeason()
+  const nextSeason = getNextSeason()
   const daysLeft = getDaysUntilSeasonEnd()
-  const endDateStr = formatSeasonEndDate()
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -178,10 +178,10 @@ export default function Leaderboard() {
         </div>
         <div style={styles.seasonRow}>
           <span style={{ ...styles.seasonName, color: season.color }}>
-            {season.emoji} {season.name}
+            Сезон: {season.emoji} {season.name}
           </span>
           <span style={styles.seasonEnd}>
-            до {endDateStr} · {daysLeft} {pluralDays(daysLeft)}
+            До следующего сезона {nextSeason.name} {nextSeason.emoji} осталось: {daysLeft} {pluralDays(daysLeft)}
           </span>
         </div>
       </header>
@@ -194,7 +194,14 @@ export default function Leaderboard() {
             color: activeTab === TAB_FRIENDS ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          ДРУЗЬЯ
+          <span style={styles.tabIcon}>
+            <UiIcon
+              name="friends"
+              size={26}
+              color={activeTab === TAB_FRIENDS ? 'var(--color-primary)' : 'var(--color-text-secondary)'}
+            />
+          </span>
+          <span style={styles.tabLabel}>ДРУЗЬЯ</span>
           {activeTab === TAB_FRIENDS && <div style={styles.tabUnderline} />}
         </button>
 
@@ -205,22 +212,24 @@ export default function Leaderboard() {
             color: activeTab === TAB_LEAGUE ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-            ЛИГА:
-            {leagueNameForTab && myLeague && (
-              <>
-                <RankIcon
-                  rankIndex={myLeague.rankIndex}
-                  size={15}
-                  color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
-                />
-                <span style={{
-                  color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
-                  transition: 'color 0.25s ease'
-                }}>
-                  {leagueNameForTab}
-                </span>
-              </>
+          <span style={styles.tabIcon}>
+            {myLeague && (
+              <RankIcon
+                rankIndex={myLeague.rankIndex}
+                size={26}
+                color={activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)'}
+              />
+            )}
+          </span>
+          <span style={styles.tabLabel}>
+            <span>ЛИГА:</span>
+            {leagueNameForTab && (
+              <span style={{
+                color: activeTab === TAB_LEAGUE ? leagueColor : 'var(--color-text-secondary)',
+                transition: 'color 0.25s ease'
+              }}>
+                {leagueNameForTab}
+              </span>
             )}
           </span>
           {activeTab === TAB_LEAGUE && <div style={styles.tabUnderline} />}
@@ -531,7 +540,12 @@ const styles = {
   },
   tab: {
     flex: 1,
-    padding: '14px 8px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: '6px',
+    padding: '12px 8px',
     background: 'transparent',
     border: 'none',
     fontFamily: 'var(--font-tiny5)',
@@ -543,6 +557,25 @@ const styles = {
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
+  },
+  // Иконка над текстом таба (друзья / лига) — крупная
+  tabIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '28px',
+    transition: 'opacity 0.25s ease'
+  },
+  // Текстовая строка таба. Для лиги внутри два span (ЛИГА: + название)
+  tabLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    justifyContent: 'center',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
   },
   tabUnderline: {
     position: 'absolute',

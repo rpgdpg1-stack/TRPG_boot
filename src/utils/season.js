@@ -74,6 +74,17 @@ export function getCurrentSeason() {
 }
 
 /**
+ * Следующий сезон (для подписи "до следующего сезона ... осталось N дней").
+ * Возвращает объект из SEASONS: { key, name, emoji, color }.
+ */
+export function getNextSeason() {
+  const order = ['spring', 'summer', 'autumn', 'winter']
+  const current = getCurrentSeason()
+  const idx = order.indexOf(current.season.key)
+  return SEASONS[order[(idx + 1) % order.length]]
+}
+
+/**
  * Дата старта сезона. Все даты в UTC, потому что 03:00 МСК = 00:00 UTC.
  */
 function getSeasonStartDate(seasonKey, year) {
