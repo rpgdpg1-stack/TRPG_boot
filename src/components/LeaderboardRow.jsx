@@ -14,6 +14,7 @@
  * Имя длинное → ellipsis. Не даём строке распухнуть и сломать раскладку.
  */
 
+import { useState } from 'react'
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
 import { getLeagueByRankIndex } from '../lib/leagues'
 import RankIcon from './RankIcon'
@@ -43,13 +44,24 @@ export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) 
                    : place === 3 ? '🥉'
                    : null
 
+  const [pressed, setPressed] = useState(false)
+
+  // Фон строки. Своя строка — лёгкая зелёная, при нажатии чуть насыщеннее.
+  // Чужая — прозрачная, при нажатии светло-серая (как .tg-row в разделах).
+  const bg = isMe
+    ? (pressed ? 'rgba(158, 209, 83, 0.20)' : 'rgba(158, 209, 83, 0.10)')
+    : (pressed ? 'rgba(255, 255, 255, 0.06)' : 'transparent')
+
   return (
     <div
       onClick={() => onTap?.(row)}
-      className="tg-row"
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)}
       style={{
         ...styles.row,
-        background: isMe ? 'rgba(158, 209, 83, 0.10)' : 'transparent',
+        background: bg,
         cursor: onTap ? 'pointer' : 'default'
       }}>
 
