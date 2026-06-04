@@ -51,7 +51,22 @@ export default function Home() {
   const [favIdx, setFavIdx] = useState(() => indexBySlug(initialFavs, savedSlug))
   const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesSync(buildFavSync) !== null)
 
-  const [history, setHistory] = useState([])
+  // Стартуем из localStorage-кеша, чтобы блок истории не мигал пустым →
+  // заполненным при заходе и перелистывании страниц (как сделано в профиле).
+  const [history, setHistory] = useState(() => {
+    try {
+      const raw = localStorage.getItem('home-recent-workouts')
+      const parsed = raw ? JSON.parse(raw) : null
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
+  })
+  // Загрузилась ли история хоть раз (чтобы не мигал пустой блок при первом
+  // запуске когда кеша ещё нет). null-кеш → ждём загрузку, не показываем пусто.
+  const [historyLoaded, setHistoryLoaded] = useState(() => {
+    try {
+      return localStorage.getItem('home-recent-workouts') !== null
+    } catch { return false }
+  })
 
   // Состояние свайпа: стартовая X и флаг "только что свайпнули".
   const swipeRef = useRef({ x: null, swiped: false })
@@ -85,11 +100,17 @@ export default function Home() {
   }, [])
 
   // История: превью 3 шт. Обновляем при изменении юзера (после завершения тренировки).
+  // Результат кешируем в localStorage — при следующем заходе стартуем из него
+  // без мигания пустого блока.
   useEffect(() => {
     let cancelled = false
     const load = () => {
       getRecentWorkouts(3).then(data => {
-        if (!cancelled) setHistory(data || [])
+        if (cancelled) return
+        const list = data || []
+        setHistory(list)
+        setHistoryLoaded(true)
+        try { localStorage.setItem('home-recent-workouts', JSON.stringify(list)) } catch { /* ignore */ }
       })
     }
     load()
@@ -284,7 +305,9 @@ export default function Home() {
           </button>
         )}
       </div>
-      {history.length === 0 ? (
+      {!historyLoaded ? (
+        <div style={styles.favSkeleton} />
+      ) : history.length === 0 ? (
         <div style={styles.favEmpty}>
           Здесь появятся твои завершённые тренировки
         </div>

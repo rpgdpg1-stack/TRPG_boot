@@ -186,11 +186,12 @@ export default function ProfileHeader({
           (минимальная высота), чтобы появление текста не сдвигало капсулы. */}
       <div style={styles.lastWorkout}>{lastWorkoutText || ''}</div>
 
-      {/* Капсулы */}
+      {/* Единый блок статистики: 3 ячейки с вертикальными разделителями,
+          сверху отделён горизонтальной линией. Без отдельных пилюль. */}
       <div ref={pillsRef} style={styles.pills}>
         <button
           onClick={() => togglePopup('muscles')}
-          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+          style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={{ ...styles.pillValue, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             {xp} <MuscleIcon size={15} earned={true} />
@@ -198,17 +199,21 @@ export default function ProfileHeader({
           <div style={styles.pillLabel}>МУСКУЛЫ</div>
         </button>
 
+        <div style={styles.statDivider} />
+
         <button
           onClick={() => togglePopup('streak')}
-          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+          style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={styles.pillValue}>🔥 {streak ?? '—'}</div>
           <div style={styles.pillLabel}>СЕРИЯ</div>
         </button>
 
+        <div style={styles.statDivider} />
+
         <button
           onClick={() => togglePopup('workouts')}
-          style={{ ...styles.pill, cursor: interactive ? 'pointer' : 'default' }}
+          style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={styles.pillValue}>{totalWorkouts ?? '—'}</div>
           <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
@@ -412,14 +417,17 @@ const styles = {
     marginTop: '-4px',
     minHeight: '14px'  // резерв под строку — текст не сдвигает капсулы при появлении
   },
-  // Три капсулы радиусом 33
+  // Единый блок статистики: ячейки в ряд, сверху отделён линией.
   pills: {
     position: 'relative',
     display: 'flex',
-    gap: '8px',
-    marginTop: '2px'
+    alignItems: 'stretch',
+    marginTop: '6px',
+    paddingTop: '14px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
   },
-  pill: {
+  // Ячейка статистики — без фона и обводки, прозрачная кнопка
+  statCell: {
     flex: 1,
     minWidth: 0,
     display: 'flex',
@@ -427,11 +435,18 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '4px',
-    padding: '12px 6px',
-    background: 'rgba(0, 0, 0, 0.4)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '33px',
+    padding: '4px 6px',
+    background: 'transparent',
+    border: 'none',
     WebkitTapHighlightColor: 'transparent'
+  },
+  // Тонкий серый вертикальный разделитель между ячейками
+  statDivider: {
+    width: '1px',
+    alignSelf: 'center',
+    height: '32px',
+    background: 'rgba(255, 255, 255, 0.10)',
+    flexShrink: 0
   },
   pillValue: {
     fontFamily: 'var(--font-tiny5)',
