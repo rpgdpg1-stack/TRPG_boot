@@ -362,26 +362,24 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    // Горизонтальный отступ 0 — плашки игрока ровно на 16px от краёв (как везде),
-    // а не на 20px как было раньше при padding 4px по бокам.
-    padding: '8px 0 4px',
+    gap: '10px',
+    margin: '8px 0 4px',
+    padding: '12px 14px',
     position: 'relative',
-    gap: '12px'
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    borderRadius: 'var(--radius-card)'
   },
   topPanel: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: '16px',
-    padding: '12px 14px',
-    background: 'rgba(255, 255, 255, 0.015)',
-    borderRadius: 'var(--radius-card)'
+    padding: 0
   },
   bottomRowWrap: {
     position: 'relative',
-    padding: '12px 14px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 'var(--radius-card)'
+    padding: 0
   },
   avatarWrap: {
     width: '100px',

@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
-import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync } from '../lib/storage'
+import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
+import { EVENTS, on } from '../lib/events'
 import PixelHeart from '../components/PixelHeart'
 import UiIcon from '../components/UiIcon'
+import HistoryRow from '../components/HistoryRow'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -31,10 +33,13 @@ function indexBySlug(entries, slug) {
 /**
  * Главная — Тренировки.
  *
+ * Порядок: Игрок → Избранное → Разделы → История → Дневной буст.
+ *
  * Избранное: карусель программ. Листается СВАЙПОМ влево/вправо (с вибро),
- * снизу точки-индикаторы (зелёные, с анимацией ширины). Последняя пролистанная
- * карточка запоминается (localStorage + Telegram CloudStorage), поэтому при
- * перезаходе/входе с другого устройства показывается именно она.
+ * снизу точки-индикаторы. Последняя пролистанная карточка запоминается
+ * (localStorage + Telegram CloudStorage).
+ *
+ * История: превью последних 3 завершённых тренировок + «Показать все» → /history.
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -46,8 +51,9 @@ export default function Home() {
   const [favIdx, setFavIdx] = useState(() => indexBySlug(initialFavs, savedSlug))
   const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesSync(buildFavSync) !== null)
 
-  // Состояние свайпа: стартовая X и флаг "только что свайпнули" (чтобы
-  // подавить ложный тап-навигацию по карточке после свайпа).
+  const [history, setHistory] = useState([])
+
+  // Состояние свайпа: стартовая X и флаг "только что свайпнули".
   const swipeRef = useRef({ x: null, swiped: false })
 
   useEffect(() => {
@@ -55,8 +61,7 @@ export default function Home() {
     lockVerticalSwipes()
   }, [])
 
-  // Фоновое обновление: после синхронного старта перечитываем из CloudStorage
-  // (вдруг избранное / последний слайд менялись с другого устройства).
+  // Фоновое обновление избранного (вдруг менялось с другого устройства).
   useEffect(() => {
     let cancelled = false
     loadFavoritesEntries(async (slug) => {
@@ -67,7 +72,6 @@ export default function Home() {
     }).then(async entries => {
       if (cancelled) return
       setFavorites(entries)
-      // Свежий сохранённый слайд из облака (приоритетнее локального)
       let slug = null
       try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
       if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
@@ -78,6 +82,19 @@ export default function Home() {
       }
     })
     return () => { cancelled = true }
+  }, [])
+
+  // История: превью 3 шт. Обновляем при изменении юзера (после завершения тренировки).
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      getRecentWorkouts(3).then(data => {
+        if (!cancelled) setHistory(data || [])
+      })
+    }
+    load()
+    const off = on(EVENTS.USER_CHANGED, load)
+    return () => { cancelled = true; off() }
   }, [])
 
   // Перейти к слайду i и запомнить его slug (локально + в облако).
@@ -110,12 +127,11 @@ export default function Home() {
     } else {
       goFav((favIdx - 1 + favorites.length) % favorites.length)
     }
-    // Сбрасываем флаг чуть позже, чтобы onClick карточки успел его увидеть
     setTimeout(() => { swipeRef.current.swiped = false }, 120)
   }
 
   const handleFavOpen = () => {
-    if (swipeRef.current.swiped) return // был свайп — не открываем
+    if (swipeRef.current.swiped) return
     haptic.light()
     const fav = favorites[favIdx]
     if (!fav) return
@@ -181,10 +197,6 @@ export default function Home() {
 
       {/* Скроллящийся контент */}
       <div style={styles.scrollSection}>
-
-      {/* Дневной буст */}
-      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
-      <DailyQuests />
 
       {/* Избранное */}
       <div style={styles.sectionHeaderRow}>
@@ -259,6 +271,34 @@ export default function Home() {
           </button>
         ))}
       </div>
+
+      {/* История */}
+      <div style={styles.historyHeaderRow}>
+        <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 4 }}>ИСТОРИЯ</span>
+        {history.length > 0 && (
+          <button
+            onClick={() => { haptic.light(); navigate('/history') }}
+            style={styles.showAllBtn}
+          >
+            Показать все ›
+          </button>
+        )}
+      </div>
+      {history.length === 0 ? (
+        <div style={styles.favEmpty}>
+          Здесь появятся твои завершённые тренировки
+        </div>
+      ) : (
+        <div style={styles.historyCard}>
+          {history.map((w, i) => (
+            <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
+          ))}
+        </div>
+      )}
+
+      {/* Дневной буст */}
+      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
+      <DailyQuests />
 
       </div>
     </div>
@@ -432,6 +472,32 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
+  // Заголовок ИСТОРИЯ + кнопка "Показать все" справа
+  historyHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '20px',
+    marginBottom: '12px'
+  },
+  showAllBtn: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--color-primary)',
+    background: 'transparent',
+    border: 'none',
+    padding: '4px 4px',
+    cursor: 'pointer',
+    letterSpacing: '0.3px'
+  },
+  historyCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
+  },
   favEmptyHeartWrap: {
     display: 'inline-flex',
     verticalAlign: 'middle',
@@ -490,8 +556,6 @@ const styles = {
     flexDirection: 'column',
     gap: '10px'
   },
-  // Зона свайпа вокруг карточки. touchAction: pan-y — вертикальный скролл
-  // страницы работает, горизонтальные жесты ловим мы.
   favSwipeArea: {
     touchAction: 'pan-y'
   },

@@ -19,6 +19,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Leaderboard from './pages/Leaderboard'
 import Rewards from './pages/Rewards'
+import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
 
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/history" element={<History />} />
           <Route path="/exercise/:id" element={<ExerciseInfo />} />
         </Routes>
 
