@@ -175,15 +175,6 @@ export default function Home() {
       comingSoon: false
     },
     {
-      id: 'cardio',
-      iconName: 'cardio',
-      title: 'Кардио',
-      subtitle: 'Бег · HIIT',
-      color: 'var(--cat-cardio)',
-      available: true,
-      comingSoon: true
-    },
-    {
       id: 'pool',
       iconName: 'swimming',
       title: 'Плавание',
@@ -191,6 +182,15 @@ export default function Home() {
       color: 'var(--cat-pool)',
       available: true,
       comingSoon: false
+    },
+    {
+      id: 'cardio',
+      iconName: 'cardio',
+      title: 'Кардио',
+      subtitle: 'Бег · HIIT',
+      color: 'var(--cat-cardio)',
+      available: true,
+      comingSoon: true
     },
     {
       id: 'stretch',

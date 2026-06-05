@@ -96,6 +96,36 @@ export default function Leaderboard() {
     setActiveTab(tab)
   }
 
+  // Свайп по списку влево/вправо — переключение вкладок Друзья ↔ Лига.
+  const swipeRef = useRef({ x: null, y: null })
+
+  const handleSwipeStart = (e) => {
+    swipeRef.current.x = e.touches[0].clientX
+    swipeRef.current.y = e.touches[0].clientY
+  }
+
+  const handleSwipeEnd = (e) => {
+    const startX = swipeRef.current.x
+    const startY = swipeRef.current.y
+    swipeRef.current.x = null
+    swipeRef.current.y = null
+    if (startX === null) return
+
+    const dx = e.changedTouches[0].clientX - startX
+    const dy = e.changedTouches[0].clientY - startY
+    // Горизонтальный свайп достаточной длины, не вертикальный скролл
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+
+    haptic.light()
+    if (dx < 0) {
+      // свайп влево → следующая вкладка (Друзья → Лига)
+      setActiveTab(TAB_LEAGUE)
+    } else {
+      // свайп вправо → предыдущая (Лига → Друзья)
+      setActiveTab(TAB_FRIENDS)
+    }
+  }
+
   const handleInfoTap = () => {
     haptic.light()
     setShowRules(true)
@@ -248,7 +278,11 @@ export default function Leaderboard() {
         </div>
       )}
 
-      <div style={styles.listWrap}>
+      <div
+        style={styles.listWrap}
+        onTouchStart={handleSwipeStart}
+        onTouchEnd={handleSwipeEnd}
+      >
         {loading ? (
           <div style={styles.empty}>Загрузка...</div>
         ) : (
