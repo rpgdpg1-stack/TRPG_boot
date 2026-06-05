@@ -40,7 +40,16 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
+
+    // Блокируем скролл страницы под модалкой, чтобы свайп по тексту заметки
+    // не листал фон. Запоминаем прежнее значение и возвращаем при закрытии.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [onClose])
 
   // Подтягиваем заметку при открытии меню (по exercise_id текущего слота).
@@ -131,6 +140,13 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
 
   return (
     <div
+      onTouchMove={(e) => {
+        // Гасим скролл фона: разрешаем тач-скролл только внутри элементов,
+        // которые сами прокручиваются (textarea / просмотр заметки / модалка).
+        // Если тач не на скроллируемом элементе — глушим, чтобы не листался фон.
+        const scrollable = e.target.closest?.('[data-scrollable]')
+        if (!scrollable) e.preventDefault()
+      }}
       style={{
         ...styles.overlay,
         // При редактировании прижимаем модалку кверху и поджимаем низ на
@@ -144,6 +160,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     >
       <div
         ref={menuRef}
+        data-scrollable
         style={styles.menu}
         onClick={(e) => e.stopPropagation()}
       >
@@ -204,6 +221,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
             <>
               <textarea
                 ref={noteInputRef}
+                data-scrollable
                 value={draft}
                 onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
                 placeholder="Например: не круглить спину, хват шире плеч"
@@ -228,7 +246,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
               )}
             </>
           ) : note ? (
-            <button onClick={startEditNote} style={styles.noteView}>
+            <button onClick={startEditNote} data-scrollable style={styles.noteView}>
               <span style={styles.noteViewIcon}>✍️</span>
               <span style={styles.noteViewText}>{note}</span>
             </button>

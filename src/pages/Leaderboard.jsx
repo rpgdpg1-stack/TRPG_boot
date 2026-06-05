@@ -217,7 +217,11 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      <div style={styles.tabsRow}>
+      <div
+        style={styles.tabsRow}
+        onTouchStart={handleSwipeStart}
+        onTouchEnd={handleSwipeEnd}
+      >
         <button
           onClick={() => handleTabTap(TAB_FRIENDS)}
           style={{
@@ -278,11 +282,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      <div
-        style={styles.listWrap}
-        onTouchStart={handleSwipeStart}
-        onTouchEnd={handleSwipeEnd}
-      >
+      <div style={styles.listWrap}>
         {loading ? (
           <div style={styles.empty}>Загрузка...</div>
         ) : (
