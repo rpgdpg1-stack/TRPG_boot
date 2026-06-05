@@ -52,6 +52,11 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     )
   }, [slot?.exercise_id])
 
+  // Идёт ли сейчас любой ввод с клавиатуры (вес или заметка). Пока true —
+  // оверлей жёстко зафиксирован (overflow: hidden, без пересчёта раскладки),
+  // чтобы фон не скроллился и вес не прыгал при появлении клавиатуры.
+  const isTyping = editingNote || editingWeight
+
   const handleWeightFocus = () => {
     setEditingWeight(true)
     setWeightDraft(String(localWeight))
@@ -219,13 +224,24 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   return (
     <div
       onTouchMove={(e) => {
-        // Гасим скролл фона: разрешаем тач-скролл только внутри элементов,
-        // которые сами прокручиваются (textarea / просмотр заметки / модалка).
-        // Если тач не на скроллируемом элементе — глушим, чтобы не листался фон.
+        // При активном вводе (клавиатура открыта) фон вообще не должен
+        // двигаться — глушим любой тач-move кроме самой textarea заметки.
+        if (isTyping) {
+          const inTextarea = e.target.closest?.('textarea')
+          if (!inTextarea) e.preventDefault()
+          return
+        }
+        // Иначе: разрешаем скролл только внутри прокручиваемых блоков.
         const scrollable = e.target.closest?.('[data-scrollable]')
         if (!scrollable) e.preventDefault()
       }}
-      style={styles.overlay}
+      style={{
+        ...styles.overlay,
+        // Во время любого ввода (вес/заметка) фиксируем оверлей: запрещаем
+        // скролл фона и убираем пересчёт раскладки от клавиатуры (иначе вес
+        // прыгает, а фон с упражнениями подскраливается).
+        overflowY: isTyping ? 'hidden' : 'auto'
+      }}
       onClick={onClose}
     >
       <div

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../features/exercises/api'
-import { getExerciseNote } from '../lib/notes'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
@@ -45,7 +44,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const [localWeight, setLocalWeight] = useState(
     user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
   )
-  const [hasNote, setHasNote] = useState(false)
   const inputRef = useRef(null)
 
   const editingRef = useRef(false)
@@ -72,16 +70,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
     )
   }, [user_weight_kg])
-
-  // Есть ли заметка у этого упражнения — для значка ✍️ под весом.
-  useEffect(() => {
-    let cancelled = false
-    if (!exercise_id) { setHasNote(false); return }
-    getExerciseNote(exercise_id).then(text => {
-      if (!cancelled) setHasNote(!!(text && text.trim()))
-    })
-    return () => { cancelled = true }
-  }, [exercise_id])
 
   // Тост "Готово, молодец!" показываем ТОЛЬКО когда карточка переходит
   // из неактивной в активную (т.е. юзер прямо сейчас тапнул).
@@ -329,9 +317,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           )}
         </div>
         <div style={styles.weightUnit}>KG</div>
-        {hasNote && (
-          <div style={styles.noteMark} aria-label="Есть заметка">✍️</div>
-        )}
       </div>
 
       <div
@@ -516,19 +501,6 @@ const styles = {
     letterSpacing: '0.05em',
     textAlign: 'center',
     color: '#888888'
-  },
-  // Значок "есть заметка" — внизу колонки веса, по центру (в одну
-  // вертикаль с цифрой и KG). Потом заменишь на SVG.
-  noteMark: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '38px',
-    textAlign: 'center',
-    fontSize: '13px',
-    lineHeight: 1,
-    zIndex: 7,
-    pointerEvents: 'none'
   },
   activeOverlay: {
     position: 'absolute',
