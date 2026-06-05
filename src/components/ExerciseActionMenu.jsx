@@ -56,6 +56,8 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     setEditingWeight(true)
     setWeightDraft(String(localWeight))
     haptic.light()
+    // Вес наверху карточки и так виден — модалку НЕ поднимаем, только
+    // показываем клавиатуру (фокус уже произошёл по тапу на инпут).
     setTimeout(() => {
       try { weightInputRef.current?.select() } catch (e) { /* ignore */ }
     }, 10)
@@ -145,8 +147,8 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     return () => { cancelled = true }
   }, [slot?.exercise_id])
 
-  // Высота клавиатуры (из visualViewport). На неё поднимаем модалку,
-  // чтобы блок ввода + кнопка "Сохранить" гарантированно были видны.
+  // Высота клавиатуры из visualViewport — нужна чтобы поднять модалку ровно
+  // над клавиатурой, не выше. Считаем только при редактировании заметки.
   const [kbHeight, setKbHeight] = useState(0)
 
   useEffect(() => {
@@ -158,16 +160,13 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     if (!vv) return
 
     const onResize = () => {
-      // Разница между полной высотой окна и видимой частью = высота клавиатуры
       const h = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
       setKbHeight(h)
     }
     onResize()
     vv.addEventListener('resize', onResize)
-    vv.addEventListener('scroll', onResize)
     return () => {
       vv.removeEventListener('resize', onResize)
-      vv.removeEventListener('scroll', onResize)
     }
   }, [editingNote])
 
@@ -176,14 +175,13 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    setTimeout(() => {
-      noteInputRef.current?.focus()
-      // Когда клавиатура поднялась — подтягиваем поле ввода в зону видимости
-      // внутри прокручиваемой модалки.
-      setTimeout(() => {
-        noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 300)
-    }, 50)
+    // Фокус ставим СИНХРОННО в том же обработчике тапа — только так iOS
+    // открывает клавиатуру сразу, а не после первого введённого символа.
+    // Никаких setTimeout/scrollIntoView: модалку поднимаем через CSS-сдвиг
+    // (см. styles.menu transform), внутренний скролл больше не нужен.
+    if (noteInputRef.current) {
+      try { noteInputRef.current.focus({ preventScroll: true }) } catch (e) { noteInputRef.current.focus() }
+    }
   }
 
   const cancelEditNote = () => {
@@ -227,21 +225,24 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
         const scrollable = e.target.closest?.('[data-scrollable]')
         if (!scrollable) e.preventDefault()
       }}
-      style={{
-        ...styles.overlay,
-        // При редактировании прижимаем модалку кверху и поджимаем низ на
-        // высоту клавиатуры (kbHeight). Так весь блок ввода + кнопки видны.
-        alignItems: editingNote ? 'flex-start' : 'center',
-        paddingTop: editingNote ? 'calc(env(safe-area-inset-top) + 12px)' : '20px',
-        paddingBottom: editingNote ? `${kbHeight + 12}px` : '20px',
-        overflowY: 'auto'
-      }}
+      style={styles.overlay}
       onClick={onClose}
     >
       <div
         ref={menuRef}
         data-scrollable
-        style={styles.menu}
+        style={{
+          ...styles.menu,
+          // При вводе заметки приподнимаем ВСЮ модалку над клавиатурой через
+          // transform (без внутреннего скролла). Зазор 30px от низа клавиатуры,
+          // чтобы блок ввода и кнопки не прижимались вплотную. Если по высоте
+          // упёрлись бы в системную зону Telegram сверху — transform ограничен
+          // так, что выше maxLift модалка не поедет.
+          transform: editingNote && kbHeight > 0
+            ? `translateY(-${Math.max(0, kbHeight - 30)}px)`
+            : 'translateY(0)',
+          transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
 
@@ -421,7 +422,11 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '20px',
+    // Верхний отступ = системная зона Telegram + запас. Так даже высокая
+    // модалка (видео + карточка + заметка) при центрировании не залезет
+    // под кнопки Telegram сверху.
+    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px',
+    overflowY: 'auto',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
   // Модалка чуть шире т.к. сверху квадратное видео — на узкой смотрится мелко.
