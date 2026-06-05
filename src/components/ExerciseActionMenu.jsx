@@ -56,19 +56,38 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     return () => { cancelled = true }
   }, [slot?.exercise_id])
 
+  // Высота клавиатуры (из visualViewport). На неё поднимаем модалку,
+  // чтобы блок ввода + кнопка "Сохранить" гарантированно были видны.
+  const [kbHeight, setKbHeight] = useState(0)
+
+  useEffect(() => {
+    if (!editingNote) {
+      setKbHeight(0)
+      return
+    }
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const onResize = () => {
+      // Разница между полной высотой окна и видимой частью = высота клавиатуры
+      const h = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKbHeight(h)
+    }
+    onResize()
+    vv.addEventListener('resize', onResize)
+    vv.addEventListener('scroll', onResize)
+    return () => {
+      vv.removeEventListener('resize', onResize)
+      vv.removeEventListener('scroll', onResize)
+    }
+  }, [editingNote])
+
   const startEditNote = () => {
     haptic.light()
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    setTimeout(() => {
-      noteInputRef.current?.focus()
-      // Подстраховка: после фокуса и поднятия клавиатуры подтягиваем поле
-      // ввода в видимую зону (на случай если модалка всё равно высокая).
-      setTimeout(() => {
-        noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 250)
-    }, 50)
+    setTimeout(() => noteInputRef.current?.focus(), 50)
   }
 
   const cancelEditNote = () => {
@@ -107,10 +126,11 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     <div
       style={{
         ...styles.overlay,
-        // При редактировании заметки прижимаем модалку кверху, чтобы блок
-        // ввода и кнопка "Сохранить" не уезжали под клавиатуру iOS.
+        // При редактировании прижимаем модалку кверху и поджимаем низ на
+        // высоту клавиатуры (kbHeight). Так весь блок ввода + кнопки видны.
         alignItems: editingNote ? 'flex-start' : 'center',
         paddingTop: editingNote ? 'calc(env(safe-area-inset-top) + 12px)' : '20px',
+        paddingBottom: editingNote ? `${kbHeight + 12}px` : '20px',
         overflowY: 'auto'
       }}
       onClick={onClose}
@@ -267,8 +287,9 @@ const styles = {
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
   videoBlock: {
-    width: '100%',
-    marginBottom: '4px'
+    width: '70%',
+    margin: '0 auto 4px',
+    alignSelf: 'center'
   },
   exerciseName: {
     fontFamily: 'var(--font-geist)',
