@@ -43,20 +43,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState(false)
 
-  // Переполняется ли блок просмотра заметки (текст длиннее видимой области).
-  // Если да — показываем мягкое затухание снизу как намёк "есть прокрутка".
-  const [noteOverflow, setNoteOverflow] = useState(false)
-  const noteViewTextRef = useRef(null)
-
-  // Замеряем переполнение когда заметка показывается (не в режиме правки).
-  useEffect(() => {
-    if (editingNote) { setNoteOverflow(false); return }
-    const el = noteViewTextRef.current
-    if (!el) { setNoteOverflow(false); return }
-    // scrollHeight заметно больше clientHeight → текст не влез, есть прокрутка.
-    setNoteOverflow(el.scrollHeight > el.clientHeight + 2)
-  }, [note, editingNote, noteLoaded])
-
   // Вес — отображаем и редактируем прямо в модалке (как на карточке в днях
   // тренировки). При сохранении дёргаем saveExerciseWeight и сообщаем наверх
   // через onWeightSaved, чтобы карточка под модалкой тоже обновила цифру.
@@ -226,6 +212,24 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     setNoteLift(0)
     setNoteError(false)
     setDraft('')
+  }
+
+  // Тап по заметке открывает редактор, свайп — скроллит текст. Отличаем по
+  // сдвигу пальца от pointerdown к pointerup: < 8px = тап, иначе скролл.
+  const noteTapStart = useRef(null)
+
+  const handleNoteViewPointerDown = (e) => {
+    noteTapStart.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleNoteViewPointerUp = (e) => {
+    const start = noteTapStart.current
+    noteTapStart.current = null
+    if (!start) return
+    const dx = Math.abs(e.clientX - start.x)
+    const dy = Math.abs(e.clientY - start.y)
+    if (dx > 8 || dy > 8) return // это скролл, не открываем редактор
+    startEditNote()
   }
 
   const handleSaveNote = async () => {
@@ -405,33 +409,23 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
             </>
           ) : note ? (
             <div
+              className="note-scroll"
               data-scrollable
               style={styles.noteView}
+              onPointerDown={handleNoteViewPointerDown}
+              onPointerUp={handleNoteViewPointerUp}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
             >
               <span style={styles.noteViewIcon}>
-                <UiIcon name="notes" size={15} color={NOTE_ICON_COLOR} />
+                <UiIcon name="notes" size={20} color={NOTE_ICON_COLOR} />
               </span>
-              <div style={styles.noteViewTextWrap}>
-                <span
-                  ref={noteViewTextRef}
-                  style={styles.noteViewText}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchMove={(e) => e.stopPropagation()}
-                >
-                  {note}
-                </span>
-                {/* Мягкое затухание снизу — намёк что текст прокручивается.
-                    Показываем только когда контент реально не влез. */}
-                {noteOverflow && <div style={styles.noteFade} aria-hidden="true" />}
-              </div>
-              <button onClick={startEditNote} style={styles.noteEditPencil} aria-label="Редактировать">
-                ✎
-              </button>
+              <span style={styles.noteViewText}>{note}</span>
             </div>
           ) : (
             <button onClick={startEditNote} style={styles.noteAddButton}>
               <span style={styles.noteViewIcon}>
-                <UiIcon name="notes" size={15} color={NOTE_ICON_COLOR} />
+                <UiIcon name="notes" size={20} color={NOTE_ICON_COLOR} />
               </span>
               <span style={styles.noteAddLabel}>Добавить заметку</span>
             </button>
@@ -470,6 +464,25 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
         @keyframes menuPanelScaleIn {
           0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* Тонкий вертикальный скроллбар внутри блока просмотра заметки.
+           Глобально скроллбары скрыты (index.css), поэтому возвращаем его
+           точечно только здесь. Дорожка прозрачная, ползунок — полупрозрачный
+           белый, скруглённый: стандартный индикатор позиции прокрутки. */
+        .note-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.28) transparent;
+        }
+        .note-scroll::-webkit-scrollbar {
+          display: block;
+          width: 4px;
+        }
+        .note-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .note-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.28);
+          border-radius: 4px;
         }
       `}</style>
     </div>
@@ -737,20 +750,26 @@ const styles = {
     color: 'var(--color-text-secondary)'
   },
   // Просмотр существующей заметки. Текст скроллится внутри, справа карандаш.
+  // Блок просмотра заметки. Сам скроллится по вертикали (до 3 строк видно,
+  // дальше — прокрутка пальцем + тонкий скроллбар справа, класс note-scroll).
+  // Кликабелен целиком: тап открывает редактор (логика тап-vs-скролл в
+  // handleNoteViewPointerUp). Правый паддинг чуть больше — место под скроллбар.
   noteView: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: '10px',
     width: '100%',
-    padding: '14px 16px',
+    padding: '14px 12px 14px 16px',
     background: 'rgba(158, 209, 83, 0.06)',
     border: '1px solid rgba(158, 209, 83, 0.2)',
     borderRadius: '14px',
     textAlign: 'left',
-    // Цвет в который затухает текст у нижнего края = фон заметки поверх фона
-    // модалки. Зелёная плёнка 6% поверх #222 ≈ этот оттенок. Используется
-    // в noteFade (linear-gradient … var(--note-fade-to)).
-    '--note-fade-to': 'rgb(33, 37, 28)'
+    cursor: 'pointer',
+    maxHeight: '60px',           // 3 строки × 20px
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain'
   },
   noteViewIcon: {
     display: 'inline-flex',
@@ -760,21 +779,9 @@ const styles = {
     lineHeight: 0,
     flexShrink: 0
   },
-  // Обёртка текста заметки: относительная, чтобы fade-затухание легло поверх
-  // нижнего края. Скролл — на ней. flex:1 чтобы занять ширину между иконкой
-  // и карандашом.
-  noteViewTextWrap: {
+  noteViewText: {
     flex: 1,
     minWidth: 0,
-    position: 'relative',
-    maxHeight: '60px',           // 3 строки × 20px
-    overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
-    touchAction: 'pan-y',
-    overscrollBehavior: 'contain'
-  },
-  noteViewText: {
-    display: 'block',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 500,
@@ -783,35 +790,7 @@ const styles = {
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word'
   },
-  // Затухание снизу — мягкий градиент от фона блока к прозрачному. sticky,
-  // чтобы держаться у нижнего края видимой области при прокрутке. Кликов не
-  // ловит (pointerEvents:none) — палец скроллит текст сквозь него.
-  noteFade: {
-    position: 'sticky',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '18px',
-    marginTop: '-18px',
-    background: 'linear-gradient(180deg, transparent 0%, var(--note-fade-to) 100%)',
-    pointerEvents: 'none'
-  },
-  // Кнопка-карандаш справа — вход в режим редактирования заметки
-  noteEditPencil: {
-    flexShrink: 0,
-    width: '28px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    alignSelf: 'flex-start'
-  },
+  
   // Режим редактирования. height под 3 строки (3 × lineHeight 20 + паддинги),
   // overflowY: scroll даёт внутренний скролл + ползунок справа, если текст
   // длиннее 3 строк. touchAction: pan-y — палец листает именно textarea.
