@@ -765,11 +765,18 @@ const styles = {
     borderRadius: '14px',
     textAlign: 'left',
     cursor: 'pointer',
-    maxHeight: '60px',           // 3 строки × 20px
+    // 3 строки целиком (3×20=60) + верхушка 4-й строки видна → понятно что
+    // текст продолжается. Высоту считаем от контента: 14 (верх. паддинг) + 74.
+    maxHeight: '88px',
     overflowY: 'auto',
     WebkitOverflowScrolling: 'touch',
     touchAction: 'pan-y',
-    overscrollBehavior: 'contain'
+    overscrollBehavior: 'contain',
+    // Лёгкое затухание нижнего края — мягкий намёк "есть ещё текст, скролль".
+    // Через mask, чтобы не перекрывать скроллбар и не ломать раскладку.
+    // Когда текст влез целиком — затухать визуально нечему, выглядит обычно.
+    WebkitMaskImage: 'linear-gradient(180deg, #000 72%, rgba(0,0,0,0.35) 100%)',
+    maskImage: 'linear-gradient(180deg, #000 72%, rgba(0,0,0,0.35) 100%)'
   },
   noteViewIcon: {
     display: 'inline-flex',
