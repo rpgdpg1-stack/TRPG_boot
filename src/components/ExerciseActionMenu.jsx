@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { getExerciseNote, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
+import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
 
@@ -23,6 +25,15 @@ import UiIcon from './UiIcon'
  */
 export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
   const menuRef = useRef(null)
+  const noteInputRef = useRef(null)
+
+  // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
+  const [note, setNote] = useState('')
+  const [noteLoaded, setNoteLoaded] = useState(false)
+  const [editingNote, setEditingNote] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+  const [noteError, setNoteError] = useState(false)
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -31,6 +42,51 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  // Подтягиваем заметку при открытии меню (по exercise_id текущего слота).
+  useEffect(() => {
+    if (!slot?.exercise_id) return
+    let cancelled = false
+    setNoteLoaded(false)
+    getExerciseNote(slot.exercise_id).then(text => {
+      if (cancelled) return
+      setNote(text)
+      setNoteLoaded(true)
+    })
+    return () => { cancelled = true }
+  }, [slot?.exercise_id])
+
+  const startEditNote = () => {
+    haptic.light()
+    setDraft(note)
+    setNoteError(false)
+    setEditingNote(true)
+    setTimeout(() => noteInputRef.current?.focus(), 50)
+  }
+
+  const cancelEditNote = () => {
+    setEditingNote(false)
+    setNoteError(false)
+    setDraft('')
+  }
+
+  const handleSaveNote = async () => {
+    if (savingNote) return
+    setSavingNote(true)
+    setNoteError(false)
+
+    const ok = await saveExerciseNote(slot.exercise_id, draft)
+    setSavingNote(false)
+
+    if (ok) {
+      haptic.success()
+      setNote(draft.trim().slice(0, NOTE_MAX_LENGTH))
+      setEditingNote(false)
+    } else {
+      haptic.error()
+      setNoteError(true)
+    }
+  }
 
   if (!slot) return null
 
@@ -94,6 +150,50 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
             </span>
             <span style={styles.actionLabel}>Сменить</span>
           </button>
+        </div>
+
+        {/* Заметка к упражнению — в самом низу модалки */}
+        <div style={styles.noteBlock}>
+          {!noteLoaded ? (
+            <div style={styles.noteSkeleton} />
+          ) : editingNote ? (
+            <>
+              <textarea
+                ref={noteInputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
+                placeholder="Например: не круглить спину, хват шире плеч"
+                style={styles.noteTextarea}
+                maxLength={NOTE_MAX_LENGTH}
+              />
+              <div style={styles.noteEditFooter}>
+                <span style={styles.noteCounter}>{draft.length}/{NOTE_MAX_LENGTH}</span>
+                <div style={styles.noteEditButtons}>
+                  <button onClick={cancelEditNote} style={styles.noteCancelBtn} disabled={savingNote}>
+                    Отмена
+                  </button>
+                  <button onClick={handleSaveNote} style={styles.noteSaveBtn} disabled={savingNote}>
+                    {savingNote ? 'Сохранение…' : 'Сохранить'}
+                  </button>
+                </div>
+              </div>
+              {noteError && (
+                <div style={styles.noteErrorText}>
+                  Не удалось сохранить. Проверь интернет.
+                </div>
+              )}
+            </>
+          ) : note ? (
+            <button onClick={startEditNote} style={styles.noteView}>
+              <span style={styles.noteViewIcon}>✍️</span>
+              <span style={styles.noteViewText}>{note}</span>
+            </button>
+          ) : (
+            <button onClick={startEditNote} style={styles.noteAddButton}>
+              <span style={styles.noteViewIcon}>✍️</span>
+              <span style={styles.noteAddLabel}>Добавить заметку</span>
+            </button>
+          )}
         </div>
 
         <button onClick={onClose} style={styles.cancelButton}>
@@ -223,6 +323,126 @@ const styles = {
     fontSize: '15px',
     fontWeight: 600,
     color: 'var(--color-text)'
+  },
+
+  // Блок заметки — в самом низу модалки, под кнопками действий
+  noteBlock: {
+    width: '100%',
+    marginTop: '8px'
+  },
+  noteSkeleton: {
+    width: '100%',
+    height: '44px',
+    borderRadius: '14px',
+    background: 'rgba(255, 255, 255, 0.03)'
+  },
+  // Кнопка "Добавить заметку" (когда заметки ещё нет)
+  noteAddButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: '100%',
+    padding: '14px 16px',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px dashed rgba(255, 255, 255, 0.15)',
+    borderRadius: '14px',
+    cursor: 'pointer',
+    textAlign: 'left'
+  },
+  noteAddLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)'
+  },
+  // Просмотр существующей заметки (тап → редактирование)
+  noteView: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    width: '100%',
+    padding: '14px 16px',
+    background: 'rgba(158, 209, 83, 0.06)',
+    border: '1px solid rgba(158, 209, 83, 0.2)',
+    borderRadius: '14px',
+    cursor: 'pointer',
+    textAlign: 'left'
+  },
+  noteViewIcon: {
+    fontSize: '15px',
+    lineHeight: '20px',
+    flexShrink: 0
+  },
+  noteViewText: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: 'var(--color-text)',
+    lineHeight: '20px',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word'
+  },
+  // Режим редактирования
+  noteTextarea: {
+    width: '100%',
+    minHeight: '72px',
+    padding: '12px 14px',
+    background: 'rgba(0, 0, 0, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '14px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 500,
+    color: 'var(--color-text)',
+    lineHeight: '20px',
+    resize: 'none',
+    outline: 'none',
+    WebkitAppearance: 'none'
+  },
+  noteEditFooter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '8px',
+    gap: '10px'
+  },
+  noteCounter: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    flexShrink: 0
+  },
+  noteEditButtons: {
+    display: 'flex',
+    gap: '8px'
+  },
+  noteCancelBtn: {
+    padding: '8px 14px',
+    background: 'transparent',
+    border: 'none',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer'
+  },
+  noteSaveBtn: {
+    padding: '8px 16px',
+    background: 'var(--color-primary)',
+    color: '#0D0C0C',
+    border: 'none',
+    borderRadius: '10px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'pointer'
+  },
+  noteErrorText: {
+    marginTop: '8px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: '#FF8C42',
+    textAlign: 'center'
   },
   cancelButton: {
     marginTop: '2px',
