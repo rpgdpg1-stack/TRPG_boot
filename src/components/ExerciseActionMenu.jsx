@@ -224,6 +224,8 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
                 data-scrollable
                 value={draft}
                 onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}
                 maxLength={NOTE_MAX_LENGTH}
@@ -457,8 +459,8 @@ const styles = {
     overflow: 'hidden'
   },
   // Режим редактирования. height под 3 строки (3 × lineHeight 20 + паддинги),
-  // overflowY: auto даёт внутренний скролл + системный ползунок справа,
-  // если текст длиннее 3 строк.
+  // overflowY: scroll даёт внутренний скролл + ползунок справа, если текст
+  // длиннее 3 строк. touchAction: pan-y — палец листает именно textarea.
   noteTextarea: {
     width: '100%',
     height: '84px',          // ~3 строки: 3×20 + 12+12 паддинги
@@ -474,8 +476,10 @@ const styles = {
     lineHeight: '20px',
     resize: 'none',
     outline: 'none',
-    overflowY: 'auto',
+    overflowY: 'scroll',
     WebkitOverflowScrolling: 'touch',
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
     WebkitAppearance: 'none'
   },
   noteEditFooter: {
