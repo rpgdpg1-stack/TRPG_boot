@@ -87,7 +87,14 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    setTimeout(() => noteInputRef.current?.focus(), 50)
+    setTimeout(() => {
+      noteInputRef.current?.focus()
+      // Когда клавиатура поднялась — подтягиваем поле ввода в зону видимости
+      // внутри прокручиваемой модалки.
+      setTimeout(() => {
+        noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }, 50)
   }
 
   const cancelEditNote = () => {
@@ -141,64 +148,53 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Верхняя часть модалки. При редактировании заметки скрываем её
-            целиком — над клавиатурой остаётся только компактный блок ввода. */}
-        {!editingNote && (
-          <>
-            {/* Видео сверху, квадратное, скругление 33 */}
-            <div style={styles.videoBlock}>
-              <ExerciseVideo
-                videoUrl={slot.video_url}
-                previewUrl={slot.preview_url}
-                size="full"
-              />
-            </div>
+        {/* Видео сверху, квадратное, скругление 33 */}
+        <div style={styles.videoBlock}>
+          <ExerciseVideo
+            videoUrl={slot.video_url}
+            previewUrl={slot.preview_url}
+            size="full"
+          />
+        </div>
 
-            {/* Название упражнения — крупно, по центру */}
-            <div style={styles.exerciseName}>{slot.exercise_name}</div>
+        {/* Название упражнения — крупно, по центру */}
+        <div style={styles.exerciseName}>{slot.exercise_name}</div>
 
-            {/* Теги: группа (цветная) + подгруппа (серая) */}
-            <div style={styles.tagsRow}>
-              {groupLabel && (
-                <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
-                  {groupLabel}
-                </span>
-              )}
-              {subGroupLabel && (
-                <span style={{ ...styles.tag, ...styles.tagSecondary }}>
-                  {subGroupLabel}
-                </span>
-              )}
-            </div>
+        {/* Теги: группа (цветная) + подгруппа (серая) */}
+        <div style={styles.tagsRow}>
+          {groupLabel && (
+            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
+              {groupLabel}
+            </span>
+          )}
+          {subGroupLabel && (
+            <span style={{ ...styles.tag, ...styles.tagSecondary }}>
+              {subGroupLabel}
+            </span>
+          )}
+        </div>
 
-            {/* Подходы — серой строкой под тегами */}
-            {slot.meta_info && (
-              <div style={styles.meta}>{slot.meta_info}</div>
-            )}
-
-            {/* Кнопки действий */}
-            <div style={styles.actionsBlock}>
-              <button onClick={onInfo} style={styles.actionButton}>
-                <span style={styles.actionIcon}>
-                  <UiIcon name="info" size={20} color="#3FA2F7" />
-                </span>
-                <span style={styles.actionLabel}>Инфо</span>
-              </button>
-
-              <button onClick={onSwap} style={styles.actionButton}>
-                <span style={styles.actionIcon}>
-                  <UiIcon name="change" size={20} color="#FF8C42" />
-                </span>
-                <span style={styles.actionLabel}>Сменить</span>
-              </button>
-            </div>
-          </>
+        {/* Подходы — серой строкой под тегами */}
+        {slot.meta_info && (
+          <div style={styles.meta}>{slot.meta_info}</div>
         )}
 
-        {/* При редактировании — компактный заголовок вместо видео/тегов */}
-        {editingNote && (
-          <div style={styles.noteEditHeader}>Заметка к упражнению</div>
-        )}
+        {/* Кнопки действий */}
+        <div style={styles.actionsBlock}>
+          <button onClick={onInfo} style={styles.actionButton}>
+            <span style={styles.actionIcon}>
+              <UiIcon name="info" size={20} color="#3FA2F7" />
+            </span>
+            <span style={styles.actionLabel}>Инфо</span>
+          </button>
+
+          <button onClick={onSwap} style={styles.actionButton}>
+            <span style={styles.actionIcon}>
+              <UiIcon name="change" size={20} color="#FF8C42" />
+            </span>
+            <span style={styles.actionLabel}>Сменить</span>
+          </button>
+        </div>
 
         {/* Заметка к упражнению — в самом низу модалки */}
         <div style={styles.noteBlock}>
@@ -244,11 +240,9 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
           )}
         </div>
 
-        {!editingNote && (
-          <button onClick={onClose} style={styles.cancelButton}>
-            Отмена
-          </button>
-        )}
+        <button onClick={onClose} style={styles.cancelButton}>
+          Отмена
+        </button>
       </div>
 
       <style>{`
@@ -285,9 +279,14 @@ const styles = {
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
   // Модалка чуть шире т.к. сверху квадратное видео — на узкой смотрится мелко.
+  // maxHeight + overflowY: при поднятой клавиатуре модалка прокручивается
+  // внутри себя, поэтому низ (поле заметки + Сохранить) всегда доступен.
   menu: {
     width: '100%',
     maxWidth: '360px',
+    maxHeight: '100%',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
@@ -376,16 +375,6 @@ const styles = {
     color: 'var(--color-text)'
   },
 
-  // Заголовок в режиме редактирования (вместо скрытого видео/тегов)
-  noteEditHeader: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '15px',
-    color: 'var(--color-text)',
-    letterSpacing: '1px',
-    textAlign: 'center',
-    marginBottom: '4px',
-    marginTop: '2px'
-  },
   // Блок заметки — в самом низу модалки, под кнопками действий
   noteBlock: {
     width: '100%',
@@ -441,12 +430,21 @@ const styles = {
     color: 'var(--color-text)',
     lineHeight: '20px',
     whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word'
+    wordBreak: 'break-word',
+    // Показываем максимум 3 строки, остальное — многоточие (раскроется
+    // при тапе в режиме редактирования со скроллом)
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden'
   },
-  // Режим редактирования
+  // Режим редактирования. height под 3 строки (3 × lineHeight 20 + паддинги),
+  // overflowY: auto даёт внутренний скролл + системный ползунок справа,
+  // если текст длиннее 3 строк.
   noteTextarea: {
     width: '100%',
-    minHeight: '72px',
+    height: '84px',          // ~3 строки: 3×20 + 12+12 паддинги
+    maxHeight: '84px',
     padding: '12px 14px',
     background: 'rgba(0, 0, 0, 0.3)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -458,6 +456,8 @@ const styles = {
     lineHeight: '20px',
     resize: 'none',
     outline: 'none',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
     WebkitAppearance: 'none'
   },
   noteEditFooter: {
