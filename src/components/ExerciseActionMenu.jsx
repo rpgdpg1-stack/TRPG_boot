@@ -61,7 +61,14 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    setTimeout(() => noteInputRef.current?.focus(), 50)
+    setTimeout(() => {
+      noteInputRef.current?.focus()
+      // Подстраховка: после фокуса и поднятия клавиатуры подтягиваем поле
+      // ввода в видимую зону (на случай если модалка всё равно высокая).
+      setTimeout(() => {
+        noteInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 250)
+    }, 50)
   }
 
   const cancelEditNote = () => {
@@ -97,7 +104,17 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
   const subGroupLabel = toTitleCase(subGroupLabelRaw)
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
+    <div
+      style={{
+        ...styles.overlay,
+        // При редактировании заметки прижимаем модалку кверху, чтобы блок
+        // ввода и кнопка "Сохранить" не уезжали под клавиатуру iOS.
+        alignItems: editingNote ? 'flex-start' : 'center',
+        paddingTop: editingNote ? 'calc(env(safe-area-inset-top) + 12px)' : '20px',
+        overflowY: 'auto'
+      }}
+      onClick={onClose}
+    >
       <div
         ref={menuRef}
         style={styles.menu}
