@@ -329,11 +329,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           )}
         </div>
         <div style={styles.weightUnit}>KG</div>
+        {hasNote && (
+          <div style={styles.noteMark} aria-label="Есть заметка">✍️</div>
+        )}
       </div>
-
-      {hasNote && (
-        <div style={styles.noteMark} aria-label="Есть заметка">✍️</div>
-      )}
 
       <div
         style={{
@@ -518,12 +517,14 @@ const styles = {
     textAlign: 'center',
     color: '#888888'
   },
-  // Значок "есть заметка" — в правом нижнем углу карточки, с отступом
-  // от краёв как у миниатюры (padding карточки = 16px). Потом заменишь на SVG.
+  // Значок "есть заметка" — внизу колонки веса, по центру (в одну
+  // вертикаль с цифрой и KG). Потом заменишь на SVG.
   noteMark: {
     position: 'absolute',
-    right: '16px',
-    bottom: '16px',
+    bottom: 0,
+    left: 0,
+    width: '38px',
+    textAlign: 'center',
     fontSize: '13px',
     lineHeight: 1,
     zIndex: 7,
