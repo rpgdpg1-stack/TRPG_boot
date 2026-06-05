@@ -128,14 +128,34 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     }
     document.addEventListener('keydown', handleKey)
 
-    // Блокируем скролл страницы под модалкой, чтобы свайп по тексту заметки
-    // не листал фон. Запоминаем прежнее значение и возвращаем при закрытии.
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    // Жёстко фиксируем body на время открытой модалки. overflow:hidden в
+    // iOS Telegram WebView НЕ держит скролл когда поднята клавиатура —
+    // документ под visualViewport всё равно листается. position:fixed
+    // физически прибивает страницу. Запоминаем scrollY и возвращаем при
+    // закрытии (иначе после fixed страница прыгнет в начало).
+    const scrollY = window.scrollY
+    const body = document.body
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width
+    }
+    body.style.position = 'fixed'
+    body.style.top = `-${scrollY}px`
+    body.style.left = '0'
+    body.style.right = '0'
+    body.style.width = '100%'
 
     return () => {
       document.removeEventListener('keydown', handleKey)
-      document.body.style.overflow = prevOverflow
+      body.style.position = prev.position
+      body.style.top = prev.top
+      body.style.left = prev.left
+      body.style.right = prev.right
+      body.style.width = prev.width
+      window.scrollTo(0, scrollY)
     }
   }, [onClose])
 
@@ -180,13 +200,10 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    // Фокус ставим СИНХРОННО в том же обработчике тапа — только так iOS
-    // открывает клавиатуру сразу, а не после первого введённого символа.
-    // Никаких setTimeout/scrollIntoView: модалку поднимаем через CSS-сдвиг
-    // (см. styles.menu transform), внутренний скролл больше не нужен.
-    if (noteInputRef.current) {
-      try { noteInputRef.current.focus({ preventScroll: true }) } catch (e) { noteInputRef.current.focus() }
-    }
+    // Клавиатуру поднимает autoFocus на самой <textarea> (см. JSX ниже):
+    // она фокусируется ровно в момент монтирования, синхронно с появлением,
+    // поэтому iOS открывает клавиатуру сразу. Ручной focus() тут бесполезен —
+    // элемента ещё нет в DOM на момент этого вызова.
   }
 
   const cancelEditNote = () => {
@@ -224,14 +241,10 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   return (
     <div
       onTouchMove={(e) => {
-        // При активном вводе (клавиатура открыта) фон вообще не должен
-        // двигаться — глушим любой тач-move кроме самой textarea заметки.
-        if (isTyping) {
-          const inTextarea = e.target.closest?.('textarea')
-          if (!inTextarea) e.preventDefault()
-          return
-        }
-        // Иначе: разрешаем скролл только внутри прокручиваемых блоков.
+        // Фон под модалкой зафиксирован через body.position:fixed (см. эффект
+        // выше), поэтому тут достаточно разрешить скролл только внутри
+        // прокручиваемых блоков (textarea/просмотр заметки/модалка), а вне
+        // их — глушить, чтобы не было резинового оттягивания оверлея.
         const scrollable = e.target.closest?.('[data-scrollable]')
         if (!scrollable) e.preventDefault()
       }}
@@ -255,7 +268,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
           // упёрлись бы в системную зону Telegram сверху — transform ограничен
           // так, что выше maxLift модалка не поедет.
           transform: editingNote && kbHeight > 0
-            ? `translateY(-${Math.max(0, kbHeight - 30)}px)`
+            ? `translateY(-${Math.max(0, kbHeight - 60)}px)`
             : 'translateY(0)',
           transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
         }}
@@ -352,6 +365,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
             <>
               <textarea
                 ref={noteInputRef}
+                autoFocus
                 data-scrollable
                 value={draft}
                 onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
