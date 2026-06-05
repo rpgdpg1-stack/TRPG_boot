@@ -56,12 +56,16 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     )
   }, [slot?.exercise_id])
 
+  // Открыта ли сейчас клавиатура (редактируется вес или заметка). Пока true —
+  // первый тап по «Техника»/«Заменить» НЕ выполняет действие, а только гасит
+  // клавиатуру (как тап мимо инпута в iOS). Это та же идея что shouldIgnoreCardTap
+  // в днях тренировки, но локально для модалки.
+  const keyboardOpen = editingWeight || editingNote
+
   const handleWeightFocus = () => {
     setEditingWeight(true)
     setWeightDraft(String(localWeight))
     haptic.light()
-    // Вес наверху карточки и так виден — модалку НЕ поднимаем, только
-    // показываем клавиатуру (фокус уже произошёл по тапу на инпут).
     setTimeout(() => {
       try { weightInputRef.current?.select() } catch (e) { /* ignore */ }
     }, 10)
@@ -226,6 +230,27 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     }
   }
 
+  // Тап по кнопкам действий. Если открыта клавиатура (вес/заметка) — первый
+  // тап просто убирает клавиатуру, само действие НЕ выполняется. Для веса
+  // достаточно снять фокус (blur) — сработает handleWeightBlur и сохранит.
+  // Для заметки в режиме редактирования кнопки и так под редактором не видны,
+  // но страхуемся: глушим, пока юзер не нажмёт Отмена/Сохранить.
+  const handleInfoTap = () => {
+    if (keyboardOpen) {
+      try { document.activeElement?.blur() } catch (e) { /* ignore */ }
+      return
+    }
+    onInfo?.()
+  }
+
+  const handleSwapTap = () => {
+    if (keyboardOpen) {
+      try { document.activeElement?.blur() } catch (e) { /* ignore */ }
+      return
+    }
+    onSwap?.()
+  }
+
   if (!slot) return null
 
   const colors = getMuscleGroupColors(slot.muscle_group)
@@ -326,24 +351,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
           </div>
         </div>
 
-        {/* Кнопки действий */}
-        <div style={styles.actionsBlock}>
-          <button onClick={onInfo} style={styles.actionButton}>
-            <span style={styles.actionIcon}>
-              <UiIcon name="info" size={20} color="#3FA2F7" />
-            </span>
-            <span style={styles.actionLabel}>Техника упражнения</span>
-          </button>
-
-          <button onClick={onSwap} style={styles.actionButton}>
-            <span style={styles.actionIcon}>
-              <UiIcon name="change" size={20} color="#FF8C42" />
-            </span>
-            <span style={styles.actionLabel}>Заменить упражнение</span>
-          </button>
-        </div>
-
-        {/* Заметка к упражнению — в самом низу модалки */}
+        {/* Заметка к упражнению — сразу под карточкой */}
         <div style={styles.noteBlock}>
           {!noteLoaded ? (
             <div style={styles.noteSkeleton} />
@@ -403,8 +411,27 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
           )}
         </div>
 
-        <button onClick={onClose} style={styles.cancelButton}>
-          Отмена
+        {/* Кнопки действий — под заметкой */}
+        <div style={styles.actionsBlock}>
+          <button onClick={handleInfoTap} style={styles.actionButton}>
+            <span style={styles.actionIcon}>
+              <UiIcon name="info" size={20} color="#3FA2F7" />
+            </span>
+            <span style={styles.actionLabel}>Техника упражнения</span>
+          </button>
+
+          <button onClick={handleSwapTap} style={styles.actionButton}>
+            <span style={styles.actionIcon}>
+              <UiIcon name="change" size={20} color="#FF8C42" />
+            </span>
+            <span style={styles.actionLabel}>Заменить упражнение</span>
+          </button>
+        </div>
+
+        {/* Закрыть — с иконкой-крестиком */}
+        <button onClick={onClose} style={styles.closeButton}>
+          <CloseIcon />
+          <span>Закрыть</span>
         </button>
       </div>
 
@@ -425,6 +452,23 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
 function toTitleCase(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+/**
+ * Аккуратный крестик для кнопки «Закрыть». Тонкие линии, скруглённые концы —
+ * нейтральный UX-стиль, цвет наследуется от текста кнопки (currentColor).
+ */
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M3 3 L11 11 M11 3 L3 11"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
 }
 
 const styles = {
@@ -784,9 +828,15 @@ const styles = {
     color: '#FF8C42',
     textAlign: 'center'
   },
-  cancelButton: {
+  // Кнопка «Закрыть» с крестиком. Компактнее остальных (меньше верт. паддинг),
+  // иконка + текст по центру, серый нейтральный цвет.
+  closeButton: {
     marginTop: '2px',
-    padding: '12px',
+    padding: '9px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '7px',
     background: 'transparent',
     border: 'none',
     fontFamily: 'var(--font-manrope)',
