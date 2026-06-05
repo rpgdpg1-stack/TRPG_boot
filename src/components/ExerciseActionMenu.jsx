@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
@@ -24,22 +24,9 @@ import UiIcon from './UiIcon'
  *
  * Закрытие: тап по оверлею или Cancel.
  */
-// Высота системной зоны сверху (safe-area-inset-top) в px. Читаем через
-// временный элемент с env() — надёжнее чем хардкод под конкретный айфон.
-function getSafeTop() {
-  try {
-    const probe = document.createElement('div')
-    probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none;'
-    document.body.appendChild(probe)
-    const h = probe.getBoundingClientRect().height
-    probe.remove()
-    // Telegram держит свои кнопки примерно в зоне ~90-116px от верха —
-    // если safe-area почти нулевая (env не сработал), берём разумный дефолт.
-    return h > 10 ? h + 60 : 100
-  } catch {
-    return 100
-  }
-}
+// Безопасный верхний отступ под системную зону Telegram (кнопки Назад / …).
+// Модалка при подъёме не должна залезать выше этой границы.
+const TOP_SAFE_PX = 120
 
 export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWeightSaved }) {
   const menuRef = useRef(null)
@@ -68,11 +55,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
       slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
     )
   }, [slot?.exercise_id])
-
-  // Идёт ли сейчас любой ввод с клавиатуры (вес или заметка). Пока true —
-  // оверлей жёстко зафиксирован (overflow: hidden, без пересчёта раскладки),
-  // чтобы фон не скроллился и вес не прыгал при появлении клавиатуры.
-  const isTyping = editingNote || editingWeight
 
   const handleWeightFocus = () => {
     setEditingWeight(true)
@@ -189,54 +171,38 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     return () => { cancelled = true }
   }, [slot?.exercise_id])
 
-  // Насколько поднять модалку при вводе заметки. Считаем СРАЗУ при входе в
-  // режим редактирования (в layout-эффекте, до отрисовки) — поэтому подъём
-  // происходит в том же кадре, без двухэтапного прыжка.
-  //
-  // Алгоритм:
-  //  1. Предполагаемая высота клавиатуры ≈ 42% высоты экрана (iOS рус. раскладка
-  //     с предиктивной строкой). Этого достаточно чтобы освободить низ модалки.
-  //  2. ПОТОЛОК: верх модалки не должен подняться выше safeTop+30px (системная
-  //     зона Telegram). Если расчётный подъём задрал бы модалку выше — режем.
+  // На сколько px поднять модалку при вводе заметки. Считается СИНХРОННО в
+  // обработчике тапа (startEditNote) и сетится в одном батче с editingNote —
+  // поэтому модалка появляется уже поднятой, в одном кадре с клавиатурой.
+  // Без отдельного эффекта = без второго ререндера = без прыжка.
   const [noteLift, setNoteLift] = useState(0)
-
-  useLayoutEffect(() => {
-    if (!editingNote) {
-      setNoteLift(0)
-      return
-    }
-
-    const vh = window.innerHeight
-    // safe-area сверху (системная зона Telegram). env() через временный замер.
-    const safeTop = getSafeTop()
-    const TOP_GAP = 30 // не прижимать верх модалки к системной зоне
-
-    // Сколько хотим освободить снизу под клавиатуру
-    const desiredLift = Math.round(vh * 0.42)
-
-    // Текущее положение верха модалки (она центрирована оверлеем)
-    const el = menuRef.current
-    const rectTop = el ? el.getBoundingClientRect().top : safeTop + TOP_GAP
-
-    // Максимум на сколько можно поднять, чтобы верх не залез выше safeTop+gap
-    const maxLift = Math.max(0, rectTop - (safeTop + TOP_GAP))
-
-    setNoteLift(Math.min(desiredLift, maxLift))
-  }, [editingNote])
 
   const startEditNote = () => {
     haptic.light()
+
+    // Считаем подъём ПРЯМО СЕЙЧАС — модалка ещё на месте, можно замерить её
+    // верхнюю границу. Поднимаем настолько, чтобы освободить ~44% экрана под
+    // клавиатуру, но не выше TOP_SAFE_PX (иначе верх уедет под кнопки Telegram).
+    const vh = window.innerHeight
+    const desired = Math.round(vh * 0.44)
+    const rectTop = menuRef.current
+      ? menuRef.current.getBoundingClientRect().top
+      : TOP_SAFE_PX
+    const maxLift = Math.max(0, rectTop - TOP_SAFE_PX)
+    const lift = Math.min(desired, maxLift)
+
+    // Оба setState в одном обработчике → React батчит → ОДИН ререндер.
+    // Модалка сразу рисуется поднятой, редактор и клавиатура появляются
+    // одновременно. autoFocus на <textarea> поднимает клавиатуру в этом же кадре.
     setDraft(note)
     setNoteError(false)
+    setNoteLift(lift)
     setEditingNote(true)
-    // Клавиатуру поднимает autoFocus на самой <textarea> (см. JSX ниже):
-    // она фокусируется ровно в момент монтирования, синхронно с появлением,
-    // поэтому iOS открывает клавиатуру сразу. Ручной focus() тут бесполезен —
-    // элемента ещё нет в DOM на момент этого вызова.
   }
 
   const cancelEditNote = () => {
     setEditingNote(false)
+    setNoteLift(0)
     setNoteError(false)
     setDraft('')
   }
@@ -253,6 +219,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
       haptic.success()
       setNote(draft.trim().slice(0, NOTE_MAX_LENGTH))
       setEditingNote(false)
+      setNoteLift(0)
     } else {
       haptic.error()
       setNoteError(true)
@@ -277,13 +244,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
         const scrollable = e.target.closest?.('[data-scrollable]')
         if (!scrollable) e.preventDefault()
       }}
-      style={{
-        ...styles.overlay,
-        // Во время любого ввода (вес/заметка) фиксируем оверлей: запрещаем
-        // скролл фона и убираем пересчёт раскладки от клавиатуры (иначе вес
-        // прыгает, а фон с упражнениями подскраливается).
-        overflowY: isTyping ? 'hidden' : 'auto'
-      }}
+      style={styles.overlay}
       onClick={onClose}
     >
       <div
@@ -291,16 +252,10 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
         data-scrollable
         style={{
           ...styles.menu,
-          // Подъём включаем СРАЗУ по editingNote (в том же ререндере, что
-          // показывает редактор) — поэтому нет двухэтапного прыжка "сначала
-          // редактор внизу, потом скачок вверх". Величину НЕ берём из
-          // измеренного kbHeight (он приходит позже, отсюда и был прыжок), а
-          // считаем сразу: поднять модалку так, чтобы её верх встал на
-          // безопасную высоту (ниже системной зоны Telegram), но не больше
-          // чем нужно чтобы освободить место под клавиатуру.
-          transform: editingNote
-            ? `translateY(-${noteLift}px)`
-            : 'translateY(0)',
+          // Подъём задаётся noteLift, который посчитан синхронно в startEditNote
+          // и засечен в одном батче с editingNote — модалка сразу появляется
+          // поднятой, без второго кадра. Для веса noteLift = 0 → модалка стоит.
+          transform: `translateY(-${noteLift}px)`,
           transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
         }}
         onClick={(e) => e.stopPropagation()}
