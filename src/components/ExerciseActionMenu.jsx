@@ -248,10 +248,22 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
               )}
             </>
           ) : note ? (
-            <button onClick={startEditNote} data-scrollable style={styles.noteView}>
+            <div
+              data-scrollable
+              style={styles.noteView}
+            >
               <span style={styles.noteViewIcon}>✍️</span>
-              <span style={styles.noteViewText}>{note}</span>
-            </button>
+              <span
+                style={styles.noteViewText}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+              >
+                {note}
+              </span>
+              <button onClick={startEditNote} style={styles.noteEditPencil} aria-label="Редактировать">
+                ✎
+              </button>
+            </div>
           ) : (
             <button onClick={startEditNote} style={styles.noteAddButton}>
               <span style={styles.noteViewIcon}>✍️</span>
@@ -425,7 +437,7 @@ const styles = {
     fontWeight: 500,
     color: 'var(--color-text-secondary)'
   },
-  // Просмотр существующей заметки (тап → редактирование)
+  // Просмотр существующей заметки. Текст скроллится внутри, справа карандаш.
   noteView: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -435,7 +447,6 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.06)',
     border: '1px solid rgba(158, 209, 83, 0.2)',
     borderRadius: '14px',
-    cursor: 'pointer',
     textAlign: 'left'
   },
   noteViewIcon: {
@@ -444,6 +455,8 @@ const styles = {
     flexShrink: 0
   },
   noteViewText: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 500,
@@ -451,12 +464,28 @@ const styles = {
     lineHeight: '20px',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
-    // Показываем максимум 3 строки, остальное — многоточие (раскроется
-    // при тапе в режиме редактирования со скроллом)
-    display: '-webkit-box',
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden'
+    // Высота 3 строки (3×20), дальше — внутренний скролл пальцем.
+    maxHeight: '60px',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain'
+  },
+  // Кнопка-карандаш справа — вход в режим редактирования заметки
+  noteEditPencil: {
+    flexShrink: 0,
+    width: '28px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    alignSelf: 'flex-start'
   },
   // Режим редактирования. height под 3 строки (3 × lineHeight 20 + паддинги),
   // overflowY: scroll даёт внутренний скролл + ползунок справа, если текст
