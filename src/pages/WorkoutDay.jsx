@@ -213,6 +213,14 @@ export default function WorkoutDay() {
     setActionSlot(slot)
   }
 
+  // Вес отредактировали в модалке действий — обновляем слоты, чтобы карточка
+  // под модалкой сразу показала новую цифру (без перезахода на экран).
+  const handleWeightSaved = (exerciseId, weight) => {
+    setSlots(prev => prev.map(s =>
+      s.exercise_id === exerciseId ? { ...s, user_weight_kg: weight } : s
+    ))
+  }
+
   /**
    * Переход на страницу Инфо. Сохраняем текущий scrollY в state, чтобы
    * при возврате восстановить позицию скролла точь-в-точь. ReturnedFromOrderNum
@@ -510,6 +518,7 @@ export default function WorkoutDay() {
       {actionSlot && (
         <ExerciseActionMenu
           slot={actionSlot}
+          onWeightSaved={handleWeightSaved}
           onInfo={handleMenuInfo}
           onSwap={handleMenuSwap}
           onClose={() => {

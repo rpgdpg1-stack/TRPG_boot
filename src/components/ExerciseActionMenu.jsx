@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
+import { saveExerciseWeight } from '../features/exercises/api'
 import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
@@ -23,7 +24,7 @@ import UiIcon from './UiIcon'
  *
  * Закрытие: тап по оверлею или Cancel.
  */
-export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
+export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWeightSaved }) {
   const menuRef = useRef(null)
   const noteInputRef = useRef(null)
 
@@ -34,6 +35,85 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
   const [draft, setDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState(false)
+
+  // Вес — отображаем и редактируем прямо в модалке (как на карточке в днях
+  // тренировки). При сохранении дёргаем saveExerciseWeight и сообщаем наверх
+  // через onWeightSaved, чтобы карточка под модалкой тоже обновила цифру.
+  const weightInputRef = useRef(null)
+  const [editingWeight, setEditingWeight] = useState(false)
+  const [weightDraft, setWeightDraft] = useState('0')
+  const [localWeight, setLocalWeight] = useState(
+    slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
+  )
+
+  useEffect(() => {
+    setLocalWeight(
+      slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
+    )
+  }, [slot?.exercise_id])
+
+  const handleWeightFocus = () => {
+    setEditingWeight(true)
+    setWeightDraft(String(localWeight))
+    haptic.light()
+    setTimeout(() => {
+      try { weightInputRef.current?.select() } catch (e) { /* ignore */ }
+    }, 10)
+  }
+
+  const handleWeightChange = (e) => {
+    let v = e.target.value
+    v = v.replace(/,/g, '.')
+    v = v.replace(/[^0-9.]/g, '')
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    if (v.length > 5) v = v.slice(0, 5)
+    setWeightDraft(v)
+  }
+
+  const handleWeightBlur = async () => {
+    setEditingWeight(false)
+    const trimmed = weightDraft.trim()
+
+    if (trimmed === '') {
+      if (localWeight !== 0) {
+        setLocalWeight(0)
+        try {
+          await saveExerciseWeight(slot.exercise_id, 0)
+          onWeightSaved?.(slot.exercise_id, 0)
+          haptic.success()
+        } catch (e) {
+          console.error('[ExerciseActionMenu] saveExerciseWeight error:', e)
+        }
+      }
+      return
+    }
+
+    const num = parseFloat(trimmed)
+    if (isNaN(num) || num < 0) return
+
+    const clamped = Math.max(0, Math.min(500, num))
+    const rounded = Math.round(clamped * 2) / 2
+    if (rounded === localWeight) return
+
+    setLocalWeight(rounded)
+    try {
+      const ok = await saveExerciseWeight(slot.exercise_id, rounded)
+      if (ok) {
+        onWeightSaved?.(slot.exercise_id, rounded)
+        haptic.success()
+      }
+    } catch (e) {
+      console.error('[ExerciseActionMenu] saveExerciseWeight error:', e)
+    }
+  }
+
+  const handleWeightKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      weightInputRef.current?.blur()
+    }
+  }
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -165,36 +245,70 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Видео сверху, квадратное, скругление 33 */}
-        <div style={styles.videoBlock}>
-          <ExerciseVideo
-            videoUrl={slot.video_url}
-            previewUrl={slot.preview_url}
-            size="full"
-          />
+        {/* Карточка-шапка: как карточка упражнения в днях тренировки, но
+            вместо статичной миниатюры — зацикленное видео. Вес тут же
+            отображается и редактируется. Большое видео — по кнопке «Техника». */}
+        <div style={styles.card}>
+          <div style={styles.preview}>
+            <ExerciseVideo
+              videoUrl={slot.video_url}
+              previewUrl={slot.preview_url}
+              size="full"
+            />
+          </div>
+
+          <div style={styles.cardContent}>
+            <div style={styles.exerciseName}>{slot.exercise_name}</div>
+
+            <div style={styles.tagsRow}>
+              {groupLabel && (
+                <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
+                  {groupLabel}
+                </span>
+              )}
+              {subGroupLabel && (
+                <span style={{ ...styles.tag, ...styles.tagSecondary }}>
+                  {subGroupLabel}
+                </span>
+              )}
+            </div>
+
+            {slot.meta_info && (
+              <div style={styles.meta}>{slot.meta_info}</div>
+            )}
+          </div>
+
+          <div
+            style={styles.weightBlock}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={styles.weightInputWrap}>
+              <input
+                ref={weightInputRef}
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*"
+                value={editingWeight ? weightDraft : String(localWeight)}
+                onChange={handleWeightChange}
+                onFocus={handleWeightFocus}
+                onBlur={handleWeightBlur}
+                onKeyDown={handleWeightKeyDown}
+                style={{
+                  ...styles.weightInput,
+                  color: colors.accent,
+                  caretColor: colors.accent,
+                  opacity: editingWeight ? 1 : 0
+                }}
+              />
+              {!editingWeight && (
+                <div style={{ ...styles.weightValue, color: colors.accent }}>
+                  {localWeight}
+                </div>
+              )}
+            </div>
+            <div style={styles.weightUnit}>KG</div>
+          </div>
         </div>
-
-        {/* Название упражнения — крупно, по центру */}
-        <div style={styles.exerciseName}>{slot.exercise_name}</div>
-
-        {/* Теги: группа (цветная) + подгруппа (серая) */}
-        <div style={styles.tagsRow}>
-          {groupLabel && (
-            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
-              {groupLabel}
-            </span>
-          )}
-          {subGroupLabel && (
-            <span style={{ ...styles.tag, ...styles.tagSecondary }}>
-              {subGroupLabel}
-            </span>
-          )}
-        </div>
-
-        {/* Подходы — серой строкой под тегами */}
-        {slot.meta_info && (
-          <div style={styles.meta}>{slot.meta_info}</div>
-        )}
 
         {/* Кнопки действий */}
         <div style={styles.actionsBlock}>
@@ -202,14 +316,14 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose }) {
             <span style={styles.actionIcon}>
               <UiIcon name="info" size={20} color="#3FA2F7" />
             </span>
-            <span style={styles.actionLabel}>Инфо</span>
+            <span style={styles.actionLabel}>Техника упражнения</span>
           </button>
 
           <button onClick={onSwap} style={styles.actionButton}>
             <span style={styles.actionIcon}>
               <UiIcon name="change" size={20} color="#FF8C42" />
             </span>
-            <span style={styles.actionLabel}>Сменить</span>
+            <span style={styles.actionLabel}>Заменить упражнение</span>
           </button>
         </div>
 
@@ -332,26 +446,51 @@ const styles = {
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
-  videoBlock: {
-    width: '70%',
-    margin: '0 auto 4px',
-    alignSelf: 'center'
+  // Карточка-шапка — вид карточки упражнения из дней тренировки.
+  card: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: '16px',
+    gap: '16px',
+    width: '100%',
+    minHeight: '150px',
+    background: '#1C1C1C',
+    borderRadius: '33px',
+    overflow: 'hidden'
+  },
+  preview: {
+    flexShrink: 0,
+    width: '118px',
+    height: '118px',
+    borderRadius: '33px',
+    overflow: 'hidden',
+    background: '#FFFFFF',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cardContent: {
+    flex: 1,
+    minWidth: 0,
+    height: '118px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    gap: '8px'
   },
   exerciseName: {
     fontFamily: 'var(--font-geist)',
-    fontSize: '17px',
+    fontSize: '15px',
     fontWeight: 700,
-    lineHeight: '21px',
-    color: 'var(--color-text)',
-    textAlign: 'center',
-    marginTop: '6px',
-    padding: '0 4px'
+    lineHeight: '19px',
+    color: '#F0F0F0'
   },
   tagsRow: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '6px',
     flexWrap: 'wrap'
   },
@@ -373,11 +512,77 @@ const styles = {
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: 500,
+    lineHeight: '14px',
     letterSpacing: '0.03em',
-    color: '#888888',
-    lineHeight: '15px'
+    color: '#888888'
+  },
+  // Колонка веса справа — копия с карточки упражнения (цифра + KG),
+  // редактируется прозрачным инпутом поверх цифры.
+  weightBlock: {
+    flexShrink: 0,
+    width: '38px',
+    height: '118px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    gap: '0px',
+    padding: '6px',
+    margin: '-6px',
+    borderRadius: '8px',
+    position: 'relative',
+    zIndex: 5
+  },
+  weightInputWrap: {
+    position: 'relative',
+    width: '38px',
+    height: '27px'
+  },
+  weightInput: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '38px',
+    height: '27px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '20px',
+    fontWeight: 800,
+    lineHeight: '27px',
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    textAlign: 'center',
+    padding: 0,
+    margin: 0,
+    transition: 'opacity 0.12s ease',
+    WebkitAppearance: 'none',
+    appearance: 'none',
+    borderRadius: 0
+  },
+  weightValue: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '38px',
+    height: '27px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '20px',
+    fontWeight: 800,
+    lineHeight: '27px',
+    textAlign: 'center',
+    pointerEvents: 'none'
+  },
+  weightUnit: {
+    width: '38px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '9px',
+    fontWeight: 800,
+    lineHeight: '12px',
+    letterSpacing: '0.05em',
+    textAlign: 'center',
+    color: '#888888'
   },
 
   // Блок с кнопками действий — сверху отступ, чтобы отделить от инфо
