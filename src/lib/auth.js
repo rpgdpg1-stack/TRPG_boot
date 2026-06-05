@@ -94,19 +94,10 @@ export async function ensureAuth() {
     // отправителя в друзья. Делаем это после emit USER_READY чтобы UI
     // уже показал главную страницу, а добавление в друзья случилось в фоне.
     // Не блокируем return — пусть выполнится асинхронно без задержки старта.
-    // [ВРЕМЕННАЯ ДИАГНОСТИКА РЕФЕРАЛА — убрать после отладки]
-    const rawStartParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
     const refCode = getStartParamReferralCode()
-    window.alert(
-      '[РЕФ-ОТЛАДКА]\n' +
-      'start_param: ' + (rawStartParam ?? 'НЕТ') + '\n' +
-      'refCode: ' + (refCode ?? 'НЕТ') + '\n' +
-      'мой id: ' + (currentUser?.id ?? 'НЕТ')
-    )
     if (refCode) {
       console.log('[auth] referral code detected:', refCode)
       acceptReferral(refCode).then(result => {
-        window.alert('[РЕФ-ОТЛАДКА] ответ сервера: ' + JSON.stringify(result))
         if (result.success) {
           console.log('[auth] friend added via referral')
           // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
@@ -116,7 +107,6 @@ export async function ensureAuth() {
           console.warn('[auth] referral failed:', result.error)
         }
       }).catch(err => {
-        window.alert('[РЕФ-ОТЛАДКА] исключение: ' + (err?.message || err))
         console.warn('[auth] referral exception:', err)
       })
     }
