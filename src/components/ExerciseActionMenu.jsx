@@ -42,6 +42,8 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   const [draft, setDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState(false)
+  // Удерживается ли кнопка «Закрыть» — для красновато-серой подсветки.
+  const [closePressed, setClosePressed] = useState(false)
 
   // Вес — отображаем и редактируем прямо в модалке (как на карточке в днях
   // тренировки). При сохранении дёргаем saveExerciseWeight и сообщаем наверх
@@ -49,6 +51,10 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   const weightInputRef = useRef(null)
   const [editingWeight, setEditingWeight] = useState(false)
   const [weightDraft, setWeightDraft] = useState('0')
+  // Момент закрытия клавиатуры веса. Нужен чтобы первый тап по кнопкам
+  // действий ПОСЛЕ закрытия не проваливался в переход (как cooldown в
+  // weight-editing-state.js для карточек дней).
+  const weightClosedAtRef = useRef(0)
   const [localWeight, setLocalWeight] = useState(
     slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
   )
@@ -86,6 +92,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
 
   const handleWeightBlur = async () => {
     setEditingWeight(false)
+    weightClosedAtRef.current = Date.now()
     const trimmed = weightDraft.trim()
 
     if (trimmed === '') {
@@ -256,8 +263,17 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   // достаточно снять фокус (blur) — сработает handleWeightBlur и сохранит.
   // Для заметки в режиме редактирования кнопки и так под редактором не видны,
   // но страхуемся: глушим, пока юзер не нажмёт Отмена/Сохранить.
+  // Гасим тап если клавиатура открыта ИЛИ закрылась только что (< 350мс назад).
+  // Это ловит кейс: тап по кнопке сперва сбрасывает фокус веса (blur), а потом
+  // долетает click — без cooldown он бы провалился в переход.
+  const shouldIgnoreActionTap = () => {
+    if (keyboardOpen) return true
+    if (Date.now() - weightClosedAtRef.current < 350) return true
+    return false
+  }
+
   const handleInfoTap = () => {
-    if (keyboardOpen) {
+    if (shouldIgnoreActionTap()) {
       try { document.activeElement?.blur() } catch (e) { /* ignore */ }
       return
     }
@@ -265,7 +281,7 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   }
 
   const handleSwapTap = () => {
-    if (keyboardOpen) {
+    if (shouldIgnoreActionTap()) {
       try { document.activeElement?.blur() } catch (e) { /* ignore */ }
       return
     }
@@ -434,23 +450,35 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
 
         {/* Кнопки действий — под заметкой */}
         <div style={styles.actionsBlock}>
-          <button onClick={handleInfoTap} style={styles.actionButton}>
+          <button onClick={handleInfoTap} className="press-tile" style={styles.actionButton}>
             <span style={styles.actionIcon}>
               <UiIcon name="info" size={20} color="#3FA2F7" />
             </span>
             <span style={styles.actionLabel}>Техника упражнения</span>
           </button>
 
-          <button onClick={handleSwapTap} style={styles.actionButton}>
+          <button onClick={handleSwapTap} className="press-tile" style={styles.actionButton}>
             <span style={styles.actionIcon}>
               <UiIcon name="change" size={20} color="#FF8C42" />
             </span>
             <span style={styles.actionLabel}>Заменить упражнение</span>
           </button>
         </div>
-
-        {/* Закрыть — с иконкой-крестиком */}
-        <button onClick={onClose} style={styles.closeButton}>
+        {/* Закрыть — с иконкой-крестиком. Лёгкий пресс (press-tile) + при
+            удержании фон подкрашивается приглушённо-красным (серо-красный). */}
+        <button
+          onClick={onClose}
+          className="press-tile"
+          onPointerDown={() => setClosePressed(true)}
+          onPointerUp={() => setClosePressed(false)}
+          onPointerLeave={() => setClosePressed(false)}
+          onPointerCancel={() => setClosePressed(false)}
+          style={{
+            ...styles.closeButton,
+            background: closePressed ? 'rgba(180, 90, 90, 0.16)' : 'transparent',
+            color: closePressed ? '#C77' : 'var(--color-text-secondary)'
+          }}
+        >
           <CloseIcon />
           <span>Закрыть</span>
         </button>
@@ -878,10 +906,12 @@ const styles = {
     gap: '7px',
     background: 'transparent',
     border: 'none',
+    borderRadius: '12px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'background 0.15s ease, color 0.15s ease'
   }
 }
