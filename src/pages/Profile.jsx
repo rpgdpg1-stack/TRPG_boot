@@ -7,7 +7,6 @@ import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
-import HistoryRow from '../components/HistoryRow'
 import UiIcon from '../components/UiIcon'
 
 /**
@@ -94,6 +93,7 @@ export default function Profile() {
     {
       title: 'ДОСТИЖЕНИЯ',
       items: [
+        { id: 'history',     icon: '📋',             title: 'История',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
         { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' }
       ]
@@ -163,30 +163,6 @@ export default function Profile() {
         </div>
         <span style={styles.inviteArrow}>›</span>
       </button>
-
-      {/* История — превью 3 + «Показать все» */}
-      <div style={styles.historyHeaderRow}>
-        <span style={styles.groupTitle}>ИСТОРИЯ</span>
-        {recentWorkouts.length > 0 && (
-          <button
-            onClick={() => { haptic.light(); navigate('/history') }}
-            style={styles.showAllBtn}
-          >
-            Показать все ›
-          </button>
-        )}
-      </div>
-      {recentWorkouts.length === 0 ? (
-        <div style={styles.historyEmpty}>
-          Здесь появятся твои завершённые тренировки
-        </div>
-      ) : (
-        <div style={styles.groupCard}>
-          {recentWorkouts.map((w, i) => (
-            <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
-          ))}
-        </div>
-      )}
 
       {/* Разделы — сгруппированы по смыслу */}
       {sectionGroups.map((group) => (
@@ -279,36 +255,6 @@ const styles = {
     color: 'var(--color-primary)',
     flexShrink: 0,
     opacity: 0.7
-  },
-
-  // === История ===
-  historyHeaderRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '12px'
-  },
-  showAllBtn: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'var(--color-primary)',
-    background: 'transparent',
-    border: 'none',
-    padding: '4px 4px',
-    cursor: 'pointer',
-    letterSpacing: '0.3px'
-  },
-  historyEmpty: {
-    padding: '16px 18px',
-    background: 'rgba(255,255,255,0.02)',
-    border: '1px dashed rgba(255,255,255,0.1)',
-    borderRadius: 'var(--radius-card)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.5
   },
 
   // === Группы разделов (как РАЗДЕЛЫ на главной) ===
