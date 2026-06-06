@@ -51,14 +51,26 @@ export function formatRelativeWithDate(iso) {
   return `${rel}: ${formatWorkoutDateShort(iso)}`
 }
 
-// Иконка раздела + название программы + вариант (день / минуты).
+// Описание тренировки для строки истории.
+// Силовая: название + буква дня (без слова «День»). Заплыв: название уже
+// содержит минуты («Заплыв 45»), отдельный вариант не нужен.
+// iconName — имя SVG из assets/ui (через UiIcon), вместо эмодзи.
 export function describeWorkout(workout) {
   const prog = getProgramByDbId(workout.program_id)
   const isSwim = prog?.kind === 'swim'
-  const emoji = isSwim ? '🏊' : '🏋️'
-  const title = prog ? titleCase(prog.title) : 'Тренировка'
-  const variant = isSwim
-    ? `${prog?.data?.durationMin || ''} мин`.trim()
-    : `День ${workout.day}`
-  return { emoji, title, variant }
+
+  if (isSwim) {
+    const min = prog?.data?.durationMin
+    return {
+      iconName: 'swimming',
+      title: `Заплыв${min ? ` ${min}` : ''}`,
+      variant: ''
+    }
+  }
+
+  return {
+    iconName: 'power',
+    title: prog ? titleCase(prog.title) : 'Тренировка',
+    variant: workout.day || ''
+  }
 }
