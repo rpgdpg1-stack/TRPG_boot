@@ -517,7 +517,8 @@ const styles = {
   historyCard: {
     display: 'flex',
     flexDirection: 'column',
-    background: 'var(--color-card)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
