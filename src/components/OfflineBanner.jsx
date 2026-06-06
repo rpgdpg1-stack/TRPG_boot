@@ -136,7 +136,7 @@ const styles = {
   // от системной зоны Telegram — одинаково на всех экранах.
   wrap: {
     position: 'fixed',
-    top: 'calc(env(safe-area-inset-top) + 16px)',
+    top: 'calc(env(safe-area-inset-top) + 6px)',
     left: 0,
     right: 0,
     display: 'flex',
