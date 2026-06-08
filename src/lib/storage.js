@@ -513,19 +513,15 @@ export async function clearAllData() {
 
   if (!userId) return
 
-  await supabase.from('users').update({
-    total_muscles: 0,
-    weekly_streak: 0,
-    weekly_streak_week: null,
-    updated_at: new Date().toISOString()
-  }).eq('id', userId)
-
-  await supabase.from('muscle_history').delete().eq('user_id', userId)
-  await supabase.from('daily_quests').delete().eq('user_id', userId)
-
-  // Сбрасываем и значки — чтобы при следующем тапе квеста
-  // снова появилась модалка Новобранца (или той лиги до которой ты быстро добежишь).
-  await supabase.from('league_badges').delete().eq('user_id', userId)
+  // Сброс прогресса через DEFINER-функцию: обнуляет total_muscles/стрик и
+  // чистит свои muscle_history/daily_quests/league_badges. Прямой апдейт users
+  // больше невозможен (колоночная защита от накрутки), поэтому идём через RPC.
+  // Значки чистим тоже — чтобы при следующем тапе квеста снова появилась
+  // модалка той лиги, до которой быстро добежишь.
+  const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
+  if (resetErr) {
+    console.error('[storage] api_reset_my_progress error:', resetErr)
+  }
 
   const { data } = await supabase.from('users').select('*').eq('id', userId).single()
   if (data) {
