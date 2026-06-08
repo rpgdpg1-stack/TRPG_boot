@@ -1,15 +1,18 @@
 /**
- * Авторизация пользователя через Telegram WebApp.
+ * Авторизация пользователя через Telegram WebApp (с проверкой подписи).
  *
- * Прод-режим: данные пользователя берутся из window.Telegram.WebApp.initDataUnsafe.user.
- * Без этих данных авторизация не происходит — приложение работает в read-only режиме.
+ * Поток:
+ *   1. Берём сырую подписанную строку initData из window.Telegram.WebApp.initData.
+ *   2. Отправляем её в Edge Function telegram-auth — та проверяет HMAC-подпись
+ *      бота, находит/создаёт auth-пользователя и связывает его с записью в users.
+ *   3. Обмениваем возвращённый одноразовый token_hash на сессию через verifyOtp.
+ *      После этого supabase-клиент работает от имени проверенного юзера (auth.uid()).
  *
- * Дев-режим: явно включается через localStorage.setItem('dev_mode', 'true').
- * Когда включён — используется стабильный фейковый ID для разработки в браузере.
+ * Без данных Telegram вход не происходит — приложение работает в read-only режиме.
+ * Веб-вход через почту появится позже как отдельный провайдер Supabase Auth.
  */
 
 import { supabase } from './supabase'
-import { getUser as getTelegramUser } from './telegram'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
 import { localGet, localSet } from '../utils/storage'
@@ -52,39 +55,63 @@ export async function ensureAuth() {
   if (authPromise) return authPromise
 
   authPromise = (async () => {
-    const tgUser = getTelegramUser()
+    // Сырая подписанная строка initData от Telegram (НЕ initDataUnsafe).
+    // Её проверяет Edge Function по HMAC-подписи бота.
+    const initData = window.Telegram?.WebApp?.initData
 
-    let telegramId, firstName, username, photoUrl
-
-    if (tgUser?.id) {
-      telegramId = tgUser.id
-      firstName = tgUser.first_name || null
-      username = tgUser.username || null
-      photoUrl = tgUser.photo_url || null
-      console.log('[auth] Telegram user found:', telegramId)
-    } else {
-      // Нет данных Telegram — вход невозможен (dev-режим убран).
+    if (!initData) {
+      // Нет данных Telegram — вход невозможен.
       // Веб-вход через почту появится позже как отдельный провайдер.
       authState = 'no-telegram'
-      console.warn('[auth] Telegram user data not available. Open through Telegram.')
+      console.warn('[auth] Telegram initData not available. Open through Telegram.')
       return null
     }
 
-    const { data, error } = await supabase.rpc('upsert_user', {
-      p_telegram_id: telegramId,
-      p_first_name: firstName,
-      p_username: username,
-      p_photo_url: photoUrl
-    })
+    // 1. Отправляем initData в Edge Function: она проверяет подпись,
+    //    находит/создаёт auth-пользователя и связывает его с записью в users.
+    const { data: authData, error: fnError } = await supabase.functions.invoke(
+      'telegram-auth',
+      { body: { initData } }
+    )
 
-    if (error) {
-      console.error('[auth] Auth error:', error)
+    if (fnError || !authData?.success || !authData?.token_hash) {
+      console.error('[auth] telegram-auth failed:', fnError || authData)
       authState = 'error'
       authPromise = null
       return null
     }
 
-    currentUser = data
+    // 2. Обмениваем одноразовый token_hash на полноценную сессию.
+    //    После этого supabase работает от имени проверенного юзера (auth.uid()).
+    //    Если verifyOtp вернёт ошибку про невалидный/просроченный токен —
+    //    поменяй type: 'email' на type: 'magiclink' (одна строка ниже).
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      token_hash: authData.token_hash,
+      type: 'email',
+    })
+
+    if (otpError || !otpData?.user?.id) {
+      console.error('[auth] verifyOtp error:', otpError)
+      authState = 'error'
+      authPromise = null
+      return null
+    }
+
+    // 3. Тянем свою запись из public.users по связке auth_id.
+    const { data: userRecord, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_id', otpData.user.id)
+      .single()
+
+    if (userError || !userRecord) {
+      console.error('[auth] user record not found by auth_id:', userError)
+      authState = 'error'
+      authPromise = null
+      return null
+    }
+
+    currentUser = userRecord
     cacheUser(currentUser)
     authState = 'ok'
     console.log('[auth] Authorized as:', currentUser)
