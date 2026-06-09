@@ -13,19 +13,18 @@ import MuscleIcon from './MuscleIcon'
  * выбирается ОДНА привычка. Набор стабилен в течение дня и меняется со сбросом
  * в 03:00 МСК — так из 22 привычек идёт ротация, но экран компактный.
  *
- * Окна ОТКРЫВАЮТСЯ по времени, но НЕ сгорают:
- *   🌅 утро  — доступно сразу (с 03:00 МСК)
- *   ☀️ день  — открывается в 12:00 МСК
- *   🌙 вечер — открывается в 18:00 МСК
- * Пропустил утренний и зашёл вечером — он всё ещё доступен. Закрыто только то,
- * чьё время не наступило. Всё открытое живёт до сброса.
+ * Окна открытия считаем в «часах суток буста» — той же системе, что getTodayKey
+ * (сдвиг −3ч, сутки стартуют в 03:00 МСК). Час буста = 0 в 03:00, 9 в 12:00,
+ * 15 в 18:00. В 00:00–02:59 МСК час буста = 21..23 — это хвост прошедших суток,
+ * там открыто всё, как и должно быть до сброса.
+ *   🌅 утро  — bootHour 0  (доступно с 03:00 МСК)
+ *   ☀️ день  — bootHour 9  (с 12:00 МСК)
+ *   🌙 вечер — bootHour 15 (с 18:00 МСК)
+ * Окна НЕ сгорают: пропустил утро, зашёл вечером — оно всё ещё доступно.
  *
  * XP: каждый закрытый слот +20, все три за день +40 бонусом → итого 100.
- * Бонус начисляется автоматически в момент закрытия третьего слота, пишется
+ * Бонус начисляется автоматически при закрытии третьего слота, пишется
  * отдельным quest_id 'boost_full_day' (reward=40), чтобы не задвоился.
- *
- * Когда выполнены все 3 — блок схлопывается в «День пройден» с раскрытием
- * (тап-vs-скролл различаем по сдвигу пальца).
  */
 
 const SLOT_XP = 20
@@ -33,58 +32,57 @@ const FULL_DAY_BONUS = 40
 const BONUS_QUEST_ID = 'boost_full_day'
 const TOTAL_DAY_REWARD = SLOT_XP * 3 + FULL_DAY_BONUS // 100
 
-// Пулы привычек. openHourMsk: null — доступно сразу; число — час МСК открытия.
+// openBootHour — час «суток буста» (от 03:00 МСК), с которого слот открыт.
 const BOOST_POOLS = [
   {
     period: 'morning',
     periodEmoji: '🌅',
     periodLabel: 'Утро',
-    openHourMsk: null,
+    openBootHour: 0, // 03:00 МСК
     items: [
-      { id: 'm_water',   title: 'Выпить стакан воды' },
-      { id: 'm_light',   title: '5 минут дневного света' },
-      { id: 'm_protein', title: 'Белок на завтрак' },
-      { id: 'm_pushups', title: '10 отжиманий от пола' },
-      { id: 'm_teeth',   title: 'Почистить зубы' },
-      { id: 'm_goal',    title: 'Записать 1 цель на день' },
-      { id: 'm_silence', title: '5 минут тишины' }
+      { id: 'm_water',   title: 'Выпить стакан воды',     benefit: 'запуск метаболизма' },
+      { id: 'm_light',   title: '5 минут дневного света',  benefit: 'циркадный ритм' },
+      { id: 'm_protein', title: 'Белок на завтрак',        benefit: 'сытость и энергия' },
+      { id: 'm_pushups', title: '10 отжиманий от пола',    benefit: 'разбудить мышцы' },
+      { id: 'm_teeth',   title: 'Почистить зубы',          benefit: 'гигиена и ритуал' },
+      { id: 'm_goal',    title: 'Записать 1 цель на день', benefit: 'фокус внимания' },
+      { id: 'm_silence', title: '5 минут тишины',          benefit: 'снять утренний шум' }
     ]
   },
   {
     period: 'day',
     periodEmoji: '☀️',
     periodLabel: 'День',
-    openHourMsk: 12,
+    openBootHour: 9, // 12:00 МСК
     items: [
-      { id: 'd_walk',    title: '10 минут ходьбы' },
-      { id: 'd_fruit',   title: 'Съесть фрукт' },
-      { id: 'd_veggies', title: 'Добавить овощи к еде' },
-      { id: 'd_move',    title: 'Встать и размяться 2 мин' },
-      { id: 'd_squats',  title: '20 приседаний' },
-      { id: 'd_eyes',    title: 'Смотреть вдаль 1 мин' },
-      { id: 'd_water',   title: 'Выпить ещё стакан воды' },
-      { id: 'd_music',   title: 'Послушать любимую песню' }
+      { id: 'd_walk',    title: '10 минут ходьбы',         benefit: 'кровообращение' },
+      { id: 'd_fruit',   title: 'Съесть фрукт',            benefit: 'витамины' },
+      { id: 'd_veggies', title: 'Добавить овощи к еде',    benefit: 'клетчатка' },
+      { id: 'd_move',    title: 'Встать и размяться 2 мин', benefit: 'снять застой' },
+      { id: 'd_squats',  title: '20 приседаний',           benefit: 'тонизировать ноги' },
+      { id: 'd_eyes',    title: 'Смотреть вдаль 1 мин',    benefit: 'отдых для глаз' },
+      { id: 'd_water',   title: 'Выпить ещё стакан воды',  benefit: 'дневная гидратация' },
+      { id: 'd_music',   title: 'Послушать любимую песню', benefit: 'поднять настроение' }
     ]
   },
   {
     period: 'evening',
     periodEmoji: '🌙',
     periodLabel: 'Вечер',
-    openHourMsk: 18,
+    openBootHour: 15, // 18:00 МСК
     items: [
-      { id: 'e_stretch', title: '10 минут растяжки' },
-      { id: 'e_breath',  title: '10 глубоких вдохов' },
-      { id: 'e_walk',    title: 'Вечерняя прогулка 15 мин' },
-      { id: 'e_screen',  title: 'Отложить телефон за час до сна' },
-      { id: 'e_plan',    title: 'Спланировать завтрашний день' },
-      { id: 'e_read',    title: 'Прочитать 5 страниц' },
-      { id: 'e_gratitude', title: 'Вспомнить 3 хороших момента' }
+      { id: 'e_stretch', title: '10 минут растяжки',              benefit: 'снять напряжение' },
+      { id: 'e_breath',  title: '10 глубоких вдохов',             benefit: 'успокоить нервы' },
+      { id: 'e_screen',  title: 'Убрать телефон за час до сна',   benefit: 'качество сна' },
+      { id: 'e_sleep',   title: 'Лечь спать вовремя',             benefit: 'восстановление' },
+      { id: 'e_shower',  title: 'Контрастный душ',                benefit: 'тонус сосудов' },
+      { id: 'e_skin',    title: 'Увлажнить кожу',                 benefit: 'уход и ритуал' },
+      { id: 'e_plank',   title: 'Планка 30–60 сек',               benefit: 'сильный кор' }
     ]
   }
 ]
 
 // Детерминированный хеш строки в неотрицательное число (FNV-подобный).
-// Один и тот же ключ дня → один и тот же индекс, без скачков при ререндере.
 function hashKey(str) {
   let h = 2166136261
   for (let i = 0; i < str.length; i++) {
@@ -94,18 +92,19 @@ function hashKey(str) {
   return Math.abs(h)
 }
 
-// Текущий час по МСК (UTC+3), независимо от часового пояса телефона.
-function getMskHour() {
+// Час «суток буста» от 03:00 МСК. 03:00 → 0, 12:00 → 9, 18:00 → 15,
+// 00:00–02:59 → 21..23 (хвост прошедших суток). Та же система, что getTodayKey.
+function getBoostHour() {
   const now = new Date()
+  // Текущее МСК-время: к UTC прибавляем 3ч (нейтрализуя локальный пояс телефона).
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000
-  const mskMs = utcMs + 3 * 3600000
-  return new Date(mskMs).getHours()
+  const msk = new Date(utcMs + 3 * 3600000)
+  return (msk.getHours() - 3 + 24) % 24
 }
 
 // Выбрать привычки на сегодня — по одной из каждого пула, детерминированно.
 function pickTodaysQuests(dayKey) {
   return BOOST_POOLS.map((pool, poolIdx) => {
-    // Сдвигаем seed индексом пула, чтобы три пула не двигались синхронно.
     const idx = hashKey(`${dayKey}:${pool.period}:${poolIdx}`) % pool.items.length
     const item = pool.items[idx]
     return {
@@ -113,25 +112,27 @@ function pickTodaysQuests(dayKey) {
       period: pool.period,
       periodEmoji: pool.periodEmoji,
       periodLabel: pool.periodLabel,
-      openHourMsk: pool.openHourMsk,
+      openBootHour: pool.openBootHour,
       xp: SLOT_XP
     }
   })
 }
 
+// Человекочитаемое время открытия слота для подписи «Откроется в HH:00».
+function openLabel(openBootHour) {
+  const mskHour = (openBootHour + 3) % 24
+  return `${String(mskHour).padStart(2, '0')}:00`
+}
+
 export default function DailyQuests() {
-  // Сегодняшний набор. Считаем один раз за монтирование — ключ дня стабилен.
-  const [dayKey] = useState(() => getTodayKey())
   const [quests] = useState(() => pickTodaysQuests(getTodayKey()))
 
   const [completed, setCompleted] = useState(() => getDailyQuestsSync())
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
 
-  // Текущий час МСК в state — чтобы окна открывались без перезагрузки страницы.
-  const [mskHour, setMskHour] = useState(() => getMskHour())
+  const [boostHour, setBoostHour] = useState(() => getBoostHour())
 
-  // Раскрыт ли блок с зачёркнутыми квестами под «День пройден».
   const [expanded, setExpanded] = useState(false)
 
   const lastTapRef = useRef({})
@@ -141,9 +142,6 @@ export default function DailyQuests() {
   const TAP_THRESHOLD_PX = 8
   const pointerStartRef = useRef(null)
   const containerRef = useRef(null)
-
-  // Флаг «бонус уже начисляли в этой сессии» — страховка от двойного вызова
-  // (бэкенд тоже защищён уникальным ключом, но лишний RPC ни к чему).
   const bonusInFlightRef = useRef(false)
 
   useEffect(() => {
@@ -158,29 +156,21 @@ export default function DailyQuests() {
       })
     }
     loadQuests()
-
     const offReady = on(EVENTS.USER_READY, loadQuests)
     const offChanged = on(EVENTS.USER_CHANGED, loadQuests)
-    return () => {
-      offReady()
-      offChanged()
-    }
+    return () => { offReady(); offChanged() }
   }, [])
 
-  // Тикаем час МСК раз в минуту — чтобы слот сам разблокировался, если юзер
-  // держит страницу открытой через 12:00 или 18:00.
+  // Тикаем час буста раз в минуту — слот сам разблокируется на 12:00/18:00.
   useEffect(() => {
-    const t = setInterval(() => setMskHour(getMskHour()), 60000)
+    const t = setInterval(() => setBoostHour(getBoostHour()), 60000)
     return () => clearInterval(t)
   }, [])
 
-  // Слот открыт, если его час наступил (или открыт сразу).
-  const isSlotOpen = (q) => q.openHourMsk === null || mskHour >= q.openHourMsk
+  const isSlotOpen = (q) => boostHour >= q.openBootHour
 
   const allSlotsDone = quests.every(q => completed[q.id])
   const bonusDone = !!completed[BONUS_QUEST_ID]
-  // «День пройден» показываем только когда и слоты, и бонус закрыты —
-  // иначе на миг мелькнул бы свёрнутый блок без начисленного бонуса.
   const dayComplete = allSlotsDone && bonusDone
 
   useEffect(() => {
@@ -202,14 +192,12 @@ export default function DailyQuests() {
     return () => document.removeEventListener('pointerdown', handleOutside)
   }, [expanded])
 
-  // Когда все 3 слота закрыты, а бонус ещё нет — автоначисляем +40.
+  // Все 3 слота закрыты, бонус ещё нет → автоначисляем +40.
   useEffect(() => {
     if (!allSlotsDone || bonusDone || bonusInFlightRef.current) return
-
     bonusInFlightRef.current = true
     haptic.success()
 
-    // Плавающая награда бонуса — летит над центром карточки.
     const rewardKey = Date.now()
     setFloatingRewards(prev => [...prev, { id: BONUS_QUEST_ID, xp: FULL_DAY_BONUS, key: rewardKey }])
     setTimeout(() => {
@@ -218,8 +206,6 @@ export default function DailyQuests() {
 
     completeQuest(BONUS_QUEST_ID, FULL_DAY_BONUS).then(result => {
       setCompleted(result.completed)
-    }).finally(() => {
-      // Не сбрасываем флаг — бонус за день уже отдан, повторов быть не должно.
     })
   }, [allSlotsDone, bonusDone])
 
@@ -250,14 +236,13 @@ export default function DailyQuests() {
   const handleAllDonePointerDown = (e) => {
     pointerStartRef.current = { x: e.clientX, y: e.clientY }
   }
-
   const handleAllDonePointerUp = (e) => {
     const start = pointerStartRef.current
     pointerStartRef.current = null
     if (!start) return
     const dx = Math.abs(e.clientX - start.x)
     const dy = Math.abs(e.clientY - start.y)
-    if (dx > TAP_THRESHOLD_PX || dy > TAP_THRESHOLD_PX) return // скролл
+    if (dx > TAP_THRESHOLD_PX || dy > TAP_THRESHOLD_PX) return
     haptic.light()
     setExpanded(prev => !prev)
   }
@@ -295,16 +280,20 @@ export default function DailyQuests() {
                     <PixelCheckbox checked={true} size={20} />
                   </div>
                   <span style={styles.periodEmojiDone}>{quest.periodEmoji}</span>
-                  <span style={styles.questTextDone}>{quest.title}</span>
+                  <div style={styles.textColDone}>
+                    <span style={styles.questTextDone}>{quest.title}</span>
+                    <span style={styles.benefitTextDone}>{quest.benefit}</span>
+                  </div>
                   <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     +{quest.xp} <MuscleIcon size={18} earned={true} />
                   </span>
                 </div>
               ))}
-              {/* Строка бонуса за полный день */}
               <div style={{ ...styles.questRowDone, ...styles.bonusRowDone }}>
                 <span style={styles.bonusGift}>🎁</span>
-                <span style={styles.questTextDone}>Бонус за полный день</span>
+                <div style={styles.textColDone}>
+                  <span style={styles.questTextDone}>Бонус за полный день</span>
+                </div>
                 <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   +{FULL_DAY_BONUS} <MuscleIcon size={18} earned={true} />
                 </span>
@@ -335,26 +324,28 @@ export default function DailyQuests() {
                 }}
               >
                 <div style={styles.checkboxWrap}>
-                  {locked ? (
-                    <LockIcon />
-                  ) : (
-                    <PixelCheckbox checked={isDone} size={20} />
-                  )}
+                  {locked ? <LockIcon /> : <PixelCheckbox checked={isDone} size={20} />}
                 </div>
 
                 <span style={styles.periodEmoji}>{quest.periodEmoji}</span>
 
-                <span style={{
-                  ...styles.questText,
-                  textDecoration: isDone ? 'line-through' : 'none',
-                  color: isDone
-                    ? 'var(--color-text-secondary)'
-                    : locked
-                      ? 'var(--color-text-secondary)'
-                      : 'var(--color-text)'
-                }}>
-                  {locked ? `Откроется в ${quest.openHourMsk}:00` : quest.title}
-                </span>
+                <div style={styles.textCol}>
+                  <span style={{
+                    ...styles.questText,
+                    textDecoration: isDone ? 'line-through' : 'none',
+                    color: isDone || locked ? 'var(--color-text-secondary)' : 'var(--color-text)'
+                  }}>
+                    {locked ? `Откроется в ${openLabel(quest.openBootHour)}` : quest.title}
+                  </span>
+                  {!locked && (
+                    <span style={{
+                      ...styles.benefitText,
+                      opacity: isDone ? 0.4 : 1
+                    }}>
+                      {quest.benefit}
+                    </span>
+                  )}
+                </div>
 
                 <div style={styles.rewardBadgeWrap}>
                   {locked ? (
@@ -384,7 +375,6 @@ export default function DailyQuests() {
         </div>
       )}
 
-      {/* Плавающая награда бонуса по центру карточки (когда летит boost_full_day) */}
       {floatingRewards.some(r => r.id === BONUS_QUEST_ID) && (
         <span style={styles.bonusFloating}>
           +{FULL_DAY_BONUS} <MuscleIcon size={20} earned={true} /> бонус!
@@ -430,7 +420,6 @@ function Chevron({ expanded }) {
   )
 }
 
-// Замочек для заблокированного слота — на месте чекбокса.
 function LockIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
@@ -454,13 +443,13 @@ const styles = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px'
+    gap: '8px'
   },
   questRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    padding: '6px 6px',
+    padding: '8px 6px',
     background: 'transparent',
     width: '100%',
     textAlign: 'left',
@@ -478,26 +467,52 @@ const styles = {
     justifyContent: 'center'
   },
   periodEmoji: {
-    fontSize: '15px',
+    fontSize: '16px',
     lineHeight: 1,
     flexShrink: 0,
-    width: '20px',
+    width: '22px',
     textAlign: 'center'
   },
   periodEmojiDone: {
     fontSize: '15px',
     lineHeight: 1,
     flexShrink: 0,
-    width: '20px',
+    width: '22px',
     textAlign: 'center',
-    opacity: 0.55
+    opacity: 0.55,
+    alignSelf: 'flex-start',
+    marginTop: '1px'
+  },
+  // Колонка текста: задание сверху, польза снизу.
+  textCol: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px'
+  },
+  textColDone: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1px'
   },
   questText: {
-    flex: 1,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 500,
+    fontSize: '14px',
+    fontWeight: 600,
+    lineHeight: 1.2,
     transition: 'color 0.3s ease, text-decoration 0.3s ease'
+  },
+  // Польза — мелкий приглушённый шрифт под заданием.
+  benefitText: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 500,
+    lineHeight: 1.2,
+    color: 'var(--color-text-secondary)',
+    transition: 'opacity 0.3s ease'
   },
   rewardBadgeWrap: {
     position: 'relative',
@@ -513,7 +528,6 @@ const styles = {
     whiteSpace: 'nowrap',
     transition: 'opacity 0.3s ease, text-decoration 0.3s ease'
   },
-  // Подпись периода у заблокированного слота вместо бейджа награды.
   lockedHint: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '11px',
@@ -535,7 +549,6 @@ const styles = {
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  // Крупная плавающая награда бонуса по центру карточки.
   bonusFloating: {
     position: 'absolute',
     bottom: '50%',
@@ -586,16 +599,15 @@ const styles = {
     borderTop: '1px solid rgba(255, 255, 255, 0.05)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px'
+    gap: '6px'
   },
   questRowDone: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    padding: '6px 6px',
+    padding: '4px 6px',
     opacity: 0.55
   },
-  // Строка бонуса — лёгкий акцент сверху отделяющей линией.
   bonusRowDone: {
     marginTop: '2px',
     paddingTop: '8px',
@@ -606,16 +618,24 @@ const styles = {
     fontSize: '16px',
     lineHeight: 1,
     flexShrink: 0,
-    width: '20px',
+    width: '22px',
     textAlign: 'center'
   },
   questTextDone: {
-    flex: 1,
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
-    textDecoration: 'line-through'
+    textDecoration: 'line-through',
+    lineHeight: 1.2
+  },
+  benefitTextDone: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    opacity: 0.7,
+    lineHeight: 1.2
   },
   rewardBadgeDone: {
     fontFamily: 'var(--font-tiny5)',
@@ -624,6 +644,7 @@ const styles = {
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     textDecoration: 'line-through',
-    opacity: 0.6
+    opacity: 0.6,
+    alignSelf: 'center'
   }
 }
