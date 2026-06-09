@@ -40,13 +40,13 @@ const BOOST_POOLS = [
     periodLabel: 'Утро',
     openBootHour: 0, // 03:00 МСК
     items: [
-      { id: 'm_water',   title: 'Выпить стакан воды',     benefit: 'запуск метаболизма' },
-      { id: 'm_light',   title: '5 минут дневного света',  benefit: 'циркадный ритм' },
-      { id: 'm_protein', title: 'Белок на завтрак',        benefit: 'сытость и энергия' },
-      { id: 'm_pushups', title: '10 отжиманий от пола',    benefit: 'разбудить мышцы' },
-      { id: 'm_teeth',   title: 'Почистить зубы',          benefit: 'гигиена и ритуал' },
-      { id: 'm_goal',    title: 'Записать 1 цель на день', benefit: 'фокус внимания' },
-      { id: 'm_silence', title: '5 минут тишины',          benefit: 'снять утренний шум' }
+      { id: 'm_water',   emoji: '💧',   title: 'Выпить стакан воды',     benefit: 'запуск метаболизма' },
+      { id: 'm_light',   emoji: '🌞',   title: '5 минут дневного света',  benefit: 'циркадный ритм' },
+      { id: 'm_protein', emoji: '🥚',   title: 'Белок на завтрак',        benefit: 'сытость и энергия' },
+      { id: 'm_pushups', emoji: '💪🏻', title: '10 отжиманий от пола',    benefit: 'разбудить мышцы' },
+      { id: 'm_teeth',   emoji: '🦷',   title: 'Почистить зубы',          benefit: 'гигиена и ритуал' },
+      { id: 'm_goal',    emoji: '🗒️',   title: 'Записать 1 цель на день', benefit: 'фокус внимания' },
+      { id: 'm_silence', emoji: '🧘🏻', title: '5 минут тишины',          benefit: 'снять утренний шум' }
     ]
   },
   {
@@ -55,14 +55,14 @@ const BOOST_POOLS = [
     periodLabel: 'День',
     openBootHour: 9, // 12:00 МСК
     items: [
-      { id: 'd_walk',    title: '10 минут ходьбы',         benefit: 'кровообращение' },
-      { id: 'd_fruit',   title: 'Съесть фрукт',            benefit: 'витамины' },
-      { id: 'd_veggies', title: 'Добавить овощи к еде',    benefit: 'клетчатка' },
-      { id: 'd_move',    title: 'Встать и размяться 2 мин', benefit: 'снять застой' },
-      { id: 'd_squats',  title: '20 приседаний',           benefit: 'тонизировать ноги' },
-      { id: 'd_eyes',    title: 'Смотреть вдаль 1 мин',    benefit: 'отдых для глаз' },
-      { id: 'd_water',   title: 'Выпить ещё стакан воды',  benefit: 'дневная гидратация' },
-      { id: 'd_music',   title: 'Послушать любимую песню', benefit: 'поднять настроение' }
+      { id: 'd_walk',    emoji: '🚶', title: '10 минут ходьбы',         benefit: 'кровообращение' },
+      { id: 'd_fruit',   emoji: '🍎', title: 'Съесть фрукт',            benefit: 'витамины' },
+      { id: 'd_veggies', emoji: '🥗', title: 'Добавить овощи к еде',    benefit: 'клетчатка' },
+      { id: 'd_move',    emoji: '🧍', title: 'Встать и размяться 2 мин', benefit: 'снять застой' },
+      { id: 'd_squats',  emoji: '🏋️', title: '20 приседаний',           benefit: 'тонизировать ноги' },
+      { id: 'd_eyes',    emoji: '👁️', title: 'Смотреть вдаль 1 мин',    benefit: 'отдых для глаз' },
+      { id: 'd_water',   emoji: '💧', title: 'Выпить ещё стакан воды',  benefit: 'дневная гидратация' },
+      { id: 'd_music',   emoji: '🎧', title: 'Послушать любимую песню', benefit: 'поднять настроение' }
     ]
   },
   {
@@ -71,13 +71,13 @@ const BOOST_POOLS = [
     periodLabel: 'Вечер',
     openBootHour: 15, // 18:00 МСК
     items: [
-      { id: 'e_stretch', title: '10 минут растяжки',              benefit: 'снять напряжение' },
-      { id: 'e_breath',  title: '10 глубоких вдохов',             benefit: 'успокоить нервы' },
-      { id: 'e_screen',  title: 'Убрать телефон за час до сна',   benefit: 'качество сна' },
-      { id: 'e_sleep',   title: 'Лечь спать вовремя',             benefit: 'восстановление' },
-      { id: 'e_shower',  title: 'Контрастный душ',                benefit: 'тонус сосудов' },
-      { id: 'e_skin',    title: 'Увлажнить кожу',                 benefit: 'уход и ритуал' },
-      { id: 'e_plank',   title: 'Планка 30–60 сек',               benefit: 'сильный кор' }
+      { id: 'e_stretch', emoji: '🤸',     title: '10 минут растяжки',              benefit: 'снять напряжение' },
+      { id: 'e_breath',  emoji: '😮‍💨', title: '10 глубоких вдохов',             benefit: 'успокоить нервы' },
+      { id: 'e_screen',  emoji: '📵',     title: 'Убрать телефон за час до сна',   benefit: 'качество сна' },
+      { id: 'e_sleep',   emoji: '😴',     title: 'Лечь спать вовремя',             benefit: 'восстановление' },
+      { id: 'e_shower',  emoji: '🚿',     title: 'Контрастный душ',                benefit: 'тонус сосудов' },
+      { id: 'e_skin',    emoji: '🧴',     title: 'Увлажнить кожу',                 benefit: 'уход и ритуал' },
+      { id: 'e_plank',   emoji: '📋',     title: 'Планка 30–60 сек',               benefit: 'сильный кор' }
     ]
   }
 ]
@@ -279,7 +279,7 @@ export default function DailyQuests() {
                   <div style={styles.checkboxWrap}>
                     <PixelCheckbox checked={true} size={20} />
                   </div>
-                  <span style={styles.periodEmojiDone}>{quest.periodEmoji}</span>
+                  <span style={styles.taskEmojiDone}>{quest.emoji}</span>
                   <div style={styles.textColDone}>
                     <span style={styles.questTextDone}>{quest.title}</span>
                     <span style={styles.benefitTextDone}>{quest.benefit}</span>
@@ -327,7 +327,9 @@ export default function DailyQuests() {
                   {locked ? <LockIcon /> : <PixelCheckbox checked={isDone} size={20} />}
                 </div>
 
-                <span style={styles.periodEmoji}>{quest.periodEmoji}</span>
+                <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : locked ? 0.4 : 1 }}>
+                  {quest.emoji}
+                </span>
 
                 <div style={styles.textCol}>
                   <span style={{
@@ -347,36 +349,41 @@ export default function DailyQuests() {
                   )}
                 </div>
 
-                <div style={styles.rewardBadgeWrap}>
-                  {locked ? (
-                    <span style={{
-                      ...styles.rewardBadge,
-                      color: 'var(--color-text-secondary)',
-                      opacity: 0.7,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      +{quest.xp} <MuscleIcon size={18} earned={false} />
-                    </span>
-                  ) : (
-                    <span style={{
-                      ...styles.rewardBadge,
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      opacity: isDone ? 0.55 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      +{quest.xp} <MuscleIcon size={18} earned={isDone} />
-                    </span>
-                  )}
+                <div style={styles.rightCol}>
+                  <span style={styles.periodTag}>
+                    {quest.periodEmoji} {quest.periodLabel}
+                  </span>
+                  <div style={styles.rewardBadgeWrap}>
+                    {locked ? (
+                      <span style={{
+                        ...styles.rewardBadge,
+                        color: 'var(--color-text-secondary)',
+                        opacity: 0.7,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        +{quest.xp} <MuscleIcon size={18} earned={false} />
+                      </span>
+                    ) : (
+                      <span style={{
+                        ...styles.rewardBadge,
+                        textDecoration: isDone ? 'line-through' : 'none',
+                        opacity: isDone ? 0.55 : 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        +{quest.xp} <MuscleIcon size={18} earned={isDone} />
+                      </span>
+                    )}
 
-                  {reward && (
-                    <span key={reward.key} style={styles.floatingReward}>
-                      +{reward.xp} <MuscleIcon size={18} earned={true} />
-                    </span>
-                  )}
+                    {reward && (
+                      <span key={reward.key} style={styles.floatingReward}>
+                        +{reward.xp} <MuscleIcon size={18} earned={true} />
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             )
@@ -475,22 +482,44 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  periodEmoji: {
-    fontSize: '16px',
+  // Крупное эмодзи задания, центрируется по вертикали относительно двух строк.
+  taskEmoji: {
+    fontSize: '24px',
     lineHeight: 1,
     flexShrink: 0,
-    width: '22px',
-    textAlign: 'center'
-  },
-  periodEmojiDone: {
-    fontSize: '15px',
-    lineHeight: 1,
-    flexShrink: 0,
-    width: '22px',
+    width: '30px',
     textAlign: 'center',
-    opacity: 0.55,
-    alignSelf: 'flex-start',
-    marginTop: '1px'
+    alignSelf: 'center',
+    transition: 'opacity 0.3s ease'
+  },
+  taskEmojiDone: {
+    fontSize: '20px',
+    lineHeight: 1,
+    flexShrink: 0,
+    width: '30px',
+    textAlign: 'center',
+    alignSelf: 'center',
+    opacity: 0.55
+  },
+  // Правая колонка: тег периода сверху, бейдж награды снизу.
+  rightCol: {
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '4px'
+  },
+  // Тег периода — маленькая капсула «🌅 Утро».
+  periodTag: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    background: 'rgba(255, 255, 255, 0.06)',
+    padding: '2px 7px',
+    borderRadius: '8px',
+    whiteSpace: 'nowrap',
+    letterSpacing: '0.2px'
   },
   // Колонка текста: задание сверху, польза снизу.
   textCol: {
