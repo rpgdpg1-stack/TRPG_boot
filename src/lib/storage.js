@@ -71,22 +71,6 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
   return newTotal
 }
 
-export async function setTotalXP(value) {
-  const userId = getUserId()
-  if (!userId) return false
-
-  const { error } = await supabase
-    .from('users')
-    .update({ total_muscles: value, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-
-  if (error) { console.error('[storage] setTotalXP error:', error); return false }
-
-  const u = getCurrentUser()
-  if (u) setCurrentUser({ ...u, total_muscles: value })
-  return true
-}
-
 export async function getUserLevel() {
   return getLevelFromXP(await getTotalXP())
 }
@@ -145,44 +129,11 @@ export async function getWeeklyStreak() {
   return user.weekly_streak || 0
 }
 
-export async function setWeeklyStreak(count) {
-  const userId = getUserId()
-  if (!userId) return false
-
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      weekly_streak: count,
-      weekly_streak_week: getCurrentWeekKey(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', userId)
-    .select()
-    .single()
-
-  if (error) { console.error('[storage] setWeeklyStreak error:', error); return false }
-
-  setCurrentUser(data)
-  return true
-}
-
-export async function addWorkoutToWeek() {
-  const userId = getUserId()
-  if (!userId) return 0
-  const currentWeek = getCurrentWeekKey()
-  const user = getCurrentUser()
-  const isCurrentWeek = user?.weekly_streak_week === currentWeek
-  const newCount = Math.min(isCurrentWeek ? (user.weekly_streak + 1) : 1, 4)
-  await setWeeklyStreak(newCount)
-  return newCount
-}
-
 /* ============================================ */
 /* СОВМЕСТИМОСТЬ */
 /* ============================================ */
 
 export async function getStreak() { return getWeeklyStreak() }
-export async function setStreak(value) { return setWeeklyStreak(value) }
 
 export async function getTotalWorkouts() {
   const userId = getUserId()
