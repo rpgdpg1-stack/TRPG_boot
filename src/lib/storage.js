@@ -253,7 +253,7 @@ export async function completeQuest(questId, reward = 20) {
 }
 
 /* ============================================ */
-/* ЗАКРЕПЫ И АКТИВНЫЙ ДЕНЬ */
+/* АКТИВНЫЙ ДЕНЬ ПРОГРАММЫ */
 /* ============================================ */
 
 export async function getActiveDay(programId) {
@@ -293,25 +293,6 @@ export async function setLastCompletedDay(programId, day) {
 export async function resetProgramDayCycle(programId) {
   await cloudRemove(`program:${programId}:last_day`)
   await cloudRemove(`program:${programId}:last_day_date`)
-}
-
-export async function getPinnedPrograms() {
-  const raw = await cloudGet('pinned_programs')
-  if (!raw) return []
-  try { return JSON.parse(raw) } catch { return [] }
-}
-
-export async function isPinned(programId) {
-  return (await getPinnedPrograms()).includes(programId)
-}
-
-export async function togglePin(programId) {
-  const pinned = await getPinnedPrograms()
-  const idx = pinned.indexOf(programId)
-  if (idx === -1) pinned.push(programId)
-  else pinned.splice(idx, 1)
-  await cloudSet('pinned_programs', JSON.stringify(pinned))
-  return idx === -1
 }
 
 /* ============================================ */
