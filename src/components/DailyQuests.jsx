@@ -349,7 +349,16 @@ export default function DailyQuests() {
 
                 <div style={styles.rewardBadgeWrap}>
                   {locked ? (
-                    <span style={styles.lockedHint}>{quest.periodLabel}</span>
+                    <span style={{
+                      ...styles.rewardBadge,
+                      color: 'var(--color-text-secondary)',
+                      opacity: 0.7,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      +{quest.xp} <MuscleIcon size={18} earned={false} />
+                    </span>
                   ) : (
                     <span style={{
                       ...styles.rewardBadge,
@@ -528,14 +537,7 @@ const styles = {
     whiteSpace: 'nowrap',
     transition: 'opacity 0.3s ease, text-decoration 0.3s ease'
   },
-  lockedHint: {
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    opacity: 0.7
-  },
+  
   floatingReward: {
     position: 'absolute',
     bottom: '100%',
