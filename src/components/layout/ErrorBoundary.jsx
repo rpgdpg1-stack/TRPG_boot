@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import * as Sentry from '@sentry/react'
 
 /**
  * ErrorBoundary — перехватывает ошибки во всех дочерних компонентах
@@ -24,9 +25,15 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Логируем для отладки. В будущем можно отправлять в Sentry/Telegram-логгер.
+    // Логируем для отладки (видно в консоли в dev).
     console.error('[ErrorBoundary] Caught error:', error)
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack)
+
+    // Шлём в Sentry с контекстом стека компонентов. Если Sentry не
+    // инициализирован (DSN пуст / dev) — вызов безопасен, просто ничего не делает.
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+    })
   }
 
   handleReload = () => {
