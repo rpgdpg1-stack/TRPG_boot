@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData, resetProgramDayCycle, devResetBadgesOnly } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
+import { PROGRAMS } from '../features/programs/registry'
 import UiIcon from '../components/UiIcon'
 
 /**
@@ -61,7 +62,11 @@ export default function Settings() {
       if (!confirmed) return
 
       try {
-        await resetProgramDayCycle('split')
+        // Сбрасываем цикл дней у всех программ, а не только у split —
+        // чтобы кнопка работала и для будущих программ без правок здесь.
+        for (const prog of PROGRAMS) {
+          await resetProgramDayCycle(prog.slug)
+        }
         haptic.success()
         window.alert('Порядок дней сброшен. Перезайди в приложение чтобы увидеть изменения.')
       } catch (err) {

@@ -333,7 +333,7 @@ const PROGRAM_EMOJI = { split: '🏋️', swim: '🏊' }
 function FavCard({ entry, onTap }) {
   if (!entry) return null
   const { prog, activeDay } = entry
-  const allDays = ['A', 'B', 'C']
+  const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
   const formattedTitle = prog.title
     ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
     : ''

@@ -167,7 +167,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
     setTimeout(() => navigate(`/workout/${prog.slug}/${day}`), 80)
   }
 
-  const allDays = ['A', 'B', 'C']
+  const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
   const formattedTitle = prog.title
     ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
     : ''

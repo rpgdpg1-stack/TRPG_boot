@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
+import { PROGRAMS, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
@@ -256,11 +257,25 @@ export async function completeQuest(questId, reward = 20) {
 /* АКТИВНЫЙ ДЕНЬ ПРОГРАММЫ */
 /* ============================================ */
 
+/**
+ * Следующий день цикла после lastCompleted, универсально для любой программы.
+ * Дни берём из самой программы (Object.keys(data.days)), а не из захардкоженного
+ * A/B/C — так новая программа (Full Body и т.д.) заработает без правок здесь.
+ * Заворот: последний день → первый. Если программы/дней нет — null.
+ */
+function nextDayInCycle(programId, lastCompleted) {
+  if (!lastCompleted) return null
+  const program = getProgramBySlug(programId)
+  const days = program?.data?.days ? Object.keys(program.data.days) : []
+  if (days.length === 0) return null
+  const idx = days.indexOf(lastCompleted)
+  if (idx === -1) return days[0]
+  return days[(idx + 1) % days.length]
+}
+
 export async function getActiveDay(programId) {
   const lastCompleted = await cloudGet(`program:${programId}:last_day`)
-  if (!lastCompleted) return null
-  const cycle = { 'A': 'B', 'B': 'C', 'C': 'A' }
-  return cycle[lastCompleted] || 'A'
+  return nextDayInCycle(programId, lastCompleted)
 }
 
 export async function setLastCompletedDay(programId, day) {
@@ -376,9 +391,9 @@ export function getFavoritesEntriesSync(buildProgramEntrySync) {
   const entries = []
   for (const [categoryId, slug] of Object.entries(favMap)) {
     // Активный день читаем синхронно из localStorage (cloudSet туда пишет).
+    // Цикл дней универсальный — берётся из самой программы (см. nextDayInCycle).
     const lastDay = localGet(`program:${slug}:last_day`)
-    const cycle = { A: 'B', B: 'C', C: 'A' }
-    const activeDay = lastDay ? (cycle[lastDay] || 'A') : null
+    const activeDay = nextDayInCycle(slug, lastDay)
 
     const built = buildProgramEntrySync(slug, activeDay)
     if (built) entries.push({ ...built, categoryId })
@@ -416,8 +431,12 @@ export async function clearAllData() {
 
   await cloudRemove('pinned_programs')
   await cloudRemove(FAVORITES_KEY)
-  await cloudRemove('program:split:last_day')
-  await cloudRemove('program:split:last_day_date')
+  // Чистим ключи цикла дней для ВСЕХ программ (не только split) — иначе после
+  // добавления новой программы её last_day переживёт сброс прогресса.
+  for (const prog of PROGRAMS) {
+    await cloudRemove(`program:${prog.slug}:last_day`)
+    await cloudRemove(`program:${prog.slug}:last_day_date`)
+  }
 
   ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
 
