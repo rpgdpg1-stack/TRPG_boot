@@ -8,7 +8,6 @@
 import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
-import { getLevelFromXP } from './levels'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
 import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
@@ -71,10 +70,6 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
   return newTotal
 }
 
-export async function getUserLevel() {
-  return getLevelFromXP(await getTotalXP())
-}
-
 export async function getRecentMuscleHistory(limit = 5) {
   const userId = getUserId()
   if (!userId) return []
@@ -128,12 +123,6 @@ export async function getWeeklyStreak() {
   if (user.weekly_streak_week !== getCurrentWeekKey()) return 0
   return user.weekly_streak || 0
 }
-
-/* ============================================ */
-/* СОВМЕСТИМОСТЬ */
-/* ============================================ */
-
-export async function getStreak() { return getWeeklyStreak() }
 
 export async function getTotalWorkouts() {
   const userId = getUserId()

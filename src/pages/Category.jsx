@@ -5,7 +5,6 @@ import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } fro
 import { getProgramsByCategory } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
-import ProgramCard from '../components/ProgramCard'
 
 /**
  * Экран категории — список программ внутри неё.
