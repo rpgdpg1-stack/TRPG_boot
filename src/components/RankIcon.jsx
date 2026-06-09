@@ -1,4 +1,4 @@
-import { getRankByLevel, RANK_NAMES, IMMORTAL, IMMORTAL_START_LEVEL, LEVELS_PER_RANK } from '../lib/levels'
+import { RANK_NAMES, IMMORTAL, IMMORTAL_START_LEVEL, LEVELS_PER_RANK } from '../lib/levels'
 
 /**
  * Иконка ранга — SVG из src/assets/ranks/, окрашенная в цвет ранга.

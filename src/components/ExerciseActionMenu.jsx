@@ -59,11 +59,14 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
   )
 
+  // Сбрасываем локальный вес ТОЛЬКО при смене упражнения (exercise_id).
+  // user_weight_kg намеренно НЕ в зависимостях: иначе эффект перезатирал бы
+  // только что введённое и сохранённое значение веса. Подавление осознанное.
   useEffect(() => {
     setLocalWeight(
       slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
     )
-  }, [slot?.exercise_id])
+  }, [slot?.exercise_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Открыта ли сейчас клавиатура (редактируется вес или заметка). Пока true —
   // первый тап по «Техника»/«Заменить» НЕ выполняет действие, а только гасит

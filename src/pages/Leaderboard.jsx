@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
-import { getLeagueByMuscles, getLeagueByRankIndex } from '../lib/leagues'
+import { getLeagueByMuscles } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { backupUser, getUserPublicProfile, BACKUP_BONUS } from '../lib/backups'
@@ -328,7 +328,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} season={season} />}
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
       {selectedProfile && (
         <ProfileModal
@@ -464,7 +464,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
   )
 }
 
-function RulesModal({ onClose, season }) {
+function RulesModal({ onClose }) {
   return createPortal(
     <div style={modalStyles.overlay} onClick={onClose}>
       <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>

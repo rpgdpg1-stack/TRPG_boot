@@ -11,7 +11,7 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
-import { cacheGet, cacheSet, cacheDelete, TTL } from './cache'
+import { cacheGet, cacheSet, TTL } from './cache'
 import { isOnline } from './network-status'
 
 export const NOTE_MAX_LENGTH = 280

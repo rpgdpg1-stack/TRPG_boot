@@ -74,6 +74,9 @@ export default function SwapExercise() {
       })
     })
     lockVerticalSwipes()
+    // location.state?.scrollY намеренно вне зависимостей: обработчик ставится
+    // один раз при маунте, scrollY читается на этот момент и не меняется.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, programId, day, orderNum])
 
   useEffect(() => {

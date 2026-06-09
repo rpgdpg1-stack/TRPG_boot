@@ -238,57 +238,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
   )
 }
 
-function HeartIcon({ filled }) {
-  const color = filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.3)'
-  if (filled) {
-    return (
-      <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-        <rect x="2" y="3" width="3" height="2" fill={color} />
-        <rect x="11" y="3" width="3" height="2" fill={color} />
-        <rect x="1" y="5" width="5" height="2" fill={color} />
-        <rect x="10" y="5" width="5" height="2" fill={color} />
-        <rect x="6" y="5" width="4" height="2" fill={color} />
-        <rect x="1" y="7" width="14" height="2" fill={color} />
-        <rect x="2" y="9" width="12" height="2" fill={color} />
-        <rect x="3" y="11" width="10" height="1" fill={color} />
-        <rect x="4" y="12" width="8" height="1" fill={color} />
-        <rect x="5" y="13" width="6" height="1" fill={color} />
-        <rect x="6" y="14" width="4" height="1" fill={color} />
-        <rect x="7" y="15" width="2" height="1" fill={color} />
-      </svg>
-    )
-  }
-  return (
-    <svg width="22" height="22" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      <rect x="2" y="3" width="3" height="1" fill={color} />
-      <rect x="11" y="3" width="3" height="1" fill={color} />
-      <rect x="1" y="4" width="1" height="1" fill={color} />
-      <rect x="5" y="4" width="1" height="1" fill={color} />
-      <rect x="10" y="4" width="1" height="1" fill={color} />
-      <rect x="14" y="4" width="1" height="1" fill={color} />
-      <rect x="1" y="5" width="1" height="2" fill={color} />
-      <rect x="14" y="5" width="1" height="2" fill={color} />
-      <rect x="6" y="5" width="1" height="1" fill={color} />
-      <rect x="9" y="5" width="1" height="1" fill={color} />
-      <rect x="7" y="6" width="2" height="1" fill={color} />
-      <rect x="1" y="7" width="1" height="1" fill={color} />
-      <rect x="14" y="7" width="1" height="1" fill={color} />
-      <rect x="2" y="8" width="1" height="1" fill={color} />
-      <rect x="13" y="8" width="1" height="1" fill={color} />
-      <rect x="3" y="9" width="1" height="1" fill={color} />
-      <rect x="12" y="9" width="1" height="1" fill={color} />
-      <rect x="3" y="10" width="1" height="1" fill={color} />
-      <rect x="12" y="10" width="1" height="1" fill={color} />
-      <rect x="4" y="11" width="1" height="1" fill={color} />
-      <rect x="11" y="11" width="1" height="1" fill={color} />
-      <rect x="5" y="12" width="1" height="1" fill={color} />
-      <rect x="10" y="12" width="1" height="1" fill={color} />
-      <rect x="6" y="13" width="1" height="1" fill={color} />
-      <rect x="9" y="13" width="1" height="1" fill={color} />
-      <rect x="7" y="14" width="2" height="1" fill={color} />
-    </svg>
-  )
-}
+
 
 function getTagColor(tag) {
   const t = tag.toLowerCase()
