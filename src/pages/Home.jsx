@@ -4,7 +4,7 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
-import { getProgramBySlug } from '../features/programs/registry'
+import { getProgramBySlug, getProgramEmoji } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
@@ -328,8 +328,6 @@ export default function Home() {
   )
 }
 
-const PROGRAM_EMOJI = { split: '🏋️', swim: '🏊' }
-
 function FavCard({ entry, onTap }) {
   if (!entry) return null
   const { prog, activeDay } = entry
@@ -337,7 +335,7 @@ function FavCard({ entry, onTap }) {
   const formattedTitle = prog.title
     ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
     : ''
-  const emoji = PROGRAM_EMOJI[prog.slug] || '💪'
+  const emoji = getProgramEmoji(prog.slug)
 
   return (
     <div onClick={onTap} className="press-tile" style={favCardStyles.card}>

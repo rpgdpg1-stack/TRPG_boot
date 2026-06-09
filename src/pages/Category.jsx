@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
-import { getProgramsByCategory } from '../features/programs/registry'
+import { getProgramsByCategory, getProgramEmoji } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 
@@ -140,9 +140,6 @@ const styles = {
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
 
-const PROGRAM_EMOJI = { split: '🏋️', swim: '🏊' }
-const DEFAULT_EMOJI = '💪'
-
 function ProgramCardWithFav({ prog, isFav, onFavTap }) {
   const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(null)
@@ -171,7 +168,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
   const formattedTitle = prog.title
     ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
     : ''
-  const emoji = PROGRAM_EMOJI[prog.slug] || DEFAULT_EMOJI
+  const emoji = getProgramEmoji(prog.slug)
 
   return (
     <div

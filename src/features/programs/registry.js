@@ -18,6 +18,7 @@ export const PROGRAMS = [
     slug: 'split',
     dbId: 'prog_001',
     title: 'СПЛИТ',
+    emoji: '🏋️',
     tags: ['зал'],
     category: 'gym',
     available: true,
@@ -28,6 +29,7 @@ export const PROGRAMS = [
     slug: 'swim',
     dbId: 'swim_001',
     title: 'ЗАПЛЫВ',
+    emoji: '🏊',
     tags: ['бассейн'],
     category: 'pool',
     kind: 'swim',
@@ -74,4 +76,12 @@ export function getProgramDaySlots(slug, day) {
   const program = getProgramBySlug(slug)
   if (!program) return []
   return program.data.days?.[day] || []
+}
+
+/**
+ * Эмодзи программы по slug. Единый источник для карточек (Home, Category).
+ * Дефолт 💪 — чтобы незнакомая/placeholder-программа не ломала вёрстку.
+ */
+export function getProgramEmoji(slug) {
+  return getProgramBySlug(slug)?.emoji || '💪'
 }
