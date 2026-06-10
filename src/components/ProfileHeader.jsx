@@ -267,7 +267,7 @@ export default function ProfileHeader({
 
           {/* Попап ТРЕНИРОВКИ */}
           {interactive && activePopup === 'workouts' && (
-            <div style={{ ...styles.popup, ...styles.popupAlignRight, border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...styles.popup, ...styles.popupAlignRight }} onClick={(e) => e.stopPropagation()}>
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
               {recentWorkouts.length === 0 ? (
                 <div style={styles.popupEmpty}>

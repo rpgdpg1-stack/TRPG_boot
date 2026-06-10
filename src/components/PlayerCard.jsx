@@ -274,7 +274,7 @@ export default function PlayerCard() {
               </button>
 
               {showXPDetails && (
-                <div ref={xpPopupRef} style={styles.popup}>
+                <div ref={xpPopupRef} style={{ ...styles.popup, border: `1px solid ${rank.color}66` }}>
 
                   <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
 
