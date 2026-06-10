@@ -111,12 +111,6 @@ export default function ProfileHeader({
     if (onPlaceTap) onPlaceTap()
   }
 
-  const streakHint = streak === 0
-    ? 'Заверши тренировку чтобы зажечь огонёк'
-    : streak < 4
-      ? `${4 - streak} до максимума недели`
-      : 'Максимум этой недели'
-
   // Своя страница (interactive) — показываем относительный формат + дату.
   // Чужой профиль из рейтинга — только относительный ("3 дня назад" / "Очень давно").
   const lastWorkoutWhen = lastWorkout
@@ -252,13 +246,12 @@ export default function ProfileHeader({
 
         {/* Попап СЕРИЯ */}
         {interactive && activePopup === 'streak' && (
-          <div style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <div style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0 2px' }}>
               <StreakFlame streak={streak || 0} />
               <span style={styles.streakCount}>x{streak || 0}</span>
             </div>
-            <div style={styles.popupHint}>{streakHint}</div>
           </div>
         )}
 
@@ -555,13 +548,6 @@ const styles = {
     height: '1px',
     background: 'rgba(255, 255, 255, 0.08)',
     margin: '8px 0'
-  },
-  popupHint: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    fontWeight: 500
   },
   streakCount: {
     fontFamily: 'var(--font-tiny5)',
