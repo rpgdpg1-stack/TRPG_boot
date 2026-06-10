@@ -330,11 +330,7 @@ export default function PlayerCard() {
                   <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
                 </div>
                 <div style={styles.streakPopupHint}>
-                  {weeklyStreak === 0
-                    ? 'Заверши тренировку чтобы зажечь огонёк'
-                    : weeklyStreak < 4
-                      ? `${4 - weeklyStreak} до максимума недели`
-                      : 'Максимум этой недели'}
+                  Серия копится за неделю. Максимум — 7 дней 🔥
                 </div>
               </div>
             )}
@@ -504,7 +500,7 @@ const styles = {
   },
   popup: {
     position: 'absolute',
-    top: 'calc(100% + 8px)',
+    top: 'calc(100% + 14px)',
     left: 0, right: 0,
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',

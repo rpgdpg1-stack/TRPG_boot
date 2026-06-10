@@ -246,12 +246,13 @@ export default function ProfileHeader({
 
         {/* Попап СЕРИЯ */}
         {interactive && activePopup === 'streak' && (
-          <div style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <div style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0 2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
               <StreakFlame streak={streak || 0} />
               <span style={styles.streakCount}>x{streak || 0}</span>
             </div>
+            <div style={styles.popupHint}>Серия копится за неделю. Максимум — 7 дней 🔥</div>
           </div>
         )}
 
@@ -276,7 +277,9 @@ export default function ProfileHeader({
             <div style={styles.popupDivider} />
             <div style={styles.popupRow}>
               <span style={styles.popupLabel}>Всего тренировок</span>
-              <span style={{ ...styles.popupAmount, color: rank.color }}>{totalWorkouts ?? 0}</span>
+              <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                {totalWorkouts ?? 0} <span style={{ fontSize: '18px', lineHeight: 1 }}>🏋️</span>
+              </span>
             </div>
           </div>
         )}
@@ -478,20 +481,26 @@ const styles = {
     letterSpacing: '1px',
     fontWeight: 600
   },
-  // Попап над капсулами
+  // Попап под капсулами — узкий формат как на главной (огонь).
+  // Ширину ограничиваем и центрируем относительно блока статистики,
+  // чтобы все три (мускулы/серия/тренировки) выглядели одинаково.
   popup: {
     position: 'absolute',
-    top: 'calc(100% + 8px)',
-    left: 0, right: 0,
-    background: 'rgba(28, 28, 28, 0.97)',
+    top: 'calc(100% + 14px)',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    minWidth: '220px',
+    maxWidth: 'calc(100% - 8px)',
+    width: 'max-content',
+    background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '20px',
-    padding: '14px 16px 12px',
+    padding: '12px 16px',
     zIndex: 50,
     animation: 'popupShowHide 6.4s ease-out forwards',
-    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)'
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
   },
   popupTitle: {
     fontFamily: 'var(--font-tiny5)',
@@ -556,5 +565,12 @@ const styles = {
     letterSpacing: '1px',
     lineHeight: 1,
     textShadow: '0 0 6px rgba(255, 140, 66, 0.6)'
+  },
+  popupHint: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    fontWeight: 500
   }
 }
