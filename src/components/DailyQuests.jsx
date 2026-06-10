@@ -188,7 +188,19 @@ export default function DailyQuests() {
     return () => document.removeEventListener('pointerdown', handleOutside)
   }, [expanded])
 
-  const handleQuestPointerDown = async (quest) => {
+  const handleQuestPointerDown = (quest, e) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleQuestPointerUp = async (quest, e) => {
+    const start = pointerStartRef.current
+    pointerStartRef.current = null
+    if (!start) return
+    // Если палец уехал дальше порога — это скролл, не тап.
+    const dx = Math.abs(e.clientX - start.x)
+    const dy = Math.abs(e.clientY - start.y)
+    if (dx > TAP_THRESHOLD_PX || dy > TAP_THRESHOLD_PX) return
+
     const now = Date.now()
     if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
     lastTapRef.current[quest.id] = now
@@ -284,7 +296,9 @@ export default function DailyQuests() {
               <button
                 key={quest.id}
                 data-quest-row
-                onPointerDown={() => handleQuestPointerDown(quest)}
+                onPointerDown={(e) => handleQuestPointerDown(quest, e)}
+                onPointerUp={(e) => handleQuestPointerUp(quest, e)}
+                onPointerCancel={() => { pointerStartRef.current = null }}
                 disabled={isDone || locked}
                 style={{
                   ...styles.questRow,
