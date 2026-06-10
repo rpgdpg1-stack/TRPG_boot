@@ -81,9 +81,29 @@ export function describeWorkout(workout) {
  * Возвращает [{ key, label, color }] в порядке появления, без дублей.
  * Только для силовых (по дням A/B/C). Для заплыва — пустой массив.
  */
+// Ручной набор групп для дней, где автонабор не отражает суть тренировки.
+// Например день B по слотам начинается с груди и плеч, но трицепс — ключевая
+// группа дня, поэтому показываем именно Грудь + Трицепс.
+const DAY_TAGS_OVERRIDE = {
+  prog_001: {
+    B: ['chest', 'triceps']
+  }
+}
+
 export function getDayMuscleTags(programId, day) {
   const prog = getProgramByDbId(programId)
   if (!prog || prog.kind === 'swim') return []
+
+  const toTag = (key) => ({
+    key,
+    label: titleCase(MUSCLE_GROUP_LABELS[key] || key),
+    color: getMuscleGroupColors(key).tag
+  })
+
+  // Ручной оверрайд для конкретного дня
+  const override = DAY_TAGS_OVERRIDE[prog.dbId]?.[day]
+  if (override) return override.map(toTag)
+
   const slots = prog.data?.days?.[day] || []
   const seen = new Set()
   const tags = []
@@ -91,11 +111,7 @@ export function getDayMuscleTags(programId, day) {
     const key = s.muscle_group
     if (seen.has(key)) continue
     seen.add(key)
-    tags.push({
-      key,
-      label: titleCase(MUSCLE_GROUP_LABELS[key] || key),
-      color: getMuscleGroupColors(key).tag
-    })
+    tags.push(toTag(key))
   }
-  return tags
+  return tags.slice(0, 2)
 }
