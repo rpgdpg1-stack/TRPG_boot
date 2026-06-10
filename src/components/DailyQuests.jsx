@@ -28,9 +28,7 @@ import MuscleIcon from './MuscleIcon'
  */
 
 const SLOT_XP = 20
-const FULL_DAY_BONUS = 40
-const BONUS_QUEST_ID = 'boost_full_day'
-const TOTAL_DAY_REWARD = SLOT_XP * 3 + FULL_DAY_BONUS // 100
+const TOTAL_DAY_REWARD = SLOT_XP * 3 // 60
 
 // openBootHour — час «суток буста» (от 03:00 МСК), с которого слот открыт.
 const BOOST_POOLS = [
@@ -142,7 +140,6 @@ export default function DailyQuests() {
   const TAP_THRESHOLD_PX = 8
   const pointerStartRef = useRef(null)
   const containerRef = useRef(null)
-  const bonusInFlightRef = useRef(false)
 
   useEffect(() => {
     const loadQuests = () => {
@@ -170,8 +167,7 @@ export default function DailyQuests() {
   const isSlotOpen = (q) => boostHour >= q.openBootHour
 
   const allSlotsDone = quests.every(q => completed[q.id])
-  const bonusDone = !!completed[BONUS_QUEST_ID]
-  const dayComplete = allSlotsDone && bonusDone
+  const dayComplete = allSlotsDone
 
   useEffect(() => {
     if (!dayComplete) setExpanded(false)
@@ -289,15 +285,6 @@ export default function DailyQuests() {
                   </span>
                 </div>
               ))}
-              <div style={{ ...styles.questRowDone, ...styles.bonusRowDone }}>
-                <span style={styles.bonusGift}>🎁</span>
-                <div style={styles.textColDone}>
-                  <span style={styles.questTextDone}>Бонус за полный день</span>
-                </div>
-                <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  +{FULL_DAY_BONUS} <MuscleIcon size={18} earned={true} />
-                </span>
-              </div>
             </div>
           </div>
         </>
@@ -318,65 +305,50 @@ export default function DailyQuests() {
                 disabled={isDone || locked}
                 style={{
                   ...styles.questRow,
-                  opacity: isDone ? 0.5 : locked ? 0.4 : 1,
+                  position: 'relative',
+                  opacity: isDone ? 0.5 : 1,
                   cursor: isDone || locked ? 'default' : 'pointer',
                   transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
                 }}
               >
-                <div style={styles.checkboxWrap}>
-                  {locked ? <LockIcon /> : <PixelCheckbox checked={isDone} size={20} />}
-                </div>
+                {/* Содержимое слота. Под блюром, если слот ещё закрыт по времени. */}
+                <div style={{
+                  ...styles.slotInner,
+                  filter: locked ? 'blur(4px)' : 'none',
+                  opacity: locked ? 0.5 : 1
+                }}>
+                  <div style={styles.checkboxWrap}>
+                    <PixelCheckbox checked={isDone} size={20} />
+                  </div>
 
-                <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : locked ? 0.4 : 1 }}>
-                  {quest.emoji}
-                </span>
-
-                <div style={styles.textCol}>
-                  <span style={{
-                    ...styles.questText,
-                    textDecoration: isDone ? 'line-through' : 'none',
-                    color: isDone || locked ? 'var(--color-text-secondary)' : 'var(--color-text)'
-                  }}>
-                    {locked ? `Откроется в ${openLabel(quest.openBootHour)}` : quest.title}
+                  <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : 1 }}>
+                    {quest.emoji}
                   </span>
-                  {!locked && (
+
+                  <div style={styles.textCol}>
                     <span style={{
-                      ...styles.benefitText,
-                      opacity: isDone ? 0.4 : 1
+                      ...styles.questText,
+                      textDecoration: isDone ? 'line-through' : 'none',
+                      color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
                     }}>
+                      {quest.title}
+                    </span>
+                    <span style={{ ...styles.benefitText, opacity: isDone ? 0.4 : 1 }}>
                       {quest.benefit}
                     </span>
-                  )}
-                </div>
+                  </div>
 
-                <div style={styles.rightCol}>
-                  <span style={styles.periodTag}>
-                    {quest.periodEmoji} {quest.periodLabel}
-                  </span>
                   <div style={styles.rewardBadgeWrap}>
-                    {locked ? (
-                      <span style={{
-                        ...styles.rewardBadge,
-                        color: 'var(--color-text-secondary)',
-                        opacity: 0.7,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        +{quest.xp} <MuscleIcon size={18} earned={false} />
-                      </span>
-                    ) : (
-                      <span style={{
-                        ...styles.rewardBadge,
-                        textDecoration: isDone ? 'line-through' : 'none',
-                        opacity: isDone ? 0.55 : 1,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        +{quest.xp} <MuscleIcon size={18} earned={isDone} />
-                      </span>
-                    )}
+                    <span style={{
+                      ...styles.rewardBadge,
+                      textDecoration: isDone ? 'line-through' : 'none',
+                      opacity: isDone ? 0.55 : 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      +{quest.xp} <MuscleIcon size={18} earned={isDone} />
+                    </span>
 
                     {reward && (
                       <span key={reward.key} style={styles.floatingReward}>
@@ -385,16 +357,19 @@ export default function DailyQuests() {
                     )}
                   </div>
                 </div>
+
+                {/* Плашка времени поверх блюра — только для закрытого слота. */}
+                {locked && (
+                  <div style={styles.lockedOverlay}>
+                    <span style={styles.lockedOverlayText}>
+                      Откроется в {openLabel(quest.openBootHour)} {quest.periodEmoji}
+                    </span>
+                  </div>
+                )}
               </button>
             )
           })}
         </div>
-      )}
-
-      {floatingRewards.some(r => r.id === BONUS_QUEST_ID) && (
-        <span style={styles.bonusFloating}>
-          +{FULL_DAY_BONUS} <MuscleIcon size={20} earned={true} /> бонус!
-        </span>
       )}
 
       <style>{`
@@ -404,13 +379,7 @@ export default function DailyQuests() {
           85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
         }
-        @keyframes bonusPop {
-          0%   { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.7); }
-          20%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
-          75%  { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.95); }
-        }
-      `}</style>
+        @`}</style>
     </div>
   )
 }
@@ -436,17 +405,7 @@ function Chevron({ expanded }) {
   )
 }
 
-function LockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'block', margin: '2px' }}>
-      <rect x="3" y="7" width="10" height="7" rx="1.5" fill="none"
-        stroke="var(--color-text-secondary)" strokeWidth="1.4" />
-      <path d="M5 7 V5 a3 3 0 0 1 6 0 V7" fill="none"
-        stroke="var(--color-text-secondary)" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
-}
+
 
 const styles = {
   container: {
@@ -501,26 +460,7 @@ const styles = {
     alignSelf: 'center',
     opacity: 0.55
   },
-  // Правая колонка: тег периода сверху, бейдж награды снизу.
-  rightCol: {
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '4px'
-  },
-  // Тег периода — маленькая капсула «🌅 Утро».
-  periodTag: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    background: 'rgba(255, 255, 255, 0.06)',
-    padding: '2px 7px',
-    borderRadius: '8px',
-    whiteSpace: 'nowrap',
-    letterSpacing: '0.2px'
-  },
+  
   // Колонка текста: задание сверху, польза снизу.
   textCol: {
     flex: 1,
@@ -552,6 +492,31 @@ const styles = {
     color: 'var(--color-text-secondary)',
     transition: 'opacity 0.3s ease'
   },
+  // Обёртка содержимого слота (под блюр уходит целиком).
+  slotInner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: '100%',
+    transition: 'filter 0.3s ease, opacity 0.3s ease'
+  },
+  // Плашка поверх заблокированного слота с временем открытия.
+  lockedOverlay: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none'
+  },
+  lockedOverlayText: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-text)',
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+    textShadow: '0 1px 4px rgba(0,0,0,0.5)'
+  },
   rewardBadgeWrap: {
     position: 'relative',
     flexShrink: 0,
@@ -580,23 +545,7 @@ const styles = {
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   },
-  bonusFloating: {
-    position: 'absolute',
-    bottom: '50%',
-    left: '50%',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontFamily: 'var(--font-tiny5)',
-    fontSize: '17px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px',
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    textShadow: '0 0 12px rgba(158, 209, 83, 0.8)',
-    animation: 'bonusPop 1.3s ease-out forwards',
-    zIndex: 5
-  },
+  
   allDoneBlock: {
     display: 'flex',
     flexDirection: 'column',
@@ -639,19 +588,7 @@ const styles = {
     padding: '4px 6px',
     opacity: 0.55
   },
-  bonusRowDone: {
-    marginTop: '2px',
-    paddingTop: '8px',
-    borderTop: '1px dashed rgba(255, 255, 255, 0.08)',
-    opacity: 0.7
-  },
-  bonusGift: {
-    fontSize: '16px',
-    lineHeight: 1,
-    flexShrink: 0,
-    width: '22px',
-    textAlign: 'center'
-  },
+  
   questTextDone: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
