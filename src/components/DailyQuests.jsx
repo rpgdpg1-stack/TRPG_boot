@@ -188,23 +188,6 @@ export default function DailyQuests() {
     return () => document.removeEventListener('pointerdown', handleOutside)
   }, [expanded])
 
-  // Все 3 слота закрыты, бонус ещё нет → автоначисляем +40.
-  useEffect(() => {
-    if (!allSlotsDone || bonusDone || bonusInFlightRef.current) return
-    bonusInFlightRef.current = true
-    haptic.success()
-
-    const rewardKey = Date.now()
-    setFloatingRewards(prev => [...prev, { id: BONUS_QUEST_ID, xp: FULL_DAY_BONUS, key: rewardKey }])
-    setTimeout(() => {
-      setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
-    }, 1300)
-
-    completeQuest(BONUS_QUEST_ID, FULL_DAY_BONUS).then(result => {
-      setCompleted(result.completed)
-    })
-  }, [allSlotsDone, bonusDone])
-
   const handleQuestPointerDown = async (quest) => {
     const now = Date.now()
     if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
@@ -379,7 +362,7 @@ export default function DailyQuests() {
           85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
         }
-        @`}</style>
+      `}</style>
     </div>
   )
 }
