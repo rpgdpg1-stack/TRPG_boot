@@ -800,8 +800,11 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,
-    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
-    display: 'inline-block'
+    textShadow: '0 0 16px rgba(158, 209, 83, 0.55), 0 0 6px rgba(158, 209, 83, 0.8)',
+    display: 'inline-block',
+    WebkitFontSmoothing: 'none',
+    MozOsxFontSmoothing: 'unset',
+    imageRendering: 'pixelated'
   },
   progressWrap: {
     padding: '0 4px'

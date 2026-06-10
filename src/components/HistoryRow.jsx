@@ -27,13 +27,13 @@ export default function HistoryRow({ workout }) {
             <span style={styles.variant}>{variant}</span>
           </>
         )}
-        <span style={styles.sep}> · </span>
-        <span style={styles.date}>{formatWorkoutDateShort(workout.finished_at)}</span>
         {muscleTags.map(t => (
           <span key={t.key} style={{ ...styles.muscleTag, background: `${t.color}33`, color: t.color }}>
             {t.label}
           </span>
         ))}
+        <span style={styles.sep}> · </span>
+        <span style={styles.date}>{formatWorkoutDateShort(workout.finished_at)}</span>
       </div>
       <span style={styles.check}>✔</span>
     </div>
