@@ -378,8 +378,8 @@ const styles = {
     padding: 0
   },
   avatarWrap: {
-    width: '100px',
-    height: '100px',
+    width: '80px',
+    height: '80px',
     flexShrink: 0,
     background: 'transparent',
     border: 'none',

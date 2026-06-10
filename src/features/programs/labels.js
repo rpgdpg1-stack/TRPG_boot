@@ -10,6 +10,8 @@ export const MUSCLE_GROUP_LABELS = {
   glutes: 'ЯГОДИЦЫ',
   shoulders: 'ПЛЕЧИ',
   arms: 'РУКИ',
+  biceps: 'БИЦЕПС',
+  triceps: 'ТРИЦЕПС',
   abs: 'ПРЕСС',
   forearms: 'ПРЕДПЛЕЧЬЯ',
   neck: 'ШЕЯ',

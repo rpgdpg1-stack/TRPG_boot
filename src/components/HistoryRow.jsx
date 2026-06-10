@@ -1,4 +1,4 @@
-import { describeWorkout, formatWorkoutDateShort } from '../utils/history'
+import { describeWorkout, formatWorkoutDateShort, getDayMuscleTags } from '../utils/history'
 import UiIcon from './UiIcon'
 
 /**
@@ -12,6 +12,7 @@ import UiIcon from './UiIcon'
 export default function HistoryRow({ workout }) {
   const { iconName, title, variant } = describeWorkout(workout)
   const iconColor = iconName === 'swimming' ? 'var(--cat-pool)' : 'var(--color-primary)'
+  const muscleTags = variant ? getDayMuscleTags(workout.program_id, variant) : []
 
   return (
     <div style={styles.row} className="tg-row">
@@ -28,6 +29,11 @@ export default function HistoryRow({ workout }) {
         )}
         <span style={styles.sep}> · </span>
         <span style={styles.date}>{formatWorkoutDateShort(workout.finished_at)}</span>
+        {muscleTags.map(t => (
+          <span key={t.key} style={{ ...styles.muscleTag, background: `${t.color}33`, color: t.color }}>
+            {t.label}
+          </span>
+        ))}
       </div>
       <span style={styles.check}>✔</span>
     </div>
@@ -56,13 +62,25 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     color: 'var(--color-text)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap'
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    rowGap: '4px'
   },
-  title: { fontWeight: 700 },
-  variant: { fontWeight: 500, color: 'var(--color-text-secondary)' },
-  sep: { color: 'var(--color-text-secondary)' },
+  title: { fontWeight: 700, whiteSpace: 'nowrap' },
+  variant: { fontWeight: 500, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' },
+  sep: { color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' },
   date: { color: 'var(--color-text-secondary)', fontWeight: 500 },
-  check: { flexShrink: 0, fontSize: '13px', color: 'var(--color-text-secondary)', opacity: 0.5 }
+  check: { flexShrink: 0, fontSize: '13px', color: 'var(--color-text-secondary)', opacity: 0.5 },
+  muscleTag: {
+    marginLeft: '6px',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 600,
+    letterSpacing: '0.2px',
+    lineHeight: '14px',
+    whiteSpace: 'nowrap'
+  }
 }

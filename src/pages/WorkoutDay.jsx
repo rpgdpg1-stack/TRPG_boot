@@ -6,6 +6,7 @@ import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { getProgramBySlug, getProgramDaySlots } from '../features/programs/registry'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { getDayMuscleTags } from '../utils/history'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import {
@@ -78,6 +79,8 @@ export default function WorkoutDay() {
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
   const programSlots = useMemo(() => getProgramDaySlots(programId, day), [programId, day])
+
+  const dayTags = useMemo(() => getDayMuscleTags(program?.dbId, day), [program, day])
 
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
@@ -392,15 +395,26 @@ export default function WorkoutDay() {
             <ArrowLeft />
           </button>
 
-          <div style={styles.dayLetterWrap}>
-            <span
-              key={day}
-              className={dayLetterAnimClass}
-              style={styles.dayLetter}
-            >
-              {day}
-            </span>
-            <SwipeHintArrow />
+          <div style={styles.dayLetterCol}>
+            <div style={styles.dayLetterWrap}>
+              <span
+                key={day}
+                className={dayLetterAnimClass}
+                style={styles.dayLetter}
+              >
+                {day}
+              </span>
+              <SwipeHintArrow />
+            </div>
+            {dayTags.length > 0 && (
+              <div key={`tags-${day}`} style={styles.dayTagsRow}>
+                {dayTags.map(t => (
+                  <span key={t.key} style={{ ...styles.dayTag, background: `${t.color}33`, color: t.color }}>
+                    {t.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
@@ -888,5 +902,29 @@ const styles = {
     color: '#0D0C0C',
     border: '1px solid var(--color-primary)',
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+  },
+  dayLetterCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+    minWidth: '120px'
+  },
+  dayTagsRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: '4px',
+    maxWidth: '220px'
+  },
+  dayTag: {
+    padding: '2px 8px',
+    borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 600,
+    letterSpacing: '0.2px',
+    lineHeight: '14px',
+    whiteSpace: 'nowrap'
   }
 }

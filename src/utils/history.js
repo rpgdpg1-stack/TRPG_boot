@@ -1,4 +1,6 @@
 import { getProgramByDbId } from '../features/programs/registry'
+import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { getMuscleGroupColors } from '../features/programs/colors'
 
 function pluralDays(n) {
   const last = n % 10
@@ -73,4 +75,27 @@ export function describeWorkout(workout) {
     title: prog ? titleCase(prog.title) : 'Тренировка',
     variant: workout.day || ''
   }
+}
+/**
+ * Уникальные группы мышц дня программы — для тегов в истории и в дне.
+ * Возвращает [{ key, label, color }] в порядке появления, без дублей.
+ * Только для силовых (по дням A/B/C). Для заплыва — пустой массив.
+ */
+export function getDayMuscleTags(programId, day) {
+  const prog = getProgramByDbId(programId)
+  if (!prog || prog.kind === 'swim') return []
+  const slots = prog.data?.days?.[day] || []
+  const seen = new Set()
+  const tags = []
+  for (const s of slots) {
+    const key = s.muscle_group
+    if (seen.has(key)) continue
+    seen.add(key)
+    tags.push({
+      key,
+      label: titleCase(MUSCLE_GROUP_LABELS[key] || key),
+      color: getMuscleGroupColors(key).tag
+    })
+  }
+  return tags
 }

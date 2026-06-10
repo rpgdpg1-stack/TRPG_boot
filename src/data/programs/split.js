@@ -16,8 +16,8 @@ export const SPLIT_PROGRAM = {
       { order_num: 1,  muscle_group: 'back',     sub_group: 'lats',              type: 'base',      default_exercise_id: 'ex_001' },
       { order_num: 2,  muscle_group: 'back',     sub_group: 'lats',              type: 'base',      default_exercise_id: 'ex_004' },
       { order_num: 3,  muscle_group: 'back',     sub_group: 'thickness',         type: 'base',      default_exercise_id: 'ex_008' },
-      { order_num: 4,  muscle_group: 'arms',     sub_group: 'biceps',            type: 'isolation', default_exercise_id: 'ex_063' },
-      { order_num: 5,  muscle_group: 'arms',     sub_group: 'biceps',            type: 'isolation', default_exercise_id: 'ex_066' },
+      { order_num: 4,  muscle_group: 'biceps',   sub_group: 'biceps',            type: 'isolation', default_exercise_id: 'ex_063' },
+      { order_num: 5,  muscle_group: 'biceps',   sub_group: 'biceps',            type: 'isolation', default_exercise_id: 'ex_066' },
       { order_num: 6,  muscle_group: 'forearms', sub_group: 'forearm_flexors',   type: 'accessory', default_exercise_id: 'ex_084' },
       { order_num: 7,  muscle_group: 'forearms', sub_group: 'forearm_extensors', type: 'accessory', default_exercise_id: 'ex_085' },
       { order_num: 8,  muscle_group: 'neck',     sub_group: 'neck_flexors',      type: 'accessory', default_exercise_id: 'ex_086' },
@@ -31,8 +31,8 @@ export const SPLIT_PROGRAM = {
       { order_num: 4, muscle_group: 'shoulders', sub_group: 'front_delt',        type: 'base',      default_exercise_id: 'ex_055' },
       { order_num: 5, muscle_group: 'shoulders', sub_group: 'mid_delt',          type: 'isolation', default_exercise_id: 'ex_058' },
       { order_num: 6, muscle_group: 'shoulders', sub_group: 'rear_delt',         type: 'isolation', default_exercise_id: 'ex_059' },
-      { order_num: 7, muscle_group: 'arms',      sub_group: 'triceps',           type: 'isolation', default_exercise_id: 'ex_071' },
-      { order_num: 8, muscle_group: 'arms',      sub_group: 'triceps',           type: 'isolation', default_exercise_id: 'ex_070' },
+      { order_num: 7, muscle_group: 'triceps',   sub_group: 'triceps',           type: 'isolation', default_exercise_id: 'ex_071' },
+      { order_num: 8, muscle_group: 'triceps',   sub_group: 'triceps',           type: 'isolation', default_exercise_id: 'ex_070' },
       { order_num: 9, muscle_group: 'abs',       sub_group: 'abs_upper',         type: 'isolation', default_exercise_id: 'ex_078' }
     ],
     C: [
