@@ -330,7 +330,7 @@ export default function PlayerCard() {
                   <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
                 </div>
                 <div style={styles.streakPopupHint}>
-                  Сброс серии происходит каждую неделю
+                  Сброс серии каждую неделю
                 </div>
               </div>
             )}

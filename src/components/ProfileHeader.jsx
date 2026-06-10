@@ -7,6 +7,7 @@ import RankIcon from './RankIcon'
 import RanksPopup from './RanksPopup'
 import StreakFlame from './StreakFlame'
 import MuscleIcon from './MuscleIcon'
+import { spawnFireSparks } from './ParticlesBg'
 
 /**
  * Карточка-шапка профиля. Переиспользуется в двух местах:
@@ -99,10 +100,14 @@ export default function ProfileHeader({
     setActivePopup(null)
   }
 
-  const togglePopup = (which) => {
+  const togglePopup = (which, e) => {
     if (!interactive) return
     haptic.light()
     if (which === 'muscles') setMuscleFlexTick(t => t + 1)
+    if (which === 'streak' && (streak || 0) >= 3 && e?.currentTarget) {
+      const rect = e.currentTarget.getBoundingClientRect()
+      spawnFireSparks(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    }
     setShowRanks(false)
     setActivePopup(prev => (prev === which ? null : which))
   }
@@ -196,7 +201,7 @@ export default function ProfileHeader({
 
           {/* Попап МУСКУЛЫ */}
           {interactive && activePopup === 'muscles' && (
-            <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...styles.popup, ...styles.popupAlignLeft, border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
               {recentHistory.length === 0 ? (
                 <div style={styles.popupEmpty}>
@@ -226,7 +231,7 @@ export default function ProfileHeader({
         </button>
 
         <button
-          onClick={() => togglePopup('streak')}
+          onClick={(e) => togglePopup('streak', e)}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={styles.statFlameRow}>
@@ -238,7 +243,7 @@ export default function ProfileHeader({
           {/* Попап СЕРИЯ */}
           {interactive && activePopup === 'streak' && (
             <div
-              style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+              style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', border: '1px solid rgba(255, 140, 66, 0.35)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
@@ -246,7 +251,7 @@ export default function ProfileHeader({
                 <StreakFlame streak={streak || 0} />
                 <span style={styles.streakCount}>x{streak || 0}</span>
               </div>
-              <div style={styles.popupHint}>Максимум 7 дней</div>
+              <div style={styles.popupHint}>Сброс серии каждую неделю</div>
             </div>
           )}
         </button>
@@ -262,7 +267,7 @@ export default function ProfileHeader({
 
           {/* Попап ТРЕНИРОВКИ */}
           {interactive && activePopup === 'workouts' && (
-            <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...styles.popup, ...styles.popupAlignRight, border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
               {recentWorkouts.length === 0 ? (
                 <div style={styles.popupEmpty}>
@@ -507,6 +512,21 @@ const styles = {
     zIndex: 50,
     animation: 'popupShowHide 6.4s ease-out forwards',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+  },
+  // Прижать попап к левому краю своей ячейки (для крайней левой — мускулы),
+  // чтобы он не уезжал за левый край карточки.
+  popupAlignLeft: {
+    left: 0,
+    marginLeft: '-6px',
+    transform: 'none'
+  },
+  // Прижать к правому краю своей ячейки (для крайней правой — тренировки).
+  popupAlignRight: {
+    left: 'auto',
+    right: 0,
+    marginLeft: 0,
+    marginRight: '-6px',
+    transform: 'none'
   },
   popupTitle: {
     fontFamily: 'var(--font-tiny5)',
