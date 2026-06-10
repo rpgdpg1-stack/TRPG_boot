@@ -408,9 +408,10 @@ export default function WorkoutDay() {
             </div>
             {dayTags.length > 0 && (
               <div key={`tags-${day}`} style={styles.dayTagsRow}>
-                {dayTags.map(t => (
-                  <span key={t.key} style={{ ...styles.dayTag, background: `${t.color}33`, color: t.color }}>
-                    {t.label}
+                {dayTags.map((t, i) => (
+                  <span key={t.key} style={styles.dayTagText}>
+                    {i > 0 && <span style={styles.dayTagDot}> · </span>}
+                    {t.label.toUpperCase()}
                   </span>
                 ))}
               </div>
@@ -800,11 +801,8 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,
-    textShadow: '0 0 16px rgba(158, 209, 83, 0.55), 0 0 6px rgba(158, 209, 83, 0.8)',
-    display: 'inline-block',
-    WebkitFontSmoothing: 'none',
-    MozOsxFontSmoothing: 'unset',
-    imageRendering: 'pixelated'
+    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
+    display: 'inline-block'
   },
   progressWrap: {
     padding: '0 4px'
@@ -917,17 +915,19 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: '4px',
-    maxWidth: '220px'
+    alignItems: 'center',
+    gap: '0',
+    maxWidth: '240px'
   },
-  dayTag: {
-    padding: '2px 8px',
-    borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 600,
-    letterSpacing: '0.2px',
-    lineHeight: '14px',
-    whiteSpace: 'nowrap'
+  dayTagText: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '2px',
+    lineHeight: 1.2
+  },
+  dayTagDot: {
+    color: 'var(--color-text-secondary)',
+    opacity: 0.5
   }
 }

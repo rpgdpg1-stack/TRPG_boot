@@ -391,7 +391,7 @@ const styles = {
   avatarInner: {
     width: '100%',
     height: '100%',
-    borderRadius: '33px',
+    borderRadius: '29px',
     overflow: 'hidden',
     background: 'var(--color-card)',
     border: '2px solid',

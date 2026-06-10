@@ -65,7 +65,7 @@ const styles = {
   title: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '32px',
-    color: 'var(--color-primary)',
+    color: 'var(--color-text-secondary)',
     letterSpacing: '3px',
     lineHeight: 1,
     marginBottom: '6px'
