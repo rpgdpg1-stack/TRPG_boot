@@ -54,7 +54,8 @@ export default function Leaderboard() {
   const daysLeft = getDaysUntilSeasonEnd()
 
   useEffect(() => {
-    backButton.setHandler(() => navigate(-1))
+    window.scrollTo(0, 0)
+    backButton.setHandler(() => navigate('/'))
     lockVerticalSwipes()
   }, [navigate])
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import { haptic, backButton, lockVerticalSwipes, closeApp } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
@@ -72,7 +72,8 @@ export default function Home() {
   const swipeRef = useRef({ x: null, swiped: false })
 
   useEffect(() => {
-    backButton.hide()
+    window.scrollTo(0, 0)
+    backButton.setHandler(() => closeApp())
     lockVerticalSwipes()
   }, [])
 

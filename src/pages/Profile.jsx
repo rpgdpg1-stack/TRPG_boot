@@ -51,9 +51,10 @@ export default function Profile() {
   })
 
   useEffect(() => {
-    backButton.hide()
+    window.scrollTo(0, 0)
+    backButton.setHandler(() => navigate('/'))
     lockVerticalSwipes()
-  }, [])
+  }, [navigate])
 
   useEffect(() => {
     const tgUser = getUser()
