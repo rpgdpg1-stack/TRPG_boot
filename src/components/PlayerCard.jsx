@@ -330,7 +330,7 @@ export default function PlayerCard() {
                   <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
                 </div>
                 <div style={styles.streakPopupHint}>
-                  Серия копится за неделю. Максимум — 7 дней 🔥
+                  Сброс серии происходит каждую неделю
                 </div>
               </div>
             )}
@@ -500,7 +500,7 @@ const styles = {
   },
   popup: {
     position: 'absolute',
-    top: 'calc(100% + 14px)',
+    top: 'calc(100% + 8px)',
     left: 0, right: 0,
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
@@ -566,7 +566,7 @@ const styles = {
   streakPopup: {
     position: 'absolute',
     right: 0,
-    top: 'calc(50% + 18px)',
+    top: 'calc(100% + 8px)',
     minWidth: '200px',
     maxWidth: 'calc(100vw - 32px)',
     background: 'rgba(34, 34, 34, 0.95)',
