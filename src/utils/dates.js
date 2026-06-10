@@ -67,3 +67,19 @@ export function getCurrentWeekKey() {
   const ww = String(weekNumber).padStart(2, '0')
   return `${isoYear}-${ww}`
 }
+
+/**
+ * Актуальный стрик с учётом недели последнего обновления.
+ *
+ * В БД лежит weekly_streak + weekly_streak_week (ISO-ключ недели, когда стрик
+ * последний раз менялся). Если эта неделя не совпадает с текущей — значит
+ * на новой неделе ещё не было тренировок, и стрик уже "протух" → 0.
+ *
+ * Свой стрик пересчитывается при логине, а чужой (в рейтинге) никто не
+ * протухает, пока друг сам не зайдёт — поэтому считаем актуальность тут.
+ */
+export function resolveWeeklyStreak(streak, streakWeek) {
+  if (!streak || streak <= 0) return 0
+  if (!streakWeek) return streak
+  return streakWeek === getCurrentWeekKey() ? streak : 0
+}

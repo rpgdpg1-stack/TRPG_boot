@@ -8,6 +8,7 @@ import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { backupUser, getUserPublicProfile, BACKUP_BONUS } from '../lib/backups'
 import { getCurrentSeason, getDaysUntilSeasonEnd, getNextSeason } from '../utils/season'
+import { resolveWeeklyStreak } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
 import ProfileHeader from '../components/ProfileHeader'
@@ -424,7 +425,7 @@ function ProfileModal({ row, onClose, onBackupDone }) {
         <ProfileHeader
           user={userObj}
           xp={row.total_muscles || 0}
-          streak={pub?.weekly_streak ?? null}
+          streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
           totalWorkouts={pub?.total_workouts ?? null}
           friendsPlace={row.place}
           lastWorkout={pub?.last_workout || null}
