@@ -289,7 +289,7 @@ export default function ProfileHeader({
           )}
         </button>
 
-        
+      </div>
 
       <style>{`
         @keyframes rankIconPopHeader {
