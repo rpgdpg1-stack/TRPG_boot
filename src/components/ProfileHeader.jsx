@@ -190,7 +190,7 @@ export default function ProfileHeader({
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={{ ...styles.statValue, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            {xp} <MuscleIcon size={26} earned={true} flex={true} flexTrigger={muscleFlexTick} />
+            <MuscleIcon size={26} earned={true} flex={true} flexTrigger={muscleFlexTick} /> {xp}
           </div>
           <div style={styles.pillLabel}>МУСКУЛЫ</div>
 
@@ -256,7 +256,7 @@ export default function ProfileHeader({
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={{ ...styles.statValue, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            {totalWorkouts ?? '—'} <span style={{ fontSize: '18px', lineHeight: 1 }}>🏋️</span>
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>🏋️</span> {totalWorkouts ?? '—'}
           </div>
           <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
 
@@ -495,8 +495,8 @@ const styles = {
     position: 'absolute',
     top: 'calc(100% + 8px)',
     left: '50%',
-    transform: 'translateX(-50%)',
     width: '230px',
+    marginLeft: '-115px',
     maxWidth: 'calc(100vw - 48px)',
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
