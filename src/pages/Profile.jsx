@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
-import { getMyFriendsPlace } from '../lib/leaderboard'
+import { getFriendsLeaderboard, getMyFriendsPlace } from '../lib/leaderboard'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import UiIcon from '../components/UiIcon'
+
+// Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
+// Дальше профиль не засоряем — пригласить всё равно можно из Рейтинга (вкладка «Друзья»).
+const FRIENDS_INVITE_LIMIT = 3
 
 /**
  * Экран "Профиль".
@@ -38,6 +42,15 @@ export default function Profile() {
     }
   })
   const [friendsPlace, setFriendsPlace] = useState(1)
+  // Число друзей — для показа кнопки «Пригласить друга» только пока друзей мало.
+  // Кешируем в localStorage, чтобы при заходе не мигало (как totalWorkouts).
+  const [friendsCount, setFriendsCount] = useState(() => {
+    try {
+      const raw = localStorage.getItem('profile-friends-count')
+      if (raw != null) return parseInt(raw, 10) || 0
+    } catch { /* ignore */ }
+    return null
+  })
   const [recentHistory, setRecentHistory] = useState([])
   // Стартуем из localStorage-кеша — число тренировок и последняя тренировка
   // не лежат в getCurrentUser(), поэтому кешируем их отдельно, чтобы при
@@ -67,16 +80,27 @@ export default function Profile() {
         getTotalWorkouts(),
         getMyFriendsPlace(),
         getRecentMuscleHistory(3),
-        getRecentWorkouts(3)
-      ]).then(([xp, streak, totalWorkouts, place, history, workouts]) => {
+        getRecentWorkouts(3),
+        getFriendsLeaderboard()
+      ]).then(([xp, streak, totalWorkouts, place, history, workouts, friendsRows]) => {
         setStats({ xp, streak, totalWorkouts })
         setFriendsPlace(place)
         setRecentHistory(history)
         setRecentWorkouts(workouts)
+
+        // Список друзей включает самого юзера → друзей на одного меньше.
+        // length === 0 значит ошибку/офлайн (свой профиль всегда в списке) —
+        // тогда счётчик не трогаем, чтобы кнопка не мигнула по сбою сети.
+        const fCount = (friendsRows && friendsRows.length > 0)
+          ? friendsRows.length - 1
+          : null
+        if (fCount !== null) setFriendsCount(fCount)
+
         // Кешируем для мгновенного показа при следующих заходах (без мигания)
         try {
           localStorage.setItem('profile-total-workouts', String(totalWorkouts))
           localStorage.setItem('profile-recent-workouts', JSON.stringify(workouts || []))
+          if (fCount !== null) localStorage.setItem('profile-friends-count', String(fCount))
         } catch { /* ignore */ }
       })
     }
@@ -131,6 +155,10 @@ export default function Profile() {
     navigate('/leaderboard?tab=friends')
   }
 
+  // Кнопку «Пригласить друга» показываем, пока друзей мало (< FRIENDS_INVITE_LIMIT).
+  // null = ещё не загрузили → показываем (для нового юзера это и есть «0 друзей»).
+  const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
+
   return (
     <div className="page page-fade" style={styles.page}>
 
@@ -151,19 +179,22 @@ export default function Profile() {
         />
       </div>
 
-      {/* Пригласить друга */}
-      <button
-        onClick={handleInviteTap}
-        style={styles.inviteButton}
-        className="press-tile"
-      >
-        <UiIcon name="invite-friend" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
-        <div style={styles.inviteContent}>
-          <div style={styles.inviteTitle}>Пригласить друга</div>
-          <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>
-        </div>
-        <span style={styles.inviteArrow}>›</span>
-      </button>
+      {/* Пригласить друга — только пока друзей мало (< FRIENDS_INVITE_LIMIT).
+          Когда друзей набралось — прячем: приглашать можно из Рейтинга (вкладка «Друзья»). */}
+      {showInvite && (
+        <button
+          onClick={handleInviteTap}
+          style={styles.inviteButton}
+          className="press-tile"
+        >
+          <UiIcon name="invite-friend" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
+          <div style={styles.inviteContent}>
+            <div style={styles.inviteTitle}>Пригласить друга</div>
+            <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>
+          </div>
+          <span style={styles.inviteArrow}>›</span>
+        </button>
+      )}
 
       {/* Разделы — сгруппированы по смыслу */}
       {sectionGroups.map((group) => (
