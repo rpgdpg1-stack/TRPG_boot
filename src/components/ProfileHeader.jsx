@@ -66,6 +66,7 @@ export default function ProfileHeader({
   recentWorkouts = [],
   interactive = false,
   showUsername = true,
+  statsLoading = false,      // true → показать скелетон вместо стрика/тренировок/посл. тренировки
   onPlaceTap = null
 }) {
   const [showRanks, setShowRanks] = useState(false)
@@ -196,8 +197,13 @@ export default function ProfileHeader({
       </div>
 
       {/* Последняя тренировка — серым. Контейнер всегда занимает место
-          (минимальная высота), чтобы появление текста не сдвигало капсулы. */}
-      <div style={styles.lastWorkout}>{lastWorkoutText || ''}</div>
+          (минимальная высота), чтобы появление текста не сдвигало капсулы.
+          При загрузке (statsLoading) — короткая пульсирующая полоска вместо текста. */}
+      <div style={styles.lastWorkout}>
+        {statsLoading
+          ? <span style={styles.skeletonLine} />
+          : (lastWorkoutText || '')}
+      </div>
 
       {/* Единый блок статистики: 3 ячейки с вертикальными разделителями,
           сверху отделён горизонтальной линией. Без отдельных пилюль. */}
@@ -247,8 +253,14 @@ export default function ProfileHeader({
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={styles.statFlameRow}>
-            <StreakFlame streak={streak || 0} />
-            <span style={styles.statCount}>x{streak ?? 0}</span>
+            {statsLoading ? (
+              <span style={styles.skeletonStat} />
+            ) : (
+              <>
+                <StreakFlame streak={streak || 0} />
+                <span style={styles.statCount}>x{streak ?? 0}</span>
+              </>
+            )}
           </div>
           <div style={styles.pillLabel}>СЕРИЯ</div>
 
@@ -273,7 +285,13 @@ export default function ProfileHeader({
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
           <div style={{ ...styles.statValue, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '18px', lineHeight: 1 }}>🏋️</span> {totalWorkouts ?? '—'}
+            {statsLoading ? (
+              <span style={styles.skeletonStat} />
+            ) : (
+              <>
+                <span style={{ fontSize: '18px', lineHeight: 1 }}>🏋️</span> {totalWorkouts ?? '—'}
+              </>
+            )}
           </div>
           <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
 
@@ -319,6 +337,10 @@ export default function ProfileHeader({
           4%   { opacity: 1; transform: translateY(0); }
           96%  { opacity: 1; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(-4px); }
+        }
+        @keyframes headerSkeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50%      { opacity: 0.9; }
         }
       `}</style>
     </div>
@@ -489,6 +511,24 @@ const styles = {
     alignItems: 'center',
     gap: '4px',
     minHeight: '32px'
+  },
+  // Скелетон для одной цифры статистики (серия/тренировки) — пульсирующий
+  // прямоугольник той же высоты что и statValue (32px), чтобы не было прыжка.
+  skeletonStat: {
+    width: '38px',
+    height: '20px',
+    borderRadius: '6px',
+    background: 'rgba(255, 255, 255, 0.10)',
+    animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
+  },
+  // Скелетон для строки последней тренировки — узкая полоска.
+  skeletonLine: {
+    display: 'inline-block',
+    width: '120px',
+    height: '10px',
+    borderRadius: '5px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
   },
   statCount: {
     fontFamily: 'var(--font-tiny5)',
