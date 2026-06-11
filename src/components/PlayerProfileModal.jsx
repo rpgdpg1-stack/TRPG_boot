@@ -43,11 +43,14 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   useEffect(() => {
     let cancelled = false
     getUserPublicProfile(row.user_id).then(data => {
+      // Кеш пишем ВСЕГДА, даже если модалку уже закрыли (cancelled) — данные
+      // с сервера пришли, незачем их терять. Иначе при быстром закрытии профиль
+      // не кешируется и в след. раз снова мигает. Гейт cancelled — только для setState.
+      if (data) setCachedProfile(row.user_id, data)
+
       if (cancelled) return
       setPub(data)
       if (data) {
-        // Обновляем кеш визуальной части — для мгновенного показа в след. раз
-        setCachedProfile(row.user_id, data)
         setTodayCount(data.today_backup_count ?? null)
         if (data.already_backed_today) {
           setBackupState('already')

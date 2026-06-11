@@ -19,7 +19,7 @@
 
 import { pcacheGet, pcacheSet } from './persistent-cache'
 
-const TTL_MS = 10 * 60 * 1000 // 10 минут
+const TTL_MS = 6 * 60 * 60 * 1000 // 6 часов — переживает обычные перезаходы за день
 
 function keyFor(userId) {
   return `pubprofile:${userId}`
