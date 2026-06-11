@@ -157,9 +157,9 @@ const styles = {
     touchAction: 'pan-y'
   },
   avatarWrap: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '11px',
+    width: '52px',
+    height: '52px',
+    borderRadius: '16px',
     overflow: 'hidden',
     background: 'var(--color-card)',
     flexShrink: 0,
@@ -174,7 +174,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '16px',
+    fontSize: '22px',
     color: 'var(--color-primary)'
   },
   nameBlock: {
