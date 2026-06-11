@@ -59,7 +59,7 @@ export default function Friends() {
 
   const handleCupTap = () => {
     haptic.light()
-    navigate('/leaderboard?tab=friends')
+    navigate('/leaderboard?tab=friends', { state: { from: '/friends' } })
   }
 
   const handleRowTap = (friend) => {

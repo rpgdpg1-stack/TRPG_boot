@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
 import { getLeagueByMuscles } from '../lib/leagues'
@@ -34,6 +34,10 @@ const TAB_LEAGUE = 'league'
 export default function Leaderboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  // Откуда пришли в рейтинг — туда и вернёт кнопка «назад».
+  // Если зашли напрямую (с главной или по ссылке) — на главную.
+  const backTo = location.state?.from || '/'
 
   const initialTab = searchParams.get('tab') === TAB_LEAGUE ? TAB_LEAGUE : TAB_FRIENDS
   const [activeTab, setActiveTab] = useState(initialTab)
@@ -54,9 +58,9 @@ export default function Leaderboard() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/'))
+    backButton.setHandler(() => navigate(backTo))
     lockVerticalSwipes()
-  }, [navigate])
+  }, [navigate, backTo])
 
   useEffect(() => {
     let cancelled = false

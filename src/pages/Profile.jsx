@@ -149,7 +149,7 @@ export default function Profile() {
 
   const handleSectionTap = (item) => {
     haptic.light()
-    if (item.path) navigate(item.path)
+    if (item.path) navigate(item.path, { state: { from: '/profile' } })
   }
 
   const handleInviteTap = async () => {
@@ -159,7 +159,7 @@ export default function Profile() {
 
   const handlePlaceTap = () => {
     haptic.light()
-    navigate('/leaderboard?tab=league')
+    navigate('/leaderboard?tab=league', { state: { from: '/profile' } })
   }
 
   // Кнопку «Пригласить друга» показываем, пока друзей мало (< FRIENDS_INVITE_LIMIT).
