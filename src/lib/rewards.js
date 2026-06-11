@@ -110,3 +110,51 @@ export async function getAllUserRewards() {
     return { badges: [], frames: [] }
   }
 }
+
+/**
+ * Сводка наград Бессмертного (медали + титулы).
+ * Возвращает { gold, silver, bronze, best_place, title1, title2, title3 }.
+ *  - gold/silver/bronze — счётчики медалей (по всем сезонам)
+ *  - best_place — лучшее место (1/2/3) или null → для медали в карточке профиля
+ *  - title1/2/3 — открыт ли титул #1/#2/#3 (хоть раз занял место)
+ */
+export async function getImmortalAwards(userId) {
+  const uid = userId || getCurrentUser()?.id
+  if (!uid) return { gold: 0, silver: 0, bronze: 0, best_place: null, title1: false, title2: false, title3: false }
+
+  try {
+    const { data, error } = await supabase.rpc('api_get_immortal_awards', { p_user_id: uid })
+    if (error) {
+      console.error('[rewards] getImmortalAwards error:', error)
+      return { gold: 0, silver: 0, bronze: 0, best_place: null, title1: false, title2: false, title3: false }
+    }
+    return data || { gold: 0, silver: 0, bronze: 0, best_place: null, title1: false, title2: false, title3: false }
+  } catch (e) {
+    console.error('[rewards] getImmortalAwards exception:', e)
+    return { gold: 0, silver: 0, bronze: 0, best_place: null, title1: false, title2: false, title3: false }
+  }
+}
+
+/**
+ * Надеть/снять активный титул (#1/#2/#3 или null чтобы снять).
+ * Пишет в users.active_title напрямую (колонка в разрешённых для UPDATE).
+ * value: 1 | 2 | 3 | null
+ */
+export async function setActiveTitle(value) {
+  const user = getCurrentUser()
+  if (!user) return false
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ active_title: value === null ? null : String(value) })
+      .eq('id', user.id)
+    if (error) {
+      console.error('[rewards] setActiveTitle error:', error)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error('[rewards] setActiveTitle exception:', e)
+    return false
+  }
+}
