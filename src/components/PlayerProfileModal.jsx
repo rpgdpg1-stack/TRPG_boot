@@ -86,7 +86,11 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   const userObj = {
     first_name: row.first_name,
     username: row.username,
-    photo_url: row.photo_url
+    photo_url: row.photo_url,
+    // active_title из публичного профиля (api_get_user_public_profile его отдаёт).
+    // Нужен, чтобы у чужого игрока показывался надетый титул #1/#2/#3 под именем.
+    // row.active_title — на случай если родитель уже положил его в строку.
+    active_title: pub?.active_title ?? row.active_title ?? null
   }
 
   const handleBackup = async () => {
