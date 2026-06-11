@@ -9,6 +9,7 @@ import RanksPopup from './RanksPopup'
 import StreakFlame from './StreakFlame'
 import MuscleIcon from './MuscleIcon'
 import { spawnFireSparks } from './ParticlesBg'
+import { getFrameByRankIndex, rankIndexFromMuscles } from '../lib/frames'
 
 /**
  * Карточка-шапка профиля. Переиспользуется в двух местах:
@@ -92,6 +93,9 @@ export default function ProfileHeader({
   const nextRank = getRankByLevel(level + 1)
   const remainingToNext = Math.max(0, needed - current)
 
+  // Рамка аватара по текущему рангу (8/9/10 — анимированные, 0–7 — полоска цвета ранга)
+  const frame = getFrameByRankIndex(rankIndexFromMuscles(xp))
+
   // Попапы — только в интерактивном режиме. Автозакрытие 6с + тап вне плашки.
   useEffect(() => {
     if (!interactive || !activePopup) return
@@ -143,18 +147,26 @@ export default function ProfileHeader({
   return (
     <div style={styles.card}>
 
-      {/* Крупный аватар по центру, рамка в цвет ранга (= активная рамка) */}
-      <div style={{
-        ...styles.avatarInner,
-        borderColor: rank.color,
-        boxShadow: `0 0 16px ${rank.color}40`
-      }}>
+      {/* Крупный аватар по центру. Рамка по текущему рангу: 8/9/10 анимированные,
+          0–7 — обычная полоска цвета ранга. */}
+      <div
+        className={frame.className}
+        style={{
+          ...styles.avatarInner,
+          ...(frame.animated
+            ? {}
+            : { borderColor: frame.color, boxShadow: `0 0 16px ${frame.color}40` })
+        }}
+      >
         {user?.photo_url ? (
           <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
         ) : (
           <div style={styles.avatarPlaceholder}>
             {displayName.charAt(0).toUpperCase()}
           </div>
+        )}
+        {frame.hasAsh && (
+          <span className="imm-ash"><i /><i /><i /><i /></span>
         )}
       </div>
 
@@ -361,8 +373,9 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     width: '100%'
   },
-  // Аватар по центру, рамка в цвет ранга (активная рамка)
+  // Аватар по центру. Рамка по рангу (CSS-класс для 8/9/10).
   avatarInner: {
+    position: 'relative',
     width: `${AVATAR_SIZE}px`,
     height: `${AVATAR_SIZE}px`,
     alignSelf: 'center',

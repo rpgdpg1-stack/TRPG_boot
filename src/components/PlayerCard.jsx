@@ -19,6 +19,7 @@ import RanksPopup from './RanksPopup'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
 import StreakFlame from './StreakFlame'
+import { getFrameByRankIndex, rankIndexFromMuscles } from '../lib/frames'
 
 /**
  * Главный блок персонажа на Главной.
@@ -145,6 +146,9 @@ export default function PlayerCard() {
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
 
+  // Рамка аватара по текущему рангу (8/9/10 — анимированные, 0–7 — полоска цвета ранга)
+  const frame = getFrameByRankIndex(rankIndexFromMuscles(xp))
+
   const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
   const { current: inLevelCurrent, needed: inLevelNeeded } = getXPInCurrentLevel(xp)
 
@@ -203,17 +207,24 @@ export default function PlayerCard() {
           style={styles.avatarWrap}
           aria-label="Открыть профиль"
         >
-          <div style={{
-            ...styles.avatarInner,
-            borderColor: rank.color,
-            boxShadow: `0 0 12px ${rank.color}33`
-          }}>
+          <div
+            className={frame.className}
+            style={{
+              ...styles.avatarInner,
+              ...(frame.animated
+                ? {}
+                : { borderColor: frame.color, boxShadow: `0 0 12px ${frame.color}33` })
+            }}
+          >
             {user?.photo_url ? (
               <img src={user.photo_url} alt="" style={styles.avatarImg} />
             ) : (
               <div style={styles.avatarPlaceholder}>
                 {displayName.charAt(0).toUpperCase()}
               </div>
+            )}
+            {frame.hasAsh && (
+              <span className="imm-ash"><i /><i /><i /><i /></span>
             )}
           </div>
         </button>
@@ -392,6 +403,7 @@ const styles = {
     position: 'relative'
   },
   avatarInner: {
+    position: 'relative',
     width: '100%',
     height: '100%',
     borderRadius: '29px',
