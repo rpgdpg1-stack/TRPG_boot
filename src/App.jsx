@@ -188,7 +188,6 @@ function RewardsQueueController() {
       // Заменила старую per-frame модалку: медали/титулы Бессмертного
       // отражаются здесь же, а копятся в Наградах.
       const summary = await getSeasonSummary()
-      console.log('[App] season summary получен:', summary)
       if (summary) {
         items.push({ type: 'season_summary', payload: summary })
       }
@@ -218,7 +217,6 @@ function RewardsQueueController() {
         }
       }
 
-      console.log('[App] очередь модалок собрана:', items.map(i => i.type))
       if (!cancelled) setQueue(items)
     }
 
