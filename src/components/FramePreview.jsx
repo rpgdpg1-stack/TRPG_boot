@@ -4,10 +4,12 @@
  * Показывает рамку «как в реальности»: для рангов 8/9/10 — анимированную
  * (через CSS-класс из frames.js + index.css: пульс/блик/пепел), для 0–7 —
  * обычную полоску цвета ранга. Внутри вместо аватара — силуэт человечка
- * (profile.svg), как заглушка.
+ * (profile.svg).
  *
- * Закрытая рамка (ранг не достигнут) — приглушённый контур + замочек в углу,
- * по аналогии с LeagueBadgeIcon (там тоже 🔒).
+ * ВАЖНО: закрытые рамки (ранг ещё не достигнут) показываются ТОЖЕ
+ * анимированными — чтобы было видно «к чему стремиться». Просто приглушены
+ * (opacity) и с замочком 🔒 поверх. Так новичок видит живую цель, а не
+ * серую заглушку.
  */
 
 import { getFrameByRankIndex } from '../lib/frames'
@@ -31,41 +33,42 @@ export default function FramePreview({ rankIndex, size = 64, isLocked = false })
     boxSizing: 'border-box'
   }
 
-  // Закрытая — приглушённый контур + замок поверх
-  if (isLocked) {
-    return (
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <div style={{ ...base, border: '2px solid rgba(255,255,255,0.12)' }}>
-          <span style={{ opacity: 0.25, lineHeight: 0 }}>
-            <UiIcon name="profile" size={silhouetteSize} color="#888888" />
-          </span>
-        </div>
+  // Стиль рамки: 8/9/10 — анимированный класс (без inline borderColor),
+  // 0–7 — полоска цвета ранга. Одинаково для открытых и закрытых —
+  // закрытые отличаются только приглушением + замком (см. ниже).
+  const style = frame.animated
+    ? { ...base, border: '3px solid' }
+    : { ...base, border: '2px solid', borderColor: frame.color, boxShadow: `0 0 8px ${frame.color}33` }
+
+  const silhouetteColor = frame.animated ? '#FFFFFF' : frame.color
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Сама рамка — анимация работает и для закрытых, но приглушена */}
+      <div
+        className={frame.className}
+        style={{ ...style, opacity: isLocked ? 0.55 : 1 }}
+      >
+        <span style={{ lineHeight: 0, opacity: isLocked ? 0.5 : 0.85 }}>
+          <UiIcon name="profile" size={silhouetteSize} color={silhouetteColor} />
+        </span>
+        {frame.hasAsh && <span className="imm-ash"><i /><i /><i /><i /></span>}
+      </div>
+
+      {/* Замок поверх — только для закрытых */}
+      {isLocked && (
         <span style={{
           position: 'absolute',
           right: '-3px',
           bottom: '-3px',
           fontSize: `${Math.round(size * 0.3)}px`,
           lineHeight: 1,
-          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))'
+          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))',
+          pointerEvents: 'none'
         }}>
           🔒
         </span>
-      </div>
-    )
-  }
-
-  // Открытая: 8/9/10 — анимированный класс (без inline borderColor),
-  // 0–7 — полоска цвета ранга.
-  const style = frame.animated
-    ? { ...base, border: '3px solid' }
-    : { ...base, border: '2px solid', borderColor: frame.color, boxShadow: `0 0 8px ${frame.color}33` }
-
-  return (
-    <div className={frame.className} style={style}>
-      <span style={{ lineHeight: 0, opacity: 0.85 }}>
-        <UiIcon name="profile" size={silhouetteSize} color={frame.animated ? '#FFFFFF' : frame.color} />
-      </span>
-      {frame.hasAsh && <span className="imm-ash"><i /><i /><i /><i /></span>}
+      )}
     </div>
   )
 }
