@@ -46,8 +46,9 @@ export default function FramePreview({ rankIndex, size = 64, isLocked = false })
     ? animatedStyle
     : { ...base, border: '2px solid', borderColor: frame.color, boxShadow: `0 0 8px ${frame.color}33` }
 
-  // Силуэт внутри — в цвет ранга (для анимированных тоже, не белый)
-  const silhouetteColor = frame.color
+  // Силуэт внутри — всегда серый (нейтральная заглушка вместо аватара),
+  // цвет несёт сама рамка, а не человечек
+  const silhouetteColor = 'var(--color-text-secondary)'
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
