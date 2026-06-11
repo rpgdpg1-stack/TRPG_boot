@@ -14,6 +14,8 @@ import { EVENTS, emit } from './events'
 
 export const BACKUP_REWARD = 100
 export const BACKUP_BONUS = 20
+// Дублирует серверный лимит (анти-чит живёт в api_backup_user). Здесь — только для UI.
+export const BACKUP_DAILY_LIMIT = 5
 
 /**
  * Подстраховать игрока. Возвращает { success, error?, reward, backer_bonus, backerBadgeRank }.
@@ -43,7 +45,12 @@ export async function backupUser(targetId) {
     }
 
     if (!data?.success) {
-      return { success: false, error: data?.error || 'unknown' }
+      return {
+        success: false,
+        error: data?.error || 'unknown',
+        dailyLimit: data?.daily_limit ?? BACKUP_DAILY_LIMIT,
+        todayCount: data?.today_count ?? null
+      }
     }
 
     // Backer получил +20 — обновим локальные мускулы оптимистично.
@@ -65,7 +72,9 @@ export async function backupUser(targetId) {
       success: true,
       reward: data.reward || BACKUP_REWARD,
       backer_bonus: data.backer_bonus || BACKUP_BONUS,
-      backerBadgeRank
+      backerBadgeRank,
+      dailyLimit: data.daily_limit ?? BACKUP_DAILY_LIMIT,
+      todayCount: data.today_count ?? null
     }
   } catch (e) {
     console.error('[backups] backupUser exception:', e)
@@ -117,14 +126,18 @@ export async function markBackupsShown(ids) {
 }
 
 /**
- * Публичный профиль чужого юзера (последняя тренировка + стрик) для модалки
- * профиля из рейтинга. Возвращает { last_workout, weekly_streak, weekly_streak_week } | null.
+ * Публичный профиль чужого юзера для модалки профиля из рейтинга.
+ * Принимает p_viewer_id (текущий юзер) — сервер докладывает статусы подстраховки.
+ * Возвращает { last_workout, weekly_streak, weekly_streak_week, total_workouts,
+ *   already_backed_today, today_backup_count, daily_backup_limit } | null.
  */
 export async function getUserPublicProfile(userId) {
   if (!userId) return null
   try {
+    const viewer = getCurrentUser()
     const { data, error } = await supabase.rpc('api_get_user_public_profile', {
-      p_user_id: userId
+      p_user_id: userId,
+      p_viewer_id: viewer?.id ?? null
     })
     if (error) {
       console.error('[backups] getUserPublicProfile error:', error)

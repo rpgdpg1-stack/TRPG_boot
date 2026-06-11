@@ -6,7 +6,7 @@ import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
 import { getLeagueByMuscles } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
-import { backupUser, getUserPublicProfile, BACKUP_BONUS } from '../lib/backups'
+import { backupUser, getUserPublicProfile, BACKUP_BONUS, BACKUP_DAILY_LIMIT } from '../lib/backups'
 import { getCurrentSeason, getDaysUntilSeasonEnd, getNextSeason } from '../utils/season'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
@@ -361,14 +361,31 @@ function ProfileModal({ row, onClose, onBackupDone }) {
   const isSelf = me && row.user_id === me.id
 
   const [pub, setPub] = useState(null)
-  const [backupState, setBackupState] = useState('idle') // 'idle' | 'sending' | 'done' | 'already'
+  // 'idle' | 'sending' | 'already' | 'limit'
+  // Начальный статус выставляем из публичного профиля (см. эффект ниже),
+  // чтобы «уже подстрахован» / «лимит» показывались СРАЗУ, без тапа.
+  const [backupState, setBackupState] = useState('idle')
+  const [todayCount, setTodayCount] = useState(null)
   const [bicepsTick, setBicepsTick] = useState(0)
   const bicepsTimers = useRef([])
 
   useEffect(() => {
     let cancelled = false
     getUserPublicProfile(row.user_id).then(data => {
-      if (!cancelled) setPub(data)
+      if (cancelled) return
+      setPub(data)
+      if (data) {
+        setTodayCount(data.today_backup_count ?? null)
+        // Приоритет: этого друга уже страховал сегодня → 'already'.
+        // Иначе если упёрся в дневной лимит → 'limit'. Иначе можно страховать.
+        if (data.already_backed_today) {
+          setBackupState('already')
+        } else if ((data.today_backup_count ?? 0) >= (data.daily_backup_limit ?? BACKUP_DAILY_LIMIT)) {
+          setBackupState('limit')
+        } else {
+          setBackupState('idle')
+        }
+      }
     })
     return () => { cancelled = true }
   }, [row.user_id])
@@ -408,6 +425,11 @@ function ProfileModal({ row, onClose, onBackupDone }) {
       onBackupDone?.(row.first_name || 'Игрок')
     } else if (result.error === 'already_today') {
       setBackupState('already')
+    } else if (result.error === 'daily_limit') {
+      // Упёрся в лимит (мог застраховать кого-то в другой вкладке/устройстве).
+      haptic.error()
+      if (result.todayCount != null) setTodayCount(result.todayCount)
+      setBackupState('limit')
     } else {
       haptic.error()
       setBackupState('idle')
@@ -415,8 +437,10 @@ function ProfileModal({ row, onClose, onBackupDone }) {
     }
   }
 
+  const limitLabel = `Лимит на сегодня · ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT}`
   const buttonText = backupState === 'sending' ? 'ОТПРАВКА...'
                    : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
+                   : backupState === 'limit'   ? limitLabel
                    : null
 
   return createPortal(
@@ -436,12 +460,24 @@ function ProfileModal({ row, onClose, onBackupDone }) {
         {/* Кнопка подстраховки — только для чужого игрока */}
         {!isSelf && (
           backupState === 'idle' ? (
-            <button onClick={handleBackup} className="press-tile" style={profileModalStyles.backupButton}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
-              </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <button onClick={handleBackup} className="press-tile" style={profileModalStyles.backupButton}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
+                </span>
+              </button>
+              {todayCount != null && (
+                <div style={profileModalStyles.backupCounter}>
+                  Сегодня {todayCount}/{BACKUP_DAILY_LIMIT}
+                </div>
+              )}
+            </div>
+          ) : backupState === 'sending' ? (
+            <button disabled style={{ ...profileModalStyles.backupButton, ...profileModalStyles.backupButtonDisabled }}>
+              {buttonText}
             </button>
           ) : (
+            // 'already' | 'limit' — статус показан сразу при открытии, тап недоступен
             <button
               disabled
               style={{ ...profileModalStyles.backupButton, ...profileModalStyles.backupButtonDisabled }}
@@ -497,7 +533,8 @@ function RulesModal({ onClose }) {
           <div style={modalStyles.sectionTitle}>ПОДСТРАХОВКА</div>
           <div style={modalStyles.sectionText}>
             Открой профиль игрока и подстрахуй его — ему +100, тебе +20 за
-            поддержку. Одного игрока можно поддержать раз в сутки.
+            поддержку. Одного игрока можно поддержать раз в сутки,
+            всего до 5 подстраховок в день.
           </div>
         </div>
 
@@ -787,6 +824,14 @@ const profileModalStyles = {
     cursor: 'default',
     letterSpacing: '0.5px',
     fontSize: '12px'
+  },
+  backupCounter: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    letterSpacing: '0.5px'
   },
   close: {
     width: '100%',
