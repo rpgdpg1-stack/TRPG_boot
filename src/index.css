@@ -346,4 +346,7 @@ img, button { -webkit-user-drag: none; }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  overflo
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
