@@ -287,6 +287,17 @@ export default function PlayerCard() {
             )}
           </div>
         </div>
+
+        {medals.best_place && (
+          <div style={styles.medalBadge}>
+            <span style={styles.medalBadgeEmoji}>
+              {medals.best_place === 1 ? '🥇' : medals.best_place === 2 ? '🥈' : '🥉'}
+            </span>
+            <span style={styles.medalBadgeCount}>
+              ×{medals.best_place === 1 ? medals.gold : medals.best_place === 2 ? medals.silver : medals.bronze}
+            </span>
+          </div>
+        )}
       </div>
 
       <div style={styles.bottomRowWrap}>
