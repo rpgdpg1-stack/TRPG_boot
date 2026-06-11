@@ -33,13 +33,11 @@ export default function LeagueBadgeIcon({
 
   // Цвета: основной цвет лиги + полупрозрачный фон того же цвета.
   // Для locked — серая палитра.
-  const ringColor = isLocked ? 'rgba(255,255,255,0.15)' : league.color
-  const bgColor = isLocked
-    ? 'rgba(255,255,255,0.04)'
-    : `${league.color}22` // 22 = ~13% альфа
+  const ringColor = league.color
+  const bgColor = `${league.color}22` // 22 = ~13% альфа
 
-  // Цвет иконки: в цвет лиги, для locked — серый приглушённый
-  const iconColor = isLocked ? 'rgba(255,255,255,0.35)' : league.color
+  // Цвет иконки — всегда в цвет лиги (недоступность показываем только замком)
+  const iconColor = league.color
 
   return (
     <div
@@ -54,7 +52,7 @@ export default function LeagueBadgeIcon({
         justifyContent: 'center',
         position: 'relative',
         flexShrink: 0,
-        boxShadow: !isLocked && showGlow
+        boxShadow: showGlow
           ? `0 0 ${Math.round(size * 0.25)}px ${league.color}40, inset 0 0 ${Math.round(size * 0.15)}px ${league.color}30`
           : 'none',
         transition: 'box-shadow 0.3s ease, background 0.3s ease'
@@ -65,7 +63,6 @@ export default function LeagueBadgeIcon({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: isLocked ? 0.4 : 1,
         lineHeight: 0
       }}>
         <RankIcon rankIndex={rankIndex} size={iconSize} color={iconColor} />

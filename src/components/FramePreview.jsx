@@ -47,9 +47,9 @@ export default function FramePreview({ rankIndex, size = 64, isLocked = false })
       {/* Сама рамка — анимация работает и для закрытых, но приглушена */}
       <div
         className={frame.className}
-        style={{ ...style, opacity: isLocked ? 0.55 : 1 }}
+        style={style}
       >
-        <span style={{ lineHeight: 0, opacity: isLocked ? 0.5 : 0.85 }}>
+        <span style={{ lineHeight: 0, opacity: 0.85 }}>
           <UiIcon name="profile" size={silhouetteSize} color={silhouetteColor} />
         </span>
         {frame.hasAsh && <span className="imm-ash"><i /><i /><i /><i /></span>}

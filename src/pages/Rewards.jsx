@@ -150,12 +150,11 @@ export default function Rewards() {
                         rankIndex={league.rankIndex}
                         size={56}
                         isLocked={isLocked}
-                        showGlow={!isLocked}
+                        showGlow={true}
                       />
                       <div style={{
                         ...styles.badgeName,
-                        color: isLocked ? 'var(--color-text-secondary)' : league.color,
-                        opacity: isLocked ? 0.5 : 1
+                        color: league.color
                       }}>
                         {league.name}
                       </div>
@@ -180,16 +179,13 @@ export default function Rewards() {
                       onClick={() => handleImmortalTitleTap(t.place, unlocked)}
                       style={{
                         ...styles.titleCard,
-                        borderColor: unlocked ? `${t.color}66` : 'rgba(255,255,255,0.08)',
-                        opacity: unlocked ? 1 : 0.5
+                        borderColor: `${t.color}66`
                       }}
                       className="press-tile"
                     >
                       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                        {/* Титул анимирован всегда (пиксели), закрытый — приглушён + замок */}
-                        <span style={{ opacity: unlocked ? 1 : 0.5 }}>
-                          <TitleTag place={t.place} size={30} />
-                        </span>
+                        {/* Титул анимирован всегда (пиксели), закрытый — отличается только замком */}
+                        <TitleTag place={t.place} size={30} />
                         {!unlocked && <span style={styles.titleLock}>🔒</span>}
                       </span>
                       <span style={styles.titleHint}>
@@ -222,8 +218,7 @@ export default function Rewards() {
                       <FramePreview rankIndex={league.rankIndex} size={60} isLocked={isLocked} />
                       <div style={{
                         ...styles.badgeName,
-                        color: isLocked ? 'var(--color-text-secondary)' : league.color,
-                        opacity: isLocked ? 0.5 : 1
+                        color: league.color
                       }}>
                         {league.name}
                       </div>
@@ -359,7 +354,7 @@ function RewardPopup({ popup, activeTitle, onToggleTitle, onClose }) {
     content = (
       <>
         <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '16px 0' }}>
-          <span style={{ transform: 'scale(2)', display: 'inline-flex', opacity: data.unlocked ? 1 : 0.5 }}>
+          <span style={{ transform: 'scale(2)', display: 'inline-flex' }}>
             <TitleTag place={data.place} size={28} />
           </span>
           {!data.unlocked && <span style={{ fontSize: 28, marginLeft: '16px' }}>🔒</span>}
