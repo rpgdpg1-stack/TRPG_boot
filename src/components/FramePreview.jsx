@@ -36,11 +36,18 @@ export default function FramePreview({ rankIndex, size = 64, isLocked = false })
   // Стиль рамки: 8/9/10 — анимированный класс (без inline borderColor),
   // 0–7 — полоска цвета ранга. Одинаково для открытых и закрытых —
   // закрытые отличаются только приглушением + замком (см. ниже).
+  // Для Легенды (conic-фон из CSS) НЕ задаём inline background — иначе перебьёт.
+  const animatedStyle = { ...base }
+  if (frame.className === 'frame-legend') {
+    delete animatedStyle.background
+  }
+
   const style = frame.animated
-    ? { ...base, border: '3px solid' }
+    ? animatedStyle
     : { ...base, border: '2px solid', borderColor: frame.color, boxShadow: `0 0 8px ${frame.color}33` }
 
-  const silhouetteColor = frame.animated ? '#FFFFFF' : frame.color
+  // Силуэт внутри — в цвет ранга (для анимированных тоже, не белый)
+  const silhouetteColor = frame.color
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>

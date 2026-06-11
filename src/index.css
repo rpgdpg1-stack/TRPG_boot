@@ -350,3 +350,34 @@ img, button { -webkit-user-drag: none; }
   pointer-events: none;
   z-index: 2;
 }
+.imm-ash i {
+  position: absolute;
+  bottom: 5%;
+  width: 3px;
+  height: 3px;
+  background: #FFD700;
+  border-radius: 1px;
+  opacity: 0;
+  /* высота полёта = почти весь аватар: используем % через translateY в keyframes.
+     Чтобы пепел летел и в мелких (60px), и в крупных (140px) аватарах одинаково
+     красиво — летим на свою высоту через CSS-переменную --ash-rise. */
+  animation: ashUp 6s linear infinite;
+}
+.imm-ash i:nth-child(1) { left: 24%; animation-delay: 0s; }
+.imm-ash i:nth-child(2) { left: 46%; width: 2px; height: 2px; background: #FFE9A8; animation-delay: -1.5s; }
+.imm-ash i:nth-child(3) { left: 62%; width: 3.5px; height: 3.5px; animation-delay: -3s; }
+.imm-ash i:nth-child(4) { left: 74%; width: 2px; height: 2px; background: #C79A2E; animation-delay: -4.5s; }
+@keyframes ashUp {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  14%  { opacity: 1; }
+  88%  { opacity: 0.8; }
+  100% { transform: translateY(-1000%) translateX(3px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-titan, .frame-legend, .frame-immortal { animation: none; }
+  .imm-ash i { animation: none; opacity: 0; }
+}
+
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
