@@ -185,20 +185,13 @@ export default function Rewards() {
                       }}
                       className="press-tile"
                     >
-                      {unlocked ? (
-                        // Открытый — анимированный титул (пиксели вылетают)
-                        <span style={{ position: 'relative', display: 'inline-flex' }}>
+                      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                        {/* Титул анимирован всегда (пиксели), закрытый — приглушён + замок */}
+                        <span style={{ opacity: unlocked ? 1 : 0.5 }}>
                           <TitleTag place={t.place} size={30} />
                         </span>
-                      ) : (
-                        // Закрытый — серый «#N» + замок
-                        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                          <span style={{ ...styles.titleBig, color: 'var(--color-text-secondary)' }}>
-                            {t.label}
-                          </span>
-                          <span style={styles.titleLock}>🔒</span>
-                        </span>
-                      )}
+                        {!unlocked && <span style={styles.titleLock}>🔒</span>}
+                      </span>
                       <span style={styles.titleHint}>
                         {isOn ? 'надет' : unlocked ? 'открыт' : 'закрыт'}
                       </span>
@@ -365,15 +358,12 @@ function RewardPopup({ popup, activeTitle, onToggleTitle, onClose }) {
     const isOn = activeTitle === String(data.place)
     content = (
       <>
-        {data.unlocked ? (
-          <div style={{ transform: 'scale(2)', margin: '16px 0' }}>
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '16px 0' }}>
+          <span style={{ transform: 'scale(2)', display: 'inline-flex', opacity: data.unlocked ? 1 : 0.5 }}>
             <TitleTag place={data.place} size={28} />
-          </div>
-        ) : (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: 48, fontFamily: 'var(--font-tiny5)', color: 'var(--color-text-secondary)', lineHeight: 1 }}>
-            {t.label} <span style={{ fontSize: 28 }}>🔒</span>
-          </div>
-        )}
+          </span>
+          {!data.unlocked && <span style={{ fontSize: 28, marginLeft: '16px' }}>🔒</span>}
+        </div>
         <div style={{ ...popupStyles.title, color: data.unlocked ? t.color : 'var(--color-text-secondary)' }}>
           ТИТУЛ {t.label}
         </div>
