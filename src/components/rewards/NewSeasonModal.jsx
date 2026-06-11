@@ -81,7 +81,7 @@ export default function NewSeasonModal({ season, daysLeft, onConfirm }) {
 
         <div style={styles.subtitle}>
           Сезон длится {daysLeft} {pluralDays(daysLeft)}.<br />
-          Попади в топ-3 своей лиги — получи рамку.
+          Поднимайся в рангах. Топ-3 Бессмертного даёт медаль и титул.
         </div>
 
         <button

@@ -32,8 +32,8 @@ const SESSION_FLAG_KEY = 'season-reset-checked-in-session'
  *
  * Никаких UI-уведомлений тут НЕ показываем — пользователь увидит:
  *  - на главной → новые мускулы (уменьшенные)
- *  - в Profile или Leaderboard → если что-то выиграл, всплывут модалки рамок
- *    (через стандартный поток getPendingRewards → SeasonEndModal)
+ *  - модалку итогов сезона (SeasonEndModal по season_summaries) при следующем
+ *    входе — сколько рангов прошёл, место, медаль/титул если Бессмертный топ-3
  *  - модалку NewSeasonModal — если сменился сезон в getCurrentSeason()
  */
 export async function checkAndResetSeasonIfNeeded() {

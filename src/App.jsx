@@ -26,7 +26,7 @@ import SwimWorkout from './pages/SwimWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
-import { getPendingRewards, markRewardShown } from './lib/rewards'
+import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummaryShown } from './lib/rewards'
 import { getPendingBackups, markBackupsShown } from './lib/backups'
 import { loadFavoritesEntries, getActiveDay } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
@@ -178,15 +178,18 @@ function RewardsQueueController() {
         items.push({ type: 'backups', payload: pendingBackups })
       }
 
-      const { badges, frames } = await getPendingRewards()
+      const { badges } = await getPendingRewards()
       if (badges?.length) {
         const sortedBadges = [...badges].sort((a, b) => a.rank_index - b.rank_index)
         for (const b of sortedBadges) items.push({ type: 'badge', payload: b })
       }
 
-      if (frames?.length) {
-        const sortedFrames = [...frames].sort((a, b) => a.place - b.place)
-        for (const f of sortedFrames) items.push({ type: 'frame', payload: f })
+      // Итоги сезона — одна модалка на снимок (season_summaries).
+      // Заменила старую per-frame модалку: медали/титулы Бессмертного
+      // отражаются здесь же, а копятся в Наградах.
+      const summary = await getSeasonSummary()
+      if (summary) {
+        items.push({ type: 'season_summary', payload: summary })
       }
 
       const user = getCurrentUser()
@@ -285,8 +288,8 @@ function RewardsQueueController() {
       markBackupsShown(ids)
     } else if (current.type === 'badge') {
       markRewardShown(current.payload.id, 'badge')
-    } else if (current.type === 'frame') {
-      markRewardShown(current.payload.id, 'frame')
+    } else if (current.type === 'season_summary') {
+      markSeasonSummaryShown(current.payload.id)
     } else if (current.type === 'new_season') {
       const user = getCurrentUser()
       if (user) {
@@ -329,11 +332,11 @@ function RewardsQueueController() {
     )
   }
 
-  if (current.type === 'frame') {
+  if (current.type === 'season_summary') {
     return (
       <SeasonEndModal
-        key={`frame-${current.payload.id}`}
-        reward={current.payload}
+        key={`summary-${current.payload.id}`}
+        summary={current.payload}
         onConfirm={handleConfirm}
       />
     )
