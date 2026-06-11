@@ -1,34 +1,49 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getAllUserRewards } from '../lib/rewards'
+import { getAllUserRewards, getImmortalAwards, setActiveTitle } from '../lib/rewards'
 import { getAllLeagues, getLeagueByRankIndex, getLeagueByMuscles } from '../lib/leagues'
-import { getCurrentUser } from '../lib/auth'
+import { getCurrentUser, refreshCurrentUser } from '../lib/auth'
 import LeagueBadgeIcon from '../components/LeagueBadgeIcon'
+import FramePreview from '../components/FramePreview'
 
 /**
- * Экран наград — две секции:
- *  1. Значки лиг — сетка 4 в ряд, открытые цветные, неоткрытые серые с замочком
- *  2. Сезонные рамки — горизонтальный список карточек со всеми накопленными
+ * Экран наград — три вкладки:
+ *  1. ТИТУЛЫ  — сетка рангов (бывшие «значки лиг») + титулы #1/#2/#3 Бессмертного
+ *  2. РАМКИ   — сетка рамок рангов (превью CSS-обводки)
+ *  3. МЕДАЛИ  — счётчики 🥇🥈🥉 + раскрывающийся список заработанных
  *
- * Логика "открытости" значка:
- *  - Если запись есть в league_badges (БД) — значок открыт
- *  - Если текущая лига юзера ВЫШЕ этого rank_index — значок тоже считаем открытым
- *    (этап пройден, юзер давно за ним). При этом запись в БД не создаём —
- *    grant_league_badge_if_new в Supabase создаёт записи только при пересечении
- *    конкретного порога во время начисления мускулов. Старые "забытые" этапы
- *    мы просто визуально подсвечиваем как открытые.
+ * Логика «открытости» ранга (титул/рамка):
+ *  - есть запись в league_badges (БД) ИЛИ текущая лига юзера ВЫШЕ/РАВНА этому рангу.
  *
- * Тап по значку лиги — попап с описанием.
- * Тап по рамке — попап с её описанием.
+ * Титул/рамка ранга НЕ выбираются (производная текущего ранга) — только описание.
+ * Выбор (надеть/снять) есть только у титулов #1/#2/#3 Бессмертного.
  */
+
+const TABS = [
+  { id: 'titles',  label: 'ТИТУЛЫ' },
+  { id: 'frames',  label: 'РАМКИ' },
+  { id: 'medals',  label: 'МЕДАЛИ' }
+]
+
+// Описания титулов Бессмертного
+const IMMORTAL_TITLES = [
+  { place: 1, label: '#1', color: '#FFD700' },
+  { place: 2, label: '#2', color: '#C0C0C0' },
+  { place: 3, label: '#3', color: '#CD7F32' }
+]
+
 export default function Rewards() {
   const navigate = useNavigate()
 
+  const [tab, setTab] = useState('titles')
   const [loading, setLoading] = useState(true)
   const [badges, setBadges] = useState([])
-  const [frames, setFrames] = useState([])
+  const [frames, setFrames] = useState([])          // season_rewards (медали Бессмертного)
+  const [awards, setAwards] = useState({ gold: 0, silver: 0, bronze: 0, best_place: null, title1: false, title2: false, title3: false })
+  const [activeTitle, setActiveTitleState] = useState(() => getCurrentUser()?.active_title ?? null)
   const [popup, setPopup] = useState(null)
+  const [medalsOpen, setMedalsOpen] = useState(false)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -37,47 +52,52 @@ export default function Rewards() {
 
   useEffect(() => {
     let cancelled = false
-    getAllUserRewards().then(data => {
+    Promise.all([getAllUserRewards(), getImmortalAwards()]).then(([all, aw]) => {
       if (cancelled) return
-      setBadges(data.badges)
-      setFrames(data.frames)
+      setBadges(all.badges)
+      setFrames(all.frames)
+      setAwards(aw)
       setLoading(false)
     })
     return () => { cancelled = true }
   }, [])
 
-  // ВСЕ лиги, включая Новобранца (rank_index = 0)
   const allLeagues = getAllLeagues()
-
-  // Текущая лига юзера — нужна чтобы автоматом подсвечивать как открытые
-  // все лиги ниже текущей (этапы пройдены, даже если значки в БД не записаны).
   const user = getCurrentUser()
   const currentRankIndex = user ? getLeagueByMuscles(user.total_muscles || 0).rankIndex : 0
-
-  // Множество rank_index которые у юзера РЕАЛЬНО получены (есть запись в league_badges)
   const earnedFromDb = new Set(badges.map(b => b.rank_index))
 
-  // Функция: считать ли значок открытым.
-  // Открыт если есть запись в БД ИЛИ текущая лига юзера ВЫШЕ этого ранга.
-  // Текущая лига (rankIndex === currentRankIndex) тоже считается открытой —
-  // ты её достиг и в ней находишься.
-  const isBadgeUnlocked = (rankIndex) => {
+  const isUnlocked = (rankIndex) => {
     if (earnedFromDb.has(rankIndex)) return true
     if (rankIndex <= currentRankIndex) return true
     return false
   }
 
-  // Сколько значков всего открыто (для подписи "N из M открыто")
-  const openedCount = allLeagues.filter(l => isBadgeUnlocked(l.rankIndex)).length
+  const openedCount = allLeagues.filter(l => isUnlocked(l.rankIndex)).length
 
-  const handleBadgeTap = (rankIndex, isLocked) => {
+  const handleBadgeTap = (rankIndex) => {
     haptic.light()
-    setPopup({ kind: 'badge', data: { rankIndex, isLocked, isCurrent: rankIndex === currentRankIndex } })
+    setPopup({ kind: 'title', data: { rankIndex, isLocked: !isUnlocked(rankIndex), isCurrent: rankIndex === currentRankIndex } })
   }
 
-  const handleFrameTap = (frame) => {
+  const handleFrameTap = (rankIndex) => {
     haptic.light()
-    setPopup({ kind: 'frame', data: frame })
+    setPopup({ kind: 'frame', data: { rankIndex, isLocked: !isUnlocked(rankIndex), isCurrent: rankIndex === currentRankIndex } })
+  }
+
+  const handleImmortalTitleTap = (place, unlocked) => {
+    haptic.light()
+    setPopup({ kind: 'immortal_title', data: { place, unlocked } })
+  }
+
+  // Надеть/снять титул #N
+  const handleToggleTitle = async (place) => {
+    haptic.medium()
+    const next = activeTitle === String(place) ? null : place
+    setActiveTitleState(next === null ? null : String(next))
+    await setActiveTitle(next)
+    await refreshCurrentUser()
+    setPopup(null)
   }
 
   return (
@@ -85,143 +105,280 @@ export default function Rewards() {
 
       <header style={styles.header}>
         <h1 style={styles.title}>НАГРАДЫ</h1>
-        <div style={styles.subtitle}>ЗНАЧКИ ЛИГ И РАМКИ СЕЗОНОВ</div>
+        <div style={styles.subtitle}>ТИТУЛЫ · РАМКИ · МЕДАЛИ СЕЗОНОВ</div>
       </header>
+
+      {/* Вкладки */}
+      <div style={styles.tabs}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => { haptic.light(); setTab(t.id) }}
+            style={{
+              ...styles.tab,
+              ...(tab === t.id ? styles.tabActive : {})
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
         <div style={styles.empty}>Загрузка...</div>
       ) : (
         <>
-          {/* Секция: значки лиг */}
-          <div style={styles.sectionHeader}>ЗНАЧКИ ЛИГ</div>
-          <div style={styles.subSectionInfo}>
-            {openedCount} из {allLeagues.length} открыто
-          </div>
+          {/* ===== ВКЛАДКА ТИТУЛЫ ===== */}
+          {tab === 'titles' && (
+            <>
+              <div style={styles.subSectionInfo}>
+                {openedCount} из {allLeagues.length} рангов открыто
+              </div>
 
-          <div style={styles.badgesGrid}>
-            {allLeagues.map(league => {
-              const unlocked = isBadgeUnlocked(league.rankIndex)
-              const isLocked = !unlocked
-              return (
-                <button
-                  key={league.rankIndex}
-                  onClick={() => handleBadgeTap(league.rankIndex, isLocked)}
-                  style={styles.badgeCell}
-                  className="press-tile"
-                >
-                  <LeagueBadgeIcon
-                    rankIndex={league.rankIndex}
-                    size={56}
-                    isLocked={isLocked}
-                    showGlow={!isLocked}
-                  />
-                  <div style={{
-                    ...styles.badgeName,
-                    color: isLocked ? 'var(--color-text-secondary)' : league.color,
-                    opacity: isLocked ? 0.5 : 1
-                  }}>
-                    {league.name}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+              <div style={styles.badgesGrid}>
+                {allLeagues.map(league => {
+                  const isLocked = !isUnlocked(league.rankIndex)
+                  return (
+                    <button
+                      key={league.rankIndex}
+                      onClick={() => handleBadgeTap(league.rankIndex)}
+                      style={styles.badgeCell}
+                      className="press-tile"
+                    >
+                      <LeagueBadgeIcon
+                        rankIndex={league.rankIndex}
+                        size={56}
+                        isLocked={isLocked}
+                        showGlow={!isLocked}
+                      />
+                      <div style={{
+                        ...styles.badgeName,
+                        color: isLocked ? 'var(--color-text-secondary)' : league.color,
+                        opacity: isLocked ? 0.5 : 1
+                      }}>
+                        {league.name}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
 
-          {/* Секция: сезонные рамки */}
-          <div style={{ ...styles.sectionHeader, marginTop: '28px' }}>СЕЗОННЫЕ РАМКИ</div>
-          <div style={styles.subSectionInfo}>
-            {frames.length === 0 ? 'Пока нет — попади в топ-3 лиги к концу сезона' : `${frames.length} в коллекции`}
-          </div>
+              {/* Титулы Бессмертного #1/#2/#3 */}
+              <div style={{ ...styles.sectionHeader, marginTop: '28px' }}>ТИТУЛЫ БЕССМЕРТНОГО</div>
+              <div style={styles.subSectionInfo}>
+                Топ-1/2/3 лиги Бессмертный по итогам сезона. Можно надеть под именем.
+              </div>
 
-          {frames.length > 0 && (
-            <div style={styles.framesList}>
-              {frames.map(frame => {
-                const league = getLeagueByRankIndex(frame.rank_index)
-                const medal = frame.place === 1 ? '🥇' : frame.place === 2 ? '🥈' : '🥉'
-                const placeColor = frame.place === 1 ? '#FFD700' : frame.place === 2 ? '#C0C0C0' : '#CD7F32'
+              <div style={styles.titlesRow}>
+                {IMMORTAL_TITLES.map(t => {
+                  const unlocked = t.place === 1 ? awards.title1 : t.place === 2 ? awards.title2 : awards.title3
+                  const isOn = activeTitle === String(t.place)
+                  return (
+                    <button
+                      key={t.place}
+                      onClick={() => handleImmortalTitleTap(t.place, unlocked)}
+                      style={{
+                        ...styles.titleCard,
+                        borderColor: unlocked ? `${t.color}66` : 'rgba(255,255,255,0.08)',
+                        opacity: unlocked ? 1 : 0.4
+                      }}
+                      className="press-tile"
+                    >
+                      <span
+                        className={unlocked ? 'title-pixel' : ''}
+                        style={{ ...styles.titleBig, color: unlocked ? t.color : 'var(--color-text-secondary)' }}
+                      >
+                        {t.label}
+                      </span>
+                      <span style={styles.titleHint}>
+                        {isOn ? 'надет' : unlocked ? 'открыт' : 'закрыт'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
 
-                return (
+          {/* ===== ВКЛАДКА РАМКИ ===== */}
+          {tab === 'frames' && (
+            <>
+              <div style={styles.subSectionInfo}>
+                Рамка отражает твой текущий ранг. Топовые ранги — анимированные.
+              </div>
+
+              <div style={styles.framesGrid}>
+                {allLeagues.map(league => {
+                  const isLocked = !isUnlocked(league.rankIndex)
+                  return (
+                    <button
+                      key={league.rankIndex}
+                      onClick={() => handleFrameTap(league.rankIndex)}
+                      style={styles.badgeCell}
+                      className="press-tile"
+                    >
+                      <FramePreview rankIndex={league.rankIndex} size={60} isLocked={isLocked} />
+                      <div style={{
+                        ...styles.badgeName,
+                        color: isLocked ? 'var(--color-text-secondary)' : league.color,
+                        opacity: isLocked ? 0.5 : 1
+                      }}>
+                        {league.name}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ===== ВКЛАДКА МЕДАЛИ ===== */}
+          {tab === 'medals' && (
+            <>
+              <div style={styles.subSectionInfo}>
+                Медали — за топ-1/2/3 лиги Бессмертный по итогам сезона.
+              </div>
+
+              <div style={styles.medalCounts}>
+                <div style={styles.medalCount}>
+                  <span style={styles.medalEmoji}>🥇</span>
+                  <span style={{ ...styles.medalNum, color: '#FFD700' }}>×{awards.gold}</span>
+                </div>
+                <div style={styles.medalCount}>
+                  <span style={styles.medalEmoji}>🥈</span>
+                  <span style={{ ...styles.medalNum, color: '#C0C0C0' }}>×{awards.silver}</span>
+                </div>
+                <div style={styles.medalCount}>
+                  <span style={styles.medalEmoji}>🥉</span>
+                  <span style={{ ...styles.medalNum, color: '#CD7F32' }}>×{awards.bronze}</span>
+                </div>
+              </div>
+
+              {frames.length === 0 ? (
+                <div style={styles.empty}>
+                  Пока пусто. Доберись до лиги Бессмертный и попади в топ-3 к концу сезона.
+                </div>
+              ) : (
+                <>
                   <button
-                    key={frame.id}
-                    onClick={() => handleFrameTap(frame)}
-                    style={{
-                      ...styles.frameCard,
-                      borderColor: `${placeColor}40`
-                    }}
+                    onClick={() => { haptic.light(); setMedalsOpen(o => !o) }}
+                    style={styles.medalsToggle}
                     className="press-tile"
                   >
-                    <div style={styles.frameMedal}>{medal}</div>
-                    <div style={styles.frameBadge}>
-                      <LeagueBadgeIcon rankIndex={frame.rank_index} size={48} showGlow={true} />
-                    </div>
-                    <div style={{ ...styles.framePlace, color: placeColor }}>
-                      {frame.place} место
-                    </div>
-                    <div style={styles.frameLeague}>
-                      {league.name}
-                    </div>
-                    <div style={styles.frameSeason}>
-                      {frame.season_name}
-                    </div>
+                    <span>Заработанные медали ({frames.length})</span>
+                    <span style={{ transform: medalsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
                   </button>
-                )
-              })}
-            </div>
+
+                  {medalsOpen && (
+                    <div style={styles.medalsList}>
+                      {[...frames]
+                        .sort((a, b) => (a.place - b.place) || (b.season_key > a.season_key ? 1 : -1))
+                        .map(m => {
+                          const medal = m.place === 1 ? '🥇' : m.place === 2 ? '🥈' : '🥉'
+                          const placeColor = m.place === 1 ? '#FFD700' : m.place === 2 ? '#C0C0C0' : '#CD7F32'
+                          return (
+                            <div key={m.id} style={styles.medalRow}>
+                              <span style={styles.medalRowEmoji}>{medal}</span>
+                              <div style={styles.medalRowInfo}>
+                                <div style={{ ...styles.medalRowPlace, color: placeColor }}>
+                                  {m.place} место · БЕССМЕРТНЫЙ
+                                </div>
+                                <div style={styles.medalRowSeason}>{m.season_name}</div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}
 
       {popup && (
-        <RewardPopup popup={popup} onClose={() => setPopup(null)} />
+        <RewardPopup
+          popup={popup}
+          activeTitle={activeTitle}
+          onToggleTitle={handleToggleTitle}
+          onClose={() => setPopup(null)}
+        />
       )}
+
+      <style>{`
+        @keyframes titlePixelFloat {
+          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+          20%  { opacity: 1; }
+          100% { opacity: 0; transform: translate(var(--px, 6px), -14px) scale(0.3); }
+        }
+      `}</style>
     </div>
   )
 }
 
-function RewardPopup({ popup, onClose }) {
+function RewardPopup({ popup, activeTitle, onToggleTitle, onClose }) {
   const { kind, data } = popup
 
   let content
-  if (kind === 'badge') {
+  if (kind === 'title') {
     const league = getLeagueByRankIndex(data.rankIndex)
-
-    // Текст в попапе зависит от состояния:
-    //  - закрыт (lock) — мотивирующий текст "достигни лигу"
-    //  - открыт и это твоя ТЕКУЩАЯ лига — "ты в ней сейчас"
-    //  - открыт и ты её прошёл — "этап пройден"
     let description
     if (data.isLocked) {
-      description = `Открой при первом достижении лиги ${league.name}. Останется навсегда.`
+      description = `Открой при достижении лиги ${league.name}. Остаётся навсегда.`
     } else if (data.isCurrent) {
-      description = 'Это твоя текущая лига. Значок останется с тобой даже после сброса сезона.'
+      description = 'Твой текущий ранг. Титул остаётся даже после сброса сезона.'
     } else {
-      description = `Этап пройден. Когда-то ты достиг лиги ${league.name} — значок останется навсегда.`
+      description = `Этап пройден — ранг ${league.name} достигнут.`
     }
-
     content = (
       <>
         <LeagueBadgeIcon rankIndex={data.rankIndex} size={96} isLocked={data.isLocked} showGlow={!data.isLocked} />
         <div style={{ ...popupStyles.title, color: data.isLocked ? 'var(--color-text-secondary)' : league.color }}>
           {league.name.toUpperCase()}
         </div>
-        <div style={popupStyles.text}>
-          {description}
+        <div style={popupStyles.text}>{description}</div>
+      </>
+    )
+  } else if (kind === 'frame') {
+    const league = getLeagueByRankIndex(data.rankIndex)
+    let description
+    if (data.isLocked) {
+      description = `Откроется при достижении ранга ${league.name}.`
+    } else {
+      description = 'Рамка отражает твой ранг и меняется вместе с ним. Выбор появится с кастомными рамками.'
+    }
+    content = (
+      <>
+        <FramePreview rankIndex={data.rankIndex} size={96} isLocked={data.isLocked} />
+        <div style={{ ...popupStyles.title, color: data.isLocked ? 'var(--color-text-secondary)' : league.color }}>
+          РАМКА · {league.name.toUpperCase()}
         </div>
+        <div style={popupStyles.text}>{description}</div>
       </>
     )
   } else {
-    const league = getLeagueByRankIndex(data.rank_index)
-    const medal = data.place === 1 ? '🥇' : data.place === 2 ? '🥈' : '🥉'
+    // immortal_title
+    const t = IMMORTAL_TITLES.find(x => x.place === data.place)
+    const isOn = activeTitle === String(data.place)
     content = (
       <>
-        <div style={{ fontSize: 64, lineHeight: 1 }}>{medal}</div>
-        <div style={popupStyles.title}>
-          {data.place} МЕСТО · {league.name.toUpperCase()}
+        <div className={data.unlocked ? 'title-pixel' : ''} style={{ fontSize: 56, fontFamily: 'var(--font-tiny5)', color: data.unlocked ? t.color : 'var(--color-text-secondary)', lineHeight: 1 }}>
+          {t.label}
+        </div>
+        <div style={{ ...popupStyles.title, color: data.unlocked ? t.color : 'var(--color-text-secondary)' }}>
+          ТИТУЛ {t.label}
         </div>
         <div style={popupStyles.text}>
-          Получена в сезон {data.season_name}.<br />
-          Совсем скоро её можно будет выставить рядом с аватаром.
+          {data.unlocked
+            ? 'Заработан за топ-' + data.place + ' лиги Бессмертный. Можно надеть — он покажется под именем как ранг.'
+            : 'Откроется, если займёшь ' + data.place + '-е место в лиге Бессмертный по итогам сезона.'}
         </div>
+        {data.unlocked && (
+          <button onClick={() => onToggleTitle(data.place)} style={{ ...popupStyles.btn, background: t.color }}>
+            {isOn ? 'СНЯТЬ' : 'НАДЕТЬ'}
+          </button>
+        )}
       </>
     )
   }
@@ -230,7 +387,9 @@ function RewardPopup({ popup, onClose }) {
     <div style={popupStyles.overlay} onClick={onClose}>
       <div style={popupStyles.modal} onClick={(e) => e.stopPropagation()}>
         {content}
-        <button onClick={onClose} style={popupStyles.btn}>ПОНЯТНО</button>
+        {kind !== 'immortal_title' || !data.unlocked
+          ? <button onClick={onClose} style={popupStyles.btnGhost}>ПОНЯТНО</button>
+          : <button onClick={onClose} style={popupStyles.btnGhost}>ЗАКРЫТЬ</button>}
       </div>
       <style>{`
         @keyframes rewardPopupFade { from { opacity: 0 } to { opacity: 1 } }
@@ -245,7 +404,7 @@ function RewardPopup({ popup, onClose }) {
 
 const styles = {
   page: {},
-  header: { marginTop: '8px', marginBottom: '20px', textAlign: 'center' },
+  header: { marginTop: '8px', marginBottom: '16px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '32px',
@@ -261,6 +420,29 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
+  tabs: {
+    display: 'flex',
+    gap: '6px',
+    marginBottom: '18px',
+    background: 'rgba(255,255,255,0.04)',
+    padding: '4px',
+    borderRadius: '14px'
+  },
+  tab: {
+    flex: 1,
+    padding: '9px 4px',
+    borderRadius: '10px',
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    color: 'var(--color-text-secondary)',
+    background: 'transparent',
+    transition: 'background 0.2s, color 0.2s'
+  },
+  tabActive: {
+    background: 'var(--color-card)',
+    color: 'var(--color-text)'
+  },
   sectionHeader: {
     fontFamily: 'var(--font-tiny5)',
     fontSize: '13px',
@@ -274,12 +456,18 @@ const styles = {
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     paddingLeft: '4px',
-    marginBottom: '14px'
+    marginBottom: '14px',
+    lineHeight: 1.4
   },
   badgesGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '8px'
+  },
+  framesGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '10px'
   },
   badgeCell: {
     display: 'flex',
@@ -300,39 +488,95 @@ const styles = {
     lineHeight: 1,
     textAlign: 'center'
   },
-  framesList: {
+  titlesRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '10px'
   },
-  frameCard: {
+  titleCard: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '4px',
-    padding: '14px 8px',
+    gap: '6px',
+    padding: '18px 8px',
     background: 'var(--color-card)',
     border: '1px solid',
     borderRadius: '16px',
-    minHeight: '160px',
+    minHeight: '92px',
     justifyContent: 'center'
   },
-  frameMedal: { fontSize: '28px', lineHeight: 1 },
-  frameBadge: { margin: '4px 0' },
-  framePlace: {
+  titleBig: {
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '12px',
-    letterSpacing: '1px'
+    fontSize: '30px',
+    letterSpacing: '1px',
+    lineHeight: 1,
+    position: 'relative'
   },
-  frameLeague: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 700,
-    color: 'var(--color-text)'
-  },
-  frameSeason: {
+  titleHint: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '10px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.5px'
+  },
+  medalCounts: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '10px',
+    marginBottom: '20px'
+  },
+  medalCount: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '18px 8px',
+    background: 'var(--color-card)',
+    borderRadius: '16px'
+  },
+  medalEmoji: { fontSize: '34px', lineHeight: 1 },
+  medalNum: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '20px',
+    letterSpacing: '1px'
+  },
+  medalsToggle: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '14px 16px',
+    background: 'var(--color-card)',
+    borderRadius: '14px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-text)',
+    marginBottom: '10px'
+  },
+  medalsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  medalRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 14px',
+    background: 'var(--color-card)',
+    borderRadius: '14px'
+  },
+  medalRowEmoji: { fontSize: '28px', lineHeight: 1, flexShrink: 0 },
+  medalRowInfo: { flex: 1, minWidth: 0 },
+  medalRowPlace: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    marginBottom: '2px'
+  },
+  medalRowSeason: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
     color: 'var(--color-text-secondary)'
   },
   empty: {
@@ -340,17 +584,15 @@ const styles = {
     padding: '40px 20px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
-    color: 'var(--color-text-secondary)'
+    color: 'var(--color-text-secondary)',
+    lineHeight: 1.5
   }
 }
 
 const popupStyles = {
   overlay: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     background: 'rgba(13, 12, 12, 0.85)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
@@ -393,8 +635,20 @@ const popupStyles = {
     width: '100%',
     marginTop: '8px',
     padding: '12px',
-    background: 'var(--color-primary)',
     color: '#0D0C0C',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 700,
+    letterSpacing: '1px',
+    borderRadius: '12px',
+    border: 'none'
+  },
+  btnGhost: {
+    width: '100%',
+    marginTop: '8px',
+    padding: '12px',
+    background: 'rgba(255,255,255,0.06)',
+    color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 700,
