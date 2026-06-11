@@ -124,6 +124,24 @@ img, button { -webkit-user-drag: none; }
   padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 60px);
 }
 
+/* Нижний fade-scrim над таб-баром: контент уходит под плавающие кнопки
+   плавно, а не обрывается. Фиксирован у низа экрана, по z-index ниже
+   таб-бара (100), но выше контента. pointer-events:none — тапы проходят
+   сквозь него к таб-бару и контенту. Высота покрывает зону под кнопками. */
+.app::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--tabbar-height) + var(--tabbar-bottom) + 24px);
+  pointer-events: none;
+  z-index: 90;
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.85) 30%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+}
+
 .page {
   padding: calc(var(--tg-safe-top) + 8px) 16px 24px;
   position: relative;

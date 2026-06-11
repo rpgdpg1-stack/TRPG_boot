@@ -215,6 +215,10 @@ export default function Home() {
       {/* Игрок — закреплён сверху (sticky). */}
       <div style={styles.playerSticky}>
         <PlayerCard />
+        {/* Fade-scrim: контент уходит под закреплённую карточку плавно
+            (градиент + лёгкий blur), а не обрывается резко. pointer-events:none
+            чтобы не перехватывал тапы по контенту под ним. */}
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       {/* Скроллящийся контент */}
@@ -473,6 +477,23 @@ const styles = {
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
+  },
+  // Fade-переход под карточкой: висит сразу под sticky-блоком, ширина на всю
+  // страницу (компенсируем боковые паддинги -16px). Градиент от фона к
+  // прозрачному + лёгкий blur с маской — контент «утопает», как в Telegram.
+  stickyFade: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 19,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
   scrollSection: {
     position: 'relative'
