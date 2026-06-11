@@ -1,0 +1,14 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <style>
+    @keyframes titanSwell { 0%,100%{ stroke-width:2.5; opacity:0.75 } 50%{ stroke-width:5; opacity:1 } }
+    @keyframes titanSwellOuter { 0%,100%{ opacity:0.15 } 50%{ opacity:0.45 } }
+    .titan-main { animation: titanSwell 2.4s ease-in-out infinite; }
+    .titan-outer { animation: titanSwellOuter 2.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .titan-main { animation: none; stroke-width:3.5; opacity:1; }
+      .titan-outer { animation: none; opacity:0.3; }
+    }
+  </style>
+  <rect class="titan-outer" x="5" y="5" width="90" height="90" rx="24" fill="none" stroke="#E24B4A" stroke-width="2"/>
+  <rect class="titan-main" x="8" y="8" width="84" height="84" rx="22" fill="none" stroke="#E24B4A"/>
+</svg>
