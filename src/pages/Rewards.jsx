@@ -6,6 +6,7 @@ import { getAllLeagues, getLeagueByRankIndex, getLeagueByMuscles } from '../lib/
 import { getCurrentUser, refreshCurrentUser } from '../lib/auth'
 import LeagueBadgeIcon from '../components/LeagueBadgeIcon'
 import FramePreview from '../components/FramePreview'
+import TitleTag from '../components/TitleTag'
 
 /**
  * Экран наград — три вкладки:
@@ -180,16 +181,24 @@ export default function Rewards() {
                       style={{
                         ...styles.titleCard,
                         borderColor: unlocked ? `${t.color}66` : 'rgba(255,255,255,0.08)',
-                        opacity: unlocked ? 1 : 0.4
+                        opacity: unlocked ? 1 : 0.5
                       }}
                       className="press-tile"
                     >
-                      <span
-                        className={unlocked ? 'title-pixel' : ''}
-                        style={{ ...styles.titleBig, color: unlocked ? t.color : 'var(--color-text-secondary)' }}
-                      >
-                        {t.label}
-                      </span>
+                      {unlocked ? (
+                        // Открытый — анимированный титул (пиксели вылетают)
+                        <span style={{ position: 'relative', display: 'inline-flex' }}>
+                          <TitleTag place={t.place} size={30} />
+                        </span>
+                      ) : (
+                        // Закрытый — серый «#N» + замок
+                        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                          <span style={{ ...styles.titleBig, color: 'var(--color-text-secondary)' }}>
+                            {t.label}
+                          </span>
+                          <span style={styles.titleLock}>🔒</span>
+                        </span>
+                      )}
                       <span style={styles.titleHint}>
                         {isOn ? 'надет' : unlocked ? 'открыт' : 'закрыт'}
                       </span>
@@ -306,14 +315,7 @@ export default function Rewards() {
         />
       )}
 
-      <style>{`
-        @keyframes titlePixelFloat {
-          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
-          20%  { opacity: 1; }
-          100% { opacity: 0; transform: translate(var(--px, 6px), -14px) scale(0.3); }
-        }
-      `}</style>
-    </div>
+      </div>
   )
 }
 
@@ -363,9 +365,15 @@ function RewardPopup({ popup, activeTitle, onToggleTitle, onClose }) {
     const isOn = activeTitle === String(data.place)
     content = (
       <>
-        <div className={data.unlocked ? 'title-pixel' : ''} style={{ fontSize: 56, fontFamily: 'var(--font-tiny5)', color: data.unlocked ? t.color : 'var(--color-text-secondary)', lineHeight: 1 }}>
-          {t.label}
-        </div>
+        {data.unlocked ? (
+          <div style={{ transform: 'scale(2)', margin: '16px 0' }}>
+            <TitleTag place={data.place} size={28} />
+          </div>
+        ) : (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: 48, fontFamily: 'var(--font-tiny5)', color: 'var(--color-text-secondary)', lineHeight: 1 }}>
+            {t.label} <span style={{ fontSize: 28 }}>🔒</span>
+          </div>
+        )}
         <div style={{ ...popupStyles.title, color: data.unlocked ? t.color : 'var(--color-text-secondary)' }}>
           ТИТУЛ {t.label}
         </div>
@@ -511,6 +519,12 @@ const styles = {
     letterSpacing: '1px',
     lineHeight: 1,
     position: 'relative'
+  },
+  titleLock: {
+    fontSize: '13px',
+    lineHeight: 1,
+    marginLeft: '2px',
+    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))'
   },
   titleHint: {
     fontFamily: 'var(--font-manrope)',
