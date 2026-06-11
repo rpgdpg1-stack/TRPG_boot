@@ -1,0 +1,235 @@
+import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { haptic } from '../lib/telegram'
+import { getCurrentUser } from '../lib/auth'
+import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT } from '../lib/backups'
+import { resolveWeeklyStreak } from '../utils/dates'
+import ProfileHeader from './ProfileHeader'
+import MuscleIcon from './MuscleIcon'
+
+/**
+ * Модалка профиля игрока. Переиспользуется из Рейтинга и из страницы Друзья.
+ *
+ * ProfileHeader в режиме просмотра (interactive=false, логин скрыт).
+ * Подгружает публичный профиль (последняя тренировка, стрик, тренировки).
+ * Для чужого игрока — кнопка «Подстраховать +100 💪» со статусами
+ * already / limit (показываются сразу при открытии).
+ *
+ * Пропсы:
+ *   row          — строка игрока: { user_id, first_name, username, photo_url,
+ *                  total_muscles, rank_index, place | league_place, ... }
+ *   onClose      — закрыть модалку
+ *   onBackupDone(name) — успешная подстраховка (родитель покажет тост)
+ *
+ * Место в карточке (🏆 #N) берётся из row.place — Рейтинг и Друзья кладут
+ * туда нужное значение (место в лиге).
+ */
+export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
+  const me = getCurrentUser()
+  const isSelf = me && row.user_id === me.id
+
+  const [pub, setPub] = useState(null)
+  const [backupState, setBackupState] = useState('idle') // idle|sending|already|limit
+  const [todayCount, setTodayCount] = useState(null)
+  const [bicepsTick, setBicepsTick] = useState(0)
+  const bicepsTimers = useRef([])
+
+  useEffect(() => {
+    let cancelled = false
+    getUserPublicProfile(row.user_id).then(data => {
+      if (cancelled) return
+      setPub(data)
+      if (data) {
+        setTodayCount(data.today_backup_count ?? null)
+        if (data.already_backed_today) {
+          setBackupState('already')
+        } else if ((data.today_backup_count ?? 0) >= (data.daily_backup_limit ?? BACKUP_DAILY_LIMIT)) {
+          setBackupState('limit')
+        } else {
+          setBackupState('idle')
+        }
+      }
+    })
+    return () => { cancelled = true }
+  }, [row.user_id])
+
+  useEffect(() => {
+    const start = setTimeout(() => {
+      setBicepsTick(t => t + 1)
+      const interval = setInterval(() => setBicepsTick(t => t + 1), 5000)
+      bicepsTimers.current.push(interval)
+    }, 3000)
+    bicepsTimers.current.push(start)
+    return () => {
+      bicepsTimers.current.forEach(id => {
+        clearTimeout(id)
+        clearInterval(id)
+      })
+      bicepsTimers.current = []
+    }
+  }, [])
+
+  const userObj = {
+    first_name: row.first_name,
+    username: row.username,
+    photo_url: row.photo_url
+  }
+
+  const handleBackup = async () => {
+    if (backupState !== 'idle') return
+    haptic.medium()
+    setBackupState('sending')
+
+    const result = await backupUser(row.user_id)
+    if (result.success) {
+      haptic.success()
+      onBackupDone?.(row.first_name || 'Игрок')
+    } else if (result.error === 'already_today') {
+      setBackupState('already')
+    } else if (result.error === 'daily_limit') {
+      haptic.error()
+      if (result.todayCount != null) setTodayCount(result.todayCount)
+      setBackupState('limit')
+    } else {
+      haptic.error()
+      setBackupState('idle')
+      window.alert('Не удалось подстраховать. Проверь подключение.')
+    }
+  }
+
+  const limitLabel = `Лимит на сегодня · ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT}`
+  const buttonText = backupState === 'sending' ? 'ОТПРАВКА...'
+                   : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
+                   : backupState === 'limit'   ? limitLabel
+                   : null
+
+  return createPortal(
+    <div style={styles.overlay} onClick={onClose}>
+      <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
+        <ProfileHeader
+          user={userObj}
+          xp={row.total_muscles || 0}
+          streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
+          totalWorkouts={pub?.total_workouts ?? null}
+          friendsPlace={row.place}
+          rankIndex={row.rank_index}
+          placeInLeague={true}
+          lastWorkout={pub?.last_workout || null}
+          interactive={false}
+          showUsername={false}
+        />
+
+        {!isSelf && (
+          backupState === 'idle' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <button onClick={handleBackup} className="press-tile" style={styles.backupButton}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
+                </span>
+              </button>
+              {todayCount != null && (
+                <div style={styles.backupCounter}>
+                  Сегодня {todayCount}/{BACKUP_DAILY_LIMIT}
+                </div>
+              )}
+            </div>
+          ) : backupState === 'sending' ? (
+            <button disabled style={{ ...styles.backupButton, ...styles.backupButtonDisabled }}>
+              {buttonText}
+            </button>
+          ) : (
+            <button disabled style={{ ...styles.backupButton, ...styles.backupButtonDisabled }}>
+              {buttonText}
+            </button>
+          )
+        )}
+
+        <button onClick={onClose} className="press-tile" style={styles.close}>ЗАКРЫТЬ</button>
+      </div>
+
+      <style>{`
+        @keyframes profileModalOverlay { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes profileModalPanel {
+          0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
+    </div>,
+    document.body
+  )
+}
+
+const styles = {
+  overlay: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(13, 12, 12, 0.88)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    animation: 'profileModalOverlay 0.25s ease-out forwards'
+  },
+  inner: {
+    width: '100%',
+    maxWidth: '340px',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+  },
+  backupButton: {
+    width: '100%',
+    padding: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(158, 209, 83, 0.16)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    color: 'var(--color-primary)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '1px',
+    borderRadius: '20px',
+    border: '1px solid rgba(158, 209, 83, 0.35)',
+    cursor: 'pointer',
+    boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
+  },
+  backupButtonDisabled: {
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: 'var(--color-text-secondary)',
+    boxShadow: 'none',
+    cursor: 'default',
+    letterSpacing: '0.5px',
+    fontSize: '12px'
+  },
+  backupCounter: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    letterSpacing: '0.5px'
+  },
+  close: {
+    width: '100%',
+    padding: '16px',
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 700,
+    letterSpacing: '1.5px',
+    borderRadius: '20px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    cursor: 'pointer'
+  }
+}

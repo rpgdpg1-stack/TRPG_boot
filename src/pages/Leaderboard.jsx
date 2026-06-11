@@ -6,16 +6,14 @@ import { getFriendsLeaderboard, getLeagueLeaderboard } from '../lib/leaderboard'
 import { getLeagueByMuscles } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
-import { backupUser, getUserPublicProfile, BACKUP_BONUS, BACKUP_DAILY_LIMIT } from '../lib/backups'
+import { BACKUP_BONUS } from '../lib/backups'
 import { getCurrentSeason, getDaysUntilSeasonEnd, getNextSeason } from '../utils/season'
-import { resolveWeeklyStreak } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
 import LeaderboardRow from '../components/LeaderboardRow'
-import ProfileHeader from '../components/ProfileHeader'
+import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
 import RankIcon from '../components/RankIcon'
 import UiIcon from '../components/UiIcon'
-import MuscleIcon from '../components/MuscleIcon'
 
 /**
  * Экран рейтинга.
@@ -140,7 +138,11 @@ export default function Leaderboard() {
 
   const handleRowTap = (row) => {
     haptic.light()
-    setSelectedProfile(row)
+    // В карточке игрока показываем кубок + место в ЛИГЕ (не среди друзей).
+    // league_place есть у строк вкладки «Лига»; для вкладки «Друзья» и для
+    // своей строки берём place как есть (доведём в Этапе 4).
+    const placeInLeague = row.league_place ?? row.place
+    setSelectedProfile({ ...row, place: placeInLeague })
   }
 
   const handleBackupDone = (targetName) => {
@@ -333,7 +335,7 @@ export default function Leaderboard() {
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
       {selectedProfile && (
-        <ProfileModal
+        <PlayerProfileModal
           row={selectedProfile}
           onClose={() => setSelectedProfile(null)}
           onBackupDone={handleBackupDone}
@@ -351,156 +353,7 @@ export default function Leaderboard() {
   )
 }
 
-/**
- * Модалка профиля игрока из рейтинга. ProfileHeader в режиме просмотра.
- * Подгружает публичный профиль (последняя тренировка, стрик).
- * Для чужого игрока — кнопка "Подстраховать".
- */
-function ProfileModal({ row, onClose, onBackupDone }) {
-  const me = getCurrentUser()
-  const isSelf = me && row.user_id === me.id
 
-  const [pub, setPub] = useState(null)
-  // 'idle' | 'sending' | 'already' | 'limit'
-  // Начальный статус выставляем из публичного профиля (см. эффект ниже),
-  // чтобы «уже подстрахован» / «лимит» показывались СРАЗУ, без тапа.
-  const [backupState, setBackupState] = useState('idle')
-  const [todayCount, setTodayCount] = useState(null)
-  const [bicepsTick, setBicepsTick] = useState(0)
-  const bicepsTimers = useRef([])
-
-  useEffect(() => {
-    let cancelled = false
-    getUserPublicProfile(row.user_id).then(data => {
-      if (cancelled) return
-      setPub(data)
-      if (data) {
-        setTodayCount(data.today_backup_count ?? null)
-        // Приоритет: этого друга уже страховал сегодня → 'already'.
-        // Иначе если упёрся в дневной лимит → 'limit'. Иначе можно страховать.
-        if (data.already_backed_today) {
-          setBackupState('already')
-        } else if ((data.today_backup_count ?? 0) >= (data.daily_backup_limit ?? BACKUP_DAILY_LIMIT)) {
-          setBackupState('limit')
-        } else {
-          setBackupState('idle')
-        }
-      }
-    })
-    return () => { cancelled = true }
-  }, [row.user_id])
-
-  // Анимация бицепса на кнопке "Подстраховать": первый флекс через 3с после
-  // открытия, дальше зацикленно каждые 5с. Чистим таймеры при размонтировании.
-  useEffect(() => {
-    const start = setTimeout(() => {
-      setBicepsTick(t => t + 1)
-      const interval = setInterval(() => setBicepsTick(t => t + 1), 5000)
-      bicepsTimers.current.push(interval)
-    }, 3000)
-    bicepsTimers.current.push(start)
-    return () => {
-      bicepsTimers.current.forEach(id => {
-        clearTimeout(id)
-        clearInterval(id)
-      })
-      bicepsTimers.current = []
-    }
-  }, [])
-
-  const userObj = {
-    first_name: row.first_name,
-    username: row.username,
-    photo_url: row.photo_url
-  }
-
-  const handleBackup = async () => {
-    if (backupState !== 'idle') return
-    haptic.medium()
-    setBackupState('sending')
-
-    const result = await backupUser(row.user_id)
-    if (result.success) {
-      haptic.success()
-      onBackupDone?.(row.first_name || 'Игрок')
-    } else if (result.error === 'already_today') {
-      setBackupState('already')
-    } else if (result.error === 'daily_limit') {
-      // Упёрся в лимит (мог застраховать кого-то в другой вкладке/устройстве).
-      haptic.error()
-      if (result.todayCount != null) setTodayCount(result.todayCount)
-      setBackupState('limit')
-    } else {
-      haptic.error()
-      setBackupState('idle')
-      window.alert('Не удалось подстраховать. Проверь подключение.')
-    }
-  }
-
-  const limitLabel = `Лимит на сегодня · ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT}`
-  const buttonText = backupState === 'sending' ? 'ОТПРАВКА...'
-                   : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
-                   : backupState === 'limit'   ? limitLabel
-                   : null
-
-  return createPortal(
-    <div style={profileModalStyles.overlay} onClick={onClose}>
-      <div style={profileModalStyles.inner} onClick={(e) => e.stopPropagation()}>
-        <ProfileHeader
-          user={userObj}
-          xp={row.total_muscles || 0}
-          streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
-          totalWorkouts={pub?.total_workouts ?? null}
-          friendsPlace={row.place}
-          lastWorkout={pub?.last_workout || null}
-          interactive={false}
-          showUsername={false}
-        />
-
-        {/* Кнопка подстраховки — только для чужого игрока */}
-        {!isSelf && (
-          backupState === 'idle' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <button onClick={handleBackup} className="press-tile" style={profileModalStyles.backupButton}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
-                </span>
-              </button>
-              {todayCount != null && (
-                <div style={profileModalStyles.backupCounter}>
-                  Сегодня {todayCount}/{BACKUP_DAILY_LIMIT}
-                </div>
-              )}
-            </div>
-          ) : backupState === 'sending' ? (
-            <button disabled style={{ ...profileModalStyles.backupButton, ...profileModalStyles.backupButtonDisabled }}>
-              {buttonText}
-            </button>
-          ) : (
-            // 'already' | 'limit' — статус показан сразу при открытии, тап недоступен
-            <button
-              disabled
-              style={{ ...profileModalStyles.backupButton, ...profileModalStyles.backupButtonDisabled }}
-            >
-              {buttonText}
-            </button>
-          )
-        )}
-
-        <button onClick={onClose} className="press-tile" style={profileModalStyles.close}>ЗАКРЫТЬ</button>
-      </div>
-
-      <style>{`
-        @keyframes profileModalOverlay { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes profileModalPanel {
-          0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
-    </div>,
-    document.body
-  )
-}
 
 function RulesModal({ onClose }) {
   return createPortal(
@@ -769,84 +622,7 @@ const styles = {
   }
 }
 
-const profileModalStyles = {
-  overlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(13, 12, 12, 0.88)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    zIndex: 9999,
-    // Старт сверху на той же высоте что и инфо-модалка — профили
-    // (свой/чужой) больше не прыгают по вертикали. Низ с запасом под
-    // таб-бар, прокрутка внутри оверлея если контент высокий.
-    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
-    overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
-    animation: 'profileModalOverlay 0.25s ease-out forwards'
-  },
-  inner: {
-    width: '100%',
-    maxWidth: '340px',
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
-  },
-  backupButton: {
-    width: '100%',
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Приглушённо-зелёный с блюром — не кричит яркой заливкой.
-    background: 'rgba(158, 209, 83, 0.16)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    color: 'var(--color-primary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 800,
-    letterSpacing: '1px',
-    borderRadius: '20px',
-    border: '1px solid rgba(158, 209, 83, 0.35)',
-    cursor: 'pointer',
-    boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
-  },
-  backupButtonDisabled: {
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text-secondary)',
-    boxShadow: 'none',
-    cursor: 'default',
-    letterSpacing: '0.5px',
-    fontSize: '12px'
-  },
-  backupCounter: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    letterSpacing: '0.5px'
-  },
-  close: {
-    width: '100%',
-    padding: '16px',
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    cursor: 'pointer'
-  }
-}
+
 
 const modalStyles = {
   overlay: {

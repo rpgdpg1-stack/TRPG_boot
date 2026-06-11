@@ -1,0 +1,104 @@
+/**
+ * Список друзей для отдельной страницы «Друзья».
+ *
+ * В отличие от lib/leaderboard.js (рейтинг — соревнование по мускулам),
+ * здесь друзья показываются СПИСКОМ: без нумерации, с закрепами и
+ * сортировкой по активности (последняя тренировка).
+ *
+ * Все функции — обёртки над Supabase RPC:
+ *  - api_get_friends_list   → список друзей (без меня) с местом в лиге,
+ *                             последней тренировкой, закрепом
+ *  - api_toggle_pin_friend  → закрепить/открепить (лимит 5)
+ *
+ * Кеш короткий (1 мин), сбрасывается при закрепе/добавлении друга.
+ */
+
+import { supabase } from './supabase'
+import { getCurrentUser } from './auth'
+import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
+
+export const PIN_LIMIT = 5
+
+/**
+ * Список друзей текущего юзера (БЕЗ самого юзера).
+ * Возвращает массив: { user_id, first_name, username, photo_url,
+ *   total_muscles, rank_index, league_place, total_in_league,
+ *   last_workout_at, pinned_at }
+ *
+ * Уже отсортирован сервером: закреплённые (новее выше) → по свежести
+ * тренировки → по мускулам.
+ */
+export async function getFriendsList() {
+  const user = getCurrentUser()
+  if (!user) return []
+
+  const cacheKey = `friends-list:${user.id}`
+  const cached = cacheGet(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase.rpc('api_get_friends_list', {
+      p_user_id: user.id
+    })
+
+    if (error) {
+      console.error('[friends-list] error:', error)
+      return []
+    }
+
+    const result = data || []
+    cacheSet(cacheKey, result, TTL.SHORT)
+    return result
+  } catch (e) {
+    console.error('[friends-list] exception:', e)
+    return []
+  }
+}
+
+/**
+ * Закрепить / открепить друга (toggle).
+ * Возвращает { success, pinned } или { success:false, error } где error:
+ *   'limit'      — упёрся в лимит 5 закрепов
+ *   'not_friend' — это не друг
+ *   'bad_args'   — кривые аргументы
+ *
+ * При успехе сбрасываем кеш списка, чтобы порядок пересчитался.
+ */
+export async function togglePinFriend(friendId) {
+  const user = getCurrentUser()
+  if (!user) return { success: false, error: 'no_user' }
+
+  try {
+    const { data, error } = await supabase.rpc('api_toggle_pin_friend', {
+      p_user_id: user.id,
+      p_friend_id: friendId
+    })
+
+    if (error) {
+      console.error('[friends-list] togglePin RPC error:', error)
+      return { success: false, error: 'rpc_error' }
+    }
+
+    if (data?.success) {
+      invalidateFriendsListCache()
+      return { success: true, pinned: data.pinned }
+    }
+
+    return { success: false, error: data?.error || 'unknown' }
+  } catch (e) {
+    console.error('[friends-list] togglePin exception:', e)
+    return { success: false, error: 'exception' }
+  }
+}
+
+/**
+ * Сбросить кеш списка друзей. Вызывается после:
+ *  - закрепа/открепа (порядок изменился)
+ *  - добавления друга (новый в списке)
+ *  - завершения тренировки (свежесть активности изменилась)
+ */
+export function invalidateFriendsListCache() {
+  const user = getCurrentUser()
+  if (!user) return
+  cacheInvalidate(`friends-list:${user.id}`)
+}

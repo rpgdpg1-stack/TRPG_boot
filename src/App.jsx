@@ -18,6 +18,7 @@ import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Leaderboard from './pages/Leaderboard'
+import Friends from './pages/Friends'
 import Rewards from './pages/Rewards'
 import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/history" element={<History />} />

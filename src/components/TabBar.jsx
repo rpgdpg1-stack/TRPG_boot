@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
 import MuscleIcon from './MuscleIcon'
-import { getMyFriendsPlace } from '../lib/leaderboard'
-import { EVENTS, on } from '../lib/events'
 
 /**
  * Таб-бар — 3 вкладки: Рейтинг / Тренировки / Профиль.
@@ -24,16 +22,7 @@ export default function TabBar() {
 
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
   const [profilePopTick, setProfilePopTick] = useState(0)
-  const [ratingPopTick, setRatingPopTick] = useState(0)
-  const [friendsPlace, setFriendsPlace] = useState(1)
-
-  useEffect(() => {
-    const load = () => { getMyFriendsPlace().then(setFriendsPlace) }
-    load()
-    const offReady = on(EVENTS.USER_READY, load)
-    const offChanged = on(EVENTS.USER_CHANGED, load)
-    return () => { offReady(); offChanged() }
-  }, [])
+  const [friendsPopTick, setFriendsPopTick] = useState(0)
 
   const isHiddenOnPath =
     location.pathname.startsWith('/workout') ||
@@ -49,12 +38,12 @@ export default function TabBar() {
 
   const tabs = [
     {
-      id: 'rating',
-      path: '/leaderboard?tab=friends',
-      label: 'Рейтинг',
-      iconName: 'leaderboard',
-      isActive: location.pathname === '/leaderboard',
-      canTap: location.pathname !== '/leaderboard'
+      id: 'friends',
+      path: '/friends',
+      label: 'Друзья',
+      iconName: 'friends',
+      isActive: location.pathname === '/friends',
+      canTap: location.pathname !== '/friends'
     },
     {
       id: 'workouts',
@@ -78,7 +67,7 @@ export default function TabBar() {
     haptic.light()
     if (tab.id === 'workouts') setMuscleFlexTick(t => t + 1)
     if (tab.id === 'profile') setProfilePopTick(t => t + 1)
-    if (tab.id === 'rating') setRatingPopTick(t => t + 1)
+    if (tab.id === 'friends') setFriendsPopTick(t => t + 1)
     if (!tab.canTap) return
     navigate(tab.path)
   }
@@ -130,19 +119,19 @@ export default function TabBar() {
                   color={tab.isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
-            ) : tab.id === 'rating' ? (
+            ) : tab.id === 'friends' ? (
               <span
-                key={`ratingpop-${ratingPopTick}`}
+                key={`friendspop-${friendsPopTick}`}
                 style={{
                   display: 'inline-flex',
                   transformOrigin: 'center center',
-                  animation: (ratingPopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
+                  animation: (friendsPopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
                 }}
               >
                 <UiIcon
-                  name="leaderboard"
+                  name="friends"
                   size={32}
-                  color={tab.isActive ? '#FFD700' : 'rgba(255,255,255,0.5)'}
+                  color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
             ) : tab.iconName ? (
@@ -155,29 +144,12 @@ export default function TabBar() {
               tab.icon
             )}
           </span>
-          {tab.id === 'rating' ? (
-            // #N — отдельный span БЕЗ styles.label. Серый (#888) при неактиве,
-            // зелёный при активе. rgba(255,255,255,0.5) читался почти белым,
-            // поэтому используем настоящий серый --color-text-secondary.
-            <span style={{
-              fontFamily: 'var(--font-tiny5)',
-              fontSize: '10px',
-              fontWeight: 600,
-              letterSpacing: '0.5px',
-              whiteSpace: 'nowrap',
-              transition: 'color 0.25s ease',
-              color: tab.isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)'
-            }}>
-              #{friendsPlace}
-            </span>
-          ) : (
-            <span style={{
-              ...styles.label,
-              color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
-            }}>
-              {tab.label}
-            </span>
-          )}
+          <span style={{
+            ...styles.label,
+            color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+          }}>
+            {tab.label}
+          </span>
         </button>
       ))}
     </nav>
