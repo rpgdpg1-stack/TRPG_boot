@@ -20,6 +20,7 @@ import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
 import StreakFlame from './StreakFlame'
 import { getFrameByRankIndex, rankIndexFromMuscles } from '../lib/frames'
+import { getImmortalAwards } from '../lib/rewards'
 
 /**
  * Главный блок персонажа на Главной.
@@ -59,6 +60,7 @@ export default function PlayerCard() {
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
   const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
+  const [medals, setMedals] = useState({ gold: 0, silver: 0, bronze: 0, best_place: null })
 
   const [showStreakPopup, setShowStreakPopup] = useState(false)
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
@@ -81,12 +83,14 @@ export default function PlayerCard() {
         getTotalXP(),
         getWeeklyStreak(),
         getRecentMuscleHistory(3),
-        getMyLeaguePlace()
-      ]).then(([xpVal, streak, history, lp]) => {
+        getMyLeaguePlace(),
+        getImmortalAwards()
+      ]).then(([xpVal, streak, history, lp, aw]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
         setRecentHistory(history)
         setLeaguePlace(lp)
+        setMedals(aw)
       })
     }
 
@@ -228,6 +232,17 @@ export default function PlayerCard() {
             )}
           </div>
         </button>
+
+        {medals.best_place && (
+          <div style={styles.medalBadge}>
+            <span style={styles.medalBadgeEmoji}>
+              {medals.best_place === 1 ? '🥇' : medals.best_place === 2 ? '🥈' : '🥉'}
+            </span>
+            <span style={styles.medalBadgeCount}>
+              ×{medals.best_place === 1 ? medals.gold : medals.best_place === 2 ? medals.silver : medals.bronze}
+            </span>
+          </div>
+        )}
 
         <div style={styles.infoColumn}>
 
@@ -423,6 +438,29 @@ const styles = {
     fontSize: '38px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
+  },
+  medalBadge: {
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
+    padding: '4px 8px',
+    background: 'rgba(255, 255, 255, 0.04)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '12px',
+    alignSelf: 'center'
+  },
+  medalBadgeEmoji: {
+    fontSize: '24px',
+    lineHeight: 1
+  },
+  medalBadgeCount: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '11px',
+    color: 'var(--color-text)',
+    letterSpacing: '0.5px',
+    lineHeight: 1
   },
   infoColumn: {
     flex: 1,
