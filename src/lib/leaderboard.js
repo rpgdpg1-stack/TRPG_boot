@@ -125,6 +125,42 @@ export async function getMyFriendsPlace() {
 }
 
 /**
+ * Моё место в ЛИГЕ (не среди друзей). Для главной и профиля рядом с кубком.
+ * Возвращает { place, totalInLeague, rankIndex }. Дефолт { 1, 1, 0 }.
+ */
+export async function getMyLeaguePlace() {
+  const user = getCurrentUser()
+  if (!user) return { place: 1, totalInLeague: 1, rankIndex: 0 }
+
+  const cacheKey = `my-league-place:${user.id}`
+  const cached = cacheGet(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase.rpc('api_get_my_league_place', {
+      p_user_id: user.id
+    })
+
+    if (error) {
+      console.error('[leaderboard] my league place error:', error)
+      return { place: 1, totalInLeague: 1, rankIndex: 0 }
+    }
+
+    const row = Array.isArray(data) ? data[0] : data
+    const result = {
+      place: row?.place ?? 1,
+      totalInLeague: row?.total_in_league ?? 1,
+      rankIndex: row?.rank_index ?? 0
+    }
+    cacheSet(cacheKey, result, TTL.MEDIUM)
+    return result
+  } catch (e) {
+    console.error('[leaderboard] my league place exception:', e)
+    return { place: 1, totalInLeague: 1, rankIndex: 0 }
+  }
+}
+
+/**
  * Сбросить все кеши лидерборда. Вызывается:
  *  - после finish workout (мускулы изменились → место могло поменяться)
  *  - после complete quest (мускулы изменились)
@@ -136,4 +172,5 @@ export function invalidateLeaderboardCache() {
   cacheInvalidate(`leaderboard-friends:${user.id}`)
   cacheInvalidate(`leaderboard-league:${user.id}`)
   cacheInvalidate(`my-friend-place:${user.id}`)
+  cacheInvalidate(`my-league-place:${user.id}`)
 }

@@ -9,7 +9,8 @@ import {
   getXPInCurrentLevel,
   getTotalXPProgress
 } from '../lib/levels'
-import { getMyFriendsPlace } from '../lib/leaderboard'
+import { getMyLeaguePlace } from '../lib/leaderboard'
+import { getLeagueByRankIndex, formatLeaguePlace } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
@@ -56,7 +57,7 @@ export default function PlayerCard() {
   const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
-  const [friendsPlace, setFriendsPlace] = useState(1)
+  const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
 
   const [showStreakPopup, setShowStreakPopup] = useState(false)
   const [muscleFlexTick, setMuscleFlexTick] = useState(0)
@@ -79,12 +80,12 @@ export default function PlayerCard() {
         getTotalXP(),
         getWeeklyStreak(),
         getRecentMuscleHistory(3),
-        getMyFriendsPlace()
-      ]).then(([xpVal, streak, history, place]) => {
+        getMyLeaguePlace()
+      ]).then(([xpVal, streak, history, lp]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
         setRecentHistory(history)
-        setFriendsPlace(place)
+        setLeaguePlace(lp)
       })
     }
 
@@ -174,7 +175,7 @@ export default function PlayerCard() {
 
   const handlePlaceTap = () => {
     haptic.light()
-    navigate('/leaderboard?tab=friends')
+    navigate('/leaderboard?tab=league')
   }
 
   const handleStreakTap = (e) => {
@@ -245,9 +246,11 @@ export default function PlayerCard() {
             <button
               onClick={handlePlaceTap}
               style={styles.friendsPlaceButton}
-              aria-label="Открыть рейтинг друзей"
+              aria-label="Открыть рейтинг лиги"
             >
-              🏆 #{friendsPlace}
+              🏆 <span style={{ color: getLeagueByRankIndex(leaguePlace.rankIndex).color }}>
+                {formatLeaguePlace(leaguePlace.place, leaguePlace.totalInLeague)}
+              </span>
             </button>
 
             {showRanks && (

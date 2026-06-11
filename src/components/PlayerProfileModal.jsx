@@ -114,6 +114,7 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           friendsPlace={row.place}
           rankIndex={row.rank_index}
           placeInLeague={true}
+          totalInLeague={row.total_in_league}
           lastWorkout={pub?.last_workout || null}
           interactive={false}
           showUsername={false}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
+import { getLeagueByRankIndex, formatLeaguePlace } from '../lib/leagues'
 import { getProgramByDbId } from '../features/programs/registry'
 import { formatRelative } from '../utils/history'
 import RankIcon from './RankIcon'
@@ -57,6 +58,9 @@ export default function ProfileHeader({
   streak = null,
   totalWorkouts = null,
   friendsPlace = 1,
+  rankIndex = null,          // индекс лиги для бейджа места (если placeInLeague)
+  placeInLeague = false,     // true → кубок + место/процент в цвет лиги
+  totalInLeague = null,      // размер лиги для расчёта процента
   lastWorkout = null,        // { finished_at, program_id, day } | null
   recentHistory = [],
   recentWorkouts = [],
@@ -74,6 +78,14 @@ export default function ProfileHeader({
   const rank = getRankByLevel(level)
   const displayName = user?.first_name || 'ATHLETE'
   const username = user?.username ? `@${user.username}` : ''
+
+  // Бейдж места рядом с кубком. В режиме лиги — место/процент в цвет лиги,
+  // иначе старое поведение (#место).
+  const effRankIndex = rankIndex != null ? rankIndex : (level >= 31 ? 10 : Math.floor((level - 1) / 3))
+  const placeColor = placeInLeague ? getLeagueByRankIndex(effRankIndex).color : 'var(--color-text)'
+  const placeText = placeInLeague
+    ? formatLeaguePlace(friendsPlace, totalInLeague)
+    : `#${friendsPlace}`
 
   const { current, needed } = getXPInCurrentLevel(xp)
   const nextRank = getRankByLevel(level + 1)
@@ -172,10 +184,10 @@ export default function ProfileHeader({
 
         {onPlaceTap ? (
           <button onClick={handlePlace} style={styles.placeButton} aria-label="Открыть рейтинг">
-            🏆 #{friendsPlace}
+            🏆 <span style={{ color: placeColor }}>{placeText}</span>
           </button>
         ) : (
-          <span style={styles.placeStatic}>🏆 #{friendsPlace}</span>
+          <span style={styles.placeStatic}>🏆 <span style={{ color: placeColor }}>{placeText}</span></span>
         )}
 
         {interactive && showRanks && (

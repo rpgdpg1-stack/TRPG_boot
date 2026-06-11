@@ -78,3 +78,22 @@ export function musclesUntilNextLeague(totalMuscles) {
   if (current.isImmortal) return null
   return current.maxMuscles - totalMuscles
 }
+
+/**
+ * Форматирование места в лиге для отображения рядом с кубком.
+ *
+ * Правило (для мотивации):
+ *  - топ-100  → "#42" (точное место)
+ *  - ниже 100 → "Топ 12%" (процент = place / total, округляем, 1..99)
+ *
+ * Возвращает строку без кубка (кубок добавляет компонент).
+ */
+export function formatLeaguePlace(place, totalInLeague) {
+  const p = Number(place) || 1
+  if (p <= 100) return `#${p}`
+
+  const total = Number(totalInLeague) || p
+  let pct = Math.round((p / total) * 100)
+  pct = Math.min(99, Math.max(1, pct))
+  return `Топ ${pct}%`
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
-import { getFriendsLeaderboard, getMyFriendsPlace } from '../lib/leaderboard'
+import { getFriendsLeaderboard, getMyLeaguePlace } from '../lib/leaderboard'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
@@ -41,7 +41,7 @@ export default function Profile() {
       totalWorkouts: cachedTotal
     }
   })
-  const [friendsPlace, setFriendsPlace] = useState(1)
+  const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
   // Число друзей — для показа кнопки «Пригласить друга» только пока друзей мало.
   // Кешируем в localStorage, чтобы при заходе не мигало (как totalWorkouts).
   const [friendsCount, setFriendsCount] = useState(() => {
@@ -78,13 +78,13 @@ export default function Profile() {
         getTotalXP(),
         getWeeklyStreak(),
         getTotalWorkouts(),
-        getMyFriendsPlace(),
+        getMyLeaguePlace(),
         getRecentMuscleHistory(3),
         getRecentWorkouts(3),
         getFriendsLeaderboard()
-      ]).then(([xp, streak, totalWorkouts, place, history, workouts, friendsRows]) => {
+      ]).then(([xp, streak, totalWorkouts, lp, history, workouts, friendsRows]) => {
         setStats({ xp, streak, totalWorkouts })
-        setFriendsPlace(place)
+        setLeaguePlace(lp)
         setRecentHistory(history)
         setRecentWorkouts(workouts)
 
@@ -152,7 +152,7 @@ export default function Profile() {
 
   const handlePlaceTap = () => {
     haptic.light()
-    navigate('/leaderboard?tab=friends')
+    navigate('/leaderboard?tab=league')
   }
 
   // Кнопку «Пригласить друга» показываем, пока друзей мало (< FRIENDS_INVITE_LIMIT).
@@ -169,7 +169,10 @@ export default function Profile() {
           xp={stats.xp}
           streak={stats.streak}
           totalWorkouts={stats.totalWorkouts}
-          friendsPlace={friendsPlace}
+          friendsPlace={leaguePlace.place}
+          rankIndex={leaguePlace.rankIndex}
+          placeInLeague={true}
+          totalInLeague={leaguePlace.totalInLeague}
           lastWorkout={recentWorkouts.length > 0 ? recentWorkouts[0] : null}
           recentHistory={recentHistory}
           recentWorkouts={recentWorkouts}
