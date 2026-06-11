@@ -158,3 +158,42 @@ export async function setActiveTitle(value) {
     return false
   }
 }
+
+/**
+ * Снимок последнего сезона (итоги) — или null если показывать нечего.
+ * { id, season_key, season_name, start_rank_index, final_rank_index,
+ *   ranks_climbed, final_place, final_league_size, is_immortal_top3 }
+ */
+export async function getSeasonSummary() {
+  const user = getCurrentUser()
+  if (!user) return null
+  try {
+    const { data, error } = await supabase.rpc('api_get_season_summary', { p_user_id: user.id })
+    if (error) {
+      console.error('[rewards] getSeasonSummary error:', error)
+      return null
+    }
+    return data || null
+  } catch (e) {
+    console.error('[rewards] getSeasonSummary exception:', e)
+    return null
+  }
+}
+
+/**
+ * Пометить снимок сезона показанным (после закрытия модалки итогов).
+ */
+export async function markSeasonSummaryShown(summaryId) {
+  if (!summaryId) return false
+  try {
+    const { error } = await supabase.rpc('api_mark_season_summary_shown', { p_summary_id: summaryId })
+    if (error) {
+      console.error('[rewards] markSeasonSummaryShown error:', error)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error('[rewards] markSeasonSummaryShown exception:', e)
+    return false
+  }
+}
