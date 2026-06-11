@@ -127,7 +127,7 @@ export default function Profile() {
       items: [
         { id: 'history',     icon: '📋',             title: 'История',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
-        { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Значки лиг · Сезонные рамки', path: '/rewards' }
+        { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Титулы · Рамки · Медали', path: '/rewards' }
       ]
     },
     {
