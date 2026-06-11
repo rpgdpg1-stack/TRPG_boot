@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
 import { getProgramByDbId } from '../features/programs/registry'
-import { formatRelative, formatRelativeWithDate } from '../utils/history'
+import { formatRelative } from '../utils/history'
 import RankIcon from './RankIcon'
 import RanksPopup from './RanksPopup'
 import StreakFlame from './StreakFlame'
@@ -118,12 +118,10 @@ export default function ProfileHeader({
     if (onPlaceTap) onPlaceTap()
   }
 
-  // Своя страница (interactive) — показываем относительный формат + дату.
-  // Чужой профиль из рейтинга — только относительный ("3 дня назад" / "Очень давно").
+  // Везде — только относительный формат ("Сегодня" / "2 дня назад" / "Очень давно").
+  // Точную дату не показываем: она есть в Истории, тут лишняя.
   const lastWorkoutWhen = lastWorkout
-    ? (interactive
-        ? formatRelativeWithDate(lastWorkout.finished_at)
-        : formatRelative(lastWorkout.finished_at))
+    ? formatRelative(lastWorkout.finished_at)
     : null
   const lastWorkoutText = lastWorkoutWhen
     ? `Последняя тренировка — ${lastWorkoutWhen}`

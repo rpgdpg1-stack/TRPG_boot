@@ -92,7 +92,7 @@ export default function Profile() {
 
   const sectionGroups = [
     {
-      title: 'ДОСТИЖЕНИЯ',
+      title: 'ПРОФИЛЬ',
       items: [
         { id: 'history',     icon: '📋',             title: 'История',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
