@@ -41,7 +41,14 @@ export default function Profile() {
       totalWorkouts: cachedTotal
     }
   })
-  const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
+  // Стартовый rankIndex считаем из кешированного xp (а не хардкод 0),
+  // иначе кубок места мигает зелёным «Новичок» перед загрузкой реальной лиги.
+  const [leaguePlace, setLeaguePlace] = useState(() => {
+    const u = getCurrentUser()
+    const muscles = u?.total_muscles || 0
+    const rankIndex = Math.min(Math.max(Math.floor(muscles / 900), 0), 10)
+    return { place: 1, totalInLeague: 1, rankIndex }
+  })
   // Число друзей — для показа кнопки «Пригласить друга» только пока друзей мало.
   // Кешируем в localStorage, чтобы при заходе не мигало (как totalWorkouts).
   const [friendsCount, setFriendsCount] = useState(() => {

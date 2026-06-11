@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT } from '../lib/backups'
+import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
 import MuscleIcon from './MuscleIcon'
@@ -28,8 +29,13 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   const me = getCurrentUser()
   const isSelf = me && row.user_id === me.id
 
-  const [pub, setPub] = useState(null)
-  const [backupState, setBackupState] = useState('idle') // idle|sending|already|limit
+  // Стартуем pub из кеша (если друг уже открывался) — тогда тренировки/стрик/
+  // последняя тренировка показываются сразу, без мелькания «—». Для чужих из
+  // лиги кеша обычно нет → pub=null → покажем скелетон.
+  const [pub, setPub] = useState(() => getCachedProfile(row.user_id))
+  // backupState стартует 'loading' — кнопку подстраховки не рисуем, пока сервер
+  // не сказал реальный статус (иначе мигает «Подстраховать» → «Уже подстрахован»).
+  const [backupState, setBackupState] = useState('loading') // loading|idle|sending|already|limit
   const [todayCount, setTodayCount] = useState(null)
   const [bicepsTick, setBicepsTick] = useState(0)
   const bicepsTimers = useRef([])
@@ -40,6 +46,8 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
       if (cancelled) return
       setPub(data)
       if (data) {
+        // Обновляем кеш визуальной части — для мгновенного показа в след. раз
+        setCachedProfile(row.user_id, data)
         setTodayCount(data.today_backup_count ?? null)
         if (data.already_backed_today) {
           setBackupState('already')
@@ -48,6 +56,9 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
         } else {
           setBackupState('idle')
         }
+      } else {
+        // Сервер не ответил — снимаем loading, даём попробовать подстраховать
+        setBackupState('idle')
       }
     })
     return () => { cancelled = true }
@@ -116,12 +127,17 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           placeInLeague={true}
           totalInLeague={row.total_in_league}
           lastWorkout={pub?.last_workout || null}
+          statsLoading={pub === null}
           interactive={false}
           showUsername={false}
         />
 
         {!isSelf && (
-          backupState === 'idle' ? (
+          backupState === 'loading' ? (
+            // Статус ещё не пришёл с сервера — нейтральный плейсхолдер той же
+            // высоты, чтобы кнопка не прыгала «Подстраховать»→«Уже подстрахован».
+            <div style={{ ...styles.backupButton, ...styles.backupButtonDisabled, ...styles.backupButtonSkeleton }} />
+          ) : backupState === 'idle' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button onClick={handleBackup} className="press-tile" style={styles.backupButton}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -134,10 +150,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
                 </div>
               )}
             </div>
-          ) : backupState === 'sending' ? (
-            <button disabled style={{ ...styles.backupButton, ...styles.backupButtonDisabled }}>
-              {buttonText}
-            </button>
           ) : (
             <button disabled style={{ ...styles.backupButton, ...styles.backupButtonDisabled }}>
               {buttonText}
@@ -153,6 +165,10 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
         @keyframes profileModalPanel {
           0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes profileSkeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50%      { opacity: 0.7; }
         }
       `}</style>
     </div>,
@@ -187,6 +203,8 @@ const styles = {
   },
   backupButton: {
     width: '100%',
+    minHeight: '56px',          // единая высота с close и disabled-вариантом
+    boxSizing: 'border-box',    // padding не распирает высоту сверх minHeight
     padding: '16px',
     display: 'flex',
     alignItems: 'center',
@@ -212,6 +230,10 @@ const styles = {
     letterSpacing: '0.5px',
     fontSize: '12px'
   },
+  backupButtonSkeleton: {
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    animation: 'profileSkeletonPulse 1.2s ease-in-out infinite'
+  },
   backupCounter: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
@@ -222,7 +244,12 @@ const styles = {
   },
   close: {
     width: '100%',
+    minHeight: '56px',          // единая высота со всеми кнопками подстраховки
+    boxSizing: 'border-box',
     padding: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     background: 'rgba(255, 255, 255, 0.06)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
