@@ -172,6 +172,26 @@ export async function saveFriendProgram(token) {
 }
 
 /**
+ * Каталог упражнений для конструктора/пикера. Прямой select (RLS exercises =
+ * public read) — нужен muscle_group, которого нет в api_get_all_exercises.
+ * Кэшируем в памяти модуля на время сессии.
+ */
+let _catalog = null
+export async function loadExerciseCatalog() {
+  if (_catalog) return _catalog
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('id, name, muscle_group, sub_group, type, preview_url, priority')
+    .order('priority', { ascending: true })
+  if (error) {
+    console.error('[customProgram] loadExerciseCatalog error:', error)
+    return []
+  }
+  _catalog = data || []
+  return _catalog
+}
+
+/**
  * Сбросить кэш и реестр пользовательских программ (например при сбросе данных).
  */
 export function clearUserProgramsCache() {

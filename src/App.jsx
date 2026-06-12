@@ -23,6 +23,7 @@ import Rewards from './pages/Rewards'
 import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
+import ProgramConstructor from './pages/ProgramConstructor'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/category/:id" element={<Category />} />
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swim/:programId" element={<SwimWorkout />} />
+          <Route path="/constructor" element={<ProgramConstructor />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           
           <Route path="/profile" element={<Profile />} />
