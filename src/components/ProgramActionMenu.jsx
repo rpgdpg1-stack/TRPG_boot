@@ -44,8 +44,16 @@ export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete,
   const run = (fn) => (e) => { e.stopPropagation(); haptic.light(); fn() }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.menu} onClick={(e) => e.stopPropagation()}>
+    <div
+      style={styles.overlay}
+      onClick={onClose}
+      onPointerDown={(e) => { if (e.target === e.currentTarget) e.preventDefault() }}
+    >
+      <div
+        style={styles.menu}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
 
         <div style={styles.actionsBlock}>
           {editable && (
@@ -95,10 +103,6 @@ export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete,
 
       <style>{`
         @keyframes menuOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes menuPanelScaleIn {
-          0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
       `}</style>
     </div>
   )
@@ -154,7 +158,6 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: '10px',
-    animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
   actionsBlock: {

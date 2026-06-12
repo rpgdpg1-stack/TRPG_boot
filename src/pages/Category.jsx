@@ -208,6 +208,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
 
   const handleCardTap = () => {
     if (lpFired.current) { lpFired.current = false; return }
+    if (menuOpen) return
     if (!prog.available) return
     haptic.light()
     if (prog.kind === 'swim') {

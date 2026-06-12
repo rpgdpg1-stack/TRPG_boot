@@ -185,7 +185,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
           style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
         >
           {atLimit
-            ? `Достигнут лимит ${max}/${max}`
+            ? `Достигнут лимит ${dayLetter} ${max}/${max}`
             : `Добавить упражнения · ${dayLetter} · ${count}/${max}`}
         </button>
       </div>
@@ -213,17 +213,21 @@ const styles = {
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
   footer: {
-    flexShrink: 0,
-    padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
-    background: 'var(--color-bg)',
-    borderTop: '1px solid rgba(255,255,255,0.06)'
+    position: 'fixed',
+    bottom: 0, left: 0, right: 0,
+    padding: '24px 16px calc(20px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 30%, var(--color-bg) 70%)',
+    zIndex: 50,
+    pointerEvents: 'none'
   },
   doneBtn: {
-    width: '100%', padding: '18px', border: 'none', borderRadius: '16px',
+    width: '100%', padding: '16px', border: 'none', borderRadius: '16px',
     background: 'var(--color-primary)', color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px',
+    pointerEvents: 'auto',
+    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
   },
-  doneBtnLimit: { background: '#E84545', color: '#fff' },
+  doneBtnLimit: { background: 'transparent', color: '#E84545', boxShadow: 'none' },
   chipsRow: {
     display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
     flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch'
@@ -237,7 +241,7 @@ const styles = {
     flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
   },
-  list: { flex: 1, overflowY: 'auto', padding: '8px 16px 32px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  list: { flex: 1, overflowY: 'auto', padding: '8px 16px 130px', display: 'flex', flexDirection: 'column', gap: '10px' },
   empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
   preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },

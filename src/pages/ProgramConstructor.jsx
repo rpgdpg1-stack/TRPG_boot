@@ -277,10 +277,13 @@ export default function ProgramConstructor() {
       </div>
 
       <button
-        onClick={() => { haptic.light(); setPickerOpen(true) }}
-        style={styles.addButton}
+        onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
+        disabled={atLimit}
+        style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
       >
-        Добавить упражнения · {LETTERS[activeIdx]} · {currentDay.length}/{MAX_PER_DAY}
+        {atLimit
+          ? `Достигнут лимит ${LETTERS[activeIdx]} ${MAX_PER_DAY}/${MAX_PER_DAY}`
+          : `Добавить упражнения · ${LETTERS[activeIdx]} · ${currentDay.length}/${MAX_PER_DAY}`}
       </button>
 
       <button
@@ -360,6 +363,10 @@ const styles = {
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
     background: 'transparent', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px'
+  },
+  addButtonLimit: {
+    border: '1.5px dashed rgba(232,69,69,0.4)',
+    color: '#E84545'
   },
   saveButton: {
     width: '100%', padding: '18px',
