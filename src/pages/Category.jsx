@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes, confirm } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory, getProgramEmoji } from '../features/programs/registry'
-import { deleteMyProgram } from '../features/programs/customProgram'
+import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 
@@ -166,6 +166,11 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
     if (success && onDeleted) onDeleted()
   }
 
+  const handleShare = async () => {
+    haptic.light()
+    await shareProgramLink(prog.dbId)
+  }
+
   useEffect(() => {
     if (!prog.available) return
     let cancelled = false
@@ -265,6 +270,11 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
             {prog.editable && (
               <button onClick={(e) => { e.stopPropagation(); handleEdit() }} style={cardStyles.actionBtn}>
                 Редактировать
+              </button>
+            )}
+            {prog.editable && (
+              <button onClick={(e) => { e.stopPropagation(); handleShare() }} style={cardStyles.actionBtn}>
+                Поделиться
               </button>
             )}
             <button onClick={(e) => { e.stopPropagation(); handleDelete() }} style={cardStyles.actionDanger}>

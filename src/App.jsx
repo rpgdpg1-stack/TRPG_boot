@@ -31,7 +31,8 @@ import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummary
 import { getPendingBackups, markBackupsShown } from './lib/backups'
 import { loadFavoritesEntries, getActiveDay } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
-import { loadMyPrograms, hydrateUserProgramsFromCache } from './features/programs/customProgram'
+import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
+import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
@@ -107,6 +108,7 @@ export default function App() {
 
         <SettingsButtonController />
         <RewardsQueueController />
+        <ShareImportController />
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -362,4 +364,45 @@ function RewardsQueueController() {
   }
 
   return null
+}
+
+/**
+ * Приём программы по ссылке. Читает start_param ('share_<токен>'), тянет снимок
+ * и показывает модалку сохранения. Если автор — сам пользователь, не предлагаем.
+ */
+function ShareImportController() {
+  const navigate = useNavigate()
+  const [snapshot, setSnapshot] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      const token = getStartParamShareToken()
+      if (!token) return
+      const user = getCurrentUser()
+      if (!user) return
+      const snap = await getSharedProgram(token)
+      if (cancelled || !snap) return
+      if (snap.author_id === user.id) return // своя же программа
+      setSnapshot({ ...snap, token })
+    }
+
+    if (getCurrentUser()) run()
+    const off = on(EVENTS.USER_READY, run)
+    return () => { cancelled = true; off() }
+  }, [])
+
+  if (!snapshot) return null
+
+  const replacing = !!getProgramBySlug('friend')
+
+  return (
+    <SaveFriendProgramModal
+      snapshot={snapshot}
+      replacing={replacing}
+      onClose={() => setSnapshot(null)}
+      onSaved={() => { setSnapshot(null); navigate('/category/gym') }}
+    />
+  )
 }

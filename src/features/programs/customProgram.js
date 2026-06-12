@@ -16,6 +16,8 @@ import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet, localRemove } from '../../utils/storage'
 
+const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
+
 const CACHE_KEY = 'user-programs'
 
 const EMOJI = { custom: '💪', shared: '🤝' }
@@ -144,6 +146,38 @@ export async function shareMyProgram(programId) {
 }
 
 /**
+ * Поделиться программой: получаем токен, формируем deep-link и открываем
+ * нативный share-диалог Telegram. Fallback (dev в браузере) — копия в буфер.
+ */
+export async function shareProgramLink(programId) {
+  const token = await shareMyProgram(programId)
+  if (!token) {
+    window.alert('Не удалось создать ссылку. Попробуй ещё раз.')
+    return false
+  }
+
+  const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
+  const appName = import.meta.env.VITE_APP_NAME || 'app'
+  const link = `https://t.me/${botUsername}/${appName}?startapp=share_${token}`
+  const text = `Забирай мою программу тренировок в RPG Training App 💪`
+
+  if (tg && typeof tg.openTelegramLink === 'function') {
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
+    tg.openTelegramLink(shareUrl)
+    return true
+  }
+
+  try {
+    await navigator.clipboard.writeText(link)
+    window.alert(`Ссылка скопирована:\n${link}`)
+    return true
+  } catch {
+    window.alert(`Скопируй ссылку:\n${link}`)
+    return false
+  }
+}
+
+/**
  * Прочитать снимок программы по токену (для модалки сохранения).
  */
 export async function getSharedProgram(token) {
@@ -153,6 +187,16 @@ export async function getSharedProgram(token) {
     return null
   }
   return data
+}
+
+/**
+ * Достать токен программы из start_param Telegram (префикс 'share_').
+ * Возвращает чистый токен или null, если параметр не про шеринг.
+ */
+export function getStartParamShareToken() {
+  const param = tg?.initDataUnsafe?.start_param
+  if (!param || !param.startsWith('share_')) return null
+  return param.slice('share_'.length)
 }
 
 /**
