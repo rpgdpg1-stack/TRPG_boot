@@ -46,15 +46,21 @@ export default function ProgramConstructor() {
   const [catalog, setCatalog] = useState([])
   const exMap = useMemo(() => Object.fromEntries(catalog.map(e => [e.id, e])), [catalog])
 
-  // Перетаскивание упражнений внутри дня (нативно, по «ручке»).
-  const [draggingIdx, setDraggingIdx] = useState(null)
-  const dragIndexRef = useRef(null)
+  // Перетаскивание упражнений внутри дня: тащим за «ручку», соседи плавно
+  // расступаются, перетаскиваемая карточка приподнимается. Порядок применяется
+  // при отпускании.
+  const [drag, setDrag] = useState(null) // { startIndex, targetIndex, dy, stride, startY }
+  const dragRef = useRef(null)
   const rowRefs = useRef([])
 
   useEffect(() => {
-    backButton.setHandler(() => navigate('/category/gym'))
+    if (pickerOpen) {
+      backButton.setHandler(() => setPickerOpen(false))
+    } else {
+      backButton.setHandler(() => navigate('/category/gym'))
+    }
     lockVerticalSwipes()
-  }, [navigate])
+  }, [navigate, pickerOpen])
 
   useEffect(() => {
     let cancelled = false
@@ -75,12 +81,13 @@ export default function ProgramConstructor() {
     setActiveIdx(i => Math.min(i, n - 1))
   }
 
-  const handleAdd = (ex) => {
+  const handleToggle = (ex) => {
     setDays(prev => {
       const next = prev.map(d => [...d])
       const day = next[activeIdx]
-      if (day.length >= MAX_PER_DAY || day.includes(ex.id)) return prev
-      day.push(ex.id)
+      const i = day.indexOf(ex.id)
+      if (i >= 0) day.splice(i, 1)                       // снять выбор
+      else if (day.length < MAX_PER_DAY) day.push(ex.id) // добавить
       return next
     })
   }
@@ -129,35 +136,47 @@ export default function ProgramConstructor() {
   const handleDragStart = (e, idx) => {
     e.stopPropagation()
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
-    dragIndexRef.current = idx
-    setDraggingIdx(idx)
+    const el = rowRefs.current[idx]
+    const stride = (el?.offsetHeight || 72) + 10 // высота строки + gap списка (10px)
+    const data = { startIndex: idx, targetIndex: idx, dy: 0, stride, startY: e.clientY }
+    dragRef.current = data
+    setDrag(data)
     haptic.medium()
   }
 
   const handleDragMove = (e) => {
-    if (dragIndexRef.current === null) return
-    const y = e.clientY
-    let target = dragIndexRef.current
-    for (let i = 0; i < currentDay.length; i++) {
-      const el = rowRefs.current[i]
-      if (!el) continue
-      const r = el.getBoundingClientRect()
-      if (y < r.top + r.height / 2) { target = i; break }
-      target = i
-    }
-    if (target !== dragIndexRef.current) {
-      moveItem(dragIndexRef.current, target)
-      dragIndexRef.current = target
-      setDraggingIdx(target)
-      haptic.selection()
-    }
+    const d = dragRef.current
+    if (!d) return
+    const dy = e.clientY - d.startY
+    const len = (days[activeIdx] || []).length
+    let targetIndex = d.startIndex + Math.round(dy / d.stride)
+    targetIndex = Math.max(0, Math.min(len - 1, targetIndex))
+    if (targetIndex !== d.targetIndex) haptic.selection()
+    const next = { ...d, dy, targetIndex }
+    dragRef.current = next
+    setDrag(next)
   }
 
   const handleDragEnd = (e) => {
-    if (dragIndexRef.current === null) return
+    const d = dragRef.current
+    if (!d) return
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
-    dragIndexRef.current = null
-    setDraggingIdx(null)
+    if (d.targetIndex !== d.startIndex) moveItem(d.startIndex, d.targetIndex)
+    dragRef.current = null
+    setDrag(null)
+  }
+
+  // Сдвиг каждой строки во время перетаскивания (плавное расступание соседей).
+  const rowDragStyle = (idx) => {
+    if (!drag) return { transition: 'transform 0.18s ease', zIndex: 1 }
+    const { startIndex, targetIndex, dy, stride } = drag
+    if (idx === startIndex) {
+      return { transform: `translateY(${dy}px) scale(1.03)`, transition: 'none', zIndex: 20 }
+    }
+    let shift = 0
+    if (targetIndex > startIndex && idx > startIndex && idx <= targetIndex) shift = -stride
+    else if (targetIndex < startIndex && idx >= targetIndex && idx < startIndex) shift = stride
+    return { transform: `translateY(${shift}px)`, transition: 'transform 0.18s ease', zIndex: 1 }
   }
 
   return (
@@ -213,8 +232,6 @@ export default function ProgramConstructor() {
         ))}
       </div>
 
-      <div style={styles.counter}>{currentDay.length} / {MAX_PER_DAY}</div>
-
       {/* Список упражнений дня */}
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
@@ -223,12 +240,12 @@ export default function ProgramConstructor() {
         {currentDay.map((exId, idx) => {
           const ex = exMap[exId]
           const c = getMuscleGroupColors(ex?.muscle_group)
-          const isDragging = draggingIdx === idx
+          const isDragging = drag?.startIndex === idx
           return (
             <div
               key={exId}
               ref={(el) => { rowRefs.current[idx] = el }}
-              style={{ ...styles.exRow, ...(isDragging ? styles.exRowDragging : {}) }}
+              style={{ ...styles.exRow, ...(isDragging ? styles.exRowDragging : {}), ...rowDragStyle(idx) }}
             >
               <div
                 onPointerDown={(e) => handleDragStart(e, idx)}
@@ -261,10 +278,9 @@ export default function ProgramConstructor() {
 
       <button
         onClick={() => { haptic.light(); setPickerOpen(true) }}
-        disabled={atLimit}
-        style={{ ...styles.addButton, opacity: atLimit ? 0.4 : 1 }}
+        style={styles.addButton}
       >
-        + ДОБАВИТЬ УПРАЖНЕНИЕ
+        Добавить упражнения · {LETTERS[activeIdx]} · {currentDay.length}/{MAX_PER_DAY}
       </button>
 
       <button
@@ -283,8 +299,7 @@ export default function ProgramConstructor() {
         <ExercisePicker
           excludeIds={new Set(currentDay)}
           atLimit={atLimit}
-          onAdd={handleAdd}
-          onClose={() => setPickerOpen(false)}
+          onToggle={handleToggle}
         />
       )}
     </div>
@@ -324,7 +339,6 @@ const styles = {
     padding: '6px 4px', fontFamily: 'var(--font-tiny5)', fontSize: '28px'
   },
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
-  counter: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRow: { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },

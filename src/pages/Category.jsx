@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes, confirm } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory, getProgramEmoji } from '../features/programs/registry'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
+import ProgramActionMenu from '../components/ProgramActionMenu'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 
@@ -152,6 +153,10 @@ const styles = {
 function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
   const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const lpTimer = useRef(null)
+  const lpFired = useRef(false)
+  const lpStart = useRef({ x: 0, y: 0 })
 
   const handleEdit = () => {
     haptic.light()
@@ -171,6 +176,27 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
     await shareProgramLink(prog.dbId)
   }
 
+  const handleLongPressDown = (e) => {
+    if (!prog.source || menuOpen) return
+    lpFired.current = false
+    lpStart.current = { x: e.clientX, y: e.clientY }
+    if (lpTimer.current) clearTimeout(lpTimer.current)
+    lpTimer.current = setTimeout(() => {
+      lpFired.current = true
+      haptic.medium()
+      setMenuOpen(true)
+    }, 450)
+  }
+  const handleLongPressMove = (e) => {
+    if (!lpTimer.current) return
+    const dx = Math.abs(e.clientX - lpStart.current.x)
+    const dy = Math.abs(e.clientY - lpStart.current.y)
+    if (dx > 10 || dy > 10) { clearTimeout(lpTimer.current); lpTimer.current = null }
+  }
+  const handleLongPressUp = () => {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null }
+  }
+
   useEffect(() => {
     if (!prog.available) return
     let cancelled = false
@@ -181,6 +207,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
   }, [prog.slug, prog.available])
 
   const handleCardTap = () => {
+    if (lpFired.current) { lpFired.current = false; return }
     if (!prog.available) return
     haptic.light()
     if (prog.kind === 'swim') {
@@ -200,6 +227,11 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
   return (
     <div
       onClick={handleCardTap}
+      onPointerDown={handleLongPressDown}
+      onPointerMove={handleLongPressMove}
+      onPointerUp={handleLongPressUp}
+      onPointerLeave={handleLongPressUp}
+      onPointerCancel={handleLongPressUp}
       className={prog.available ? 'press-tile' : ''}
       style={{
         ...cardStyles.card,
@@ -264,25 +296,17 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
         {prog.source === 'shared' && prog.authorName && (
           <div style={cardStyles.authorLine}>от {prog.authorName}</div>
         )}
-
-        {prog.source && (
-          <div style={cardStyles.userActions}>
-            {prog.editable && (
-              <button onClick={(e) => { e.stopPropagation(); handleEdit() }} style={cardStyles.actionBtn}>
-                Редактировать
-              </button>
-            )}
-            {prog.editable && (
-              <button onClick={(e) => { e.stopPropagation(); handleShare() }} style={cardStyles.actionBtn}>
-                Поделиться
-              </button>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); handleDelete() }} style={cardStyles.actionDanger}>
-              Удалить
-            </button>
-          </div>
-        )}
       </div>
+
+      {menuOpen && (
+        <ProgramActionMenu
+          editable={prog.editable}
+          onEdit={() => { setMenuOpen(false); handleEdit() }}
+          onShare={() => { setMenuOpen(false); handleShare() }}
+          onDelete={() => { setMenuOpen(false); handleDelete() }}
+          onClose={() => setMenuOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -403,32 +427,5 @@ const cardStyles = {
     fontSize: '11px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)'
-  },
-  userActions: {
-    display: 'flex',
-    gap: '8px',
-    marginTop: '2px'
-  },
-  actionBtn: {
-    padding: '6px 12px',
-    background: 'rgba(255, 255, 255, 0.08)',
-    border: 'none',
-    borderRadius: '8px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    letterSpacing: '0.3px'
-  },
-  actionDanger: {
-    padding: '6px 12px',
-    background: 'rgba(232, 69, 69, 0.12)',
-    border: 'none',
-    borderRadius: '8px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#E84545',
-    letterSpacing: '0.3px'
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { loadExerciseCatalog } from '../features/programs/customProgram'
 import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -13,14 +13,20 @@ import { haptic } from '../lib/telegram'
  *
  * onAdd(exercise) — добавить выбранное. onClose() — закрыть.
  */
-export default function ExercisePicker({ excludeIds, atLimit, onAdd, onClose }) {
+export default function ExercisePicker({ excludeIds, atLimit, onToggle }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
+  const inputRef = useRef(null)
 
   const excluded = excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])
+
+  const handleClearSearch = () => {
+    setSearch('')
+    try { inputRef.current?.blur() } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -66,23 +72,25 @@ export default function ExercisePicker({ excludeIds, atLimit, onAdd, onClose }) 
     setActiveGroup(prev => (prev === g ? null : g))
   }
 
-  const handleAdd = (ex) => {
-    if (atLimit || excluded.has(ex.id)) return
-    haptic.success()
-    onAdd(ex)
+  const handleToggle = (ex) => {
+    const isAdded = excluded.has(ex.id)
+    if (!isAdded && atLimit) return // добавить сверх лимита нельзя
+    haptic.selection()
+    onToggle(ex)
   }
 
   return (
     <div style={styles.overlay}>
       <div style={styles.header}>
         <input
+          ref={inputRef}
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Поиск упражнения"
           style={styles.search}
         />
-        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">✕</button>
+        <button onClick={handleClearSearch} style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
       </div>
 
       {atLimit && (
@@ -159,14 +167,14 @@ export default function ExercisePicker({ excludeIds, atLimit, onAdd, onClose }) 
                 </div>
               </div>
               <button
-                onClick={() => handleAdd(ex)}
-                disabled={added || disabled}
+                onClick={() => handleToggle(ex)}
+                disabled={disabled}
                 style={{
                   ...styles.addBtn,
                   background: added ? 'rgba(158,209,83,0.15)' : 'var(--color-primary)',
                   color: added ? 'var(--color-primary)' : '#0D0C0C'
                 }}
-                aria-label={added ? 'Добавлено' : 'Добавить'}
+                aria-label={added ? 'Убрать' : 'Добавить'}
               >
                 {added ? '✓' : '+'}
               </button>

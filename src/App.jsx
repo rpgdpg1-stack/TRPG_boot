@@ -128,7 +128,7 @@ export default function App() {
           <Route path="/exercise/:id" element={<ExerciseInfo />} />
         </Routes>
 
-        <TabBar />
+        <BottomTabBar />
       </div>
     </ErrorBoundary>
   )
@@ -147,6 +147,12 @@ function SettingsButtonController() {
   }, [location.pathname, navigate])
 
   return null
+}
+
+function BottomTabBar() {
+  const location = useLocation()
+  if (location.pathname.startsWith('/constructor')) return null
+  return <TabBar />
 }
 
 /**
