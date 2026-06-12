@@ -299,7 +299,11 @@ export default function ProgramConstructor() {
         <ExercisePicker
           excludeIds={new Set(currentDay)}
           atLimit={atLimit}
+          dayLetter={LETTERS[activeIdx]}
+          count={currentDay.length}
+          max={MAX_PER_DAY}
           onToggle={handleToggle}
+          onDone={() => setPickerOpen(false)}
         />
       )}
     </div>

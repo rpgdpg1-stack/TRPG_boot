@@ -13,7 +13,7 @@ import { haptic } from '../lib/telegram'
  *
  * onAdd(exercise) — добавить выбранное. onClose() — закрыть.
  */
-export default function ExercisePicker({ excludeIds, atLimit, onToggle }) {
+export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, max, onToggle, onDone }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -92,10 +92,6 @@ export default function ExercisePicker({ excludeIds, atLimit, onToggle }) {
         />
         <button onClick={handleClearSearch} style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
       </div>
-
-      {atLimit && (
-        <div style={styles.limitNote}>В дне уже 10 упражнений — лимит</div>
-      )}
 
       {/* Чипы групп мышц */}
       <div style={styles.chipsRow}>
@@ -182,6 +178,17 @@ export default function ExercisePicker({ excludeIds, atLimit, onToggle }) {
           )
         })}
       </div>
+
+      <div style={styles.footer}>
+        <button
+          onClick={onDone}
+          style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
+        >
+          {atLimit
+            ? `Достигнут лимит ${max}/${max}`
+            : `Добавить упражнения · ${dayLetter} · ${count}/${max}`}
+        </button>
+      </div>
     </div>
   )
 }
@@ -205,11 +212,18 @@ const styles = {
     background: 'var(--color-card)', border: 'none', borderRadius: '14px',
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
-  limitNote: {
-    margin: '0 16px 4px', padding: '8px 12px',
-    background: 'rgba(232,69,69,0.1)', borderRadius: '10px',
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E84545', textAlign: 'center'
+  footer: {
+    flexShrink: 0,
+    padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
+    background: 'var(--color-bg)',
+    borderTop: '1px solid rgba(255,255,255,0.06)'
   },
+  doneBtn: {
+    width: '100%', padding: '18px', border: 'none', borderRadius: '16px',
+    background: 'var(--color-primary)', color: '#0D0C0C',
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
+  },
+  doneBtnLimit: { background: '#E84545', color: '#fff' },
   chipsRow: {
     display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
     flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch'
