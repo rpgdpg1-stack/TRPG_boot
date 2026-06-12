@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm } from '../lib/telegram'
 import { getProgramBySlug } from '../features/programs/registry'
@@ -45,6 +45,11 @@ export default function ProgramConstructor() {
 
   const [catalog, setCatalog] = useState([])
   const exMap = useMemo(() => Object.fromEntries(catalog.map(e => [e.id, e])), [catalog])
+
+  // Перетаскивание упражнений внутри дня (нативно, по «ручке»).
+  const [draggingIdx, setDraggingIdx] = useState(null)
+  const dragIndexRef = useRef(null)
+  const rowRefs = useRef([])
 
   useEffect(() => {
     backButton.setHandler(() => navigate('/category/gym'))
@@ -111,6 +116,50 @@ export default function ProgramConstructor() {
   const currentDay = days[activeIdx] || []
   const atLimit = currentDay.length >= MAX_PER_DAY
 
+  const moveItem = (from, to) => {
+    setDays(prev => {
+      const next = prev.map(d => [...d])
+      const arr = next[activeIdx]
+      const [item] = arr.splice(from, 1)
+      arr.splice(to, 0, item)
+      return next
+    })
+  }
+
+  const handleDragStart = (e, idx) => {
+    e.stopPropagation()
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+    dragIndexRef.current = idx
+    setDraggingIdx(idx)
+    haptic.medium()
+  }
+
+  const handleDragMove = (e) => {
+    if (dragIndexRef.current === null) return
+    const y = e.clientY
+    let target = dragIndexRef.current
+    for (let i = 0; i < currentDay.length; i++) {
+      const el = rowRefs.current[i]
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      if (y < r.top + r.height / 2) { target = i; break }
+      target = i
+    }
+    if (target !== dragIndexRef.current) {
+      moveItem(dragIndexRef.current, target)
+      dragIndexRef.current = target
+      setDraggingIdx(target)
+      haptic.selection()
+    }
+  }
+
+  const handleDragEnd = (e) => {
+    if (dragIndexRef.current === null) return
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
+    dragIndexRef.current = null
+    setDraggingIdx(null)
+  }
+
   return (
     <div className="page page-enter" style={styles.page}>
       <header style={styles.header}>
@@ -171,11 +220,26 @@ export default function ProgramConstructor() {
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
         )}
-        {currentDay.map(exId => {
+        {currentDay.map((exId, idx) => {
           const ex = exMap[exId]
           const c = getMuscleGroupColors(ex?.muscle_group)
+          const isDragging = draggingIdx === idx
           return (
-            <div key={exId} style={styles.exRow}>
+            <div
+              key={exId}
+              ref={(el) => { rowRefs.current[idx] = el }}
+              style={{ ...styles.exRow, ...(isDragging ? styles.exRowDragging : {}) }}
+            >
+              <div
+                onPointerDown={(e) => handleDragStart(e, idx)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                style={styles.dragHandle}
+                aria-label="Перетащить"
+              >
+                <GripIcon />
+              </div>
               <div style={styles.exPreview}>
                 {ex?.preview_url
                   ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
@@ -227,6 +291,18 @@ export default function ProgramConstructor() {
   )
 }
 
+function GripIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
+      <g fill="rgba(255,255,255,0.4)">
+        <rect x="3" y="4"  width="12" height="2" />
+        <rect x="3" y="8"  width="12" height="2" />
+        <rect x="3" y="12" width="12" height="2" />
+      </g>
+    </svg>
+  )
+}
+
 const styles = {
   page: { padding: '0 16px 40px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   header: { textAlign: 'center', margin: '8px 0 20px' },
@@ -251,7 +327,9 @@ const styles = {
   counter: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  exRow: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
+  exRow: { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
+  exRowDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', position: 'relative', zIndex: 5 },
+  dragHandle: { width: '30px', height: '52px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '52px', height: '52px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exPreviewPlaceholder: { fontSize: '22px', opacity: 0.4 },
