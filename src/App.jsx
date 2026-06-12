@@ -30,6 +30,7 @@ import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummary
 import { getPendingBackups, markBackupsShown } from './lib/backups'
 import { loadFavoritesEntries, getActiveDay } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
+import { loadMyPrograms, hydrateUserProgramsFromCache } from './features/programs/customProgram'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
@@ -45,6 +46,7 @@ export default function App() {
   if (authPromiseRef.current === null) {
     initTelegram()
     startNetworkMonitor() // запускаем детектор сети как можно раньше
+    hydrateUserProgramsFromCache() // свои программы из кэша — доступны сразу, в т.ч. оффлайн
     authPromiseRef.current = ensureAuth().catch(err => {
       console.error('[App] ensureAuth failed:', err)
       return null
@@ -53,12 +55,16 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
-    authPromiseRef.current?.then(user => {
+    authPromiseRef.current?.then(async user => {
       if (cancelled || !user) return
       checkAndResetSeasonIfNeeded()
       // После авторизации — пробуем разгрести очередь (вдруг с прошлого
       // раза остались несинканутые операции и сеть уже есть).
       syncQueue()
+      // Свои программы (своя + от друга) из БД → в реестр, ДО сборки избранного,
+      // чтобы избранная пользовательская программа корректно подтянулась.
+      await loadMyPrograms()
+      if (cancelled) return
       // Предзагружаем избранное в кеш, чтобы на главной карточка появилась
       // сразу вместе с остальным контентом, без мигания.
       loadFavoritesEntries(async (slug) => {

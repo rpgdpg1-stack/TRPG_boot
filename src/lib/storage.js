@@ -9,7 +9,7 @@ import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
-import { PROGRAMS, getProgramBySlug } from '../features/programs/registry'
+import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
@@ -433,7 +433,7 @@ export async function clearAllData() {
   await cloudRemove(FAVORITES_KEY)
   // Чистим ключи цикла дней для ВСЕХ программ (не только split) — иначе после
   // добавления новой программы её last_day переживёт сброс прогресса.
-  for (const prog of PROGRAMS) {
+  for (const prog of getAllPrograms()) {
     await cloudRemove(`program:${prog.slug}:last_day`)
     await cloudRemove(`program:${prog.slug}:last_day_date`)
   }

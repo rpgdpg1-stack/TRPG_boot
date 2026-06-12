@@ -40,17 +40,40 @@ export const PROGRAMS = [
 ]
 
 /**
+ * Пользовательские программы (своя + от друга) — подгружаются из БД в рантайме
+ * через features/programs/customProgram.js и участвуют во всех геттерах ниже.
+ */
+let USER_PROGRAMS = []
+
+export function setUserPrograms(list) {
+  USER_PROGRAMS = Array.isArray(list) ? list : []
+}
+
+export function getUserPrograms() {
+  return USER_PROGRAMS
+}
+
+/** Все программы: статические + пользовательские (для сбросов/обходов). */
+export function getAllPrograms() {
+  return [...PROGRAMS, ...USER_PROGRAMS]
+}
+
+/**
  * Найти программу по slug (то что в URL).
  */
 export function getProgramBySlug(slug) {
-  return PROGRAMS.find(p => p.slug === slug) || null
+  return PROGRAMS.find(p => p.slug === slug)
+    || USER_PROGRAMS.find(p => p.slug === slug)
+    || null
 }
 
 /**
  * Найти программу по dbId (то что в БД).
  */
 export function getProgramByDbId(dbId) {
-  return PROGRAMS.find(p => p.dbId === dbId) || null
+  return PROGRAMS.find(p => p.dbId === dbId)
+    || USER_PROGRAMS.find(p => p.dbId === dbId)
+    || null
 }
 
 /**
@@ -65,7 +88,10 @@ export function getProgramByAnyId(id) {
  * Все программы для категории (для экрана Category).
  */
 export function getProgramsByCategory(categoryId) {
-  return PROGRAMS.filter(p => p.category === categoryId)
+  return [
+    ...PROGRAMS.filter(p => p.category === categoryId),
+    ...USER_PROGRAMS.filter(p => p.category === categoryId)
+  ]
 }
 
 /**
