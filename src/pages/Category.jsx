@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
+import { backButton, haptic, lockVerticalSwipes, confirm } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
 import { getProgramsByCategory, getProgramEmoji } from '../features/programs/registry'
+import { deleteMyProgram } from '../features/programs/customProgram'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
 
@@ -58,12 +59,14 @@ export default function Category() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [favoriteSlug, setFavoriteSlug] = useState(null)
+  const [, bump] = useState(0)
 
   const meta = CATEGORIES_META[id]
 
   const realPrograms = getProgramsByCategory(id)
   const placeholderPrograms = realPrograms.length === 0 ? (PLACEHOLDER_PROGRAMS[id] || []) : []
   const programs = [...realPrograms, ...placeholderPrograms]
+  const hasCustom = realPrograms.some(p => p.source === 'custom')
 
   useEffect(() => {
     backButton.setHandler(() => navigate('/'))
@@ -89,6 +92,8 @@ export default function Category() {
     if (id === 'gym') navigate('/constructor')
   }
 
+  const handleDeleted = () => bump(n => n + 1)
+
   if (!meta) {
     return (
       <div className="page page-enter" style={styles.notFoundPage}>
@@ -112,13 +117,16 @@ export default function Category() {
             prog={prog}
             isFav={favoriteSlug === prog.slug}
             onFavTap={() => handleFavoriteTap(prog.slug)}
+            onDeleted={handleDeleted}
           />
         ))}
       </div>
 
-      <button onClick={handleCreateTap} style={styles.createButton}>
-        {meta.createLabel}
-      </button>
+      {(id !== 'gym' || !hasCustom) && (
+        <button onClick={handleCreateTap} style={styles.createButton}>
+          {meta.createLabel}
+        </button>
+      )}
     </div>
   )
 }
@@ -141,9 +149,22 @@ const styles = {
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
 
-function ProgramCardWithFav({ prog, isFav, onFavTap }) {
+function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
   const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(null)
+
+  const handleEdit = () => {
+    haptic.light()
+    navigate('/constructor')
+  }
+
+  const handleDelete = async () => {
+    const ok = await confirm('Удалить эту программу?')
+    if (!ok) return
+    haptic.medium()
+    const success = await deleteMyProgram(prog.dbId)
+    if (success && onDeleted) onDeleted()
+  }
 
   useEffect(() => {
     if (!prog.available) return
@@ -232,6 +253,23 @@ function ProgramCardWithFav({ prog, isFav, onFavTap }) {
               )
             })}
             {prog.comingSoon && <span style={cardStyles.soonTag}>Скоро</span>}
+          </div>
+        )}
+
+        {prog.source === 'shared' && prog.authorName && (
+          <div style={cardStyles.authorLine}>от {prog.authorName}</div>
+        )}
+
+        {prog.source && (
+          <div style={cardStyles.userActions}>
+            {prog.editable && (
+              <button onClick={(e) => { e.stopPropagation(); handleEdit() }} style={cardStyles.actionBtn}>
+                Редактировать
+              </button>
+            )}
+            <button onClick={(e) => { e.stopPropagation(); handleDelete() }} style={cardStyles.actionDanger}>
+              Удалить
+            </button>
           </div>
         )}
       </div>
@@ -348,6 +386,39 @@ const cardStyles = {
     fontSize: '11px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
+    letterSpacing: '0.3px'
+  },
+  authorLine: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)'
+  },
+  userActions: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '2px'
+  },
+  actionBtn: {
+    padding: '6px 12px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    border: 'none',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    letterSpacing: '0.3px'
+  },
+  actionDanger: {
+    padding: '6px 12px',
+    background: 'rgba(232, 69, 69, 0.12)',
+    border: 'none',
+    borderRadius: '8px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#E84545',
     letterSpacing: '0.3px'
   }
 }
