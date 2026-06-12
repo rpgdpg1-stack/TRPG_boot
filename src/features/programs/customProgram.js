@@ -13,6 +13,7 @@
 import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { setUserPrograms } from './registry'
+import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet, localRemove } from '../../utils/storage'
 
 const CACHE_KEY = 'user-programs'
@@ -102,6 +103,7 @@ export async function saveMyProgram(name, days) {
     throw error
   }
   await loadMyPrograms()
+  invalidateWorkoutDayCache()
   return data
 }
 
@@ -120,6 +122,7 @@ export async function deleteMyProgram(programId) {
     return false
   }
   await loadMyPrograms()
+  invalidateWorkoutDayCache()
   return !!data
 }
 
@@ -168,6 +171,7 @@ export async function saveFriendProgram(token) {
     throw error
   }
   await loadMyPrograms()
+  invalidateWorkoutDayCache()
   return data
 }
 

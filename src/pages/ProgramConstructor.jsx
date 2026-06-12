@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { backButton, lockVerticalSwipes, haptic, confirm } from '../lib/telegram'
+import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
