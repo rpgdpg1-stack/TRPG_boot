@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
 
@@ -41,13 +42,20 @@ export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete,
     }
   }, [onClose])
 
+  // Блокируем взаимодействие с оверлеем на первые 300мс: гасим «долетевший»
+  // клик/тап, которым открылось меню (иначе он проскакивает на кнопки).
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 300)
+    return () => clearTimeout(t)
+  }, [])
+
   const run = (fn) => (e) => { e.stopPropagation(); haptic.light(); fn() }
 
-  return (
+  const menu = (
     <div
-      style={styles.overlay}
+      style={{ ...styles.overlay, pointerEvents: ready ? 'auto' : 'none' }}
       onClick={onClose}
-      onPointerDown={(e) => { if (e.target === e.currentTarget) e.preventDefault() }}
     >
       <div
         style={styles.menu}
@@ -106,6 +114,8 @@ export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete,
       `}</style>
     </div>
   )
+
+  return createPortal(menu, document.body)
 }
 
 function CloseIcon() {
