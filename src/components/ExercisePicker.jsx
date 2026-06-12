@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { loadExerciseCatalog } from '../features/programs/customProgram'
 import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -79,7 +80,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
     onToggle(ex)
   }
 
-  return (
+  const content = (
     <div style={styles.overlay}>
       <div style={styles.header}>
         <input
@@ -191,6 +192,8 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
       </div>
     </div>
   )
+
+  return createPortal(content, document.body)
 }
 
 const styles = {
