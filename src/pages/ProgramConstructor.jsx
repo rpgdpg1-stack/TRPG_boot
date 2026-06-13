@@ -284,9 +284,14 @@ export default function ProgramConstructor() {
         className="press-tile"
         style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
       >
-        {atLimit
-          ? `Достигнут лимит ${LETTERS[activeIdx]} ${MAX_PER_DAY}/${MAX_PER_DAY}`
-          : `Добавить упражнения · ${LETTERS[activeIdx]} · ${currentDay.length}/${MAX_PER_DAY}`}
+        {atLimit ? (
+          <>
+            <span>Достигнут лимит {MAX_PER_DAY}/{MAX_PER_DAY}</span>
+            <span style={styles.addButtonHint}>Удалите упражнение из списка, чтобы освободить место</span>
+          </>
+        ) : (
+          `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`
+        )}
       </button>
 
       <button
@@ -371,11 +376,16 @@ const styles = {
     width: '100%', padding: '18px', marginBottom: '12px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
     background: 'transparent', color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px'
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
     color: '#E84545'
+  },
+  addButtonHint: {
+    fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px',
+    color: 'var(--color-text-secondary)', textTransform: 'none'
   },
   saveButton: {
     width: '100%', padding: '18px',

@@ -19,7 +19,9 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
+  const [limitToast, setLimitToast] = useState(false)
   const inputRef = useRef(null)
+  const limitTimer = useRef(null)
 
   const excluded = excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])
 
@@ -78,10 +80,18 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
 
   const handleToggle = (ex) => {
     const isAdded = excluded.has(ex.id)
-    if (!isAdded && atLimit) return
+    if (!isAdded && atLimit) {
+      haptic.warning()
+      setLimitToast(true)
+      if (limitTimer.current) clearTimeout(limitTimer.current)
+      limitTimer.current = setTimeout(() => setLimitToast(false), 2600)
+      return
+    }
     haptic.selection()
     onToggle(ex)
   }
+
+  useEffect(() => () => { if (limitTimer.current) clearTimeout(limitTimer.current) }, [])
 
   const content = (
     <div style={styles.overlay}>
@@ -191,17 +201,18 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
         })}
       </div>
 
+      {/* Красный попап про лимит — появляется при тапе на «+» сверх лимита. */}
+      {limitToast && (
+        <div style={styles.limitToast}>
+          Лимит {max}/{max} достигнут. Снимите галочку с одного из упражнений, чтобы выбрать это.
+        </div>
+      )}
+
       {/* Кнопку прячем при открытой клавиатуре (поиск). */}
       {!searchFocused && (
         <div style={styles.footer}>
-          <button
-            onClick={onDone}
-            className="press-tile"
-            style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
-          >
-            {atLimit
-              ? `Достигнут лимит ${dayLetter} ${max}/${max}`
-              : `Добавить упражнения · ${dayLetter} · ${count}/${max}`}
+          <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
+            Добавить упражнения · {count}/{max}
           </button>
         </div>
       )}
@@ -295,10 +306,24 @@ const styles = {
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)',
     pointerEvents: 'auto'
   },
-  doneBtnLimit: {
-    background: 'rgba(232,69,69,0.12)',
-    color: '#E84545',
-    border: '1.5px solid rgba(232,69,69,0.5)',
-    boxShadow: 'none'
+  limitToast: {
+    position: 'absolute',
+    left: '16px', right: '16px',
+    bottom: 'calc(96px + env(safe-area-inset-bottom))',
+    padding: '12px 14px',
+    background: 'rgba(232, 69, 69, 0.16)',
+    border: '1px solid rgba(232, 69, 69, 0.5)',
+    borderRadius: '14px',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: 1.35,
+    color: '#FF6B6B',
+    textAlign: 'center',
+    zIndex: 60,
+    pointerEvents: 'none',
+    animation: 'menuOverlayFadeIn 0.18s ease-out forwards'
   }
 }
