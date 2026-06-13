@@ -87,6 +87,12 @@ export default function ProgramConstructor() {
     loadExerciseCatalog().then(list => { if (!cancelled) setCatalog(list) })
     return () => { cancelled = true }
   }, [])
+  
+  // Конструктор всегда открывается с самого верха страницы.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.scrollingElement?.scrollTo(0, 0)
+  }, [])
 
   // Клавиатура: прячем док сразу при открытии, показываем с задержкой при
   // закрытии (чтобы возврат не попал в анимацию клавиатуры → без моргания).
@@ -435,7 +441,7 @@ function GripIcon() {
 }
 
 const styles = {
-  page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
+  page: { padding: '0 16px 32px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
@@ -463,7 +469,7 @@ const styles = {
     padding: '6px 4px', fontFamily: 'var(--font-tiny5)', fontSize: '28px'
   },
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
-  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' },
+  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '150px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRow: { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
   exRowDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', position: 'relative', zIndex: 5 },
