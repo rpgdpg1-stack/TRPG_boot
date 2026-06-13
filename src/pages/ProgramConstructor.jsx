@@ -101,10 +101,20 @@ export default function ProgramConstructor() {
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
-    const onResize = () => setKbOpen((window.innerHeight - vv.height) > 150)
+    let t = null
+    const onResize = () => {
+      const open = (window.innerHeight - vv.height) > 150
+      if (open) {
+        if (t) { clearTimeout(t); t = null }
+        setKbOpen(true)          // прячем сразу
+      } else {
+        if (t) clearTimeout(t)
+        t = setTimeout(() => setKbOpen(false), 280) // возвращаем с задержкой — без промаргивания
+      }
+    }
     vv.addEventListener('resize', onResize)
     onResize()
-    return () => vv.removeEventListener('resize', onResize)
+    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
 
   const changeDayCount = (n) => {
@@ -468,8 +478,9 @@ const styles = {
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '12px', color: 'var(--color-text-secondary)', fontSize: '14px' },
   addButton: {
     width: '100%', padding: '18px',
-    border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'transparent', color: 'var(--color-text-secondary)',
+    border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
+    background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
     pointerEvents: 'auto'
