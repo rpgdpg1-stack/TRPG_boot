@@ -219,15 +219,16 @@ const styles = {
   },
   footer: {
     flexShrink: 0,
-    padding: '12px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'var(--color-bg)',
-    borderTop: '1px solid rgba(255,255,255,0.06)'
+    padding: '24px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 35%, var(--color-bg) 80%)',
+    pointerEvents: 'none'
   },
   doneBtn: {
     width: '100%', padding: '16px', border: 'none', borderRadius: '16px',
     background: 'var(--color-primary)', color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)',
+    pointerEvents: 'auto'
   },
   doneBtnLimit: {
     background: 'rgba(232,69,69,0.12)',
@@ -248,7 +249,7 @@ const styles = {
     flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
   },
-  list: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  list: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: '10px' },
   empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
   preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
