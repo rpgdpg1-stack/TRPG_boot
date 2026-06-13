@@ -42,6 +42,7 @@ export default function ProgramConstructor() {
   const [activeIdx, setActiveIdx] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [nameFocused, setNameFocused] = useState(false)
 
   const [catalog, setCatalog] = useState([])
   const exMap = useMemo(() => Object.fromEntries(catalog.map(e => [e.id, e])), [catalog])
@@ -189,6 +190,8 @@ export default function ProgramConstructor() {
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        onFocus={() => setNameFocused(true)}
+        onBlur={() => setNameFocused(false)}
         placeholder="Название программы"
         maxLength={40}
         style={styles.nameInput}
@@ -278,34 +281,38 @@ export default function ProgramConstructor() {
         })}
       </div>
 
-      <button
-        onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
-        disabled={atLimit}
-        className="press-tile"
-        style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
-      >
-        {atLimit ? (
-          <>
-            <span>Достигнут лимит {MAX_PER_DAY}/{MAX_PER_DAY}</span>
-            <span style={styles.addButtonHint}>Удалите упражнение из списка, чтобы освободить место</span>
-          </>
-        ) : (
-          `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`
-        )}
-      </button>
+      {!nameFocused && (
+        <div style={styles.dock}>
+          <button
+            onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
+            disabled={atLimit}
+            className="press-tile"
+            style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
+          >
+            {atLimit ? (
+              <>
+                <span>Достигнут лимит {MAX_PER_DAY}/{MAX_PER_DAY}</span>
+                <span style={styles.addButtonHint}>Удалите упражнение из списка, чтобы освободить место</span>
+              </>
+            ) : (
+              `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`
+            )}
+          </button>
 
-      <button
-        onClick={handleSave}
-        disabled={!canSave}
-        className="press-tile"
-        style={{
-          ...styles.saveButton,
-          ...(canSave ? styles.saveButtonReady : {}),
-          opacity: canSave ? 1 : 0.35
-        }}
-      >
-        {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
-      </button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="press-tile"
+            style={{
+              ...styles.saveButton,
+              ...(canSave ? styles.saveButtonReady : {}),
+              opacity: canSave ? 1 : 0.35
+            }}
+          >
+            {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
+          </button>
+        </div>
+      )}
 
       {pickerOpen && (
         <ExercisePicker
@@ -340,7 +347,15 @@ function GripIcon() {
 }
 
 const styles = {
-  page: { padding: '0 16px 40px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
+  page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
+  dock: {
+    position: 'fixed', bottom: 0, left: 0, right: 0,
+    padding: '32px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 35%, var(--color-bg) 75%)',
+    display: 'flex', flexDirection: 'column', gap: '12px',
+    pointerEvents: 'none',
+    zIndex: 40
+  },
   header: { textAlign: 'center', margin: '8px 0 20px' },
   title: { fontFamily: 'var(--font-tiny5)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
@@ -373,11 +388,12 @@ const styles = {
   exTag: { alignSelf: 'flex-start', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '12px', color: 'var(--color-text-secondary)', fontSize: '14px' },
   addButton: {
-    width: '100%', padding: '18px', marginBottom: '12px',
+    width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'transparent', color: 'var(--color-text-secondary)',
+    background: 'rgba(13,12,12,0.6)', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+    pointerEvents: 'auto'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
@@ -391,7 +407,8 @@ const styles = {
     width: '100%', padding: '18px',
     background: 'var(--color-card)', color: 'var(--color-text)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px'
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
+    pointerEvents: 'auto'
   },
   saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' }
 }
