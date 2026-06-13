@@ -28,7 +28,7 @@ import ProgramConstructor from './pages/ProgramConstructor'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummaryShown } from './lib/rewards'
-import { getPendingBackups, markBackupsShown } from './lib/backups'
+import { getPendingBackups } from './lib/backups'
 import { loadFavoritesEntries, getActiveDay } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
@@ -177,6 +177,7 @@ function BottomTabBar() {
  * показываем — тихо проставляем текущий сезон в БД.
  */
 function RewardsQueueController() {
+  const navigate = useNavigate()
   const [queue, setQueue] = useState([])
 
   // Базовая загрузка очереди — стартовая + при USER_CHANGED.
@@ -300,8 +301,9 @@ function RewardsQueueController() {
     if (!current) return
 
     if (current.type === 'backups') {
-      const ids = current.payload.map(b => b.id)
-      markBackupsShown(ids)
+      // Пометку показанными делает сама модалка (markBackupsShown по всем ids
+      // группы). Здесь после «Готово» уводим на главную — как обычно.
+      navigate('/')
     } else if (current.type === 'badge') {
       markRewardShown(current.payload.id, 'badge')
     } else if (current.type === 'season_summary') {
