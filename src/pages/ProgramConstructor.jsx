@@ -429,11 +429,10 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '14px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'var(--color-bg)',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(to top, var(--color-bg) 0%, rgba(13,12,12,0.85) 55%, rgba(13,12,12,0) 100%)',
     display: 'flex', flexDirection: 'column', gap: '12px',
-    pointerEvents: 'auto',
+    pointerEvents: 'none',
     zIndex: 40
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
