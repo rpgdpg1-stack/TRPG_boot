@@ -22,6 +22,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [limitToast, setLimitToast] = useState(false)
   const inputRef = useRef(null)
   const limitTimer = useRef(null)
+  const listRef = useRef(null)
 
   const excluded = useMemo(
     () => (excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])),
@@ -176,7 +177,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       )}
 
       {/* Список */}
-      <div style={styles.list}>
+      <div ref={listRef} style={styles.list}>
         {loading && <div style={styles.empty}>Загрузка…</div>}
         {!loading && filtered.length === 0 && <div style={styles.empty}>Ничего не найдено</div>}
         {!loading && filtered.map(ex => {
