@@ -16,7 +16,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [kbOpen, setKbOpen] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
   const [limitToast, setLimitToast] = useState(false)
@@ -44,27 +43,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     return () => { cancelled = true }
   }, [])
 
-  // Кнопку снизу показываем только когда клавиатура ПОЛНОСТЬЮ закрылась
-  // (с задержкой). Иначе при закрытии она промаргивает по центру — баг iOS
-  // с fixed/absolute bottom во время анимации клавиатуры.
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    let t = null
-    const onResize = () => {
-      const open = (window.innerHeight - vv.height) > 150
-      if (open) {
-        if (t) { clearTimeout(t); t = null }
-        setKbOpen(true)               // прячем сразу
-      } else {
-        if (t) clearTimeout(t)
-        t = setTimeout(() => setKbOpen(false), 300) // показываем после закрытия
-      }
-    }
-    vv.addEventListener('resize', onResize)
-    onResize()
-    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
-  }, [])
+
 
   // Группы в порядке появления (каталог отсортирован по id), подгруппы внутри.
   const groups = useMemo(() => {
@@ -231,14 +210,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       )}
 
-      {/* Кнопку прячем, пока открыта клавиатура; показываем после её закрытия. */}
-      {!kbOpen && (
-        <div style={styles.footer}>
-          <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
-            Добавить упражнения · {count}/{max}
-          </button>
-        </div>
-      )}
+      {/* Кнопка всегда внизу: absolute в полноэкранном оверлее. При открытой
+          клавиатуре уходит ПОД неё, без скрытия/показа — значит без морганий. */}
+      <div style={styles.footer}>
+        <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
+          Добавить упражнения · {count}/{max}
+        </button>
+      </div>
     </div>
   )
 
