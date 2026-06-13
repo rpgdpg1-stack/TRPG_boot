@@ -45,6 +45,7 @@ export default function ProgramConstructor() {
   const [saving, setSaving] = useState(false)
   const [nameFocused, setNameFocused] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const [kbOpen, setKbOpen] = useState(false)
 
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
@@ -86,6 +87,16 @@ export default function ProgramConstructor() {
     let cancelled = false
     loadExerciseCatalog().then(list => { if (!cancelled) setCatalog(list) })
     return () => { cancelled = true }
+  }, [])
+
+  // Клавиатура открыта, если визуальный вьюпорт заметно ниже окна. Прячем док.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => setKbOpen((window.innerHeight - vv.height) > 150)
+    vv.addEventListener('resize', onResize)
+    onResize()
+    return () => vv.removeEventListener('resize', onResize)
   }, [])
 
   const changeDayCount = (n) => {
@@ -301,7 +312,7 @@ export default function ProgramConstructor() {
         })}
       </div>
 
-      {!nameFocused && createPortal(
+      {!nameFocused && !kbOpen && createPortal(
         <div style={styles.dock}>
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
@@ -412,10 +423,11 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '32px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 80%)',
+    padding: '14px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'var(--color-bg)',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
     display: 'flex', flexDirection: 'column', gap: '12px',
-    pointerEvents: 'none',
+    pointerEvents: 'auto',
     zIndex: 40
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
@@ -452,11 +464,9 @@ const styles = {
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'var(--color-bg)', color: 'var(--color-text-secondary)',
+    background: 'transparent', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-    pointerEvents: 'auto',
-    position: 'relative', zIndex: 1
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
@@ -470,9 +480,7 @@ const styles = {
     width: '100%', padding: '18px',
     background: 'var(--color-card)', color: 'var(--color-text)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
-    pointerEvents: 'auto',
-    position: 'relative', zIndex: 1
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px'
   },
   saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' },
   exitOverlay: {
