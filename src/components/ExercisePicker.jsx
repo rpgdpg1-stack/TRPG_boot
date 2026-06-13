@@ -12,7 +12,7 @@ import { haptic } from '../lib/telegram'
  * Порядок групп/подгрупп — как в каталоге (сортировка по id). Без фильтра уже
  * выбранные упражнения поднимаются наверх списка.
  */
-export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, max, onToggle, onDone }) {
+export default function ExercisePicker({ excludeIds, atLimit, count, max, onToggle, onDone }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -23,7 +23,10 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
   const inputRef = useRef(null)
   const limitTimer = useRef(null)
 
-  const excluded = excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])
+  const excluded = useMemo(
+    () => (excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])),
+    [excludeIds]
+  )
 
   const handleClearSearch = () => {
     setSearch('')
