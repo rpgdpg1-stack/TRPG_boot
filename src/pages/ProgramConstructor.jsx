@@ -284,6 +284,7 @@ export default function ProgramConstructor() {
 
       {!nameFocused && createPortal(
         <div style={styles.dock}>
+          <div style={styles.dockFade} />
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
             disabled={atLimit}
@@ -352,11 +353,20 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '32px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 35%, var(--color-bg) 75%)',
+    padding: '0 16px calc(16px + env(safe-area-inset-bottom))',
     display: 'flex', flexDirection: 'column', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
+  },
+  // Полоса затемнения ТОЛЬКО под кнопками — как в библиотеке. Лежит позади
+  // кнопок (zIndex -1 внутри дока), уходит вверх от низа экрана.
+  dockFade: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
+    height: 'calc(100% + 40px)',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 80%)',
+    pointerEvents: 'none',
+    zIndex: -1
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
   title: { fontFamily: 'var(--font-tiny5)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
@@ -392,10 +402,11 @@ const styles = {
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'rgba(13,12,12,0.6)', color: 'var(--color-text-secondary)',
+    background: 'var(--color-bg)', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-    pointerEvents: 'auto'
+    pointerEvents: 'auto',
+    position: 'relative', zIndex: 1
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
@@ -410,7 +421,8 @@ const styles = {
     background: 'var(--color-card)', color: 'var(--color-text)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
-    pointerEvents: 'auto'
+    pointerEvents: 'auto',
+    position: 'relative', zIndex: 1
   },
   saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' }
 }
