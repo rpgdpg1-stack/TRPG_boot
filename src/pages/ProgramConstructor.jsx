@@ -303,7 +303,6 @@ export default function ProgramConstructor() {
 
       {!nameFocused && createPortal(
         <div style={styles.dock}>
-          <div style={styles.dockFade} />
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
             disabled={atLimit}
@@ -413,20 +412,11 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '0 16px calc(16px + env(safe-area-inset-bottom))',
+    padding: '32px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 80%)',
     display: 'flex', flexDirection: 'column', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
-  },
-  // Полоса затемнения ТОЛЬКО под кнопками — как в библиотеке. Лежит позади
-  // кнопок (zIndex -1 внутри дока), уходит вверх от низа экрана.
-  dockFade: {
-    position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    height: 'calc(100% + 40px)',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 80%)',
-    pointerEvents: 'none',
-    zIndex: -1
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
   title: { fontFamily: 'var(--font-tiny5)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
