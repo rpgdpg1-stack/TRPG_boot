@@ -43,9 +43,7 @@ export default function ProgramConstructor() {
   const [activeIdx, setActiveIdx] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [nameFocused, setNameFocused] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
-  const [kbOpen, setKbOpen] = useState(false)
 
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
@@ -97,25 +95,6 @@ export default function ProgramConstructor() {
     return () => document.body.classList.remove('hide-app-scrim')
   }, [])
 
-  // Клавиатура открыта, если визуальный вьюпорт заметно ниже окна. Прячем док.
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    let t = null
-    const onResize = () => {
-      const open = (window.innerHeight - vv.height) > 150
-      if (open) {
-        if (t) { clearTimeout(t); t = null }
-        setKbOpen(true)          // прячем сразу
-      } else {
-        if (t) clearTimeout(t)
-        t = setTimeout(() => setKbOpen(false), 280) // возвращаем с задержкой — без промаргивания
-      }
-    }
-    vv.addEventListener('resize', onResize)
-    onResize()
-    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
-  }, [])
 
   const changeDayCount = (n) => {
     if (n === dayCount) return
@@ -239,8 +218,6 @@ export default function ProgramConstructor() {
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        onFocus={() => setNameFocused(true)}
-        onBlur={() => setNameFocused(false)}
         placeholder="Название программы"
         maxLength={40}
         style={styles.nameInput}
@@ -330,7 +307,7 @@ export default function ProgramConstructor() {
         })}
       </div>
 
-      {!nameFocused && !kbOpen && createPortal(
+      {createPortal(
         <div style={styles.dock}>
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
