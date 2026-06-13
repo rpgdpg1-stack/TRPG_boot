@@ -185,12 +185,12 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
               </div>
               <button
                 onClick={() => handleToggle(ex)}
-                disabled={disabled}
                 className="press-tile"
                 style={{
                   ...styles.addBtn,
                   background: added ? 'rgba(158,209,83,0.15)' : 'var(--color-primary)',
-                  color: added ? 'var(--color-primary)' : '#0D0C0C'
+                  color: added ? 'var(--color-primary)' : '#0D0C0C',
+                  opacity: disabled ? 0.45 : 1
                 }}
                 aria-label={added ? 'Убрать' : 'Добавить'}
               >
@@ -204,7 +204,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
       {/* Красный попап про лимит — появляется при тапе на «+» сверх лимита. */}
       {limitToast && (
         <div style={styles.limitToast}>
-          Лимит {max}/{max} достигнут. Снимите галочку с одного из упражнений, чтобы выбрать это.
+          Лимит {max}/{max} достигнут. Снимите галочку с одного из выбранных упражнений, чтобы добавить это.
         </div>
       )}
 

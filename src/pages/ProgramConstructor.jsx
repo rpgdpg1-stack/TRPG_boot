@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug } from '../features/programs/registry'
@@ -281,7 +282,7 @@ export default function ProgramConstructor() {
         })}
       </div>
 
-      {!nameFocused && (
+      {!nameFocused && createPortal(
         <div style={styles.dock}>
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
@@ -311,7 +312,8 @@ export default function ProgramConstructor() {
           >
             {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {pickerOpen && (
