@@ -423,11 +423,10 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '14px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'var(--color-bg)',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.9) 45%, var(--color-bg) 70%)',
     display: 'flex', flexDirection: 'column', gap: '12px',
-    pointerEvents: 'auto',
+    pointerEvents: 'none',
     zIndex: 40
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
@@ -464,9 +463,10 @@ const styles = {
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'transparent', color: 'var(--color-text-secondary)',
+    background: 'var(--color-bg)', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+    pointerEvents: 'auto'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
@@ -480,7 +480,8 @@ const styles = {
     width: '100%', padding: '18px',
     background: 'var(--color-card)', color: 'var(--color-text)',
     border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px'
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
+    pointerEvents: 'auto'
   },
   saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' },
   exitOverlay: {
