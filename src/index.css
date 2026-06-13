@@ -142,6 +142,11 @@ img, button { -webkit-user-drag: none; }
   mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
 }
 
+/* На конструкторе нижний таб-бар скрыт — этот fade-scrim не нужен, и именно
+   он ложился поверх кнопок и прилипал к клавиатуре на iOS. Гасим его, пока
+   открыт конструктор (класс вешается из ProgramConstructor). */
+body.hide-app-scrim .app::after { display: none; }
+
 .page {
   padding: calc(var(--tg-safe-top) + 8px) 16px 24px;
   position: relative;

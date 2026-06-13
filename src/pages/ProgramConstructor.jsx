@@ -89,6 +89,14 @@ export default function ProgramConstructor() {
     return () => { cancelled = true }
   }, [])
 
+  // Гасим глобальный нижний fade-scrim (.app::after): на конструкторе таб-бара
+  // нет, а scrim иначе ложится поверх кнопок и липнет к клавиатуре на iOS.
+  // Класс снимается при уходе со страницы.
+  useEffect(() => {
+    document.body.classList.add('hide-app-scrim')
+    return () => document.body.classList.remove('hide-app-scrim')
+  }, [])
+
   // Клавиатура открыта, если визуальный вьюпорт заметно ниже окна. Прячем док.
   useEffect(() => {
     const vv = window.visualViewport
