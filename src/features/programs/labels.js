@@ -29,6 +29,7 @@ export const SUB_GROUP_LABELS = {
   lats:        'ШИРИНА',
   thickness:   'ТОЛЩИНА',
   extensors:   'РАЗГИБАТЕЛИ',
+  traps:       'ТРАПЕЦИИ',
   // chest
   chest:       'ГРУДЬ',
   chest_upper: 'ВЕРХ ГРУДИ',
@@ -40,6 +41,7 @@ export const SUB_GROUP_LABELS = {
   front_delt:  'ПЕРЕДНЯЯ ДЕЛЬТА',
   mid_delt:    'СРЕДНЯЯ ДЕЛЬТА',
   rear_delt:   'ЗАДНЯЯ ДЕЛЬТА',
+  rotator_cuff:'РОТАТОРНАЯ МАНЖЕТА',
   // legs
   quadriceps:  'КВАДРИЦЕПС',
   hamstrings:  'БИЦЕПС БЕДРА',
@@ -51,10 +53,12 @@ export const SUB_GROUP_LABELS = {
   abs_upper:   'ВЕРХ ПРЕССА',
   abs_lower:   'НИЗ ПРЕССА',
   abs_oblique: 'КОСЫЕ',
+  core:        'КОР',
   // forearms
   forearm_flexors:   'СГИБАТЕЛИ ПРЕДПЛЕЧЬЯ',
   forearm_extensors: 'РАЗГИБАТЕЛИ ПРЕДПЛЕЧЬЯ',
   // neck
   neck_flexors:   'СГИБАТЕЛИ ШЕИ',
-  neck_extensors: 'РАЗГИБАТЕЛИ ШЕИ'
+  neck_extensors: 'РАЗГИБАТЕЛИ ШЕИ',
+  warmup:         'РАЗМИНКА'
 }

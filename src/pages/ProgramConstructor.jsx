@@ -268,7 +268,7 @@ export default function ProgramConstructor() {
                 <div style={styles.exName}>{ex?.name || exId}</div>
                 {ex && (
                   <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
-                    {MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group}
+                    {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
                   </span>
                 )}
               </div>
@@ -315,6 +315,11 @@ export default function ProgramConstructor() {
       )}
     </div>
   )
+}
+
+function toTitleCase(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 function GripIcon() {

@@ -8,16 +8,15 @@ import { haptic } from '../lib/telegram'
 /**
  * Пикер упражнений для конструктора.
  *
- * Полноэкранный оверлей. Фильтр: группа мышц → подгруппа + поиск по названию.
- * excludeIds — id упражнений, уже добавленных в текущий день (показываем галочку).
- * atLimit — день уже заполнен (10): добавление заблокировано.
- *
- * onAdd(exercise) — добавить выбранное. onClose() — закрыть.
+ * Полноэкранный оверлей (портал в body). Фильтр: группа мышц → подгруппа + поиск.
+ * Порядок групп/подгрупп — как в каталоге (сортировка по id). Без фильтра уже
+ * выбранные упражнения поднимаются наверх списка.
  */
 export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, max, onToggle, onDone }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
   const inputRef = useRef(null)
@@ -40,8 +39,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
     return () => { cancelled = true }
   }, [])
 
-  // Группы в порядке появления (каталог уже отсортирован по priority),
-  // и подгруппы внутри каждой группы.
+  // Группы в порядке появления (каталог отсортирован по id), подгруппы внутри.
   const groups = useMemo(() => {
     const map = new Map()
     const order = []
@@ -64,8 +62,13 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
     if (activeSub) list = list.filter(e => e.sub_group === activeSub)
     const q = search.trim().toLowerCase()
     if (q) list = list.filter(e => (e.name || '').toLowerCase().includes(q))
+    // Без фильтра и поиска — уже выбранные наверх (стабильно, порядок внутри сохраняется).
+    if (!activeGroup && !activeSub && !q) {
+      list = [...list].sort((a, b) => Number(excluded.has(b.id)) - Number(excluded.has(a.id)))
+    }
     return list
-  }, [catalog, activeGroup, activeSub, search])
+    // excluded меняется при каждом тапе галочки — это и двигает выбранное наверх.
+  }, [catalog, activeGroup, activeSub, search, excluded])
 
   const handleGroupTap = (g) => {
     haptic.light()
@@ -75,7 +78,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
 
   const handleToggle = (ex) => {
     const isAdded = excluded.has(ex.id)
-    if (!isAdded && atLimit) return // добавить сверх лимита нельзя
+    if (!isAdded && atLimit) return
     haptic.selection()
     onToggle(ex)
   }
@@ -88,6 +91,8 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           placeholder="Поиск упражнения"
           style={styles.search}
         />
@@ -110,32 +115,35 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
                 color: active ? '#fff' : 'var(--color-text-secondary)'
               }}
             >
-              {MUSCLE_GROUP_LABELS[group] || group}
+              {toTitleCase(MUSCLE_GROUP_LABELS[group] || group)}
             </button>
           )
         })}
       </div>
 
-      {/* Чипы подгрупп выбранной группы */}
+      {/* Подгруппы активной группы — как содержимое открытой вкладки:
+          отдельная панель с фоном чуть светлее, чтобы не путать с группами. */}
       {activeGroup && activeSubs.length > 0 && (
-        <div style={styles.chipsRow}>
-          {activeSubs.map(sub => {
-            const active = activeSub === sub
-            return (
-              <button
-                key={sub}
-                onClick={() => { haptic.light(); setActiveSub(prev => (prev === sub ? null : sub)) }}
-                className="press-tile"
-                style={{
-                  ...styles.subChip,
-                  background: active ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.04)',
-                  color: active ? '#fff' : 'var(--color-text-secondary)'
-                }}
-              >
-                {SUB_GROUP_LABELS[sub] || sub}
-              </button>
-            )
-          })}
+        <div style={styles.subPanel}>
+          <div style={styles.subChipsRow}>
+            {activeSubs.map(sub => {
+              const active = activeSub === sub
+              return (
+                <button
+                  key={sub}
+                  onClick={() => { haptic.light(); setActiveSub(prev => (prev === sub ? null : sub)) }}
+                  className="press-tile"
+                  style={{
+                    ...styles.subChip,
+                    background: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.10)',
+                    color: active ? '#0D0C0C' : 'var(--color-text-secondary)'
+                  }}
+                >
+                  {toTitleCase(SUB_GROUP_LABELS[sub] || sub)}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -158,10 +166,10 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
                 <div style={styles.rowName}>{ex.name}</div>
                 <div style={styles.rowTags}>
                   <span style={{ ...styles.rowTag, background: c.tag, color: '#fff' }}>
-                    {MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group}
+                    {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
                   </span>
                   <span style={{ ...styles.rowTag, ...styles.rowTagSecondary }}>
-                    {SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group}
+                    {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
                   </span>
                 </div>
               </div>
@@ -183,21 +191,29 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
         })}
       </div>
 
-      <div style={styles.footer}>
-        <button
-          onClick={onDone}
-          className="press-tile"
-          style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
-        >
-          {atLimit
-            ? `Достигнут лимит ${dayLetter} ${max}/${max}`
-            : `Добавить упражнения · ${dayLetter} · ${count}/${max}`}
-        </button>
-      </div>
+      {/* Кнопку прячем при открытой клавиатуре (поиск). */}
+      {!searchFocused && (
+        <div style={styles.footer}>
+          <button
+            onClick={onDone}
+            className="press-tile"
+            style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
+          >
+            {atLimit
+              ? `Достигнут лимит ${dayLetter} ${max}/${max}`
+              : `Добавить упражнения · ${dayLetter} · ${count}/${max}`}
+          </button>
+        </div>
+      )}
     </div>
   )
 
   return createPortal(content, document.body)
+}
+
+function toTitleCase(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {
@@ -221,10 +237,55 @@ const styles = {
     background: 'var(--color-card)', border: 'none', borderRadius: '14px',
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
+  chipsRow: {
+    display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
+    flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch', flexShrink: 0
+  },
+  // Панель подгрупп — «содержимое открытой вкладки группы».
+  subPanel: {
+    margin: '2px 16px 4px',
+    padding: '10px 12px',
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: '16px',
+    flexShrink: 0
+  },
+  subChipsRow: {
+    display: 'flex', gap: '8px', overflowX: 'auto',
+    flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch'
+  },
+  chip: {
+    flexShrink: 0, padding: '8px 14px', border: 'none', borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700,
+    whiteSpace: 'nowrap', letterSpacing: '0.3px'
+  },
+  subChip: {
+    flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
+    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap'
+  },
+  list: {
+    flex: 1, minHeight: 0, overflowY: 'auto',
+    padding: '8px 16px 110px',
+    display: 'flex', flexDirection: 'column', gap: '10px',
+    WebkitOverflowScrolling: 'touch',
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y'
+  },
+  empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
+  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px', flexShrink: 0 },
+  preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  previewPlaceholder: { fontSize: '24px', opacity: 0.4 },
+  rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
+  rowName: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  rowTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
+  rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
+  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 700 },
+  // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
-    flexShrink: 0,
-    padding: '24px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 35%, var(--color-bg) 80%)',
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
     pointerEvents: 'none'
   },
   doneBtn: {
@@ -239,30 +300,5 @@ const styles = {
     color: '#E84545',
     border: '1.5px solid rgba(232,69,69,0.5)',
     boxShadow: 'none'
-  },
-  chipsRow: {
-    display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
-    flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch'
-  },
-  chip: {
-    flexShrink: 0, padding: '8px 14px', border: 'none', borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700,
-    whiteSpace: 'nowrap', letterSpacing: '0.3px'
-  },
-  subChip: {
-    flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
-  },
-  list: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: '10px' },
-  empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
-  preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewPlaceholder: { fontSize: '24px', opacity: 0.4 },
-  rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
-  rowName: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  rowTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
-  rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 700 }
+  }
 }
