@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { haptic } from '../../lib/telegram'
-import { backupUser } from '../../lib/backups'
+import { backupUser, markBackupsShown, BACKUP_REWARD, BACKUP_DAILY_LIMIT } from '../../lib/backups'
 import { getLevelFromXP, getRankByLevel } from '../../lib/levels'
 import RankIcon from '../RankIcon'
 import MuscleIcon from '../MuscleIcon'
@@ -8,56 +8,76 @@ import MuscleIcon from '../MuscleIcon'
 /**
  * Модалка "тебя подстраховали".
  *
- * Список строк (фото + имя + ранг), у каждой компактная кнопка "+100 в ответ".
- * Тап по кнопке → начисление в БД, галочка + улёт бицепса (как в дневных
- * миссиях), строка гаснет, кнопка → "✔". Экран НЕ закрывается.
- * Внизу одна кнопка "Готово" закрывает всё и помечает показанными.
+ * Данные приходят из api_get_pending_backups УЖЕ СГРУППИРОВАННЫМИ по игроку:
+ *   { backer_id, ids[], count, total_reward, reward, first_name, username,
+ *     photo_url, total_muscles, rank_index, can_return }
+ * Один игрок = одна карточка, даже если он подстраховал тебя много раз.
  *
- * can_return=false (уже страховал в ответ сегодня) → кнопка сразу "✔".
+ * Тап по карточке игрока → ответная подстраховка (+100 ему). Из центра карточки
+ * крупно вылетает бицепс с "+100", потом на карточке зелёная галочка и она гаснет.
+ * can_return=false (уже страховал сегодня) → галочка сразу.
+ * Достигнут дневной лимit 5 → остальные карточки блокируются с подписью.
  *
- * @param items     - массив подстраховок из api_get_pending_backups
- * @param onConfirm - закрыть модалку (родитель пометит показанными)
+ * Кнопка "Готово" помечает все подстраховки показанными и закрывает модалку.
+ *
+ * @param items     - сгруппированный массив из api_get_pending_backups
+ * @param onConfirm - закрыть модалку (родитель)
  */
 export default function BackupReceivedModal({ items, onConfirm }) {
-  // Состояние ответных подстраховок по backer_id:
-  //   'idle' | 'sending' | 'done' | 'already'
+  // Состояние ответа по backer_id: 'idle' | 'sending' | 'done' | 'already'
   const initial = {}
   for (const it of items) {
     initial[it.backer_id] = it.can_return ? 'idle' : 'already'
   }
   const [returnState, setReturnState] = useState(initial)
-  const [flyers, setFlyers] = useState({}) // backer_id → key для улёта бицепса
+  const [flyers, setFlyers] = useState({})        // backer_id → key (улёт бицепса)
+  const [limitReached, setLimitReached] = useState(false)
 
   const handleReturn = async (item) => {
     const id = item.backer_id
-    if (returnState[id] !== 'idle') return
+    if (returnState[id] !== 'idle' || limitReached) return
 
     haptic.success()
     setReturnState(prev => ({ ...prev, [id]: 'sending' }))
 
-    // Улёт бицепса
-    const flyKey = Date.now()
-    setFlyers(prev => ({ ...prev, [id]: flyKey }))
-    setTimeout(() => {
-      setFlyers(prev => {
-        const next = { ...prev }
-        if (next[id] === flyKey) delete next[id]
-        return next
-      })
-    }, 1100)
-
     const result = await backupUser(id)
+
     if (result.success) {
+      // Бицепс вылетает из центра карточки только при реальном успехе
+      const flyKey = Date.now()
+      setFlyers(prev => ({ ...prev, [id]: flyKey }))
+      setTimeout(() => {
+        setFlyers(prev => {
+          const next = { ...prev }
+          if (next[id] === flyKey) delete next[id]
+          return next
+        })
+      }, 1000)
       setReturnState(prev => ({ ...prev, [id]: 'done' }))
     } else if (result.error === 'already_today') {
       setReturnState(prev => ({ ...prev, [id]: 'already' }))
+    } else if (result.error === 'daily_limit') {
+      haptic.error()
+      setLimitReached(true)
+      setReturnState(prev => ({ ...prev, [id]: 'idle' }))
     } else {
       haptic.error()
       setReturnState(prev => ({ ...prev, [id]: 'idle' }))
     }
   }
 
-  const isSingle = items.length === 1
+  const handleConfirm = () => {
+    // Помечаем показанными ВСЕ id всех групп (на случай если родитель берёт
+    // только представительный id — здесь гарантированно закрываем все).
+    const allIds = items.flatMap(it => it.ids || [it.id]).filter(Boolean)
+    markBackupsShown(allIds)
+    onConfirm?.()
+  }
+
+  const n = items.length
+  const subtitle = n === 1
+    ? '1 игрок подстраховал тебя. Подстрахуй в ответ — нажми на игрока.'
+    : `${n} ${pluralPeople(n)} подстраховали тебя. Подстрахуй в ответ — нажми на игрока.`
 
   return (
     <div style={styles.overlay}>
@@ -70,25 +90,29 @@ export default function BackupReceivedModal({ items, onConfirm }) {
         </div>
 
         <div style={styles.kicker}>ТЕБЯ ПОДСТРАХОВАЛИ</div>
-        <div style={styles.subtitle}>
-          {isSingle
-            ? 'Тебе закинули мускулы. Можешь поддержать в ответ.'
-            : `${items.length} ${pluralPeople(items.length)} поддержали тебя. Ответь тем же.`}
-        </div>
+        <div style={styles.subtitle}>{subtitle}</div>
 
         <div style={styles.list}>
           {items.map(item => {
             const level = getLevelFromXP(item.total_muscles || 0)
             const rank = getRankByLevel(level)
             const name = item.first_name || 'Игрок'
+            const count = item.count || 1
             const state = returnState[item.backer_id]
             const flyKey = flyers[item.backer_id]
+            const dim = state === 'done' || state === 'already'
+            const tappable = state === 'idle' && !limitReached
 
             return (
-              <div key={item.id} style={{
-                ...styles.row,
-                opacity: state === 'done' || state === 'already' ? 0.6 : 1
-              }}>
+              <div
+                key={item.backer_id}
+                onClick={() => { if (tappable) handleReturn(item) }}
+                style={{
+                  ...styles.row,
+                  opacity: dim ? 0.6 : (limitReached && state === 'idle' ? 0.5 : 1),
+                  cursor: tappable ? 'pointer' : 'default'
+                }}
+              >
                 <div style={styles.avatarWrap}>
                   {item.photo_url ? (
                     <img src={item.photo_url} alt="" style={styles.avatarImg} draggable={false} />
@@ -103,37 +127,43 @@ export default function BackupReceivedModal({ items, onConfirm }) {
                     <RankIcon level={level} size={11} />
                     {rank.name} {rank.subLevel}
                   </div>
+                  {count >= 2 && (
+                    <div style={styles.countLine}>
+                      Подстраховал {count} {pluralTimes(count)}
+                    </div>
+                  )}
                 </div>
 
-                {/* Кнопка ответа */}
-                <div style={styles.returnWrap}>
-                  {state === 'done' || state === 'already' ? (
+                {/* Справа: сколько закинул (инфо), после ответа — галочка */}
+                <div style={styles.rightWrap}>
+                  {dim ? (
                     <span style={styles.doneBadge}>✔</span>
                   ) : (
-                    <button
-                      onClick={() => handleReturn(item)}
-                      disabled={state === 'sending'}
-                      style={{
-                        ...styles.returnButton,
-                        opacity: state === 'sending' ? 0.5 : 1
-                      }}
-                    >
-                      +100 <MuscleIcon size={14} earned={true} />
-                    </button>
-                  )}
-
-                  {flyKey && (
-                    <span key={flyKey} style={styles.flyer}>
-                      +100 <MuscleIcon size={14} earned={true} />
+                    <span style={{ ...styles.giveBadge, opacity: state === 'sending' ? 0.5 : 1 }}>
+                      +{item.total_reward} <MuscleIcon size={14} earned={true} />
                     </span>
                   )}
                 </div>
+
+                {/* Крупный бицепс из центра карточки */}
+                {flyKey && (
+                  <span key={flyKey} style={styles.flyerBig}>
+                    <MuscleIcon size={38} earned={true} flexTrigger={flyKey} />
+                    <span style={styles.flyerPlus}>+{BACKUP_REWARD}</span>
+                  </span>
+                )}
               </div>
             )
           })}
         </div>
 
-        <button onClick={onConfirm} style={styles.confirmButton}>
+        {limitReached && (
+          <div style={styles.limitNote}>
+            Лимит подстраховок на сегодня — {BACKUP_DAILY_LIMIT}/{BACKUP_DAILY_LIMIT}
+          </div>
+        )}
+
+        <button onClick={handleConfirm} style={styles.confirmButton}>
           ГОТОВО
         </button>
       </div>
@@ -144,11 +174,11 @@ export default function BackupReceivedModal({ items, onConfirm }) {
           0%   { opacity: 0; transform: scale(0.9) translateY(16px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        @keyframes backupFlyUp {
-          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
-          15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
-          85%  { opacity: 1; transform: translateX(-50%) translateY(-40px) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-52px) scale(0.9); }
+        @keyframes backupReturnFly {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+          20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
+          35%  { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
+          100% { opacity: 0; transform: translate(-50%, -190%) scale(0.95); }
         }
       `}</style>
     </div>
@@ -162,6 +192,15 @@ function pluralPeople(n) {
   if (last === 1) return 'игрок'
   if (last >= 2 && last <= 4) return 'игрока'
   return 'игроков'
+}
+
+function pluralTimes(n) {
+  const last = n % 10
+  const lastTwo = n % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return 'раз'
+  if (last === 1) return 'раз'
+  if (last >= 2 && last <= 4) return 'раза'
+  return 'раз'
 }
 
 const styles = {
@@ -229,6 +268,7 @@ const styles = {
     marginBottom: '8px'
   },
   row: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
@@ -236,7 +276,9 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.05)',
     borderRadius: '14px',
-    transition: 'opacity 0.3s ease'
+    transition: 'opacity 0.3s ease',
+    WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none'
   },
   avatarWrap: {
     width: '40px',
@@ -280,13 +322,21 @@ const styles = {
     letterSpacing: '1px',
     lineHeight: 1
   },
-  returnWrap: {
-    position: 'relative',
+  countLine: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '10px',
+    fontWeight: 600,
+    color: 'var(--color-primary)',
+    opacity: 0.85,
+    lineHeight: 1.2,
+    marginTop: '1px'
+  },
+  rightWrap: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center'
   },
-  returnButton: {
+  giveBadge: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '3px',
@@ -298,7 +348,6 @@ const styles = {
     fontSize: '12px',
     letterSpacing: '0.5px',
     color: 'var(--color-primary)',
-    cursor: 'pointer',
     whiteSpace: 'nowrap'
   },
   doneBadge: {
@@ -312,21 +361,36 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.12)',
     borderRadius: '50%'
   },
-  flyer: {
+  flyerBig: {
     position: 'absolute',
-    bottom: '100%',
+    top: '50%',
     left: '50%',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '3px',
+    gap: '6px',
     fontFamily: 'var(--font-tiny5)',
-    fontSize: '13px',
+    fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
-    textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
-    animation: 'backupFlyUp 1.1s ease-out forwards'
+    zIndex: 5,
+    textShadow: '0 0 10px rgba(158, 209, 83, 0.7)',
+    filter: 'drop-shadow(0 0 10px rgba(250, 223, 190, 0.5))',
+    animation: 'backupReturnFly 1s ease-out forwards'
+  },
+  flyerPlus: {
+    fontFamily: 'var(--font-tiny5)',
+    fontSize: '18px',
+    color: 'var(--color-primary)'
+  },
+  limitNote: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    marginBottom: '2px'
   },
   confirmButton: {
     width: '100%',
