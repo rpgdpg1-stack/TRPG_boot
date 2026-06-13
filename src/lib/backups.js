@@ -84,8 +84,11 @@ export async function backupUser(targetId) {
 
 /**
  * Получить невыданные "меня подстраховали" — для модалки-списка.
- * Возвращает массив: { id, reward, backer_id, first_name, username, photo_url,
- *   total_muscles, rank_index, can_return }
+ * Данные УЖЕ сгруппированы по подстраховавшему (один игрок = один объект).
+ * Возвращает массив: { backer_id, id, ids[], count, total_reward, reward,
+ *   first_name, username, photo_url, total_muscles, rank_index, can_return }
+ *   где count — сколько раз подстраховал, total_reward — суммарно закинул,
+ *   ids — все id записей группы (для markBackupsShown).
  */
 export async function getPendingBackups() {
   const user = getCurrentUser()
