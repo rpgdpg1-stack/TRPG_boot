@@ -16,6 +16,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [kbOpen, setKbOpen] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
   const [limitToast, setLimitToast] = useState(false)
@@ -41,6 +42,21 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       }
     })
     return () => { cancelled = true }
+  }, [])
+
+  // Клавиатура: прячем кнопку сразу, показываем с задержкой при закрытии.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    let t = null
+    const onResize = () => {
+      const open = (window.innerHeight - vv.height) > 150
+      if (open) { if (t) { clearTimeout(t); t = null } setKbOpen(true) }
+      else { if (t) clearTimeout(t); t = setTimeout(() => setKbOpen(false), 350) }
+    }
+    vv.addEventListener('resize', onResize)
+    onResize()
+    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
 
 
@@ -210,13 +226,14 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       )}
 
-      {/* Кнопка всегда внизу: absolute в полноэкранном оверлее. При открытой
-          клавиатуре уходит ПОД неё, без скрытия/показа — значит без морганий. */}
-      <div style={styles.footer}>
-        <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
-          Добавить упражнения · {count}/{max}
-        </button>
-      </div>
+      {/* Кнопку прячем при открытой клавиатуре; показываем с задержкой при закрытии. */}
+      {!kbOpen && (
+        <div style={styles.footer}>
+          <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
+            Добавить упражнения · {count}/{max}
+          </button>
+        </div>
+      )}
     </div>
   )
 
@@ -276,7 +293,7 @@ const styles = {
   },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: '8px 16px 16px',
+    padding: '8px 16px 110px',
     display: 'block',
     WebkitOverflowScrolling: 'touch',
     overscrollBehavior: 'contain',
@@ -293,12 +310,11 @@ const styles = {
   rowTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
   rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 700 },
-  // Футер — нижняя панель колонки (не absolute, иначе всплывает над клавиатурой на iOS).
+  // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
-    flexShrink: 0,
-    padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
-    background: 'var(--color-bg)',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
     pointerEvents: 'none'
   },
   doneBtn: {

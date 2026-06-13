@@ -44,6 +44,7 @@ export default function ProgramConstructor() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const [kbOpen, setKbOpen] = useState(false)
 
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
@@ -85,6 +86,22 @@ export default function ProgramConstructor() {
     let cancelled = false
     loadExerciseCatalog().then(list => { if (!cancelled) setCatalog(list) })
     return () => { cancelled = true }
+  }, [])
+
+  // Клавиатура: прячем док сразу при открытии, показываем с задержкой при
+  // закрытии (чтобы возврат не попал в анимацию клавиатуры → без моргания).
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    let t = null
+    const onResize = () => {
+      const open = (window.innerHeight - vv.height) > 150
+      if (open) { if (t) { clearTimeout(t); t = null } setKbOpen(true) }
+      else { if (t) clearTimeout(t); t = setTimeout(() => setKbOpen(false), 350) }
+    }
+    vv.addEventListener('resize', onResize)
+    onResize()
+    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
 
   // Гасим глобальный нижний fade-scrim (.app::after): на конструкторе таб-бара
@@ -307,7 +324,7 @@ export default function ProgramConstructor() {
         })}
       </div>
 
-      {createPortal(
+      {!kbOpen && createPortal(
         <div style={styles.dock}>
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
