@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
-import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 
@@ -313,9 +313,14 @@ export default function ProgramConstructor() {
               <div style={styles.exContent}>
                 <div style={styles.exName}>{ex?.name || exId}</div>
                 {ex && (
-                  <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
-                    {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
-                  </span>
+                  <div style={styles.exTags}>
+                    <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
+                      {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
+                    </span>
+                    <span style={{ ...styles.exTag, ...styles.exTagSecondary }}>
+                      {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
+                    </span>
+                  </div>
                 )}
               </div>
               <button onClick={() => handleRemove(exId)} className="press-tile" style={styles.removeBtn} aria-label="Удалить">✕</button>
@@ -468,7 +473,9 @@ const styles = {
   exPreviewPlaceholder: { fontSize: '22px', opacity: 0.4 },
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
   exName: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  exTag: { alignSelf: 'flex-start', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700 },
+  exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  exTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
+  exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '12px', color: 'var(--color-text-secondary)', fontSize: '14px' },
   addButton: {
     width: '100%', padding: '18px',
