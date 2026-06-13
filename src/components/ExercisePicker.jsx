@@ -277,15 +277,15 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap'
   },
   list: {
-    flex: 1, minHeight: 0, overflowY: 'auto',
+    flex: '1 1 0%', minHeight: 0, height: '100%', overflowY: 'auto',
     padding: '8px 16px 110px',
-    display: 'flex', flexDirection: 'column', gap: '10px',
+    display: 'block',
     WebkitOverflowScrolling: 'touch',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
   },
   empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px', flexShrink: 0 },
+  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px', marginBottom: '10px' },
   preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   previewPlaceholder: { fontSize: '24px', opacity: 0.4 },
