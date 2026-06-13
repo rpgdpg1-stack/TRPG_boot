@@ -317,7 +317,6 @@ export default function ProgramConstructor() {
           <button
             onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
             disabled={atLimit}
-            className="press-tile"
             style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
           >
             {atLimit ? (
@@ -333,7 +332,6 @@ export default function ProgramConstructor() {
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="press-tile"
             style={{
               ...styles.saveButton,
               ...(canSave ? styles.saveButtonReady : {}),
@@ -423,10 +421,11 @@ const styles = {
   page: { padding: '0 16px 220px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.9) 45%, var(--color-bg) 70%)',
+    padding: '14px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'var(--color-bg)',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
     display: 'flex', flexDirection: 'column', gap: '12px',
-    pointerEvents: 'none',
+    pointerEvents: 'auto',
     zIndex: 40
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
@@ -463,10 +462,9 @@ const styles = {
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
-    background: 'var(--color-bg)', color: 'var(--color-text-secondary)',
+    background: 'transparent', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-    pointerEvents: 'auto'
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
