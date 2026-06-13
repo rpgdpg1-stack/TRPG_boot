@@ -44,9 +44,21 @@ export default function ProgramConstructor() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [nameFocused, setNameFocused] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+
+  // Снимок исходного состояния — чтобы понять, были ли изменения.
+  const initialSnapshot = useRef(null)
 
   const [catalog, setCatalog] = useState([])
   const exMap = useMemo(() => Object.fromEntries(catalog.map(e => [e.id, e])), [catalog])
+
+  // Снимок при первом рендере: с чем пришли (для сравнения «были ли правки»).
+  if (initialSnapshot.current === null) {
+    initialSnapshot.current = JSON.stringify({ name: existing?.title || '', days })
+  }
+
+  const isDirty = () =>
+    initialSnapshot.current !== JSON.stringify({ name, days })
 
   // Перетаскивание упражнений внутри дня: тащим за «ручку», соседи плавно
   // расступаются, перетаскиваемая карточка приподнимается. Порядок применяется
@@ -59,10 +71,16 @@ export default function ProgramConstructor() {
     if (pickerOpen) {
       backButton.setHandler(() => setPickerOpen(false))
     } else {
-      backButton.setHandler(() => navigate('/category/gym'))
+      backButton.setHandler(() => {
+        if (isDirty()) setConfirmExit(true)
+        else navigate('/category/gym')
+      })
     }
     lockVerticalSwipes()
-  }, [navigate, pickerOpen])
+    // isDirty читает name/days на момент тапа через замыкание эффекта —
+    // поэтому держим name и days в зависимостях, чтобы handler был свежий.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, pickerOpen, name, days])
 
   useEffect(() => {
     let cancelled = false
@@ -112,6 +130,7 @@ export default function ProgramConstructor() {
     try {
       const payload = days.map(d => ({ exercises: d }))
       await saveMyProgram(name.trim(), payload)
+      initialSnapshot.current = JSON.stringify({ name, days }) // зафиксировали как сохранённое
       haptic.success()
       navigate('/category/gym')
     } catch (e) {
@@ -328,6 +347,47 @@ export default function ProgramConstructor() {
           onDone={() => setPickerOpen(false)}
         />
       )}
+
+      {confirmExit && createPortal(
+        <div style={styles.exitOverlay} onClick={() => setConfirmExit(false)}>
+          <div style={styles.exitModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.exitTitle}>Сохранить изменения?</div>
+            <div style={styles.exitText}>В программе есть несохранённые изменения.</div>
+
+            <button
+              className="press-tile"
+              style={styles.exitSave}
+              onClick={async () => {
+                if (!canSave) {
+                  // Нечего/нельзя сохранить (пустой день) — подсказываем, не выходим.
+                  haptic.error()
+                  window.alert('В каждом дне должно быть хотя бы одно упражнение.')
+                  return
+                }
+                setConfirmExit(false)
+                await handleSave()
+              }}
+            >
+              Сохранить
+            </button>
+            <button
+              className="press-tile"
+              style={styles.exitDiscard}
+              onClick={() => { setConfirmExit(false); haptic.light(); navigate('/category/gym') }}
+            >
+              Не сохранять
+            </button>
+            <button
+              className="press-tile"
+              style={styles.exitCancel}
+              onClick={() => setConfirmExit(false)}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
@@ -424,5 +484,44 @@ const styles = {
     pointerEvents: 'auto',
     position: 'relative', zIndex: 1
   },
-  saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' }
+  saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' },
+  exitOverlay: {
+    position: 'fixed', inset: 0, zIndex: 300,
+    background: 'rgba(13,12,12,0.75)',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px'
+  },
+  exitModal: {
+    width: '100%', maxWidth: '360px',
+    background: 'rgba(34,34,34,0.98)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '33px',
+    padding: '24px 18px 16px',
+    display: 'flex', flexDirection: 'column', gap: '10px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.6)'
+  },
+  exitTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800,
+    color: 'var(--color-text)', textAlign: 'center'
+  },
+  exitText: {
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '8px'
+  },
+  exitSave: {
+    width: '100%', padding: '16px', border: 'none', borderRadius: '16px',
+    background: 'var(--color-primary)', color: '#0D0C0C',
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
+  },
+  exitDiscard: {
+    width: '100%', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
+    background: 'rgba(255,255,255,0.04)', color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700
+  },
+  exitCancel: {
+    width: '100%', padding: '12px', border: 'none', borderRadius: '12px',
+    background: 'transparent', color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600
+  }
 }
