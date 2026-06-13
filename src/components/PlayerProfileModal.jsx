@@ -121,6 +121,12 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
                    : backupState === 'limit'   ? limitLabel
                    : null
 
+  // Место рядом с кубком — ВСЕГДА место в ЛИГЕ игрока (не среди друзей).
+  // Друзья и обе вкладки рейтинга кладут его в league_place; на старых
+  // строках без league_place — фолбэк на place.
+  const leaguePlace = row.league_place ?? row.place ?? 1
+  const leagueTotal = row.total_in_league ?? null
+
   return createPortal(
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
@@ -129,10 +135,10 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           xp={row.total_muscles || 0}
           streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
           totalWorkouts={pub?.total_workouts ?? null}
-          friendsPlace={row.place}
+          friendsPlace={leaguePlace}
           rankIndex={row.rank_index}
           placeInLeague={true}
-          totalInLeague={row.total_in_league}
+          totalInLeague={leagueTotal}
           lastWorkout={pub?.last_workout || null}
           statsLoading={pub === null}
           interactive={false}

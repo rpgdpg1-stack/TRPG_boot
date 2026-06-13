@@ -142,11 +142,9 @@ export default function Leaderboard() {
 
   const handleRowTap = (row) => {
     haptic.light()
-    // В карточке игрока показываем кубок + место в ЛИГЕ (не среди друзей).
-    // league_place есть у строк вкладки «Лига»; для вкладки «Друзья» и для
-    // своей строки берём place как есть (доведём в Этапе 4).
-    const placeInLeague = row.league_place ?? row.place
-    setSelectedProfile({ ...row, place: placeInLeague })
+    // Место в модалке считает сама модалка: league_place (обе вкладки теперь
+    // его отдают), иначе place. Передаём строку как есть.
+    setSelectedProfile(row)
   }
 
   const handleBackupDone = (targetName) => {

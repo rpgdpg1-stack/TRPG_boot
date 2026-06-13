@@ -274,7 +274,7 @@ export default function PlayerCard() {
               style={styles.friendsPlaceButton}
               aria-label="Открыть рейтинг лиги"
             >
-              🏆 <span style={{ color: getLeagueByRankIndex(leaguePlace.rankIndex).color }}>
+              🏆 <span style={{ color: getLeagueByRankIndex(rankIndexFromMuscles(xp)).color }}>
                 {formatLeaguePlace(leaguePlace.place, leaguePlace.totalInLeague)}
               </span>
             </button>
