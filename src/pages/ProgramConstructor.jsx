@@ -471,7 +471,8 @@ const styles = {
     border: '1.5px dashed rgba(255,255,255,0.15)', borderRadius: 'var(--radius-card)',
     background: 'transparent', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+    pointerEvents: 'auto'
   },
   addButtonLimit: {
     border: '1.5px dashed rgba(232,69,69,0.4)',
