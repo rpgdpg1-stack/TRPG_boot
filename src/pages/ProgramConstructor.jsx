@@ -202,6 +202,7 @@ export default function ProgramConstructor() {
             <button
               key={n}
               onClick={() => changeDayCount(n)}
+              className="press-tile"
               style={{
                 ...styles.segment,
                 background: dayCount === n ? 'var(--color-primary)' : 'var(--color-card)',
@@ -220,6 +221,7 @@ export default function ProgramConstructor() {
           <button
             key={letter}
             onClick={() => { haptic.light(); setActiveIdx(idx) }}
+            className="press-tile"
             style={{
               ...styles.dayTab,
               color: activeIdx === idx ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
@@ -270,7 +272,7 @@ export default function ProgramConstructor() {
                   </span>
                 )}
               </div>
-              <button onClick={() => handleRemove(exId)} style={styles.removeBtn} aria-label="Удалить">✕</button>
+              <button onClick={() => handleRemove(exId)} className="press-tile" style={styles.removeBtn} aria-label="Удалить">✕</button>
             </div>
           )
         })}
@@ -279,6 +281,7 @@ export default function ProgramConstructor() {
       <button
         onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
         disabled={atLimit}
+        className="press-tile"
         style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
       >
         {atLimit
@@ -289,6 +292,7 @@ export default function ProgramConstructor() {
       <button
         onClick={handleSave}
         disabled={!canSave}
+        className="press-tile"
         style={{
           ...styles.saveButton,
           ...(canSave ? styles.saveButtonReady : {}),

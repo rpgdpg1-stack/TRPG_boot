@@ -230,7 +230,7 @@ export async function loadExerciseCatalog() {
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, muscle_group, sub_group, type, preview_url, priority')
-    .order('priority', { ascending: true })
+    .order('id', { ascending: true })
   if (error) {
     console.error('[customProgram] loadExerciseCatalog error:', error)
     return []

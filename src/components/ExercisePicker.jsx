@@ -103,6 +103,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
             <button
               key={group}
               onClick={() => handleGroupTap(group)}
+              className="press-tile"
               style={{
                 ...styles.chip,
                 background: active ? c.tag : 'rgba(255,255,255,0.06)',
@@ -124,6 +125,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
               <button
                 key={sub}
                 onClick={() => { haptic.light(); setActiveSub(prev => (prev === sub ? null : sub)) }}
+                className="press-tile"
                 style={{
                   ...styles.subChip,
                   background: active ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.04)',
@@ -166,6 +168,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
               <button
                 onClick={() => handleToggle(ex)}
                 disabled={disabled}
+                className="press-tile"
                 style={{
                   ...styles.addBtn,
                   background: added ? 'rgba(158,209,83,0.15)' : 'var(--color-primary)',
@@ -183,6 +186,7 @@ export default function ExercisePicker({ excludeIds, atLimit, dayLetter, count, 
       <div style={styles.footer}>
         <button
           onClick={onDone}
+          className="press-tile"
           style={{ ...styles.doneBtn, ...(atLimit ? styles.doneBtnLimit : {}) }}
         >
           {atLimit
