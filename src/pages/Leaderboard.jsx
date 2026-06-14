@@ -600,7 +600,7 @@ const styles = {
     fontSize: '13px',
     fontWeight: 800,
     letterSpacing: '2px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none',
     boxShadow: '0 4px 16px rgba(158, 209, 83, 0.3)'
   },
@@ -619,7 +619,7 @@ const styles = {
     fontSize: '12px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-medium)',
     border: '1px solid rgba(158, 209, 83, 0.25)'
   }
 }
@@ -652,7 +652,7 @@ const modalStyles = {
     flexShrink: 0,
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
+    borderRadius: 'var(--radius-card)',
     padding: '24px 22px 18px',
     display: 'flex',
     flexDirection: 'column',
@@ -701,7 +701,7 @@ const modalStyles = {
     fontSize: '14px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none'
   }
 }

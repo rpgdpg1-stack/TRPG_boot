@@ -229,7 +229,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '1px',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-medium)',
     border: '1px solid rgba(158, 209, 83, 0.35)',
     cursor: 'pointer',
     boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
@@ -268,7 +268,7 @@ const styles = {
     fontSize: '13px',
     fontWeight: 700,
     letterSpacing: '1.5px',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-medium)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     cursor: 'pointer'
   }
