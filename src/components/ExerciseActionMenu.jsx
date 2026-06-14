@@ -651,7 +651,7 @@ const styles = {
     gap: '0px',
     padding: '6px',
     margin: '-6px',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-small)',
     position: 'relative',
     zIndex: 5
   },
@@ -719,7 +719,7 @@ const styles = {
     gap: '12px',
     padding: '14px 18px',
     background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none',
     width: '100%',
     textAlign: 'left',
@@ -742,7 +742,7 @@ const styles = {
   noteSkeleton: {
     width: '100%',
     height: '44px',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-small)',
     background: 'rgba(255, 255, 255, 0.03)'
   },
   // Кнопка "Добавить заметку" (когда заметки ещё нет)
@@ -754,7 +754,7 @@ const styles = {
     padding: '14px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px dashed rgba(255, 255, 255, 0.15)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     cursor: 'pointer',
     textAlign: 'left'
   },
@@ -777,7 +777,7 @@ const styles = {
     padding: '14px 12px 14px 16px',
     background: 'rgba(158, 209, 83, 0.06)',
     border: '1px solid rgba(158, 209, 83, 0.2)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     textAlign: 'left',
     cursor: 'pointer',
     // 3 строки целиком (3×20=60) + верхушка 4-й строки видна → понятно что
@@ -822,7 +822,7 @@ const styles = {
     padding: '12px 14px',
     background: 'rgba(0, 0, 0, 0.3)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 500,
@@ -867,7 +867,7 @@ const styles = {
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 700,
@@ -891,7 +891,7 @@ const styles = {
     gap: '7px',
     background: 'transparent',
     border: 'none',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 500,

@@ -429,7 +429,7 @@ const styles = {
     gap: '0px',
     padding: '6px',
     margin: '-6px',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-small)',
     position: 'relative',
     zIndex: 5
   },
@@ -501,7 +501,7 @@ const styles = {
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(158, 209, 83, 0.3)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-small)',
     padding: '8px 14px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',

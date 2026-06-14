@@ -418,7 +418,7 @@ const styles = {
     width: '100%',
     textAlign: 'left',
     transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease',
-    borderRadius: '10px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none'
   },
   checkboxWrap: {

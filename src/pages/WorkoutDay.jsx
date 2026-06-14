@@ -853,7 +853,7 @@ const styles = {
   error: {
     background: 'rgba(232, 69, 69, 0.08)',
     border: '1px solid rgba(232, 69, 69, 0.3)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     padding: '14px 16px',
     marginBottom: '16px'
   },
@@ -883,7 +883,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '2px',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease'
   },
