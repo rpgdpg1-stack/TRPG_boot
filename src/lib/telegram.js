@@ -80,7 +80,7 @@ export function bindSafeArea() {
     // пусть остаётся фолбэк 116px из CSS. Иначе ставим реальную высоту + запас.
     if (tg.safeAreaInset == null && tg.contentSafeAreaInset == null) return
 
-    document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 8}px`)
+    document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 16}px`)
   }
 
   apply()
