@@ -369,15 +369,7 @@ export default function DailyQuests() {
         </div>
       )}
 
-      <style>{`
-        @keyframes rewardFloatUp {
-          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
-          15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
-          85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
-        }
-      `}</style>
-    </div>
+      </div>
   )
 }
 

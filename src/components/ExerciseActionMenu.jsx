@@ -481,14 +481,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
       </div>
 
       <style>{`
-        @keyframes menuOverlayFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes menuPanelScaleIn {
-          0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
         /* Тонкий вертикальный скроллбар внутри блока просмотра заметки.
            Глобально скроллбары скрыты (index.css), поэтому возвращаем его
            точечно только здесь. Дорожка прозрачная, ползунок — полупрозрачный

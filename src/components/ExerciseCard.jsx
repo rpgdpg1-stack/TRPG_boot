@@ -321,15 +321,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           ✅ Готово, молодец!
         </div>
       )}
-
-      <style>{`
-        @keyframes doneToastFade {
-          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
-          15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-          75%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
-        }
-      `}</style>
     </div>
   )
 }

@@ -589,18 +589,7 @@ export default function WorkoutDay() {
  * border-radius 33px = радиус карточки, иначе обводка не повторит форму.
  */
 function ReturnGlow() {
-  return (
-    <div style={glowStyles.wrap} aria-hidden="true">
-      <style>{`
-        @keyframes returnGlowFade {
-          0%   { opacity: 0; }
-          15%  { opacity: 1; }
-          55%  { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `}</style>
-    </div>
-  )
+  return <div style={glowStyles.wrap} aria-hidden="true" />
 }
 
 const glowStyles = {
