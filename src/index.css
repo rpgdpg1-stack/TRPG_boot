@@ -147,7 +147,7 @@ img, button { -webkit-user-drag: none; }
 body.hide-app-scrim .app::after { display: none; }
 
 .page {
-  padding: calc(var(--tg-safe-top) + 8px) 16px 24px;
+  padding: calc(var(--tg-safe-top) - 24px) 16px 24px;
   position: relative;
   z-index: 1;
 }

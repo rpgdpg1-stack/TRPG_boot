@@ -441,7 +441,7 @@ function GripIcon() {
 }
 
 const styles = {
-  page: { padding: '0 16px 32px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
+  page: { padding: '0 16px 32px', paddingTop: 'calc(var(--tg-safe-top) - 24px)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',

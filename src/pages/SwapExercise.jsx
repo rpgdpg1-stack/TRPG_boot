@@ -353,7 +353,7 @@ const styles = {
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: 'var(--tg-safe-top)',
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
     paddingBottom: '12px',
     marginLeft: '-16px',
     marginRight: '-16px',
