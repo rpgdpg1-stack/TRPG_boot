@@ -533,7 +533,7 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '8px'
   },
   exitSave: {
-    width: '100%', padding: '16px', border: 'none', borderRadius: '16px',
+    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-medium)',
     background: 'var(--color-primary)', color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
   },
