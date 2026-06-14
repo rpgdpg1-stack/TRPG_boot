@@ -259,12 +259,12 @@ const styles = {
   search: {
     flex: 1, height: '44px', padding: '0 16px',
     background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '14px', color: 'var(--color-text)',
+    borderRadius: 'var(--radius-medium)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', outline: 'none'
   },
   closeBtn: {
     width: '44px', height: '44px', flexShrink: 0,
-    background: 'var(--color-card)', border: 'none', borderRadius: '14px',
+    background: 'var(--color-card)', border: 'none', borderRadius: 'var(--radius-medium)',
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
   chipsRow: {
@@ -276,7 +276,7 @@ const styles = {
     margin: '2px 16px 4px',
     padding: '10px 12px',
     background: 'rgba(255,255,255,0.05)',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     flexShrink: 0
   },
   subChipsRow: {
@@ -300,8 +300,8 @@ const styles = {
     touchAction: 'pan-y'
   },
   empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px', marginBottom: '10px' },
-  preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-medium)', padding: '10px', marginBottom: '10px' },
+  preview: { width: '56px', height: '56px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   previewPlaceholder: { fontSize: '24px', opacity: 0.4 },
   rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
@@ -309,7 +309,7 @@ const styles = {
   rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   rowTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
   rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 700 },
+  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: 'var(--radius-medium)', fontSize: '20px', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -318,7 +318,7 @@ const styles = {
     pointerEvents: 'none'
   },
   doneBtn: {
-    width: '100%', padding: '16px', border: 'none', borderRadius: '16px',
+    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-medium)',
     background: 'var(--color-primary)', color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px',
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)',
@@ -331,7 +331,7 @@ const styles = {
     padding: '12px 14px',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',
