@@ -406,7 +406,7 @@ const cardStyles = {
   tag: {
     display: 'inline-block',
     padding: '3px 9px',
-    borderRadius: '6px',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     fontWeight: 700,
@@ -417,7 +417,7 @@ const cardStyles = {
     display: 'inline-block',
     padding: '3px 9px',
     background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '6px',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     fontWeight: 600,
