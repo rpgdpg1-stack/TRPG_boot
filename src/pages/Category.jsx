@@ -215,7 +215,8 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
       setTimeout(() => navigate(`/swim/${prog.slug}`), 80)
       return
     }
-    const day = activeDay || 'A'
+    const firstDay = prog.data?.days ? Object.keys(prog.data.days)[0] : 'A'
+    const day = activeDay || firstDay
     setTimeout(() => navigate(`/workout/${prog.slug}/${day}`), 80)
   }
 

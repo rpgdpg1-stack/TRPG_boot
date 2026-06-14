@@ -161,7 +161,8 @@ export default function Home() {
       setTimeout(() => navigate(`/swim/${fav.prog.slug}`, { state: { fromHome: true } }), 80)
       return
     }
-    const day = fav.activeDay || 'A'
+    const firstDay = fav.prog.data?.days ? Object.keys(fav.prog.data.days)[0] : 'A'
+    const day = fav.activeDay || firstDay
     setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, { state: { fromHome: true } }), 80)
   }
 
