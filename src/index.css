@@ -345,24 +345,6 @@ body.hide-app-scrim .app::after { display: none; }
 }
 
 /* ============================================ */
-/* GLOW */
-/* ============================================ */
-
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 8px var(--color-primary); }
-  50%      { box-shadow: 0 0 16px var(--color-primary); }
-}
-
-@keyframes featuredGlow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(232, 69, 69, 0.15), inset 0 0 30px rgba(232, 69, 69, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 28px rgba(232, 69, 69, 0.25), inset 0 0 30px rgba(232, 69, 69, 0.08);
-  }
-}
-
-/* ============================================ */
 /* РАМКИ АВАТАРА (ранги 8/9/10) — чистый CSS    */
 /* ============================================ */
 /*

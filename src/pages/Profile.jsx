@@ -268,7 +268,7 @@ const styles = {
     padding: '14px 20px',
     background: 'rgba(158, 209, 83, 0.08)',
     border: '1px solid rgba(158, 209, 83, 0.25)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-medium)',
     marginBottom: '20px',
     minHeight: '64px',
     textAlign: 'left'

@@ -236,7 +236,7 @@ const styles = {
     gap: '12px',
     padding: '14px 18px',
     background: 'var(--color-card)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-medium)',
     width: '100%',
     textAlign: 'left',
     minHeight: '60px',
