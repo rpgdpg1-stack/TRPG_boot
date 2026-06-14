@@ -33,6 +33,7 @@ export function initTelegram() {
 
   paintTelegramChrome()
   lockVerticalSwipes()
+  bindSafeArea()
 }
 
 export function paintTelegramChrome() {
@@ -53,6 +54,42 @@ export function paintTelegramChrome() {
   try {
     if (typeof tg.setBottomBarColor === 'function') {
       tg.setBottomBarColor(APP_BG)
+    }
+  } catch (e) { /* ignore */ }
+}
+
+/**
+ * Адаптивный верхний safe-area отступ для контента.
+ *
+ * Пишет в CSS-переменную --tg-safe-top реальную высоту, которую занимают
+ * сверху: вырез/статусбар устройства (safeAreaInset) + шапка Telegram с
+ * кнопками (contentSafeAreaInset) + запас 8px. Обновляется на события
+ * Telegram (поворот, вход/выход из фуллскрина).
+ *
+ * Если поля недоступны (старый клиент Telegram до Bot API 8.0) — переменную
+ * не трогаем, и работает хардкод-фолбэк 116px из index.css.
+ */
+export function bindSafeArea() {
+  if (!tg) return
+
+  const apply = () => {
+    const sys = tg.safeAreaInset?.top ?? 0          // вырез / статус-бар устройства
+    const ui  = tg.contentSafeAreaInset?.top ?? 0   // шапка Telegram (Назад / …)
+
+    // Если оба поля отсутствуют (старый клиент) — не трогаем переменную,
+    // пусть остаётся фолбэк 116px из CSS. Иначе ставим реальную высоту + запас.
+    if (tg.safeAreaInset == null && tg.contentSafeAreaInset == null) return
+
+    document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 8}px`)
+  }
+
+  apply()
+
+  try {
+    if (typeof tg.onEvent === 'function') {
+      tg.onEvent('safeAreaChanged', apply)
+      tg.onEvent('contentSafeAreaChanged', apply)
+      tg.onEvent('fullscreenChanged', apply)
     }
   } catch (e) { /* ignore */ }
 }

@@ -59,7 +59,8 @@
   --press-duration: 120ms;
   --press-ease: cubic-bezier(0.4, 0, 0.6, 1);
 
-  /* Safe-area под Telegram nav. */
+  /* Safe-area под Telegram nav. Фолбэк для старых клиентов (до Bot API 8.0);
+     на новых перезаписывается реальным значением из bindSafeArea() в telegram.js. */
   --tg-safe-top: 116px;
 }
 
