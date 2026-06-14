@@ -5,13 +5,13 @@ import UiIcon from './UiIcon'
 import MuscleIcon from './MuscleIcon'
 
 /**
- * Таб-бар — 3 вкладки: Рейтинг / Тренировки / Профиль.
+ * Таб-бар — 3 вкладки: Друзья / Тренировки / Профиль.
  *
  * Цвета:
- *  - Тренировки: иконка бицепса бежевая при активе, лейбл зелёный
- *  - Рейтинг: иконка кубка золотая при активе; #N серый при неактиве,
- *    зелёный при активе (наследует цвет лейбла — как «Тренировки»/«Профиль»)
+ *  - Друзья: иконка зелёная (--color-primary) при активе, лейбл зелёный
+ *  - Тренировки: иконка бицепса бежевая (#FADFBE) при активе, лейбл зелёный
  *  - Профиль: иконка БЕЛАЯ при активе, лейбл зелёный
+ *  - Неактив везде: иконка rgba(255,255,255,0.5), лейбл rgba(255,255,255,0.5)
  *
  * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
  * и инфо упражнения (/exercise/...).
@@ -74,13 +74,6 @@ export default function TabBar() {
 
   return (
     <nav style={styles.tabbar}>
-      <style>{`
-        @keyframes tabIconPop {
-          0%   { transform: scale(1); }
-          40%  { transform: scale(1.28); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
       {tabs.map(tab => (
         <button
           key={tab.id}
@@ -134,15 +127,7 @@ export default function TabBar() {
                   color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
-            ) : tab.iconName ? (
-              <UiIcon
-                name={tab.iconName}
-                size={32}
-                color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
-              />
-            ) : (
-              tab.icon
-            )}
+            ) : null}
           </span>
           <span style={{
             ...styles.label,

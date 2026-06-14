@@ -40,39 +40,14 @@ export default function TitleTag({ place, size = 15 }) {
         #{p}
       </span>
 
-      {/* Пиксели — 4 штуки, вылетают редко по очереди */}
+      {/* Пиксели — 4 штуки, вылетают редко по очереди.
+          Стили .title-pixels и keyframes titlePixelFloat — в index.css. */}
       <span className="title-pixels" aria-hidden="true">
         <i style={{ background: color, left: '10%', animationDelay: '0s' }} />
         <i style={{ background: color, left: '38%', animationDelay: '1.4s' }} />
         <i style={{ background: color, left: '62%', animationDelay: '2.8s' }} />
         <i style={{ background: color, left: '85%', animationDelay: '4.2s' }} />
       </span>
-
-      <style>{`
-        .title-pixels {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .title-pixels i {
-          position: absolute;
-          top: 30%;
-          width: 2.5px;
-          height: 2.5px;
-          border-radius: 1px;
-          opacity: 0;
-          animation: titlePixelFloat 5.6s ease-out infinite;
-        }
-        @keyframes titlePixelFloat {
-          0%   { opacity: 0; transform: translate(0, 0) scale(1); }
-          12%  { opacity: 1; }
-          100% { opacity: 0; transform: translate(2px, -12px) scale(0.3); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .title-pixels i { animation: none; opacity: 0; }
-        }
-      `}</style>
     </span>
   )
 }
