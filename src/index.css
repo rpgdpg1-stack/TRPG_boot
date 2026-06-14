@@ -38,8 +38,8 @@
   --tag-outdoor: #5DBB63;
 
   /* Скругления */
-  --radius-card: 33px;
-  --radius-small: 33px;
+  --radius-card: 33px;   /* крупное: карточки, модалки, аватары, таб-бар */
+  --radius-small: 12px;  /* мелкое: кнопки, инпуты, чипы, тосты, плашки */
 
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
