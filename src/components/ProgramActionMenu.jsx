@@ -159,7 +159,6 @@ const styles = {
     width: '100%',
     maxHeight: '100%',
     overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',

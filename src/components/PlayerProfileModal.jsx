@@ -202,7 +202,6 @@ const styles = {
     zIndex: 9999,
     padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
   inner: {

@@ -555,7 +555,6 @@ const styles = {
     width: '100%',
     maxHeight: '100%',
     overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
@@ -785,7 +784,6 @@ const styles = {
     // текст продолжается. Высоту считаем от контента: 14 (верх. паддинг) + 74.
     maxHeight: '88px',
     overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
     touchAction: 'pan-y',
     overscrollBehavior: 'contain',
     // Лёгкое затухание нижнего края — мягкий намёк "есть ещё текст, скролль".
@@ -833,7 +831,6 @@ const styles = {
     resize: 'none',
     outline: 'none',
     overflowY: 'scroll',
-    WebkitOverflowScrolling: 'touch',
     touchAction: 'pan-y',
     overscrollBehavior: 'contain',
     WebkitAppearance: 'none'

@@ -269,7 +269,7 @@ const styles = {
   },
   chipsRow: {
     display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
-    flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch', flexShrink: 0
+    flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
   subPanel: {
@@ -281,7 +281,7 @@ const styles = {
   },
   subChipsRow: {
     display: 'flex', gap: '8px', overflowX: 'auto',
-    flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch'
+    flexWrap: 'nowrap'
   },
   chip: {
     flexShrink: 0, padding: '8px 14px', border: 'none', borderRadius: '999px',
@@ -296,7 +296,6 @@ const styles = {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
     padding: '8px 16px 110px',
     display: 'block',
-    WebkitOverflowScrolling: 'touch',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
   },

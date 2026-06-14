@@ -644,7 +644,6 @@ const modalStyles = {
     // Низ с запасом под таб-бар, прокрутка внутри оверлея.
     padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },
   modal: {
