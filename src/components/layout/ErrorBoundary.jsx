@@ -114,7 +114,7 @@ const styles = {
     maxWidth: '320px',
     background: 'rgba(232, 69, 69, 0.08)',
     border: '1px solid rgba(232, 69, 69, 0.2)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-medium)',
     padding: '12px 14px',
     marginTop: '4px'
   },
@@ -141,7 +141,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 700,
     letterSpacing: '2px',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-medium)',
     border: 'none',
     cursor: 'pointer',
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'

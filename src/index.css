@@ -15,7 +15,6 @@
   --color-primary-dark: #648337;
   --color-text: #FFFFFF;
   --color-text-secondary: #888888;
-  --color-overlay: rgba(0, 0, 0, 0.4);
 
   /* Цвета акцентов категорий */
   --cat-strength: #E84545;
@@ -38,8 +37,9 @@
   --tag-outdoor: #5DBB63;
 
   /* Скругления */
-  --radius-card: 33px;   /* крупное: карточки, модалки, аватары, таб-бар */
-  --radius-small: 12px;  /* мелкое: кнопки, инпуты, чипы, тосты, плашки */
+  --radius-card: 33px;     /* крупное: карточки, модалки, аватары, таб-бар */
+  --radius-medium: 20px;   /* среднее: кнопки-действия, инпуты, тосты, плашки */
+  --radius-small: 10px;    /* мелкое: чипы-бейджи, скелетоны */
 
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
