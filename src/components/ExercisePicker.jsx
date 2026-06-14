@@ -309,7 +309,7 @@ const styles = {
   rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   rowTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
   rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: 'var(--radius-medium)', fontSize: '20px', fontWeight: 700 },
+  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: 'var(--radius-small)', fontSize: '20px', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -318,7 +318,7 @@ const styles = {
     pointerEvents: 'none'
   },
   doneBtn: {
-    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-medium)',
+    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-small)',
     background: 'var(--color-primary)', color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px',
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)',
