@@ -55,7 +55,7 @@ export default function Home() {
   // заполненным при заходе и перелистывании страниц (как сделано в профиле).
   const [history, setHistory] = useState(() => {
     try {
-      const raw = localStorage.getItem('home-recent-workouts')
+      const raw = localGet('home-recent-workouts')
       const parsed = raw ? JSON.parse(raw) : null
       return Array.isArray(parsed) ? parsed : []
     } catch { return [] }
@@ -63,9 +63,7 @@ export default function Home() {
   // Загрузилась ли история хоть раз (чтобы не мигал пустой блок при первом
   // запуске когда кеша ещё нет). null-кеш → ждём загрузку, не показываем пусто.
   const [historyLoaded, setHistoryLoaded] = useState(() => {
-    try {
-      return localStorage.getItem('home-recent-workouts') !== null
-    } catch { return false }
+    return localGet('home-recent-workouts') !== null
   })
 
   // Состояние свайпа: стартовая X и флаг "только что свайпнули".
@@ -111,7 +109,7 @@ export default function Home() {
         const list = data || []
         setHistory(list)
         setHistoryLoaded(true)
-        try { localStorage.setItem('home-recent-workouts', JSON.stringify(list)) } catch { /* ignore */ }
+        localSet('home-recent-workouts', JSON.stringify(list))
       })
     }
     load()

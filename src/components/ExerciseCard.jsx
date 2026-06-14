@@ -8,6 +8,7 @@ import {
   markWeightEditingEnded,
   shouldIgnoreCardTap
 } from '../lib/weight-editing-state'
+import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 
 /**
  * Карточка упражнения.
@@ -161,13 +162,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleInputChange = (e) => {
-    let v = e.target.value
-    v = v.replace(/,/g, '.')
-    v = v.replace(/[^0-9.]/g, '')
-    const parts = v.split('.')
-    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-    if (v.length > 5) v = v.slice(0, 5)
-    setDraft(v)
+    setDraft(sanitizeWeightInput(e.target.value))
   }
 
   const handleInputBlur = async () => {
@@ -175,16 +170,14 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     setEditing(false)
     markWeightEditingEnded()
 
-    const trimmed = draft.trim()
+    const norm = normalizeWeightForSave(draft)
 
-    // Стерли всё → ставим 0. Если вес и так был 0 — нечего сохранять и
-    // нечего пиликать (юзер открыл инпут случайно).
-    if (trimmed === '') {
+    // Стерли всё → ставим 0. Если вес и так был 0 — нечего сохранять.
+    if (norm.cleared) {
       if (localWeight !== 0) {
         setLocalWeight(0)
         try {
           await saveExerciseWeight(exercise_id, 0)
-          // Успешно сохранили обнуление — вибрируем как "записал"
           haptic.success()
         } catch (e) {
           console.error('[ExerciseCard] saveExerciseWeight error:', e)
@@ -193,15 +186,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       return
     }
 
-    const num = parseFloat(trimmed)
-    // Невалидный ввод — молча выходим без вибро, чтобы не сбивать с толку
-    if (isNaN(num) || num < 0) return
+    // Невалидный ввод — молча выходим без вибро.
+    if (norm.invalid) return
 
-    const clamped = Math.max(0, Math.min(500, num))
-    const rounded = Math.round(clamped * 2) / 2
+    const rounded = norm.value
 
-    // Вес не изменился (ввёл то же что было) — не пиликаем, иначе будет
-    // ложный фидбек "что-то сохранил" хотя по факту ничего не произошло.
+    // Вес не изменился — не пиликаем (ложный фидбек "сохранил").
     if (rounded === localWeight) return
 
     setLocalWeight(rounded)
@@ -209,7 +199,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     try {
       const ok = await saveExerciseWeight(exercise_id, rounded)
       if (ok) {
-        // Реально сохранили новый вес — успешный пиликов как подтверждение
         haptic.success()
       } else {
         console.warn('[ExerciseCard] saveExerciseWeight returned false')

@@ -3,6 +3,7 @@ import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
+import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
@@ -84,21 +85,15 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   }
 
   const handleWeightChange = (e) => {
-    let v = e.target.value
-    v = v.replace(/,/g, '.')
-    v = v.replace(/[^0-9.]/g, '')
-    const parts = v.split('.')
-    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-    if (v.length > 5) v = v.slice(0, 5)
-    setWeightDraft(v)
+    setWeightDraft(sanitizeWeightInput(e.target.value))
   }
 
   const handleWeightBlur = async () => {
     setEditingWeight(false)
     weightClosedAtRef.current = Date.now()
-    const trimmed = weightDraft.trim()
+    const norm = normalizeWeightForSave(weightDraft)
 
-    if (trimmed === '') {
+    if (norm.cleared) {
       if (localWeight !== 0) {
         setLocalWeight(0)
         try {
@@ -112,11 +107,9 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
       return
     }
 
-    const num = parseFloat(trimmed)
-    if (isNaN(num) || num < 0) return
+    if (norm.invalid) return
 
-    const clamped = Math.max(0, Math.min(500, num))
-    const rounded = Math.round(clamped * 2) / 2
+    const rounded = norm.value
     if (rounded === localWeight) return
 
     setLocalWeight(rounded)
