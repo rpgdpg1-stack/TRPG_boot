@@ -258,18 +258,21 @@ export default function ProgramConstructor() {
         <h1 style={styles.title}>{isEdit ? 'РЕДАКТИРОВАТЬ' : 'СВОЯ ПРОГРАММА'}</h1>
       </header>
 
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Название программы"
-        maxLength={40}
-        style={styles.nameInput}
-      />
+      <div style={styles.section}>
+        <div style={styles.secLabel}>НАЗВАНИЕ</div>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Название программы"
+          maxLength={40}
+          style={styles.nameInput}
+        />
+      </div>
 
       {/* Количество дней */}
       <div style={styles.section}>
-        <div style={styles.label}>ДНЕЙ В ПРОГРАММЕ</div>
+        <div style={styles.secLabel}>ДНЕЙ В ПРОГРАММЕ</div>
         <div style={styles.segments}>
           {[1, 2, 3].map(n => (
             <button
@@ -289,7 +292,9 @@ export default function ProgramConstructor() {
       </div>
 
       {/* Вкладки дней */}
-      <div style={styles.dayTabs}>
+      <div style={styles.section}>
+        <div style={styles.secLabel}>ДНИ</div>
+        <div style={styles.dayTabs}>
         {LETTERS.slice(0, dayCount).map((letter, idx) => (
           <button
             key={letter}
@@ -305,9 +310,11 @@ export default function ProgramConstructor() {
             <span style={styles.dayTabCount}>{days[idx]?.length || 0}</span>
           </button>
         ))}
+        </div>
       </div>
 
       {/* Список упражнений дня */}
+      <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
@@ -481,16 +488,16 @@ const styles = {
   header: { textAlign: 'center', margin: '8px 0 20px' },
   title: { fontFamily: 'var(--font-tiny5)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
-    width: '100%', height: '52px', padding: '0 18px', marginBottom: '20px',
+    width: '100%', height: '52px', padding: '0 18px',
     background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 'var(--radius-card)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
   },
   section: { marginBottom: '20px' },
-  label: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
+  secLabel: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
   segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', fontFamily: 'var(--font-tiny5)', fontSize: '20px' },
-  dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '8px' },
+  dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center' },
   dayTab: {
     display: 'flex', alignItems: 'center', gap: '6px',
     background: 'transparent', border: 'none', borderBottom: '2px solid transparent',
