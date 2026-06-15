@@ -350,6 +350,8 @@ const styles = {
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-small)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     fontWeight: 700,
