@@ -419,12 +419,12 @@ const styles = {
     marginBottom: '18px',
     background: 'rgba(255,255,255,0.04)',
     padding: '4px',
-    borderRadius: 'var(--radius-medium)'
+    borderRadius: '14px'
   },
   tab: {
     flex: 1,
     padding: '9px 4px',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: '10px',
     fontFamily: 'var(--font-tiny5)',
     fontSize: '12px',
     letterSpacing: '1px',
