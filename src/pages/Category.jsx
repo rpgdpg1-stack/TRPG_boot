@@ -221,8 +221,12 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
   }
 
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
+  // Свою программу показываем ровно как ввёл юзер (его регистр, эмодзи).
+  // Встроенные — нормализуем: Первая заглавная, остальные строчные.
   const formattedTitle = prog.title
-    ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
+    ? (prog.source === 'custom'
+        ? prog.title
+        : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const emoji = getProgramEmoji(prog.slug)
 
