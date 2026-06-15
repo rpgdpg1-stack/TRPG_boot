@@ -387,8 +387,10 @@ export default function ProgramConstructor() {
       )}
 
       {limitToast && createPortal(
-        <div key={limitNonce} className="shake-error" style={styles.limitToast}>
-          Удалите упражнение из списка, чтобы освободить место.
+        <div style={styles.limitToastWrap}>
+          <div key={limitNonce} className="shake-error" style={styles.limitToast}>
+            Удалите упражнение из списка, чтобы освободить место.
+          </div>
         </div>,
         document.body
       )}
@@ -523,11 +525,17 @@ const styles = {
     border: '1.5px dashed rgba(232,69,69,0.4)',
     color: '#E84545'
   },
-  limitToast: {
+  limitToastWrap: {
     position: 'fixed',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    left: 0,
+    right: 0,
     bottom: 'calc(155px + env(safe-area-inset-bottom))',
+    display: 'flex',
+    justifyContent: 'center',
+    zIndex: 60,
+    pointerEvents: 'none'
+  },
+  limitToast: {
     maxWidth: '200px',
     padding: '10px 14px',
     background: 'rgba(232, 69, 69, 0.16)',
@@ -540,9 +548,7 @@ const styles = {
     fontWeight: 600,
     lineHeight: 1.35,
     color: '#FF6B6B',
-    textAlign: 'center',
-    zIndex: 60,
-    pointerEvents: 'none'
+    textAlign: 'center'
   },
   saveButton: {
     width: '100%', padding: '18px',
