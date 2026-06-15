@@ -349,7 +349,6 @@ const styles = {
     color: '#FF6B6B',
     textAlign: 'center',
     zIndex: 60,
-    pointerEvents: 'none',
-    animation: 'menuOverlayFadeIn 0.18s ease-out forwards'
+    pointerEvents: 'none'
   }
 }
