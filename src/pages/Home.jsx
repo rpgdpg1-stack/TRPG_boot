@@ -4,7 +4,7 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
-import { getProgramBySlug, getProgramEmoji } from '../features/programs/registry'
+import { getProgramBySlug, getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
@@ -380,13 +380,7 @@ function FavCard({ entry, onTap }) {
           <div style={favCardStyles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              const t = tag.toLowerCase()
-              const bg = prog.source === 'custom' ? 'var(--color-primary)'
-                       : t === 'зал' ? 'var(--tag-gym)'
-                       : t === 'дом' ? 'var(--tag-home)'
-                       : t === 'бассейн' ? 'var(--cat-pool)'
-                       : 'var(--tag-outdoor)'
-              return <span key={tag} style={{ ...favCardStyles.tag, background: bg }}>{ft}</span>
+              return <span key={tag} style={{ ...favCardStyles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
             })}
           </div>
         )}

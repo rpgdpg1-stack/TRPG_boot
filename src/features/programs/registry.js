@@ -111,3 +111,19 @@ export function getProgramDaySlots(slug, day) {
 export function getProgramEmoji(slug) {
   return getProgramBySlug(slug)?.emoji || '💪'
 }
+
+/**
+ * Цвет тега программы. Единый источник для карточек (Home, Category).
+ * Кастомная программа (source === 'custom') — всегда акцентный зелёный.
+ * Встроенные — по названию тега. Незнакомый тег → серый.
+ */
+export function getProgramTagColor(tag, source) {
+  if (source === 'custom') return 'var(--color-primary)'
+  switch ((tag || '').toLowerCase()) {
+    case 'зал': return 'var(--tag-gym)'
+    case 'дом': return 'var(--tag-home)'
+    case 'улица': return 'var(--tag-outdoor)'
+    case 'бассейн': return 'var(--cat-pool)'
+    default: return 'var(--color-text-secondary)'
+  }
+}

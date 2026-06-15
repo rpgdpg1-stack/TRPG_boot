@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes, confirm } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
-import { getProgramsByCategory, getProgramEmoji } from '../features/programs/registry'
+import { getProgramsByCategory, getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import ProgramActionMenu from '../components/ProgramActionMenu'
 import { swimTotalMeters } from '../data/programs/swim'
@@ -289,9 +289,8 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
           <div style={cardStyles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              const bg = prog.source === 'custom' ? 'var(--color-primary)' : getTagColor(tag)
               return (
-                <span key={tag} style={{ ...cardStyles.tag, background: bg }}>
+                <span key={tag} style={{ ...cardStyles.tag, background: getProgramTagColor(tag, prog.source) }}>
                   {ft}
                 </span>
               )
@@ -320,14 +319,6 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
 
 
 
-function getTagColor(tag) {
-  const t = tag.toLowerCase()
-  if (t === 'зал') return 'var(--tag-gym)'
-  if (t === 'дом') return 'var(--tag-home)'
-  if (t === 'улица') return 'var(--tag-outdoor)'
-  if (t === 'бассейн') return 'var(--cat-pool)'
-  return 'var(--color-text-secondary)'
-}
 
 const cardStyles = {
   card: {
