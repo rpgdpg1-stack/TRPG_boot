@@ -445,13 +445,13 @@ const styles = {
     gap: '6px',
     padding: '4px',
     background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 'var(--radius-medium)',
+    borderRadius: '14px',
     marginBottom: '12px'
   },
   poolButton: {
     flex: 1,
     padding: '10px',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: '10px',
     border: 'none',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
