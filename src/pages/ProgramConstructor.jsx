@@ -461,7 +461,7 @@ const styles = {
   section: { marginBottom: '20px' },
   label: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
-  segment: { flex: 1, height: '52px', border: 'none', borderRadius: '16px', fontFamily: 'var(--font-tiny5)', fontSize: '20px' },
+  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', fontFamily: 'var(--font-tiny5)', fontSize: '20px' },
   dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '8px' },
   dayTab: {
     display: 'flex', alignItems: 'center', gap: '6px',
@@ -471,10 +471,10 @@ const styles = {
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '150px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  exRow: { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-card)', borderRadius: '20px', padding: '10px' },
+  exRow: { display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-card)', borderRadius: 'var(--radius-medium)', padding: '10px' },
   exRowDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', position: 'relative', zIndex: 5 },
   dragHandle: { width: '30px', height: '52px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
-  exPreview: { width: '52px', height: '52px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  exPreview: { width: '52px', height: '52px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exPreviewPlaceholder: { fontSize: '22px', opacity: 0.4 },
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
@@ -482,7 +482,7 @@ const styles = {
   exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   exTag: { padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, whiteSpace: 'nowrap' },
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '12px', color: 'var(--color-text-secondary)', fontSize: '14px' },
+  removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 'var(--radius-medium)', color: 'var(--color-text-secondary)', fontSize: '14px' },
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
@@ -503,7 +503,7 @@ const styles = {
   saveButton: {
     width: '100%', padding: '18px',
     background: 'var(--color-card)', color: 'var(--color-text)',
-    border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
     pointerEvents: 'auto'
   },
@@ -538,12 +538,12 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
   },
   exitDiscard: {
-    width: '100%', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px',
+    width: '100%', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-medium)',
     background: 'rgba(255,255,255,0.04)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700
   },
   exitCancel: {
-    width: '100%', padding: '12px', border: 'none', borderRadius: '12px',
+    width: '100%', padding: '12px', border: 'none', borderRadius: 'var(--radius-small)',
     background: 'transparent', color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600
   }

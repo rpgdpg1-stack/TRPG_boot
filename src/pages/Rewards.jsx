@@ -419,12 +419,12 @@ const styles = {
     marginBottom: '18px',
     background: 'rgba(255,255,255,0.04)',
     padding: '4px',
-    borderRadius: '14px'
+    borderRadius: 'var(--radius-medium)'
   },
   tab: {
     flex: 1,
     padding: '9px 4px',
-    borderRadius: '10px',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-tiny5)',
     fontSize: '12px',
     letterSpacing: '1px',
@@ -469,7 +469,7 @@ const styles = {
     gap: '6px',
     padding: '12px 4px',
     background: 'var(--color-card)',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none',
     minHeight: '108px',
     justifyContent: 'center'
@@ -494,7 +494,7 @@ const styles = {
     padding: '18px 8px',
     background: 'var(--color-card)',
     border: '1px solid',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     minHeight: '92px',
     justifyContent: 'center'
   },
@@ -530,7 +530,7 @@ const styles = {
     gap: '8px',
     padding: '18px 8px',
     background: 'var(--color-card)',
-    borderRadius: '16px'
+    borderRadius: 'var(--radius-medium)'
   },
   medalEmoji: { fontSize: '34px', lineHeight: 1 },
   medalNum: {
@@ -545,7 +545,7 @@ const styles = {
     alignItems: 'center',
     padding: '14px 16px',
     background: 'var(--color-card)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 600,
@@ -563,7 +563,7 @@ const styles = {
     gap: '12px',
     padding: '12px 14px',
     background: 'var(--color-card)',
-    borderRadius: '14px'
+    borderRadius: 'var(--radius-medium)'
   },
   medalRowEmoji: { fontSize: '28px', lineHeight: 1, flexShrink: 0 },
   medalRowInfo: { flex: 1, minWidth: 0 },
@@ -607,7 +607,7 @@ const popupStyles = {
     maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
+    borderRadius: 'var(--radius-card)',
     padding: '28px 22px 18px',
     display: 'flex',
     flexDirection: 'column',
@@ -639,7 +639,7 @@ const popupStyles = {
     fontSize: '14px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none'
   },
   btnGhost: {
@@ -652,7 +652,7 @@ const popupStyles = {
     fontSize: '14px',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none'
   }
 }

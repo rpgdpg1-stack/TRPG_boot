@@ -445,13 +445,13 @@ const styles = {
     gap: '6px',
     padding: '4px',
     background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     marginBottom: '12px'
   },
   poolButton: {
     flex: 1,
     padding: '10px',
-    borderRadius: '10px',
+    borderRadius: 'var(--radius-small)',
     border: 'none',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
@@ -467,7 +467,7 @@ const styles = {
     alignItems: 'baseline',
     padding: '8px 14px',
     background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     marginBottom: '10px'
   },
   blockTitle: {
@@ -488,7 +488,7 @@ const styles = {
     color: 'var(--cat-pool)',
     background: 'rgba(63, 162, 247, 0.1)',
     border: '1px solid rgba(63, 162, 247, 0.25)',
-    borderRadius: '10px',
+    borderRadius: 'var(--radius-small)',
     padding: '6px 12px',
     textAlign: 'center',
     marginBottom: '10px'
@@ -500,7 +500,7 @@ const styles = {
     gap: '12px',
     padding: '12px 14px',
     background: 'var(--color-card)',
-    borderRadius: '14px'
+    borderRadius: 'var(--radius-medium)'
   },
   swimContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
   swimName: {
@@ -561,7 +561,7 @@ const styles = {
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '2px',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     border: '1px solid var(--cat-pool)',
     boxShadow: '0 4px 20px rgba(63, 162, 247, 0.3)',
     cursor: 'pointer'
@@ -604,7 +604,7 @@ const laneStyles = {
   water: {
     position: 'relative',
     height: '40px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     overflow: 'hidden',
     background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
     border: '1px solid rgba(63, 162, 247, 0.35)',
@@ -657,7 +657,7 @@ const modalStyles = {
   modal: {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(63, 162, 247, 0.25)',
-    borderRadius: '24px',
+    borderRadius: 'var(--radius-card)',
     padding: '32px 24px 24px',
     width: '100%',
     maxWidth: '320px',
@@ -689,7 +689,7 @@ const modalStyles = {
     padding: '8px 16px',
     background: 'rgba(158, 209, 83, 0.1)',
     border: '1px solid rgba(158, 209, 83, 0.3)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-medium)',
     textShadow: '0 0 10px rgba(158, 209, 83, 0.5)'
   },
   message: {
@@ -710,7 +710,7 @@ const modalStyles = {
     fontSize: '15px',
     fontWeight: 700,
     letterSpacing: '1.5px',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-medium)',
     border: 'none'
   },
   buttonError: { background: '#FF8C42' }
