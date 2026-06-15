@@ -493,7 +493,7 @@ const styles = {
     padding: '6px 4px', fontFamily: 'var(--font-tiny5)', fontSize: '28px'
   },
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
-  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '88px' },
+  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '24px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
@@ -524,7 +524,7 @@ const styles = {
   limitToast: {
     position: 'fixed',
     left: '16px', right: '16px',
-    bottom: 'calc(120px + env(safe-area-inset-bottom))',
+    bottom: 'calc(160px + env(safe-area-inset-bottom))',
     padding: '12px 14px',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
