@@ -187,6 +187,16 @@ body.hide-app-scrim .app::after { display: none; }
   color: #E84545 !important;
 }
 
+/* Press-эффект «увеличение»: для инпутов/полей — на фокус/нажатие слегка
+   подрастают, чтобы было видно что тапнул. Переиспользуемо. */
+.press-grow {
+  transition: transform 0.18s var(--press-ease);
+}
+.press-grow:focus,
+.press-grow:active {
+  transform: scale(1.02);
+}
+
 /* ============================================ */
 /* PRESS-эффект для карточек упражнений */
 /* ============================================ */

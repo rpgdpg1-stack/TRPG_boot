@@ -29,6 +29,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   )
 
   const handleClearSearch = () => {
+    haptic.selection()
     setSearch('')
     try { inputRef.current?.blur() } catch { /* ignore */ }
   }
@@ -121,10 +122,12 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => haptic.selection()}
           placeholder="Поиск упражнения"
+          className="press-grow"
           style={styles.search}
         />
-        <button onClick={handleClearSearch} style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
+        <button onClick={handleClearSearch} className="press-tile" style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
       </div>
 
       {/* Чипы групп мышц */}
@@ -207,8 +210,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                 className="press-tile"
                 style={{
                   ...styles.addBtn,
-                  background: added ? 'rgba(158,209,83,0.15)' : 'var(--color-primary)',
-                  color: added ? 'var(--color-primary)' : '#0D0C0C',
+                  background: added ? 'rgba(158,209,83,0.15)' : 'rgba(255,255,255,0.06)',
+                  color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                   opacity: disabled ? 0.45 : 1
                 }}
                 aria-label={added ? 'Убрать' : 'Добавить'}
@@ -264,7 +267,9 @@ const styles = {
   },
   closeBtn: {
     width: '44px', height: '44px', flexShrink: 0,
-    background: 'var(--color-card)', border: 'none', borderRadius: 'var(--radius-medium)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    lineHeight: 1, paddingBottom: '2px',
+    background: 'var(--color-card)', border: 'none', borderRadius: '50%',
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
   chipsRow: {
@@ -309,7 +314,7 @@ const styles = {
   rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   rowTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  addBtn: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: 'var(--radius-medium)', fontSize: '20px', fontWeight: 700 },
+  addBtn: { width: '40px', height: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: '18px', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
