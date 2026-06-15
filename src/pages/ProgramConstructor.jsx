@@ -524,7 +524,7 @@ const styles = {
   limitToast: {
     position: 'fixed',
     left: '16px', right: '16px',
-    bottom: 'calc(150px + env(safe-area-inset-bottom))',
+    bottom: 'calc(155px + env(safe-area-inset-bottom))',
     padding: '12px 14px',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
