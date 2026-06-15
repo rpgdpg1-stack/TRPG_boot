@@ -330,7 +330,7 @@ export default function ProgramConstructor() {
                     </div>
                   )}
                 </div>
-                <button onClick={() => handleRemove(exId)} className="press-tile" style={styles.removeBtn} aria-label="Удалить">✕</button>
+                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
               </div>
             </div>
           )
