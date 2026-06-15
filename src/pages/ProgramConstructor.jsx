@@ -274,20 +274,23 @@ export default function ProgramConstructor() {
       <div style={styles.section}>
         <div style={styles.secLabel}>ДНЕЙ В ПРОГРАММЕ</div>
         <div style={styles.segments}>
-          {[1, 2, 3].map(n => (
-            <button
-              key={n}
-              onClick={() => changeDayCount(n)}
-              className="press-tile"
-              style={{
-                ...styles.segment,
-                background: dayCount === n ? 'var(--color-primary)' : 'var(--color-card)',
-                color: dayCount === n ? '#0D0C0C' : 'var(--color-text-secondary)'
-              }}
-            >
-              {n}
-            </button>
-          ))}
+          {[1, 2, 3].map(n => {
+            const active = dayCount === n
+            return (
+              <button
+                key={n}
+                onClick={() => changeDayCount(n)}
+                className="press-tile"
+                style={{
+                  ...styles.segment,
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                  fontSize: active ? '26px' : '20px'
+                }}
+              >
+                {n}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -496,7 +499,7 @@ const styles = {
   section: { marginBottom: '20px' },
   secLabel: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
-  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', fontFamily: 'var(--font-tiny5)', fontSize: '20px' },
+  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', background: 'var(--color-card)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-tiny5)', fontSize: '20px', transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center' },
   dayTab: {
     display: 'flex', alignItems: 'center', gap: '6px',
