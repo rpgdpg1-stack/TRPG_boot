@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
-import { clearAllData, resetProgramDayCycle, devResetBadgesOnly } from '../lib/storage'
+import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
 import UiIcon from '../components/UiIcon'
@@ -45,9 +45,8 @@ export default function Settings() {
     {
       title: 'СБРОС',
       items: [
-        { id: 'debug-reset-days',   icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Начать цикл A/B/C заново',        tone: 'warning' },
-        { id: 'debug-reset-badges', icon: '🏅', title: 'Сбросить значки лиг',   subtitle: 'DEV · для теста модалок',         tone: 'warning' },
-        { id: 'debug-reset',        icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Обнулить мускулы, квесты, стрик', tone: 'danger' }
+        { id: 'debug-reset-days', icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
+        { id: 'debug-reset',      icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
       ]
     }
   ]
@@ -77,32 +76,10 @@ export default function Settings() {
       return
     }
 
-    if (item.id === 'debug-reset-badges') {
-      const confirmed = await tgConfirm(
-        'Сбросить значки лиг?\n\nЭто dev-инструмент для тестов модалок.\nМускулы, стрик и история начислений НЕ пострадают — только удалятся все полученные значки.\n\nПри следующем тапе квеста модалка значка появится снова.'
-      )
-      if (!confirmed) return
-
-      try {
-        const ok = await devResetBadgesOnly()
-        if (ok) {
-          haptic.success()
-          window.alert('Значки сброшены. Тапни любой квест или заверши тренировку — должна появиться модалка значка той лиги в которой ты сейчас.')
-        } else {
-          haptic.error()
-          window.alert('Не удалось сбросить значки. Проверь подключение.')
-        }
-      } catch (err) {
-        console.error('[Settings] reset badges failed:', err)
-        haptic.error()
-        window.alert('Не удалось сбросить значки. Проверь подключение.')
-      }
-      return
-    }
 
     if (item.id === 'debug-reset') {
       const confirmed = await tgConfirm(
-        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все выполненные квесты, история начислений и значки лиг.\n\nЭто действие нельзя отменить.'
+        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все квесты, история начислений, значки лиг, история тренировок и полученные подстраховки.\n\nЭто действие нельзя отменить.'
       )
       if (!confirmed) return
 
