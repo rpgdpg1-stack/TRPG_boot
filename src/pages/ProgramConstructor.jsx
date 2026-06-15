@@ -370,7 +370,7 @@ export default function ProgramConstructor() {
           <button
             onClick={handleAddTap}
             className="press-tile"
-            style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
+            style={styles.addButton}
           >
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
@@ -527,10 +527,6 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
     pointerEvents: 'auto'
-  },
-  addButtonLimit: {
-    border: '1.5px dashed rgba(232,69,69,0.4)',
-    color: '#E84545'
   },
   limitToastWrap: {
     position: 'fixed',
