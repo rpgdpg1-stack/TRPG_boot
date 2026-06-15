@@ -325,10 +325,11 @@ const styles = {
     pointerEvents: 'none'
   },
   doneBtn: {
-    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-medium)',
-    background: 'var(--color-primary)', color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)',
+    width: '100%', padding: '18px', borderRadius: 'var(--radius-card)',
+    border: '1.5px dashed rgba(255,255,255,0.18)',
+    background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     pointerEvents: 'auto'
   },
   limitToast: {

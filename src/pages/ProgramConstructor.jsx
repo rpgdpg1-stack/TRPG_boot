@@ -543,7 +543,7 @@ const styles = {
   saveButton: {
     width: '100%', padding: '18px',
     background: 'var(--color-card)', color: 'var(--color-text)',
-    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-medium)',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-card)',
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
     pointerEvents: 'auto'
   },
