@@ -293,6 +293,20 @@ body.hide-app-scrim .app::after { display: none; }
   100% { opacity: 0; transform: scale(1.6); }
 }
 
+/* «Шейк ошибки»: влево → толчок вправо, как стандартная вибрация ошибки.
+   Переиспользуемо для тостов/попапов/полей при недопустимом действии. */
+@keyframes errorShake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-7px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+.shake-error {
+  animation: errorShake 0.4s var(--press-ease) both;
+}
+
 /* ============================================ */
 /* КОМПОНЕНТНЫЕ АНИМАЦИИ (вынесены из компонентов) */
 /* ============================================ */

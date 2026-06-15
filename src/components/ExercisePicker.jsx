@@ -20,6 +20,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
   const [limitToast, setLimitToast] = useState(false)
+  const [limitNonce, setLimitNonce] = useState(0)
   const inputRef = useRef(null)
   const limitTimer = useRef(null)
 
@@ -102,8 +103,9 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const handleToggle = (ex) => {
     const isAdded = excluded.has(ex.id)
     if (!isAdded && atLimit) {
-      haptic.warning()
+      haptic.error()
       setLimitToast(true)
+      setLimitNonce(n => n + 1)
       if (limitTimer.current) clearTimeout(limitTimer.current)
       limitTimer.current = setTimeout(() => setLimitToast(false), 2600)
       return
@@ -225,7 +227,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
 
       {/* Красный попап про лимит — появляется при тапе на «+» сверх лимита. */}
       {limitToast && (
-        <div style={styles.limitToast}>
+        <div key={limitNonce} className="shake-error" style={styles.limitToast}>
           Лимит {max}/{max} достигнут. Снимите галочку с одного из выбранных упражнений, чтобы добавить это.
         </div>
       )}

@@ -45,6 +45,9 @@ export default function ProgramConstructor() {
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
+  const [limitToast, setLimitToast] = useState(false)
+  const [limitNonce, setLimitNonce] = useState(0)
+  const limitTimer = useRef(null)
 
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
@@ -117,6 +120,24 @@ export default function ProgramConstructor() {
     document.body.classList.add('hide-app-scrim')
     return () => document.body.classList.remove('hide-app-scrim')
   }, [])
+
+  // Чистим таймер попапа лимита при уходе со страницы.
+  useEffect(() => () => { if (limitTimer.current) clearTimeout(limitTimer.current) }, [])
+
+  // Тап по кнопке «Добавить» когда день уже забит (10/10): вибрация ошибки +
+  // красный попап с подсказкой + шейк (нонс перезапускает анимацию на каждый тап).
+  const handleAddTap = () => {
+    if (atLimit) {
+      haptic.error()
+      setLimitToast(true)
+      setLimitNonce(n => n + 1)
+      if (limitTimer.current) clearTimeout(limitTimer.current)
+      limitTimer.current = setTimeout(() => setLimitToast(false), 2600)
+      return
+    }
+    haptic.light()
+    setPickerOpen(true)
+  }
 
 
   const changeDayCount = (n) => {
@@ -340,18 +361,12 @@ export default function ProgramConstructor() {
       {!kbOpen && createPortal(
         <div style={styles.dock}>
           <button
-            onClick={() => { if (atLimit) return; haptic.light(); setPickerOpen(true) }}
-            disabled={atLimit}
+            onClick={handleAddTap}
             style={{ ...styles.addButton, ...(atLimit ? styles.addButtonLimit : {}) }}
           >
-            {atLimit ? (
-              <>
-                <span>Достигнут лимит {MAX_PER_DAY}/{MAX_PER_DAY}</span>
-                <span style={styles.addButtonHint}>Удалите упражнение из списка, чтобы освободить место</span>
-              </>
-            ) : (
-              `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`
-            )}
+            {atLimit
+              ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
+              : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
           </button>
 
           <button
@@ -365,6 +380,13 @@ export default function ProgramConstructor() {
           >
             {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
           </button>
+        </div>,
+        document.body
+      )}
+
+      {limitToast && createPortal(
+        <div key={limitNonce} className="shake-error" style={styles.limitToast}>
+          Удалите упражнение из списка, чтобы освободить место.
         </div>,
         document.body
       )}
@@ -499,9 +521,24 @@ const styles = {
     border: '1.5px dashed rgba(232,69,69,0.4)',
     color: '#E84545'
   },
-  addButtonHint: {
-    fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px',
-    color: 'var(--color-text-secondary)', textTransform: 'none'
+  limitToast: {
+    position: 'fixed',
+    left: '16px', right: '16px',
+    bottom: 'calc(150px + env(safe-area-inset-bottom))',
+    padding: '12px 14px',
+    background: 'rgba(232, 69, 69, 0.16)',
+    border: '1px solid rgba(232, 69, 69, 0.5)',
+    borderRadius: 'var(--radius-medium)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: 1.35,
+    color: '#FF6B6B',
+    textAlign: 'center',
+    zIndex: 60,
+    pointerEvents: 'none'
   },
   saveButton: {
     width: '100%', padding: '18px',
