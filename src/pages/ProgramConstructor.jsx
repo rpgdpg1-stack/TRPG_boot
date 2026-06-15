@@ -189,7 +189,7 @@ export default function ProgramConstructor() {
     e.stopPropagation()
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
     const el = rowRefs.current[idx]
-    const stride = (el?.offsetHeight || 72) + 10 // высота строки + gap списка (10px)
+    const stride = (el?.offsetHeight || 90) + 10 // высота строки + gap списка (10px)
     const data = { startIndex: idx, targetIndex: idx, dy: 0, stride, startY: e.clientY }
     dragRef.current = data
     setDrag(data)
@@ -299,7 +299,7 @@ export default function ProgramConstructor() {
             <div
               key={exId}
               ref={(el) => { rowRefs.current[idx] = el }}
-              style={{ ...styles.exRow, ...(isDragging ? styles.exRowDragging : {}), ...rowDragStyle(idx) }}
+              style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
             >
               <div
                 onPointerDown={(e) => handleDragStart(e, idx)}
@@ -311,25 +311,27 @@ export default function ProgramConstructor() {
               >
                 <GripIcon />
               </div>
-              <div style={styles.exPreview}>
-                {ex?.preview_url
-                  ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                  : <div style={styles.exPreviewPlaceholder}>💪</div>}
+              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
+                <div style={styles.exPreview}>
+                  {ex?.preview_url
+                    ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
+                    : <div style={styles.exPreviewPlaceholder}>💪</div>}
+                </div>
+                <div style={styles.exContent}>
+                  <div style={styles.exName}>{ex?.name || exId}</div>
+                  {ex && (
+                    <div style={styles.exTags}>
+                      <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
+                        {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
+                      </span>
+                      <span style={{ ...styles.exTag, ...styles.exTagSecondary }}>
+                        {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => handleRemove(exId)} className="press-tile" style={styles.removeBtn} aria-label="Удалить">✕</button>
               </div>
-              <div style={styles.exContent}>
-                <div style={styles.exName}>{ex?.name || exId}</div>
-                {ex && (
-                  <div style={styles.exTags}>
-                    <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
-                      {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
-                    </span>
-                    <span style={{ ...styles.exTag, ...styles.exTagSecondary }}>
-                      {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => handleRemove(exId)} className="press-tile" style={styles.removeBtn} aria-label="Удалить">✕</button>
             </div>
           )
         })}
@@ -471,9 +473,10 @@ const styles = {
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '150px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  exRow: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
-  exRowDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', position: 'relative', zIndex: 5 },
-  dragHandle: { width: '30px', height: '52px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
+  exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
+  exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
+  exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
+  dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exPreviewPlaceholder: { fontSize: '28px', opacity: 0.4 },
