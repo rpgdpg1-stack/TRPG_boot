@@ -289,8 +289,9 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
           <div style={cardStyles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+              const bg = prog.source === 'custom' ? 'var(--color-primary)' : getTagColor(tag)
               return (
-                <span key={tag} style={{ ...cardStyles.tag, background: getTagColor(tag) }}>
+                <span key={tag} style={{ ...cardStyles.tag, background: bg }}>
                   {ft}
                 </span>
               )

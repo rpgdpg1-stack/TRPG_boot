@@ -336,8 +336,11 @@ function FavCard({ entry, onTap }) {
   if (!entry) return null
   const { prog, activeDay } = entry
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
+  // Свою программу показываем как ввёл юзер (регистр, эмодзи); встроенные нормализуем.
   const formattedTitle = prog.title
-    ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
+    ? (prog.source === 'custom'
+        ? prog.title
+        : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const emoji = getProgramEmoji(prog.slug)
 
@@ -378,7 +381,8 @@ function FavCard({ entry, onTap }) {
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
               const t = tag.toLowerCase()
-              const bg = t === 'зал' ? 'var(--tag-gym)'
+              const bg = prog.source === 'custom' ? 'var(--color-primary)'
+                       : t === 'зал' ? 'var(--tag-gym)'
                        : t === 'дом' ? 'var(--tag-home)'
                        : t === 'бассейн' ? 'var(--cat-pool)'
                        : 'var(--tag-outdoor)'
