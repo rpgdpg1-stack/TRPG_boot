@@ -316,7 +316,7 @@ const styles = {
   rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   rowTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  addBtn: { width: '40px', height: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: '18px', fontWeight: 700 },
+  addBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: '18px', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
