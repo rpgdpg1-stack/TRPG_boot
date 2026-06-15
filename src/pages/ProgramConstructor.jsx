@@ -485,7 +485,7 @@ const styles = {
   exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   exTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 'var(--radius-medium)', color: 'var(--color-text-secondary)', fontSize: '14px' },
+  removeBtn: { width: '40px', height: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
     width: '100%', padding: '18px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
