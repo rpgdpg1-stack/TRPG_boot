@@ -19,7 +19,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [kbOpen, setKbOpen] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
-  const [limitToast, setLimitToast] = useState(false)
+  const [limitRowId, setLimitRowId] = useState(null)
   const [limitNonce, setLimitNonce] = useState(0)
   const inputRef = useRef(null)
   const limitTimer = useRef(null)
@@ -104,10 +104,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     const isAdded = excluded.has(ex.id)
     if (!isAdded && atLimit) {
       haptic.error()
-      setLimitToast(true)
+      setLimitRowId(ex.id)
       setLimitNonce(n => n + 1)
       if (limitTimer.current) clearTimeout(limitTimer.current)
-      limitTimer.current = setTimeout(() => setLimitToast(false), 2600)
+      limitTimer.current = setTimeout(() => setLimitRowId(null), 2600)
       return
     }
     haptic.selection()
@@ -207,6 +207,11 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   </span>
                 </div>
               </div>
+              {limitRowId === ex.id && (
+                <div key={limitNonce} className="shake-error" style={styles.limitBubble}>
+                  Лимит {max}/{max}
+                </div>
+              )}
               <button
                 onClick={() => handleToggle(ex)}
                 className="press-tile"
@@ -224,13 +229,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           )
         })}
       </div>
-
-      {/* Красный попап про лимит — появляется при тапе на «+» сверх лимита. */}
-      {limitToast && (
-        <div key={limitNonce} className="shake-error" style={styles.limitToast}>
-          Лимит {max}/{max} достигнут. Снимите галочку с одного из выбранных упражнений, чтобы добавить это.
-        </div>
-      )}
 
       {/* Кнопку прячем при открытой клавиатуре; показываем с задержкой при закрытии. */}
       {!kbOpen && (
@@ -307,7 +305,7 @@ const styles = {
     touchAction: 'pan-y'
   },
   empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  row: { display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px', marginBottom: '10px' },
+  row: { position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px', marginBottom: '10px' },
   preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   previewPlaceholder: { fontSize: '28px', opacity: 0.4 },
@@ -332,23 +330,22 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     pointerEvents: 'auto'
   },
-  limitToast: {
+  limitBubble: {
     position: 'absolute',
-    left: '16px', right: '16px',
-    bottom: 'calc(96px + env(safe-area-inset-bottom))',
-    padding: '12px 14px',
+    right: '60px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    padding: '6px 10px',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
-    borderRadius: 'var(--radius-medium)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    lineHeight: 1.35,
+    fontSize: '11px',
+    fontWeight: 700,
+    lineHeight: 1,
     color: '#FF6B6B',
-    textAlign: 'center',
-    zIndex: 60,
+    whiteSpace: 'nowrap',
+    zIndex: 5,
     pointerEvents: 'none'
   }
 }
