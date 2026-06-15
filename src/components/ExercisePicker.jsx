@@ -190,13 +190,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           const c = getMuscleGroupColors(ex.muscle_group)
           const disabled = atLimit && !added
           return (
-            <div key={ex.id} style={{ ...styles.row, opacity: disabled ? 0.4 : 1 }}>
-              <div style={styles.preview}>
+            <div key={ex.id} style={styles.row}>
+              <div style={{ ...styles.preview, opacity: disabled ? 0.4 : 1 }}>
                 {ex.preview_url
                   ? <img src={ex.preview_url} alt="" style={styles.previewImg} draggable={false} />
                   : <div style={styles.previewPlaceholder}>💪</div>}
               </div>
-              <div style={styles.rowContent}>
+              <div style={{ ...styles.rowContent, opacity: disabled ? 0.4 : 1 }}>
                 <div style={styles.rowName}>{ex.name}</div>
                 <div style={styles.rowTags}>
                   <span style={{ ...styles.rowTag, background: c.tag, color: '#fff' }}>
@@ -207,24 +207,26 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   </span>
                 </div>
               </div>
-              {limitRowId === ex.id && (
-                <div key={limitNonce} className="shake-error" style={styles.limitBubble}>
-                  Лимит {max}/{max}
-                </div>
-              )}
-              <button
-                onClick={() => handleToggle(ex)}
-                className="press-tile"
-                style={{
-                  ...styles.addBtn,
-                  background: added ? 'rgba(158,209,83,0.15)' : 'rgba(255,255,255,0.06)',
-                  color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  opacity: disabled ? 0.45 : 1
-                }}
-                aria-label={added ? 'Убрать' : 'Добавить'}
-              >
-                {added ? '✓' : '+'}
-              </button>
+              <div style={styles.addBtnWrap}>
+                {limitRowId === ex.id && (
+                  <div key={limitNonce} className="shake-error" style={styles.limitBubble}>
+                    Лимит {max}/{max}
+                  </div>
+                )}
+                <button
+                  onClick={() => handleToggle(ex)}
+                  className="press-tile"
+                  style={{
+                    ...styles.addBtn,
+                    background: added ? 'rgba(158,209,83,0.15)' : 'rgba(255,255,255,0.06)',
+                    color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                    opacity: disabled ? 0.45 : 1
+                  }}
+                  aria-label={added ? 'Убрать' : 'Добавить'}
+                >
+                  {added ? '✓' : '+'}
+                </button>
+              </div>
             </div>
           )
         })}
@@ -330,9 +332,16 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
     pointerEvents: 'auto'
   },
+  addBtnWrap: {
+    position: 'relative',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   limitBubble: {
     position: 'absolute',
-    right: '60px',
+    right: 'calc(100% + 10px)',
     top: '50%',
     transform: 'translateY(-50%)',
     padding: '6px 10px',
