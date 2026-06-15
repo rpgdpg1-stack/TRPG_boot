@@ -445,6 +445,10 @@ export async function clearAllData() {
 
   cacheInvalidate('')
 
+  // Сбрасываем in-memory кеш собранного избранного — иначе после полного
+  // сброса главная покажет старые избранные программы до перезапуска аппа.
+  favoritesEntriesCache = null
+
   // Оффлайн-инфраструктура: чистим очередь несинканутых операций и
   // persistent-кеш дней/весов/упражнений. Иначе после сброса прогресса
   // старые операции могут уехать в БД при следующем синке.
@@ -453,11 +457,11 @@ export async function clearAllData() {
 
   if (!userId) return
 
-  // Сброс прогресса через DEFINER-функцию: обнуляет total_muscles/стрик и
-  // чистит свои muscle_history/daily_quests/league_badges. Прямой апдейт users
-  // больше невозможен (колоночная защита от накрутки), поэтому идём через RPC.
-  // Значки чистим тоже — чтобы при следующем тапе квеста снова появилась
-  // модалка той лиги, до которой быстро добежишь.
+  // Сброс прогресса через DEFINER-функцию: обнуляет total_muscles/стрик,
+  // чистит muscle_history/daily_quests/league_badges, историю тренировок
+  // (workouts + exercise_sets каскадом) и полученные подстраховки, плюс
+  // ставит метку last_progress_reset_at. Прямой апдейт users невозможен
+  // (колоночная защита от накрутки), поэтому идём через RPC.
   const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
   if (resetErr) {
     console.error('[storage] api_reset_my_progress error:', resetErr)
@@ -467,28 +471,5 @@ export async function clearAllData() {
   if (data) {
     setCurrentUser(data)
     emit(EVENTS.USER_CHANGED, data)
-  }
-}
-
-/**
- * Дев-сброс ТОЛЬКО значков лиг. Не трогает мускулы, стрик, историю.
- * Используется кнопкой в настройках чтобы тестировать модалки на одном аккаунте.
- */
-export async function devResetBadgesOnly() {
-  const userId = getUserId()
-  if (!userId) return false
-
-  try {
-    const { error } = await supabase.rpc('api_dev_reset_user_badges', {
-      p_user_id: userId
-    })
-    if (error) {
-      console.error('[storage] devResetBadgesOnly RPC error:', error)
-      return false
-    }
-    return true
-  } catch (e) {
-    console.error('[storage] devResetBadgesOnly exception:', e)
-    return false
   }
 }
