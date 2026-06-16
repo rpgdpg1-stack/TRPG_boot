@@ -1,0 +1,142 @@
+---
+name: trpg-workflow
+description: "Рабочий процесс проекта TRPG (Telegram Mini App, фитнес-RPG на Vite+React+Supabase). Применять при правках кода, обсуждении задач, добавлении программ тренировок и ревью чистоты кода."
+---
+
+# TRPG Workflow
+
+Проект **TRPG** — геймифицированный фитнес-трекер, Telegram Mini App.
+Пользователь (Дмитрий) — нон-программист. Конвенции базы данных — в скиле «trpg-supabase»,
+дизайн-система — в скиле «trpg-ui».
+
+## Контекст
+
+- **Стек:** Vite + React 18 + React Router 6 + Supabase + Telegram WebApp SDK.
+  Деплой на Vercel. Медиа на Selectel S3, бакет `trpg`. Стили — CSS (НЕ Tailwind).
+- **Supabase Ref:** `jybwxbqmnommazjfucbq`. Бот: `@TrainingRPGbot`.
+- **Геймификация:** мускулы 💪 = XP, 11 лиг, сезоны (сброс раз в квартал), стрики,
+  лидерборды, подстраховка, ежедневные квесты, рамки-награды.
+- **Программы:** `split` (A/B/C силовой) и `swim` (Заплыв, дистанция). Упражнения — в Supabase.
+
+## Старт задачи (в Claude Code)
+
+Файлы я читаю **сам** из репозитория — не прошу Дмитрия их прикладывать. Перед правкой:
+сначала прочитать актуальные файлы по теме (Read/Grep), понять текущую логику, и только потом
+менять. Не править по памяти — память не хранит код, без свежего файла правки → баги.
+
+## Формат правок (в Claude Code)
+
+- Правки вношу **напрямую** инструментами (Edit/Write) — без формата «Было/Стало» (он был нужен
+  для ручной вставки в чате, тут не нужен).
+- Точечные правки делать минимальными и адресными, по стилю окружающего кода.
+- Целый файл писать только если он новый.
+- «Дай полный код файла» — показать полностью без споров.
+
+## Подача
+
+- Если задача из нескольких шагов — нумеровать («Шаг 1 из 5», SQL-блоки тоже считаются),
+  чтобы Дмитрий видел прогресс.
+- SQL/миграции: если утверждено — применять сам через Supabase-коннектор
+  (правила и защита от деструктива — в скиле «trpg-supabase»).
+
+## Коммиты (авто-коммит разрешён)
+
+Дмитрий разрешил коммитить правки самому, без отдельного спроса. Порядок:
+- После правки прогнать `npm run lint` (или eslint по изменённым файлам) и `npm run build`.
+  **Коммитить только если оба прошли.**
+- Коммит прямо в `main`, сообщение на русском в стиле conventional commits
+  (`fix(...)`, `feat(...)`, `refactor(...)`).
+- `push` отдельно — только по явной просьбе (GitHub Desktop у Дмитрия часто пушит сам).
+- Нашлась ошибка позже — поправить amend этого коммита (после проверки) или отдельным коммитом.
+
+## Обновление скилов (по итогу правок)
+
+Скилы живут в репозитории: `.claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md`.
+Когда правки за сессию вскрыли что-то для дизайн-системы/конвенций (новый паттерн, класс,
+переиспользуемое правило, устаревшая инфа) — **отредактировать нужный SKILL.md напрямую**
+(вплести новое в существующую структуру, удалить устаревшее) и закоммитить вместе с кодом.
+В конце явно сказать Дмитрию, в какой скил это пошло. Не молчать про такие вещи — предлагать самому.
+
+## Чеклист перед коммитом
+
+Импорты целы и нет ссылок на удалённое · новые файлы внесены в дерево (обновить этот скил) ·
+нет мёртвого кода от правки · при изменении БД — RPC протестирован · `lint` + `build` зелёные.
+
+## Именование
+
+`api_*` — RPC · PascalCase `.jsx` — компоненты · нижний регистр — слаги программ ·
+camelCase — утилиты (`getTodayKey`).
+
+## Известные грабли (не наступать)
+
+- Клавиатура iOS → высота через `visualViewport`.
+- Скролл в модалках → `data-scrollable` + `onTouchMove`.
+- Inline SVG с `currentColor` → `import.meta.glob` с `?raw` + `dangerouslySetInnerHTML`.
+- Завершение квеста → `pointerUp` с порогом `TAP_THRESHOLD_PX = 8`.
+- Место в лиге → top 100: `#N`, ниже: `Топ N%`, цвет по лиге.
+- Стрики кэпнуты на 7 структурой БД (one-per-day), `LEAST()` не нужен.
+- Стрик: начальный `useState` гнать через `resolveWeeklyStreak(streak, week)` (utils/dates),
+  а не показывать сырое `weekly_streak` — иначе вспышка прошлого значения при смене недели.
+
+## Стоп-лист (НЕ делаем)
+
+A/B/C-гибрид · Google Sheets (миграция сделана) · кнопку «disable legacy keys» до миграции ключей.
+
+## Новая программа тренировок
+
+Уточнить: название, дни, упражнения по дням. Затем пакетом одним коммитом:
+`src/data/programs/<slug>.js` → запись в `registry.js` → INSERT в Supabase →
+универсализация мест с захардкоженным `'split'`. (Следующая — Full Body.)
+
+## Чистота кода
+
+После правок чистить: неиспользуемые файлы, мёртвый код, старые импорты.
+Перед удалением проверить, кто использует; при сомнении — оставить и предупредить.
+
+## ENV (только имена, без значений; см. .env.example в репо)
+
+Фронт (Vite): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`.
+Серверные (Supabase secrets): `TELEGRAM_BOT_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`, Selectel S3 creds.
+
+## Дерево проекта
+
+Актуально на 2026-06-16. **При создании нового файла — внести его сюда** (я редактирую этот скил
+сам и коммичу). Регенерация:
+`find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' | sort`
+
+```
+Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · eslint.config.js
+        index.html · package.json · vercel.json · vite.config.js
+        .github/workflows/keepalive.yml
+        .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md
+
+src/
+├── App.jsx · main.jsx (Sentry PROD) · index.css (дизайн-токены)
+├── assets/ranks/   11 SVG: rookie athlete sportsman coach machine titan elite champion legend immortal x3-champion
+├── assets/ui/      SVG-иконки: cardio change cloud_done cloud_sync friends info invite-friend
+│                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
+├── components/     DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
+│                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon MuscleIcon
+│                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlayerCard PlayerProfileModal
+│                   ProfileHeader ProgramActionMenu RankIcon RanksPopup SaveFriendProgramModal
+│                   StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
+│   ├── layout/     ErrorBoundary · Loader
+│   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal
+├── data/programs/  split.js · swim.js
+├── features/exercises/  api.js · weight-format.js
+├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
+├── lib/            auth backups cache cloud-storage events frames friends-list friends leaderboard
+│                   leagues levels network-status notes offline-queue persistent-cache profile-cache
+│                   rewards season-reset storage supabase sync-engine telegram weight-editing-state
+├── pages/          Category ExerciseInfo Friends History Home Leaderboard Profile ProgramConstructor
+│                   Recovery Rewards Settings SwapExercise SwimWorkout WorkoutDay
+└── utils/          dates history plural season storage workout-progress
+
+supabase/
+├── config.toml
+└── functions/telegram-auth/  index.ts · deno.json · .npmrc
+```
+
+## Коммуникация
+
+Неформальный русский, короткие сообщения, термины вперемешку с разговорным.
