@@ -12,6 +12,7 @@ import {
 import { getMyLeaguePlace } from '../lib/leaderboard'
 import { getLeagueByRankIndex, formatLeaguePlace } from '../lib/leagues'
 import { getCurrentUser } from '../lib/auth'
+import { resolveWeeklyStreak } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
 import { spawnFireSparks } from './ParticlesBg'
 import XPBar from './XPBar'
@@ -54,7 +55,7 @@ export default function PlayerCard() {
   const [xp, setXP] = useState(() => getCurrentUser()?.total_muscles || 0)
   const [weeklyStreak, setWeeklyStreak] = useState(() => {
     const u = getCurrentUser()
-    return u?.weekly_streak || 0
+    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
   const [recentHistory, setRecentHistory] = useState([])
   const [showXPDetails, setShowXPDetails] = useState(false)

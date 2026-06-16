@@ -4,6 +4,7 @@ import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram
 import { getTotalXP, getWeeklyStreak, getTotalWorkouts, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
 import { getFriendsLeaderboard, getMyLeaguePlace } from '../lib/leaderboard'
 import { getCurrentUser } from '../lib/auth'
+import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
@@ -37,7 +38,7 @@ export default function Profile() {
     } catch { /* ignore */ }
     return {
       xp: u?.total_muscles || 0,
-      streak: u?.weekly_streak || 0,
+      streak: resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week),
       totalWorkouts: cachedTotal
     }
   })
