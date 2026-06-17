@@ -174,6 +174,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '22px',
     color: 'var(--color-primary)'
   },
@@ -220,6 +221,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1,
@@ -242,6 +244,7 @@ const styles = {
   },
   muscles: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     letterSpacing: '0.5px',
     flexShrink: 0,

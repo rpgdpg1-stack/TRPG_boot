@@ -247,6 +247,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -311,6 +312,7 @@ const styles = {
   inviteEmoji: { fontSize: '40px', marginBottom: '8px' },
   inviteTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '16px',
     color: 'var(--color-text)',
     letterSpacing: '2px',

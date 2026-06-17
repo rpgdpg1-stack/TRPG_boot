@@ -81,6 +81,7 @@ const styles = {
     alignItems: 'center',
     gap: '2px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     zIndex: 2,
     textShadow: '0 0 4px rgba(0,0,0,0.8)'
   },

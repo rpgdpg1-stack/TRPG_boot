@@ -160,6 +160,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -168,6 +169,7 @@ const styles = {
   },
   groupTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',

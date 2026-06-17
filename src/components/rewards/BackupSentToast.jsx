@@ -126,6 +126,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '17px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -150,6 +151,7 @@ const styles = {
     border: '1px solid rgba(158, 209, 83, 0.3)',
     borderRadius: '12px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',

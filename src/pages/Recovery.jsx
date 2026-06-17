@@ -178,6 +178,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -215,6 +216,7 @@ const styles = {
   },
   categoryTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '14px',
     letterSpacing: '2px',
     marginBottom: '2px'
@@ -258,6 +260,7 @@ const styles = {
   },
   itemFreq: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
@@ -311,6 +314,7 @@ const popupStyles = {
   },
   freq: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',

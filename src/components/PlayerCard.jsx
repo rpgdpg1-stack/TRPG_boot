@@ -447,6 +447,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '38px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
@@ -469,6 +470,7 @@ const styles = {
   },
   medalBadgeCount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text)',
     letterSpacing: '0.5px',
@@ -510,6 +512,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '15px',
     letterSpacing: '1.5px',
     padding: '2px 0',
@@ -524,6 +527,7 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '8px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     letterSpacing: '1px',
     color: 'var(--color-text)',
@@ -557,6 +561,7 @@ const styles = {
   },
   streakCount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '14px',
     color: '#FFFFFF',
     letterSpacing: '1px',
@@ -578,6 +583,7 @@ const styles = {
   },
   popupSectionTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -609,6 +615,7 @@ const styles = {
   },
   popupAmount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
@@ -650,6 +657,7 @@ const styles = {
   },
   streakPopupTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1.5px',
@@ -664,6 +672,7 @@ const styles = {
   },
   streakPopupCount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '22px',
     color: '#FFFFFF',
     letterSpacing: '1px',

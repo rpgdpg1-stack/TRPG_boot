@@ -96,6 +96,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -120,6 +121,7 @@ const styles = {
   },
   errorTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     color: '#E84545',
     letterSpacing: '1px',

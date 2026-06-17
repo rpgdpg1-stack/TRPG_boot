@@ -400,6 +400,7 @@ const styles = {
   header: { marginTop: '8px', marginBottom: '16px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -426,6 +427,7 @@ const styles = {
     padding: '9px 4px',
     borderRadius: '10px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text-secondary)',
@@ -438,6 +440,7 @@ const styles = {
   },
   sectionHeader: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -476,6 +479,7 @@ const styles = {
   },
   badgeName: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     letterSpacing: '0.5px',
     lineHeight: 1,
@@ -500,6 +504,7 @@ const styles = {
   },
   titleBig: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '30px',
     letterSpacing: '1px',
     lineHeight: 1,
@@ -535,6 +540,7 @@ const styles = {
   medalEmoji: { fontSize: '34px', lineHeight: 1 },
   medalNum: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '20px',
     letterSpacing: '1px'
   },
@@ -569,6 +575,7 @@ const styles = {
   medalRowInfo: { flex: 1, minWidth: 0 },
   medalRowPlace: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     letterSpacing: '1px',
     marginBottom: '2px'
@@ -618,6 +625,7 @@ const popupStyles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '16px',
     letterSpacing: '2px',
     textAlign: 'center'

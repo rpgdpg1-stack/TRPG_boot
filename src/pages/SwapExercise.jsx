@@ -366,6 +366,7 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '24px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -384,6 +385,7 @@ const styles = {
   },
   sectionLabel: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -392,6 +394,7 @@ const styles = {
   },
   alternativesHeader: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -508,6 +511,7 @@ const rowStyles = {
   },
   defaultBadge: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '9px',
     color: 'var(--color-primary)',
     background: 'rgba(158, 209, 83, 0.15)',

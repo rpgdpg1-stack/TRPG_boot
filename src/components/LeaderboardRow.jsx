@@ -133,6 +133,7 @@ const styles = {
   },
   placeNumber: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
@@ -159,6 +160,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-primary)'
   },
@@ -193,12 +195,14 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1
   },
   muscles: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     letterSpacing: '0.5px',
     flexShrink: 0,

@@ -135,7 +135,7 @@ export default function Category() {
 const styles = {
   page: {},
   header: { marginBottom: '24px', marginTop: '8px', textAlign: 'center' },
-  title: { fontFamily: 'var(--font-display)', fontSize: '36px', letterSpacing: '3px', lineHeight: 1, marginBottom: '8px' },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '36px', letterSpacing: '3px', lineHeight: 1, marginBottom: '8px' },
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px' },
   programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
   createButton: {
@@ -378,6 +378,7 @@ const cardStyles = {
   },
   daysLabel: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '14px',
     color: 'rgba(255, 255, 255, 0.35)',
     letterSpacing: '1px'
@@ -389,6 +390,7 @@ const cardStyles = {
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '17px',
     lineHeight: 1,
     transition: 'color 0.3s ease, text-shadow 0.3s ease'

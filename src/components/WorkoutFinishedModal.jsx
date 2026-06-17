@@ -202,12 +202,14 @@ const styles = {
   },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     letterSpacing: '2px',
     textAlign: 'center'
   },
   rewardBadge: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '24px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',

@@ -150,6 +150,7 @@ const styles = {
     left: '50%',
     transform: 'translateX(-50%)',
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -165,6 +166,7 @@ const styles = {
   },
   logo: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '20px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',

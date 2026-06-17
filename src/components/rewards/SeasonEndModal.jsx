@@ -198,12 +198,14 @@ const styles = {
   },
   seasonHeader: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px'
   },
   seasonName: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -241,6 +243,7 @@ const styles = {
   },
   finishLine: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
@@ -260,6 +263,7 @@ const styles = {
   },
   rewardTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '14px',
     letterSpacing: '1.5px',
     textAlign: 'center'

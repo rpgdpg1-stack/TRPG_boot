@@ -64,6 +64,7 @@ const styles = {
   header: { marginTop: '8px', marginBottom: '20px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '32px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',

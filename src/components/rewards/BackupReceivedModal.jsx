@@ -246,6 +246,7 @@ const styles = {
   },
   kicker: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -297,6 +298,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-primary)'
   },
@@ -318,6 +320,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1
@@ -345,6 +348,7 @@ const styles = {
     border: '1px solid rgba(158, 209, 83, 0.4)',
     borderRadius: '999px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     letterSpacing: '0.5px',
     color: 'var(--color-primary)',
@@ -369,6 +373,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -381,6 +386,7 @@ const styles = {
   },
   flyerPlus: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-primary)'
   },

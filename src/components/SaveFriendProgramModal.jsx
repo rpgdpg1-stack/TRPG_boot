@@ -72,7 +72,7 @@ const styles = {
   emoji: { fontSize: '44px', marginBottom: '12px' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '20px', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px' },
   author: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' },
-  meta: { fontFamily: 'var(--font-display)', fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: '20px' },
+  meta: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: '20px' },
   warn: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E0A23C', background: 'rgba(224,162,60,0.1)', borderRadius: '12px', padding: '10px 12px', marginBottom: '16px' },
   error: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E84545', marginBottom: '12px' },
   saveBtn: {

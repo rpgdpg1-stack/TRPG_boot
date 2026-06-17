@@ -393,6 +393,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
+    fontWeight: 800,
     fontSize: '52px',
     color: 'var(--color-primary)'
   },
@@ -430,6 +431,7 @@ const styles = {
   },
   rank: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '15px',
     letterSpacing: '1.5px',
     padding: '2px 0',
@@ -447,6 +449,7 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text)',
@@ -460,6 +463,7 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text)'
@@ -500,6 +504,7 @@ const styles = {
   
   pillValue: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '15px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -510,6 +515,7 @@ const styles = {
   // счётчика стрика, чтобы все три ячейки были визуально на одной высоте.
   statValue: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '20px',
     letterSpacing: '0.5px',
     lineHeight: 1,
@@ -545,6 +551,7 @@ const styles = {
   },
   statCount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '20px',
     color: '#FFFFFF',
     letterSpacing: '1px',
@@ -595,6 +602,7 @@ const styles = {
   },
   popupTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -622,6 +630,7 @@ const styles = {
   },
   popupAmount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
@@ -630,6 +639,7 @@ const styles = {
   },
   popupDate: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px',
@@ -651,6 +661,7 @@ const styles = {
   },
   streakCount: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 700,
     fontSize: '22px',
     color: '#FFFFFF',
     letterSpacing: '1px',

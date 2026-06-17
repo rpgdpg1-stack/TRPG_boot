@@ -303,6 +303,7 @@ const styles = {
   // === Группы разделов (как РАЗДЕЛЫ на главной) ===
   groupTitle: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',

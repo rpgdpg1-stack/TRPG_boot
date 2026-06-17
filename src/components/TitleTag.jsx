@@ -29,6 +29,7 @@ export default function TitleTag({ place, size = 15 }) {
       <span
         style={{
           fontFamily: 'var(--font-display)',
+          fontWeight: 700,
           fontSize: `${size}px`,
           letterSpacing: '1.5px',
           color,

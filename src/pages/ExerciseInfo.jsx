@@ -241,6 +241,7 @@ const styles = {
   },
   sectionHeader: {
     fontFamily: 'var(--font-display)',
+    fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
