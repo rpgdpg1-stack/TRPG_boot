@@ -29,7 +29,6 @@ const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скрол�
 export default function FriendRow({ friend, onTap, onLongPress }) {
   const {
     first_name,
-    username,
     photo_url,
     total_muscles,
     rank_index,
@@ -42,7 +41,6 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
   const leagueColor = getLeagueByRankIndex(rank_index).color
 
   const displayName = first_name || 'Игрок'
-  const handleStr = username ? `@${username}` : ''
   const isPinned = !!pinned_at
 
   const lastWorkoutText = last_workout_at ? formatRelative(last_workout_at) : null
@@ -122,7 +120,6 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
         <div style={styles.nameRow}>
           {isPinned && <span style={styles.pin}>📌</span>}
           <span style={styles.name}>{displayName}</span>
-          {handleStr && <span style={styles.handle}>{handleStr}</span>}
         </div>
         <div style={styles.metaRow}>
           <span style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -206,12 +203,6 @@ const styles = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     minWidth: 0
-  },
-  handle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    flexShrink: 0
   },
   metaRow: {
     display: 'flex',

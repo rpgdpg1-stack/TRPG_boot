@@ -161,7 +161,6 @@ export default function PlayerCard() {
   const remainingToNext = Math.max(0, inLevelNeeded - inLevelCurrent)
 
   const displayName = user?.first_name || 'ATHLETE'
-  const username = user?.username ? `@${user.username}` : ''
 
   const handleAvatarTap = () => {
     haptic.light()
@@ -249,7 +248,6 @@ export default function PlayerCard() {
 
           <div style={styles.nameRow}>
             <span style={styles.name}>{displayName}</span>
-            {username && <span style={styles.username}>{username}</span>}
           </div>
 
           <div style={styles.rankWrap} data-rank-button-wrap>
@@ -497,11 +495,6 @@ const styles = {
     fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.1
-  },
-  username: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)'
   },
   rankWrap: {
     position: 'relative',

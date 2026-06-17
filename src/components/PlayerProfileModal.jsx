@@ -142,7 +142,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           lastWorkout={pub?.last_workout || null}
           statsLoading={pub === null}
           interactive={false}
-          showUsername={false}
         />
 
         {!isSelf && (

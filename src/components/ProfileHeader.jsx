@@ -15,12 +15,11 @@ import { getFrameByRankIndex, rankIndexFromMuscles } from '../lib/frames'
  * Карточка-шапка профиля. Переиспользуется в двух местах:
  *  - на странице Профиль (interactive=true): капсулы тапаются → попапы,
  *    ранг тапается → список рангов, место ведёт в рейтинг
- *  - в модалке из Рейтинга/Лиги (interactive=false): только визуал, без
- *    попапов, логин телеги скрыт (showUsername=false)
+ *  - в модалке из Рейтинга/Лиги (interactive=false): только визуал, без попапов
  *
  * Макет:
  *   [ КРУПНЫЙ АВАТАР ]   ← по центру, рамка в цвет ранга (актив. рамка)
- *   Имя              @логин
+ *   Имя
  *   🏅 Атлет 2          🏆 #1
  *   Последняя тренировка — 12 мая
  *   [Мускулы] [Серия] [Тренировок]   ← капсулы радиусом 33
@@ -66,7 +65,6 @@ export default function ProfileHeader({
   recentHistory = [],
   recentWorkouts = [],
   interactive = false,
-  showUsername = true,
   statsLoading = false,      // true → показать скелетон вместо стрика/тренировок/посл. тренировки
   onPlaceTap = null
 }) {
@@ -79,7 +77,6 @@ export default function ProfileHeader({
   const level = getLevelFromXP(xp)
   const rank = getRankByLevel(level)
   const displayName = user?.first_name || 'ATHLETE'
-  const username = user?.username ? `@${user.username}` : ''
 
   // Бейдж места рядом с кубком. В режиме лиги — место/процент в цвет лиги,
   // иначе старое поведение (#место).
@@ -170,10 +167,9 @@ export default function ProfileHeader({
         )}
       </div>
 
-      {/* Имя слева, логин справа */}
+      {/* Имя */}
       <div style={styles.nameRow}>
         <span style={styles.name}>{displayName}</span>
-        {showUsername && username && <span style={styles.username}>{username}</span>}
       </div>
 
       {/* Ранг слева, место справа */}
@@ -414,12 +410,6 @@ const styles = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     minWidth: 0
-  },
-  username: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    flexShrink: 0
   },
   rankRow: {
     position: 'relative',

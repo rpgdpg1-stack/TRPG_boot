@@ -185,7 +185,6 @@ export default function Profile() {
           recentHistory={recentHistory}
           recentWorkouts={recentWorkouts}
           interactive={true}
-          showUsername={true}
           onPlaceTap={handlePlaceTap}
         />
       </div>
