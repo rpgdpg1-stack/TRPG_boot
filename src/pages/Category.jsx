@@ -113,12 +113,10 @@ export default function Category() {
 
       <header style={styles.header}>
         <span style={styles.headerIcon}>
-          <UiIcon name={meta.iconName} size={30} color={meta.color} />
+          <UiIcon name={meta.iconName} size={40} color={meta.color} />
         </span>
-        <div style={styles.headerText}>
-          <h1 style={styles.title}>{meta.title}</h1>
-          <div style={styles.subtitle}>{meta.subtitle}</div>
-        </div>
+        <h1 style={styles.title}>{meta.title}</h1>
+        <div style={styles.subtitle}>{meta.subtitle}</div>
       </header>
 
       <div style={styles.programs}>
@@ -144,11 +142,10 @@ export default function Category() {
 
 const styles = {
   page: {},
-  header: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', marginTop: '8px' },
-  headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, width: '40px' },
-  headerText: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)' },
-  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px' },
+  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '24px', marginTop: '8px' },
+  headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },
+  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center' },
   programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
   createButton: {
     width: '100%', padding: '20px',
