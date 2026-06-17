@@ -506,7 +506,7 @@ const styles = {
   statValue: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '12px',
+    fontSize: '16px',
     letterSpacing: '0.5px',
     lineHeight: 1,
     whiteSpace: 'nowrap',
@@ -542,7 +542,7 @@ const styles = {
   statCount: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '12px',
+    fontSize: '16px',
     color: '#FFFFFF',
     letterSpacing: '1px',
     lineHeight: 1,
