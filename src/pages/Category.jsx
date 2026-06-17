@@ -7,6 +7,7 @@ import { deleteMyProgram, shareProgramLink } from '../features/programs/customPr
 import ProgramActionMenu from '../components/ProgramActionMenu'
 import { swimTotalMeters } from '../data/programs/swim'
 import PixelHeart from '../components/PixelHeart'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -20,24 +21,28 @@ const CATEGORIES_META = {
     title: 'СИЛОВАЯ',
     subtitle: 'ВЫБЕРИ ПРОГРАММУ',
     color: 'var(--color-primary)',
+    iconName: 'power',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   cardio: {
     title: 'КАРДИО',
     subtitle: 'СКОРО',
     color: 'var(--cat-cardio)',
+    iconName: 'cardio',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   pool: {
     title: 'ПЛАВАНИЕ',
     subtitle: 'ВЫБЕРИ ПРОГРАММУ',
     color: 'var(--cat-pool)',
+    iconName: 'swimming',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   },
   stretch: {
     title: 'РАСТЯЖКА',
     subtitle: 'СКОРО',
     color: 'var(--cat-stretch)',
+    iconName: 'stretching',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ'
   }
 }
@@ -107,8 +112,13 @@ export default function Category() {
     <div className="page page-enter" style={styles.page}>
 
       <header style={styles.header}>
-        <h1 style={{ ...styles.title, color: meta.color }}>{meta.title}</h1>
-        <div style={styles.subtitle}>{meta.subtitle}</div>
+        <span style={styles.headerIcon}>
+          <UiIcon name={meta.iconName} size={30} color={meta.color} />
+        </span>
+        <div style={styles.headerText}>
+          <h1 style={styles.title}>{meta.title}</h1>
+          <div style={styles.subtitle}>{meta.subtitle}</div>
+        </div>
       </header>
 
       <div style={styles.programs}>
@@ -134,8 +144,10 @@ export default function Category() {
 
 const styles = {
   page: {},
-  header: { marginBottom: '24px', marginTop: '8px', textAlign: 'center' },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '36px', letterSpacing: '3px', lineHeight: 1, marginBottom: '8px' },
+  header: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', marginTop: '8px' },
+  headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, width: '40px' },
+  headerText: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)' },
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px' },
   programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
   createButton: {
