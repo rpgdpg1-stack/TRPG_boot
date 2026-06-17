@@ -91,11 +91,11 @@ const styles = {
     letterSpacing: '1px'
   },
   slash: {
-    fontSize: '11px',
+    fontSize: '12px',
     color: 'rgba(255,255,255,0.7)'
   },
   needed: {
-    fontSize: '11px',
+    fontSize: '12px',
     color: 'rgba(255,255,255,0.7)',
     letterSpacing: '1px'
   }

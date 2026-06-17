@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
 import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
 import { formatRelative } from '../utils/history'
+import { localGet, localSet } from '../utils/storage'
 import {
   getLevelFromXP,
   getRankByLevel,
@@ -59,7 +60,12 @@ export default function PlayerCard() {
     return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
   const [recentHistory, setRecentHistory] = useState([])
-  const [lastWorkout, setLastWorkout] = useState(null)
+  // Стартуем из кэша — строка «последняя тренировка» рисуется сразу, без мигания
+  // и без прыжка имени/ранга при возврате на главную.
+  const [lastWorkout, setLastWorkout] = useState(() => {
+    try { const raw = localGet('player-last-workout'); return raw ? JSON.parse(raw) : null }
+    catch { return null }
+  })
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
   const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
@@ -95,7 +101,9 @@ export default function PlayerCard() {
         setRecentHistory(history)
         setLeaguePlace(lp)
         setMedals(aw)
-        setLastWorkout(recentW?.[0] || null)
+        const lw = recentW?.[0] || null
+        setLastWorkout(lw)
+        localSet('player-last-workout', JSON.stringify(lw))
       })
     }
 
@@ -295,9 +303,8 @@ export default function PlayerCard() {
             )}
           </div>
 
-          {lastWorkoutText && (
-            <div style={styles.lastWorkout}>{lastWorkoutText}</div>
-          )}
+          {/* Всегда занимает место (minHeight), чтобы имя/ранг не прыгали при загрузке. */}
+          <div style={styles.lastWorkout}>{lastWorkoutText || ''}</div>
         </div>
 
         {medals.best_place && (
@@ -502,7 +509,8 @@ const styles = {
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     lineHeight: 1.2,
-    marginTop: '2px'
+    marginTop: '2px',
+    minHeight: '14px'  // резерв — текст не сдвигает имя/ранг при появлении
   },
   nameRow: {
     display: 'flex',
@@ -527,7 +535,7 @@ const styles = {
   rank: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '11px',
+    fontSize: '12px',
     letterSpacing: '1.5px',
     padding: '2px 0',
     background: 'transparent',
@@ -543,7 +551,7 @@ const styles = {
     borderRadius: '8px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
-    fontSize: '11px',
+    fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text)',
     cursor: 'pointer',
@@ -577,7 +585,7 @@ const styles = {
   streakCount: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
-    fontSize: '14px',
+    fontSize: '12px',
     color: '#FFFFFF',
     letterSpacing: '1px',
     lineHeight: 1,

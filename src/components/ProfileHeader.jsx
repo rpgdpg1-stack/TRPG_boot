@@ -186,7 +186,7 @@ export default function ProfileHeader({
             key={`rankpop-${rankPopTick}`}
             style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopHeader 0.4s ease-out' : 'none' }}
           >
-            <RankIcon level={level} size={24} />
+            <RankIcon level={level} size={20} />
           </span>
           {rank.name} {rank.subLevel}
         </button>
@@ -402,7 +402,7 @@ const styles = {
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.1,
@@ -422,14 +422,14 @@ const styles = {
   rank: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '12px',
     letterSpacing: '1.5px',
     padding: '2px 0',
     background: 'transparent',
     border: 'none',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     minWidth: 0
   },
   placeButton: {
@@ -506,7 +506,7 @@ const styles = {
   statValue: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '20px',
+    fontSize: '12px',
     letterSpacing: '0.5px',
     lineHeight: 1,
     whiteSpace: 'nowrap',
@@ -542,7 +542,7 @@ const styles = {
   statCount: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '20px',
+    fontSize: '12px',
     color: '#FFFFFF',
     letterSpacing: '1px',
     lineHeight: 1,
