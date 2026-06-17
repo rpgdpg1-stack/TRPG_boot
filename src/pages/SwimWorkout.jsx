@@ -141,7 +141,7 @@ export default function SwimWorkout() {
       {/* Закреплённая шапка: заголовок + переключатель бассейна + дорожка */}
       <div style={styles.stickyHeader}>
         <header style={styles.header}>
-          <h1 style={styles.title}>ЗАПЛЫВ</h1>
+          <h1 style={styles.title}>ЗАПЛЫВ 45</h1>
           <div style={styles.subtitle}>{SWIM_PROGRAM.durationMin} мин · {totalMeters} м</div>
         </header>
 

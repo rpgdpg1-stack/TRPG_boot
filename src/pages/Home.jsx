@@ -4,7 +4,7 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
-import { getProgramBySlug, getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
+import { getProgramBySlug, getProgramEmoji, getProgramTagColor, programCountLabel } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
@@ -169,7 +169,7 @@ export default function Home() {
       id: 'gym',
       iconName: 'power',
       title: 'Силовая',
-      subtitle: '1 программа: Сплит',
+      subtitle: programCountLabel('gym'),
       color: 'var(--color-primary)',
       available: true,
       comingSoon: false
@@ -178,7 +178,7 @@ export default function Home() {
       id: 'pool',
       iconName: 'swimming',
       title: 'Плавание',
-      subtitle: '1 программа: Заплыв',
+      subtitle: programCountLabel('pool'),
       color: 'var(--cat-pool)',
       available: true,
       comingSoon: false

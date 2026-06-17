@@ -70,9 +70,15 @@ export function describeWorkout(workout) {
     }
   }
 
+  // Кастомную программу показываем как ввёл юзер (его регистр), встроенную —
+  // нормализуем (Первая заглавная). Та же развилка, что на карточке категории.
+  const title = prog
+    ? (prog.source === 'custom' ? prog.title : titleCase(prog.title))
+    : 'Тренировка'
+
   return {
     iconName: 'power',
-    title: prog ? titleCase(prog.title) : 'Тренировка',
+    title,
     variant: workout.day || ''
   }
 }
