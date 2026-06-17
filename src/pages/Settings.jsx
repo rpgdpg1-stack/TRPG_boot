@@ -29,6 +29,7 @@ export default function Settings() {
     {
       title: 'ОСНОВНОЕ',
       items: [
+        { id: 'home-layout',   icon: '🏠', title: 'Отображение на главной', subtitle: 'Что показывать и в каком порядке' },
         { id: 'library',       icon: '📚', title: 'Справочник упражнений', subtitle: 'База с техникой и видео' },
         { id: 'notifications', icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
         { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' }
@@ -53,6 +54,11 @@ export default function Settings() {
 
   const handleSectionTap = async (item) => {
     haptic.light()
+
+    if (item.id === 'home-layout') {
+      navigate('/settings/home-layout')
+      return
+    }
 
     if (item.id === 'debug-reset-days') {
       const confirmed = await tgConfirm(

@@ -9,6 +9,7 @@ import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
+import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
 import UiIcon from '../components/UiIcon'
 import HistoryRow from '../components/HistoryRow'
@@ -16,66 +17,37 @@ import HistoryRow from '../components/HistoryRow'
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 
-// Свёрнутость секций главной (Разделы / История / Дневной буст).
-// Хранится в CloudStorage → состояние одинаковое на телефоне и ПК.
-// Избранное не сворачивается — его тут нет.
-const SECTIONS_COLLAPSED_KEY = 'home-sections-collapsed'
-
-function readCollapsed() {
-  try {
-    const parsed = JSON.parse(localGet(SECTIONS_COLLAPSED_KEY))
-    if (parsed && typeof parsed === 'object') return parsed
-  } catch { /* ignore */ }
-  return {}
-}
-
-// Шеврон секции: «вниз» когда свёрнуто, плавно поворачивается «вверх» когда раскрыто.
-function Chevron({ open }) {
+// Заголовок секции. Если задан onTap — кликабельный (ведёт на страницу секции),
+// со стрелкой-affordance справа. Иначе обычный статичный заголовок.
+function SectionHeader({ title, onTap }) {
+  if (!onTap) {
+    return <div style={homeSectionStyles.header}>{title}</div>
+  }
   return (
-    <svg
-      width="14" height="14" viewBox="0 0 14 14" fill="none"
-      style={{
-        transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-        transition: 'transform 0.25s var(--ease-ios)',
-        flexShrink: 0
-      }}
-      aria-hidden="true"
-    >
-      <path d="M3.5 5.25 L7 8.75 L10.5 5.25" stroke="var(--color-text-secondary)"
-        strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-// Заголовок сворачиваемой секции: тап по всей строке — свернуть/развернуть.
-function SectionToggle({ title, collapsed, onToggle }) {
-  return (
-    <button onClick={onToggle} style={homeSectionStyles.toggle} aria-expanded={!collapsed}>
-      <span style={homeSectionStyles.toggleText}>{title}</span>
-      <Chevron open={!collapsed} />
+    <button onClick={onTap} style={homeSectionStyles.headerBtn}>
+      <span style={homeSectionStyles.headerText}>{title}</span>
+      <span style={homeSectionStyles.headerArrow}>›</span>
     </button>
   )
 }
 
 const homeSectionStyles = {
-  toggle: {
+  header: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
+    color: 'var(--color-text-secondary)', letterSpacing: '3px',
+    marginTop: '20px', marginBottom: '12px', paddingLeft: '4px'
+  },
+  headerBtn: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     width: '100%', padding: '0 4px',
     marginTop: '20px', marginBottom: '12px',
     background: 'transparent', border: 'none', cursor: 'pointer'
   },
-  toggleText: {
+  headerText: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
     color: 'var(--color-text-secondary)', letterSpacing: '3px'
   },
-  showAllRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px',
-    width: '100%', padding: '13px',
-    background: 'transparent', border: 'none',
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
-    color: 'var(--color-primary)', letterSpacing: '0.3px', cursor: 'pointer'
-  }
+  headerArrow: { fontSize: '20px', color: 'var(--color-text-secondary)', flexShrink: 0, lineHeight: 1 }
 }
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
@@ -95,13 +67,15 @@ function indexBySlug(entries, slug) {
 /**
  * Главная — Тренировки.
  *
- * Порядок: Игрок → Избранное → Разделы → История → Дневной буст.
+ * Порядок: Игрок (закреплён) → Избранное (закреплено) → управляемые секции.
+ *
+ * Управляемые секции (Разделы / История / Дневной буст) — порядок и видимость
+ * задаются в настройках «Отображение на главной» (lib/home-layout, синк через
+ * CloudStorage). Тап по заголовку Истории ведёт на /history.
  *
  * Избранное: карусель программ. Листается СВАЙПОМ влево/вправо (с вибро),
  * снизу точки-индикаторы. Последняя пролистанная карточка запоминается
  * (localStorage + Telegram CloudStorage).
- *
- * История: превью последних 3 завершённых тренировок + «Показать все» → /history.
  */
 export default function Home() {
   const navigate = useNavigate()
@@ -128,35 +102,20 @@ export default function Home() {
     return localGet('home-recent-workouts') !== null
   })
 
-  // Свёрнутость секций. Стартуем из localStorage (мгновенно), облако догонит.
-  const [collapsed, setCollapsed] = useState(readCollapsed)
+  // Конфиг отображения секций (порядок + видимость). Старт из localStorage, облако догонит.
+  const [layout, setLayout] = useState(readHomeLayout)
 
   // Состояние свайпа: стартовая X и флаг "только что свайпнули".
   const swipeRef = useRef({ x: null, swiped: false })
 
-  // Подтянуть свёрнутость из облака (вдруг менял с другого устройства).
+  // Подтянуть конфиг из облака (вдруг менял в настройках с другого устройства).
   useEffect(() => {
     let cancelled = false
-    cloudGet(SECTIONS_COLLAPSED_KEY).then(raw => {
-      if (cancelled || !raw) return
-      try {
-        const parsed = JSON.parse(raw)
-        if (parsed && typeof parsed === 'object') setCollapsed(parsed)
-      } catch { /* ignore */ }
-    }).catch(() => {})
+    loadHomeLayoutFromCloud().then(cloud => {
+      if (!cancelled && cloud) setLayout(cloud)
+    })
     return () => { cancelled = true }
   }, [])
-
-  const toggleSection = (key) => {
-    haptic.light()
-    setCollapsed(prev => {
-      const next = { ...prev, [key]: !prev[key] }
-      const json = JSON.stringify(next)
-      localSet(SECTIONS_COLLAPSED_KEY, json)
-      cloudSet(SECTIONS_COLLAPSED_KEY, json)
-      return next
-    })
-  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -297,6 +256,72 @@ export default function Home() {
     setTimeout(() => navigate(`/category/${cat.id}`), 80)
   }
 
+  // Рендер управляемых секций (порядок и видимость — из конфига `layout`).
+  const renderCategories = () => (
+    <>
+      <SectionHeader title="РАЗДЕЛЫ" />
+      <div style={styles.categoryGroup}>
+        {categories.map((cat, idx) => (
+          <button
+            key={cat.id}
+            onClick={() => handleCategoryTap(cat)}
+            className="tg-row"
+            style={{
+              ...styles.categoryRow,
+              borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+            }}
+          >
+            <span style={styles.categoryIcon}>
+              <UiIcon name={cat.iconName} size={26} color={cat.color} />
+            </span>
+
+            <div style={styles.categoryContent}>
+              <div style={styles.categoryTitle}>{cat.title}</div>
+              <div style={styles.categorySubtitle}>
+                {cat.subtitle}
+                {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+              </div>
+            </div>
+
+            <div style={styles.categoryArrow}>›</div>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+
+  const renderHistory = () => (
+    <>
+      <SectionHeader title="ИСТОРИЯ" onTap={() => { haptic.light(); navigate('/history') }} />
+      {!historyLoaded ? (
+        <div style={styles.favSkeleton} />
+      ) : history.length === 0 ? (
+        <div style={styles.favEmpty}>
+          Здесь появятся твои завершённые тренировки
+        </div>
+      ) : (
+        <div style={styles.historyCard}>
+          {history.map((w, i) => (
+            <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  const renderQuests = () => (
+    <>
+      <SectionHeader title="ДНЕВНОЙ БУСТ" />
+      <DailyQuests />
+    </>
+  )
+
+  const SECTION_RENDERERS = {
+    categories: renderCategories,
+    history: renderHistory,
+    quests: renderQuests
+  }
+
   return (
     <div className="page page-fade" style={styles.page}>
 
@@ -355,66 +380,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* Разделы */}
-      <SectionToggle title="РАЗДЕЛЫ" collapsed={!!collapsed.categories} onToggle={() => toggleSection('categories')} />
-      {!collapsed.categories && (
-        <div style={styles.categoryGroup}>
-          {categories.map((cat, idx) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryTap(cat)}
-              className="tg-row"
-              style={{
-                ...styles.categoryRow,
-                borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
-              }}
-            >
-              <span style={styles.categoryIcon}>
-                <UiIcon name={cat.iconName} size={26} color={cat.color} />
-              </span>
-
-              <div style={styles.categoryContent}>
-                <div style={styles.categoryTitle}>{cat.title}</div>
-                <div style={styles.categorySubtitle}>
-                  {cat.subtitle}
-                  {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-                </div>
-              </div>
-
-              <div style={styles.categoryArrow}>›</div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* История */}
-      <SectionToggle title="ИСТОРИЯ" collapsed={!!collapsed.history} onToggle={() => toggleSection('history')} />
-      {!collapsed.history && (
-        !historyLoaded ? (
-          <div style={styles.favSkeleton} />
-        ) : history.length === 0 ? (
-          <div style={styles.favEmpty}>
-            Здесь появятся твои завершённые тренировки
-          </div>
-        ) : (
-          <div style={styles.historyCard}>
-            {history.map((w, i) => (
-              <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
-            ))}
-            <button
-              onClick={() => { haptic.light(); navigate('/history') }}
-              className="tg-row"
-              style={homeSectionStyles.showAllRow}
-            >
-              Показать все ›
-            </button>
-          </div>
+      {/* Управляемые секции — порядок и видимость из настроек «Отображение на главной» */}
+      {layout.order.map(key => (
+        layout.hidden[key] ? null : (
+          <div key={key}>{SECTION_RENDERERS[key]?.()}</div>
         )
-      )}
-
-      {/* Дневной буст */}
-      <SectionToggle title="ДНЕВНОЙ БУСТ" collapsed={!!collapsed.quests} onToggle={() => toggleSection('quests')} />
-      {!collapsed.quests && <DailyQuests />}
+      ))}
 
       </div>
     </div>
