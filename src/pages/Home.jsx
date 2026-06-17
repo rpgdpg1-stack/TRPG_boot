@@ -16,6 +16,68 @@ import HistoryRow from '../components/HistoryRow'
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 
+// Свёрнутость секций главной (Разделы / История / Дневной буст).
+// Хранится в CloudStorage → состояние одинаковое на телефоне и ПК.
+// Избранное не сворачивается — его тут нет.
+const SECTIONS_COLLAPSED_KEY = 'home-sections-collapsed'
+
+function readCollapsed() {
+  try {
+    const parsed = JSON.parse(localGet(SECTIONS_COLLAPSED_KEY))
+    if (parsed && typeof parsed === 'object') return parsed
+  } catch { /* ignore */ }
+  return {}
+}
+
+// Шеврон секции: «вниз» когда свёрнуто, плавно поворачивается «вверх» когда раскрыто.
+function Chevron({ open }) {
+  return (
+    <svg
+      width="14" height="14" viewBox="0 0 14 14" fill="none"
+      style={{
+        transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+        transition: 'transform 0.25s var(--ease-ios)',
+        flexShrink: 0
+      }}
+      aria-hidden="true"
+    >
+      <path d="M3.5 5.25 L7 8.75 L10.5 5.25" stroke="var(--color-text-secondary)"
+        strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Заголовок сворачиваемой секции: тап по всей строке — свернуть/развернуть.
+function SectionToggle({ title, collapsed, onToggle }) {
+  return (
+    <button onClick={onToggle} style={homeSectionStyles.toggle} aria-expanded={!collapsed}>
+      <span style={homeSectionStyles.toggleText}>{title}</span>
+      <Chevron open={!collapsed} />
+    </button>
+  )
+}
+
+const homeSectionStyles = {
+  toggle: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    width: '100%', padding: '0 4px',
+    marginTop: '20px', marginBottom: '12px',
+    background: 'transparent', border: 'none', cursor: 'pointer'
+  },
+  toggleText: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
+    color: 'var(--color-text-secondary)', letterSpacing: '3px'
+  },
+  showAllRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px',
+    width: '100%', padding: '13px',
+    background: 'transparent', border: 'none',
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    color: 'var(--color-primary)', letterSpacing: '0.3px', cursor: 'pointer'
+  }
+}
+
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
 function buildFavSync(slug, activeDay) {
   const prog = getProgramBySlug(slug)
@@ -66,8 +128,35 @@ export default function Home() {
     return localGet('home-recent-workouts') !== null
   })
 
+  // Свёрнутость секций. Стартуем из localStorage (мгновенно), облако догонит.
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+
   // Состояние свайпа: стартовая X и флаг "только что свайпнули".
   const swipeRef = useRef({ x: null, swiped: false })
+
+  // Подтянуть свёрнутость из облака (вдруг менял с другого устройства).
+  useEffect(() => {
+    let cancelled = false
+    cloudGet(SECTIONS_COLLAPSED_KEY).then(raw => {
+      if (cancelled || !raw) return
+      try {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') setCollapsed(parsed)
+      } catch { /* ignore */ }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const toggleSection = (key) => {
+    haptic.light()
+    setCollapsed(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      const json = JSON.stringify(next)
+      localSet(SECTIONS_COLLAPSED_KEY, json)
+      cloudSet(SECTIONS_COLLAPSED_KEY, json)
+      return next
+    })
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -267,65 +356,65 @@ export default function Home() {
       )}
 
       {/* Разделы */}
-      <div style={styles.sectionHeader}>РАЗДЕЛЫ</div>
+      <SectionToggle title="РАЗДЕЛЫ" collapsed={!!collapsed.categories} onToggle={() => toggleSection('categories')} />
+      {!collapsed.categories && (
+        <div style={styles.categoryGroup}>
+          {categories.map((cat, idx) => (
+            <button
+              key={cat.id}
+              onClick={() => handleCategoryTap(cat)}
+              className="tg-row"
+              style={{
+                ...styles.categoryRow,
+                borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+              }}
+            >
+              <span style={styles.categoryIcon}>
+                <UiIcon name={cat.iconName} size={26} color={cat.color} />
+              </span>
 
-      <div style={styles.categoryGroup}>
-        {categories.map((cat, idx) => (
-          <button
-            key={cat.id}
-            onClick={() => handleCategoryTap(cat)}
-            className="tg-row"
-            style={{
-              ...styles.categoryRow,
-              borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
-            }}
-          >
-            <span style={styles.categoryIcon}>
-              <UiIcon name={cat.iconName} size={26} color={cat.color} />
-            </span>
-
-            <div style={styles.categoryContent}>
-              <div style={styles.categoryTitle}>{cat.title}</div>
-              <div style={styles.categorySubtitle}>
-                {cat.subtitle}
-                {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+              <div style={styles.categoryContent}>
+                <div style={styles.categoryTitle}>{cat.title}</div>
+                <div style={styles.categorySubtitle}>
+                  {cat.subtitle}
+                  {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+                </div>
               </div>
-            </div>
 
-            <div style={styles.categoryArrow}>›</div>
-          </button>
-        ))}
-      </div>
-
-      {/* История */}
-      <div style={styles.historyHeaderRow}>
-        <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 4 }}>ИСТОРИЯ</span>
-        {history.length > 0 && (
-          <button
-            onClick={() => { haptic.light(); navigate('/history') }}
-            style={styles.showAllBtn}
-          >
-            Показать все ›
-          </button>
-        )}
-      </div>
-      {!historyLoaded ? (
-        <div style={styles.favSkeleton} />
-      ) : history.length === 0 ? (
-        <div style={styles.favEmpty}>
-          Здесь появятся твои завершённые тренировки
-        </div>
-      ) : (
-        <div style={styles.historyCard}>
-          {history.map((w, i) => (
-            <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
+              <div style={styles.categoryArrow}>›</div>
+            </button>
           ))}
         </div>
       )}
 
+      {/* История */}
+      <SectionToggle title="ИСТОРИЯ" collapsed={!!collapsed.history} onToggle={() => toggleSection('history')} />
+      {!collapsed.history && (
+        !historyLoaded ? (
+          <div style={styles.favSkeleton} />
+        ) : history.length === 0 ? (
+          <div style={styles.favEmpty}>
+            Здесь появятся твои завершённые тренировки
+          </div>
+        ) : (
+          <div style={styles.historyCard}>
+            {history.map((w, i) => (
+              <HistoryRow key={`${w.finished_at}-${i}`} workout={w} />
+            ))}
+            <button
+              onClick={() => { haptic.light(); navigate('/history') }}
+              className="tg-row"
+              style={homeSectionStyles.showAllRow}
+            >
+              Показать все ›
+            </button>
+          </div>
+        )
+      )}
+
       {/* Дневной буст */}
-      <div style={styles.sectionHeader}>ДНЕВНОЙ БУСТ</div>
-      <DailyQuests />
+      <SectionToggle title="ДНЕВНОЙ БУСТ" collapsed={!!collapsed.quests} onToggle={() => toggleSection('quests')} />
+      {!collapsed.quests && <DailyQuests />}
 
       </div>
     </div>
@@ -513,25 +602,6 @@ const styles = {
     marginTop: '20px',
     marginBottom: '12px',
     paddingLeft: '4px'
-  },
-  // Заголовок ИСТОРИЯ + кнопка "Показать все" справа
-  historyHeaderRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: '20px',
-    marginBottom: '12px'
-  },
-  showAllBtn: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'var(--color-primary)',
-    background: 'transparent',
-    border: 'none',
-    padding: '4px 4px',
-    cursor: 'pointer',
-    letterSpacing: '0.3px'
   },
   historyCard: {
     display: 'flex',

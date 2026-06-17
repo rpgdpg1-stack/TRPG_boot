@@ -92,3 +92,6 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - Legacy `service_role` ключ (формат `eyJ…`) действителен до конца 2026.
   Кнопку «disable legacy keys» НЕ нажимать до полной миграции ключей.
 - GitHub Actions keepalive (2×/неделю) не даёт уснуть Supabase free-tier.
+- **UI-настройки (свёрнутость секций, закрепы, активные дни) в Supabase НЕ хранить** —
+  для них есть Telegram CloudStorage (`lib/cloud-storage.js`), он и синкает между устройствами.
+  Не заводить таблицы/RPC под клиентские предпочтения. Детали — в trpg-workflow.
