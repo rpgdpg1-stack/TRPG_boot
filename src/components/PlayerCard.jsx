@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
-import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory } from '../lib/storage'
+import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
+import { formatRelative } from '../utils/history'
 import {
   getLevelFromXP,
   getRankByLevel,
@@ -58,6 +59,7 @@ export default function PlayerCard() {
     return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
   const [recentHistory, setRecentHistory] = useState([])
+  const [lastWorkout, setLastWorkout] = useState(null)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
   const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
@@ -85,13 +87,15 @@ export default function PlayerCard() {
         getWeeklyStreak(),
         getRecentMuscleHistory(3),
         getMyLeaguePlace(),
-        getImmortalAwards()
-      ]).then(([xpVal, streak, history, lp, aw]) => {
+        getImmortalAwards(),
+        getRecentWorkouts(1)
+      ]).then(([xpVal, streak, history, lp, aw, recentW]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
         setRecentHistory(history)
         setLeaguePlace(lp)
         setMedals(aw)
+        setLastWorkout(recentW?.[0] || null)
       })
     }
 
@@ -161,6 +165,11 @@ export default function PlayerCard() {
   const remainingToNext = Math.max(0, inLevelNeeded - inLevelCurrent)
 
   const displayName = user?.first_name || 'ATHLETE'
+
+  // Последняя тренировка — относительный формат, как в шапке профиля.
+  const lastWorkoutText = lastWorkout
+    ? `Последняя тренировка — ${formatRelative(lastWorkout.finished_at)}`
+    : null
 
   const handleAvatarTap = () => {
     haptic.light()
@@ -285,6 +294,10 @@ export default function PlayerCard() {
               />
             )}
           </div>
+
+          {lastWorkoutText && (
+            <div style={styles.lastWorkout}>{lastWorkoutText}</div>
+          )}
         </div>
 
         {medals.best_place && (
@@ -414,7 +427,8 @@ const styles = {
   },
   bottomRowWrap: {
     position: 'relative',
-    padding: 0
+    paddingTop: '12px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
   },
   avatarWrap: {
     width: '80px',
@@ -482,6 +496,14 @@ const styles = {
     gap: '6px',
     justifyContent: 'center',
     alignSelf: 'center'
+  },
+  lastWorkout: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    lineHeight: 1.2,
+    marginTop: '2px'
   },
   nameRow: {
     display: 'flex',
