@@ -4,7 +4,6 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Loader from './components/layout/Loader'
 import ErrorBoundary from './components/layout/ErrorBoundary'
 import TabBar from './components/TabBar'
-import ParticlesBg from './components/ParticlesBg'
 import LeagueBadgeModal from './components/rewards/LeagueBadgeModal'
 import SeasonEndModal from './components/rewards/SeasonEndModal'
 import NewSeasonModal from './components/rewards/NewSeasonModal'
@@ -104,7 +103,6 @@ export default function App() {
     <ErrorBoundary>
       <div className="app">
         <OfflineBanner />
-        <ParticlesBg />
 
         <SettingsButtonController />
         <RewardsQueueController />

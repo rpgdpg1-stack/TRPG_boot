@@ -270,14 +270,6 @@ body.hide-app-scrim .app::after { display: none; }
 /* АНИМАЦИИ ЧАСТИЦ */
 /* ============================================ */
 
-@keyframes particleFloatBg {
-  0%   { opacity: 0; transform: translateY(0) translateX(0); }
-  10%  { opacity: var(--particle-opacity, 0.35); }
-  50%  { transform: translateY(-50vh) translateX(var(--drift-mid, 8px)); }
-  90%  { opacity: var(--particle-opacity, 0.35); }
-  100% { opacity: 0; transform: translateY(-105vh) translateX(var(--drift-end, 0px)); }
-}
-
 @keyframes particleBurst {
   0%   { opacity: 0; transform: translate(0, 0) scale(1); }
   10%  { opacity: 1; }
