@@ -9,9 +9,6 @@ import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import UiIcon from '../components/UiIcon'
-import CategoryList from '../components/CategoryList'
-import FavoritesList from '../components/FavoritesList'
-import DailyQuests from '../components/DailyQuests'
 
 // Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
 // Дальше профиль не засоряем — пригласить всё равно можно из Рейтинга (вкладка «Друзья»).
@@ -129,6 +126,9 @@ export default function Profile() {
     {
       title: 'ПРОФИЛЬ',
       items: [
+        { id: 'sections',    icon: '🗂️',            title: 'Разделы',     subtitle: 'Силовая · Плавание · Кардио', path: '/sections' },
+        { id: 'favorites',   icon: '❤️',            title: 'Избранное',   subtitle: 'Закреплённые программы',       path: '/favorites' },
+        { id: 'daily-boost', icon: '⚡',            title: 'Дневной буст', subtitle: 'Ежедневные квесты',           path: '/daily-boost' },
         { id: 'history',     icon: '📋',             title: 'История',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
         { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Титулы · Рамки · Медали', path: '/rewards' }
@@ -208,16 +208,6 @@ export default function Profile() {
           <span style={styles.inviteArrow}>›</span>
         </button>
       )}
-
-      {/* Встроенные блоки главной — живут в профиле (показ на главной — по тумблерам) */}
-      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>РАЗДЕЛЫ</div>
-      <CategoryList />
-
-      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>ИЗБРАННОЕ</div>
-      <FavoritesList />
-
-      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>ДНЕВНОЙ БУСТ</div>
-      <DailyQuests />
 
       {/* Меню профиля — сгруппировано по смыслу */}
       {sectionGroups.map((group) => (

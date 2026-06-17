@@ -15,7 +15,7 @@ import { EVENTS, emit } from './events'
 export const BACKUP_REWARD = 100
 export const BACKUP_BONUS = 20
 // Дублирует серверный лимит (анти-чит живёт в api_backup_user). Здесь — только для UI.
-export const BACKUP_DAILY_LIMIT = 5
+export const BACKUP_DAILY_LIMIT = 6
 
 /**
  * Подстраховать игрока. Возвращает { success, error?, reward, backer_bonus, backerBadgeRank }.
