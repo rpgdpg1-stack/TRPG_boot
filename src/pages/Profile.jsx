@@ -9,6 +9,9 @@ import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import UiIcon from '../components/UiIcon'
+import CategoryList from '../components/CategoryList'
+import FavoritesList from '../components/FavoritesList'
+import DailyQuests from '../components/DailyQuests'
 
 // Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
 // Дальше профиль не засоряем — пригласить всё равно можно из Рейтинга (вкладка «Друзья»).
@@ -206,7 +209,17 @@ export default function Profile() {
         </button>
       )}
 
-      {/* Разделы — сгруппированы по смыслу */}
+      {/* Встроенные блоки главной — живут в профиле (показ на главной — по тумблерам) */}
+      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>РАЗДЕЛЫ</div>
+      <CategoryList />
+
+      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>ИЗБРАННОЕ</div>
+      <FavoritesList />
+
+      <div style={{ ...styles.groupTitle, marginTop: '20px' }}>ДНЕВНОЙ БУСТ</div>
+      <DailyQuests />
+
+      {/* Меню профиля — сгруппировано по смыслу */}
       {sectionGroups.map((group) => (
         <section key={group.title}>
           <div style={{ ...styles.groupTitle, marginTop: '20px' }}>
