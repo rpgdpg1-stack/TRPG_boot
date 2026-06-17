@@ -18,16 +18,13 @@ import HistoryRow from '../components/HistoryRow'
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 
 // Заголовок секции. Если задан onTap — кликабельный (ведёт на страницу секции),
-// со стрелкой-affordance справа. Иначе обычный статичный заголовок.
+// без стрелок и прочих символов — просто текст-заголовок.
 function SectionHeader({ title, onTap }) {
   if (!onTap) {
     return <div style={homeSectionStyles.header}>{title}</div>
   }
   return (
-    <button onClick={onTap} style={homeSectionStyles.headerBtn}>
-      <span style={homeSectionStyles.headerText}>{title}</span>
-      <span style={homeSectionStyles.headerArrow}>›</span>
-    </button>
+    <button onClick={onTap} style={homeSectionStyles.headerBtn}>{title}</button>
   )
 }
 
@@ -38,16 +35,12 @@ const homeSectionStyles = {
     marginTop: '20px', marginBottom: '12px', paddingLeft: '4px'
   },
   headerBtn: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    width: '100%', padding: '0 4px',
+    display: 'block', width: '100%', textAlign: 'left', padding: '0 4px',
     marginTop: '20px', marginBottom: '12px',
-    background: 'transparent', border: 'none', cursor: 'pointer'
-  },
-  headerText: {
+    background: 'transparent', border: 'none', cursor: 'pointer',
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
     color: 'var(--color-text-secondary)', letterSpacing: '3px'
-  },
-  headerArrow: { fontSize: '20px', color: 'var(--color-text-secondary)', flexShrink: 0, lineHeight: 1 }
+  }
 }
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
@@ -337,13 +330,16 @@ export default function Home() {
       {/* Скроллящийся контент */}
       <div style={styles.scrollSection}>
 
-      {/* Избранное */}
-      <div style={styles.sectionHeaderRow}>
+      {/* Избранное — тап по заголовку открывает страницу избранного */}
+      <button
+        onClick={() => { haptic.light(); navigate('/favorites') }}
+        style={styles.favHeaderBtn}
+      >
         <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
         <span style={{ display: 'inline-flex', marginLeft: '-2px', marginTop: '1px' }}>
           <PixelHeart filled={favorites.length > 0} size={15} />
         </span>
-      </div>
+      </button>
       {!favLoaded ? (
         <div style={styles.favSkeleton} />
       ) : favorites.length === 0 ? (
@@ -566,13 +562,16 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  sectionHeaderRow: {
+  favHeaderBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     marginTop: '20px',
     marginBottom: '12px',
-    paddingLeft: '4px'
+    paddingLeft: '4px',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer'
   },
   historyCard: {
     display: 'flex',
