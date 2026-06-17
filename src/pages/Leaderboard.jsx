@@ -301,7 +301,6 @@ export default function Leaderboard() {
                 <LeaderboardRow
                   row={row}
                   isMe={row.is_me}
-                  showHandle={activeTab === TAB_FRIENDS}
                   onTap={handleRowTap}
                 />
               </div>

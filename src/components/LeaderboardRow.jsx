@@ -20,10 +20,9 @@ import { getLeagueByRankIndex } from '../lib/leagues'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
 
-export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) {
+export default function LeaderboardRow({ row, isMe, onTap }) {
   const {
     first_name,
-    username,
     photo_url,
     total_muscles,
     place
@@ -36,7 +35,6 @@ export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) 
   const rank = getRankByLevel(level)
 
   const displayName = first_name || 'Игрок'
-  const handleStr = username ? `@${username}` : ''
 
   // Медалька для топ-3, иначе — серая решётка с номером
   const placeBadge = place === 1 ? '🥇'
@@ -94,7 +92,6 @@ export default function LeaderboardRow({ row, isMe, showHandle = true, onTap }) 
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
           <span style={styles.name}>{displayName}</span>
-          {showHandle && handleStr && <span style={styles.handle}>{handleStr}</span>}
         </div>
         <div style={{ ...styles.rank, color: rank.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
           <RankIcon level={level} size={11} />
@@ -186,12 +183,6 @@ const styles = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     minWidth: 0
-  },
-  handle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    color: 'var(--color-text-secondary)',
-    flexShrink: 0
   },
   rank: {
     fontFamily: 'var(--font-display)',
