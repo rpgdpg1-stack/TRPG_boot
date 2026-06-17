@@ -13,6 +13,7 @@ import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
 import UiIcon from '../components/UiIcon'
 import HistoryRow from '../components/HistoryRow'
+import FriendsBlock from '../components/FriendsBlock'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -309,8 +310,16 @@ export default function Home() {
     </>
   )
 
+  const renderFriends = () => (
+    <>
+      <SectionHeader title="ДРУЗЬЯ" onTap={() => { haptic.light(); navigate('/friends') }} />
+      <FriendsBlock />
+    </>
+  )
+
   const SECTION_RENDERERS = {
     categories: renderCategories,
+    friends: renderFriends,
     history: renderHistory,
     quests: renderQuests
   }

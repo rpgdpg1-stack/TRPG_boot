@@ -8,7 +8,7 @@
  * Все функции — обёртки над Supabase RPC:
  *  - api_get_friends_list   → список друзей (без меня) с местом в лиге,
  *                             последней тренировкой, закрепом
- *  - api_toggle_pin_friend  → закрепить/открепить (лимит 5)
+ *  - api_toggle_pin_friend  → закрепить/открепить (лимит 6)
  *
  * Кеш короткий (1 мин), сбрасывается при закрепе/добавлении друга.
  */
@@ -17,7 +17,7 @@ import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 
-export const PIN_LIMIT = 5
+export const PIN_LIMIT = 6
 
 /**
  * Список друзей текущего юзера (БЕЗ самого юзера).
@@ -58,7 +58,7 @@ export async function getFriendsList() {
 /**
  * Закрепить / открепить друга (toggle).
  * Возвращает { success, pinned } или { success:false, error } где error:
- *   'limit'      — упёрся в лимит 5 закрепов
+ *   'limit'      — упёрся в лимит 6 закрепов
  *   'not_friend' — это не друг
  *   'bad_args'   — кривые аргументы
  *
