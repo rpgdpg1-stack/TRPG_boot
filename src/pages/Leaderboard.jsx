@@ -324,15 +324,6 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {activeTab === TAB_FRIENDS && !showInviteCTA && !loading && (
-        <div style={styles.bottomInvite}>
-          <button onClick={handleInviteTap} style={{ ...styles.inviteButtonSecondary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <UiIcon name="invite-friend" size={16} color="var(--color-primary)" />
-            Пригласить ещё друга
-          </button>
-        </div>
-      )}
-
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
       {selectedProfile && (

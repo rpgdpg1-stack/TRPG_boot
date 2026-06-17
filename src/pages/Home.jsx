@@ -103,6 +103,10 @@ export default function Home() {
   // Состояние свайпа: стартовая X и флаг "только что свайпнули".
   const swipeRef = useRef({ x: null, swiped: false })
 
+  // Направление лёгкой анимации заезда карточки избранного при смене слайда
+  // ('right' — заезд справа, 'left' — слева). null до первого переключения.
+  const [slideDir, setSlideDir] = useState(null)
+
   // Подтянуть конфиг из облака (вдруг менял в настройках с другого устройства).
   useEffect(() => {
     let cancelled = false
@@ -161,7 +165,9 @@ export default function Home() {
   }, [])
 
   // Перейти к слайду i и запомнить его slug (локально + в облако).
-  const goFav = (i) => {
+  // dir — направление анимации заезда ('right' | 'left').
+  const goFav = (i, dir) => {
+    if (dir) setSlideDir(dir)
     setFavIdx(i)
     const slug = favorites[i]?.prog?.slug
     if (slug) {
@@ -186,9 +192,9 @@ export default function Home() {
     swipeRef.current.swiped = true
     haptic.light()
     if (dx < 0) {
-      goFav((favIdx + 1) % favorites.length)
+      goFav((favIdx + 1) % favorites.length, 'right')
     } else {
-      goFav((favIdx - 1 + favorites.length) % favorites.length)
+      goFav((favIdx - 1 + favorites.length) % favorites.length, 'left')
     }
     setTimeout(() => { swipeRef.current.swiped = false }, 120)
   }
@@ -256,6 +262,11 @@ export default function Home() {
     quests: renderQuests
   }
 
+  // Цвет раздела текущей избранной карточки — им красим активную точку-индикатор.
+  const favAccent = favorites[favIdx]?.prog
+    ? (CATEGORY_META[favorites[favIdx].prog.category]?.color || 'var(--color-primary)')
+    : 'var(--color-primary)'
+
   return (
     <div className="page page-fade" style={styles.page}>
 
@@ -284,12 +295,16 @@ export default function Home() {
       {!favLoaded ? (
         <div style={styles.favSkeleton} />
       ) : favorites.length === 0 ? (
-        <div style={styles.favEmpty}>
+        <button
+          onClick={() => { haptic.light(); navigate('/favorites') }}
+          className="press-tile"
+          style={styles.favEmpty}
+        >
           <span style={styles.favEmptyHeartWrap}>
             <PixelHeart filled={false} size={18} />
           </span>
           Поставь сердце на программу внутри категории — она появится здесь
-        </div>
+        </button>
       ) : (
         <div style={styles.favSlider}>
           <div
@@ -297,17 +312,22 @@ export default function Home() {
             onTouchEnd={handleFavTouchEnd}
             style={styles.favSwipeArea}
           >
-            <FavCard entry={favorites[favIdx]} onTap={handleFavOpen} />
+            <div
+              key={favIdx}
+              className={slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined}
+            >
+              <FavCard entry={favorites[favIdx]} onTap={handleFavOpen} />
+            </div>
           </div>
           {favorites.length > 1 && (
             <div style={styles.favDots}>
               {favorites.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => { haptic.light(); goFav(i) }}
+                  onClick={() => { haptic.light(); goFav(i, i > favIdx ? 'right' : 'left') }}
                   style={{
                     ...styles.favDot,
-                    background: i === favIdx ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
+                    background: i === favIdx ? favAccent : 'rgba(255,255,255,0.2)',
                     width: i === favIdx ? '16px' : '6px'
                   }}
                 />
@@ -469,6 +489,7 @@ const styles = {
   },
 
   favEmpty: {
+    width: '100%',
     padding: '16px 18px',
     background: 'rgba(255,255,255,0.02)',
     border: '1px dashed rgba(255,255,255,0.1)',
@@ -477,7 +498,8 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    lineHeight: 1.5
+    lineHeight: 1.5,
+    cursor: 'pointer'
   },
   favSkeleton: {
     minHeight: '100px',

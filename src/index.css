@@ -266,6 +266,19 @@ body.hide-app-scrim .app::after { display: none; }
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* Лёгкий горизонтальный заезд (карусель избранного и т.п.) */
+.hslide-in-right { animation: hslideInRight 0.3s var(--ease-ios) both; }
+.hslide-in-left  { animation: hslideInLeft  0.3s var(--ease-ios) both; }
+
+@keyframes hslideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes hslideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 /* ============================================ */
 /* АНИМАЦИИ ЧАСТИЦ */
 /* ============================================ */
