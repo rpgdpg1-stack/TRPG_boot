@@ -4,8 +4,8 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
-import { getProgramBySlug, getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
-import { swimTotalMeters } from '../data/programs/swim'
+import { getProgramBySlug } from '../features/programs/registry'
+import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
@@ -14,6 +14,7 @@ import PixelHeart from '../components/PixelHeart'
 import HistoryRow from '../components/HistoryRow'
 import FriendsBlock from '../components/FriendsBlock'
 import CategoryList from '../components/CategoryList'
+import FavCardBody from '../components/FavCardBody'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -330,59 +331,29 @@ export default function Home() {
 
 function FavCard({ entry, onTap }) {
   if (!entry) return null
-  const { prog, activeDay } = entry
-  const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
-  // Свою программу показываем как ввёл юзер (регистр, эмодзи); встроенные нормализуем.
-  const formattedTitle = prog.title
-    ? (prog.source === 'custom'
-        ? prog.title
-        : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
-    : ''
-  const emoji = getProgramEmoji(prog.slug)
+  const { prog } = entry
+  // Цвет раздела программы: силовая — зелёный, плавание — синий, и т.д.
+  // Им красим обводку, свечение, тег «НАЧАТЬ» и подсветку активного дня.
+  const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
+
+  const cardStyle = {
+    ...favCardStyles.card,
+    border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
+    boxShadow: `0 0 20px color-mix(in srgb, ${accent} 20%, transparent), inset 0 0 30px color-mix(in srgb, ${accent} 6%, transparent)`
+  }
+  const startTagStyle = {
+    ...favCardStyles.startTag,
+    background: `color-mix(in srgb, ${accent} 12%, transparent)`,
+    border: `1px solid color-mix(in srgb, ${accent} 38%, transparent)`,
+    color: accent,
+    boxShadow: `0 0 12px color-mix(in srgb, ${accent} 12%, transparent)`
+  }
 
   return (
-    <div onClick={onTap} className="press-tile" style={favCardStyles.card}>
-      <span style={favCardStyles.emoji}>{emoji}</span>
-      <div style={favCardStyles.content}>
-        <div style={favCardStyles.title}>{formattedTitle}</div>
+    <div onClick={onTap} className="press-tile" style={cardStyle}>
+      <FavCardBody entry={entry} accent={accent} />
 
-        {prog.kind === 'swim' ? (
-          <div style={favCardStyles.daysRow}>
-            <span style={favCardStyles.daysLabel}>
-              {prog.data.durationMin} мин · {swimTotalMeters()} м
-            </span>
-          </div>
-        ) : (
-          <div style={favCardStyles.daysRow}>
-            <span style={favCardStyles.daysLabel}>День:</span>
-            <div style={favCardStyles.daysList}>
-              {allDays.map(d => {
-                const isToday = !!activeDay && d === activeDay
-                return (
-                  <span key={d} style={{
-                    ...favCardStyles.dayLetter,
-                    color: isToday ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
-                    textShadow: isToday ? '0 0 6px rgba(158,209,83,0.4)' : 'none'
-                  }}>
-                    {d}
-                  </span>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {prog.tags && prog.tags.length > 0 && (
-          <div style={favCardStyles.tags}>
-            {prog.tags.map(tag => {
-              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              return <span key={tag} style={{ ...favCardStyles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
-            })}
-          </div>
-        )}
-      </div>
-
-      <div style={favCardStyles.startTag}>
+      <div style={startTagStyle}>
         НАЧАТЬ
         <span style={favCardStyles.startArrow}>›</span>
       </div>
@@ -400,33 +371,7 @@ const favCardStyles = {
     borderRadius: 'var(--radius-card)',
     width: '100%',
     minHeight: '100px',
-    cursor: 'pointer',
-    border: '1px solid rgba(158, 209, 83, 0.4)',
-    boxShadow: '0 0 20px rgba(158, 209, 83, 0.18), inset 0 0 30px rgba(158, 209, 83, 0.05)'
-  },
-  emoji: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
-  content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
-  title: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    letterSpacing: '0.3px',
-    lineHeight: 1.1
-  },
-  daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
-  daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
-  dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
-  tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  tag: {
-    display: 'inline-block',
-    padding: '3px 9px',
-    borderRadius: '6px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 700,
-    color: 'var(--color-bg)'
+    cursor: 'pointer'
   },
   startTag: {
     flexShrink: 0,
@@ -435,15 +380,11 @@ const favCardStyles = {
     alignItems: 'center',
     gap: '2px',
     padding: '8px 12px',
-    background: 'rgba(158, 209, 83, 0.12)',
-    border: '1px solid rgba(158, 209, 83, 0.35)',
     borderRadius: '12px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '12px',
-    letterSpacing: '1px',
-    color: 'var(--color-primary)',
-    boxShadow: '0 0 12px rgba(158, 209, 83, 0.1)'
+    letterSpacing: '1px'
   },
   startArrow: {
     fontFamily: 'var(--font-manrope)',

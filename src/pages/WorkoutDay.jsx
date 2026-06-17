@@ -787,7 +787,7 @@ const styles = {
   dayLetter: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '64px',
+    fontSize: '45px',
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,

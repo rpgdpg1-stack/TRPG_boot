@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { loadFavoritesEntries, getActiveDay, toggleFavoriteProgram } from '../lib/storage'
-import { getProgramBySlug, getProgramEmoji, getProgramsByCategory } from '../features/programs/registry'
+import { getProgramBySlug, getProgramsByCategory } from '../features/programs/registry'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import UiIcon from './UiIcon'
 import PixelHeart from './PixelHeart'
+import FavCardBody from './FavCardBody'
 
 /**
  * Список избранного по разделам — общий для страницы «Избранное» и профиля.
@@ -87,18 +88,12 @@ export default function FavoritesList() {
 
 function FavoriteCard({ entry, onOpen, onRemove }) {
   const { prog } = entry
-  const emoji = getProgramEmoji(prog.slug)
-  // Кастомную — как ввёл юзер, встроенную — нормализуем.
-  const title = prog.source === 'custom'
-    ? prog.title
-    : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
+  // Цвет раздела — только для подсветки активного дня (обводки/свечения тут нет).
+  const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
 
   return (
     <div onClick={onOpen} className="press-tile" style={styles.card}>
-      <span style={styles.cardEmoji}>{emoji}</span>
-      <div style={styles.cardContent}>
-        <div style={styles.cardTitle}>{title}</div>
-      </div>
+      <FavCardBody entry={entry} accent={accent} />
       <button
         onClick={(e) => { e.stopPropagation(); onRemove() }}
         style={styles.heartBtn}
@@ -146,21 +141,12 @@ const styles = {
     alignItems: 'center',
     gap: '14px',
     padding: '16px 18px',
+    paddingRight: '52px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '88px',
+    minHeight: '100px',
     textAlign: 'left'
-  },
-  cardEmoji: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
-  cardContent: { flex: 1, minWidth: 0, paddingRight: '36px' },
-  cardTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    letterSpacing: '0.3px',
-    lineHeight: 1.1
   },
   heartBtn: {
     position: 'absolute',
