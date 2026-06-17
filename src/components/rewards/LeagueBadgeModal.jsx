@@ -157,13 +157,13 @@ const styles = {
     position: 'relative'
   },
   kicker: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '28px',
     letterSpacing: '3px',
     lineHeight: 1,

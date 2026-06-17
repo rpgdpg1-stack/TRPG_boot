@@ -197,13 +197,13 @@ const styles = {
     animation: 'seasonPanelIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   seasonHeader: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px'
   },
   seasonName: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -240,7 +240,7 @@ const styles = {
     marginTop: '4px'
   },
   finishLine: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
@@ -259,7 +259,7 @@ const styles = {
     gap: '4px'
   },
   rewardTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     letterSpacing: '1.5px',
     textAlign: 'center'

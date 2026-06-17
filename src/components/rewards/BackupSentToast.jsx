@@ -125,7 +125,7 @@ const styles = {
     filter: 'drop-shadow(0 0 14px rgba(250, 223, 190, 0.4))'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '17px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -149,7 +149,7 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.1)',
     border: '1px solid rgba(158, 209, 83, 0.3)',
     borderRadius: '12px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',

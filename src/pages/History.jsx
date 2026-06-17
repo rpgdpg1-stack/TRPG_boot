@@ -63,7 +63,7 @@ const styles = {
   page: {},
   header: { marginTop: '8px', marginBottom: '20px', textAlign: 'center' },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',

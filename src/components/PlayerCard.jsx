@@ -446,7 +446,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '38px',
     color: 'var(--color-primary)',
     background: 'var(--color-card)'
@@ -468,7 +468,7 @@ const styles = {
     lineHeight: 1
   },
   medalBadgeCount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text)',
     letterSpacing: '0.5px',
@@ -509,7 +509,7 @@ const styles = {
     gap: '2px'
   },
   rank: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '15px',
     letterSpacing: '1.5px',
     padding: '2px 0',
@@ -523,7 +523,7 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '8px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     letterSpacing: '1px',
     color: 'var(--color-text)',
@@ -556,7 +556,7 @@ const styles = {
     justifyContent: 'flex-start'
   },
   streakCount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: '#FFFFFF',
     letterSpacing: '1px',
@@ -577,7 +577,7 @@ const styles = {
     animation: 'popupShowHide 6.4s ease-out forwards'
   },
   popupSectionTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -608,7 +608,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   popupAmount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
@@ -649,7 +649,7 @@ const styles = {
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 140, 66, 0.1)'
   },
   streakPopupTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1.5px',
@@ -663,7 +663,7 @@ const styles = {
     padding: '2px 0'
   },
   streakPopupCount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '22px',
     color: '#FFFFFF',
     letterSpacing: '1px',

@@ -173,7 +173,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '22px',
     color: 'var(--color-primary)'
   },
@@ -219,7 +219,7 @@ const styles = {
     overflow: 'hidden'
   },
   rank: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1,
@@ -241,7 +241,7 @@ const styles = {
     minWidth: 0
   },
   muscles: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     letterSpacing: '0.5px',
     flexShrink: 0,

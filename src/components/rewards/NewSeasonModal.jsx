@@ -165,13 +165,13 @@ const styles = {
     filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))'
   },
   kicker: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '24px',
     letterSpacing: '3px',
     lineHeight: 1,

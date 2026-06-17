@@ -28,7 +28,7 @@ export default function TitleTag({ place, size = 15 }) {
     <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
       <span
         style={{
-          fontFamily: 'var(--font-tiny5)',
+          fontFamily: 'var(--font-display)',
           fontSize: `${size}px`,
           letterSpacing: '1.5px',
           color,

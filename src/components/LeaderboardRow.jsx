@@ -132,7 +132,7 @@ const styles = {
     lineHeight: 1
   },
   placeNumber: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
@@ -158,7 +158,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-primary)'
   },
@@ -192,13 +192,13 @@ const styles = {
     flexShrink: 0
   },
   rank: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1
   },
   muscles: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     letterSpacing: '0.5px',
     flexShrink: 0,

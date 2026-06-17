@@ -392,7 +392,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '52px',
     color: 'var(--color-primary)'
   },
@@ -429,7 +429,7 @@ const styles = {
     padding: '0 2px'
   },
   rank: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '15px',
     letterSpacing: '1.5px',
     padding: '2px 0',
@@ -446,7 +446,7 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-small)',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text)',
@@ -459,7 +459,7 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-small)',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-text)'
@@ -499,7 +499,7 @@ const styles = {
   },
   
   pillValue: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '15px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -509,7 +509,7 @@ const styles = {
   // Крупная цифра в блоке статистики (мускулы/тренировки) — размер как у
   // счётчика стрика, чтобы все три ячейки были визуально на одной высоте.
   statValue: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '20px',
     letterSpacing: '0.5px',
     lineHeight: 1,
@@ -544,7 +544,7 @@ const styles = {
     animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
   },
   statCount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '20px',
     color: '#FFFFFF',
     letterSpacing: '1px',
@@ -594,7 +594,7 @@ const styles = {
     transform: 'none'
   },
   popupTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -621,7 +621,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   popupAmount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
@@ -629,7 +629,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   popupDate: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px',
@@ -650,7 +650,7 @@ const styles = {
     margin: '8px 0'
   },
   streakCount: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '22px',
     color: '#FFFFFF',
     letterSpacing: '1px',

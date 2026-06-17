@@ -201,13 +201,13 @@ const styles = {
     animation: 'flameModalFloat 1.6s ease-in-out infinite'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     letterSpacing: '2px',
     textAlign: 'center'
   },
   rewardBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '24px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',

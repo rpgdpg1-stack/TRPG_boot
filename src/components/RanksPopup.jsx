@@ -233,7 +233,7 @@ const styles = {
   },
   rankName: {
     flex: 1,
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '1px',
     whiteSpace: 'nowrap',
@@ -251,7 +251,7 @@ const styles = {
     transition: 'color 0.3s ease'
   },
   xp: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     letterSpacing: '0.5px',
     flexShrink: 0,

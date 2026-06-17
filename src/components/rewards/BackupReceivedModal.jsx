@@ -245,7 +245,7 @@ const styles = {
     filter: 'drop-shadow(0 0 14px rgba(250, 223, 190, 0.4))'
   },
   kicker: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -296,7 +296,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-primary)'
   },
@@ -317,7 +317,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   rank: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     letterSpacing: '1px',
     lineHeight: 1
@@ -344,7 +344,7 @@ const styles = {
     background: 'rgba(158, 209, 83, 0.12)',
     border: '1px solid rgba(158, 209, 83, 0.4)',
     borderRadius: '999px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '0.5px',
     color: 'var(--color-primary)',
@@ -368,7 +368,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -380,7 +380,7 @@ const styles = {
     animation: 'backupReturnFly 1s ease-out forwards'
   },
   flyerPlus: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-primary)'
   },

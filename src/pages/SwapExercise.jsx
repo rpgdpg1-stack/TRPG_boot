@@ -365,7 +365,7 @@ const styles = {
     textAlign: 'center'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '24px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -383,7 +383,7 @@ const styles = {
     marginBottom: '16px'
   },
   sectionLabel: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -391,7 +391,7 @@ const styles = {
     paddingLeft: '4px'
   },
   alternativesHeader: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -507,7 +507,7 @@ const rowStyles = {
     color: 'var(--color-text)'
   },
   defaultBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '9px',
     color: 'var(--color-primary)',
     background: 'rgba(158, 209, 83, 0.15)',

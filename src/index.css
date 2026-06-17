@@ -44,7 +44,7 @@
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
   --font-manrope: 'Manrope', system-ui, sans-serif;
-  --font-tiny5: 'Tiny5', monospace;
+  --font-display: 'Geist', system-ui, sans-serif; /* акцентный (бывш. пиксельный Tiny5): XP, ранги, титулы, цифры */
 
   /* Размеры таббара */
   --tabbar-height: 72px;

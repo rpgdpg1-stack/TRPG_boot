@@ -424,7 +424,7 @@ const styles = {
   },
   header: { textAlign: 'center', marginBottom: '14px' },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--cat-pool)',
     letterSpacing: '3px',
@@ -482,7 +482,7 @@ const styles = {
     color: 'var(--color-text-secondary)'
   },
   repeatBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '1.5px',
     color: 'var(--cat-pool)',
@@ -540,13 +540,13 @@ const styles = {
     marginTop: '4px'
   },
   totalLabel: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--color-text)',
     letterSpacing: '1px'
   },
   totalValue: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--cat-pool)',
     letterSpacing: '0.5px'
@@ -574,7 +574,7 @@ const styles = {
     borderRadius: 'var(--radius-card)'
   },
   tipsTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -632,7 +632,7 @@ const laneStyles = {
   label: {
     position: 'relative',
     zIndex: 2,
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: '#FFFFFF',
     letterSpacing: '1px',
@@ -673,16 +673,16 @@ const modalStyles = {
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 66, 0.2)'
   },
   icon: { fontSize: '56px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(63, 162, 247, 0.5))' },
-  title: { fontFamily: 'var(--font-tiny5)', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' },
+  title: { fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '2px', textAlign: 'center' },
   distanceBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '26px',
     color: 'var(--cat-pool)',
     letterSpacing: '1px',
     textShadow: '0 0 12px rgba(63, 162, 247, 0.4)'
   },
   rewardBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '22px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',

@@ -149,7 +149,7 @@ const styles = {
     top: '30%',
     left: '50%',
     transform: 'translateX(-50%)',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',
@@ -164,7 +164,7 @@ const styles = {
     animation: 'logoFadeIn 0.6s ease-out 0.3s both'
   },
   logo: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '20px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',

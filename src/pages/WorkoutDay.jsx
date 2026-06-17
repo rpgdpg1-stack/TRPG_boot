@@ -785,7 +785,7 @@ const styles = {
     minWidth: '120px'
   },
   dayLetter: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '64px',
     color: 'var(--color-primary)',
     letterSpacing: '0',
@@ -797,7 +797,7 @@ const styles = {
     padding: '0 4px'
   },
   progressLabel: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
@@ -830,7 +830,7 @@ const styles = {
     gap: '12px'
   },
   muscleHeader: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
@@ -909,7 +909,7 @@ const styles = {
     maxWidth: '240px'
   },
   dayTagText: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',

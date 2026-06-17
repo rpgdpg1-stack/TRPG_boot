@@ -450,7 +450,7 @@ const styles = {
     position: 'relative'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -478,7 +478,7 @@ const styles = {
     gap: '2px'
   },
   seasonName: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     letterSpacing: '2px'
   },
@@ -507,7 +507,7 @@ const styles = {
     padding: '12px 8px',
     border: 'none',
     borderRadius: '29px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     letterSpacing: '2px',
     transition: 'color 0.25s ease, background 0.25s ease',
@@ -579,7 +579,7 @@ const styles = {
     marginBottom: '8px'
   },
   inviteTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '16px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -667,7 +667,7 @@ const modalStyles = {
     marginBottom: '4px'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '16px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -679,7 +679,7 @@ const modalStyles = {
     borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
   },
   sectionTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-primary)',
     letterSpacing: '2px',

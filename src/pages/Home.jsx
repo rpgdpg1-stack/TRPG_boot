@@ -419,9 +419,9 @@ const favCardStyles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  daysLabel: { fontFamily: 'var(--font-tiny5)', fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
+  daysLabel: { fontFamily: 'var(--font-display)', fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
-  dayLetter: { fontFamily: 'var(--font-tiny5)', fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
+  dayLetter: { fontFamily: 'var(--font-display)', fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
   tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   tag: {
     display: 'inline-block',
@@ -442,7 +442,7 @@ const favCardStyles = {
     background: 'rgba(158, 209, 83, 0.12)',
     border: '1px solid rgba(158, 209, 83, 0.35)',
     borderRadius: '12px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     letterSpacing: '1px',
     color: 'var(--color-primary)',
@@ -496,7 +496,7 @@ const styles = {
     position: 'relative'
   },
   sectionHeader: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',
@@ -572,7 +572,7 @@ const styles = {
   categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
   categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
   categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' },
-  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-tiny5)', fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
+  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-display)', fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
   categoryArrow: { fontSize: '24px', color: 'var(--color-text-secondary)', flexShrink: 0 },
 
   favEmpty: {

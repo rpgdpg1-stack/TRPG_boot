@@ -80,7 +80,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '2px',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     zIndex: 2,
     textShadow: '0 0 4px rgba(0,0,0,0.8)'
   },

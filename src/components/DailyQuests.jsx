@@ -499,7 +499,7 @@ const styles = {
     pointerEvents: 'none'
   },
   lockedOverlayText: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text)',
     letterSpacing: '0.5px',
@@ -513,7 +513,7 @@ const styles = {
     alignItems: 'center'
   },
   rewardBadge: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -525,7 +525,7 @@ const styles = {
     position: 'absolute',
     bottom: '100%',
     left: '50%',
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
@@ -546,7 +546,7 @@ const styles = {
     userSelect: 'none'
   },
   allDoneReward: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
@@ -595,7 +595,7 @@ const styles = {
     lineHeight: 1.2
   },
   rewardBadgeDone: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',

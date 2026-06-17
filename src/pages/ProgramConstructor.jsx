@@ -489,7 +489,7 @@ const styles = {
     zIndex: 40
   },
   header: { textAlign: 'center', margin: '8px 0 20px' },
-  title: { fontFamily: 'var(--font-tiny5)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
+  title: { fontFamily: 'var(--font-display)', fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     width: '100%', height: '52px', padding: '0 18px',
     background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
@@ -497,14 +497,14 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
   },
   section: { marginBottom: '20px' },
-  secLabel: { fontFamily: 'var(--font-tiny5)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
+  secLabel: { fontFamily: 'var(--font-display)', fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
-  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', background: 'var(--color-card)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-tiny5)', fontSize: '20px', transition: 'color 0.18s ease, font-size 0.18s ease' },
+  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', background: 'var(--color-card)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-display)', fontSize: '20px', transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center' },
   dayTab: {
     display: 'flex', alignItems: 'center', gap: '6px',
     background: 'transparent', border: 'none', borderBottom: '2px solid transparent',
-    padding: '6px 4px', fontFamily: 'var(--font-tiny5)', fontSize: '28px'
+    padding: '6px 4px', fontFamily: 'var(--font-display)', fontSize: '28px'
   },
   dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },

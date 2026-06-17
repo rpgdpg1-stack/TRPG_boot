@@ -159,7 +159,7 @@ const styles = {
     marginBottom: '20px'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -167,7 +167,7 @@ const styles = {
     margin: 0
   },
   groupTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '3px',

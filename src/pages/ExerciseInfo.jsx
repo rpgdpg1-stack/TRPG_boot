@@ -240,7 +240,7 @@ const styles = {
     fontWeight: 700
   },
   sectionHeader: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',

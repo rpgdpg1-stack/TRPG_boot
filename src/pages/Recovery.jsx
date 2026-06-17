@@ -177,7 +177,7 @@ const styles = {
     textAlign: 'center'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '32px',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
@@ -214,7 +214,7 @@ const styles = {
     minWidth: 0
   },
   categoryTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '14px',
     letterSpacing: '2px',
     marginBottom: '2px'
@@ -257,7 +257,7 @@ const styles = {
     lineHeight: 1.3
   },
   itemFreq: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
@@ -310,7 +310,7 @@ const popupStyles = {
     lineHeight: 1.3
   },
   freq: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '1px',

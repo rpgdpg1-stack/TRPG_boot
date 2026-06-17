@@ -95,7 +95,7 @@ const styles = {
     marginBottom: '8px'
   },
   title: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '18px',
     color: 'var(--color-text)',
     letterSpacing: '2px',
@@ -119,7 +119,7 @@ const styles = {
     marginTop: '4px'
   },
   errorTitle: {
-    fontFamily: 'var(--font-tiny5)',
+    fontFamily: 'var(--font-display)',
     fontSize: '10px',
     color: '#E84545',
     letterSpacing: '1px',
