@@ -18,6 +18,8 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import HomeLayoutSettings from './pages/HomeLayoutSettings'
 import Favorites from './pages/Favorites'
+import Sections from './pages/Sections'
+import DailyBoost from './pages/DailyBoost'
 import Leaderboard from './pages/Leaderboard'
 import Friends from './pages/Friends'
 import Rewards from './pages/Rewards'
@@ -127,6 +129,8 @@ export default function App() {
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/history" element={<History />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/sections" element={<Sections />} />
+          <Route path="/daily-boost" element={<DailyBoost />} />
           <Route path="/exercise/:id" element={<ExerciseInfo />} />
         </Routes>
 

@@ -4,16 +4,16 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
-import { getProgramBySlug, getProgramEmoji, getProgramTagColor, programCountLabel } from '../features/programs/registry'
+import { getProgramBySlug, getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
-import UiIcon from '../components/UiIcon'
 import HistoryRow from '../components/HistoryRow'
 import FriendsBlock from '../components/FriendsBlock'
+import CategoryList from '../components/CategoryList'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -206,81 +206,12 @@ export default function Home() {
     setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, { state: { fromHome: true } }), 80)
   }
 
-  const categories = [
-    {
-      id: 'gym',
-      iconName: 'power',
-      title: 'Силовая',
-      subtitle: programCountLabel('gym'),
-      color: 'var(--color-primary)',
-      available: true,
-      comingSoon: false
-    },
-    {
-      id: 'pool',
-      iconName: 'swimming',
-      title: 'Плавание',
-      subtitle: programCountLabel('pool'),
-      color: 'var(--cat-pool)',
-      available: true,
-      comingSoon: false
-    },
-    {
-      id: 'cardio',
-      iconName: 'cardio',
-      title: 'Кардио',
-      subtitle: 'Бег · HIIT',
-      color: 'var(--cat-cardio)',
-      available: true,
-      comingSoon: true
-    },
-    {
-      id: 'stretch',
-      iconName: 'stretching',
-      title: 'Растяжка',
-      subtitle: 'Йога · Пилатес',
-      color: 'var(--cat-stretch)',
-      available: true,
-      comingSoon: true
-    }
-  ]
-
-  const handleCategoryTap = (cat) => {
-    haptic.light()
-    setTimeout(() => navigate(`/category/${cat.id}`), 80)
-  }
 
   // Рендер управляемых секций (порядок и видимость — из конфига `layout`).
   const renderCategories = () => (
     <>
-      <SectionHeader title="РАЗДЕЛЫ" />
-      <div style={styles.categoryGroup}>
-        {categories.map((cat, idx) => (
-          <button
-            key={cat.id}
-            onClick={() => handleCategoryTap(cat)}
-            className="tg-row"
-            style={{
-              ...styles.categoryRow,
-              borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
-            }}
-          >
-            <span style={styles.categoryIcon}>
-              <UiIcon name={cat.iconName} size={26} color={cat.color} />
-            </span>
-
-            <div style={styles.categoryContent}>
-              <div style={styles.categoryTitle}>{cat.title}</div>
-              <div style={styles.categorySubtitle}>
-                {cat.subtitle}
-                {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-              </div>
-            </div>
-
-            <div style={styles.categoryArrow}>›</div>
-          </button>
-        ))}
-      </div>
+      <SectionHeader title="РАЗДЕЛЫ" onTap={() => { haptic.light(); navigate('/sections') }} />
+      <CategoryList />
     </>
   )
 
@@ -305,7 +236,7 @@ export default function Home() {
 
   const renderQuests = () => (
     <>
-      <SectionHeader title="ДНЕВНОЙ БУСТ" />
+      <SectionHeader title="ДНЕВНОЙ БУСТ" onTap={() => { haptic.light(); navigate('/daily-boost') }} />
       <DailyQuests />
     </>
   )
@@ -595,36 +526,6 @@ const styles = {
     verticalAlign: 'middle',
     marginRight: '6px'
   },
-  categoryGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    overflow: 'hidden'
-  },
-  categoryRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '0 18px',
-    width: '100%',
-    height: '68px',
-    textAlign: 'left',
-    border: 'none'
-  },
-  categoryIcon: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 1,
-    flexShrink: 0,
-    width: '34px'
-  },
-  categoryContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
-  categoryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
-  categorySubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' },
-  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
-  categoryArrow: { fontSize: '24px', color: 'var(--color-text-secondary)', flexShrink: 0 },
 
   favEmpty: {
     padding: '16px 18px',

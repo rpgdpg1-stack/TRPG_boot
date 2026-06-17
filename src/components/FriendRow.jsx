@@ -101,7 +101,12 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
       onPointerCancel={handleLeave}
       style={{
         ...styles.row,
-        background: pressed ? 'rgba(255, 255, 255, 0.06)' : 'transparent'
+        // Нажатие — ярче-зелёный (как тап по себе в рейтинге); закреплённый —
+        // мягкий зелёный в покое; обычный — прозрачный. При скролле (не тап) —
+        // pressed сбрасывается, так что подсветки нет.
+        background: pressed
+          ? 'rgba(158, 209, 83, 0.20)'
+          : (isPinned ? 'rgba(158, 209, 83, 0.10)' : 'transparent')
       }}
     >
       {/* Аватар — рамка в цвет лиги */}
@@ -118,7 +123,6 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
       {/* Имя + (ранг · последняя тренировка) */}
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
-          {isPinned && <span style={styles.pin}>📌</span>}
           <span style={styles.name}>{displayName}</span>
         </div>
         <div style={styles.metaRow}>
@@ -187,12 +191,6 @@ const styles = {
     alignItems: 'baseline',
     gap: '5px',
     overflow: 'hidden'
-  },
-  pin: {
-    fontSize: '11px',
-    lineHeight: 1,
-    flexShrink: 0,
-    alignSelf: 'center'
   },
   name: {
     fontFamily: 'var(--font-manrope)',
