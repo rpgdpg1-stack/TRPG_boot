@@ -263,7 +263,7 @@ export default function PlayerCard() {
             <button
               ref={rankButtonRef}
               onClick={handleRankTap}
-              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <span
                 key={`rankpop-${rankPopTick}`}
@@ -272,7 +272,7 @@ export default function PlayerCard() {
                   animation: rankPopTick ? 'rankIconPop 0.4s ease-out' : 'none'
                 }}
               >
-                <RankIcon level={level} size={26} />
+                <RankIcon level={level} size={20} />
               </span>
               {rank.name} {rank.subLevel}
             </button>
@@ -427,8 +427,7 @@ const styles = {
   },
   bottomRowWrap: {
     position: 'relative',
-    paddingTop: '12px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+    padding: 0
   },
   avatarWrap: {
     width: '80px',
@@ -522,21 +521,22 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '2px'
+    justifyContent: 'space-between',
+    gap: '8px'
   },
   rank: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '11px',
     letterSpacing: '1.5px',
     padding: '2px 0',
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    minWidth: 0
   },
   friendsPlaceButton: {
-    marginLeft: '10px',
+    flexShrink: 0,
     padding: '2px 8px',
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
