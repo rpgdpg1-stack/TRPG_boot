@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUser, haptic } from '../lib/telegram'
-import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory } from '../lib/storage'
+import { getTotalXP, getWeeklyStreak, getRecentMuscleHistory, getTotalWorkouts, getRecentWorkouts } from '../lib/storage'
+import { getProgramByDbId } from '../features/programs/registry'
 import {
   getLevelFromXP,
   getRankByLevel,
@@ -29,7 +30,9 @@ import { getImmortalAwards } from '../lib/rewards'
  * Макет:
  *   [АВАТАР 100x100 квадрат]   Имя @ник
  *                              Ранг (цветной)
- *                              [💪 XP-бар  🔥 x2]
+ * Нижняя строка: [мини XP-бар слева] [🔥 серия по центру] [🏋️ тренировки справа].
+ * У XP-бара и тренировок — попапы (последние начисления / последние тренировки),
+ * как в карточке профиля (ProfileHeader).
  *
  * StreakFlame вынесен в отдельный компонент (src/components/StreakFlame.jsx) —
  * используется и тут, и в попапе серии на странице профиля.
@@ -48,6 +51,21 @@ function formatSourceLabel(source) {
   return SOURCE_LABELS[source] || 'Начисление'
 }
 
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+
+function fmtDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`
+}
+
+// Имя программы для попапа тренировок: кастомную — как ввёл юзер, встроенную — нормализуем.
+function programTitle(dbId) {
+  const p = getProgramByDbId(dbId)
+  if (!p) return 'Тренировка'
+  return p.source === 'custom' ? p.title : p.title.charAt(0).toUpperCase() + p.title.slice(1).toLowerCase()
+}
+
 export default function PlayerCard() {
   const navigate = useNavigate()
 
@@ -58,6 +76,9 @@ export default function PlayerCard() {
     return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
   const [recentHistory, setRecentHistory] = useState([])
+  const [totalWorkouts, setTotalWorkouts] = useState(0)
+  const [recentWorkouts, setRecentWorkouts] = useState([])
+  const [showWorkouts, setShowWorkouts] = useState(false)
   const [showXPDetails, setShowXPDetails] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
   const [leaguePlace, setLeaguePlace] = useState({ place: 1, totalInLeague: 1, rankIndex: 0 })
@@ -72,8 +93,11 @@ export default function PlayerCard() {
   const rankButtonRef = useRef(null)
   const streakButtonRef = useRef(null)
   const streakPopupRef = useRef(null)
+  const workoutsButtonRef = useRef(null)
+  const workoutsPopupRef = useRef(null)
   const xpAutoCloseTimer = useRef(null)
   const streakAutoCloseTimer = useRef(null)
+  const workoutsAutoCloseTimer = useRef(null)
 
   useEffect(() => {
     const tgUser = getUser()
@@ -85,13 +109,17 @@ export default function PlayerCard() {
         getWeeklyStreak(),
         getRecentMuscleHistory(3),
         getMyLeaguePlace(),
-        getImmortalAwards()
-      ]).then(([xpVal, streak, history, lp, aw]) => {
+        getImmortalAwards(),
+        getTotalWorkouts(),
+        getRecentWorkouts(3)
+      ]).then(([xpVal, streak, history, lp, aw, totalW, recentW]) => {
         setXP(xpVal)
         setWeeklyStreak(streak)
         setRecentHistory(history)
         setLeaguePlace(lp)
         setMedals(aw)
+        setTotalWorkouts(totalW)
+        setRecentWorkouts(recentW)
       })
     }
 
@@ -147,6 +175,25 @@ export default function PlayerCard() {
     return () => document.removeEventListener('pointerdown', handleOutside)
   }, [showStreakPopup])
 
+  useEffect(() => {
+    if (showWorkouts) {
+      getRecentWorkouts(3).then(setRecentWorkouts)
+      workoutsAutoCloseTimer.current = setTimeout(() => setShowWorkouts(false), 6000)
+    }
+    return () => { if (workoutsAutoCloseTimer.current) clearTimeout(workoutsAutoCloseTimer.current) }
+  }, [showWorkouts])
+
+  useEffect(() => {
+    if (!showWorkouts) return
+    const handleOutside = (e) => {
+      if (workoutsButtonRef.current?.contains(e.target)) return
+      if (workoutsPopupRef.current?.contains(e.target)) return
+      setShowWorkouts(false)
+    }
+    document.addEventListener('pointerdown', handleOutside)
+    return () => document.removeEventListener('pointerdown', handleOutside)
+  }, [showWorkouts])
+
   const level = getLevelFromXP(xp)
   const rank = getRankByLevel(level)
   const progress = getLevelProgress(xp)
@@ -173,6 +220,7 @@ export default function PlayerCard() {
     setMuscleFlexTick(t => t + 1)
     setShowXPDetails(prev => !prev)
     setShowRanks(false)
+    setShowWorkouts(false)
   }
 
   const handleRankTap = () => {
@@ -180,6 +228,7 @@ export default function PlayerCard() {
     setRankPopTick(t => t + 1)
     setShowRanks(prev => !prev)
     setShowXPDetails(false)
+    setShowWorkouts(false)
   }
 
   const handlePlaceTap = () => {
@@ -199,7 +248,16 @@ export default function PlayerCard() {
       setShowStreakPopup(true)
       setShowXPDetails(false)
       setShowRanks(false)
+      setShowWorkouts(false)
     }
+  }
+
+  const handleWorkoutsTap = () => {
+    haptic.light()
+    setShowWorkouts(prev => !prev)
+    setShowXPDetails(false)
+    setShowRanks(false)
+    setShowStreakPopup(false)
   }
 
   return (
@@ -303,6 +361,8 @@ export default function PlayerCard() {
 
       <div style={styles.bottomRowWrap}>
           <div style={styles.bottomRow}>
+
+            {/* Мини XP-бар — слева */}
             <div style={styles.xpBlock}>
               <button ref={xpButtonRef} onClick={handleXPTap} style={styles.xpBarButton}>
                 <XPBar
@@ -315,7 +375,7 @@ export default function PlayerCard() {
               </button>
 
               {showXPDetails && (
-                <div ref={xpPopupRef} style={{ ...styles.popup, border: `1px solid ${rank.color}66` }}>
+                <div ref={xpPopupRef} style={{ ...styles.popup, ...styles.popupAlignLeft, border: `1px solid ${rank.color}66` }}>
 
                   <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
 
@@ -353,28 +413,72 @@ export default function PlayerCard() {
               )}
             </div>
 
-            <button
-              ref={streakButtonRef}
-              onClick={handleStreakTap}
-              style={styles.streakButton}
-              aria-label={`Серия: ${weeklyStreak}`}
-            >
-              <StreakFlame streak={weeklyStreak} />
-              <span style={styles.streakCount}>x{weeklyStreak}</span>
-            </button>
+            {/* Серия — по центру строки */}
+            <div style={styles.streakZone}>
+              <button
+                ref={streakButtonRef}
+                onClick={handleStreakTap}
+                style={styles.streakButton}
+                aria-label={`Серия: ${weeklyStreak}`}
+              >
+                <StreakFlame streak={weeklyStreak} />
+                <span style={styles.streakCount}>x{weeklyStreak}</span>
+              </button>
 
-            {showStreakPopup && (
-              <div ref={streakPopupRef} style={styles.streakPopup}>
-                <div style={styles.streakPopupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
-                <div style={styles.streakPopupRow}>
-                  <StreakFlame streak={weeklyStreak} />
-                  <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
+              {showStreakPopup && (
+                <div ref={streakPopupRef} style={styles.streakPopup}>
+                  <div style={styles.streakPopupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
+                  <div style={styles.streakPopupRow}>
+                    <StreakFlame streak={weeklyStreak} />
+                    <span style={styles.streakPopupCount}>x{weeklyStreak}</span>
+                  </div>
+                  <div style={styles.streakPopupHint}>
+                    Сброс серии каждую неделю
+                  </div>
                 </div>
-                <div style={styles.streakPopupHint}>
-                  Сброс серии каждую неделю
+              )}
+            </div>
+
+            {/* Тренировки — справа, с попапом (как ячейка в профиле) */}
+            <div style={styles.workoutsBlock}>
+              <button
+                ref={workoutsButtonRef}
+                onClick={handleWorkoutsTap}
+                style={styles.workoutsButton}
+                aria-label={`Тренировок: ${totalWorkouts}`}
+              >
+                <span style={styles.workoutsEmoji}>🏋️</span>
+                <span style={styles.workoutsCount}>{totalWorkouts}</span>
+              </button>
+
+              {showWorkouts && (
+                <div ref={workoutsPopupRef} style={{ ...styles.popup, ...styles.popupAlignRight }}>
+                  <div style={styles.popupSectionTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
+                  {recentWorkouts.length === 0 ? (
+                    <div style={styles.popupEmpty}>
+                      Пока нет завершённых тренировок.<br />
+                      Заверши первую — она появится здесь.
+                    </div>
+                  ) : (
+                    <div style={styles.popupHistoryList}>
+                      {recentWorkouts.map((w, idx) => (
+                        <div key={idx} style={styles.popupRow}>
+                          <span style={styles.popupLabel}>{programTitle(w.program_id)} · День {w.day}</span>
+                          <span style={styles.popupDate}>{fmtDate(w.finished_at)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={styles.popupDivider} />
+                  <div style={styles.popupRow}>
+                    <span style={styles.popupLabel}>Всего тренировок</span>
+                    <span style={{ ...styles.popupAmount, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      {totalWorkouts} <span style={{ fontSize: '15px', lineHeight: 1 }}>🏋️</span>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
       </div>
 
@@ -538,16 +642,24 @@ const styles = {
     width: '100%',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '8px'
   },
+  // Мини-бар слева: фиксированная ширина, прижат к левому краю строки.
   xpBlock: {
-    flex: 1,
-    minWidth: 0,
+    width: '142px',
+    flexShrink: 0,
     position: 'relative'
   },
   xpBarButton: { width: '100%', padding: 0, background: 'transparent' },
+  // Центральная зона серии — забирает свободное место, серия в ней по центру.
+  streakZone: {
+    flex: 1,
+    minWidth: 0,
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center'
+  },
   streakButton: {
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
@@ -555,9 +667,33 @@ const styles = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    minWidth: '52px',
-    justifyContent: 'flex-start'
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Тренировки — справа.
+  workoutsBlock: {
+    flexShrink: 0,
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'flex-end'
+  },
+  workoutsButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: 0,
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  workoutsEmoji: { fontSize: '18px', lineHeight: 1 },
+  workoutsCount: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '14px',
+    color: 'var(--color-text)',
+    letterSpacing: '1px',
+    lineHeight: 1
   },
   streakCount: {
     fontFamily: 'var(--font-display)',
@@ -571,7 +707,8 @@ const styles = {
   popup: {
     position: 'absolute',
     top: 'calc(100% + 8px)',
-    left: 0, right: 0,
+    width: '240px',
+    maxWidth: 'calc(100vw - 48px)',
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
@@ -580,6 +717,19 @@ const styles = {
     padding: '14px 16px 12px',
     zIndex: 50,
     animation: 'popupShowHide 6.4s ease-out forwards'
+  },
+  // Прижать попап к левому краю своего блока (XP-бар слева).
+  popupAlignLeft: { left: 0 },
+  // Прижать попап к правому краю своего блока (тренировки справа).
+  popupAlignRight: { right: 0 },
+  popupDate: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 600,
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.5px',
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
   },
   popupSectionTitle: {
     fontFamily: 'var(--font-display)',
@@ -637,9 +787,10 @@ const styles = {
   },
   streakPopup: {
     position: 'absolute',
-    right: 0,
+    left: '50%',
+    marginLeft: '-110px',
     top: 'calc(100% + 8px)',
-    minWidth: '200px',
+    width: '220px',
     maxWidth: 'calc(100vw - 32px)',
     background: 'rgba(34, 34, 34, 0.95)',
     backdropFilter: 'blur(20px)',
