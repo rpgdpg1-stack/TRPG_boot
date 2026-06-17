@@ -83,6 +83,52 @@ export async function backupUser(targetId) {
 }
 
 /**
+ * Подстраховать ВСЕХ закреплённых друзей, кого ещё не страховал сегодня
+ * (в пределах дневного лимита). Сервер сам выбирает кого и считает награды.
+ * Возвращает { success, count, totalBonus, totalReward }.
+ * count === 0 — некого страховать (всех уже застраховал или лимит на сегодня).
+ */
+export async function backupAllPinned() {
+  const user = getCurrentUser()
+  if (!user) return { success: false, error: 'no_user', count: 0 }
+
+  try {
+    const { data, error } = await supabase.rpc('api_backup_all_pinned', { p_user_id: user.id })
+    if (error) {
+      console.error('[backups] backupAllPinned RPC error:', error)
+      return { success: false, error: 'rpc_error', count: 0 }
+    }
+
+    const count = data?.count || 0
+    const totalBonus = data?.total_bonus || 0
+
+    if (count > 0) {
+      // Тебе упал суммарный бонус — обновим локальные мускулы оптимистично.
+      const fresh = getCurrentUser()
+      if (fresh) {
+        const { setCurrentUser } = await import('./auth')
+        setCurrentUser({ ...fresh, total_muscles: (fresh.total_muscles || 0) + totalBonus })
+      }
+      invalidateLeaderboardCache()
+      cacheInvalidate(`muscle-history:${user.id}`)
+
+      const badge = data?.backer_new_badge_rank_index
+      if (badge !== null && badge !== undefined) emit(EVENTS.BADGE_EARNED, { rank_index: badge })
+    }
+
+    return {
+      success: !!data?.success,
+      count,
+      totalBonus,
+      totalReward: data?.total_reward || 0
+    }
+  } catch (e) {
+    console.error('[backups] backupAllPinned exception:', e)
+    return { success: false, error: 'exception', count: 0 }
+  }
+}
+
+/**
  * Получить невыданные "меня подстраховали" — для модалки-списка.
  * Данные УЖЕ сгруппированы по подстраховавшему (один игрок = один объект).
  * Возвращает массив: { backer_id, id, ids[], count, total_reward, reward,

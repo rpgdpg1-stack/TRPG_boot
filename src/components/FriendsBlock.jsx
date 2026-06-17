@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
-import { getFriendsList } from '../lib/friends-list'
+import { getFriendsList, invalidateFriendsListCache } from '../lib/friends-list'
 import { EVENTS, on } from '../lib/events'
 import { BACKUP_BONUS } from '../lib/backups'
 import FriendRow from './FriendRow'
 import PlayerProfileModal from './PlayerProfileModal'
 import BackupSentToast from './rewards/BackupSentToast'
+import BackupAllButton from './BackupAllButton'
 
 /**
  * Блок «Друзья» на главной (контент секции; заголовок рисует Home).
@@ -22,19 +23,25 @@ export default function FriendsBlock() {
   const [selected, setSelected] = useState(null)
   const [sentToast, setSentToast] = useState(null)
 
+  const load = () => {
+    getFriendsList().then(list => {
+      setPinned((list || []).filter(f => f.pinned_at))
+      setLoaded(true)
+    })
+  }
+
   useEffect(() => {
-    let cancelled = false
-    const load = () => {
-      getFriendsList().then(list => {
-        if (cancelled) return
-        setPinned((list || []).filter(f => f.pinned_at))
-        setLoaded(true)
-      })
-    }
     load()
     const off = on(EVENTS.USER_CHANGED, load)
-    return () => { cancelled = true; off() }
+    return () => { off() }
   }, [])
+
+  const handleBackupAllDone = () => {
+    invalidateFriendsListCache()
+    load()
+  }
+
+  const eligibleCount = pinned.filter(f => !f.backed_today).length
 
   const handleRowTap = (friend) => {
     haptic.light()
@@ -65,6 +72,8 @@ export default function FriendsBlock() {
           </div>
         ))}
       </div>
+
+      {eligibleCount > 0 && <BackupAllButton onDone={handleBackupAllDone} />}
 
       {selected && (
         <PlayerProfileModal

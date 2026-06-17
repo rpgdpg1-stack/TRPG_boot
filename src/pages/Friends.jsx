@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFriendsList, togglePinFriend, PIN_LIMIT } from '../lib/friends-list'
+import { getFriendsList, togglePinFriend, PIN_LIMIT, invalidateFriendsListCache } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
+import BackupAllButton from '../components/BackupAllButton'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
 import UiIcon from '../components/UiIcon'
@@ -50,7 +51,15 @@ export default function Friends() {
     return off
   }, [])
 
-  const pinnedCount = friends.filter(f => f.pinned_at).length
+  const pinnedFriends = friends.filter(f => f.pinned_at)
+  const otherFriends = friends.filter(f => !f.pinned_at)
+  const pinnedCount = pinnedFriends.length
+  const eligiblePinnedCount = pinnedFriends.filter(f => !f.backed_today).length
+
+  const handleBackupAllDone = () => {
+    invalidateFriendsListCache()
+    load()
+  }
 
   const handleInviteTap = async () => {
     haptic.medium()
@@ -140,20 +149,30 @@ export default function Friends() {
         <>
           <div style={styles.hint}>Удерживай друга, чтобы закрепить 📌</div>
 
-          <div style={styles.list}>
-            {friends.map((friend, idx) => (
-              <div
-                key={friend.user_id}
-                style={idx === 0 ? undefined : styles.rowDivider}
-              >
-                <FriendRow
-                  friend={friend}
-                  onTap={handleRowTap}
-                  onLongPress={handleLongPress}
-                />
-              </div>
-            ))}
-          </div>
+          {/* Закреплённые сверху */}
+          {pinnedFriends.length > 0 && (
+            <div style={styles.list}>
+              {pinnedFriends.map((friend, idx) => (
+                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Подстраховать всех закреплённых — под закреплёнными */}
+          {eligiblePinnedCount > 0 && <BackupAllButton onDone={handleBackupAllDone} />}
+
+          {/* Остальные друзья */}
+          {otherFriends.length > 0 && (
+            <div style={{ ...styles.list, marginTop: pinnedFriends.length > 0 ? '12px' : 0 }}>
+              {otherFriends.map((friend, idx) => (
+                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={styles.bottomInvite}>
             <button onClick={handleInviteTap} style={{ ...styles.inviteButtonSecondary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
