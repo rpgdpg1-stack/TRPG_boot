@@ -17,7 +17,6 @@ const KEY = 'home-layout'
 // Управляемые секции главной (профиль и избранное закреплены — их тут нет).
 export const HOME_SECTIONS = [
   { key: 'categories', title: 'РАЗДЕЛЫ' },
-  { key: 'friends',    title: 'ДРУЗЬЯ' },
   { key: 'history',    title: 'ИСТОРИЯ' },
   { key: 'quests',     title: 'ДНЕВНОЙ БУСТ' }
 ]

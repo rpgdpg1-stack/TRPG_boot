@@ -12,7 +12,6 @@ import { EVENTS, on } from '../lib/events'
 import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
 import HistoryRow from '../components/HistoryRow'
-import FriendsBlock from '../components/FriendsBlock'
 import CategoryList from '../components/CategoryList'
 import FavCardBody from '../components/FavCardBody'
 
@@ -248,16 +247,8 @@ export default function Home() {
     </>
   )
 
-  const renderFriends = () => (
-    <>
-      <SectionHeader title="ДРУЗЬЯ" onTap={() => { haptic.light(); navigate('/friends') }} />
-      <FriendsBlock />
-    </>
-  )
-
   const SECTION_RENDERERS = {
     categories: renderCategories,
-    friends: renderFriends,
     history: renderHistory,
     quests: renderQuests
   }
