@@ -381,7 +381,7 @@ const favCardStyles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '100px',
+    minHeight: '165px',
     cursor: 'pointer'
   },
   startTag: {
@@ -493,7 +493,7 @@ const styles = {
     cursor: 'pointer'
   },
   favSkeleton: {
-    minHeight: '100px',
+    minHeight: '165px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     opacity: 0.4
@@ -510,7 +510,8 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: '6px'
+    gap: '6px',
+    marginTop: '8px'
   },
   favDot: {
     height: '6px',

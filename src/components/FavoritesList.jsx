@@ -116,7 +116,7 @@ function EmptyCard({ onAdd }) {
 
 const styles = {
   skeleton: {
-    height: '100px',
+    height: '130px',
     borderRadius: 'var(--radius-card)',
     background: 'rgba(255,255,255,0.04)'
   },
@@ -145,7 +145,7 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '100px',
+    minHeight: '130px',
     textAlign: 'left'
   },
   heartBtn: {
@@ -169,7 +169,7 @@ const styles = {
     justifyContent: 'center',
     gap: '8px',
     width: '100%',
-    minHeight: '88px',
+    minHeight: '130px',
     padding: '16px 18px',
     border: '1.5px dashed rgba(255,255,255,0.15)',
     borderRadius: 'var(--radius-card)',
