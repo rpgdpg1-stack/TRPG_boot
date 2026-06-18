@@ -191,11 +191,11 @@ const styles = {
     marginBottom: '20px'
   },
   title: {
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontWeight: 800,
     fontSize: '26px',
     color: 'var(--color-text)',
-    letterSpacing: '2px',
+    letterSpacing: 'normal',
     lineHeight: 1,
     margin: 0
   },
@@ -208,11 +208,11 @@ const styles = {
     textAlign: 'center'
   },
   groupLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '3px',
+    letterSpacing: 'normal',
     margin: '20px 0 12px',
     paddingLeft: '4px'
   },

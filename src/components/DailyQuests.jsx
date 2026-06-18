@@ -308,59 +308,55 @@ export default function DailyQuests() {
                   transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
                 }}
               >
-                {/* Содержимое слота. Под блюром, если слот ещё закрыт по времени. */}
-                <div style={{
-                  ...styles.slotInner,
-                  filter: locked ? 'blur(4px)' : 'none',
-                  opacity: locked ? 0.5 : 1
-                }}>
-                  <div style={styles.checkboxWrap}>
-                    <PixelCheckbox checked={isDone} size={20} />
-                  </div>
-
-                  <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : 1 }}>
-                    {quest.emoji}
-                  </span>
-
-                  <div style={styles.textCol}>
-                    <span style={{
-                      ...styles.questText,
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
-                    }}>
-                      {quest.title}
-                    </span>
-                    <span style={{ ...styles.benefitText, opacity: isDone ? 0.4 : 1 }}>
-                      {quest.benefit}
-                    </span>
-                  </div>
-
-                  <div style={styles.rewardBadgeWrap}>
-                    <span style={{
-                      ...styles.rewardBadge,
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      opacity: isDone ? 0.55 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      +{quest.xp} <MuscleIcon size={18} earned={isDone} />
-                    </span>
-
-                    {reward && (
-                      <span key={reward.key} style={styles.floatingReward}>
-                        +{reward.xp} <MuscleIcon size={18} earned={true} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Плашка времени поверх блюра — только для закрытого слота. */}
-                {locked && (
-                  <div style={styles.lockedOverlay}>
-                    <span style={styles.lockedOverlayText}>
+                {locked ? (
+                  /* Закрытый слот — простая тёмная карточка с замком, без блюра. */
+                  <div style={styles.lockedInner}>
+                    <span style={styles.lockIcon}>🔒</span>
+                    <span style={styles.lockedText}>
                       Откроется в {openLabel(quest.openBootHour)} {quest.periodEmoji}
                     </span>
+                  </div>
+                ) : (
+                  <div style={{ ...styles.slotInner, opacity: 1 }}>
+                    <div style={styles.checkboxWrap}>
+                      <PixelCheckbox checked={isDone} size={20} />
+                    </div>
+
+                    <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : 1 }}>
+                      {quest.emoji}
+                    </span>
+
+                    <div style={styles.textCol}>
+                      <span style={{
+                        ...styles.questText,
+                        textDecoration: isDone ? 'line-through' : 'none',
+                        color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
+                      }}>
+                        {quest.title}
+                      </span>
+                      <span style={{ ...styles.benefitText, opacity: isDone ? 0.4 : 1 }}>
+                        {quest.benefit}
+                      </span>
+                    </div>
+
+                    <div style={styles.rewardBadgeWrap}>
+                      <span style={{
+                        ...styles.rewardBadge,
+                        textDecoration: isDone ? 'line-through' : 'none',
+                        opacity: isDone ? 0.55 : 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        +{quest.xp} <MuscleIcon size={18} earned={isDone} />
+                      </span>
+
+                      {reward && (
+                        <span key={reward.key} style={styles.floatingReward}>
+                          +{reward.xp} <MuscleIcon size={18} earned={true} />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </button>
@@ -489,23 +485,29 @@ const styles = {
     width: '100%',
     transition: 'filter 0.3s ease, opacity 0.3s ease'
   },
-  // Плашка поверх заблокированного слота с временем открытия.
-  lockedOverlay: {
-    position: 'absolute',
-    inset: 0,
+  // Закрытый слот — тёмная карточка с замком и временем открытия (без блюра).
+  lockedInner: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'none'
+    gap: '10px',
+    width: '100%',
+    padding: '4px 4px',
+    borderRadius: 'var(--radius-medium)',
+    background: 'rgba(255,255,255,0.03)'
   },
-  lockedOverlayText: {
+  lockIcon: {
+    fontSize: '18px',
+    lineHeight: 1,
+    flexShrink: 0,
+    opacity: 0.7
+  },
+  lockedText: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
-    color: 'var(--color-text)',
+    color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    textShadow: '0 1px 4px rgba(0,0,0,0.5)'
+    whiteSpace: 'nowrap'
   },
   rewardBadgeWrap: {
     position: 'relative',
