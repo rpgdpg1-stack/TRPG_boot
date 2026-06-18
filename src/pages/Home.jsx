@@ -381,7 +381,7 @@ const favCardStyles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '165px',
+    minHeight: '130px',
     cursor: 'pointer'
   },
   startTag: {
@@ -493,7 +493,7 @@ const styles = {
     cursor: 'pointer'
   },
   favSkeleton: {
-    minHeight: '165px',
+    minHeight: '130px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     opacity: 0.4
