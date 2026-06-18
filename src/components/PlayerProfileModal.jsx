@@ -153,7 +153,7 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <button onClick={handleBackup} className="press-tile" style={styles.backupButton}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  Подстраховать +100 <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
+                  Подстраховать <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
                 </span>
               </button>
               {todayCount != null && (

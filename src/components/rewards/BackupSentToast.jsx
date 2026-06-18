@@ -3,15 +3,29 @@ import { createPortal } from 'react-dom'
 import MuscleIcon from '../MuscleIcon'
 
 /**
- * Модалка-подтверждение после того как ТЫ подстраховал игрока.
- * Показывает что target получил +100, а ты +20 за поддержку.
+ * Модалка-подтверждение после того как ТЫ подстраховал игрока(ов).
+ * Акцент — на ТВОём бонусе (крупно/жирно), отправленное другу — помельче.
  * Анимированный бицепс + искорки (как в завершении тренировки).
  *
- * @param targetName   - имя того кого подстраховал
- * @param bonus        - сколько получил ты (по умолчанию 20)
+ * Одиночная подстраховка: targetName + reward=100 + bonus=20.
+ * Пакетная («подстраховать всех»): count>1, reward=N×100, bonus=N×20.
+ *
+ * @param targetName   - имя того кого подстраховал (одиночная)
+ * @param count        - сколько друзей подстраховал разом (по умолчанию 1)
+ * @param reward       - сколько ушло друзьям суммарно (по умолчанию 100)
+ * @param bonus        - сколько получил ты суммарно (по умолчанию 20)
  * @param onConfirm    - закрыть
  */
-export default function BackupSentToast({ targetName, bonus = 20, onConfirm }) {
+function pluralFriendsDone(n) {
+  const last = n % 10, lastTwo = n % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return `${n} друзей подстраховано`
+  if (last === 1) return `${n} друг подстрахован`
+  if (last >= 2 && last <= 4) return `${n} друга подстраховано`
+  return `${n} друзей подстраховано`
+}
+
+export default function BackupSentToast({ targetName, count = 1, reward = 100, bonus = 20, onConfirm }) {
+  const isBatch = count > 1
   const sceneRef = useRef(null)
 
   useEffect(() => {
@@ -60,12 +74,17 @@ export default function BackupSentToast({ targetName, bonus = 20, onConfirm }) {
         </div>
 
         <div style={styles.title}>ПОДДЕРЖКА ОТПРАВЛЕНА</div>
+
+        {isBatch && <div style={styles.batchLine}>{pluralFriendsDone(count)}</div>}
+
         <div style={styles.subtitle}>
-          {targetName ? `${targetName} получает` : 'Игрок получает'} +100 <MuscleIcon size={14} earned={true} />
+          {isBatch
+            ? <>друзьям отправлено +{reward} <MuscleIcon size={13} earned={true} /></>
+            : <>{targetName ? `${targetName} получает` : 'Игрок получает'} +{reward} <MuscleIcon size={13} earned={true} /></>}
         </div>
 
         <div style={styles.bonusBadge}>
-          +{bonus} <MuscleIcon size={20} earned={true} /> тебе за поддержку
+          +{bonus} <MuscleIcon size={24} earned={true} /> тебе за поддержку
         </div>
 
         <button onClick={onConfirm} style={styles.button}>ОК</button>
@@ -132,29 +151,38 @@ const styles = {
     letterSpacing: '2px',
     textAlign: 'center'
   },
+  batchLine: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    textAlign: 'center'
+  },
+  // Что ушло другу — помельче (второстепенно).
   subtitle: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: '12px',
     color: 'var(--color-text-secondary)',
     fontWeight: 500
   },
+  // Твой бонус — главный акцент: крупнее и жирнее.
   bonusBadge: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: '7px',
     marginTop: '4px',
-    padding: '8px 16px',
-    background: 'rgba(158, 209, 83, 0.1)',
-    border: '1px solid rgba(158, 209, 83, 0.3)',
-    borderRadius: '12px',
+    padding: '10px 18px',
+    background: 'rgba(158, 209, 83, 0.12)',
+    border: '1px solid rgba(158, 209, 83, 0.35)',
+    borderRadius: '14px',
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
+    fontWeight: 700,
+    fontSize: '17px',
     color: 'var(--color-primary)',
-    letterSpacing: '1px',
+    letterSpacing: '0.5px',
     textShadow: '0 0 10px rgba(158, 209, 83, 0.4)'
   },
   button: {

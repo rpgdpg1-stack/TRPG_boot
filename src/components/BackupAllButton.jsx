@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { backupAllPinned } from '../lib/backups'
 import MuscleIcon from './MuscleIcon'
+import BackupSentToast from './rewards/BackupSentToast'
 
 /**
  * Кнопка «Подстраховать всех» — разом страхует всех закреплённых друзей,
@@ -30,8 +31,7 @@ export default function BackupAllButton({ onDone }) {
   const [busy, setBusy] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [flyer, setFlyer] = useState(null) // { bonus, count, key }
-
-  if (hidden) return null
+  const [result, setResult] = useState(null) // { count, bonus, reward } — для модалки
 
   const handleTap = async () => {
     if (busy) return
@@ -51,38 +51,51 @@ export default function BackupAllButton({ onDone }) {
     haptic.success()
     setFlyer({ bonus: res.totalBonus, count: res.count, key: Date.now() })
 
-    // Дать бицепсу улететь, затем спрятать кнопку и обновить список.
+    // Бицепс не спеша улетает, затем прячем кнопку и показываем модалку-итог.
     setTimeout(() => {
       setHidden(true)
-      onDone?.()
-    }, 1100)
+      setResult({ count: res.count, bonus: res.totalBonus, reward: res.totalReward })
+    }, 1900)
   }
 
   return (
-    <button onClick={handleTap} className="press-tile" style={styles.btn}>
-      <span style={styles.label}>
-        {flyer
-          ? `${flyer.count} ${pluralPins(flyer.count)} ${doneWord(flyer.count)}`
-          : 'Подстраховать всех'}
-        {!flyer && <MuscleIcon size={20} earned={true} />}
-      </span>
+    <>
+      {!hidden && (
+        <button onClick={handleTap} className="press-tile" style={styles.btn}>
+          <span style={styles.label}>
+            {flyer
+              ? `${flyer.count} ${pluralPins(flyer.count)} ${doneWord(flyer.count)}`
+              : 'Подстраховать всех'}
+            {!flyer && <MuscleIcon size={20} earned={true} />}
+          </span>
 
-      {flyer && (
-        <span key={flyer.key} style={styles.flyer}>
-          <MuscleIcon size={32} earned={true} flexTrigger={flyer.key} />
-          <span style={styles.flyerPlus}>+{flyer.bonus}</span>
-        </span>
+          {flyer && (
+            <span key={flyer.key} style={styles.flyer}>
+              <MuscleIcon size={32} earned={true} flexTrigger={flyer.key} />
+              <span style={styles.flyerPlus}>+{flyer.bonus}</span>
+            </span>
+          )}
+
+          <style>{`
+            @keyframes backupAllFly {
+              0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+              15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
+              30%  { opacity: 1; transform: translate(-50%, -65%) scale(1.1); }
+              100% { opacity: 0; transform: translate(-50%, -200%) scale(0.95); }
+            }
+          `}</style>
+        </button>
       )}
 
-      <style>{`
-        @keyframes backupAllFly {
-          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-          20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
-          35%  { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
-          100% { opacity: 0; transform: translate(-50%, -190%) scale(0.95); }
-        }
-      `}</style>
-    </button>
+      {result && (
+        <BackupSentToast
+          count={result.count}
+          reward={result.reward}
+          bonus={result.bonus}
+          onConfirm={() => { setResult(null); onDone?.() }}
+        />
+      )}
+    </>
   )
 }
 
@@ -124,7 +137,7 @@ const styles = {
     zIndex: 5,
     textShadow: '0 0 10px rgba(158, 209, 83, 0.7)',
     filter: 'drop-shadow(0 0 10px rgba(250, 223, 190, 0.5))',
-    animation: 'backupAllFly 1s ease-out forwards'
+    animation: 'backupAllFly 1.8s ease-out forwards'
   },
   flyerPlus: {
     fontFamily: 'var(--font-display)',
