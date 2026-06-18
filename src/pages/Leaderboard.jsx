@@ -210,7 +210,7 @@ export default function Leaderboard() {
         <div style={styles.titleRow}>
           <h1 style={styles.title}>РЕЙТИНГ</h1>
           <button onClick={handleInfoTap} style={styles.infoButton} aria-label="Правила">
-            <UiIcon name="info" size={22} color="#3FA2F7" />
+            <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
           </button>
         </div>
         <div style={styles.seasonRow}>
