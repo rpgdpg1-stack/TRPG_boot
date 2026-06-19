@@ -57,6 +57,13 @@ export default function SwapExercise() {
     window.scrollTo(0, 0)
   }, [])
 
+  // Таб-бара на /swap нет, а кнопка «Сменить» прибита к низу со своим
+  // градиентом — глобальный нижний скрим (.app::after) тут лишний. Гасим.
+  useEffect(() => {
+    document.body.classList.add('hide-app-scrim')
+    return () => document.body.classList.remove('hide-app-scrim')
+  }, [])
+
   useEffect(() => {
     // При нажатии "Назад" — возвращаемся на день, передаём order_num карточки
     // с которой пришли, но БЕЗ флага wasSwapped. Это нужно WorkoutDay чтобы
@@ -435,26 +442,28 @@ const styles = {
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   },
+  // Футер — как в пикере (отступы от края + градиент-подложка).
   bottomBar: {
     position: 'fixed',
     bottom: '0',
     left: '0',
     right: '0',
-    padding: '24px 16px 20px',
-    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.85) 30%, var(--color-bg) 70%)',
+    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.85) 40%, var(--color-bg) 85%)',
     zIndex: 50,
     pointerEvents: 'none'
   },
+  // Размеры и скругление — как у кнопки в пикере; заливка и контур свои.
   confirmButton: {
     width: '100%',
-    padding: '16px',
+    padding: '18px',
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',
     fontWeight: 800,
     letterSpacing: '2px',
-    borderRadius: 'var(--radius-medium)',
+    borderRadius: 'var(--radius-card)',
     border: 'none',
     pointerEvents: 'auto',
     transition: 'opacity 0.2s ease, transform 0.1s ease',

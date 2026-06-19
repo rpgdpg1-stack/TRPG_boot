@@ -133,10 +133,10 @@ img, button { -webkit-user-drag: none; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(var(--tabbar-height) + var(--tabbar-bottom) + 24px);
+  height: calc(var(--tabbar-height) + var(--tabbar-bottom));
   pointer-events: none;
   z-index: 90;
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.85) 30%, rgba(13, 12, 12, 0) 100%);
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.5) 40%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
   mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
 }
@@ -145,6 +145,11 @@ img, button { -webkit-user-drag: none; }
    он ложился поверх кнопок и прилипал к клавиатуре на iOS. Гасим его, пока
    открыт конструктор (класс вешается из ProgramConstructor). */
 body.hide-app-scrim .app::after { display: none; }
+
+/* При открытой клавиатуре fixed-скрим на iOS «прилипает» к клавиатуре сверху —
+   затемнение над клавишами. Гасим его, пока клавиатура открыта (класс
+   keyboard-open вешается из App по visualViewport). */
+body.keyboard-open .app::after { display: none; }
 
 .page {
   padding: calc(var(--tg-safe-top) - 24px) 16px 24px;

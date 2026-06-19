@@ -180,6 +180,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       )}
 
+      {/* Обёртка списка: сверху fade-scrim (как под карточкой игрока на главной) —
+          список уезжает под теги групп/подгрупп плавно, без обрыва. */}
+      <div style={styles.listWrap}>
+        <div style={styles.topFade} aria-hidden="true" />
       {/* Список. key пересоздаёт контейнер при смене фильтра — новый монтируется
           с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает). */}
       <div key={`${activeGroup || 'all'}-${activeSub || 'all'}-${search}`} style={styles.list}>
@@ -231,6 +235,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           )
         })}
       </div>
+      </div>
 
       {/* Кнопку прячем при открытой клавиатуре; показываем с задержкой при закрытии. */}
       {!kbOpen && (
@@ -275,12 +280,12 @@ const styles = {
     color: 'var(--color-text-secondary)', fontSize: '16px'
   },
   chipsRow: {
-    display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px',
+    display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px 6px',
     flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
   subPanel: {
-    margin: '2px 16px 4px',
+    margin: '2px 16px 6px',
     padding: '10px 12px',
     background: 'rgba(255,255,255,0.05)',
     borderRadius: 'var(--radius-medium)',
@@ -299,9 +304,32 @@ const styles = {
     flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap'
   },
+  // Обёртка списка — даёт точку отсчёта для верхнего fade-scrim (absolute).
+  listWrap: {
+    position: 'relative',
+    flex: '1 1 0%',
+    minHeight: 0,
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  // Верхний fade-scrim — как под карточкой игрока на главной (градиент + blur).
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '24px',
+    zIndex: 5,
+    pointerEvents: 'none',
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+  },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: '8px 16px 110px',
+    padding: '2px 16px 110px',
     display: 'block',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'

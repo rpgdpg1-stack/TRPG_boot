@@ -80,6 +80,24 @@ export default function App() {
       }).catch(() => {})
     })
 
+    // Глобальный детектор клавиатуры: вешаем body.keyboard-open пока она открыта.
+    // По нему CSS гасит нижний fade-scrim (.app::after), который на iOS иначе
+    // «прилипает» к клавиатуре сверху (затемнение над клавишами).
+    const vv = window.visualViewport
+    let kbCleanup = () => {}
+    if (vv) {
+      const onResize = () => {
+        const open = (window.innerHeight - vv.height) > 150
+        document.body.classList.toggle('keyboard-open', open)
+      }
+      vv.addEventListener('resize', onResize)
+      onResize()
+      kbCleanup = () => {
+        vv.removeEventListener('resize', onResize)
+        document.body.classList.remove('keyboard-open')
+      }
+    }
+
     // Когда сеть возвращается — запускаем синк очереди.
     const offNet = onNetworkChange((isOnline) => {
       if (isOnline) {
@@ -91,6 +109,7 @@ export default function App() {
     return () => {
       cancelled = true
       offNet()
+      kbCleanup()
     }
   }, [])
 

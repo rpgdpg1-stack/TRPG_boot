@@ -73,6 +73,10 @@ export default function WorkoutDay() {
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
   const [isReturning, setIsReturning] = useState(false)
 
+  // Открыта ли клавиатура (ввод веса на карточке). Пока true — прибитую к низу
+  // кнопку «Завершить» прячем, чтобы она не липла к клавиатуре.
+  const [kbOpen, setKbOpen] = useState(false)
+
   const cardRefs = useRef(new Map())
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -101,6 +105,30 @@ export default function WorkoutDay() {
   useEffect(() => {
     setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))
   }, [programId, day])
+
+  // На странице тренировки таб-бара нет, а кнопка «Завершить» прибита к низу
+  // со своим градиентом-подложкой. Глобальный нижний скрим (.app::after) тут
+  // лишний (двойное затемнение) — гасим на время страницы.
+  useEffect(() => {
+    document.body.classList.add('hide-app-scrim')
+    return () => document.body.classList.remove('hide-app-scrim')
+  }, [])
+
+  // Клавиатура (ввод веса): прячем кнопку сразу при открытии, показываем с
+  // задержкой при закрытии — чтобы не моргала на анимации клавиатуры.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    let t = null
+    const onResize = () => {
+      const open = (window.innerHeight - vv.height) > 150
+      if (open) { if (t) { clearTimeout(t); t = null } setKbOpen(true) }
+      else { if (t) clearTimeout(t); t = setTimeout(() => setKbOpen(false), 350) }
+    }
+    vv.addEventListener('resize', onResize)
+    onResize()
+    return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -517,23 +545,27 @@ export default function WorkoutDay() {
           </div>
         )}
 
-        {!loading && slots.length > 0 && (
-          <div style={styles.finishWrap}>
-            <button
-              onClick={handleFinishButtonTap}
-              disabled={!canFinish}
-              style={{
-                ...styles.finishButton,
-                ...(isAllDone ? styles.finishButtonReady : {}),
-                opacity: canFinish ? 1 : 0.35,
-                cursor: canFinish ? 'pointer' : 'default'
-              }}
-            >
-              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Кнопка «Завершить» прибита к низу (как «Добавить упражнения» в пикере):
+          градиент-подложка + кнопка. При открытой клавиатуре прячем, чтобы не
+          липла к клавишам. */}
+      {!loading && slots.length > 0 && !kbOpen && (
+        <div style={styles.finishBar}>
+          <button
+            onClick={handleFinishButtonTap}
+            disabled={!canFinish}
+            style={{
+              ...styles.finishButton,
+              ...(isAllDone ? styles.finishButtonReady : {}),
+              opacity: canFinish ? 1 : 0.35,
+              cursor: canFinish ? 'pointer' : 'default'
+            }}
+          >
+            {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+          </button>
+        </div>
+      )}
 
       {actionSlot && (
         <ExerciseActionMenu
@@ -750,7 +782,8 @@ function groupByMuscleGroup(slots) {
 
 const styles = {
   page: {
-    padding: '0 16px 40px',
+    padding: '0 16px',
+    paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
     minHeight: '100dvh'
   },
   stickyHeader: {
@@ -891,9 +924,17 @@ const styles = {
     color: 'var(--color-text-secondary)',
     wordBreak: 'break-word'
   },
-  finishWrap: {
-    marginTop: '28px',
-    paddingTop: '8px'
+  // Футер кнопки «Завершить» — прибит к низу (как пикер/конструктор):
+  // градиент-подложка, список уезжает под него; сама кнопка кликабельна.
+  finishBar: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
+    pointerEvents: 'none',
+    zIndex: 40
   },
   finishButton: {
     width: '100%',
@@ -904,8 +945,9 @@ const styles = {
     fontSize: '14px',
     fontWeight: 800,
     letterSpacing: '2px',
-    borderRadius: 'var(--radius-medium)',
+    borderRadius: 'var(--radius-card)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
+    pointerEvents: 'auto',
     transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease'
   },
   finishButtonReady: {
