@@ -17,6 +17,7 @@ import {
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
+import ActionButton from '../components/ActionButton'
 
 /**
  * Экран дня тренировки.
@@ -552,18 +553,13 @@ export default function WorkoutDay() {
           липла к клавишам. */}
       {!loading && slots.length > 0 && !kbOpen && (
         <div style={styles.finishBar}>
-          <button
+          <ActionButton
             onClick={handleFinishButtonTap}
             disabled={!canFinish}
-            style={{
-              ...styles.finishButton,
-              ...(isAllDone ? styles.finishButtonReady : {}),
-              opacity: canFinish ? 1 : 0.35,
-              cursor: canFinish ? 'pointer' : 'default'
-            }}
+            variant={isAllDone ? 'accent' : 'neutral'}
           >
             {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
-          </button>
+          </ActionButton>
         </div>
       )}
 
@@ -935,26 +931,6 @@ const styles = {
     background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
     pointerEvents: 'none',
     zIndex: 40
-  },
-  finishButton: {
-    width: '100%',
-    padding: '18px',
-    background: 'var(--color-card)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-card)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    pointerEvents: 'auto',
-    transition: 'opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease'
-  },
-  finishButtonReady: {
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    border: '1px solid var(--color-primary)',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
   },
   dayLetterCol: {
     display: 'flex',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
+import ActionButton from '../components/ActionButton'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -250,17 +251,14 @@ export default function SwapExercise() {
       </div>
 
       <div style={styles.bottomBar}>
-        <button
+        <ActionButton
           onClick={handleConfirm}
           disabled={!selectedId || selectedId === currentExerciseId || saving || loading}
-          style={{
-            ...styles.confirmButton,
-            opacity: (!selectedId || selectedId === currentExerciseId || saving || loading) ? 0.4 : 1,
-            cursor: (!selectedId || selectedId === currentExerciseId || saving || loading) ? 'default' : 'pointer'
-          }}
+          variant="accent"
+          style={{ fontSize: '15px', letterSpacing: '2px' }}
         >
           {saving ? 'Сохранение...' : 'СМЕНИТЬ'}
-        </button>
+        </ActionButton>
       </div>
     </div>
   )
@@ -453,22 +451,6 @@ const styles = {
     zIndex: 50,
     pointerEvents: 'none'
   },
-  // Размеры и скругление — как у кнопки в пикере; заливка и контур свои.
-  confirmButton: {
-    width: '100%',
-    padding: '18px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-card)',
-    border: 'none',
-    pointerEvents: 'auto',
-    transition: 'opacity 0.2s ease, transform 0.1s ease',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
-  }
 }
 
 const rowStyles = {

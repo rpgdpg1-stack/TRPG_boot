@@ -7,6 +7,7 @@ import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customP
 import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
+import ActionButton from '../components/ActionButton'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -380,18 +381,13 @@ export default function ProgramConstructor() {
               : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
           </button>
 
-          <button
+          <ActionButton
             onClick={handleSave}
             disabled={!canSave}
-            className="press-tile"
-            style={{
-              ...styles.saveButton,
-              ...(canSave ? styles.saveButtonReady : {}),
-              opacity: canSave ? 1 : 0.35
-            }}
+            variant="accent"
           >
             {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
-          </button>
+          </ActionButton>
         </div>,
         document.body
       )}
@@ -556,14 +552,6 @@ const styles = {
     color: '#FF6B6B',
     textAlign: 'center'
   },
-  saveButton: {
-    width: '100%', padding: '18px',
-    background: 'var(--color-card)', color: 'var(--color-text)',
-    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-card)',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '1.5px',
-    pointerEvents: 'auto'
-  },
-  saveButtonReady: { background: 'var(--color-primary)', color: '#0D0C0C', border: '1px solid var(--color-primary)' },
   exitOverlay: {
     position: 'fixed', inset: 0, zIndex: 300,
     background: 'rgba(13,12,12,0.75)',
