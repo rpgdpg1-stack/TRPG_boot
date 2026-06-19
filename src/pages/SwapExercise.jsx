@@ -449,8 +449,8 @@ const styles = {
     right: '0',
     display: 'flex',
     justifyContent: 'center',
-    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.85) 40%, var(--color-bg) 85%)',
+    padding: '44px 16px calc(16px + env(safe-area-inset-bottom))',
+    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.35) 55%, rgba(13, 12, 12, 0.8) 82%, var(--color-bg) 100%)',
     zIndex: 50,
     pointerEvents: 'none'
   },
