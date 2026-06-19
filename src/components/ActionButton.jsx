@@ -49,29 +49,29 @@ const styles = {
     cursor: 'pointer',
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
-  // Выключена: прозрачнее серой кнопки пикера + лёгкий блюр, текст тусклый.
+  // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Без обводки.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
-    border: '1.5px dashed rgba(255, 255, 255, 0.10)',
+    border: 'none',
     color: 'rgba(136, 136, 136, 0.55)',
     cursor: 'default'
   },
-  // Серая — как «Добавить упражнения» в пикере.
+  // Серая — полупрозрачный фон + блюр, без обводки (пунктир только у кнопки
+  // «Добавить упражнение» в конструкторе/пикере, тут не нужен).
   neutral: {
     background: 'rgba(34, 34, 34, 0.55)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
-    border: '1.5px dashed rgba(255, 255, 255, 0.18)',
+    border: 'none',
     color: 'var(--color-text-secondary)'
   },
-  // Зелёная — тот же полупрозрачный эффект + блюр, акцент наш зелёный.
+  // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в
+  // инфо-попапе рейтинга). Без обводки.
   accent: {
-    background: 'rgba(158, 209, 83, 0.16)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: '1.5px solid rgba(158, 209, 83, 0.55)',
-    color: 'var(--color-primary)'
+    background: 'var(--color-primary)',
+    border: 'none',
+    color: '#0D0C0C'
   }
 }
