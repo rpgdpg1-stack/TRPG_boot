@@ -440,6 +440,11 @@ export default function WorkoutDay() {
             />
           </div>
         </div>
+
+        {/* Fade-scrim: контент уходит под залипающую шапку плавно (градиент +
+            лёгкий blur), как под карточкой игрока на главной. pointer-events:none
+            чтобы не перехватывал тапы по карточкам упражнений под ним. */}
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={{
@@ -754,11 +759,25 @@ const styles = {
     zIndex: 30,
     background: 'var(--color-bg)',
     paddingTop: 'calc(var(--tg-safe-top) - 24px)',
-    paddingBottom: '14px',
+    paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
+  },
+  stickyFade: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 29,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
   headerRow: {
     display: 'flex',
