@@ -14,6 +14,7 @@
 export default function ActionButton({
   variant = 'neutral',
   disabled = false,
+  hug = false,
   onClick,
   children,
   style,
@@ -27,7 +28,7 @@ export default function ActionButton({
       onClick={onClick}
       disabled={disabled}
       className={`press-tile ${className}`.trim()}
-      style={{ ...styles.base, ...look, ...style }}
+      style={{ ...styles.base, ...(hug ? styles.hug : styles.full), ...look, ...style }}
       {...rest}
     >
       {children}
@@ -37,7 +38,6 @@ export default function ActionButton({
 
 const styles = {
   base: {
-    width: '100%',
     padding: '18px',
     borderRadius: 'var(--radius-card)',
     fontFamily: 'var(--font-manrope)',
@@ -47,31 +47,38 @@ const styles = {
     textAlign: 'center',
     pointerEvents: 'auto',
     cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
-  // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Без обводки.
+  // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
+  full: { width: '100%' },
+  // По размеру контента (скругление облегает текст). Контейнер центрирует.
+  hug: { width: 'auto', padding: '18px 40px' },
+  // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Сплошная тонкая рамка.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
-    border: 'none',
+    border: '1.5px solid rgba(255, 255, 255, 0.12)',
     color: 'rgba(136, 136, 136, 0.55)',
     cursor: 'default'
   },
-  // Серая — полупрозрачный фон + блюр, без обводки (пунктир только у кнопки
-  // «Добавить упражнение» в конструкторе/пикере, тут не нужен).
+  // Серая — полупрозрачный фон + блюр, сплошная рамка (пунктир оставлен только
+  // кнопке «Добавить упражнение» в конструкторе/пикере).
   neutral: {
     background: 'rgba(34, 34, 34, 0.55)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
-    border: 'none',
+    border: '1.5px solid rgba(255, 255, 255, 0.20)',
     color: 'var(--color-text-secondary)'
   },
   // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в
-  // инфо-попапе рейтинга). Без обводки.
+  // инфо-попапе рейтинга), сплошная рамка чуть темнее заливки для чёткого края.
   accent: {
     background: 'var(--color-primary)',
-    border: 'none',
+    border: '1.5px solid var(--color-primary-dark)',
     color: '#0D0C0C'
   }
 }

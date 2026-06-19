@@ -557,6 +557,7 @@ export default function WorkoutDay() {
             onClick={handleFinishButtonTap}
             disabled={!canFinish}
             variant={isAllDone ? 'accent' : 'neutral'}
+            hug
           >
             {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
           </ActionButton>
@@ -927,6 +928,8 @@ const styles = {
     bottom: 0,
     left: 0,
     right: 0,
+    display: 'flex',
+    justifyContent: 'center',
     padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
     background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
     pointerEvents: 'none',
