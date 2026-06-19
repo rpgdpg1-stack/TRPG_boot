@@ -14,6 +14,14 @@ const APP_BG = '#0D0C0C'
 let currentBackHandler = null
 let currentSettingsHandler = null
 
+// Обработчики, реально привязанные сейчас к нативным кнопкам. Отличаются от
+// currentBackHandler/currentSettingsHandler («желаемых»): снимать через offClick
+// нужно именно ПРИВЯЗАННЫЙ, иначе при смене обработчика старый не удаляется и
+// они копятся — «Назад» начинает дёргать стопку устаревших колбэков и ведёт
+// не туда / не реагирует.
+let registeredBackHandler = null
+let registeredSettingsHandler = null
+
 // «Желаемое» состояние кнопок шапки. Нужно, чтобы переустановить его после
 // пробуждения свёрнутого приложения: Telegram при сворачивании усыпляет webview
 // и при возврате нативный мост к кнопкам ломается — старый обработчик
@@ -25,9 +33,15 @@ let settingsVisible = false
 
 function applyBackButton() {
   if (!tg?.BackButton) return
+  // Сначала снимаем ИМЕННО привязанный обработчик (а не желаемый), иначе старые
+  // копятся. Идемпотентно: при resync переустановит тот же без дублей.
+  if (registeredBackHandler) {
+    try { tg.BackButton.offClick(registeredBackHandler) } catch (e) { /* ignore */ }
+    registeredBackHandler = null
+  }
   if (backVisible && currentBackHandler) {
-    try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
     tg.BackButton.onClick(currentBackHandler)
+    registeredBackHandler = currentBackHandler
     tg.BackButton.show()
   } else {
     tg.BackButton.hide()
@@ -37,9 +51,13 @@ function applyBackButton() {
 function applySettingsButton() {
   if (!tg?.SettingsButton) return
   try {
+    if (registeredSettingsHandler) {
+      try { tg.SettingsButton.offClick(registeredSettingsHandler) } catch (e) { /* ignore */ }
+      registeredSettingsHandler = null
+    }
     if (settingsVisible && currentSettingsHandler) {
-      try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
       tg.SettingsButton.onClick(currentSettingsHandler)
+      registeredSettingsHandler = currentSettingsHandler
       tg.SettingsButton.show()
     } else {
       tg.SettingsButton.hide()
@@ -155,16 +173,14 @@ export const haptic = {
 /**
  * Кнопка "Назад" в шапке Telegram.
  *
- * setHandler — главный метод. При смене обработчика:
- *  1. Удаляем СТАРЫЙ конкретный handler через offClick(currentBackHandler)
- *  2. Сохраняем новый в currentBackHandler
- *  3. Регистрируем новый через onClick(newHandler)
- *  4. Показываем кнопку
+ * setHandler/show/hide лишь записывают «желаемое» состояние (видимость +
+ * обработчик), а фактическую привязку делает applyBackButton: снимает РАНЕЕ
+ * привязанный handler (registeredBackHandler) и ставит новый. Так обработчики
+ * не копятся при частой смене (напр. в конструкторе на каждое изменение) и
+ * состояние можно переустановить после пробуждения приложения (resync).
  *
- * Это решает баг: раньше offClick() без аргумента в новых версиях SDK
- * не всегда удалял обработчик, и при тапе срабатывали ОБА — старый
- * (из предыдущего экрана) и новый. Из-за этого Назад вёл "не туда"
- * или приходилось тапать несколько раз.
+ * Раньше offClick() без аргумента в новых версиях SDK не всегда удалял
+ * обработчик, поэтому удаляем строго конкретную функцию.
  */
 export const backButton = {
   show: (onClick) => {
@@ -182,11 +198,8 @@ export const backButton = {
   hide: () => {
     if (!tg?.BackButton) return
     backVisible = false
-    applyBackButton()
-    if (currentBackHandler) {
-      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
-      currentBackHandler = null
-    }
+    currentBackHandler = null
+    applyBackButton() // снимет привязанный обработчик и спрячет кнопку
   }
 }
 
@@ -204,11 +217,8 @@ export const settingsButton = {
   hide: () => {
     if (!tg?.SettingsButton) return
     settingsVisible = false
+    currentSettingsHandler = null
     applySettingsButton()
-    if (currentSettingsHandler) {
-      try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
-      currentSettingsHandler = null
-    }
   }
 }
 
