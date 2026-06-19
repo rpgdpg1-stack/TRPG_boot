@@ -14,6 +14,39 @@ const APP_BG = '#0D0C0C'
 let currentBackHandler = null
 let currentSettingsHandler = null
 
+// «Желаемое» состояние кнопок шапки. Нужно, чтобы переустановить его после
+// пробуждения свёрнутого приложения: Telegram при сворачивании усыпляет webview
+// и при возврате нативный мост к кнопкам ломается — старый обработчик
+// отвязывается, а команды show/hide до нативной кнопки не доходят. Из-за этого
+// «Назад» зависала видимой, ни на что не реагировала и помогало только полное
+// закрытие приложения. Храним намерение и заново применяем его в resync.
+let backVisible = false
+let settingsVisible = false
+
+function applyBackButton() {
+  if (!tg?.BackButton) return
+  if (backVisible && currentBackHandler) {
+    try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
+    tg.BackButton.onClick(currentBackHandler)
+    tg.BackButton.show()
+  } else {
+    tg.BackButton.hide()
+  }
+}
+
+function applySettingsButton() {
+  if (!tg?.SettingsButton) return
+  try {
+    if (settingsVisible && currentSettingsHandler) {
+      try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
+      tg.SettingsButton.onClick(currentSettingsHandler)
+      tg.SettingsButton.show()
+    } else {
+      tg.SettingsButton.hide()
+    }
+  } catch (e) { /* ignore */ }
+}
+
 export function initTelegram() {
   if (!tg) {
     console.warn('Telegram WebApp SDK не загружен (вне Телеграма?)')
@@ -34,6 +67,7 @@ export function initTelegram() {
   paintTelegramChrome()
   lockVerticalSwipes()
   bindSafeArea()
+  bindLifecycle()
 }
 
 export function paintTelegramChrome() {
@@ -135,25 +169,20 @@ export const haptic = {
 export const backButton = {
   show: (onClick) => {
     if (!tg?.BackButton) return
-    if (currentBackHandler) {
-      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
-    }
     currentBackHandler = onClick
-    tg.BackButton.onClick(onClick)
-    tg.BackButton.show()
+    backVisible = true
+    applyBackButton()
   },
   setHandler: (onClick) => {
     if (!tg?.BackButton) return
-    if (currentBackHandler) {
-      try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
-    }
     currentBackHandler = onClick
-    tg.BackButton.onClick(onClick)
-    tg.BackButton.show()
+    backVisible = true
+    applyBackButton()
   },
   hide: () => {
     if (!tg?.BackButton) return
-    tg.BackButton.hide()
+    backVisible = false
+    applyBackButton()
     if (currentBackHandler) {
       try { tg.BackButton.offClick(currentBackHandler) } catch (e) { /* ignore */ }
       currentBackHandler = null
@@ -168,26 +197,57 @@ export const backButton = {
 export const settingsButton = {
   show: (onClick) => {
     if (!tg?.SettingsButton) return
-    try {
-      if (currentSettingsHandler) {
-        try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
-      }
-      currentSettingsHandler = onClick
-      tg.SettingsButton.onClick(onClick)
-      tg.SettingsButton.show()
-    } catch (e) {
-      console.warn('[telegram] SettingsButton not supported:', e?.message)
-    }
+    currentSettingsHandler = onClick
+    settingsVisible = true
+    applySettingsButton()
   },
   hide: () => {
     if (!tg?.SettingsButton) return
-    try {
-      tg.SettingsButton.hide()
-      if (currentSettingsHandler) {
-        try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
-        currentSettingsHandler = null
-      }
-    } catch (e) { /* ignore */ }
+    settingsVisible = false
+    applySettingsButton()
+    if (currentSettingsHandler) {
+      try { tg.SettingsButton.offClick(currentSettingsHandler) } catch (e) { /* ignore */ }
+      currentSettingsHandler = null
+    }
+  }
+}
+
+/**
+ * Переустановка состояния шапки после пробуждения свёрнутого приложения.
+ *
+ * Telegram при сворачивании усыпляет webview; при возврате (через минуты)
+ * нативный мост к кнопкам может «протухнуть»: команды не доходят, а обработчик
+ * «Назад» отвязан. Заново дёргаем ready() (поднимаем мост) и переустанавливаем
+ * желаемое состояние кнопок и цвета шапки. Вызывается на activated /
+ * возврат видимости вкладки (см. bindLifecycle).
+ */
+export function resyncTelegramChrome() {
+  if (!tg) return
+  try { tg.ready() } catch (e) { /* ignore */ }
+  applyBackButton()
+  applySettingsButton()
+  paintTelegramChrome()
+}
+
+/**
+ * Подписка на жизненный цикл: когда приложение снова становится активным
+ * (Telegram-событие activated, Bot API 8.0) или вкладка снова видима —
+ * переустанавливаем состояние шапки. Без этого после сворачивания «Назад»
+ * зависала и не реагировала до полного перезапуска приложения.
+ */
+export function bindLifecycle() {
+  if (!tg) return
+
+  try {
+    if (typeof tg.onEvent === 'function') {
+      tg.onEvent('activated', resyncTelegramChrome)
+    }
+  } catch (e) { /* ignore */ }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') resyncTelegramChrome()
+    })
   }
 }
 
