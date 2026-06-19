@@ -1,12 +1,19 @@
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { programCountLabel } from '../features/programs/registry'
 import UiIcon from './UiIcon'
 
+const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не тап → гасим подсветку
+
 /**
  * Список разделов (категорий) — единый источник для главной и страницы «Разделы».
  * Карточка-группа со строками: иконка раздела, название, динамичная подпись
  * с числом программ, стрелка. Тап → экран категории.
+ *
+ * Фон группы — приглушённый серый (как у Истории / Дневного буста). Эффект
+ * нажатия — как в строке «Друзья»: на удержание фон чуть светлеет и плавно
+ * гаснет; при скролле (палец сдвинулся) подсветка не появляется.
  */
 export default function CategoryList() {
   const navigate = useNavigate()
@@ -18,19 +25,46 @@ export default function CategoryList() {
     { id: 'stretch', iconName: 'stretching', title: 'Растяжка', subtitle: 'Йога · Пилатес',          color: 'var(--cat-stretch)',   comingSoon: true }
   ]
 
-  const handleTap = (cat) => {
+  const [pressedId, setPressedId] = useState(null)
+  const startPos = useRef({ x: 0, y: 0 })
+
+  const handleDown = (e, cat) => {
+    setPressedId(cat.id)
+    startPos.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handleMove = (e) => {
+    const dx = Math.abs(e.clientX - startPos.current.x)
+    const dy = Math.abs(e.clientY - startPos.current.y)
+    if (dx > MOVE_TOLERANCE || dy > MOVE_TOLERANCE) setPressedId(null)
+  }
+
+  const handleUp = (cat) => {
+    // Если палец уехал в скролл — pressedId уже сброшен, тап не засчитываем.
+    const wasPressed = pressedId === cat.id
+    setPressedId(null)
+    if (!wasPressed) return
     haptic.light()
     setTimeout(() => navigate(`/category/${cat.id}`), 80)
   }
 
+  const handleCancel = () => setPressedId(null)
+
   return (
     <div style={styles.group}>
       {categories.map((cat, idx) => (
-        <button
+        <div
           key={cat.id}
-          onClick={() => handleTap(cat)}
-          className="tg-row"
-          style={{ ...styles.row, borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)' }}
+          onPointerDown={(e) => handleDown(e, cat)}
+          onPointerMove={handleMove}
+          onPointerUp={() => handleUp(cat)}
+          onPointerLeave={handleCancel}
+          onPointerCancel={handleCancel}
+          style={{
+            ...styles.row,
+            borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+            background: pressedId === cat.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent'
+          }}
         >
           <span style={styles.icon}>
             <UiIcon name={cat.iconName} size={26} color={cat.color} />
@@ -45,7 +79,7 @@ export default function CategoryList() {
           </div>
 
           <div style={styles.arrow}>›</div>
-        </button>
+        </div>
       ))}
     </div>
   )
@@ -55,7 +89,7 @@ const styles = {
   group: {
     display: 'flex',
     flexDirection: 'column',
-    background: 'var(--color-card)',
+    background: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
@@ -67,7 +101,10 @@ const styles = {
     width: '100%',
     height: '68px',
     textAlign: 'left',
-    border: 'none'
+    border: 'none',
+    cursor: 'pointer',
+    touchAction: 'pan-y',
+    transition: 'background 0.2s ease'
   },
   icon: {
     display: 'flex',
