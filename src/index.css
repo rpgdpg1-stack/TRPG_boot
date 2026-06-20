@@ -24,6 +24,7 @@
   --purple-500: #B47BFF;
   --pink-500: #F178B6;
   --yellow-500: #FFD700;
+  --beige-200: #FADFBE;
 
   /* ── Уровень 2: семантика (по назначению, ссылается на примитивы) ──
      Имена не меняются — компоненты их используют как раньше. */
@@ -35,6 +36,7 @@
   --color-primary-dark: var(--green-700);
   --color-text: var(--neutral-0);
   --color-text-secondary: var(--neutral-500);
+  --color-icon-muscle: var(--beige-200);  /* бежевая иконка бицепса (активный таб «Тренировки») */
 
   /* Цвета акцентов категорий */
   --cat-strength: var(--red-500);
