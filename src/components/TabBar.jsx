@@ -12,7 +12,8 @@ import MuscleIcon from './MuscleIcon'
  *  - Друзья: иконка БЕЛАЯ при активе
  *  - Тренировки: иконка бицепса бежевая (#FADFBE) при активе
  *  - Профиль: иконка БЕЛАЯ при активе
- *  - Неактив везде: иконка/лейбл rgba(255,255,255,0.5)
+ *  - Неактив везде: иконка/лейбл --color-text-inactive (белый 50%)
+ *  - Активный таб: gap иконка→лейбл 4px (неактив 3px)
  *
  * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
  * и инфо упражнения (/exercise/...).
@@ -86,6 +87,8 @@ export default function TabBar() {
               : 'transparent',
             boxShadow: 'none',
             cursor: tab.canTap ? 'pointer' : 'default',
+            // Активный (залитый) — отступ иконка→лейбл 4px, неактивный 3px.
+            gap: tab.isActive ? '4px' : '3px',
             // Нахлёст −5px: каждый таб (кроме первого) налезает на соседа слева.
             marginLeft: i === 0 ? 0 : '-5px',
             // Активный — поверх соседей, чтобы его пилюля перекрывала их края.
@@ -99,7 +102,7 @@ export default function TabBar() {
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
-                color={tab.isActive ? '#FADFBE' : 'rgba(255,255,255,0.5)'}
+                color={tab.isActive ? '#FADFBE' : 'var(--color-text-inactive)'}
                 flexTrigger={tab.isActive ? muscleFlexTick : 0}
               />
             ) : tab.id === 'profile' ? (
@@ -114,7 +117,7 @@ export default function TabBar() {
                 <UiIcon
                   name="profile"
                   size={32}
-                  color={tab.isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
+                  color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
                 />
               </span>
             ) : tab.id === 'friends' ? (
@@ -129,14 +132,14 @@ export default function TabBar() {
                 <UiIcon
                   name="friends"
                   size={32}
-                  color={tab.isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
+                  color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
                 />
               </span>
             ) : null}
           </span>
           <span style={{
             ...styles.label,
-            color: tab.isActive ? 'var(--color-text)' : 'rgba(255, 255, 255, 0.5)'
+            color: tab.isActive ? 'var(--color-text)' : 'var(--color-text-inactive)'
           }}>
             {tab.label}
           </span>
@@ -164,7 +167,9 @@ const styles = {
     WebkitBackdropFilter: 'blur(var(--blur-sm))',
     borderRadius: 'var(--radius-pill)',
     border: '1px solid var(--color-border)',
-    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+    // Тень как в iOS-доке: мягкая, X0 Y8 Blur40, чёрный 12%. Плюс верхний
+    // блик-кромка (inset 1px белый 6%) — лёгкий «стеклянный» край сверху.
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
     zIndex: 100
   },
   tab: {
