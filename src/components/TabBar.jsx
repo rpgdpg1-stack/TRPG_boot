@@ -163,13 +163,15 @@ const styles = {
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
     // лёгкий тёмный фон + слабый блюр. Токены: surface-dim + border.
     background: 'var(--color-surface-dim)',
-    backdropFilter: 'blur(var(--blur-sm))',
-    WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    // saturate(180%) — подкручивает насыщенность того, что просвечивает под баром
+    // (iOS-эффект матового стекла: цвета за стеклом сочнее).
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     borderRadius: 'var(--radius-pill)',
     border: '1px solid var(--color-border)',
     // Тень как в iOS-доке: мягкая, X0 Y8 Blur40, чёрный 12%. Плюс верхний
-    // блик-кромка (inset 1px белый 6%) — лёгкий «стеклянный» край сверху.
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+    // блик-кромка (inset Y1 Blur4 белый 10%) — мягкий «стеклянный» край сверху.
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12), inset 0 1px 4px rgba(255, 255, 255, 0.10)',
     zIndex: 100
   },
   tab: {

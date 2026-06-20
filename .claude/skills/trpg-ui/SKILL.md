@@ -58,9 +58,12 @@ description: "Дизайн-система и UI/UX-конвенции проек
 - **Нахлёст табов −5px** (в Figma = отрицательный item spacing −5 на контейнере). В коде CSS
   отрицательный gap нельзя → делаем `gap:0` + `marginLeft:-5px` у табов (кроме первого);
   активный таб `position:relative` + `zIndex` выше, чтобы пилюля перекрывала соседей.
-- **Тень** = Effect Style (стиль эффекта), НЕ переменная (как Text Style). Таб-бар: drop
-  `0 8 40 / #000 12%` (как в iOS-доке) + inner-блик `inset 0 1 0 / #fff 6%` (верхняя стеклянная
-  кромка). В Figma — один Effect Style `shadow/tabbar` из двух эффектов (Drop + Inner shadow).
+- **Стекло/тень** = Effect Style (стиль эффекта), НЕ переменная (как Text Style). Таб-бар:
+  `backdrop-filter: blur(8) saturate(180%)` (матовое стекло) + drop `0 8 40 / #000 12%` (iOS-док)
+  + inner-блик `inset 0 1px 4px / #fff 10%` (верхняя стеклянная кромка). В Figma это один Effect
+  Style из 3 эффектов (Background blur + Drop + Inner shadow) — назвать **`effect/tabbar`**
+  (не `shadow/...`, т.к. внутри ещё и блюр). Liquid Glass (рефракция/дисперсия) в вебе не
+  воспроизвести нативно — не тащим.
 Размытие (backdrop blur): `--blur-sm` (8px — таб-бар, dim-кнопка), `--blur-md` (12px —
 серая neutral-кнопка/панель). В Figma — коллекция Blur (Number): `blur/sm`, `blur/md`.
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,
