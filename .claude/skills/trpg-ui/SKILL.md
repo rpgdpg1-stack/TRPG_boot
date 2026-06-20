@@ -67,6 +67,9 @@ description: "Дизайн-система и UI/UX-конвенции проек
   сверху (свечение по верхним углам ~5%) → тёмный снизу (чёрный ~22%). В CSS делается через
   два фона: `linear-gradient(surface,surface) padding-box` + `linear-gradient(180deg, …) border-box`
   при `border:1px solid transparent`. В Figma — Stroke с типом Gradient (градиентная обводка).
+  Градиент держать видимым по всему кольцу (не уводить в 0% в середине, иначе строук «пропадает»).
+- **Активный таб — тёмное стекло:** фон `--color-surface-active` (rgba(42,42,42,0.65)) +
+  `backdrop-filter: blur(8)` на самом табе (полупрозрачный, чуть стеклянный, как активные в iOS).
 Размытие (backdrop blur): `--blur-sm` (8px — таб-бар, dim-кнопка), `--blur-md` (12px —
 серая neutral-кнопка/панель). В Figma — коллекция Blur (Number): `blur/sm`, `blur/md`.
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,

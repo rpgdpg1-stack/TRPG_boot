@@ -82,9 +82,13 @@ export default function TabBar() {
           onClick={() => handleTap(tab)}
           style={{
             ...styles.tab,
+            // Активный таб — тёмное стекло: полупрозрачный фон + лёгкий блюр
+            // (как приглушённое стекло на активных в iOS/Telegram).
             background: tab.isActive
-              ? 'var(--color-card-hover)'
+              ? 'var(--color-surface-active)'
               : 'transparent',
+            backdropFilter: tab.isActive ? 'blur(var(--blur-sm))' : 'none',
+            WebkitBackdropFilter: tab.isActive ? 'blur(var(--blur-sm))' : 'none',
             boxShadow: 'none',
             cursor: tab.canTap ? 'pointer' : 'default',
             // Активный (залитый) — отступ иконка→лейбл 4px, неактивный 3px.
@@ -165,7 +169,7 @@ const styles = {
     // Фон + градиентная обводка (gradient stroke) как стеклянная кромка iOS:
     // внутренняя заливка surface-dim (padding-box), а сама обводка (border-box) —
     // градиент: еле-еле белый сверху (свечение по верхним углам ~5%) → тёмный снизу.
-    background: 'linear-gradient(var(--color-surface-dim), var(--color-surface-dim)) padding-box, linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 40%, rgba(0,0,0,0.22)) border-box',
+    background: 'linear-gradient(var(--color-surface-dim), var(--color-surface-dim)) padding-box, linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.30)) border-box',
     // saturate(180%) — подкручивает насыщенность того, что просвечивает под баром
     // (iOS-эффект матового стекла: цвета за стеклом сочнее).
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
