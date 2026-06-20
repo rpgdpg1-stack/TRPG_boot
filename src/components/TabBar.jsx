@@ -75,7 +75,7 @@ export default function TabBar() {
 
   return (
     <nav style={styles.tabbar}>
-      {tabs.map(tab => (
+      {tabs.map((tab, i) => (
         <button
           key={tab.id}
           onClick={() => handleTap(tab)}
@@ -85,7 +85,11 @@ export default function TabBar() {
               ? 'var(--color-card-hover)'
               : 'transparent',
             boxShadow: 'none',
-            cursor: tab.canTap ? 'pointer' : 'default'
+            cursor: tab.canTap ? 'pointer' : 'default',
+            // Нахлёст −5px: каждый таб (кроме первого) налезает на соседа слева.
+            marginLeft: i === 0 ? 0 : '-5px',
+            // Активный — поверх соседей, чтобы его пилюля перекрывала их края.
+            zIndex: tab.isActive ? 2 : 1
           }}
         >
           <span style={{
@@ -150,7 +154,7 @@ const styles = {
     transform: 'translateX(-50%)',
     display: 'flex',
     alignItems: 'center',
-    gap: '2px',
+    gap: '0',
     padding: '4px',
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
@@ -174,6 +178,7 @@ const styles = {
     // Растягиваемся на всю внутреннюю высоту бара (учитывая padding и border),
     // вместо фикс-высоты — тогда отступ сверху/снизу всегда ровно 4px.
     alignSelf: 'stretch',
+    position: 'relative', // чтобы работал z-index при нахлёсте
     borderRadius: 'var(--radius-pill)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
