@@ -7,34 +7,54 @@
      Без этого клавиатура моргает: сначала светлый блюр, потом тёмный фон. */
   color-scheme: dark;
 
+  /* ── Уровень 1: палитра-примитивы (сырые цвета, без смысла) ──
+     Зеркало коллекции Primitives в Figma (имена 1:1: green-500 = green/500). */
+  --neutral-0: #FFFFFF;
+  --neutral-500: #888888;
+  --neutral-850: #2A2A2A;
+  --neutral-900: #222222;
+  --neutral-950: #0D0C0C;
+  --green-400: #5DBB63;
+  --green-500: #9ED153;
+  --green-700: #648337;
+  --blue-400: #4A90E2;
+  --blue-500: #3FA2F7;
+  --orange-500: #FF8C42;
+  --red-500: #E84545;
+  --purple-500: #B47BFF;
+  --pink-500: #F178B6;
+  --yellow-500: #FFD700;
+
+  /* ── Уровень 2: семантика (по назначению, ссылается на примитивы) ──
+     Имена не меняются — компоненты их используют как раньше. */
   /* Основные цвета */
-  --color-bg: #0D0C0C;
-  --color-card: #222222;
-  --color-card-hover: #2a2a2a;
-  --color-primary: #9ED153;
-  --color-primary-dark: #648337;
-  --color-text: #FFFFFF;
-  --color-text-secondary: #888888;
+  --color-bg: var(--neutral-950);
+  --color-card: var(--neutral-900);
+  --color-card-hover: var(--neutral-850);
+  --color-primary: var(--green-500);
+  --color-primary-dark: var(--green-700);
+  --color-text: var(--neutral-0);
+  --color-text-secondary: var(--neutral-500);
 
   /* Цвета акцентов категорий */
-  --cat-strength: #E84545;
-  --cat-cardio: #FF8C42;
-  --cat-pool: #3FA2F7;
-  --cat-stretch: #F178B6;
-  --cat-recovery: #FFFFFF;
+  --cat-strength: var(--red-500);
+  --cat-cardio: var(--orange-500);
+  --cat-pool: var(--blue-500);
+  --cat-stretch: var(--pink-500);
+  --cat-recovery: var(--neutral-0);
 
   /* Цвета редкости (рангов) */
-  --rarity-common: #9ED153;
-  --rarity-rare: #3FA2F7;
-  --rarity-epic: #B47BFF;
-  --rarity-legendary: #FF8C42;
-  --rarity-mythic: #E84545;
-  --rarity-godlike: #FFD700;
+  --rarity-common: var(--green-500);
+  --rarity-rare: var(--blue-500);
+  --rarity-epic: var(--purple-500);
+  --rarity-legendary: var(--orange-500);
+  --rarity-mythic: var(--red-500);
+  --rarity-godlike: var(--yellow-500);
 
   /* Цвета тегов программ */
-  --tag-gym: #FF8C42;
-  --tag-home: #4A90E2;
-  --tag-outdoor: #5DBB63;
+  --tag-gym: var(--orange-500);
+  --tag-home: var(--blue-400);
+  --tag-outdoor: var(--green-400);
 
   /* Скругления */
   --radius-card: 33px;     /* крупное: карточки, модалки, аватары, таб-бар */
