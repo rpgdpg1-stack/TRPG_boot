@@ -91,8 +91,8 @@ export default function TabBar() {
             WebkitBackdropFilter: tab.isActive ? 'blur(var(--blur-sm))' : 'none',
             boxShadow: 'none',
             cursor: tab.canTap ? 'pointer' : 'default',
-            // Активный (залитый) — отступ иконка→лейбл 4px, неактивный 3px.
-            gap: tab.isActive ? '4px' : '3px',
+            // Активный (залитый) — отступ иконка→лейбл 1px, неактивный 0.5px.
+            gap: tab.isActive ? '1px' : '0.5px',
             // Нахлёст −5px: каждый таб (кроме первого) налезает на соседа слева.
             marginLeft: i === 0 ? 0 : '-5px',
             // Активный — поверх соседей, чтобы его пилюля перекрывала их края.
