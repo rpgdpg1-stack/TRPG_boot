@@ -99,10 +99,7 @@ export default function TabBar() {
             zIndex: tab.isActive ? 2 : 1
           }}
         >
-          <span style={{
-            ...styles.icon,
-            opacity: tab.isActive ? 1 : 0.45
-          }}>
+          <span style={styles.icon}>
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
