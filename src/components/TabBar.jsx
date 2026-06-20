@@ -150,15 +150,15 @@ const styles = {
     transform: 'translateX(-50%)',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '3px',
+    gap: '5px',
+    padding: '4px',
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
     // лёгкий тёмный фон + слабый блюр. Токены: surface-dim + border.
     background: 'var(--color-surface-dim)',
     backdropFilter: 'blur(var(--blur-sm))',
     WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-pill)',
     border: '1px solid var(--color-border)',
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
     zIndex: 100
@@ -171,8 +171,8 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     minWidth: '78px',
-    height: 'calc(var(--tabbar-height) - 9px)',
-    borderRadius: '30px',
+    height: 'calc(var(--tabbar-height) - 8px)',
+    borderRadius: 'var(--radius-pill)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
   },
