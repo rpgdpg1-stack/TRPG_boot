@@ -154,12 +154,12 @@ const styles = {
     padding: '3px',
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
-    // лёгкий тёмный фон + слабый блюр. Обводку оставляем прежнюю.
-    background: 'rgba(34, 34, 34, 0.30)',
+    // лёгкий тёмный фон + слабый блюр. Токены: surface-dim + border.
+    background: 'var(--color-surface-dim)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     borderRadius: 'var(--radius-card)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--color-border)',
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
     zIndex: 100
   },

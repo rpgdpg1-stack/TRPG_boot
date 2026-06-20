@@ -46,6 +46,9 @@ description: "Дизайн-система и UI/UX-конвенции проек
 Категории: `--cat-strength` `--cat-cardio` `--cat-pool` `--cat-stretch` `--cat-recovery`.
 Редкость рангов: `--rarity-common/rare/epic/legendary/mythic/godlike`.
 Теги программ: `--tag-gym/home/outdoor`.
+Полупрозрачные (альфа вшита, БЕЗ алиаса на примитив — примитивы сплошные):
+`--color-surface-dim` (rgba(34,34,34,0.30) — стеклянный фон таб-бара и dim-кнопки),
+`--color-border` (rgba(255,255,255,0.08) — тонкая обводка-волосок).
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,
 есть fallback на серый). Цвета лиг — из `src/lib/leagues.js`.
 Цвет тега программы — из `getProgramTagColor(tag, source)` в `registry.js` (единый источник, см. «Антидубль»).
@@ -57,7 +60,9 @@ description: "Дизайн-система и UI/UX-конвенции проек
 Токены там — **Variables**, структура зеркалит `index.css` 1:1. Коллекции:
 - **Primitives** (палитра, тип Color): группы `neutral/{0,500,850,900,950}`, `green/{400,500,700}`,
   `blue/{400,500}`, `orange/500`, `red/500`, `purple/500`, `pink/500`, `yellow/500`.
-- **Semantic** (тип Color, ссылается на Primitives): группы `base/*`, `cat/*`, `rarity/*`, `tag/*`.
+- **Semantic** (тип Color, ссылается на Primitives): группы `base/*`, `cat/*`, `rarity/*`, `tag/*`,
+  плюс полупрозрачные с вшитой альфой (БЕЗ алиаса): `surface/dim` ↔ `--color-surface-dim`,
+  `border/default` ↔ `--color-border`.
 - **Radius** (Number): `card=33, medium=20, small=10`. **Size** (Number): `tabbar-height=72, tabbar-bottom=16`.
 
 **Соответствие имён** (детерминированное): Figma `green/500` ↔ CSS `--green-500`;
