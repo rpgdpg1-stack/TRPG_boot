@@ -63,6 +63,10 @@ description: "Дизайн-система и UI/UX-конвенции проек
   Внутренний блик убрали (светился по всем краям). В Figma это Effect Style из 2 эффектов
   (Background blur + Drop shadow) — назвать **`effect/tabbar`** (не `shadow/...`, т.к. внутри ещё
   блюр). Liquid Glass (рефракция/дисперсия) в вебе не воспроизвести нативно — не тащим.
+- **Стеклянная кромка (gradient stroke):** обводка бара — не сплошная, а градиент: еле белый
+  сверху (свечение по верхним углам ~5%) → тёмный снизу (чёрный ~22%). В CSS делается через
+  два фона: `linear-gradient(surface,surface) padding-box` + `linear-gradient(180deg, …) border-box`
+  при `border:1px solid transparent`. В Figma — Stroke с типом Gradient (градиентная обводка).
 Размытие (backdrop blur): `--blur-sm` (8px — таб-бар, dim-кнопка), `--blur-md` (12px —
 серая neutral-кнопка/панель). В Figma — коллекция Blur (Number): `blur/sm`, `blur/md`.
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,
