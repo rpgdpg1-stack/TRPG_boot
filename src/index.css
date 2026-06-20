@@ -30,7 +30,7 @@
   /* Основные цвета */
   --color-bg: var(--neutral-950);
   --color-card: var(--neutral-900);
-  --color-card-hover: rgba(42, 42, 42, 0.20); /* ховер/актив карточки: #2A2A2A 20% (зеркало Figma) */
+  --color-card-hover: rgba(42, 42, 42, 0.75); /* ховер/актив карточки: #2A2A2A 75% (зеркало Figma) */
   --color-primary: var(--green-500);
   --color-primary-dark: var(--green-700);
   --color-text: var(--neutral-0);
@@ -61,7 +61,7 @@
   --color-surface-dim: rgba(34, 34, 34, 0.30);  /* стеклянный фон: таб-бар, dim-кнопка */
   --color-border: rgba(255, 255, 255, 0.08);    /* тонкая обводка-волосок */
   --color-text-inactive: rgba(255, 255, 255, 0.5); /* неактивные иконки/лейблы (таб-бар) */
-  --color-surface-active: rgba(42, 42, 42, 0.65);  /* активный таб: тёмное стекло (полупрозр.) */
+  --color-surface-active: rgba(42, 42, 42, 0.20);  /* активный таб: тёмное стекло (полупрозр.) */
 
   /* Размытие (backdrop blur). 2 ступени: sm — таб-бар и dim-кнопка; md — серая
      кнопка/панель (neutral). Зеркало коллекции Blur в Figma (blur/sm, blur/md). */
