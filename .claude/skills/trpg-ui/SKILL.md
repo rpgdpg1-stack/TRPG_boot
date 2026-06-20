@@ -49,6 +49,8 @@ description: "Дизайн-система и UI/UX-конвенции проек
 Полупрозрачные (альфа вшита, БЕЗ алиаса на примитив — примитивы сплошные):
 `--color-surface-dim` (rgba(34,34,34,0.30) — стеклянный фон таб-бара и dim-кнопки),
 `--color-border` (rgba(255,255,255,0.08) — тонкая обводка-волосок).
+Размытие (backdrop blur): `--blur-sm` (8px — таб-бар, dim-кнопка), `--blur-md` (12px —
+серая neutral-кнопка/панель). В Figma — коллекция Blur (Number): `blur/sm`, `blur/md`.
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,
 есть fallback на серый). Цвета лиг — из `src/lib/leagues.js`.
 Цвет тега программы — из `getProgramTagColor(tag, source)` в `registry.js` (единый источник, см. «Антидубль»).

@@ -59,8 +59,8 @@ const styles = {
   // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Сплошная тонкая рамка.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    backdropFilter: 'blur(var(--blur-sm))',
+    WebkitBackdropFilter: 'blur(var(--blur-sm))',
     border: '1.5px solid rgba(255, 255, 255, 0.12)',
     color: 'rgba(136, 136, 136, 0.55)',
     cursor: 'default'
@@ -69,8 +69,8 @@ const styles = {
   // кнопке «Добавить упражнение» в конструкторе/пикере).
   neutral: {
     background: 'rgba(34, 34, 34, 0.55)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    backdropFilter: 'blur(var(--blur-md))',
+    WebkitBackdropFilter: 'blur(var(--blur-md))',
     border: '1.5px solid rgba(255, 255, 255, 0.20)',
     color: 'var(--color-text-secondary)'
   },
