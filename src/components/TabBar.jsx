@@ -8,10 +8,11 @@ import MuscleIcon from './MuscleIcon'
  * Таб-бар — 3 вкладки: Друзья / Тренировки / Профиль.
  *
  * Цвета:
- *  - Друзья: иконка зелёная (--color-primary) при активе, лейбл зелёный
- *  - Тренировки: иконка бицепса бежевая (#FADFBE) при активе, лейбл зелёный
- *  - Профиль: иконка БЕЛАЯ при активе, лейбл зелёный
- *  - Неактив везде: иконка rgba(255,255,255,0.5), лейбл rgba(255,255,255,0.5)
+ *  - Активный таб: фон сплошной серый (--color-card-hover), лейбл белый.
+ *  - Друзья: иконка БЕЛАЯ при активе
+ *  - Тренировки: иконка бицепса бежевая (#FADFBE) при активе
+ *  - Профиль: иконка БЕЛАЯ при активе
+ *  - Неактив везде: иконка/лейбл rgba(255,255,255,0.5)
  *
  * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
  * и инфо упражнения (/exercise/...).
@@ -81,7 +82,7 @@ export default function TabBar() {
           style={{
             ...styles.tab,
             background: tab.isActive
-              ? 'rgba(158, 209, 83, 0.10)'
+              ? 'var(--color-card-hover)'
               : 'transparent',
             boxShadow: 'none',
             cursor: tab.canTap ? 'pointer' : 'default'
@@ -124,14 +125,14 @@ export default function TabBar() {
                 <UiIcon
                   name="friends"
                   size={32}
-                  color={tab.isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.5)'}
+                  color={tab.isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
                 />
               </span>
             ) : null}
           </span>
           <span style={{
             ...styles.label,
-            color: tab.isActive ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.5)'
+            color: tab.isActive ? 'var(--color-text)' : 'rgba(255, 255, 255, 0.5)'
           }}>
             {tab.label}
           </span>
@@ -152,11 +153,11 @@ const styles = {
     gap: '4px',
     padding: '3px',
     height: 'var(--tabbar-height)',
-    // iOS-стекло как в Telegram: сильный блюр + насыщенность, фон
-    // полупрозрачный чтобы контент под баром размывался и просвечивал.
-    background: 'rgba(28, 28, 30, 0.72)',
-    backdropFilter: 'blur(40px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+    // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
+    // лёгкий тёмный фон + слабый блюр. Обводку оставляем прежнюю.
+    background: 'rgba(34, 34, 34, 0.30)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
     borderRadius: 'var(--radius-card)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
