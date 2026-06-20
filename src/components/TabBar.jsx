@@ -171,7 +171,7 @@ const styles = {
     border: '1px solid var(--color-border)',
     // Тень как в iOS-доке: мягкая, X0 Y8 Blur40, чёрный 12%. Плюс верхний
     // блик-кромка (inset Y1 Blur4 белый 10%) — мягкий «стеклянный» край сверху.
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12), inset 0 1px 4px rgba(255, 255, 255, 0.10)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12), inset 0 1px 4px rgba(255, 255, 255, 0.08)',
     zIndex: 100
   },
   tab: {
