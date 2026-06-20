@@ -166,16 +166,13 @@ const styles = {
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
     // лёгкий тёмный фон + слабый блюр. Токены: surface-dim + border.
-    // Фон + градиентная обводка (gradient stroke) как стеклянная кромка iOS:
-    // внутренняя заливка surface-dim (padding-box), а сама обводка (border-box) —
-    // градиент: еле-еле белый сверху (свечение по верхним углам ~5%) → тёмный снизу.
-    background: 'linear-gradient(var(--color-surface-dim), var(--color-surface-dim)) padding-box, linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.30)) border-box',
+    background: 'var(--color-surface-dim)',
     // saturate(180%) — подкручивает насыщенность того, что просвечивает под баром
     // (iOS-эффект матового стекла: цвета за стеклом сочнее).
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     borderRadius: 'var(--radius-pill)',
-    border: '1px solid transparent',
+    border: '1px solid var(--color-border)',
     // Тень как в iOS-доке: мягкая, X0 Y8 Blur40, чёрный 12%.
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
     zIndex: 100
