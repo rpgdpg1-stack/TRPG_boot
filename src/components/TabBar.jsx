@@ -150,7 +150,7 @@ const styles = {
     transform: 'translateX(-50%)',
     display: 'flex',
     alignItems: 'center',
-    gap: '0',
+    gap: '2px',
     padding: '4px',
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
