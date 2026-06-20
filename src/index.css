@@ -30,7 +30,7 @@
   /* Основные цвета */
   --color-bg: var(--neutral-950);
   --color-card: var(--neutral-900);
-  --color-card-hover: rgba(42, 42, 42, 0.75); /* ховер/актив карточки: #2A2A2A 75% (зеркало Figma) */
+  --color-card-hover: rgba(42, 42, 42, 0.55); /* ховер/актив карточки: #2A2A2A 55% (зеркало Figma) */
   --color-primary: var(--green-500);
   --color-primary-dark: var(--green-700);
   --color-text: var(--neutral-0);
