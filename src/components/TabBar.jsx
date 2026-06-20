@@ -171,7 +171,9 @@ const styles = {
     gap: '3px',
     padding: '0 12px',
     width: '90px',
-    height: 'calc(var(--tabbar-height) - 8px)',
+    // Растягиваемся на всю внутреннюю высоту бара (учитывая padding и border),
+    // вместо фикс-высоты — тогда отступ сверху/снизу всегда ровно 4px.
+    alignSelf: 'stretch',
     borderRadius: 'var(--radius-pill)',
     transition: 'background 0.25s ease, box-shadow 0.25s ease',
     border: 'none'
