@@ -192,6 +192,21 @@ body.keyboard-open .app::after { display: none; }
   z-index: 1;
 }
 
+/* Sticky-заголовок группы мышц (экран дня тренировки). Прилипает под шапкой дня
+   (top задаётся инлайн = высоте шапки) и выталкивается следующей группой при
+   скролле (нативный push — плавно и без багов). ::after — мягкий fade, чтобы
+   контент уходил под заголовок плавно, а не обрывался резко. */
+.muscle-sticky-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  background: linear-gradient(to bottom, var(--color-bg), rgba(13, 12, 12, 0));
+  pointer-events: none;
+}
+
 /* ============================================ */
 /* PRESS-эффект (универсальный) */
 /* ============================================ */

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -86,6 +86,19 @@ export default function WorkoutDay() {
   const [kbOpen, setKbOpen] = useState(false)
 
   const cardRefs = useRef(new Map())
+
+  // Высота закреплённой шапки дня — под неё прилипают sticky-заголовки групп мышц.
+  const headerRef = useRef(null)
+  const [headerH, setHeaderH] = useState(0)
+  useLayoutEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const measure = () => setHeaderH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
@@ -440,7 +453,7 @@ export default function WorkoutDay() {
 
       {/* Шапка дня закреплена сверху (sticky) — то же устройство, что карточка
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
-      <div style={styles.stickyHeader}>
+      <div ref={headerRef} style={styles.stickyHeader}>
 
         {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
             прогресс. Фон/строук как у карточки игрока на главной. */}
@@ -514,10 +527,6 @@ export default function WorkoutDay() {
             </div>
           </div>
         </div>
-
-        {/* Fade-scrim под блоком: контент уходит под шапку плавно (как на
-            главной под карточкой игрока). pointer-events:none — тапы проходят. */}
-        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={{
@@ -543,10 +552,14 @@ export default function WorkoutDay() {
           <div style={styles.sectionsWrap}>
             {sections.map((section, sIdx) => (
               <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-                <h2 style={{
-                  ...styles.muscleHeader,
-                  color: getMuscleGroupColors(section.muscleGroup).accent
-                }}>
+                <h2
+                  className="muscle-sticky-header"
+                  style={{
+                    ...styles.muscleHeader,
+                    top: headerH,
+                    color: getMuscleGroupColors(section.muscleGroup).accent
+                  }}
+                >
                   {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
                 </h2>
 
@@ -834,21 +847,6 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Fade-переход под блоком (копия с главной): градиент фон→прозрачный + blur.
-  stickyFade: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    height: '28px',
-    pointerEvents: 'none',
-    zIndex: 29,
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
-    backdropFilter: 'blur(3px)',
-    WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
-  },
   // Один целиковый блок — фон и строук как у карточки игрока на главной.
   // Тень не нужна — переход даёт фейд под блоком (как на главной).
   headerCard: {
@@ -959,14 +957,20 @@ const styles = {
     flexDirection: 'column',
     gap: '12px'
   },
+  // Sticky-заголовок группы мышц: прилипает под шапкой дня (top=headerH),
+  // выталкивается следующей группой. Фон bg + ::after-fade (класс
+  // .muscle-sticky-header в index.css) — контент уходит под заголовок плавно.
   muscleHeader: {
+    position: 'sticky',
+    zIndex: 20,
+    background: 'var(--color-bg)',
+    margin: '0 -16px',
+    padding: '10px 16px 8px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    padding: '4px 4px',
-    margin: 0
+    letterSpacing: '2px'
   },
   exerciseList: {
     display: 'flex',
