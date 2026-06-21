@@ -147,14 +147,15 @@ export function getProgramEmoji(slug) {
 
 /**
  * Места тренировки (Зал/Дом/Улица) — единый источник для конструктора и карточек.
- * Порядок фиксированный: зал → дом → улица. Эмодзи пока временные.
- * Цвет иконки = цвет соответствующего тега (--tag-gym/home/outdoor).
+ * Порядок фиксированный: зал → дом → улица. `icon` — имя SVG в assets/ui
+ * (рисуется через UiIcon, красится currentColor вместе с текстом тега).
+ * Цвет тега/иконки = цвет соответствующего тега (--tag-gym/home/outdoor).
  */
 export const PLACES = ['gym', 'home', 'outdoor']
 export const PLACE_META = {
-  gym:     { key: 'gym',     label: 'Зал',   emoji: '🏋️', color: 'var(--tag-gym)' },
-  home:    { key: 'home',    label: 'Дом',   emoji: '🏠', color: 'var(--tag-home)' },
-  outdoor: { key: 'outdoor', label: 'Улица', emoji: '🌳', color: 'var(--tag-outdoor)' }
+  gym:     { key: 'gym',     label: 'Зал',   icon: 'place-gym',    color: 'var(--tag-gym)' },
+  home:    { key: 'home',    label: 'Дом',   icon: 'place-home',   color: 'var(--tag-home)' },
+  outdoor: { key: 'outdoor', label: 'Улица', icon: 'place-street', color: 'var(--tag-outdoor)' }
 }
 export function getPlaceMeta(loc) {
   return PLACE_META[loc] || PLACE_META.gym

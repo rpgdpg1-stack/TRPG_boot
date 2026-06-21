@@ -8,6 +8,7 @@ import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
+import UiIcon from '../components/UiIcon'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -334,7 +335,7 @@ export default function ProgramConstructor() {
                     fontSize: active ? '15px' : '13px'
                   }}
                 >
-                  <span style={styles.placeEmoji}>{meta.emoji}</span>
+                  <UiIcon name={meta.icon} size={16} />
                   {meta.label}
                 </button>
                 <div style={{ ...styles.tabUnderline, background: active ? 'var(--color-primary)' : 'transparent' }} />
@@ -583,7 +584,6 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
     transition: 'transform 0.18s var(--ease-ios), color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
   },
-  placeEmoji: { fontSize: '16px', lineHeight: 1 },
   dayPill: {
     width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
     height: '46px', padding: '0 14px',

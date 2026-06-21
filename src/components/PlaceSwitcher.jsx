@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { getProgramPlaces, getPlaceMeta } from '../features/programs/registry'
 import { useProgramPlace } from '../lib/program-place'
 import { haptic } from '../lib/telegram'
+import UiIcon from './UiIcon'
 
 /**
  * Переключатель места тренировки (Зал/Дом/Улица) — общий для карточек программы
@@ -70,7 +71,7 @@ export default function PlaceSwitcher({ program, value: cValue, onChange }) {
               cursor: places.length > 1 ? 'pointer' : 'default'
             }}
           >
-            <span style={styles.emoji}>{meta.emoji}</span>
+            <UiIcon name={meta.icon} size={14} />
             {meta.label}
           </button>
         )
@@ -94,6 +95,5 @@ const styles = {
     lineHeight: 1.3,
     whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
-  },
-  emoji: { fontSize: '12px', lineHeight: 1 }
+  }
 }
