@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -79,6 +79,20 @@ export default function WorkoutDay() {
   const [kbOpen, setKbOpen] = useState(false)
 
   const cardRefs = useRef(new Map())
+
+  // Высота плавающей шапки (пузыри) меряется в рантайме: задаёт верхний отступ
+  // контенту (чтобы стартовал под пузырями) и высоту верхнего стеклянного фейда.
+  const headerRef = useRef(null)
+  const [headerH, setHeaderH] = useState(0)
+  useLayoutEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const measure = () => setHeaderH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
@@ -409,7 +423,14 @@ export default function WorkoutDay() {
   return (
     <div style={styles.page}>
 
-      <div style={styles.stickyHeader}>
+      {/* Стеклянное затемнение у верхней кромки: контент, уходя под плавающие
+          пузыри, мягко темнеет и размывается (перенесено сюда из-под прежней
+          шапки). pointer-events:none — тапы по карточкам проходят сквозь. */}
+      <div style={{ ...styles.topFade, height: headerH || 200 }} aria-hidden="true" />
+
+      {/* Плавающие пузыри (стрелки / день+группы / прогресс) — закреплены вверху,
+          контент скроллится под ними как под таб-баром. */}
+      <div ref={headerRef} style={styles.floatingHeader}>
 
         <div
           style={styles.headerRow}
@@ -418,13 +439,14 @@ export default function WorkoutDay() {
         >
           <button
             onClick={() => goToDay(prevDay, 'prev')}
-            style={styles.arrowButton}
+            style={styles.arrowBubble}
+            className="press-tile"
             aria-label="Предыдущий день"
           >
             <ArrowLeft />
           </button>
 
-          <div style={styles.dayLetterCol}>
+          <div style={styles.dayBubble}>
             <div style={styles.dayLetterWrap}>
               <span
                 key={day}
@@ -449,17 +471,18 @@ export default function WorkoutDay() {
 
           <button
             onClick={() => goToDay(nextDay, 'next')}
-            style={styles.arrowButton}
+            style={styles.arrowBubble}
+            className="press-tile"
             aria-label="Следующий день"
           >
             <ArrowRight />
           </button>
         </div>
 
-        <div style={styles.progressWrap}>
-          <div style={styles.progressLabel}>
+        <div style={styles.progressBubble}>
+          <span style={styles.progressLabel}>
             {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
-          </div>
+          </span>
           <div style={styles.progressTrack}>
             <div
               style={{
@@ -469,15 +492,11 @@ export default function WorkoutDay() {
             />
           </div>
         </div>
-
-        {/* Fade-scrim: контент уходит под залипающую шапку плавно (градиент +
-            лёгкий blur), как под карточкой игрока на главной. pointer-events:none
-            чтобы не перехватывал тапы по карточкам упражнений под ним. */}
-        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={{
         ...styles.body,
+        paddingTop: (headerH || 200) + 12,
         opacity: isReturning ? 0 : 1,
         transition: isReturning ? 'none' : 'opacity 0.22s ease-out'
       }}>
@@ -783,55 +802,81 @@ const styles = {
     paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
     minHeight: '100dvh'
   },
-  stickyHeader: {
-    position: 'sticky',
+  // Плавающая шапка: пузыри (стрелки / день+группы / прогресс) закреплены
+  // вверху, контент скроллится под ними (высоту меряем в рантайме → headerH).
+  floatingHeader: {
+    position: 'fixed',
     top: 0,
-    zIndex: 30,
-    background: 'var(--color-bg)',
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
-    paddingBottom: 0,
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
-  },
-  stickyFade: {
-    position: 'absolute',
-    top: '100%',
     left: 0,
     right: 0,
-    height: '28px',
+    zIndex: 45,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    paddingBottom: 0
+  },
+  // Стеклянный фейд у верхней кромки: контент, уходя под пузыри, темнеет и
+  // размывается. Высота задаётся инлайн = headerH.
+  topFade: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
     pointerEvents: 'none',
-    zIndex: 29,
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    zIndex: 30,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 45%, rgba(13, 12, 12, 0) 100%)',
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)'
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 8px',
-    marginBottom: '14px',
+    gap: '8px',
     touchAction: 'pan-y'
   },
-  arrowButton: {
-    background: 'transparent',
-    border: 'none',
-    padding: '12px',
-    cursor: 'pointer',
+  // Стеклянный пузырь — общий вид (фон таб-бара): surface-dim + blur + волосок.
+  arrowBubble: {
+    flexShrink: 0,
+    width: '52px',
+    height: '52px',
+    padding: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    background: 'var(--color-surface-dim)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+    cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
+  },
+  dayBubble: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '12px 16px',
+    background: 'var(--color-surface-dim)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
   },
   dayLetterWrap: {
     display: 'flex',
     alignItems: 'flex-end',
-    justifyContent: 'center',
-    minWidth: '120px'
+    justifyContent: 'center'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
@@ -843,8 +888,19 @@ const styles = {
     textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
     display: 'inline-block'
   },
-  progressWrap: {
-    padding: '0 4px'
+  // Прогресс-пилюля: цифры 7 / 10 слева, длинная полоска справа — в одном пузыре.
+  progressBubble: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    height: '44px',
+    padding: '0 18px',
+    background: 'var(--color-surface-dim)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
   },
   progressLabel: {
     fontFamily: 'var(--font-display)',
@@ -852,10 +908,11 @@ const styles = {
     fontSize: '14px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
-    marginBottom: '6px'
+    flexShrink: 0,
+    whiteSpace: 'nowrap'
   },
   progressTrack: {
-    width: '100%',
+    flex: 1,
     height: '4px',
     background: 'rgba(255, 255, 255, 0.08)',
     borderRadius: '2px',
@@ -934,13 +991,6 @@ const styles = {
     background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.35) 55%, rgba(13,12,12,0.8) 82%, var(--color-bg) 100%)',
     pointerEvents: 'none',
     zIndex: 40
-  },
-  dayLetterCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '6px',
-    minWidth: '120px'
   },
   dayTagsRow: {
     display: 'flex',
