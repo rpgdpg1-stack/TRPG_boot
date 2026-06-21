@@ -12,6 +12,8 @@ import UiIcon from '../components/UiIcon'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
+const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
+const NAME_PLACEHOLDER = 'Введите название'
 
 /**
  * Конструктор своей программы.
@@ -291,12 +293,15 @@ export default function ProgramConstructor() {
 
       <div style={styles.section}>
         <div style={styles.secLabel}>НАЗВАНИЕ</div>
+        {/* Hug-блок: ширина по плейсхолдеру, растёт по тексту в одну строку
+            (size в символах). Форма как неактивный таб-бар (без выделения). */}
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Название программы"
-          maxLength={40}
+          placeholder={NAME_PLACEHOLDER}
+          maxLength={NAME_MAX}
+          size={Math.max(name.length, NAME_PLACEHOLDER.length)}
           style={styles.nameInput}
         />
       </div>
@@ -611,9 +616,12 @@ const styles = {
   header: { textAlign: 'center', margin: '8px 0 20px' },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
-    width: '100%', height: '52px', padding: '0 18px',
-    background: 'var(--color-card)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-card)', color: 'var(--color-text)',
+    height: '52px', padding: '0 20px', maxWidth: '100%',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
   },
   section: { marginBottom: '20px' },
