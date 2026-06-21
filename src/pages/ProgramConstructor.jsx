@@ -304,22 +304,34 @@ export default function ProgramConstructor() {
       {/* Количество дней */}
       <div style={styles.section}>
         <div style={styles.secLabel}>ДНЕЙ В ПРОГРАММЕ</div>
-        <div style={styles.segGroup}>
-          {[1, 2, 3].map((n, i) => {
+        <div style={styles.placeRow}>
+          {[1, 2, 3].map(n => {
             const active = dayCount === n
+            // Выбранное число — в контейнере-таб-баре (залито), остальные —
+            // голым текстом снаружи (как одно выбранное место среди прочих).
+            if (active) {
+              return (
+                <div key={n} style={{ ...styles.segGroup, width: 'auto' }}>
+                  <button
+                    onClick={() => changeDayCount(n)}
+                    className="press-tile"
+                    style={{
+                      ...styles.segItem, ...styles.segItemActive,
+                      flex: '0 0 auto', padding: '0 22px',
+                      color: 'var(--color-primary)', fontSize: '24px'
+                    }}
+                  >
+                    {n}
+                  </button>
+                </div>
+              )
+            }
             return (
               <button
                 key={n}
                 onClick={() => changeDayCount(n)}
                 className="press-tile"
-                style={{
-                  ...styles.segItem,
-                  ...(active ? styles.segItemActive : {}),
-                  marginLeft: i === 0 ? 0 : '-5px',
-                  zIndex: active ? 2 : 1,
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
-                  fontSize: active ? '24px' : '20px'
-                }}
+                style={{ ...styles.placeBare, fontSize: '20px' }}
               >
                 {n}
               </button>
