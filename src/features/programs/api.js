@@ -137,7 +137,7 @@ async function loadUserWeights(userId) {
   return weightsByEx
 }
 
-export async function getWorkoutDay(programSlug, day) {
+export async function getWorkoutDay(programSlug, day, place = null) {
   const user = getCurrentUser()
   if (!user) {
     console.warn('[programs] no user, returning []')
@@ -151,7 +151,9 @@ export async function getWorkoutDay(programSlug, day) {
   }
   const dbId = program.dbId
 
-  const dayCacheKey = `workout-day:${user.id}:${programSlug}:${day}`
+  // Место входит в ключ кеша — наборы Зал/Дом/Улица кешируются раздельно.
+  const placeKey = place || 'gym'
+  const dayCacheKey = `workout-day:${user.id}:${programSlug}:${placeKey}:${day}`
   const cachedDay = cacheGet(dayCacheKey)
   if (cachedDay) {
     schedulePrefetch(programSlug, day, user.id)
@@ -165,7 +167,7 @@ export async function getWorkoutDay(programSlug, day) {
     return pcachedDay
   }
 
-  const slotsRaw = getProgramDaySlots(programSlug, day)
+  const slotsRaw = getProgramDaySlots(programSlug, day, place)
   if (!slotsRaw.length) return []
 
   const [swapsByOrder, exercises, weightsByEx] = await Promise.all([
@@ -213,16 +215,19 @@ export async function getWorkoutDay(programSlug, day) {
   cacheSet(dayCacheKey, result, TTL.MEDIUM)
   pcacheSet(dayCacheKey, result) // переживает перезапуск для оффлайна
 
-  schedulePrefetch(programSlug, day, user.id)
+  schedulePrefetch(programSlug, day, user.id, place)
 
   return result
 }
 
-function schedulePrefetch(programSlug, currentDay, userId) {
+function schedulePrefetch(programSlug, currentDay, userId, place = null) {
   const program = getProgramBySlug(programSlug)
   if (!program) return
 
-  const days = Object.keys(program.data.days)
+  const placeKey = place || 'gym'
+  // Дни берём для текущего места (фолбэк на «Зал»/data.days).
+  const dayMap = (place && program.data.locations?.[place]) || program.data.days || {}
+  const days = Object.keys(dayMap)
   const idx = days.indexOf(currentDay)
   if (idx === -1) return
 
@@ -232,11 +237,11 @@ function schedulePrefetch(programSlug, currentDay, userId) {
   const neighbours = [prev, next].filter(d => d !== currentDay)
 
   for (const d of neighbours) {
-    const key = `workout-day:${userId}:${programSlug}:${d}`
+    const key = `workout-day:${userId}:${programSlug}:${placeKey}:${d}`
     if (cacheGet(key)) continue
 
     runWhenIdle(() => {
-      getWorkoutDay(programSlug, d).catch(e => {
+      getWorkoutDay(programSlug, d, place).catch(e => {
         console.warn('[programs] prefetch failed for day', d, e?.message)
       })
     })

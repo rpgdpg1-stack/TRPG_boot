@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { getProgramPlaces, getPlaceMeta } from '../features/programs/registry'
-import { cloudGet, cloudSet } from '../lib/cloud-storage'
-import { localGet, localSet } from '../utils/storage'
+import { useProgramPlace } from '../lib/program-place'
 import { haptic } from '../lib/telegram'
 
 /**
@@ -13,37 +12,23 @@ import { haptic } from '../lib/telegram'
  * (выдвигаются справа), выбор запоминается (CloudStorage, кросс-девайс) пока юзер
  * не сменит. Если место одно — тег статичный, не тапается.
  *
- * Выбор живёт по ключу `program-place:<slug>` и используется как «активное место»
- * программы (его потом будет грузить экран тренировки).
+ * Выбор живёт по ключу `program-place:<slug>` (см. useProgramPlace) и используется
+ * как «активное место» программы — его же грузит экран тренировки.
+ *
+ * Управление: по умолчанию неконтролируемый (свой useProgramPlace, пишет выбор
+ * сам). Если передан `value` — контролируемый (выбор хранит родитель, напр. экран
+ * дня), тогда запись делает родитель через onChange.
  *
  * Тап по переключателю не должен срабатывать как тап по карточке — глушим
  * всплытие (stopPropagation) на всех интеракциях.
  */
-export default function PlaceSwitcher({ program, onChange }) {
+export default function PlaceSwitcher({ program, value: cValue, onChange }) {
   const places = useMemo(() => getProgramPlaces(program), [program])
-  const key = `program-place:${program?.slug || ''}`
-  const placesKey = places.join(',')
-
-  const [value, setValue] = useState(() => {
-    const saved = localGet(key)
-    return (saved && places.includes(saved)) ? saved : (places[0] || 'gym')
-  })
+  const [iValue, iSet] = useProgramPlace(program?.slug || '', places)
   const [open, setOpen] = useState(false)
 
-  // Догоняем выбор из облака (другое устройство).
-  useEffect(() => {
-    let alive = true
-    cloudGet(key).then(v => {
-      if (alive && v && places.includes(v)) setValue(v)
-    })
-    return () => { alive = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, placesKey])
-
-  // Если выбранное место исчезло (удалили в конструкторе) — откат на первое.
-  useEffect(() => {
-    if (places.length && !places.includes(value)) setValue(places[0])
-  }, [placesKey, value, places])
+  const controlled = cValue != null
+  const value = controlled ? cValue : iValue
 
   if (places.length === 0) return null
 
@@ -51,9 +36,7 @@ export default function PlaceSwitcher({ program, onChange }) {
     e.stopPropagation()
     if (loc !== value) {
       haptic.selection()
-      setValue(loc)
-      localSet(key, loc)
-      cloudSet(key, loc)
+      if (!controlled) iSet(loc)
       onChange?.(loc)
     }
     setOpen(false)

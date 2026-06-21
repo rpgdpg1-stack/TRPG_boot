@@ -123,12 +123,17 @@ export function programCountLabel(categoryId) {
 }
 
 /**
- * Получить слоты дня программы по slug.
+ * Получить слоты дня программы по slug и (опц.) месту.
+ * Если место передано и у программы есть набор для него (data.locations[place]) —
+ * берём его; иначе фолбэк на data.days (набор «Зал» / встроенная программа).
  * Используется в страницах WorkoutDay (силовая). Для плавания не применяется.
  */
-export function getProgramDaySlots(slug, day) {
+export function getProgramDaySlots(slug, day, place) {
   const program = getProgramBySlug(slug)
   if (!program) return []
+  if (place && program.data.locations?.[place]) {
+    return program.data.locations[place][day] || []
+  }
   return program.data.days?.[day] || []
 }
 

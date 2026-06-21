@@ -3,7 +3,9 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
-import { getProgramBySlug, getProgramDaySlots } from '../features/programs/registry'
+import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
+import { useProgramPlace } from '../lib/program-place'
+import PlaceSwitcher from '../components/PlaceSwitcher'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getDayMuscleTags } from '../utils/history'
@@ -88,7 +90,12 @@ export default function WorkoutDay() {
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
-  const programSlots = useMemo(() => getProgramDaySlots(programId, day), [programId, day])
+  // Выбранное место (Зал/Дом/Улица) — общий с карточками выбор. Упражнения дня
+  // грузятся под него.
+  const places = useMemo(() => getProgramPlaces(program), [program])
+  const [place, setPlace] = useProgramPlace(programId, places)
+
+  const programSlots = useMemo(() => getProgramDaySlots(programId, day, place), [programId, day, place])
 
   const dayTags = useMemo(() => getDayMuscleTags(program?.dbId, day), [program, day])
 
@@ -158,7 +165,7 @@ export default function WorkoutDay() {
 
       setLoading(true)
       try {
-        const data = await getWorkoutDay(programId, day)
+        const data = await getWorkoutDay(programId, day, place)
         if (!cancelled) {
           setSlots(data || [])
           setLoading(false)
@@ -174,7 +181,7 @@ export default function WorkoutDay() {
 
     load()
     return () => { cancelled = true }
-  }, [programId, day])
+  }, [programId, day, place])
 
   useEffect(() => {
     saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
@@ -434,8 +441,9 @@ export default function WorkoutDay() {
         <div style={styles.headerCard}>
 
           <div style={styles.topMetaRow}>
-            {/* Место тренировки (Зал/Дом/Улица). Пока эмодзи, тап без действия. */}
-            <span style={styles.placeBadge} aria-label="Место тренировки">🏋️</span>
+            {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
+                подгружает упражнения этого места из конструктора. */}
+            <PlaceSwitcher program={program} value={place} onChange={setPlace} />
             <span style={styles.timer}>{formatDuration(elapsedSec)}</span>
           </div>
 
@@ -852,11 +860,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 2px'
-  },
-  placeBadge: {
-    fontSize: '20px',
-    lineHeight: 1,
-    userSelect: 'none'
   },
   timer: {
     fontFamily: 'var(--font-display)',
