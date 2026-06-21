@@ -53,9 +53,9 @@ export default function WorkoutDay() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [activeOrderNums, setActiveOrderNums] = useState(() => {
-    return new Set(loadWorkoutProgress(programId, day))
-  })
+  // Прогресс грузится в эффекте ниже (после того как известно место) —
+  // у каждого места (Зал/Дом/Улица) свой набор отжатых упражнений.
+  const [activeOrderNums, setActiveOrderNums] = useState(() => new Set())
 
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishStatus, setFinishStatus] = useState('idle')
@@ -94,6 +94,9 @@ export default function WorkoutDay() {
   // грузятся под него.
   const places = useMemo(() => getProgramPlaces(program), [program])
   const [place, setPlace] = useProgramPlace(programId, places)
+  // Актуальное место для сейва прогресса (без гонки при переключении места).
+  const placeRef = useRef(place)
+  placeRef.current = place
 
   const programSlots = useMemo(() => getProgramDaySlots(programId, day, place), [programId, day, place])
 
@@ -116,8 +119,8 @@ export default function WorkoutDay() {
   }, [navigate, program, location.state])
 
   useEffect(() => {
-    setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))
-  }, [programId, day])
+    setActiveOrderNums(new Set(loadWorkoutProgress(programId, day, place)))
+  }, [programId, day, place])
 
   // Старт/сброс таймера тренировки: при заходе и при переключении дня.
   useEffect(() => {
@@ -183,8 +186,11 @@ export default function WorkoutDay() {
     return () => { cancelled = true }
   }, [programId, day, place])
 
+  // Сохраняем под актуальное место (placeRef) — без place в deps, чтобы при
+  // переключении места не затереть прогресс нового места старыми галочками
+  // (load-эффект выше сначала подставит правильный набор).
   useEffect(() => {
-    saveWorkoutProgress(programId, day, Array.from(activeOrderNums))
+    saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
 
   // Реакция на возврат с экранов "Сменить" и "Инфо".
@@ -393,7 +399,7 @@ export default function WorkoutDay() {
       // день фиксируем в цикле A/B/C. Показываем спец-сообщение в модалке.
       if (result.offline) {
         await setLastCompletedDay(programId, day)
-        clearWorkoutProgress(programId, day)
+        clearWorkoutProgress(programId, day, place)
         haptic.warning()
         setFinishedOffline(true)
         setFinishStatus('idle')
@@ -403,7 +409,7 @@ export default function WorkoutDay() {
       }
 
       await setLastCompletedDay(programId, day)
-      clearWorkoutProgress(programId, day)
+      clearWorkoutProgress(programId, day, place)
       haptic.success()
 
       setShowFinishedModal(false)
