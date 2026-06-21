@@ -21,7 +21,9 @@ const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 const CACHE_KEY = 'user-programs'
 
 const EMOJI = { custom: '💪', shared: '🤝' }
-const TAGS = { custom: ['своя'], shared: ['от друга'] }
+// Тег «своя» убран — у кастомной программы вместо него показываются места
+// (Зал/Дом/Улица) из data.locations. Программе от друга тег пока оставляем.
+const TAGS = { custom: [], shared: ['от друга'] }
 
 /**
  * Преобразовать строку из api_get_my_programs в объект реестра.
@@ -43,7 +45,9 @@ function mapToRegistry(p) {
     editable: !!p.editable,         // редактировать можно только свою
     authorId: p.author_id || null,
     authorName: p.author_name || null,
-    data: { days: p.days || {} }
+    // days — набор «Зал» (для экрана дня, совместимость); locations — карта по
+    // местам { gym:{A:[...]}, home:{...}, outdoor:{...} } для карточек/конструктора.
+    data: { days: p.days || {}, locations: p.locations || {} }
   }
 }
 
@@ -89,16 +93,20 @@ export async function loadMyPrograms() {
 
 /**
  * Сохранить/пересобрать свою программу.
- * days: [{ exercises: ['ex_001', ...] }, ...] — 1..3 дня, ≤10 упр/день.
+ * dayCount: 1..3 (общее число дней A/B/C).
+ * byLocation: { gym: [ ['ex_001',...], ... ], home: [...], outdoor: [...] } —
+ *   ключ места → массив дней, день → массив exercise_id. Пустые дни/места
+ *   можно не передавать; RPC их пропускает. ≤10 упр/день.
  * Возвращает id программы ('usr_<id>') или бросает ошибку валидации из RPC.
  */
-export async function saveMyProgram(name, days) {
+export async function saveMyProgram(name, dayCount, byLocation) {
   const user = getCurrentUser()
   if (!user) return null
   const { data, error } = await supabase.rpc('api_save_my_program', {
     p_user_id: user.id,
     p_name: name,
-    p_days: days
+    p_day_count: dayCount,
+    p_days: byLocation
   })
   if (error) {
     console.error('[customProgram] saveMyProgram error:', error)

@@ -141,6 +141,39 @@ export function getProgramEmoji(slug) {
 }
 
 /**
+ * Места тренировки (Зал/Дом/Улица) — единый источник для конструктора и карточек.
+ * Порядок фиксированный: зал → дом → улица. Эмодзи пока временные.
+ * Цвет иконки = цвет соответствующего тега (--tag-gym/home/outdoor).
+ */
+export const PLACES = ['gym', 'home', 'outdoor']
+export const PLACE_META = {
+  gym:     { key: 'gym',     label: 'Зал',   emoji: '🏋️', color: 'var(--tag-gym)' },
+  home:    { key: 'home',    label: 'Дом',   emoji: '🏠', color: 'var(--tag-home)' },
+  outdoor: { key: 'outdoor', label: 'Улица', emoji: '🌳', color: 'var(--tag-outdoor)' }
+}
+export function getPlaceMeta(loc) {
+  return PLACE_META[loc] || PLACE_META.gym
+}
+
+/**
+ * Какие места заполнены у программы (есть хоть один непустой день).
+ * Берёт из data.locations (кастомная из БД). Возвращает массив ключей в
+ * порядке PLACES. Для встроенной силовой (нет locations) — по тегу 'зал', иначе [].
+ */
+export function getProgramPlaces(program) {
+  if (!program) return []
+  const locs = program.data?.locations
+  if (locs && typeof locs === 'object' && Object.keys(locs).length > 0) {
+    return PLACES.filter(loc => {
+      const days = locs[loc]
+      return days && Object.values(days).some(slots => Array.isArray(slots) && slots.length > 0)
+    })
+  }
+  if ((program.tags || []).includes('зал')) return ['gym']
+  return []
+}
+
+/**
  * Цвет тега программы. Единый источник для карточек (Home, Category).
  * Кастомная программа (source === 'custom') — всегда акцентный зелёный.
  * Встроенные — по названию тега. Незнакомый тег → серый.

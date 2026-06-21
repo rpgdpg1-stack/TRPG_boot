@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getProgramBySlug } from '../features/programs/registry'
+import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
 import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -28,19 +28,13 @@ export default function ProgramConstructor() {
 
   const [name, setName] = useState(existing?.title || '')
   const [dayCount, setDayCount] = useState(() => {
-    const n = existing ? Object.keys(existing.data.days || {}).length : 1
+    const n = existing?.days_count || (existing ? Object.keys(existing.data.days || {}).length : 1)
     return Math.min(3, Math.max(1, n || 1))
   })
-  // days: массив дней, каждый — массив exercise_id в порядке.
-  const [days, setDays] = useState(() => {
-    if (existing) {
-      return LETTERS.slice(0, dayCount).map(letter => {
-        const slots = existing.data.days?.[letter] || []
-        return [...slots].sort((a, b) => a.order_num - b.order_num).map(s => s.default_exercise_id)
-      })
-    }
-    return [[]]
-  })
+  // byLoc: { gym: [ [exId,...] /* день A */, ... ], home: [...], outdoor: [...] }
+  // Для каждого места — массив дней (по числу dayCount), день — массив exercise_id.
+  const [byLoc, setByLoc] = useState(() => initByLoc(existing, dayCount))
+  const [activeLoc, setActiveLoc] = useState('gym')
   const [activeIdx, setActiveIdx] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -58,11 +52,11 @@ export default function ProgramConstructor() {
 
   // Снимок при первом рендере: с чем пришли (для сравнения «были ли правки»).
   if (initialSnapshot.current === null) {
-    initialSnapshot.current = JSON.stringify({ name: existing?.title || '', days })
+    initialSnapshot.current = JSON.stringify({ name: existing?.title || '', dayCount, byLoc })
   }
 
   const isDirty = () =>
-    initialSnapshot.current !== JSON.stringify({ name, days })
+    initialSnapshot.current !== JSON.stringify({ name, dayCount, byLoc })
 
   // Перетаскивание упражнений внутри дня: тащим за «ручку», соседи плавно
   // расступаются, перетаскиваемая карточка приподнимается. Порядок применяется
@@ -81,10 +75,10 @@ export default function ProgramConstructor() {
       })
     }
     lockVerticalSwipes()
-    // isDirty читает name/days на момент тапа через замыкание эффекта —
-    // поэтому держим name и days в зависимостях, чтобы handler был свежий.
+    // isDirty читает name/byLoc на момент тапа через замыкание эффекта —
+    // поэтому держим их в зависимостях, чтобы handler был свежий.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, pickerOpen, name, days])
+  }, [navigate, pickerOpen, name, byLoc])
 
   useEffect(() => {
     let cancelled = false
@@ -144,20 +138,31 @@ export default function ProgramConstructor() {
   const changeDayCount = (n) => {
     if (n === dayCount) return
     haptic.light()
-    setDays(prev => {
-      const next = [...prev]
-      if (n > prev.length) { while (next.length < n) next.push([]) }
-      else { next.length = n }
+    setByLoc(prev => {
+      const next = {}
+      for (const loc of PLACES) {
+        const arr = [...(prev[loc] || [])]
+        if (n > arr.length) { while (arr.length < n) arr.push([]) }
+        else { arr.length = n }
+        next[loc] = arr
+      }
       return next
     })
     setDayCount(n)
     setActiveIdx(i => Math.min(i, n - 1))
   }
 
+  // Переключение места (Зал/Дом/Улица) — наполняем дни для каждого места отдельно.
+  const changeLoc = (loc) => {
+    if (loc === activeLoc) return
+    haptic.selection()
+    setActiveLoc(loc)
+  }
+
   const handleToggle = (ex) => {
-    setDays(prev => {
-      const next = prev.map(d => [...d])
-      const day = next[activeIdx]
+    setByLoc(prev => {
+      const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
+      const day = next[activeLoc][activeIdx]
       const i = day.indexOf(ex.id)
       if (i >= 0) day.splice(i, 1)                       // снять выбор
       else if (day.length < MAX_PER_DAY) day.push(ex.id) // добавить
@@ -167,23 +172,29 @@ export default function ProgramConstructor() {
 
   const handleRemove = (exId) => {
     haptic.light()
-    setDays(prev => {
-      const next = prev.map(d => [...d])
-      next[activeIdx] = next[activeIdx].filter(id => id !== exId)
+    setByLoc(prev => {
+      const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
+      next[activeLoc][activeIdx] = next[activeLoc][activeIdx].filter(id => id !== exId)
       return next
     })
   }
 
-  const canSave = days.length >= 1 && days.every(d => d.length >= 1) && !saving
+  // Сохранить можно, когда «Зал» (основное место) заполнен по всем дням.
+  // Дом/Улица — опциональны (любое непустое место пойдёт в сохранение).
+  const canSave = !saving && (byLoc.gym || []).length >= 1 && (byLoc.gym || []).every(d => d.length >= 1)
 
   const handleSave = async () => {
     if (!canSave) return
     setSaving(true)
     haptic.medium()
     try {
-      const payload = days.map(d => ({ exercises: d }))
-      await saveMyProgram(name.trim(), payload)
-      initialSnapshot.current = JSON.stringify({ name, days }) // зафиксировали как сохранённое
+      // Передаём только места, где есть хоть один непустой день.
+      const payload = {}
+      for (const loc of PLACES) {
+        if ((byLoc[loc] || []).some(d => d.length > 0)) payload[loc] = byLoc[loc]
+      }
+      await saveMyProgram(name.trim(), dayCount, payload)
+      initialSnapshot.current = JSON.stringify({ name, dayCount, byLoc }) // зафиксировали как сохранённое
       haptic.success()
       navigate('/category/gym')
     } catch (e) {
@@ -194,13 +205,13 @@ export default function ProgramConstructor() {
     }
   }
 
-  const currentDay = days[activeIdx] || []
+  const currentDay = byLoc[activeLoc]?.[activeIdx] || []
   const atLimit = currentDay.length >= MAX_PER_DAY
 
   const moveItem = (from, to) => {
-    setDays(prev => {
-      const next = prev.map(d => [...d])
-      const arr = next[activeIdx]
+    setByLoc(prev => {
+      const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
+      const arr = next[activeLoc][activeIdx]
       const [item] = arr.splice(from, 1)
       arr.splice(to, 0, item)
       return next
@@ -222,7 +233,7 @@ export default function ProgramConstructor() {
     const d = dragRef.current
     if (!d) return
     const dy = e.clientY - d.startY
-    const len = (days[activeIdx] || []).length
+    const len = (byLoc[activeLoc]?.[activeIdx] || []).length
     let targetIndex = d.startIndex + Math.round(dy / d.stride)
     targetIndex = Math.max(0, Math.min(len - 1, targetIndex))
     if (targetIndex !== d.targetIndex) haptic.selection()
@@ -295,25 +306,65 @@ export default function ProgramConstructor() {
         </div>
       </div>
 
-      {/* Вкладки дней */}
+      {/* Место (Зал/Дом/Улица) — для каждого свои дни. Активное место увеличено
+          + зелёная полоса под ним; заполненное (есть упражнения) — зелёная
+          обводка; пустое неактивное — приглушено (opacity 0.45). */}
+      <div style={styles.section}>
+        <div style={styles.secLabel}>МЕСТО</div>
+        <div style={styles.placeTabs}>
+          {PLACES.map(loc => {
+            const meta = getPlaceMeta(loc)
+            const filled = (byLoc[loc] || []).some(d => d.length > 0)
+            const active = activeLoc === loc
+            return (
+              <div key={loc} style={styles.tabCol}>
+                <button
+                  onClick={() => changeLoc(loc)}
+                  className="press-tile"
+                  style={{
+                    ...styles.placePill,
+                    borderColor: filled ? 'var(--color-primary)' : 'transparent',
+                    color: active ? 'var(--color-primary)' : (filled ? 'var(--color-text)' : 'var(--color-text-secondary)'),
+                    opacity: active || filled ? 1 : 0.45,
+                    transform: active ? 'scale(1.06)' : 'scale(1)',
+                    fontSize: active ? '15px' : '13px'
+                  }}
+                >
+                  <span style={styles.placeEmoji}>{meta.emoji}</span>
+                  {meta.label}
+                </button>
+                <div style={{ ...styles.tabUnderline, background: active ? 'var(--color-primary)' : 'transparent' }} />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Вкладки дней — пилюли, активный день увеличен + зелёная полоса под ним. */}
       <div style={styles.section}>
         <div style={styles.secLabel}>ДНИ</div>
         <div style={styles.dayTabs}>
-        {LETTERS.slice(0, dayCount).map((letter, idx) => (
-          <button
-            key={letter}
-            onClick={() => { haptic.light(); setActiveIdx(idx) }}
-            className="press-tile"
-            style={{
-              ...styles.dayTab,
-              color: activeIdx === idx ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)',
-              borderColor: activeIdx === idx ? 'var(--color-primary)' : 'transparent'
-            }}
-          >
-            {letter}
-            <span style={styles.dayTabCount}>{days[idx]?.length || 0}</span>
-          </button>
-        ))}
+          {LETTERS.slice(0, dayCount).map((letter, idx) => {
+            const active = activeIdx === idx
+            const count = byLoc[activeLoc]?.[idx]?.length || 0
+            return (
+              <div key={letter} style={styles.tabCol}>
+                <button
+                  onClick={() => { haptic.light(); setActiveIdx(idx) }}
+                  className="press-tile"
+                  style={{
+                    ...styles.dayPill,
+                    color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                    transform: active ? 'scale(1.06)' : 'scale(1)'
+                  }}
+                >
+                  <span style={{ fontSize: active ? '24px' : '20px' }}>{letter}</span>
+                  <span style={{ ...styles.dayPillCount, color: active ? 'var(--color-primary)' : 'inherit', fontSize: active ? '13px' : '12px' }}>{count}</span>
+                </button>
+                <div style={{ ...styles.tabUnderline, background: active ? 'var(--color-primary)' : 'transparent' }} />
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -462,6 +513,26 @@ function toTitleCase(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
+// Дни одного места из existing.data.locations[loc] (или data.days для «Зал» —
+// фолбэк на старый кеш до перезагрузки из БД).
+function buildDaysForLoc(existing, locKey, dayCount) {
+  const dayMap = existing?.data?.locations?.[locKey]
+    || (locKey === 'gym' ? existing?.data?.days : null)
+    || {}
+  return LETTERS.slice(0, dayCount).map(letter => {
+    const slots = dayMap[letter] || []
+    return [...slots].sort((a, b) => a.order_num - b.order_num).map(s => s.default_exercise_id)
+  })
+}
+
+function initByLoc(existing, dayCount) {
+  return {
+    gym: buildDaysForLoc(existing, 'gym', dayCount),
+    home: buildDaysForLoc(existing, 'home', dayCount),
+    outdoor: buildDaysForLoc(existing, 'outdoor', dayCount)
+  }
+}
+
 function GripIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
@@ -496,13 +567,27 @@ const styles = {
   secLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
   segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', background: 'var(--color-card)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', transition: 'color 0.18s ease, font-size 0.18s ease' },
-  dayTabs: { display: 'flex', gap: '20px', justifyContent: 'center' },
-  dayTab: {
-    display: 'flex', alignItems: 'center', gap: '6px',
-    background: 'transparent', border: 'none', borderBottom: '2px solid transparent',
-    padding: '6px 4px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px'
+  // Общая раскладка пилюль-вкладок (место и дни): колонка «пилюля + полоса».
+  placeTabs: { display: 'flex', gap: '10px' },
+  dayTabs: { display: 'flex', gap: '10px' },
+  tabCol: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
+  tabUnderline: { width: '70%', height: '3px', borderRadius: '2px', transition: 'background 0.2s ease' },
+  placePill: {
+    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    height: '46px', padding: '0 8px',
+    background: 'var(--color-card)', border: '1.5px solid transparent', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
+    transition: 'transform 0.18s var(--ease-ios), color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
   },
-  dayTabCount: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700, opacity: 0.7 },
+  placeEmoji: { fontSize: '16px', lineHeight: 1 },
+  dayPill: {
+    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    height: '46px', padding: '0 14px',
+    background: 'var(--color-card)', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: 800,
+    transition: 'transform 0.18s var(--ease-ios), color 0.18s ease'
+  },
+  dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
