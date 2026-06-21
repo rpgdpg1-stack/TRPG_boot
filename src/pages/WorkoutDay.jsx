@@ -432,64 +432,69 @@ export default function WorkoutDay() {
           контент скроллится под ними как под таб-баром. */}
       <div ref={headerRef} style={styles.floatingHeader}>
 
-        <div
-          style={styles.headerRow}
-          onTouchStart={handleHeaderTouchStart}
-          onTouchEnd={handleHeaderTouchEnd}
-        >
-          <button
-            onClick={() => goToDay(prevDay, 'prev')}
-            style={styles.arrowBubble}
-            className="press-tile"
-            aria-label="Предыдущий день"
-          >
-            <ArrowLeft />
-          </button>
+        {/* Один целиковый блок-пузырь: стрелки + день с группами + прогресс.
+            Заливка как у активного таба (--color-surface-active), радиус 33. */}
+        <div style={styles.headerCard}>
 
-          <div style={styles.dayBubble}>
-            <div style={styles.dayLetterWrap}>
-              <span
-                key={day}
-                className={dayLetterAnimClass}
-                style={styles.dayLetter}
-              >
-                {day}
-              </span>
-              <SwipeHintArrow />
-            </div>
-            {dayTags.length > 0 && (
-              <div key={`tags-${day}`} style={styles.dayTagsRow}>
-                {dayTags.map((t, i) => (
-                  <span key={t.key} style={styles.dayTagText}>
-                    {i > 0 && <span style={styles.dayTagDot}> · </span>}
-                    {t.label.toUpperCase()}
-                  </span>
-                ))}
+          <div
+            style={styles.headerRow}
+            onTouchStart={handleHeaderTouchStart}
+            onTouchEnd={handleHeaderTouchEnd}
+          >
+            <button
+              onClick={() => goToDay(prevDay, 'prev')}
+              style={styles.arrowButton}
+              className="press-tile"
+              aria-label="Предыдущий день"
+            >
+              <ArrowLeft />
+            </button>
+
+            <div style={styles.dayCol}>
+              <div style={styles.dayLetterWrap}>
+                <span
+                  key={day}
+                  className={dayLetterAnimClass}
+                  style={styles.dayLetter}
+                >
+                  {day}
+                </span>
+                <SwipeHintArrow />
               </div>
-            )}
+              {dayTags.length > 0 && (
+                <div key={`tags-${day}`} style={styles.dayTagsRow}>
+                  {dayTags.map((t, i) => (
+                    <span key={t.key} style={styles.dayTagText}>
+                      {i > 0 && <span style={styles.dayTagDot}> · </span>}
+                      {t.label.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => goToDay(nextDay, 'next')}
+              style={styles.arrowButton}
+              className="press-tile"
+              aria-label="Следующий день"
+            >
+              <ArrowRight />
+            </button>
           </div>
 
-          <button
-            onClick={() => goToDay(nextDay, 'next')}
-            style={styles.arrowBubble}
-            className="press-tile"
-            aria-label="Следующий день"
-          >
-            <ArrowRight />
-          </button>
-        </div>
-
-        <div style={styles.progressBubble}>
-          <span style={styles.progressLabel}>
-            {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
-          </span>
-          <div style={styles.progressTrack}>
-            <div
-              style={{
-                ...styles.progressFill,
-                width: `${progressPct}%`
-              }}
-            />
+          <div style={styles.progressRow}>
+            <span style={styles.progressLabel}>
+              {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
+            </span>
+            <div style={styles.progressTrack}>
+              <div
+                style={{
+                  ...styles.progressFill,
+                  width: `${progressPct}%`
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -833,6 +838,19 @@ const styles = {
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)'
   },
+  // Один целиковый блок-пузырь: заливка активного таба, радиус 33, стекло.
+  headerCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    padding: '14px 16px',
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-card)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -840,38 +858,25 @@ const styles = {
     gap: '8px',
     touchAction: 'pan-y'
   },
-  // Стеклянный пузырь — общий вид (фон таб-бара): surface-dim + blur + волосок.
-  arrowBubble: {
+  // Стрелки — прозрачные кнопки внутри общего блока (без своих пузырей).
+  arrowButton: {
     flexShrink: 0,
-    width: '52px',
-    height: '52px',
-    padding: 0,
+    background: 'transparent',
+    border: 'none',
+    padding: '12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'var(--color-surface-dim)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
-  dayBubble: {
+  dayCol: {
     flex: 1,
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '6px',
-    padding: '12px 16px',
-    background: 'var(--color-surface-dim)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+    gap: '6px'
   },
   dayLetterWrap: {
     display: 'flex',
@@ -888,19 +893,12 @@ const styles = {
     textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
     display: 'inline-block'
   },
-  // Прогресс-пилюля: цифры 7 / 10 слева, длинная полоска справа — в одном пузыре.
-  progressBubble: {
+  // Прогресс: цифры 7 / 10 слева, длинная полоска справа — строкой внутри блока.
+  progressRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    height: '44px',
-    padding: '0 18px',
-    background: 'var(--color-surface-dim)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+    padding: '0 8px'
   },
   progressLabel: {
     fontFamily: 'var(--font-display)',
