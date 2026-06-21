@@ -299,12 +299,14 @@ export default function ProgramConstructor() {
                 onClick={() => changeDayCount(n)}
                 className="press-tile"
                 style={{
-                  ...styles.segment,
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  fontSize: active ? '26px' : '20px'
+                  ...styles.pillTab,
+                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                  fontSize: active ? '26px' : '20px',
+                  transform: active ? 'scale(1.06)' : 'scale(1)'
                 }}
               >
                 {n}
+                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
               </button>
             )
           })}
@@ -322,24 +324,23 @@ export default function ProgramConstructor() {
             const filled = (byLoc[loc] || []).some(d => d.length > 0)
             const active = activeLoc === loc
             return (
-              <div key={loc} style={styles.tabCol}>
-                <button
-                  onClick={() => changeLoc(loc)}
-                  className="press-tile"
-                  style={{
-                    ...styles.placePill,
-                    borderColor: filled ? 'var(--color-primary)' : 'transparent',
-                    color: active ? 'var(--color-primary)' : (filled ? 'var(--color-text)' : 'var(--color-text-secondary)'),
-                    opacity: active || filled ? 1 : 0.45,
-                    transform: active ? 'scale(1.06)' : 'scale(1)',
-                    fontSize: active ? '15px' : '13px'
-                  }}
-                >
-                  <UiIcon name={meta.icon} size={16} />
-                  {meta.label}
-                </button>
-                <div style={{ ...styles.tabUnderline, background: active ? 'var(--color-primary)' : 'transparent' }} />
-              </div>
+              <button
+                key={loc}
+                onClick={() => changeLoc(loc)}
+                className="press-tile"
+                style={{
+                  ...styles.pillTab,
+                  borderColor: filled ? 'var(--color-primary)' : 'transparent',
+                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                  opacity: active || filled ? 1 : 0.45,
+                  transform: active ? 'scale(1.06)' : 'scale(1)',
+                  fontSize: active ? '15px' : '13px'
+                }}
+              >
+                <UiIcon name={meta.icon} size={16} />
+                {meta.label}
+                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
+              </button>
             )
           })}
         </div>
@@ -353,21 +354,21 @@ export default function ProgramConstructor() {
             const active = activeIdx === idx
             const count = byLoc[activeLoc]?.[idx]?.length || 0
             return (
-              <div key={letter} style={styles.tabCol}>
-                <button
-                  onClick={() => { haptic.light(); setActiveIdx(idx) }}
-                  className="press-tile"
-                  style={{
-                    ...styles.dayPill,
-                    color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
-                    transform: active ? 'scale(1.06)' : 'scale(1)'
-                  }}
-                >
-                  <span style={{ fontSize: active ? '24px' : '20px' }}>{letter}</span>
-                  <span style={{ ...styles.dayPillCount, color: active ? 'var(--color-primary)' : 'inherit', fontSize: active ? '13px' : '12px' }}>{count}</span>
-                </button>
-                <div style={{ ...styles.tabUnderline, background: active ? 'var(--color-primary)' : 'transparent' }} />
-              </div>
+              <button
+                key={letter}
+                onClick={() => { haptic.light(); setActiveIdx(idx) }}
+                className="press-tile"
+                style={{
+                  ...styles.pillTab,
+                  fontWeight: 800,
+                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                  transform: active ? 'scale(1.06)' : 'scale(1)'
+                }}
+              >
+                <span style={{ fontSize: active ? '24px' : '20px' }}>{letter}</span>
+                <span style={{ ...styles.dayPillCount, color: active ? 'var(--color-primary)' : 'inherit', fontSize: active ? '13px' : '12px' }}>{count}</span>
+                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
+              </button>
             )
           })}
         </div>
@@ -564,32 +565,29 @@ const styles = {
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     width: '100%', height: '52px', padding: '0 18px',
-    background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--color-card)', border: 'none',
     borderRadius: 'var(--radius-card)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
   },
   section: { marginBottom: '20px' },
   secLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
-  segment: { flex: 1, height: '52px', border: 'none', borderRadius: 'var(--radius-medium)', background: 'var(--color-card)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', transition: 'color 0.18s ease, font-size 0.18s ease' },
-  // Общая раскладка пилюль-вкладок (место и дни): колонка «пилюля + полоса».
+  // Единая пилюля-вкладка (дней-в-программе / место / день): одной высоты и
+  // ширины (flex:1), радиус 90. Активная увеличена + зелёная полоса ВНУТРИ снизу
+  // (overflow:hidden обрезает её края по скруглению).
   placeTabs: { display: 'flex', gap: '10px' },
   dayTabs: { display: 'flex', gap: '10px' },
-  tabCol: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
-  tabUnderline: { width: '70%', height: '3px', borderRadius: '2px', transition: 'background 0.2s ease' },
-  placePill: {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-    height: '46px', padding: '0 8px',
+  pillTab: {
+    flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    height: '52px', padding: '0 8px',
     background: 'var(--color-card)', border: '1.5px solid transparent', borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
     transition: 'transform 0.18s var(--ease-ios), color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
   },
-  dayPill: {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-    height: '46px', padding: '0 14px',
-    background: 'var(--color-card)', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)', fontWeight: 800,
-    transition: 'transform 0.18s var(--ease-ios), color 0.18s ease'
+  tabUnderlineInside: {
+    position: 'absolute', left: 0, right: 0, bottom: 0, height: '3px',
+    transition: 'background 0.2s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
