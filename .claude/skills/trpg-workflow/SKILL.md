@@ -157,7 +157,7 @@ src/
 │                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
 ├── components/     ActionButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
 │                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon MuscleIcon
-│                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlayerCard PlayerProfileModal
+│                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerCard PlayerProfileModal
 │                   ProfileHeader ProgramActionMenu RankIcon RanksPopup SaveFriendProgramModal
 │                   StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
