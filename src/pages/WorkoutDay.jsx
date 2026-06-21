@@ -821,17 +821,15 @@ const styles = {
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
-  // Один целиковый блок: заливка активного таба, радиус 33, стекло.
+  // Один целиковый блок — фон и строук как у карточки игрока на главной.
   // Тень не нужна — переход даёт фейд под блоком (как на главной).
   headerCard: {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     padding: '14px 16px',
-    background: 'var(--color-surface-active)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    border: '1px solid var(--color-border)',
+    background: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
   },
   headerRow: {
