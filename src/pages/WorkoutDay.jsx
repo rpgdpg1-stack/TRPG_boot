@@ -100,6 +100,12 @@ export default function WorkoutDay() {
     return () => ro.disconnect()
   }, [])
 
+  // Закреплённый заголовок текущей группы мышц: при скролле показывает группу,
+  // чей заголовок ушёл под шапку. Не уезжает — стоит на месте, меняет текст.
+  const sectionRefs = useRef([])
+  const stickyIdxRef = useRef(-1)
+  const [stickyGroup, setStickyGroup] = useState(null)
+
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
@@ -263,6 +269,47 @@ export default function WorkoutDay() {
 
     navigate(location.pathname, { replace: true, state: null })
   }, [loading, slots.length, location.state, location.pathname, navigate])
+
+  // Отслеживаем, заголовок какой группы ушёл под шапку — его показывает
+  // закреплённый заголовок-пузырёк. Считаем активной последнюю секцию, чей верх
+  // выше линии под шапкой (headerH). Обновляем стейт только при смене группы.
+  useEffect(() => {
+    if (loading) { setStickyGroup(null); stickyIdxRef.current = -1; return }
+    const secs = groupByMuscleGroup(slots)
+    if (!secs.length) { setStickyGroup(null); stickyIdxRef.current = -1; return }
+
+    const lineY = (headerH || 0) + 1
+    const update = () => {
+      let active = -1
+      for (let i = 0; i < secs.length; i++) {
+        const el = sectionRefs.current[i]
+        if (!el) continue
+        if (el.getBoundingClientRect().top <= lineY) active = i
+        else break
+      }
+      if (active === stickyIdxRef.current) return
+      stickyIdxRef.current = active
+      if (active < 0) {
+        setStickyGroup(null)
+      } else {
+        const g = secs[active].muscleGroup
+        setStickyGroup({
+          label: MUSCLE_GROUP_LABELS[g] || g.toUpperCase(),
+          accent: getMuscleGroupColors(g).accent
+        })
+      }
+    }
+
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => { ticking = false; update() })
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [loading, slots, headerH])
 
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
@@ -527,6 +574,9 @@ export default function WorkoutDay() {
             </div>
           </div>
         </div>
+
+        {/* Fade-scrim под блоком дня: контент уходит под шапку плавно. */}
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={{
@@ -551,15 +601,15 @@ export default function WorkoutDay() {
         {!loading && sections.length > 0 && (
           <div style={styles.sectionsWrap}>
             {sections.map((section, sIdx) => (
-              <section key={`${section.muscleGroup}-${sIdx}`} style={styles.section}>
-                <h2
-                  className="muscle-sticky-header"
-                  style={{
-                    ...styles.muscleHeader,
-                    top: headerH,
-                    color: getMuscleGroupColors(section.muscleGroup).accent
-                  }}
-                >
+              <section
+                key={`${section.muscleGroup}-${sIdx}`}
+                ref={(el) => { sectionRefs.current[sIdx] = el }}
+                style={styles.section}
+              >
+                <h2 style={{
+                  ...styles.muscleHeader,
+                  color: getMuscleGroupColors(section.muscleGroup).accent
+                }}>
                   {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
                 </h2>
 
@@ -604,6 +654,18 @@ export default function WorkoutDay() {
         )}
 
       </div>
+
+      {/* Закреплённый заголовок-пузырёк текущей группы. key=label → лёгкая
+          микро-анимация при смене текста (Спина → Бицепс). */}
+      {stickyGroup && (
+        <div
+          key={stickyGroup.label}
+          className="sticky-group-bubble"
+          style={{ ...styles.stickyGroupOverlay, top: headerH, color: stickyGroup.accent }}
+        >
+          {stickyGroup.label}
+        </div>
+      )}
 
       {/* Кнопка «Завершить» прибита к низу (как «Добавить упражнения» в пикере):
           градиент-подложка + кнопка. При открытой клавиатуре прячем, чтобы не
@@ -847,6 +909,21 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
+  // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
+  stickyFade: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 29,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+  },
   // Один целиковый блок — фон и строук как у карточки игрока на главной.
   // Тень не нужна — переход даёт фейд под блоком (как на главной).
   headerCard: {
@@ -957,20 +1034,35 @@ const styles = {
     flexDirection: 'column',
     gap: '12px'
   },
-  // Sticky-заголовок группы мышц: прилипает под шапкой дня (top=headerH),
-  // выталкивается следующей группой. Фон bg + ::after-fade (класс
-  // .muscle-sticky-header в index.css) — контент уходит под заголовок плавно.
   muscleHeader: {
-    position: 'sticky',
-    zIndex: 20,
-    background: 'var(--color-bg)',
-    margin: '0 -16px',
-    padding: '10px 16px 8px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
+    letterSpacing: '2px',
+    padding: '4px 4px',
+    margin: 0
+  },
+  // Закреплённый заголовок-пузырёк текущей группы: стоит под шапкой дня (top=
+  // headerH), меняет текст на активную группу при скролле. Hug по тексту, лёгкий
+  // размытый фон. Не уезжает (в отличие от нативного sticky-push).
+  stickyGroupOverlay: {
+    position: 'fixed',
+    left: '20px',
+    zIndex: 25,
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '5px 14px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'rgba(13, 12, 12, 0.55)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '14px',
+    letterSpacing: '2px',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap'
   },
   exerciseList: {
     display: 'flex',
