@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -79,20 +79,6 @@ export default function WorkoutDay() {
   const [kbOpen, setKbOpen] = useState(false)
 
   const cardRefs = useRef(new Map())
-
-  // Высота плавающей шапки (пузыри) меряется в рантайме: задаёт верхний отступ
-  // контенту (чтобы стартовал под пузырями) и высоту верхнего стеклянного фейда.
-  const headerRef = useRef(null)
-  const [headerH, setHeaderH] = useState(0)
-  useLayoutEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-    const measure = () => setHeaderH(el.offsetHeight)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
@@ -423,16 +409,11 @@ export default function WorkoutDay() {
   return (
     <div style={styles.page}>
 
-      {/* Стеклянное затемнение у верхней кромки: контент, уходя под плавающие
-          пузыри, мягко темнеет и размывается (перенесено сюда из-под прежней
-          шапки). pointer-events:none — тапы по карточкам проходят сквозь. */}
-      <div style={{ ...styles.topFade, height: headerH || 200 }} aria-hidden="true" />
+      {/* Шапка дня закреплена сверху (sticky) — то же устройство, что карточка
+          игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
+      <div style={styles.stickyHeader}>
 
-      {/* Плавающие пузыри (стрелки / день+группы / прогресс) — закреплены вверху,
-          контент скроллится под ними как под таб-баром. */}
-      <div ref={headerRef} style={styles.floatingHeader}>
-
-        {/* Один целиковый блок-пузырь: стрелки + день с группами + прогресс.
+        {/* Один целиковый блок: стрелки + день с группами + прогресс.
             Заливка как у активного таба (--color-surface-active), радиус 33. */}
         <div style={styles.headerCard}>
 
@@ -497,11 +478,14 @@ export default function WorkoutDay() {
             </div>
           </div>
         </div>
+
+        {/* Fade-scrim под блоком: контент уходит под шапку плавно (как на
+            главной под карточкой игрока). pointer-events:none — тапы проходят. */}
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={{
         ...styles.body,
-        paddingTop: (headerH || 200) + 12,
         opacity: isReturning ? 0 : 1,
         transition: isReturning ? 'none' : 'opacity 0.22s ease-out'
       }}>
@@ -807,38 +791,38 @@ const styles = {
     paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
     minHeight: '100dvh'
   },
-  // Плавающая шапка: пузыри (стрелки / день+группы / прогресс) закреплены
-  // вверху, контент скроллится под ними (высоту меряем в рантайме → headerH).
-  floatingHeader: {
-    position: 'fixed',
+  // Шапка дня закреплена сверху — то же устройство, что playerSticky на главной:
+  // sticky, сплошной фон зоны (чтобы контент не просвечивал), отступ под
+  // телеграмовские элементы, full-width через отрицательные боковые margin.
+  stickyHeader: {
+    position: 'sticky',
     top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 45,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
-    paddingLeft: '16px',
-    paddingRight: '16px',
-    paddingBottom: 0
-  },
-  // Стеклянный фейд у верхней кромки: контент, уходя под пузыри, темнеет и
-  // размывается. Высота задаётся инлайн = headerH.
-  topFade: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    pointerEvents: 'none',
     zIndex: 30,
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 45%, rgba(13, 12, 12, 0) 100%)',
+    background: 'var(--color-bg)',
+    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    paddingBottom: 0,
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px'
+  },
+  // Fade-переход под блоком (копия с главной): градиент фон→прозрачный + blur.
+  stickyFade: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 29,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%)'
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
-  // Один целиковый блок-пузырь: заливка активного таба, радиус 33, стекло.
+  // Один целиковый блок: заливка активного таба, радиус 33, стекло.
+  // Тень не нужна — переход даёт фейд под блоком (как на главной).
   headerCard: {
     display: 'flex',
     flexDirection: 'column',
@@ -848,8 +832,7 @@ const styles = {
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-card)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+    borderRadius: 'var(--radius-card)'
   },
   headerRow: {
     display: 'flex',

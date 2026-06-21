@@ -115,7 +115,7 @@ export function paintTelegramChrome() {
  *
  * Пишет в CSS-переменную --tg-safe-top реальную высоту, которую занимают
  * сверху: вырез/статусбар устройства (safeAreaInset) + шапка Telegram с
- * кнопками (contentSafeAreaInset) + запас 8px. Обновляется на события
+ * кнопками (contentSafeAreaInset) + запас 16px. Обновляется на события
  * Telegram (поворот, вход/выход из фуллскрина).
  *
  * Если поля недоступны (старый клиент Telegram до Bot API 8.0) — переменную
