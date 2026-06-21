@@ -37,6 +37,12 @@ export default function ProgramConstructor() {
   const [byLoc, setByLoc] = useState(() => initByLoc(existing, dayCount))
   const [activeLoc, setActiveLoc] = useState('gym')
   const [activeIdx, setActiveIdx] = useState(0)
+  // Трогал ли юзер места (тапнул хоть раз). Нужно, чтобы у новой программы до
+  // первого тапа контейнер-таб-бар не показывался (все места голым текстом).
+  // У существующей программы (есть заполненные места) — сразу true.
+  const [placeTouched, setPlaceTouched] = useState(
+    () => Object.keys(existing?.data?.locations || {}).length > 0
+  )
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
@@ -155,10 +161,13 @@ export default function ProgramConstructor() {
 
   // Переключение места (Зал/Дом/Улица) — наполняем дни для каждого места отдельно.
   const changeLoc = (loc) => {
-    if (loc === activeLoc) return
     haptic.selection()
+    setPlaceTouched(true)
     setActiveLoc(loc)
   }
+
+  // Заполнено ли место (есть хоть один непустой день).
+  const placeFilled = (loc) => (byLoc[loc] || []).some(d => d.length > 0)
 
   const handleToggle = (ex) => {
     setByLoc(prev => {
@@ -212,6 +221,11 @@ export default function ProgramConstructor() {
 
   const currentDay = byLoc[activeLoc]?.[activeIdx] || []
   const atLimit = currentDay.length >= MAX_PER_DAY
+
+  // Места внутри контейнера-таб-бара (заполненные + активное после тапа) и
+  // снаружи (пустые неактивные — голым текстом, как невыбранные табы).
+  const inContainerPlaces = PLACES.filter(loc => placeFilled(loc) || (loc === activeLoc && placeTouched))
+  const outsidePlaces = PLACES.filter(loc => !inContainerPlaces.includes(loc))
 
   const moveItem = (from, to) => {
     setByLoc(prev => {
@@ -290,8 +304,8 @@ export default function ProgramConstructor() {
       {/* Количество дней */}
       <div style={styles.section}>
         <div style={styles.secLabel}>ДНЕЙ В ПРОГРАММЕ</div>
-        <div style={styles.segments}>
-          {[1, 2, 3].map(n => {
+        <div style={styles.segGroup}>
+          {[1, 2, 3].map((n, i) => {
             const active = dayCount === n
             return (
               <button
@@ -299,11 +313,12 @@ export default function ProgramConstructor() {
                 onClick={() => changeDayCount(n)}
                 className="press-tile"
                 style={{
-                  ...styles.pillTab,
-                  ...(active ? styles.pillTabActive : {}),
+                  ...styles.segItem,
+                  ...(active ? styles.segItemActive : {}),
+                  marginLeft: i === 0 ? 0 : '-5px',
+                  zIndex: active ? 2 : 1,
                   color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
-                  fontSize: active ? '26px' : '20px',
-                  transform: active ? 'scale(1.06)' : 'scale(1)'
+                  fontSize: active ? '24px' : '20px'
                 }}
               >
                 {n}
@@ -313,33 +328,49 @@ export default function ProgramConstructor() {
         </div>
       </div>
 
-      {/* Место (Зал/Дом/Улица) — для каждого свои дни. Активное место увеличено
-          + зелёная полоса под ним; заполненное (есть упражнения) — зелёная
-          обводка; пустое неактивное — приглушено (opacity 0.45). */}
+      {/* Место (Зал/Дом/Улица) — «таб-бар на одну активную позицию»: заполненные
+          места + активное собраны в контейнер-таб-бар (фон/обводка из таб-бара),
+          активная позиция залита (surface-active). Пустые неактивные места — голым
+          текстом снаружи (как невыбранные табы). Контейнера нет, пока не тапнули. */}
       <div style={styles.section}>
         <div style={styles.secLabel}>МЕСТО</div>
-        <div style={styles.placeTabs}>
-          {PLACES.map(loc => {
+        <div style={styles.placeRow}>
+          {inContainerPlaces.length > 0 && (
+            <div style={{ ...styles.segGroup, width: 'auto' }}>
+              {inContainerPlaces.map((loc, i) => {
+                const meta = getPlaceMeta(loc)
+                const active = activeLoc === loc
+                return (
+                  <button
+                    key={loc}
+                    onClick={() => changeLoc(loc)}
+                    className="press-tile"
+                    style={{
+                      ...styles.segItem,
+                      ...(active ? styles.segItemActive : {}),
+                      flex: '0 0 auto',
+                      padding: '0 16px',
+                      marginLeft: i === 0 ? 0 : '-5px',
+                      zIndex: active ? 2 : 1,
+                      color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
+                      fontSize: active ? '15px' : '13px'
+                    }}
+                  >
+                    <UiIcon name={meta.icon} size={21} />
+                    {meta.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {outsidePlaces.map(loc => {
             const meta = getPlaceMeta(loc)
-            const filled = (byLoc[loc] || []).some(d => d.length > 0)
-            const active = activeLoc === loc
             return (
               <button
                 key={loc}
                 onClick={() => changeLoc(loc)}
                 className="press-tile"
-                style={{
-                  ...styles.pillTab,
-                  ...(active ? styles.pillTabActive : {}),
-                  // Обводка-нить только у активного и заполненного; пустое
-                  // неактивное — без обводки и совсем тусклое.
-                  borderColor: (active || filled) ? 'var(--color-border)' : 'transparent',
-                  color: active
-                    ? 'var(--color-primary)'
-                    : (filled ? 'var(--color-text-inactive)' : 'rgba(255,255,255,0.25)'),
-                  transform: active ? 'scale(1.06)' : 'scale(1)',
-                  fontSize: active ? '15px' : '13px'
-                }}
+                style={styles.placeBare}
               >
                 <UiIcon name={meta.icon} size={21} />
                 {meta.label}
@@ -352,7 +383,7 @@ export default function ProgramConstructor() {
       {/* Вкладки дней — пилюли, активный день увеличен + зелёная полоса под ним. */}
       <div style={styles.section}>
         <div style={styles.secLabel}>ДНИ</div>
-        <div style={styles.dayTabs}>
+        <div style={styles.segGroup}>
           {LETTERS.slice(0, dayCount).map((letter, idx) => {
             const active = activeIdx === idx
             const count = byLoc[activeLoc]?.[idx]?.length || 0
@@ -362,11 +393,12 @@ export default function ProgramConstructor() {
                 onClick={() => { haptic.light(); setActiveIdx(idx) }}
                 className="press-tile"
                 style={{
-                  ...styles.pillTab,
-                  ...(active ? styles.pillTabActive : {}),
+                  ...styles.segItem,
+                  ...(active ? styles.segItemActive : {}),
                   fontWeight: 800,
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
-                  transform: active ? 'scale(1.06)' : 'scale(1)'
+                  marginLeft: idx === 0 ? 0 : '-5px',
+                  zIndex: active ? 2 : 1,
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
                 }}
               >
                 <span style={{ fontSize: active ? '24px' : '20px' }}>{letter}</span>
@@ -574,26 +606,41 @@ const styles = {
   },
   section: { marginBottom: '20px' },
   secLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
-  segments: { display: 'flex', gap: '10px' },
-  // Единая пилюля-вкладка (дней-в-программе / место / день): одной высоты и
-  // ширины (flex:1), радиус 90, тонкая обводка как у таб-бара. Логика состояний
-  // как в таб-баре: активная — залита фоном активного таба (стекло) + акцентный
-  // текст + чуть увеличена; неактивная — приглушённый текст. Без нижней полоски.
-  placeTabs: { display: 'flex', gap: '10px' },
-  dayTabs: { display: 'flex', gap: '10px' },
-  pillTab: {
-    flex: 1, minWidth: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-    height: '52px', padding: '0 8px',
-    background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
-    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
+  // Контейнер-таб-бар (как нижний таб-бар приложения): фон surface-dim + тонкая
+  // обводка + блюр + тень, паддинг 4. Для дней-в-программе и дней — на всю ширину
+  // (табы flex:1); для мест — width:auto (обнимает заполненные/активное).
+  segGroup: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: '4px', width: '100%',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
   },
-  // Заливка активной пилюли — как активный таб в таб-баре (стекло + блюр).
-  pillTabActive: {
+  // Таб внутри контейнера: прозрачный (как неактивный таб), активный залит
+  // (surface-active). Увеличивается только текст, не сам таб. Нахлёст -5 задаётся
+  // инлайн (marginLeft), активный поверх соседей (zIndex).
+  segItem: {
+    flex: 1, minWidth: 0, position: 'relative',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    alignSelf: 'stretch', minHeight: '44px', padding: '0 8px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease, font-size 0.18s ease'
+  },
+  segItemActive: {
     background: 'var(--color-surface-active)',
-    backdropFilter: 'blur(var(--blur-sm))',
-    WebkitBackdropFilter: 'blur(var(--blur-sm))'
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
+  },
+  // Ряд мест: контейнер-таб-бар (заполненные/активное) + голые места снаружи.
+  placeRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
+  // Голое место снаружи контейнера — просто текст+иконка, приглушённый (как
+  // невыбранный таб без контейнера).
+  placeBare: {
+    display: 'flex', alignItems: 'center', gap: '6px', padding: '0 10px', minHeight: '44px',
+    background: 'transparent', border: 'none',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px',
+    color: 'rgba(255, 255, 255, 0.3)', whiteSpace: 'nowrap',
+    transition: 'color 0.18s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
