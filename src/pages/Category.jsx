@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes, confirm } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory, getActiveDay } from '../lib/storage'
-import { getProgramsByCategory, getProgramEmoji, getProgramTagColor, programCountLabel } from '../features/programs/registry'
+import { getProgramsByCategory, getProgramEmoji, getProgramTagColor, getProgramPlaces, programCountLabel } from '../features/programs/registry'
+import PlaceSwitcher from '../components/PlaceSwitcher'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import ProgramActionMenu from '../components/ProgramActionMenu'
 import { swimTotalMeters } from '../data/programs/swim'
@@ -424,7 +425,14 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
           </div>
         )}
 
-        {prog.tags && prog.tags.length > 0 && (
+        {/* Места (Зал/Дом/Улица) — переключаемый тег; для программ без мест
+            (заплыв) — обычные теги как раньше. */}
+        {getProgramPlaces(prog).length > 0 ? (
+          <div style={cardStyles.tags}>
+            <PlaceSwitcher program={prog} />
+            {prog.comingSoon && <span style={cardStyles.soonTag}>Скоро</span>}
+          </div>
+        ) : prog.tags && prog.tags.length > 0 ? (
           <div style={cardStyles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
@@ -436,7 +444,7 @@ function ProgramCardWithFav({ prog, isFav, onFavTap, onDeleted }) {
             })}
             {prog.comingSoon && <span style={cardStyles.soonTag}>Скоро</span>}
           </div>
-        )}
+        ) : null}
 
         {prog.source === 'shared' && prog.authorName && (
           <div style={cardStyles.authorLine}>от {prog.authorName}</div>

@@ -1,5 +1,6 @@
-import { getProgramEmoji, getProgramTagColor } from '../features/programs/registry'
+import { getProgramEmoji, getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
 import { swimTotalMeters } from '../data/programs/swim'
+import PlaceSwitcher from './PlaceSwitcher'
 
 /**
  * Тело карточки избранной программы — общее для главной и страницы «Избранное».
@@ -22,6 +23,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) 
         : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const emoji = getProgramEmoji(prog.slug)
+  const places = getProgramPlaces(prog)
 
   return (
     <>
@@ -55,14 +57,18 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) 
           </div>
         )}
 
-        {prog.tags && prog.tags.length > 0 && (
+        {/* Места (Зал/Дом/Улица) — переключаемый тег. Для программ без мест
+            (заплыв) — обычные теги как раньше. */}
+        {places.length > 0 ? (
+          <PlaceSwitcher program={prog} />
+        ) : prog.tags && prog.tags.length > 0 ? (
           <div style={styles.tags}>
             {prog.tags.map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
               return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
             })}
           </div>
-        )}
+        ) : null}
       </div>
     </>
   )

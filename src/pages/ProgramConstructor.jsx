@@ -179,9 +179,13 @@ export default function ProgramConstructor() {
     })
   }
 
-  // Сохранить можно, когда «Зал» (основное место) заполнен по всем дням.
-  // Дом/Улица — опциональны (любое непустое место пойдёт в сохранение).
-  const canSave = !saving && (byLoc.gym || []).length >= 1 && (byLoc.gym || []).every(d => d.length >= 1)
+  // Сохранить можно, когда хотя бы ОДНО место заполнено по всем дням (Зал не
+  // обязателен — можно собрать только Дом или только Улицу). Остальные места
+  // (в т.ч. частично заполненные) тоже сохраняются, если есть непустые дни.
+  const canSave = !saving && PLACES.some(loc => {
+    const arr = byLoc[loc] || []
+    return arr.length >= 1 && arr.every(d => d.length >= 1)
+  })
 
   const handleSave = async () => {
     if (!canSave) return
