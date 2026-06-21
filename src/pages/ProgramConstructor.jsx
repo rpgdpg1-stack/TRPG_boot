@@ -300,13 +300,13 @@ export default function ProgramConstructor() {
                 className="press-tile"
                 style={{
                   ...styles.pillTab,
-                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                  ...(active ? styles.pillTabActive : {}),
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
                   fontSize: active ? '26px' : '20px',
                   transform: active ? 'scale(1.06)' : 'scale(1)'
                 }}
               >
                 {n}
-                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
               </button>
             )
           })}
@@ -330,16 +330,19 @@ export default function ProgramConstructor() {
                 className="press-tile"
                 style={{
                   ...styles.pillTab,
-                  borderColor: filled ? 'var(--color-primary)' : 'transparent',
-                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
-                  opacity: active || filled ? 1 : 0.45,
+                  ...(active ? styles.pillTabActive : {}),
+                  // Обводка-нить только у активного и заполненного; пустое
+                  // неактивное — без обводки и совсем тусклое.
+                  borderColor: (active || filled) ? 'var(--color-border)' : 'transparent',
+                  color: active
+                    ? 'var(--color-primary)'
+                    : (filled ? 'var(--color-text-inactive)' : 'rgba(255,255,255,0.25)'),
                   transform: active ? 'scale(1.06)' : 'scale(1)',
                   fontSize: active ? '15px' : '13px'
                 }}
               >
-                <UiIcon name={meta.icon} size={16} />
+                <UiIcon name={meta.icon} size={21} />
                 {meta.label}
-                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
               </button>
             )
           })}
@@ -360,14 +363,14 @@ export default function ProgramConstructor() {
                 className="press-tile"
                 style={{
                   ...styles.pillTab,
+                  ...(active ? styles.pillTabActive : {}),
                   fontWeight: 800,
-                  color: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)',
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
                   transform: active ? 'scale(1.06)' : 'scale(1)'
                 }}
               >
                 <span style={{ fontSize: active ? '24px' : '20px' }}>{letter}</span>
                 <span style={{ ...styles.dayPillCount, color: active ? 'var(--color-primary)' : 'inherit', fontSize: active ? '13px' : '12px' }}>{count}</span>
-                <span style={{ ...styles.tabUnderlineInside, background: active ? 'var(--color-primary)' : 'transparent' }} />
               </button>
             )
           })}
@@ -565,7 +568,7 @@ const styles = {
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     width: '100%', height: '52px', padding: '0 18px',
-    background: 'var(--color-card)', border: 'none',
+    background: 'var(--color-card)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-card)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
   },
@@ -573,21 +576,24 @@ const styles = {
   secLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
   segments: { display: 'flex', gap: '10px' },
   // Единая пилюля-вкладка (дней-в-программе / место / день): одной высоты и
-  // ширины (flex:1), радиус 90. Активная увеличена + зелёная полоса ВНУТРИ снизу
-  // (overflow:hidden обрезает её края по скруглению).
+  // ширины (flex:1), радиус 90, тонкая обводка как у таб-бара. Логика состояний
+  // как в таб-баре: активная — залита фоном активного таба (стекло) + акцентный
+  // текст + чуть увеличена; неактивная — приглушённый текст. Без нижней полоски.
   placeTabs: { display: 'flex', gap: '10px' },
   dayTabs: { display: 'flex', gap: '10px' },
   pillTab: {
-    flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden',
+    flex: 1, minWidth: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
     height: '52px', padding: '0 8px',
-    background: 'var(--color-card)', border: '1.5px solid transparent', borderRadius: 'var(--radius-pill)',
+    background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
-    transition: 'transform 0.18s var(--ease-ios), color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
+    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, font-size 0.18s ease'
   },
-  tabUnderlineInside: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, height: '3px',
-    transition: 'background 0.2s ease'
+  // Заливка активной пилюли — как активный таб в таб-баре (стекло + блюр).
+  pillTabActive: {
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))',
+    WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
