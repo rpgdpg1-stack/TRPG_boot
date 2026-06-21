@@ -64,6 +64,11 @@ export default function WorkoutDay() {
 
   const [slideDir, setSlideDir] = useState('right')
 
+  // Таймер тренировки: тикает с захода на день, сбрасывается при смене дня.
+  // finishedSec фиксирует длительность на момент «Завершить» — для модалки.
+  const [elapsedSec, setElapsedSec] = useState(0)
+  const [finishedSec, setFinishedSec] = useState(0)
+
   // Эффекты возврата с других экранов:
   //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
   //   glowedOrderNum  — карточка светится зелёной обводкой и плавно гаснет
@@ -106,6 +111,16 @@ export default function WorkoutDay() {
   useEffect(() => {
     setActiveOrderNums(new Set(loadWorkoutProgress(programId, day)))
   }, [programId, day])
+
+  // Старт/сброс таймера тренировки: при заходе и при переключении дня.
+  useEffect(() => {
+    setElapsedSec(0)
+    const start = Date.now()
+    const id = setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - start) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [day])
 
   // На странице тренировки таб-бара нет, а кнопка «Завершить» прибита к низу
   // со своим градиентом-подложкой. Глобальный нижний скрим (.app::after) тут
@@ -340,6 +355,7 @@ export default function WorkoutDay() {
   const handleFinishButtonTap = () => {
     if (activeOrderNums.size === 0) return
     haptic.medium()
+    setFinishedSec(elapsedSec)
     setShowFinishedModal(true)
   }
 
@@ -413,9 +429,15 @@ export default function WorkoutDay() {
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
       <div style={styles.stickyHeader}>
 
-        {/* Один целиковый блок: стрелки + день с группами + прогресс.
-            Заливка как у активного таба (--color-surface-active), радиус 33. */}
+        {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
+            прогресс. Фон/строук как у карточки игрока на главной. */}
         <div style={styles.headerCard}>
+
+          <div style={styles.topMetaRow}>
+            {/* Место тренировки (Зал/Дом/Улица). Пока эмодзи, тап без действия. */}
+            <span style={styles.placeBadge} aria-label="Место тренировки">🏋️</span>
+            <span style={styles.timer}>{formatDuration(elapsedSec)}</span>
+          </div>
 
           <div
             style={styles.headerRow}
@@ -594,6 +616,7 @@ export default function WorkoutDay() {
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
+          durationLabel={formatDuration(finishedSec)}
           status={finishStatus}
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
@@ -725,34 +748,25 @@ const overlayStyles = {
 
 function ArrowLeft() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      <g fill="rgba(255,255,255,0.5)">
-        <rect x="12" y="6"  width="2" height="2" />
-        <rect x="10" y="8"  width="2" height="2" />
-        <rect x="8"  y="10" width="2" height="2" />
-        <rect x="6"  y="12" width="2" height="2" />
-        <rect x="8"  y="14" width="2" height="2" />
-        <rect x="10" y="16" width="2" height="2" />
-        <rect x="12" y="18" width="2" height="2" />
-      </g>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 5 L8 12 L15 19" stroke="rgba(255,255,255,0.5)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
 function ArrowRight() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      <g fill="rgba(255,255,255,0.5)">
-        <rect x="10" y="6"  width="2" height="2" />
-        <rect x="12" y="8"  width="2" height="2" />
-        <rect x="14" y="10" width="2" height="2" />
-        <rect x="16" y="12" width="2" height="2" />
-        <rect x="14" y="14" width="2" height="2" />
-        <rect x="12" y="16" width="2" height="2" />
-        <rect x="10" y="18" width="2" height="2" />
-      </g>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 5 L16 12 L9 19" stroke="rgba(255,255,255,0.5)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
+}
+
+// mm:ss из секунд (таймер тренировки).
+function formatDuration(totalSec) {
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 function SwipeHintArrow() {
@@ -832,6 +846,26 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
   },
+  // Верхний ряд блока: место тренировки слева, таймер справа.
+  topMetaRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 2px'
+  },
+  placeBadge: {
+    fontSize: '20px',
+    lineHeight: 1,
+    userSelect: 'none'
+  },
+  timer: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '15px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px',
+    fontVariantNumeric: 'tabular-nums'
+  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -892,15 +926,15 @@ const styles = {
   },
   progressTrack: {
     flex: 1,
-    height: '4px',
+    height: '7px',
     background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '2px',
+    borderRadius: '4px',
     overflow: 'hidden'
   },
   progressFill: {
     height: '100%',
     background: 'var(--color-primary)',
-    borderRadius: '2px',
+    borderRadius: '4px',
     transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
   body: {

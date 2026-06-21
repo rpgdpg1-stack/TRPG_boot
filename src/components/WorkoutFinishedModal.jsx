@@ -17,7 +17,7 @@ import MuscleIcon from './MuscleIcon'
  * @param errorMsg  - текст ошибки если status === 'error'
  * @param onConfirm - вызывается при тапе на ОК/Повторить
  */
-export default function WorkoutFinishedModal({ reward = 150, status = 'idle', errorMsg = '', offline = false, onConfirm }) {
+export default function WorkoutFinishedModal({ reward = 150, durationLabel = '', status = 'idle', errorMsg = '', offline = false, onConfirm }) {
   const sceneRef = useRef(null)
 
   // Спавним пиксельные искорки из огонька (как у горящих огоньков стрика)
@@ -104,6 +104,11 @@ export default function WorkoutFinishedModal({ reward = 150, status = 'idle', er
         }}>
           {titleText}
         </div>
+
+        {/* Длительность тренировки (кроме состояния ошибки). */}
+        {!isError && durationLabel && (
+          <div style={styles.duration}>⏱ {durationLabel}</div>
+        )}
 
         {/* Ошибка → сообщение. Оффлайн → пояснение. Норма → бейдж награды. */}
         {isError ? (
@@ -206,6 +211,14 @@ const styles = {
     fontSize: '18px',
     letterSpacing: '2px',
     textAlign: 'center'
+  },
+  duration: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '22px',
+    color: 'var(--color-text)',
+    letterSpacing: '1px',
+    fontVariantNumeric: 'tabular-nums'
   },
   rewardBadge: {
     fontFamily: 'var(--font-display)',
