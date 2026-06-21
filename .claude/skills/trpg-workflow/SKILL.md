@@ -167,7 +167,7 @@ src/
 ├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
 ├── lib/            auth backups cache cloud-storage events frames friends-list friends leaderboard
 │                   leagues levels network-status notes offline-queue persistent-cache profile-cache
-│                   rewards season-reset storage supabase sync-engine telegram weight-editing-state
+│                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
 ├── pages/          Category ExerciseInfo Friends History Home Leaderboard Profile ProgramConstructor
 │                   Recovery Rewards Settings SwapExercise SwimWorkout WorkoutDay
 └── utils/          dates history plural season storage workout-progress
