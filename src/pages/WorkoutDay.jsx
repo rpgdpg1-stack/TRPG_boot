@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -46,6 +46,12 @@ import UiIcon from '../components/UiIcon'
  *   Инфо тихо возвращался куда было. Теперь оба сценария ведут себя
  *   одинаково — возврат на ту же позицию скролла.
  */
+
+// Память последних загруженных слотов по ключу `${programId}/${day}/${place}`.
+// На возврате с Инфо/Смены отдаёт их синхронно — без скелетона и дозагрузки,
+// чтобы позицию скролла можно было восстановить до отрисовки (без моргания).
+const slotsMemory = new Map()
+
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -81,11 +87,9 @@ export default function WorkoutDay() {
   //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
   //   glowedOrderNum  — карточка светится зелёной обводкой и плавно гаснет
   //   swappedOrderNum — карточка играет анимацию "змейки" (только swap)
-  //   isReturning     — на время скролла прячем контент чтобы скрыть рывок
   const [pressedOrderNum, setPressedOrderNum] = useState(null)
   const [glowedOrderNum, setGlowedOrderNum] = useState(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
-  const [isReturning, setIsReturning] = useState(false)
 
   // Открыта ли клавиатура (ввод веса на карточке). Пока true — прибитую к низу
   // кнопку «Завершить» прячем, чтобы она не липла к клавиатуре.
@@ -169,6 +173,21 @@ export default function WorkoutDay() {
     return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
 
+  // Префилл из памяти ДО отрисовки (на каждую смену дня/места): если слоты уже
+  // загружались — показываем их сразу, без скелетона (возврат с Инфо/Смены,
+  // свайп на ранее открытый день). useLayoutEffect → успеваем до paint, скролл
+  // восстановится без моргания. Если в памяти пусто — скелетон.
+  useLayoutEffect(() => {
+    const cached = slotsMemory.get(`${programId}/${day}/${place}`)
+    if (cached && cached.length) {
+      setSlots(cached)
+      setLoading(false)
+    } else {
+      setSlots([])
+      setLoading(true)
+    }
+  }, [programId, day, place])
+
   useEffect(() => {
     let cancelled = false
 
@@ -179,18 +198,22 @@ export default function WorkoutDay() {
         return
       }
 
+      // Состояние loading/skeleton уже выставил префилл-эффект выше. Здесь только
+      // фетчим и обновляем: при наличии кеша — «по-тихому», без скелетона.
+      const hasCache = slotsMemory.has(`${programId}/${day}/${place}`)
       setError(null)
-      setLoading(true)
       try {
         const data = await getWorkoutDay(programId, day, place)
         if (!cancelled) {
-          setSlots(data || [])
+          const arr = data || []
+          slotsMemory.set(`${programId}/${day}/${place}`, arr)
+          setSlots(arr)
           setLoading(false)
         }
       } catch (e) {
         // Технический текст — только в консоль; пользователю человеческое.
         console.error('[WorkoutDay] load error:', e)
-        if (!cancelled) {
+        if (!cancelled && !hasCache) {
           setError('Не удалось загрузить тренировку. Проверь интернет и попробуй ещё раз.')
           setLoading(false)
         }
@@ -222,60 +245,50 @@ export default function WorkoutDay() {
     else if (rem <= 3) setSparkKey(k => k + 1)
   }, [activeOrderNums.size, slots.length, loading])
 
-  // Реакция на возврат с экранов "Сменить" и "Инфо".
-  // Срабатывает после рендера карточек (slots не пустой, loading закончился).
-  //
-  // Алгоритм:
-  //   1. Прячем body через opacity 0 — скрываем рывок прокрутки
-  //   2. Восстанавливаем точную позицию scrollY (как было перед уходом)
-  //   3. Через 60мс плавно показываем body (fade-in 220мс)
-  //   4. Запускаем эффекты: press + glow (+ swap-snake если wasSwapped)
-  //
-  // Очищаем state из истории чтобы при свайпе между днями повтор не сработал.
-  useEffect(() => {
-    if (loading) return
-    if (!slots.length) return
+  // Возврат с "Сменить"/"Инфо": восстанавливаем ТОЧНУЮ позицию скролла ДО
+  // отрисовки (useLayoutEffect) — без моргания и без «прыжка наверх». Слоты к
+  // этому моменту уже есть (префилл из памяти), высота карточек фиксирована
+  // (minHeight), поэтому scrollTo сразу попадает в нужное место.
+  const didRestoreRef = useRef(false)
+  useLayoutEffect(() => {
+    if (didRestoreRef.current) return
+    if (loading || !slots.length) return
 
     const stateData = location.state || {}
     const returnedFrom = stateData.returnedFromOrderNum
-    const wasSwapped = stateData.wasSwapped
-    const savedScrollY = stateData.scrollY
-
     if (returnedFrom == null) return
 
-    setIsReturning(true)
+    didRestoreRef.current = true
+    const savedScrollY = stateData.scrollY
+    if (typeof savedScrollY === 'number') {
+      window.scrollTo(0, savedScrollY)
+    } else {
+      const cardEl = cardRefs.current.get(returnedFrom)
+      if (cardEl) cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
+    }
+  }, [loading, slots.length, location.state])
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // Восстанавливаем точную позицию скролла. Если savedScrollY не было
-        // (например юзер пришёл из другой точки), скроллим к карточке центром
-        // как раньше — мягкий fallback чтобы карточка точно нашлась.
-        if (typeof savedScrollY === 'number') {
-          window.scrollTo({ top: savedScrollY, left: 0, behavior: 'auto' })
-        } else {
-          const cardEl = cardRefs.current.get(returnedFrom)
-          if (cardEl) cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
-        }
+  // Эффекты подсветки карточки, с которой уходил (press + glow + змейка свапа),
+  // и очистка state из истории, чтобы повтор не сработал при свайпе дней.
+  useEffect(() => {
+    if (loading || !slots.length) return
 
-        setTimeout(() => {
-          setIsReturning(false)
+    const stateData = location.state || {}
+    const returnedFrom = stateData.returnedFromOrderNum
+    if (returnedFrom == null) return
 
-          // Press-эффект и зелёное свечение — оба запускаются на той же
-          // карточке. Press короткий (350мс), glow подольше (~1500мс).
-          setPressedOrderNum(returnedFrom)
-          setTimeout(() => setPressedOrderNum(null), 350)
+    const wasSwapped = stateData.wasSwapped
 
-          setGlowedOrderNum(returnedFrom)
-          setTimeout(() => setGlowedOrderNum(null), 1600)
+    setPressedOrderNum(returnedFrom)
+    setTimeout(() => setPressedOrderNum(null), 350)
 
-          // Анимация змейки — только для реальной смены упражнения
-          if (wasSwapped) {
-            setSwappedOrderNum(returnedFrom)
-            setTimeout(() => setSwappedOrderNum(null), 2600)
-          }
-        }, 60)
-      })
-    })
+    setGlowedOrderNum(returnedFrom)
+    setTimeout(() => setGlowedOrderNum(null), 1600)
+
+    if (wasSwapped) {
+      setSwappedOrderNum(returnedFrom)
+      setTimeout(() => setSwappedOrderNum(null), 2600)
+    }
 
     navigate(location.pathname, { replace: true, state: null })
   }, [loading, slots.length, location.state, location.pathname, navigate])
@@ -593,11 +606,7 @@ export default function WorkoutDay() {
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      <div style={{
-        ...styles.body,
-        opacity: isReturning ? 0 : 1,
-        transition: isReturning ? 'none' : 'opacity 0.22s ease-out'
-      }}>
+      <div style={styles.body}>
 
         {error && (
           <div style={styles.errorBox}>
