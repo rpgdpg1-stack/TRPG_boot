@@ -661,7 +661,7 @@ export default function WorkoutDay() {
         <div
           key={stickyGroup.label}
           className="sticky-group-bubble"
-          style={{ ...styles.stickyGroupOverlay, top: headerH, color: stickyGroup.accent }}
+          style={{ ...styles.stickyGroupOverlay, top: headerH + 14, color: stickyGroup.accent }}
         >
           {stickyGroup.label}
         </div>
@@ -1034,13 +1034,18 @@ const styles = {
     flexDirection: 'column',
     gap: '12px'
   },
+  // Текст заголовка стоит ровно там же, где текст закреплённого пузырька
+  // (left 20px + padding-left 14px = 34px от края страницы). Страница даёт
+  // отступ 16px, значит у заголовка padding-left 18px → текст тоже на 34px.
+  // Так при скролле пилюля-пузырёк появляется ВОКРУГ заголовка, а сам текст
+  // не сдвигается.
   muscleHeader: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    padding: '4px 4px',
+    padding: '4px 4px 4px 18px',
     margin: 0
   },
   // Закреплённый заголовок-пузырёк текущей группы: стоит под шапкой дня (top=
