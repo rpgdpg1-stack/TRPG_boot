@@ -47,6 +47,20 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
+  // Кроссфейд превью при смене упражнения (свап): старое изображение держим
+  // снизу, новое сверху плавно проявляем по onLoad — без «промаргивания»/бланка.
+  const curSrcRef = useRef(preview_url)
+  const [frontSrc, setFrontSrc] = useState(preview_url)
+  const [backSrc, setBackSrc] = useState(null)
+  const [frontReady, setFrontReady] = useState(true)
+  useEffect(() => {
+    if (preview_url === curSrcRef.current) return
+    setBackSrc(curSrcRef.current) // старое остаётся видимым, пока грузится новое
+    curSrcRef.current = preview_url
+    setFrontSrc(preview_url)
+    setFrontReady(false)
+  }, [preview_url])
+
   const editingRef = useRef(false)
 
   const longPressTimer = useRef(null)
@@ -240,8 +254,26 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       }}
     >
       <div style={styles.preview}>
-        {preview_url ? (
-          <img src={preview_url} alt="" style={styles.previewImg} draggable={false} />
+        {/* Нижний слой — старое изображение, держится пока новое не проявится. */}
+        {backSrc && (
+          <img src={backSrc} alt="" style={styles.previewImgLayer} draggable={false} />
+        )}
+        {frontSrc ? (
+          <img
+            src={frontSrc}
+            alt=""
+            draggable={false}
+            onLoad={() => {
+              setFrontReady(true)
+              // Старое убираем после завершения кроссфейда.
+              setTimeout(() => setBackSrc(null), 750)
+            }}
+            style={{
+              ...styles.previewImgLayer,
+              opacity: frontReady ? 1 : 0,
+              transition: 'opacity 0.7s ease'
+            }}
+          />
         ) : (
           <div style={styles.previewPlaceholder}>💪</div>
         )}
@@ -359,6 +391,7 @@ const styles = {
     overflow: 'hidden'
   },
   preview: {
+    position: 'relative',
     flexShrink: 0,
     width: '118px',
     height: '118px',
@@ -369,7 +402,10 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  previewImg: {
+  // Слой изображения превью (для кроссфейда старое/новое — оба absolute).
+  previewImgLayer: {
+    position: 'absolute',
+    inset: 0,
     width: '100%',
     height: '100%',
     objectFit: 'cover'
