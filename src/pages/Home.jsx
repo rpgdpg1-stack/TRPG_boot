@@ -417,7 +417,11 @@ const styles = {
     top: 0,
     zIndex: 20,
     background: 'var(--color-bg)',
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)',
+    // Верхний край карточки игрока — ровно на 16px ниже кнопок Telegram
+    // (закрыть / три точки). В --tg-safe-top уже заложен запас 16px ниже
+    // кнопок (telegram.js: sys + ui + 16), поэтому берём переменную как есть —
+    // отступ сверху совпадает с боковым отступом страницы (16px).
+    paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
