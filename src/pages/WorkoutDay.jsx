@@ -1040,7 +1040,7 @@ const skeletonStyles = {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '33px'
+    borderRadius: '28px'
   },
   lines: {
     flex: 1,
