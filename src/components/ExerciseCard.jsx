@@ -266,12 +266,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             onLoad={() => {
               setFrontReady(true)
               // Старое убираем после завершения кроссфейда.
-              setTimeout(() => setBackSrc(null), 750)
+              setTimeout(() => setBackSrc(null), 1450)
             }}
             style={{
               ...styles.previewImgLayer,
               opacity: frontReady ? 1 : 0,
-              transition: 'opacity 0.7s ease'
+              transition: 'opacity 1.4s ease'
             }}
           />
         ) : (
