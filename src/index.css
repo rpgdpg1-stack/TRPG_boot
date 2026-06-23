@@ -187,7 +187,11 @@ body.hide-app-scrim .app::after { display: none; }
 body.keyboard-open .app::after { display: none; }
 
 .page {
-  padding: calc(var(--tg-safe-top) - 24px) 16px 24px;
+  /* Верх контента — ровно на 16px ниже кнопок Telegram (закрыть / три точки),
+     единообразно с боковым отступом 16px. В --tg-safe-top заложен запас +16px,
+     но Telegram в contentSafeAreaInset резервирует зону ещё ~18px ниже видимых
+     кнопок — поэтому отнимаем 18px, чтобы видимый зазор был ровно 16px. */
+  padding: calc(var(--tg-safe-top) - 18px) 16px 24px;
   position: relative;
   z-index: 1;
 }

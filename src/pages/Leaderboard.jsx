@@ -636,7 +636,7 @@ const modalStyles = {
     zIndex: 9999,
     // Старт сверху на той же высоте что и профили — единое положение.
     // Низ с запасом под таб-бар, прокрутка внутри оверлея.
-    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
+    padding: 'calc(var(--tg-safe-top) - 18px) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },

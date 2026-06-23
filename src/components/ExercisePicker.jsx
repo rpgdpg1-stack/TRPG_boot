@@ -262,7 +262,7 @@ const styles = {
     height: '100dvh',
     background: 'var(--color-bg)',
     display: 'flex', flexDirection: 'column',
-    paddingTop: 'var(--tg-safe-top)',
+    paddingTop: 'calc(var(--tg-safe-top) - 18px)',
     overflow: 'hidden'
   },
   header: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px' },

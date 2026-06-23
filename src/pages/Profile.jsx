@@ -254,10 +254,10 @@ export default function Profile() {
 }
 
 const styles = {
-  // Верхний отступ как у playerSticky на главной (tg-safe-top − 24px),
+  // Верхний отступ как у playerSticky на главной (16px ниже кнопок Telegram),
   // чтобы блок аватара в профиле начинался на той же высоте.
   page: {
-    paddingTop: 'calc(var(--tg-safe-top) - 24px)'
+    paddingTop: 'calc(var(--tg-safe-top) - 18px)'
   },
   headerWrap: {
     marginTop: '8px',
