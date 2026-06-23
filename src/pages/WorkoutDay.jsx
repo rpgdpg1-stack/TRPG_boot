@@ -472,7 +472,7 @@ export default function WorkoutDay() {
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
                 подгружает упражнения этого места из конструктора. */}
             <PlaceSwitcher program={program} value={place} onChange={setPlace} />
-            <span style={styles.timer}>{formatDuration(elapsedSec)}</span>
+            <span style={styles.timer}>{formatElapsedMin(elapsedSec)}</span>
           </div>
 
           <div
@@ -498,7 +498,6 @@ export default function WorkoutDay() {
                 >
                   {day}
                 </span>
-                <SwipeHintArrow />
               </div>
               {dayTags.length > 0 && (
                 <div key={`tags-${day}`} style={styles.dayTagsRow}>
@@ -507,6 +506,21 @@ export default function WorkoutDay() {
                       {i > 0 && <span style={styles.dayTagDot}> · </span>}
                       {t.label.toUpperCase()}
                     </span>
+                  ))}
+                </div>
+              )}
+              {/* Пейджер дней (день N из M): активный кружок — зелёный.
+                  Показываем только при 2+ днях. */}
+              {days.length > 1 && (
+                <div style={styles.dayPager}>
+                  {days.map((d, i) => (
+                    <span
+                      key={d}
+                      style={{
+                        ...styles.dayDot,
+                        ...(i === currentDayIdx ? styles.dayDotActive : null)
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -960,27 +974,21 @@ function ArrowRight() {
   )
 }
 
-// mm:ss из секунд (таймер тренировки).
+// mm:ss из секунд — для модалки завершения (итоговая длительность).
 function formatDuration(totalSec) {
   const m = Math.floor(totalSec / 60)
   const s = totalSec % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-function SwipeHintArrow() {
-  return (
-    <svg width="12" height="14" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges" style={{ marginLeft: 4 }}>
-      <g fill="rgba(255,255,255,0.35)">
-        <rect x="5"  y="2"  width="2" height="2" />
-        <rect x="5"  y="4"  width="2" height="2" />
-        <rect x="5"  y="6"  width="2" height="2" />
-        <rect x="3"  y="8"  width="2" height="2" />
-        <rect x="5"  y="8"  width="2" height="2" />
-        <rect x="7"  y="8"  width="2" height="2" />
-        <rect x="5"  y="10" width="2" height="2" />
-      </g>
-    </svg>
-  )
+// Таймер в шапке — без секунд. До часа: минуты числом ("0", "1", "20"…);
+// от часа: "ч:мм" ("1:05").
+function formatElapsedMin(totalSec) {
+  const totalMin = Math.floor(totalSec / 60)
+  if (totalMin < 60) return String(totalMin)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${h}:${String(m).padStart(2, '0')}`
 }
 
 function groupByMuscleGroup(slots) {
@@ -1091,6 +1099,25 @@ const styles = {
     display: 'flex',
     alignItems: 'flex-end',
     justifyContent: 'center'
+  },
+  // Пейджер дней под буквой+тегами: показывает позицию (день N из M).
+  dayPager: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    marginTop: '2px'
+  },
+  dayDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.18)',
+    transition: 'background 0.25s ease, transform 0.25s ease'
+  },
+  dayDotActive: {
+    background: 'var(--color-primary)',
+    transform: 'scale(1.15)'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',

@@ -9,6 +9,7 @@ import {
   shouldIgnoreCardTap
 } from '../lib/weight-editing-state'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
+import UiIcon from './UiIcon'
 
 /**
  * Карточка упражнения.
@@ -39,7 +40,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     user_weight_kg
   } = slot
 
-  const [showDoneToast, setShowDoneToast] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('0')
   const [localWeight, setLocalWeight] = useState(
@@ -71,26 +71,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
     )
   }, [user_weight_kg])
-
-  // Тост "Готово, молодец!" показываем ТОЛЬКО когда карточка переходит
-  // из неактивной в активную (т.е. юзер прямо сейчас тапнул).
-  // При первом монтировании (возврат на страницу, карточка уже была активной
-  // из сохранённого состояния) — НЕ показываем, юзер этот тост уже видел.
-  //
-  // Логика: храним предыдущее значение isActive в реф. Тост запускаем только
-  // если было false → стало true. Все остальные кейсы (true → true при первом
-  // рендере, true → false при снятии отметки, false → false) — без тоста.
-  const prevIsActiveRef = useRef(isActive)
-  useEffect(() => {
-    const wasActive = prevIsActiveRef.current
-    prevIsActiveRef.current = isActive
-
-    if (!wasActive && isActive) {
-      setShowDoneToast(true)
-      const timer = setTimeout(() => setShowDoneToast(false), 1500)
-      return () => clearTimeout(timer)
-    }
-  }, [isActive])
 
   useEffect(() => {
     return () => {
@@ -223,6 +203,24 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
+  // Видимая кнопка «⋯» — дубль входа в меню (Инфо / Сменить), которое иначе
+  // только по long-press. stopPropagation, чтобы тап по ней не отметил
+  // упражнение выполненным и не запустил long-press карточки.
+  const handleMenuPointerDown = (e) => {
+    e.stopPropagation()
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  const handleMenuClick = (e) => {
+    e.stopPropagation()
+    if (shouldIgnoreCardTap()) return
+    haptic.medium()
+    if (onLongPress) onLongPress(slot)
+  }
+
   return (
     <div
       onClick={handleCardClick}
@@ -305,8 +303,19 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             </div>
           )}
         </div>
-        <div style={styles.weightUnit}>KG</div>
+        <div style={styles.weightUnit}>кг</div>
       </div>
+
+      {/* Видимый дубль входа в меню «Инфо / Сменить» (помимо long-press). */}
+      <button
+        type="button"
+        onClick={handleMenuClick}
+        onPointerDown={handleMenuPointerDown}
+        style={styles.menuButton}
+        aria-label="Меню упражнения"
+      >
+        ⋯
+      </button>
 
       <div
         style={{
@@ -316,9 +325,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         }}
       />
 
-      {showDoneToast && (
-        <div style={styles.doneToast}>
-          ✅ Готово, молодец!
+      {/* Галочка «выполнено» — акцентный зелёный, по центру поверх затемнения. */}
+      {isActive && (
+        <div style={styles.doneCheck} aria-hidden="true">
+          <UiIcon name="check" size={52} color="var(--color-primary)" />
         </div>
       )}
     </div>
@@ -492,25 +502,39 @@ const styles = {
     transition: 'opacity 0.35s ease',
     zIndex: 6
   },
-  doneToast: {
+  // Кнопка «⋯» в верхнем правом углу — вход в меню. Над затемнением (zIndex 7),
+  // чтобы оставалась видимой и тапабельной даже на выполненной карточке.
+  menuButton: {
+    position: 'absolute',
+    top: '4px',
+    right: '8px',
+    width: '34px',
+    height: '30px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#9A9A9A',
+    fontSize: '22px',
+    fontWeight: 700,
+    lineHeight: 1,
+    letterSpacing: '1px',
+    padding: 0,
+    zIndex: 7,
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Галочка «выполнено» — по центру, поверх затемнения, с лёгкой тенью для
+  // читаемости на любом фоне карточки.
+  doneCheck: {
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    background: 'rgba(34, 34, 34, 0.95)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(158, 209, 83, 0.3)',
-    borderRadius: 'var(--radius-small)',
-    padding: '8px 14px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: 'var(--color-primary)',
-    whiteSpace: 'nowrap',
+    zIndex: 7,
     pointerEvents: 'none',
-    animation: 'doneToastFade 1.5s ease-out forwards',
-    zIndex: 10,
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(158, 209, 83, 0.15)'
+    filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55))',
+    animation: 'checkPop 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
   }
 }
