@@ -328,7 +328,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       {/* Галочка «выполнено» — акцентный зелёный, по центру поверх затемнения. */}
       {isActive && (
         <div style={styles.doneCheck} aria-hidden="true">
-          <UiIcon name="check" size={30} color="var(--color-primary)" />
+          <UiIcon name="check" size={40} color="var(--color-primary)" />
         </div>
       )}
     </div>
@@ -417,7 +417,7 @@ const styles = {
   // Серый тег подгруппы — фон полупрозрачный, текст приглушённый
   tagSecondary: {
     background: 'rgba(255, 255, 255, 0.08)',
-    color: '#A0A0A0',
+    color: '#B5B5B5',
     fontWeight: 600
   },
   meta: {
@@ -426,7 +426,7 @@ const styles = {
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
-    color: '#888888'
+    color: '#A8A8A8'
   },
   weightBlock: {
     flexShrink: 0,
