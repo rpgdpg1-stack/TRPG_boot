@@ -362,7 +362,7 @@ const styles = {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '28px',
+    borderRadius: '36px',
     overflow: 'hidden',
     background: '#FFFFFF',
     display: 'flex',
