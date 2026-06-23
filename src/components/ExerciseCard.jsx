@@ -265,13 +265,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             draggable={false}
             onLoad={() => {
               setFrontReady(true)
-              // Старое убираем после завершения кроссфейда.
-              setTimeout(() => setBackSrc(null), 1450)
+              // Старое убираем после завершения кроссфейда (задержка + длительность).
+              setTimeout(() => setBackSrc(null), 2400)
             }}
             style={{
               ...styles.previewImgLayer,
               opacity: frontReady ? 1 : 0,
-              transition: 'opacity 1.4s ease'
+              // Задержка 0.35с — кроссфейд стартует когда карточка идёт вверх из
+              // press-эффекта; длительность 2с — плавная смена кадра во время возврата.
+              transition: 'opacity 2s ease 0.35s'
             }}
           />
         ) : (
