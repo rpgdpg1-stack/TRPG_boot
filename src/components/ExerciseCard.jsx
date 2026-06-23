@@ -354,7 +354,7 @@ const styles = {
     gap: '16px',
     width: '100%',
     minHeight: '150px',
-    borderRadius: '33px',
+    borderRadius: '49px',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
   },
@@ -362,7 +362,7 @@ const styles = {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '36px',
+    borderRadius: '33px',
     overflow: 'hidden',
     background: '#FFFFFF',
     display: 'flex',
@@ -498,7 +498,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.4)',
     backdropFilter: 'grayscale(1) blur(1.9px)',
     WebkitBackdropFilter: 'grayscale(1) blur(1.9px)',
-    borderRadius: '33px',
+    borderRadius: '49px',
     transition: 'opacity 0.35s ease',
     zIndex: 6
   },

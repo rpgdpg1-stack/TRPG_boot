@@ -924,7 +924,7 @@ const glowStyles = {
     left: -1,
     right: -1,
     bottom: -1,
-    borderRadius: '34px',
+    borderRadius: '50px',
     border: '1.5px solid var(--color-primary)',
     boxShadow: '0 0 18px rgba(158, 209, 83, 0.45), inset 0 0 14px rgba(158, 209, 83, 0.10)',
     pointerEvents: 'none',
@@ -940,7 +940,7 @@ const glowStyles = {
 function SwapAnimationOverlay() {
   const W = 700
   const H = 150
-  const R = 33
+  const R = 49
 
   const path = `
     M ${W / 2} 0
@@ -1033,14 +1033,14 @@ const skeletonStyles = {
     gap: '16px',
     padding: '16px',
     minHeight: '150px',
-    borderRadius: '33px',
+    borderRadius: '49px',
     background: '#1C1C1C'
   },
   thumb: {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '36px'
+    borderRadius: '33px'
   },
   lines: {
     flex: 1,
