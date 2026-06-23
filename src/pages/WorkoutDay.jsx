@@ -19,7 +19,9 @@ import {
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
+import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран дня тренировки.
@@ -52,11 +54,15 @@ export default function WorkoutDay() {
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Тик повторной загрузки (кнопка «Обновить» на экране ошибки).
+  const [reloadTick, setReloadTick] = useState(0)
 
   // Прогресс грузится в эффекте ниже (после того как известно место) —
   // у каждого места (Зал/Дом/Улица) свой набор отжатых упражнений.
   const [activeOrderNums, setActiveOrderNums] = useState(() => new Set())
 
+  // Подтверждение завершения (минимал-модалка перед «праздничной»).
+  const [showConfirm, setShowConfirm] = useState(false)
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
@@ -173,6 +179,7 @@ export default function WorkoutDay() {
         return
       }
 
+      setError(null)
       setLoading(true)
       try {
         const data = await getWorkoutDay(programId, day, place)
@@ -181,9 +188,10 @@ export default function WorkoutDay() {
           setLoading(false)
         }
       } catch (e) {
+        // Технический текст — только в консоль; пользователю человеческое.
         console.error('[WorkoutDay] load error:', e)
         if (!cancelled) {
-          setError(e.message || String(e))
+          setError('Не удалось загрузить тренировку. Проверь интернет и попробуй ещё раз.')
           setLoading(false)
         }
       }
@@ -191,7 +199,7 @@ export default function WorkoutDay() {
 
     load()
     return () => { cancelled = true }
-  }, [programId, day, place])
+  }, [programId, day, place, reloadTick])
 
   // Сохраняем под актуальное место (placeRef) — без place в deps, чтобы при
   // переключении места не затереть прогресс нового места старыми галочками
@@ -386,11 +394,29 @@ export default function WorkoutDay() {
     }
   }
 
+  // Тап «Завершить» → сначала минимал-подтверждение (защита от случайного
+  // раннего завершения). На «Завершить» в нём — праздничная модалка + сохранение.
   const handleFinishButtonTap = () => {
     if (activeOrderNums.size === 0) return
     haptic.medium()
     setFinishedSec(elapsedSec)
+    setShowConfirm(true)
+  }
+
+  const handleConfirmFinishYes = () => {
+    haptic.medium()
+    setShowConfirm(false)
     setShowFinishedModal(true)
+  }
+
+  const handleConfirmFinishCancel = () => {
+    haptic.light()
+    setShowConfirm(false)
+  }
+
+  const handleRetry = () => {
+    haptic.light()
+    setReloadTick(t => t + 1)
   }
 
   const handleConfirmFinish = async () => {
@@ -503,7 +529,7 @@ export default function WorkoutDay() {
                 <div key={`tags-${day}`} style={styles.dayTagsRow}>
                   {dayTags.map((t, i) => (
                     <span key={t.key} style={styles.dayTagText}>
-                      {i > 0 && <span style={styles.dayTagDot}> · </span>}
+                      {i > 0 && ', '}
                       {t.label.toUpperCase()}
                     </span>
                   ))}
@@ -574,9 +600,22 @@ export default function WorkoutDay() {
       }}>
 
         {error && (
-          <div style={styles.error}>
-            <div style={styles.errorTitle}>Ошибка загрузки:</div>
-            <div style={styles.errorText}>{error}</div>
+          <div style={styles.errorBox}>
+            <UiIcon name="network_off" size={42} color="var(--color-text-secondary)" />
+            <div style={styles.errorBoxTitle}>Что-то пошло не так</div>
+            <div style={styles.errorBoxText}>{error}</div>
+            <button onClick={handleRetry} style={styles.retryButton} className="press-tile">
+              Обновить
+            </button>
+          </div>
+        )}
+
+        {/* Скелетон на время загрузки — чтобы контент не «прыгал». */}
+        {loading && !error && (
+          <div style={styles.sectionsWrap}>
+            <div style={styles.exerciseList}>
+              {[0, 1, 2].map(i => <SkeletonCard key={i} />)}
+            </div>
           </div>
         )}
 
@@ -677,10 +716,19 @@ export default function WorkoutDay() {
         />
       )}
 
+      {showConfirm && (
+        <FinishConfirmModal
+          done={activeOrderNums.size}
+          total={slots.length}
+          onConfirm={handleConfirmFinishYes}
+          onCancel={handleConfirmFinishCancel}
+        />
+      )}
+
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
-          durationLabel={formatDuration(finishedSec)}
+          durationLabel={formatElapsedMin(finishedSec)}
           status={finishStatus}
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
@@ -958,6 +1006,61 @@ const overlayStyles = {
   }
 }
 
+/**
+ * Скелетон карточки упражнения на время загрузки — повторяет силуэт реальной
+ * карточки (картинка + строки), мягкий shimmer (класс .skel). Убирает «прыжок»
+ * контента при подгрузке.
+ */
+function SkeletonCard() {
+  return (
+    <div style={skeletonStyles.card}>
+      <div className="skel" style={skeletonStyles.thumb} />
+      <div style={skeletonStyles.lines}>
+        <div className="skel" style={{ ...skeletonStyles.line, width: '72%' }} />
+        <div className="skel" style={{ ...skeletonStyles.line, width: '44%', height: '12px' }} />
+        <div className="skel" style={{ ...skeletonStyles.line, width: '32%', height: '10px' }} />
+      </div>
+      <div className="skel" style={skeletonStyles.weight} />
+    </div>
+  )
+}
+
+const skeletonStyles = {
+  card: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '16px',
+    padding: '16px',
+    minHeight: '150px',
+    borderRadius: '33px',
+    background: '#1C1C1C'
+  },
+  thumb: {
+    flexShrink: 0,
+    width: '118px',
+    height: '118px',
+    borderRadius: '33px'
+  },
+  lines: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  line: {
+    height: '16px',
+    borderRadius: '6px'
+  },
+  weight: {
+    flexShrink: 0,
+    width: '30px',
+    height: '24px',
+    borderRadius: '6px'
+  }
+}
+
 function ArrowLeft() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -974,15 +1077,8 @@ function ArrowRight() {
   )
 }
 
-// mm:ss из секунд — для модалки завершения (итоговая длительность).
-function formatDuration(totalSec) {
-  const m = Math.floor(totalSec / 60)
-  const s = totalSec % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
-
-// Таймер в шапке — без секунд. До часа: минуты числом ("0", "1", "20"…);
-// от часа: "ч:мм" ("1:05").
+// Длительность без секунд — для шапки и модалки завершения. До часа: минуты
+// числом ("0", "1", "20"…); от часа: "ч:мм" ("1:05").
 function formatElapsedMin(totalSec) {
   const totalMin = Math.floor(totalSec / 60)
   if (totalMin < 60) return String(totalMin)
@@ -1203,25 +1299,42 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)'
   },
-  error: {
-    background: 'rgba(232, 69, 69, 0.08)',
-    border: '1px solid rgba(232, 69, 69, 0.3)',
-    borderRadius: 'var(--radius-medium)',
-    padding: '14px 16px',
-    marginBottom: '16px'
+  // Человеческий экран ошибки: иконка + короткий текст + кнопка «Обновить».
+  errorBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: '10px',
+    padding: '48px 24px'
   },
-  errorTitle: {
+  errorBoxTitle: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '17px',
+    letterSpacing: '1px',
+    color: 'var(--color-text)',
+    marginTop: '4px'
+  },
+  errorBoxText: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
-    color: '#E84545',
-    fontWeight: 700,
-    marginBottom: '6px'
-  },
-  errorText: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    lineHeight: 1.5,
     color: 'var(--color-text-secondary)',
-    wordBreak: 'break-word'
+    maxWidth: '260px'
+  },
+  retryButton: {
+    marginTop: '8px',
+    padding: '11px 28px',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 'var(--radius-pill)',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '14px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
   // Футер кнопки «Завершить» — прибит к низу (как пикер/конструктор):
   // градиент-подложка, список уезжает под него; сама кнопка кликабельна.
@@ -1252,9 +1365,5 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
     lineHeight: 1.2
-  },
-  dayTagDot: {
-    color: 'var(--color-text-secondary)',
-    opacity: 0.5
   }
 }

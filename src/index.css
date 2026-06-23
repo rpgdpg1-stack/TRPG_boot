@@ -399,6 +399,23 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+/* Скелетон загрузки: мягкий shimmer по плейсхолдерам (WorkoutDay SkeletonCard). */
+.skel {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.04) 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeletonShimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
+
 /* Возврат с экранов Инфо/Замена: зелёная обводка карточки (WorkoutDay.jsx) */
 @keyframes returnGlowFade {
   0%   { opacity: 0; }
