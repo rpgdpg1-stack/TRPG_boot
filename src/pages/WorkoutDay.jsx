@@ -829,7 +829,11 @@ const styles = {
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: 'calc(var(--tg-safe-top) - 18px)',
+    // Карточка-шапка (headerCard) не имеет своего верхнего margin (в отличие
+    // от PlayerCard на главной, у которого margin 8px сверху). Поэтому здесь
+    // отнимаем не 18px, а 10px — чтобы видимый зазор до кнопок Telegram был
+    // те же 16px, что и везде.
+    paddingTop: 'calc(var(--tg-safe-top) - 10px)',
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',

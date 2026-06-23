@@ -252,7 +252,7 @@ const infoStyles = {
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
     zIndex: 9999,
-    padding: 'calc(var(--tg-safe-top) - 18px) 20px calc(var(--tabbar-height) + 40px)',
+    padding: 'calc(var(--tg-safe-top) - 10px) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'catInfoOverlay 0.2s ease-out forwards'
   },

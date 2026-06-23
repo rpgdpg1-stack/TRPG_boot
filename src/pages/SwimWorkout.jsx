@@ -415,7 +415,10 @@ const styles = {
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    paddingTop: 'calc(var(--tg-safe-top) - 18px)',
+    // Первый элемент шапки (header) без верхнего margin — отнимаем 10px (а не
+    // 18px), чтобы зазор до кнопок Telegram был ровно 16px, как на остальных
+    // экранах (где у первого элемента есть свой margin/padding 8px сверху).
+    paddingTop: 'calc(var(--tg-safe-top) - 10px)',
     paddingBottom: '14px',
     marginLeft: '-16px',
     marginRight: '-16px',
