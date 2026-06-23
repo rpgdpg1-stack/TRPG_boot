@@ -197,6 +197,38 @@ body.keyboard-open .app::after { display: none; }
 }
 
 /* ============================================ */
+/* Финал прогресс-бара дня (искра / счётчик / салют) */
+/* ============================================ */
+
+/* Разлёт частицы из головы заливки: дистанцию задают --tx/--ty в инлайне. */
+@keyframes progSparkFly {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.3); }
+}
+/* Появление счётчика 3-2-1 (ремаунт по key при смене цифры). */
+@keyframes progCountIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  to   { opacity: 0.65; transform: translateX(-50%) translateY(0); }
+}
+/* Очень слабый твинкл головы в финишной зоне. */
+@keyframes progTwinkle {
+  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.7); }
+  50%      { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+}
+/* Центральная вспышка-«пых» финального салюта. */
+@keyframes progFlash {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.3); }
+  30%  { opacity: 0.8; }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.6); }
+}
+/* Уважение к prefers-reduced-motion: гасим бесконечный твинкл (вспышки на
+   нажатие/финиш короткие и осмысленные — оставляем). */
+@media (prefers-reduced-motion: reduce) {
+  .prog-twinkle { animation: none !important; opacity: 0.4 !important; }
+}
+
+/* ============================================ */
 /* PRESS-эффект (универсальный) */
 /* ============================================ */
 

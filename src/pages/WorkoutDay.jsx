@@ -87,6 +87,13 @@ export default function WorkoutDay() {
 
   const cardRefs = useRef(new Map())
 
+  // Финал прогресса: счётчик 3-2-1 + искра на «голове» заливки и микро-салют на
+  // 100%. Анимации событийные (вспышка на нажатие), чтобы ничего не мельтешило в
+  // закреплённой шапке. sparkKey/finishKey — ремаунт частиц для повтора анимации.
+  const prevDoneRef = useRef(0)
+  const [sparkKey, setSparkKey] = useState(0)
+  const [finishKey, setFinishKey] = useState(0)
+
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
 
@@ -192,6 +199,20 @@ export default function WorkoutDay() {
   useEffect(() => {
     saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
+
+  // Триггер искры/салюта. Только когда отжали ровно одно упражнение (now - prev
+  // === 1) — так не срабатывает на загрузке прогресса (скачок 0→N) и на снятии
+  // галочки. Осталось 3/2/1 → искра; осталось 0 → финальный салют.
+  useEffect(() => {
+    const prev = prevDoneRef.current
+    const now = activeOrderNums.size
+    prevDoneRef.current = now
+    if (loading) return
+    if (now - prev !== 1) return
+    const rem = slots.length - now
+    if (rem === 0) setFinishKey(k => k + 1)
+    else if (rem <= 3) setSparkKey(k => k + 1)
+  }, [activeOrderNums.size, slots.length, loading])
 
   // Реакция на возврат с экранов "Сменить" и "Инфо".
   // Срабатывает после рендера карточек (slots не пустой, loading закончился).
@@ -425,6 +446,7 @@ export default function WorkoutDay() {
   }
 
   const sections = groupByMuscleGroup(slots)
+  const remaining = slots.length - activeOrderNums.size
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
@@ -504,13 +526,25 @@ export default function WorkoutDay() {
             <span style={styles.progressLabel}>
               {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
             </span>
-            <div style={styles.progressTrack}>
-              <div
-                style={{
-                  ...styles.progressFill,
-                  width: `${progressPct}%`
-                }}
-              />
+            <div style={styles.progressArea}>
+              <div style={styles.progressTrack}>
+                <div
+                  style={{
+                    ...styles.progressFill,
+                    width: `${progressPct}%`
+                  }}
+                />
+              </div>
+
+              {/* Финал: счётчик 3-2-1, искра на голове, салют на 100%. */}
+              {!loading && slots.length > 0 && (
+                <ProgressFinale
+                  pct={progressPct}
+                  remaining={remaining}
+                  sparkKey={sparkKey}
+                  finishKey={finishKey}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -671,6 +705,154 @@ export default function WorkoutDay() {
  */
 function ReturnGlow() {
   return <div style={glowStyles.wrap} aria-hidden="true" />
+}
+
+/**
+ * Финал прогресс-бара: на финишной прямой (осталось 3/2/1) над «головой»
+ * заливки стоит тусклый счётчик-обратный отсчёт, голова мягко светится и еле
+ * заметно искрится. При каждом нажатии — одноразовая вспышка искр (sparkKey),
+ * на 100% — микро-салют (finishKey). Всё лёгкое и не зацикленное (кроме очень
+ * слабого твинкла), чтобы не отвлекать в закреплённой шапке.
+ *
+ * marker — нулевой по ширине якорь на позиции головы (left = pct%), частицы и
+ * счётчик позиционируются от него. zIndex над дорожкой.
+ */
+function ProgressFinale({ pct, remaining, sparkKey, finishKey }) {
+  const inZone = remaining >= 1 && remaining <= 3
+  return (
+    <div style={{ ...finaleStyles.marker, left: `${pct}%` }} aria-hidden="true">
+      {inZone && <span style={finaleStyles.headGlow} />}
+      {inZone && (
+        <span
+          className="prog-twinkle"
+          style={{ ...finaleStyles.twinkle, animation: 'progTwinkle 1.9s ease-in-out infinite' }}
+        />
+      )}
+      {inZone && <span key={remaining} style={finaleStyles.count}>{remaining}</span>}
+
+      {sparkKey > 0 && <SparkBurst key={`s${sparkKey}`} />}
+      {finishKey > 0 && <SparkBurst key={`f${finishKey}`} finale />}
+    </div>
+  )
+}
+
+/**
+ * Вспышка искр из точки головы. Обычная (на нажатие) — 4 искры, узкий разлёт.
+ * Финальная (на 100%) — 8 искр пошире/подольше + центральная вспышка-«пых».
+ * Направления раскладываем по кругу, дистанцию пишем в CSS-переменные --tx/--ty,
+ * keyframe progSparkFly разносит и гасит частицу за один проход (forwards).
+ */
+function SparkBurst({ finale = false }) {
+  const n = finale ? 8 : 4
+  const spread = finale ? 17 : 9
+  const dur = finale ? 780 : 560
+  const base = finale ? -Math.PI / 2 : -0.6
+  const parts = Array.from({ length: n }, (_, i) => {
+    const ang = base + (Math.PI * 2 * i) / n
+    return {
+      tx: (Math.cos(ang) * spread).toFixed(1),
+      ty: (Math.sin(ang) * spread).toFixed(1)
+    }
+  })
+  return (
+    <span style={finaleStyles.burst}>
+      {finale && <span style={finaleStyles.flash} />}
+      {parts.map((p, i) => (
+        <span
+          key={i}
+          style={{
+            ...finaleStyles.particle,
+            ...(finale ? finaleStyles.particleFinale : null),
+            '--tx': `${p.tx}px`,
+            '--ty': `${p.ty}px`,
+            animationDuration: `${dur}ms`
+          }}
+        />
+      ))}
+    </span>
+  )
+}
+
+const finaleStyles = {
+  marker: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    pointerEvents: 'none',
+    zIndex: 2
+  },
+  // Счётчик «осталось»: мельче и тусклее чем «7/9», читается как вторичный.
+  count: {
+    position: 'absolute',
+    bottom: 'calc(100% + 4px)',
+    left: 0,
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '11px',
+    letterSpacing: '0.5px',
+    color: 'var(--color-text-secondary)',
+    whiteSpace: 'nowrap',
+    animation: 'progCountIn 280ms ease-out both'
+  },
+  headGlow: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    width: '12px',
+    height: '12px',
+    transform: 'translate(-50%, -50%)',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(158, 209, 83, 0.55) 0%, rgba(158, 209, 83, 0) 70%)'
+  },
+  twinkle: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    width: '4px',
+    height: '4px',
+    transform: 'translate(-50%, -50%)',
+    borderRadius: '50%',
+    background: 'var(--color-primary)',
+    boxShadow: '0 0 5px rgba(158, 209, 83, 0.7)'
+  },
+  burst: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 0
+  },
+  particle: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    width: '3px',
+    height: '3px',
+    borderRadius: '50%',
+    background: 'var(--color-primary)',
+    boxShadow: '0 0 4px rgba(158, 209, 83, 0.8)',
+    transform: 'translate(-50%, -50%)',
+    animationName: 'progSparkFly',
+    animationTimingFunction: 'cubic-bezier(0.2, 0.6, 0.3, 1)',
+    animationFillMode: 'forwards'
+  },
+  particleFinale: {
+    width: '3.5px',
+    height: '3.5px',
+    boxShadow: '0 0 6px rgba(158, 209, 83, 0.9)'
+  },
+  flash: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    width: '16px',
+    height: '16px',
+    transform: 'translate(-50%, -50%)',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(158, 209, 83, 0.8) 0%, rgba(158, 209, 83, 0) 70%)',
+    animation: 'progFlash 600ms ease-out forwards'
+  }
 }
 
 const glowStyles = {
@@ -936,8 +1118,14 @@ const styles = {
     flexShrink: 0,
     whiteSpace: 'nowrap'
   },
-  progressTrack: {
+  // Обёртка над дорожкой: держит абсолютный слой финала (искра/счётчик/салют),
+  // который НЕ обрезается (в отличие от самой дорожки с overflow: hidden).
+  progressArea: {
     flex: 1,
+    position: 'relative'
+  },
+  progressTrack: {
+    width: '100%',
     height: '7px',
     background: 'rgba(255, 255, 255, 0.08)',
     borderRadius: '4px',
