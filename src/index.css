@@ -192,17 +192,6 @@ body.keyboard-open .app::after { display: none; }
   z-index: 1;
 }
 
-/* Закреплённый заголовок-пузырёк текущей группы мышц (экран дня тренировки):
-   стоит под шапкой, текст меняется на активную группу. Микро-анимация смены
-   (ремаунт по key) — мягкое появление нового текста. */
-.sticky-group-bubble {
-  animation: stickyGroupIn 0.26s var(--ease-ios) both;
-}
-@keyframes stickyGroupIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ============================================ */
 /* PRESS-эффект (универсальный) */
 /* ============================================ */

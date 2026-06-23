@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -86,25 +86,6 @@ export default function WorkoutDay() {
   const [kbOpen, setKbOpen] = useState(false)
 
   const cardRefs = useRef(new Map())
-
-  // Высота закреплённой шапки дня — под неё прилипают sticky-заголовки групп мышц.
-  const headerRef = useRef(null)
-  const [headerH, setHeaderH] = useState(0)
-  useLayoutEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-    const measure = () => setHeaderH(el.offsetHeight)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  // Закреплённый заголовок текущей группы мышц: при скролле показывает группу,
-  // чей заголовок ушёл под шапку. Не уезжает — стоит на месте, меняет текст.
-  const sectionRefs = useRef([])
-  const stickyIdxRef = useRef(-1)
-  const [stickyGroup, setStickyGroup] = useState(null)
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
@@ -269,47 +250,6 @@ export default function WorkoutDay() {
 
     navigate(location.pathname, { replace: true, state: null })
   }, [loading, slots.length, location.state, location.pathname, navigate])
-
-  // Отслеживаем, заголовок какой группы ушёл под шапку — его показывает
-  // закреплённый заголовок-пузырёк. Считаем активной последнюю секцию, чей верх
-  // выше линии под шапкой (headerH). Обновляем стейт только при смене группы.
-  useEffect(() => {
-    if (loading) { setStickyGroup(null); stickyIdxRef.current = -1; return }
-    const secs = groupByMuscleGroup(slots)
-    if (!secs.length) { setStickyGroup(null); stickyIdxRef.current = -1; return }
-
-    const lineY = (headerH || 0) + 1
-    const update = () => {
-      let active = -1
-      for (let i = 0; i < secs.length; i++) {
-        const el = sectionRefs.current[i]
-        if (!el) continue
-        if (el.getBoundingClientRect().top <= lineY) active = i
-        else break
-      }
-      if (active === stickyIdxRef.current) return
-      stickyIdxRef.current = active
-      if (active < 0) {
-        setStickyGroup(null)
-      } else {
-        const g = secs[active].muscleGroup
-        setStickyGroup({
-          label: MUSCLE_GROUP_LABELS[g] || g.toUpperCase(),
-          accent: getMuscleGroupColors(g).accent
-        })
-      }
-    }
-
-    let ticking = false
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => { ticking = false; update() })
-    }
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [loading, slots, headerH])
 
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
@@ -500,7 +440,7 @@ export default function WorkoutDay() {
 
       {/* Шапка дня закреплена сверху (sticky) — то же устройство, что карточка
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
-      <div ref={headerRef} style={styles.stickyHeader}>
+      <div style={styles.stickyHeader}>
 
         {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
             прогресс. Фон/строук как у карточки игрока на главной. */}
@@ -603,7 +543,6 @@ export default function WorkoutDay() {
             {sections.map((section, sIdx) => (
               <section
                 key={`${section.muscleGroup}-${sIdx}`}
-                ref={(el) => { sectionRefs.current[sIdx] = el }}
                 style={styles.section}
               >
                 <h2 style={{
@@ -654,18 +593,6 @@ export default function WorkoutDay() {
         )}
 
       </div>
-
-      {/* Закреплённый заголовок-пузырёк текущей группы. key=label → лёгкая
-          микро-анимация при смене текста (Спина → Бицепс). */}
-      {stickyGroup && (
-        <div
-          key={stickyGroup.label}
-          className="sticky-group-bubble"
-          style={{ ...styles.stickyGroupOverlay, top: headerH + 14, color: stickyGroup.accent }}
-        >
-          {stickyGroup.label}
-        </div>
-      )}
 
       {/* Кнопка «Завершить» прибита к низу (как «Добавить упражнения» в пикере):
           градиент-подложка + кнопка. При открытой клавиатуре прячем, чтобы не
@@ -1047,27 +974,6 @@ const styles = {
     letterSpacing: '2px',
     padding: '4px 4px 4px 18px',
     margin: 0
-  },
-  // Закреплённый заголовок-пузырёк текущей группы: стоит под шапкой дня (top=
-  // headerH), меняет текст на активную группу при скролле. Hug по тексту, лёгкий
-  // размытый фон. Не уезжает (в отличие от нативного sticky-push).
-  stickyGroupOverlay: {
-    position: 'fixed',
-    left: '20px',
-    zIndex: 25,
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '5px 14px',
-    borderRadius: 'var(--radius-pill)',
-    background: 'rgba(13, 12, 12, 0.55)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '14px',
-    letterSpacing: '2px',
-    pointerEvents: 'none',
-    whiteSpace: 'nowrap'
   },
   exerciseList: {
     display: 'flex',
