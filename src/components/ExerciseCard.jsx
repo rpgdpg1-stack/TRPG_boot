@@ -507,7 +507,7 @@ const styles = {
   menuButton: {
     position: 'absolute',
     top: '4px',
-    right: '8px',
+    right: '18px',
     width: '34px',
     height: '30px',
     display: 'flex',

@@ -337,7 +337,7 @@ export default function WorkoutDay() {
       state: {
         returnTo: `/workout/${programId}/${day}`,
         returnedFromOrderNum: slot.order_num,
-        scrollY: window.scrollY
+        scrollY: getRealScrollY()
       }
     })
   }
@@ -362,7 +362,7 @@ export default function WorkoutDay() {
         currentExerciseName: slot.exercise_name,
         defaultExerciseId,
         muscleGroup: slot.muscle_group,
-        scrollY: window.scrollY
+        scrollY: getRealScrollY()
       }
     })
   }
@@ -1086,6 +1086,17 @@ function ArrowRight() {
   )
 }
 
+// Реальная позиция скролла. ExerciseActionMenu на время открытого меню фиксирует
+// body (position:fixed; top:-scrollY) — тогда window.scrollY === 0, а настоящая
+// позиция спрятана в body.style.top. Иначе берём обычный window.scrollY.
+function getRealScrollY() {
+  const top = document.body.style.top
+  if (document.body.style.position === 'fixed' && top) {
+    return -parseInt(top, 10) || 0
+  }
+  return window.scrollY
+}
+
 // Длительность без секунд — для шапки и модалки завершения. До часа: минуты
 // числом ("0", "1", "20"…); от часа: "ч:мм" ("1:05").
 function formatElapsedMin(totalSec) {
@@ -1156,7 +1167,7 @@ const styles = {
     padding: '14px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 'var(--radius-card)'
+    borderRadius: '49px'
   },
   // Верхний ряд блока: место тренировки слева, таймер справа.
   topMetaRow: {
