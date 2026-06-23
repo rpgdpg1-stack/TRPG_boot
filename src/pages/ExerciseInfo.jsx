@@ -2,31 +2,19 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getExerciseById } from '../features/exercises/api'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
-import { getMuscleGroupColors } from '../features/programs/colors'
-import ExerciseVideo from '../components/ExerciseVideo'
+import ExerciseHeaderCard from '../components/ExerciseHeaderCard'
 
 /**
- * Полноэкранная страница с подробной информацией об упражнении.
+ * Полноэкранная страница с подробной информацией об упражнении (техника).
  *
  * URL: /exercise/:id
- * State (опционально): { returnTo: '/workout/split/A' } — куда вести "Назад".
+ * State (опционально): { returnTo, returnedFromOrderNum, scrollY } — для возврата
+ * на день тренировки с восстановлением позиции скролла.
  *
- * Назад от Telegram BackButton:
- *   - если в state есть returnTo → туда
- *   - иначе → navigate(-1) (история браузера)
- *
- * Структура страницы:
- *  - Видео сверху на всю ширину контентной зоны, квадратное, скругление 33px
- *  - Название упражнения крупно
- *  - Теги группы + подгруппы
- *  - Подходы (meta_info)
- *  - Описание (description из БД). Если description пустой —
- *    показываем placeholder "Скоро тут будет подробное описание техники"
- *
- * В дальнейшем сюда добавим: целевые мышцы, типичные ошибки, советы.
- * Под это в exercises есть колонка description — пока используем её как
- * единый текст. Когда контент разрастётся — разобьём на секции.
+ * Структура:
+ *  - Сверху ЗАКРЕПЛЁННАЯ (sticky) карточка-шапка упражнения (видео + название +
+ *    теги + подходы) — тот же компонент ExerciseHeaderCard, что и в меню действий.
+ *  - Ниже скроллится описание техники. Пока реального текста нет — placeholder.
  */
 export default function ExerciseInfo() {
   const { id } = useParams()
@@ -36,10 +24,6 @@ export default function ExerciseInfo() {
   const [exercise, setExercise] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Куда вести "Назад". Если на эту страницу пришли с экрана тренировки,
-  // ExerciseActionMenu передал в state: returnTo, returnedFromOrderNum, scrollY.
-  // При возврате прокидываем эти данные обратно — WorkoutDay по ним
-  // восстановит позицию скролла и проиграет эффекты (press + glow).
   const returnTo = location.state?.returnTo || null
   const returnedFromOrderNum = location.state?.returnedFromOrderNum ?? null
   const savedScrollY = location.state?.scrollY
@@ -80,7 +64,7 @@ export default function ExerciseInfo() {
 
   if (loading) {
     return (
-      <div className="page page-fade" style={styles.page}>
+      <div className="page page-fade" style={styles.fallbackPage}>
         <div style={styles.loading}>Загрузка...</div>
       </div>
     )
@@ -88,7 +72,7 @@ export default function ExerciseInfo() {
 
   if (!exercise) {
     return (
-      <div className="page page-fade" style={styles.page}>
+      <div className="page page-fade" style={styles.fallbackPage}>
         <div style={styles.errorBlock}>
           Упражнение не найдено.<br />
           Попробуй вернуться назад.
@@ -97,147 +81,87 @@ export default function ExerciseInfo() {
     )
   }
 
-  const colors = getMuscleGroupColors(exercise.muscle_group)
-  const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[exercise.muscle_group] || exercise.muscle_group)
-  const subGroupLabel = toTitleCase(SUB_GROUP_LABELS[exercise.sub_group] || exercise.sub_group)
-
-  // description в БД может содержать дефолтный плейсхолдер "Здесь будет подробное описание".
-  // Если такой — считаем что описания нет и показываем UI-заглушку. Когда заполнишь
-  // реальный текст — он будет показан автоматически.
+  // description в БД может содержать дефолтный плейсхолдер. Если такой —
+  // считаем что описания нет и показываем UI-заглушку.
   const hasRealDescription = exercise.description
     && exercise.description.trim()
     && !exercise.description.includes('Здесь будет подробное описание')
 
   return (
-    <div className="page page-fade" style={styles.page}>
+    <div className="page-fade" style={styles.page}>
 
-      {/* Видео сверху на всю ширину контентной зоны страницы */}
-      <div style={styles.videoBlock}>
-        <ExerciseVideo
+      {/* Закреплённая карточка-шапка — как блок-шапка в дне тренировки. */}
+      <div style={styles.stickyHeader}>
+        <ExerciseHeaderCard
           videoUrl={exercise.video_url}
           previewUrl={exercise.preview_url}
-          size="full"
+          name={exercise.name}
+          muscleGroup={exercise.muscle_group}
+          subGroup={exercise.sub_group}
+          meta={exercise.meta_info}
         />
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      {/* Название упражнения */}
-      <h1 style={styles.title}>{exercise.name}</h1>
-
-      {/* Теги: группа (цветная) + подгруппа (серая) */}
-      <div style={styles.tagsRow}>
-        {groupLabel && (
-          <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
-            {groupLabel}
-          </span>
-        )}
-        {subGroupLabel && (
-          <span style={{ ...styles.tag, ...styles.tagSecondary }}>
-            {subGroupLabel}
-          </span>
-        )}
-      </div>
-
-      {/* Подходы */}
-      {exercise.meta_info && (
-        <div style={styles.meta}>
-          Подходы: <span style={styles.metaValue}>{exercise.meta_info}</span>
+      {/* Скроллящееся описание техники. */}
+      <div style={styles.body}>
+        <div style={styles.sectionHeader}>ОПИСАНИЕ</div>
+        <div style={styles.descriptionBlock}>
+          {hasRealDescription ? (
+            <div style={styles.descriptionText}>
+              {exercise.description.split('\n').map((line, idx) => (
+                <p key={idx} style={styles.paragraph}>{line}</p>
+              ))}
+            </div>
+          ) : (
+            <div style={styles.descriptionPlaceholder}>
+              📖<br />
+              Скоро тут будет подробное описание техники,<br />
+              целевые мышцы, типичные ошибки и советы
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Описание */}
-      <div style={styles.sectionHeader}>ОПИСАНИЕ</div>
-      <div style={styles.descriptionBlock}>
-        {hasRealDescription ? (
-          // Если в БД реальный текст — показываем его, сохраняя переносы строк
-          <div style={styles.descriptionText}>
-            {exercise.description.split('\n').map((line, idx) => (
-              <p key={idx} style={styles.paragraph}>{line}</p>
-            ))}
-          </div>
-        ) : (
-          <div style={styles.descriptionPlaceholder}>
-            📖<br />
-            Скоро тут будет подробное описание техники,<br />
-            целевые мышцы, типичные ошибки и советы
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
 const styles = {
-  page: {},
-  loading: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)'
+  page: {
+    padding: '0 16px',
+    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+    minHeight: '100dvh'
   },
-  errorBlock: {
-    padding: '40px 20px',
-    textAlign: 'center',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    lineHeight: 1.5
+  // Карточка-шапка закреплена сверху (как в дне тренировки): сплошной фон зоны,
+  // отступ под кнопки Telegram, full-width через отрицательные боковые margin.
+  stickyHeader: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 30,
+    background: 'var(--color-bg)',
+    paddingTop: 'var(--tg-safe-top)',
+    paddingBottom: 0,
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px'
   },
-  videoBlock: {
-    width: '100%',
-    marginTop: '4px',
-    marginBottom: '20px'
+  stickyFade: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 29,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
-  title: {
-    fontFamily: 'var(--font-geist)',
-    fontSize: '22px',
-    fontWeight: 700,
-    lineHeight: 1.25,
-    color: 'var(--color-text)',
-    margin: '0 0 12px 0',
-    padding: '0 4px'
-  },
-  tagsRow: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: '8px',
-    flexWrap: 'wrap',
-    marginBottom: '14px',
-    padding: '0 4px'
-  },
-  tag: {
-    display: 'inline-block',
-    padding: '4px 12px',
-    borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 700,
-    letterSpacing: '0.3px',
-    lineHeight: '16px',
-    whiteSpace: 'nowrap'
-  },
-  tagSecondary: {
-    background: 'rgba(255, 255, 255, 0.08)',
-    color: '#A0A0A0',
-    fontWeight: 600
-  },
-  meta: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#888888',
-    marginBottom: '24px',
-    padding: '0 4px'
-  },
-  metaValue: {
-    color: 'var(--color-text)',
-    fontWeight: 700
+  body: {
+    paddingTop: '20px'
   },
   sectionHeader: {
     fontFamily: 'var(--font-display)',
@@ -270,5 +194,22 @@ const styles = {
     textAlign: 'center',
     lineHeight: 1.6,
     padding: '20px 8px'
+  },
+  // Фоллбэки загрузки/ошибки используют обычный .page (центрируем текст).
+  fallbackPage: {},
+  loading: {
+    textAlign: 'center',
+    padding: '60px 20px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)'
+  },
+  errorBlock: {
+    padding: '40px 20px',
+    textAlign: 'center',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    lineHeight: 1.5
   }
 }
