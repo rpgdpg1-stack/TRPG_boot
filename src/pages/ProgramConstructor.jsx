@@ -604,7 +604,7 @@ function GripIcon() {
 }
 
 const styles = {
-  page: { padding: '0 16px 32px', paddingTop: 'calc(var(--tg-safe-top) - 18px)', minHeight: '100dvh' },
+  page: { padding: '0 16px 32px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
@@ -613,7 +613,7 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 40
   },
-  header: { textAlign: 'center', margin: '8px 0 20px' },
+  header: { textAlign: 'center', margin: '0 0 20px' },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     height: '52px', padding: '0 20px', maxWidth: '100%',

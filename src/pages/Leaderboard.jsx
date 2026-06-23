@@ -429,7 +429,6 @@ function pluralPlayers(n) {
 const styles = {
   page: {},
   header: {
-    marginTop: '8px',
     marginBottom: '20px'
   },
   titleRow: {
@@ -634,10 +633,9 @@ const modalStyles = {
     alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
-    // Старт сверху на той же высоте что и профили (16px ниже кнопок Telegram).
-    // Карточка-ребёнок без своего margin сверху, поэтому отнимаем 10px.
-    // Низ с запасом под таб-бар, прокрутка внутри оверлея.
-    padding: 'calc(var(--tg-safe-top) - 10px) 20px calc(var(--tabbar-height) + 40px)',
+    // Старт сверху на той же высоте что и профили (16px ниже кнопок Telegram,
+    // зашито в var). Низ с запасом под таб-бар, прокрутка внутри оверлея.
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'rulesOverlay 0.2s ease-out forwards'
   },

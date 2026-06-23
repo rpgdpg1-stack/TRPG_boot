@@ -418,7 +418,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
-    margin: '8px 0 4px',
+    margin: '0 0 4px',
     padding: '12px 14px',
     position: 'relative',
     background: 'rgba(255, 255, 255, 0.03)',

@@ -262,10 +262,12 @@ const styles = {
     height: '100dvh',
     background: 'var(--color-bg)',
     display: 'flex', flexDirection: 'column',
-    paddingTop: 'calc(var(--tg-safe-top) - 18px)',
+    paddingTop: 'var(--tg-safe-top)',
     overflow: 'hidden'
   },
-  header: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px' },
+  // Без верхнего padding: поле поиска начинается ровно на 16px ниже кнопок
+  // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
+  header: { display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px 8px' },
   search: {
     flex: 1, height: '44px', padding: '0 16px',
     background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',

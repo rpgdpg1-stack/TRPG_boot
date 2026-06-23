@@ -96,7 +96,7 @@
 
   /* Safe-area под Telegram nav. Фолбэк для старых клиентов (до Bot API 8.0);
      на новых перезаписывается реальным значением из bindSafeArea() в telegram.js. */
-  --tg-safe-top: 116px;
+  --tg-safe-top: 108px;
 }
 
 /* ============================================ */
@@ -187,11 +187,11 @@ body.hide-app-scrim .app::after { display: none; }
 body.keyboard-open .app::after { display: none; }
 
 .page {
-  /* Верх контента — ровно на 16px ниже кнопок Telegram (закрыть / три точки),
-     единообразно с боковым отступом 16px. В --tg-safe-top заложен запас +16px,
-     но Telegram в contentSafeAreaInset резервирует зону ещё ~18px ниже видимых
-     кнопок — поэтому отнимаем 18px, чтобы видимый зазор был ровно 16px. */
-  padding: calc(var(--tg-safe-top) - 18px) 16px 24px;
+  /* Единое правило отступов: верх контента — ровно на 16px ниже кнопок Telegram
+     (это уже зашито в var(--tg-safe-top), см. bindSafeArea). Первый элемент
+     страницы НЕ должен иметь своего верхнего margin/padding — тогда зазор везде
+     одинаковый 16px, как боковой отступ. */
+  padding: var(--tg-safe-top) 16px 24px;
   position: relative;
   z-index: 1;
 }

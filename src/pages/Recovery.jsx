@@ -173,7 +173,6 @@ const styles = {
   page: {},
   header: {
     marginBottom: '20px',
-    marginTop: '8px',
     textAlign: 'center'
   },
   title: {

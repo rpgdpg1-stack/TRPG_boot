@@ -397,7 +397,7 @@ function RewardPopup({ popup, activeTitle, onToggleTitle, onClose }) {
 
 const styles = {
   page: {},
-  header: { marginTop: '8px', marginBottom: '16px', textAlign: 'center' },
+  header: { marginBottom: '16px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,

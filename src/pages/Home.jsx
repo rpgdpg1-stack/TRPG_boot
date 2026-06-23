@@ -417,14 +417,10 @@ const styles = {
     top: 0,
     zIndex: 20,
     background: 'var(--color-bg)',
-    // Верхний край карточки игрока — ровно на 16px ниже кнопок Telegram
-    // (закрыть / три точки), единообразно с боковым отступом страницы (16px).
-    // В --tg-safe-top заложен запас +16px (telegram.js: sys + ui + 16), но по
-    // факту Telegram в contentSafeAreaInset резервирует зону ещё на ~18px ниже
-    // видимых кнопок — поэтому реальный зазор получался ~34px. Отнимаем 18px,
-    // чтобы видимый зазор стал ровно 16px (значение в CSS-px одинаково на всех
-    // iPhone — кнопки Telegram везде одного размера).
-    paddingTop: 'calc(var(--tg-safe-top) - 18px)',
+    // Верхний край карточки игрока — ровно 16px ниже кнопок Telegram (зашито в
+    // var(--tg-safe-top)). У PlayerCard нет своего верхнего margin — отступ
+    // целиком задаёт var, как на всех экранах.
+    paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',

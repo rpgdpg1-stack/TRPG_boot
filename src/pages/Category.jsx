@@ -227,7 +227,7 @@ function CategoryInfoModal({ meta, onClose }) {
 
 const styles = {
   page: {},
-  header: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '24px', marginTop: '8px' },
+  header: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '24px' },
   infoButton: { position: 'absolute', top: 0, right: 0, width: '36px', height: '36px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },
@@ -252,7 +252,7 @@ const infoStyles = {
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
     zIndex: 9999,
-    padding: 'calc(var(--tg-safe-top) - 10px) 20px calc(var(--tabbar-height) + 40px)',
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'catInfoOverlay 0.2s ease-out forwards'
   },

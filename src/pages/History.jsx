@@ -61,7 +61,7 @@ export default function History() {
 
 const styles = {
   page: {},
-  header: { marginTop: '8px', marginBottom: '20px', textAlign: 'center' },
+  header: { marginBottom: '20px', textAlign: 'center' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,

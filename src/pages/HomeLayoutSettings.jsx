@@ -187,7 +187,6 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: '6px',
-    marginTop: '8px',
     marginBottom: '20px'
   },
   title: {

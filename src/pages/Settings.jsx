@@ -161,7 +161,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '10px',
-    marginTop: '8px',
     marginBottom: '20px'
   },
   title: {

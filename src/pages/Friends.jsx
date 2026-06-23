@@ -254,7 +254,6 @@ function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
 const styles = {
   page: {},
   header: {
-    marginTop: '8px',
     marginBottom: '16px'
   },
   titleRow: {

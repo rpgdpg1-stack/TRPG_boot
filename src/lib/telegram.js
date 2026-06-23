@@ -115,11 +115,15 @@ export function paintTelegramChrome() {
  *
  * Пишет в CSS-переменную --tg-safe-top реальную высоту, которую занимают
  * сверху: вырез/статусбар устройства (safeAreaInset) + шапка Telegram с
- * кнопками (contentSafeAreaInset) + запас 16px. Обновляется на события
+ * кнопками (contentSafeAreaInset) + запас 8px. Запас подобран так, чтобы
+ * ЧИСТЫЙ var(--tg-safe-top) давал ровно 16px ниже кнопок Telegram до первого
+ * элемента (Telegram резервирует в contentSafeAreaInset ещё ~8px ниже видимых
+ * кнопок). Единое правило: первый элемент экрана БЕЗ своего верхнего отступа +
+ * paddingTop: var(--tg-safe-top) = всегда 16px сверху. Обновляется на события
  * Telegram (поворот, вход/выход из фуллскрина).
  *
  * Если поля недоступны (старый клиент Telegram до Bot API 8.0) — переменную
- * не трогаем, и работает хардкод-фолбэк 116px из index.css.
+ * не трогаем, и работает хардкод-фолбэк 108px из index.css.
  */
 export function bindSafeArea() {
   if (!tg) return
@@ -129,10 +133,10 @@ export function bindSafeArea() {
     const ui  = tg.contentSafeAreaInset?.top ?? 0   // шапка Telegram (Назад / …)
 
     // Если оба поля отсутствуют (старый клиент) — не трогаем переменную,
-    // пусть остаётся фолбэк 116px из CSS. Иначе ставим реальную высоту + запас.
+    // пусть остаётся фолбэк 108px из CSS. Иначе ставим реальную высоту + запас.
     if (tg.safeAreaInset == null && tg.contentSafeAreaInset == null) return
 
-    document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 16}px`)
+    document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 8}px`)
   }
 
   apply()

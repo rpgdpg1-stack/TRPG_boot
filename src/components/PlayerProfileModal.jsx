@@ -199,7 +199,7 @@ const styles = {
     alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: 'calc(var(--tg-safe-top) - 10px) 20px calc(var(--tabbar-height) + 40px)',
+    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
