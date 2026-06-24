@@ -5,6 +5,7 @@ import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENG
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { haptic } from '../lib/telegram'
+import { useKeyboardInset } from '../lib/use-keyboard-inset'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
 
@@ -29,6 +30,7 @@ import UiIcon from './UiIcon'
 const NOTE_ICON_COLOR = '#FFA94D'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
+  const kbInset = useKeyboardInset()
   const noteInputRef = useRef(null)
 
   // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
@@ -224,7 +226,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   return (
     <div
-      style={styles.overlay}
+      style={{
+        ...styles.overlay,
+        // Высота клавиатуры в нижний паддинг → центрированная модалка плавно
+        // приподнимается ровно над клавиатурой (с отступом), без рывков.
+        paddingBottom: `calc(20px + ${kbInset}px)`,
+        transition: 'padding-bottom 0.25s ease'
+      }}
       onClick={handleOverlayClick}
     >
       <div
