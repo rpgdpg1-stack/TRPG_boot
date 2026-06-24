@@ -86,16 +86,16 @@ const styles = {
     textShadow: '0 0 4px rgba(0,0,0,0.8)'
   },
   current: {
-    fontSize: '12px',
+    fontSize: '10.5px',
     color: '#FFFFFF',
     letterSpacing: '1px'
   },
   slash: {
-    fontSize: '12px',
+    fontSize: '10.5px',
     color: 'rgba(255,255,255,0.7)'
   },
   needed: {
-    fontSize: '12px',
+    fontSize: '10.5px',
     color: 'rgba(255,255,255,0.7)',
     letterSpacing: '1px'
   }

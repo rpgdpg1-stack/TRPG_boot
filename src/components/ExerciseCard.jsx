@@ -388,7 +388,7 @@ const styles = {
     gap: '16px',
     width: '100%',
     minHeight: '150px',
-    borderRadius: '49px',
+    borderRadius: '33px',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
   },
@@ -536,7 +536,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.4)',
     backdropFilter: 'grayscale(1) blur(1.9px)',
     WebkitBackdropFilter: 'grayscale(1) blur(1.9px)',
-    borderRadius: '49px',
+    borderRadius: '33px',
     transition: 'opacity 0.35s ease',
     zIndex: 6
   },

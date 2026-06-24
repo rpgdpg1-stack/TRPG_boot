@@ -577,7 +577,7 @@ const styles = {
     width: '100%',
     minHeight: '150px',
     background: '#1C1C1C',
-    borderRadius: '49px',
+    borderRadius: '33px',
     overflow: 'hidden'
   },
   preview: {

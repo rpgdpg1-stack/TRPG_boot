@@ -934,7 +934,7 @@ const glowStyles = {
     left: -1,
     right: -1,
     bottom: -1,
-    borderRadius: '50px',
+    borderRadius: '34px',
     border: '1.5px solid var(--color-primary)',
     boxShadow: '0 0 18px rgba(158, 209, 83, 0.45), inset 0 0 14px rgba(158, 209, 83, 0.10)',
     pointerEvents: 'none',
@@ -950,7 +950,7 @@ const glowStyles = {
 function SwapAnimationOverlay() {
   const W = 700
   const H = 150
-  const R = 49
+  const R = 33
 
   const path = `
     M ${W / 2} 0
@@ -1043,7 +1043,7 @@ const skeletonStyles = {
     gap: '16px',
     padding: '16px',
     minHeight: '150px',
-    borderRadius: '49px',
+    borderRadius: '33px',
     background: '#1C1C1C'
   },
   thumb: {
@@ -1168,7 +1168,7 @@ const styles = {
     padding: '14px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: '49px'
+    borderRadius: 'var(--radius-card)'
   },
   // Верхний ряд блока: место тренировки слева, таймер справа.
   topMetaRow: {
