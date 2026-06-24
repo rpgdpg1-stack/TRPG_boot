@@ -27,23 +27,14 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
     setTimeout(() => onClose?.(), 170)
   }
 
-  // Esc + блокировка скролла фона через overflow:hidden (БЕЗ position:fixed —
-  // тот сдвигал страницу на -scrollY и под закреплённой шапкой с blur всё
-  // моргало при открытии меню ниже середины экрана).
+  // Только Esc. Скролл фона НЕ лочим через html/body (и position:fixed, и
+  // overflow:hidden ломали закреплённую шапку с blur — она дёргалась/улетала).
+  // Прокрутку под меню гасим через touch-action:none на оверлее (см. стили) —
+  // фон при этом не трогаем, закреп остаётся на месте.
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') requestClose() }
     document.addEventListener('keydown', onKey)
-    const html = document.documentElement
-    const body = document.body
-    const prevHtml = html.style.overflow
-    const prevBody = body.style.overflow
-    html.style.overflow = 'hidden'
-    body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      html.style.overflow = prevHtml
-      body.style.overflow = prevBody
-    }
+    return () => document.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -139,6 +130,9 @@ const styles = {
     position: 'fixed',
     inset: 0,
     background: 'transparent',
+    // Гасим прокрутку фона, не трогая html/body (иначе ломается закреп).
+    touchAction: 'none',
+    overscrollBehavior: 'contain',
     zIndex: 9999
   },
   menu: {

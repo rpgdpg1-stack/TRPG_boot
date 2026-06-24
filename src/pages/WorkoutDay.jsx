@@ -760,7 +760,7 @@ export default function WorkoutDay() {
           items={[
             {
               key: 'note',
-              icon: <UiIcon name="notes" size={20} color="var(--color-text-secondary)" />,
+              icon: <UiIcon name="notes" size={20} color="#FFA94D" />,
               label: dotsHasNote ? 'Открыть заметку' : 'Добавить заметку',
               onClick: () => { const s = dotsSlot; setTimeout(() => setActionSlot(s), 190) }
             },
