@@ -43,8 +43,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const [draft, setDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState(false)
-  // Удерживается ли кнопка «Закрыть» — для красновато-серой подсветки.
-  const [closePressed, setClosePressed] = useState(false)
 
   // Вес — отображаем и редактируем прямо в модалке (как на карточке в днях
   // тренировки). При сохранении дёргаем saveExerciseWeight и сообщаем наверх
@@ -215,22 +213,28 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     setDraft('')
   }
 
-  // Тап по заметке открывает редактор, свайп — скроллит текст. Отличаем по
-  // сдвигу пальца от pointerdown к pointerup: < 8px = тап, иначе скролл.
-  const noteTapStart = useRef(null)
-
-  const handleNoteViewPointerDown = (e) => {
-    noteTapStart.current = { x: e.clientX, y: e.clientY }
+  // Тап мимо модалки. Если открыта клавиатура (вес/заметка) — сперва гасим её
+  // (blur), и только ПОСЛЕ закрытия закрываем модалку. Иначе scrollTo при
+  // анимации клавиатуры дёргает закреплённую шапку страницы.
+  const handleOverlayClick = () => {
+    const active = document.activeElement
+    const editing = editingWeight || editingNote ||
+      (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'))
+    if (editing) {
+      try { active?.blur() } catch (e) { /* ignore */ }
+      setEditingNote(false)
+      setNoteLift(0)
+      setTimeout(() => onClose(), 320)
+    } else {
+      onClose()
+    }
   }
 
-  const handleNoteViewPointerUp = (e) => {
-    const start = noteTapStart.current
-    noteTapStart.current = null
-    if (!start) return
-    const dx = Math.abs(e.clientX - start.x)
-    const dy = Math.abs(e.clientY - start.y)
-    if (dx > 8 || dy > 8) return // это скролл, не открываем редактор
-    startEditNote()
+  // Авто-рост textarea заметки по контенту — весь текст виден без внутр. скролла.
+  const autoGrowNote = (el) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
   }
 
   const handleSaveNote = async () => {
@@ -280,7 +284,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         if (!scrollable) e.preventDefault()
       }}
       style={styles.overlay}
-      onClick={onClose}
+      onClick={handleOverlayClick}
     >
       <div
         ref={menuRef}
@@ -368,13 +372,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           ) : editingNote ? (
             <>
               <textarea
-                ref={noteInputRef}
+                ref={(el) => { noteInputRef.current = el; autoGrowNote(el) }}
                 autoFocus
-                data-scrollable
                 value={draft}
-                onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchMove={(e) => e.stopPropagation()}
+                onChange={(e) => { setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH)); autoGrowNote(e.target) }}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}
                 maxLength={NOTE_MAX_LENGTH}
@@ -398,13 +399,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             </>
           ) : note ? (
             <div
-              className="note-scroll"
-              data-scrollable
               style={styles.noteView}
-              onPointerDown={handleNoteViewPointerDown}
-              onPointerUp={handleNoteViewPointerUp}
-              onTouchStart={(e) => e.stopPropagation()}
-              onTouchMove={(e) => e.stopPropagation()}
+              onClick={startEditNote}
             >
               <span style={styles.noteViewIcon}>
                 <UiIcon name="notes" size={20} color={NOTE_ICON_COLOR} />
@@ -421,47 +417,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           )}
         </div>
 
-        {/* Закрыть — с иконкой-крестиком. Лёгкий пресс (press-tile) + при
-            удержании фон подкрашивается приглушённо-красным (серо-красный). */}
-        <button
-          onClick={onClose}
-          className="press-tile"
-          onPointerDown={() => setClosePressed(true)}
-          onPointerUp={() => setClosePressed(false)}
-          onPointerLeave={() => setClosePressed(false)}
-          onPointerCancel={() => setClosePressed(false)}
-          style={{
-            ...styles.closeButton,
-            background: closePressed ? 'rgba(180, 90, 90, 0.16)' : 'transparent',
-            color: closePressed ? '#C77' : 'var(--color-text-secondary)'
-          }}
-        >
-          <CloseIcon />
-          <span>Закрыть</span>
-        </button>
       </div>
-
-      <style>{`
-        /* Тонкий вертикальный скроллбар внутри блока просмотра заметки.
-           Глобально скроллбары скрыты (index.css), поэтому возвращаем его
-           точечно только здесь. Дорожка прозрачная, ползунок — полупрозрачный
-           белый, скруглённый: стандартный индикатор позиции прокрутки. */
-        .note-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,0.28) transparent;
-        }
-        .note-scroll::-webkit-scrollbar {
-          display: block;
-          width: 4px;
-        }
-        .note-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .note-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.28);
-          border-radius: 4px;
-        }
-      `}</style>
     </div>
   )
 }
@@ -475,18 +431,6 @@ function toTitleCase(str) {
  * Аккуратный крестик для кнопки «Закрыть». Тонкие линии, скруглённые концы —
  * нейтральный UX-стиль, цвет наследуется от текста кнопки (currentColor).
  */
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path
-        d="M3 3 L11 11 M11 3 L3 11"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
 
 const styles = {
   overlay: {
@@ -740,18 +684,9 @@ const styles = {
     border: '1px solid rgba(158, 209, 83, 0.2)',
     borderRadius: 'var(--radius-medium)',
     textAlign: 'left',
-    cursor: 'pointer',
-    // 3 строки целиком (3×20=60) + верхушка 4-й строки видна → понятно что
-    // текст продолжается. Высоту считаем от контента: 14 (верх. паддинг) + 74.
-    maxHeight: '88px',
-    overflowY: 'auto',
-    touchAction: 'pan-y',
-    overscrollBehavior: 'contain',
-    // Лёгкое затухание нижнего края — мягкий намёк "есть ещё текст, скролль".
-    // Через mask, чтобы не перекрывать скроллбар и не ломать раскладку.
-    // Когда текст влез целиком — затухать визуально нечему, выглядит обычно.
-    WebkitMaskImage: 'linear-gradient(180deg, #000 72%, rgba(0,0,0,0.35) 100%)',
-    maskImage: 'linear-gradient(180deg, #000 72%, rgba(0,0,0,0.35) 100%)'
+    cursor: 'pointer'
+    // Без maxHeight/overflow — блок растёт под весь текст (до 280 символов),
+    // без внутреннего скролла. Кнопку «Закрыть» убрали — место под текст есть.
   },
   noteViewIcon: {
     display: 'inline-flex',
@@ -778,8 +713,7 @@ const styles = {
   // длиннее 3 строк. touchAction: pan-y — палец листает именно textarea.
   noteTextarea: {
     width: '100%',
-    height: '84px',          // ~3 строки: 3×20 + 12+12 паддинги
-    maxHeight: '84px',
+    minHeight: '84px',       // старт ~3 строки; дальше растёт по контенту (autoGrowNote)
     padding: '12px 14px',
     background: 'rgba(0, 0, 0, 0.3)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -791,9 +725,7 @@ const styles = {
     lineHeight: '20px',
     resize: 'none',
     outline: 'none',
-    overflowY: 'scroll',
-    touchAction: 'pan-y',
-    overscrollBehavior: 'contain',
+    overflow: 'hidden',
     WebkitAppearance: 'none'
   },
   noteEditFooter: {
