@@ -19,7 +19,7 @@ import {
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import AnchorMenu from '../components/AnchorMenu'
-import { getExerciseNote } from '../lib/notes'
+import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
@@ -237,6 +237,17 @@ export default function WorkoutDay() {
     saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums))
   }, [programId, day, activeOrderNums])
 
+  // Префетч заметок упражнений дня — греем кэш, чтобы меню «⋯» и модалка заметки
+  // открывались без мигания «Добавить»→«Открыть».
+  useEffect(() => {
+    if (loading || !slots.length) return
+    for (const s of slots) {
+      if (s.exercise_id && getExerciseNoteCached(s.exercise_id) === null) {
+        getExerciseNote(s.exercise_id).catch(() => {})
+      }
+    }
+  }, [loading, slots])
+
   // Триггер искры/салюта. Только когда отжали ровно одно упражнение (now - prev
   // === 1) — так не срабатывает на загрузке прогресса (скачок 0→N) и на снятии
   // галочки. Осталось 3/2/1 → искра; осталось 0 → финальный салют.
@@ -326,7 +337,9 @@ export default function WorkoutDay() {
   const closeDots = () => { setDotsSlot(null); setDotsAnchor(null) }
   const handleDots = (slot, rect) => {
     if (showFinishedModal) return
-    setDotsHasNote(false)
+    // Из кэша — мгновенно правильная надпись (без мигания «Добавить»→«Открыть»).
+    const cached = getExerciseNoteCached(slot.exercise_id)
+    setDotsHasNote(!!(cached && cached.trim()))
     setDotsSlot(slot)
     setDotsAnchor(rect)
     getExerciseNote(slot.exercise_id)

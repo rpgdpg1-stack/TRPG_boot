@@ -21,6 +21,18 @@ function noteCacheKey(userId, exerciseId) {
 }
 
 /**
+ * Синхронно прочитать заметку из кэша. Возвращает строку (включая '') если в
+ * кэше есть, либо null если ещё не загружали (неизвестно). Без сети/запросов —
+ * для мгновенного отображения без мигания.
+ */
+export function getExerciseNoteCached(exerciseId) {
+  const user = getCurrentUser()
+  if (!user || !exerciseId) return null
+  const cached = cacheGet(noteCacheKey(user.id, exerciseId))
+  return (cached !== null && cached !== undefined) ? cached : null
+}
+
+/**
  * Получить заметку упражнения. Возвращает строку или '' если нет.
  */
 export async function getExerciseNote(exerciseId) {

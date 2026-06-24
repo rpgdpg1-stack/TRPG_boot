@@ -27,29 +27,22 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
     setTimeout(() => onClose?.(), 170)
   }
 
-  // Esc + фиксация фона (визуально остаётся на месте).
+  // Esc + блокировка скролла фона через overflow:hidden (БЕЗ position:fixed —
+  // тот сдвигал страницу на -scrollY и под закреплённой шапкой с blur всё
+  // моргало при открытии меню ниже середины экрана).
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') requestClose() }
     document.addEventListener('keydown', onKey)
-    const scrollY = window.scrollY
+    const html = document.documentElement
     const body = document.body
-    const prev = {
-      position: body.style.position, top: body.style.top,
-      left: body.style.left, right: body.style.right, width: body.style.width
-    }
-    body.style.position = 'fixed'
-    body.style.top = `-${scrollY}px`
-    body.style.left = '0'
-    body.style.right = '0'
-    body.style.width = '100%'
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      body.style.position = prev.position
-      body.style.top = prev.top
-      body.style.left = prev.left
-      body.style.right = prev.right
-      body.style.width = prev.width
-      window.scrollTo(0, scrollY)
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -156,7 +149,7 @@ const styles = {
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '20px',
+    borderRadius: '33px',
     padding: '6px',
     display: 'flex',
     flexDirection: 'column',

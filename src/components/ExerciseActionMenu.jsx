@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
-import { getExerciseNote, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
+import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { haptic } from '../lib/telegram'
@@ -37,8 +37,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
 
   // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
-  const [note, setNote] = useState('')
-  const [noteLoaded, setNoteLoaded] = useState(false)
+  const [note, setNote] = useState(() => getExerciseNoteCached(slot?.exercise_id) ?? '')
+  const [noteLoaded, setNoteLoaded] = useState(() => getExerciseNoteCached(slot?.exercise_id) !== null)
   const [editingNote, setEditingNote] = useState(false)
   const [draft, setDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
@@ -167,7 +167,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   useEffect(() => {
     if (!slot?.exercise_id) return
     let cancelled = false
-    setNoteLoaded(false)
+    // Из кэша — сразу, без скелетона; иначе показываем скелетон до загрузки.
+    const cached = getExerciseNoteCached(slot.exercise_id)
+    if (cached !== null) { setNote(cached); setNoteLoaded(true) }
+    else setNoteLoaded(false)
     getExerciseNote(slot.exercise_id).then(text => {
       if (cancelled) return
       setNote(text)
