@@ -124,9 +124,9 @@ export default function ProgramCard({
           isFav={isFav}
           onToggleFav={onToggleFav}
           editable={prog.editable}
-          onEdit={() => { closeMenu(); handleEdit() }}
-          onShare={() => { closeMenu(); handleShare() }}
-          onDelete={() => { closeMenu(); handleDelete() }}
+          onEdit={handleEdit}
+          onShare={handleShare}
+          onDelete={handleDelete}
           onClose={closeMenu}
         />
       )}

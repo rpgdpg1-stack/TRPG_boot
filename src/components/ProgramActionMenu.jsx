@@ -5,14 +5,15 @@ import UiIcon from './UiIcon'
 import PixelHeart from './PixelHeart'
 
 /**
- * Компактное контекст-меню программы — выпадает у «⋯» (как нативное меню iOS/
- * Telegram). Узкое, под контент, с лёгким блюром фона. Без кнопки «Закрыть» —
- * тап по пустому месту закрывает.
+ * Компактное контекст-меню программы — выпадает у «⋯» (как нативное iOS/Telegram).
  *
- * Пункты: «Добавить/Убрать из избранного» (сердечко outline/залитое) + для своей
- * программы Редактировать / Поделиться / Удалить. Для встроенной — только избранное.
+ * - Само меню — «стекло» (блюр фона под ним), весь экран НЕ затемняется.
+ * - Раскрывается/сворачивается из угла, ближайшего к «⋯» (рост и сжатие в угол).
+ * - Пункты: «Добавить/Убрать из избранного» (сердечко outline/залитое) + для своей
+ *   программы Редактировать / Поделиться / Удалить. Без «Закрыть» — тап мимо закрывает.
+ * - Нажатие на пункт — серая пилюля-подсветка (держишь — есть, убрал палец — нет).
  *
- * @param anchorRect — DOMRect кнопки «⋯», от неё позиционируется меню.
+ * @param anchorRect — DOMRect кнопки «⋯».
  */
 export default function ProgramActionMenu({
   anchorRect,
@@ -26,10 +27,20 @@ export default function ProgramActionMenu({
 }) {
   const menuRef = useRef(null)
   const [pos, setPos] = useState(null)
+  const [placement, setPlacement] = useState('below')
+  const [closing, setClosing] = useState(false)
+  const [pressed, setPressed] = useState(null)
+
+  // Анимированное закрытие: сначала сжатие в угол, потом размонтирование.
+  const requestClose = () => {
+    if (closing) return
+    setClosing(true)
+    setTimeout(() => onClose?.(), 170)
+  }
 
   // Esc + фиксация фона (визуально остаётся на месте: top:-scrollY).
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e) => { if (e.key === 'Escape') requestClose() }
     document.addEventListener('keydown', onKey)
     const scrollY = window.scrollY
     const body = document.body
@@ -51,10 +62,11 @@ export default function ProgramActionMenu({
       body.style.width = prev.width
       window.scrollTo(0, scrollY)
     }
-  }, [onClose])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Позиция: правый край меню к правому краю «⋯», вниз с зазором; если не влезает
-  // вниз — открываем вверх. Меряем реальную высоту после рендера.
+  // вниз — вверх. Угол роста — ближайший к «⋯».
   useLayoutEffect(() => {
     const el = menuRef.current
     if (!el || !anchorRect) return
@@ -66,10 +78,13 @@ export default function ProgramActionMenu({
     let left = anchorRect.right - mw
     left = Math.max(8, Math.min(left, vw - 8 - mw))
     let top = anchorRect.bottom + gap
+    let place = 'below'
     if (top + mh > vh - 8) {
       const above = anchorRect.top - gap - mh
-      top = above >= 8 ? above : Math.max(8, vh - 8 - mh)
+      if (above >= 8) { top = above; place = 'above' }
+      else top = Math.max(8, vh - 8 - mh)
     }
+    setPlacement(place)
     setPos({ top, left })
   }, [anchorRect])
 
@@ -80,13 +95,31 @@ export default function ProgramActionMenu({
     return () => clearTimeout(t)
   }, [])
 
-  const run = (fn) => (e) => { e.stopPropagation(); haptic.light(); fn() }
-  const toggleFav = (e) => { e.stopPropagation(); haptic.medium(); onToggleFav?.(); onClose() }
+  const act = (fn, strong) => (e) => {
+    e.stopPropagation()
+    strong ? haptic.medium() : haptic.light()
+    requestClose()
+    fn?.()
+  }
+
+  const rowProps = (key) => ({
+    onPointerDown: () => setPressed(key),
+    onPointerUp: () => setPressed(null),
+    onPointerLeave: () => setPressed(null),
+    onPointerCancel: () => setPressed(null),
+    style: {
+      ...styles.row,
+      background: pressed === key ? 'rgba(255,255,255,0.10)' : 'transparent',
+      transform: pressed === key ? 'scale(0.985)' : 'scale(1)'
+    }
+  })
+
+  const visible = pos && !closing
 
   const menu = (
     <div
       style={{ ...styles.overlay, pointerEvents: ready ? 'auto' : 'none' }}
-      onClick={onClose}
+      onClick={requestClose}
     >
       <div
         ref={menuRef}
@@ -94,12 +127,13 @@ export default function ProgramActionMenu({
           ...styles.menu,
           top: pos?.top ?? 0,
           left: pos?.left ?? 0,
-          opacity: pos ? 1 : 0,
-          transform: pos ? 'scale(1)' : 'scale(0.95)'
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'scale(1)' : 'scale(0.6)',
+          transformOrigin: placement === 'above' ? 'bottom right' : 'top right'
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={toggleFav} className="press-tile" style={styles.row}>
+        <button {...rowProps('fav')} onClick={act(onToggleFav, true)}>
           <span style={styles.icon}><PixelHeart filled={isFav} size={20} /></span>
           <span style={styles.label}>{isFav ? 'Убрать из избранного' : 'Добавить в избранное'}</span>
         </button>
@@ -107,15 +141,15 @@ export default function ProgramActionMenu({
         {editable && (
           <>
             <div style={styles.divider} />
-            <button onClick={run(onEdit)} className="press-tile" style={styles.row}>
+            <button {...rowProps('edit')} onClick={act(onEdit)}>
               <span style={styles.icon}><UiIcon name="change" size={20} color="#3FA2F7" /></span>
               <span style={styles.label}>Редактировать</span>
             </button>
-            <button onClick={run(onShare)} className="press-tile" style={styles.row}>
+            <button {...rowProps('share')} onClick={act(onShare)}>
               <span style={styles.icon}><UiIcon name="invite-friend" size={20} color="#9ED153" /></span>
               <span style={styles.label}>Поделиться</span>
             </button>
-            <button onClick={run(onDelete)} className="press-tile" style={styles.row}>
+            <button {...rowProps('delete')} onClick={act(onDelete)}>
               <span style={styles.icon}><TrashIcon /></span>
               <span style={{ ...styles.label, color: '#E84545' }}>Удалить</span>
             </button>
@@ -143,40 +177,42 @@ function TrashIcon() {
 }
 
 const styles = {
+  // Прозрачный слой — только ловит тап мимо меню. Экран НЕ затемняем.
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(13, 12, 12, 0.35)',
-    backdropFilter: 'blur(2px)',
-    WebkitBackdropFilter: 'blur(2px)',
+    background: 'transparent',
     zIndex: 9999
   },
+  // Само меню — «стекло»: полупрозрачный фон + блюр (как таб-бар).
   menu: {
     position: 'fixed',
     minWidth: '234px',
     maxWidth: '290px',
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'rgba(28, 28, 30, 0.7)',
+    backdropFilter: 'blur(22px) saturate(1.6)',
+    WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '20px',
     padding: '6px',
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.55)',
-    transformOrigin: 'top right',
-    transition: 'opacity 0.14s ease, transform 0.14s ease'
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+    transition: 'opacity 0.16s ease, transform 0.17s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },
   row: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
     padding: '12px 14px',
-    background: 'transparent',
     border: 'none',
-    borderRadius: '12px',
+    borderRadius: '13px',
     width: '100%',
     textAlign: 'left',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'background 0.12s ease, transform 0.1s ease',
+    WebkitTapHighlightColor: 'transparent'
   },
   icon: {
     display: 'inline-flex',
