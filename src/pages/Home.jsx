@@ -8,6 +8,7 @@ import { getProgramBySlug } from '../features/programs/registry'
 import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
+import { formatRelative } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
@@ -352,21 +353,24 @@ function FavCard({ entry, onTap }) {
     border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
     boxShadow: `0 0 20px color-mix(in srgb, ${accent} 20%, transparent), inset 0 0 30px color-mix(in srgb, ${accent} 6%, transparent)`
   }
-  const startTagStyle = {
-    ...favCardStyles.startTag,
-    background: `color-mix(in srgb, ${accent} 12%, transparent)`,
-    border: `1px solid color-mix(in srgb, ${accent} 38%, transparent)`,
-    color: accent,
-    boxShadow: `0 0 12px color-mix(in srgb, ${accent} 12%, transparent)`
-  }
+
+  // Когда программу (в т.ч. заплыв) последний раз делали — из CloudStorage,
+  // per-program ключ. Вместо кнопки «НАЧАТЬ» (карточка и так тапается целиком).
+  const lastDate = localGet(`program:${prog.slug}:last_day_date`)
 
   return (
     <div onClick={onTap} className="press-tile" style={cardStyle}>
       <FavCardBody entry={entry} accent={accent} />
 
-      <div style={startTagStyle}>
-        НАЧАТЬ
-        <span style={favCardStyles.startArrow}>›</span>
+      <div style={favCardStyles.lastTrained}>
+        {lastDate ? (
+          <>
+            <span style={favCardStyles.lastTrainedLabel}>ПОСЛЕДНЯЯ</span>
+            <span style={favCardStyles.lastTrainedValue}>{formatRelative(lastDate)}</span>
+          </>
+        ) : (
+          <span style={favCardStyles.lastTrainedValue}>Ещё не начинали</span>
+        )}
       </div>
     </div>
   )
@@ -384,24 +388,29 @@ const favCardStyles = {
     minHeight: '130px',
     cursor: 'pointer'
   },
-  startTag: {
+  lastTrained: {
     flexShrink: 0,
     alignSelf: 'center',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '2px',
-    padding: '8px 12px',
-    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '3px',
+    textAlign: 'right',
+    maxWidth: '90px'
+  },
+  lastTrainedLabel: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '9px',
+    letterSpacing: '1.5px',
+    color: 'rgba(255,255,255,0.32)'
+  },
+  lastTrainedValue: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '12px',
-    letterSpacing: '1px'
-  },
-  startArrow: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    lineHeight: 1,
-    marginTop: '-1px'
+    lineHeight: 1.25,
+    color: 'var(--color-text-secondary)'
   }
 }
 
