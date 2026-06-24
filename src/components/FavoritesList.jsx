@@ -71,7 +71,6 @@ export default function FavoritesList() {
                   isFav
                   onToggleFav={() => handleRemove(catId, entry.prog.slug)}
                   onDeleted={load}
-                  heart="center"
                   dots
                 />
               : <EmptyCard onAdd={() => handleAdd(catId)} />}

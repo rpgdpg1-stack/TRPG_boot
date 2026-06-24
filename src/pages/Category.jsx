@@ -168,7 +168,6 @@ export default function Category() {
             isFav={favoriteSlug === prog.slug}
             onToggleFav={() => handleFavoriteTap(prog.slug)}
             onDeleted={handleDeleted}
-            heart="center"
             dots
           />
         ))}

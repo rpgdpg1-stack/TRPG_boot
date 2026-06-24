@@ -1,22 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
-import FavCardBody from './FavCardBody'
 import PixelHeart from './PixelHeart'
 
 /**
- * Меню действий над программой (long-press или «⋯» на карточке).
+ * Компактное контекст-меню программы — выпадает у «⋯» (как нативное меню iOS/
+ * Telegram). Узкое, под контент, с лёгким блюром фона. Без кнопки «Закрыть» —
+ * тап по пустому месту закрывает.
  *
- * Как меню в дне тренировки: сверху мини-карточка программы (тот же FavCardBody)
- * с сердечком-избранным в углу, ниже — действия. Для своей программы —
- * Редактировать / Поделиться / Удалить; для встроенной — только сердечко + Закрыть.
- * Фон фиксируется через body.position.
+ * Пункты: «Добавить/Убрать из избранного» (сердечко outline/залитое) + для своей
+ * программы Редактировать / Поделиться / Удалить. Для встроенной — только избранное.
+ *
+ * @param anchorRect — DOMRect кнопки «⋯», от неё позиционируется меню.
  */
 export default function ProgramActionMenu({
-  prog,
-  activeDay = null,
-  accent = 'var(--color-primary)',
+  anchorRect,
   isFav = false,
   onToggleFav,
   editable,
@@ -25,14 +24,13 @@ export default function ProgramActionMenu({
   onDelete,
   onClose
 }) {
-  const [closePressed, setClosePressed] = useState(false)
+  const menuRef = useRef(null)
+  const [pos, setPos] = useState(null)
 
+  // Esc + фиксация фона (визуально остаётся на месте: top:-scrollY).
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handleKey)
-
-    // Прибиваем страницу под модалкой (как в ExerciseActionMenu), чтобы фон
-    // не скроллился и не «обрезался».
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
     const scrollY = window.scrollY
     const body = document.body
     const prev = {
@@ -44,9 +42,8 @@ export default function ProgramActionMenu({
     body.style.left = '0'
     body.style.right = '0'
     body.style.width = '100%'
-
     return () => {
-      document.removeEventListener('keydown', handleKey)
+      document.removeEventListener('keydown', onKey)
       body.style.position = prev.position
       body.style.top = prev.top
       body.style.left = prev.left
@@ -56,15 +53,35 @@ export default function ProgramActionMenu({
     }
   }, [onClose])
 
-  // Блокируем взаимодействие с оверлеем на первые 300мс: гасим «долетевший»
-  // клик/тап, которым открылось меню (иначе он проскакивает на кнопки).
+  // Позиция: правый край меню к правому краю «⋯», вниз с зазором; если не влезает
+  // вниз — открываем вверх. Меряем реальную высоту после рендера.
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!el || !anchorRect) return
+    const gap = 10
+    const mw = el.offsetWidth
+    const mh = el.offsetHeight
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let left = anchorRect.right - mw
+    left = Math.max(8, Math.min(left, vw - 8 - mw))
+    let top = anchorRect.bottom + gap
+    if (top + mh > vh - 8) {
+      const above = anchorRect.top - gap - mh
+      top = above >= 8 ? above : Math.max(8, vh - 8 - mh)
+    }
+    setPos({ top, left })
+  }, [anchorRect])
+
+  // Гасим «долетевший» тап, которым открыли меню (первые 250мс).
   const [ready, setReady] = useState(false)
   useEffect(() => {
-    const t = setTimeout(() => setReady(true), 300)
+    const t = setTimeout(() => setReady(true), 250)
     return () => clearTimeout(t)
   }, [])
 
   const run = (fn) => (e) => { e.stopPropagation(); haptic.light(); fn() }
+  const toggleFav = (e) => { e.stopPropagation(); haptic.medium(); onToggleFav?.(); onClose() }
 
   const menu = (
     <div
@@ -72,86 +89,43 @@ export default function ProgramActionMenu({
       onClick={onClose}
     >
       <div
-        style={styles.menu}
+        ref={menuRef}
+        style={{
+          ...styles.menu,
+          top: pos?.top ?? 0,
+          left: pos?.left ?? 0,
+          opacity: pos ? 1 : 0,
+          transform: pos ? 'scale(1)' : 'scale(0.95)'
+        }}
         onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
       >
-
-        {/* Мини-карточка программы — сверху, как в дне тренировки. Сердечко в
-            углу переключает избранное (вместо «⋯» на самой карточке). */}
-        {prog && (
-          <div style={styles.miniCard}>
-            <FavCardBody entry={{ prog, activeDay }} accent={accent} />
-            <button
-              onClick={(e) => { e.stopPropagation(); haptic.medium(); onToggleFav?.() }}
-              style={styles.miniHeart}
-              aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
-            >
-              <PixelHeart filled={isFav} size={22} />
-            </button>
-          </div>
-        )}
-
-        {/* Действия — только для своей программы. */}
-        {editable && (
-          <div style={styles.actionsBlock}>
-            <button onClick={run(onEdit)} className="press-tile" style={styles.actionButton}>
-              <span style={styles.actionIcon}>
-                <UiIcon name="change" size={20} color="#3FA2F7" />
-              </span>
-              <span style={styles.actionLabel}>Редактировать</span>
-            </button>
-
-            <button onClick={run(onShare)} className="press-tile" style={styles.actionButton}>
-              <span style={styles.actionIcon}>
-                <UiIcon name="invite-friend" size={20} color="#9ED153" />
-              </span>
-              <span style={styles.actionLabel}>Поделиться</span>
-            </button>
-
-            <button onClick={run(onDelete)} className="press-tile" style={styles.actionButton}>
-              <span style={styles.actionIcon}>
-                <TrashIcon />
-              </span>
-              <span style={{ ...styles.actionLabel, color: '#E84545' }}>Удалить</span>
-            </button>
-          </div>
-        )}
-
-        <button
-          onClick={onClose}
-          className="press-tile"
-          onPointerDown={() => setClosePressed(true)}
-          onPointerUp={() => setClosePressed(false)}
-          onPointerLeave={() => setClosePressed(false)}
-          onPointerCancel={() => setClosePressed(false)}
-          style={{
-            ...styles.closeButton,
-            background: closePressed ? 'rgba(180, 90, 90, 0.16)' : 'transparent',
-            color: closePressed ? '#C77' : 'var(--color-text-secondary)'
-          }}
-        >
-          <CloseIcon />
-          <span>Закрыть</span>
+        <button onClick={toggleFav} className="press-tile" style={styles.row}>
+          <span style={styles.icon}><PixelHeart filled={isFav} size={20} /></span>
+          <span style={styles.label}>{isFav ? 'Убрать из избранного' : 'Добавить в избранное'}</span>
         </button>
 
+        {editable && (
+          <>
+            <div style={styles.divider} />
+            <button onClick={run(onEdit)} className="press-tile" style={styles.row}>
+              <span style={styles.icon}><UiIcon name="change" size={20} color="#3FA2F7" /></span>
+              <span style={styles.label}>Редактировать</span>
+            </button>
+            <button onClick={run(onShare)} className="press-tile" style={styles.row}>
+              <span style={styles.icon}><UiIcon name="invite-friend" size={20} color="#9ED153" /></span>
+              <span style={styles.label}>Поделиться</span>
+            </button>
+            <button onClick={run(onDelete)} className="press-tile" style={styles.row}>
+              <span style={styles.icon}><TrashIcon /></span>
+              <span style={{ ...styles.label, color: '#E84545' }}>Удалить</span>
+            </button>
+          </>
+        )}
       </div>
-
-      <style>{`
-        @keyframes menuOverlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   )
 
   return createPortal(menu, document.body)
-}
-
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  )
 }
 
 function TrashIcon() {
@@ -172,102 +146,57 @@ const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(13, 12, 12, 0.75)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999,
-    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px',
-    overflowY: 'auto',
-    animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
+    background: 'rgba(13, 12, 12, 0.35)',
+    backdropFilter: 'blur(2px)',
+    WebkitBackdropFilter: 'blur(2px)',
+    zIndex: 9999
   },
   menu: {
-    width: '100%',
-    maxHeight: '100%',
-    overflowY: 'auto',
+    position: 'fixed',
+    minWidth: '234px',
+    maxWidth: '290px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '33px',
-    padding: '14px 14px 12px',
+    borderRadius: '20px',
+    padding: '6px',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    gap: '10px',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+    gap: '2px',
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.55)',
+    transformOrigin: 'top right',
+    transition: 'opacity 0.14s ease, transform 0.14s ease'
   },
-  // Мини-карточка программы в шапке меню (тот же FavCardBody, чуть ниже карточки
-  // в списках). Сердечко в правом верхнем углу вместо «⋯».
-  miniCard: {
-    position: 'relative',
-    width: '100%',
+  row: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '14px 16px',
-    paddingRight: '48px',
-    minHeight: '112px',
-    background: '#1C1C1C',
-    borderRadius: '24px',
-    textAlign: 'left'
-  },
-  miniHeart: {
-    position: 'absolute',
-    bottom: '12px',
-    right: '14px',
-    width: '28px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: '12px 14px',
     background: 'transparent',
     border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  actionsBlock: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px'
-  },
-  actionButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '14px 18px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 'var(--radius-medium)',
-    border: 'none',
+    borderRadius: '12px',
     width: '100%',
     textAlign: 'left',
-    transition: 'background 0.15s ease, transform 0.1s ease',
     cursor: 'pointer'
   },
-  actionIcon: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '20px', lineHeight: 0, flexShrink: 0 },
-  actionLabel: {
+  icon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '22px',
+    height: '20px',
+    flexShrink: 0,
+    lineHeight: 0
+  },
+  label: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',
     fontWeight: 600,
-    color: 'var(--color-text)'
+    color: 'var(--color-text)',
+    whiteSpace: 'nowrap'
   },
-  closeButton: {
-    marginTop: '2px',
-    padding: '9px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '7px',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 'var(--radius-small)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    transition: 'background 0.15s ease, color 0.15s ease'
+  divider: {
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    margin: '4px 8px'
   }
 }
