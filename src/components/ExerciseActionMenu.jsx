@@ -654,7 +654,8 @@ const styles = {
   // длиннее 3 строк. touchAction: pan-y — палец листает именно textarea.
   noteTextarea: {
     width: '100%',
-    minHeight: '84px',       // старт ~3 строки; дальше растёт по контенту (autoGrowNote)
+    minHeight: '46px',       // ~1 строка; дальше растёт по контенту (autoGrowNote) —
+                             //  совпадает по высоте с блоком просмотра, модалка не прыгает
     padding: '12px 14px',
     background: 'rgba(0, 0, 0, 0.3)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
