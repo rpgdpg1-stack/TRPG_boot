@@ -67,14 +67,31 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
     return () => clearTimeout(t)
   }, [])
 
+  // Драг/скролл по пункту отменяет тап: подсветка снимается и действие НЕ
+  // выполняется (как обычная кнопка — потянул пальцем мимо = не нажал).
+  const pressStart = useRef(null)
+  const pressMoved = useRef(false)
+
   const onItem = (it) => (e) => {
     e.stopPropagation()
+    if (pressMoved.current) { pressMoved.current = false; return }
     it.haptic === 'medium' ? haptic.medium() : haptic.light()
     requestClose()
     it.onClick?.()
   }
   const rowProps = (key) => ({
-    onPointerDown: () => setPressed(key),
+    onPointerDown: (e) => {
+      setPressed(key)
+      pressStart.current = { x: e.clientX, y: e.clientY }
+      pressMoved.current = false
+    },
+    onPointerMove: (e) => {
+      if (!pressStart.current) return
+      if (Math.abs(e.clientX - pressStart.current.x) > 8 || Math.abs(e.clientY - pressStart.current.y) > 8) {
+        pressMoved.current = true
+        setPressed(null)
+      }
+    },
     onPointerUp: () => setPressed(null),
     onPointerLeave: () => setPressed(null),
     onPointerCancel: () => setPressed(null)

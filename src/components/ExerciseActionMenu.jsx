@@ -342,6 +342,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 autoFocus
                 value={draft}
                 onChange={(e) => { setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH)); autoGrowNote(e.target) }}
+                onFocus={(e) => e.target.select()}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}
                 maxLength={NOTE_MAX_LENGTH}
