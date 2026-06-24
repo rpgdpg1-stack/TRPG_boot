@@ -130,34 +130,15 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     }
     document.addEventListener('keydown', handleKey)
 
-    // Жёстко фиксируем body на время открытой модалки. overflow:hidden в
-    // iOS Telegram WebView НЕ держит скролл когда поднята клавиатура —
-    // документ под visualViewport всё равно листается. position:fixed
-    // физически прибивает страницу. Запоминаем scrollY и возвращаем при
-    // закрытии (иначе после fixed страница прыгнет в начало).
+    // НЕ фиксируем body через position:fixed — он ломает закреплённую sticky-шапку
+    // страницы (при открытии/закрытии модалки шапка дёргается/моргает). Скролл
+    // фона гасим через touch-action:none + onTouchMove на оверлее (см. ниже).
+    // Запоминаем позицию и, если iOS-клавиатура сдвинула документ, мягко вернём
+    // её при закрытии обычным scrollTo (sticky это не ломает).
     const scrollY = window.scrollY
-    const body = document.body
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width
-    }
-    body.style.position = 'fixed'
-    body.style.top = `-${scrollY}px`
-    body.style.left = '0'
-    body.style.right = '0'
-    body.style.width = '100%'
-
     return () => {
       document.removeEventListener('keydown', handleKey)
-      body.style.position = prev.position
-      body.style.top = prev.top
-      body.style.left = prev.left
-      body.style.right = prev.right
-      body.style.width = prev.width
-      window.scrollTo(0, scrollY)
+      if (Math.abs(window.scrollY - scrollY) > 1) window.scrollTo(0, scrollY)
     }
   }, [onClose])
 
@@ -213,21 +194,15 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     setDraft('')
   }
 
-  // Тап мимо модалки. Если открыта клавиатура (вес/заметка) — сперва гасим её
-  // (blur), и только ПОСЛЕ закрытия закрываем модалку. Иначе scrollTo при
-  // анимации клавиатуры дёргает закреплённую шапку страницы.
+  // Тап мимо модалки. Если в фокусе инпут (вес/заметка) — blur (гасит клавиатуру,
+  // вес сохраняется через onBlur), затем закрываем. Позиция вернётся в эффекте
+  // выше без дёрганья шапки.
   const handleOverlayClick = () => {
     const active = document.activeElement
-    const editing = editingWeight || editingNote ||
-      (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'))
-    if (editing) {
-      try { active?.blur() } catch (e) { /* ignore */ }
-      setEditingNote(false)
-      setNoteLift(0)
-      setTimeout(() => onClose(), 320)
-    } else {
-      onClose()
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+      try { active.blur() } catch (e) { /* ignore */ }
     }
+    onClose()
   }
 
   // Авто-рост textarea заметки по контенту — весь текст виден без внутр. скролла.
@@ -275,20 +250,11 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   return (
     <div
-      onTouchMove={(e) => {
-        // Фон под модалкой зафиксирован через body.position:fixed (см. эффект
-        // выше), поэтому тут достаточно разрешить скролл только внутри
-        // прокручиваемых блоков (textarea/просмотр заметки/модалка), а вне
-        // их — глушить, чтобы не было резинового оттягивания оверлея.
-        const scrollable = e.target.closest?.('[data-scrollable]')
-        if (!scrollable) e.preventDefault()
-      }}
       style={styles.overlay}
       onClick={handleOverlayClick}
     >
       <div
         ref={menuRef}
-        data-scrollable
         style={{
           ...styles.menu,
           // Подъём задаётся noteLift, который посчитан синхронно в startEditNote
@@ -443,6 +409,10 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
+    // Гасим скролл фона декларативно (touch-action), не трогая body — иначе
+    // ломается sticky-шапка. Скролл самой высокой модалки разрешён через
+    // touch-action:pan-y на ней (см. menu).
+    touchAction: 'none',
     // Верхний отступ = системная зона Telegram + запас. Так даже высокая
     // модалка (видео + карточка + заметка) при центрировании не залезет
     // под кнопки Telegram сверху.
@@ -460,6 +430,7 @@ const styles = {
     width: '100%',
     maxHeight: '100%',
     overflowY: 'auto',
+    touchAction: 'pan-y',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
