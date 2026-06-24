@@ -1,44 +1,33 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
-import UiIcon from './UiIcon'
-import PixelHeart from './PixelHeart'
 
 /**
- * Компактное контекст-меню программы — выпадает у «⋯» (как нативное iOS/Telegram).
+ * Компактное контекст-меню, привязанное к кнопке («⋯») — как нативное iOS/Telegram.
  *
- * - Само меню — «стекло» (блюр фона под ним), весь экран НЕ затемняется.
- * - Раскрывается/сворачивается из угла, ближайшего к «⋯» (рост и сжатие в угол).
- * - Пункты: «Добавить/Убрать из избранного» (сердечко outline/залитое) + для своей
- *   программы Редактировать / Поделиться / Удалить. Без «Закрыть» — тап мимо закрывает.
- * - Нажатие на пункт — серая пилюля-подсветка (держишь — есть, убрал палец — нет).
+ * - Само меню «стекло» (блюр фона под ним), весь экран НЕ затемняется.
+ * - Раскрывается/сворачивается из угла, ближайшего к кнопке.
+ * - Без «Закрыть» — тап мимо закрывает.
+ * - Нажатие на пункт — серая пилюля-подсветка (держишь — есть, убрал — нет).
  *
- * @param anchorRect — DOMRect кнопки «⋯».
+ * @param anchorRect — DOMRect кнопки, от неё позиционируется меню.
+ * @param items — [{ key, icon, label, labelColor?, haptic?, onClick } | { divider:true }]
+ * @param onClose — закрыть (вызывается после анимации сворачивания).
  */
-export default function ProgramActionMenu({
-  anchorRect,
-  isFav = false,
-  onToggleFav,
-  editable,
-  onEdit,
-  onShare,
-  onDelete,
-  onClose
-}) {
+export default function AnchorMenu({ anchorRect, items, onClose }) {
   const menuRef = useRef(null)
   const [pos, setPos] = useState(null)
   const [placement, setPlacement] = useState('below')
   const [closing, setClosing] = useState(false)
   const [pressed, setPressed] = useState(null)
 
-  // Анимированное закрытие: сначала сжатие в угол, потом размонтирование.
   const requestClose = () => {
     if (closing) return
     setClosing(true)
     setTimeout(() => onClose?.(), 170)
   }
 
-  // Esc + фиксация фона (визуально остаётся на месте: top:-scrollY).
+  // Esc + фиксация фона (визуально остаётся на месте).
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') requestClose() }
     document.addEventListener('keydown', onKey)
@@ -65,8 +54,8 @@ export default function ProgramActionMenu({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Позиция: правый край меню к правому краю «⋯», вниз с зазором; если не влезает
-  // вниз — вверх. Угол роста — ближайший к «⋯».
+  // Позиция: правый край меню к правому краю кнопки, вниз с зазором; если не
+  // влезает — вверх. Угол роста — ближайший к кнопке.
   useLayoutEffect(() => {
     const el = menuRef.current
     if (!el || !anchorRect) return
@@ -88,30 +77,23 @@ export default function ProgramActionMenu({
     setPos({ top, left })
   }, [anchorRect])
 
-  // Гасим «долетевший» тап, которым открыли меню (первые 250мс).
   const [ready, setReady] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 250)
     return () => clearTimeout(t)
   }, [])
 
-  const act = (fn, strong) => (e) => {
+  const onItem = (it) => (e) => {
     e.stopPropagation()
-    strong ? haptic.medium() : haptic.light()
+    it.haptic === 'medium' ? haptic.medium() : haptic.light()
     requestClose()
-    fn?.()
+    it.onClick?.()
   }
-
   const rowProps = (key) => ({
     onPointerDown: () => setPressed(key),
     onPointerUp: () => setPressed(null),
     onPointerLeave: () => setPressed(null),
-    onPointerCancel: () => setPressed(null),
-    style: {
-      ...styles.row,
-      background: pressed === key ? 'rgba(255,255,255,0.10)' : 'transparent',
-      transform: pressed === key ? 'scale(0.985)' : 'scale(1)'
-    }
+    onPointerCancel: () => setPressed(null)
   })
 
   const visible = pos && !closing
@@ -133,28 +115,25 @@ export default function ProgramActionMenu({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button {...rowProps('fav')} onClick={act(onToggleFav, true)}>
-          <span style={styles.icon}><PixelHeart filled={isFav} size={20} /></span>
-          <span style={styles.label}>{isFav ? 'Убрать из избранного' : 'Добавить в избранное'}</span>
-        </button>
-
-        {editable && (
-          <>
-            <div style={styles.divider} />
-            <button {...rowProps('edit')} onClick={act(onEdit)}>
-              <span style={styles.icon}><UiIcon name="change" size={20} color="#3FA2F7" /></span>
-              <span style={styles.label}>Редактировать</span>
-            </button>
-            <button {...rowProps('share')} onClick={act(onShare)}>
-              <span style={styles.icon}><UiIcon name="invite-friend" size={20} color="#9ED153" /></span>
-              <span style={styles.label}>Поделиться</span>
-            </button>
-            <button {...rowProps('delete')} onClick={act(onDelete)}>
-              <span style={styles.icon}><TrashIcon /></span>
-              <span style={{ ...styles.label, color: '#E84545' }}>Удалить</span>
-            </button>
-          </>
-        )}
+        {items.map((it, i) => it.divider ? (
+          <div key={`d${i}`} style={styles.divider} />
+        ) : (
+          <button
+            key={it.key}
+            {...rowProps(it.key)}
+            onClick={onItem(it)}
+            style={{
+              ...styles.row,
+              background: pressed === it.key ? 'rgba(255,255,255,0.10)' : 'transparent',
+              transform: pressed === it.key ? 'scale(0.985)' : 'scale(1)'
+            }}
+          >
+            <span style={styles.icon}>{it.icon}</span>
+            <span style={{ ...styles.label, ...(it.labelColor ? { color: it.labelColor } : null) }}>
+              {it.label}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -162,29 +141,13 @@ export default function ProgramActionMenu({
   return createPortal(menu, document.body)
 }
 
-function TrashIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="#E84545" strokeWidth="1.6" strokeLinecap="round" fill="none">
-        <path d="M4 5.5 H16" />
-        <path d="M8 5.5 V4 H12 V5.5" />
-        <path d="M5.5 5.5 L6.2 16 H13.8 L14.5 5.5" />
-        <path d="M8.5 8.5 V13" />
-        <path d="M11.5 8.5 V13" />
-      </g>
-    </svg>
-  )
-}
-
 const styles = {
-  // Прозрачный слой — только ловит тап мимо меню. Экран НЕ затемняем.
   overlay: {
     position: 'fixed',
     inset: 0,
     background: 'transparent',
     zIndex: 9999
   },
-  // Само меню — «стекло»: полупрозрачный фон + блюр (как таб-бар).
   menu: {
     position: 'fixed',
     minWidth: '234px',
@@ -207,7 +170,7 @@ const styles = {
     gap: '14px',
     padding: '12px 14px',
     border: 'none',
-    borderRadius: '13px',
+    borderRadius: '90px',
     width: '100%',
     textAlign: 'left',
     cursor: 'pointer',

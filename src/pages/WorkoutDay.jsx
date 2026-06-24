@@ -18,6 +18,8 @@ import {
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
+import AnchorMenu from '../components/AnchorMenu'
+import { getExerciseNote } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
@@ -75,6 +77,10 @@ export default function WorkoutDay() {
   const [finishedOffline, setFinishedOffline] = useState(false)
 
   const [actionSlot, setActionSlot] = useState(null)
+  // Меню «⋯» у упражнения: заметка / техника / замена (привязано к кнопке).
+  const [dotsSlot, setDotsSlot] = useState(null)
+  const [dotsAnchor, setDotsAnchor] = useState(null)
+  const [dotsHasNote, setDotsHasNote] = useState(false)
 
   const [slideDir, setSlideDir] = useState('right')
 
@@ -315,6 +321,19 @@ export default function WorkoutDay() {
     setActionSlot(slot)
   }
 
+  // Тап по «⋯» — компактное меню у кнопки. Подтягиваем наличие заметки, чтобы
+  // показать «Добавить» / «Открыть заметку».
+  const closeDots = () => { setDotsSlot(null); setDotsAnchor(null) }
+  const handleDots = (slot, rect) => {
+    if (showFinishedModal) return
+    setDotsHasNote(false)
+    setDotsSlot(slot)
+    setDotsAnchor(rect)
+    getExerciseNote(slot.exercise_id)
+      .then(note => setDotsHasNote(!!(note && note.trim())))
+      .catch(() => {})
+  }
+
   // Вес отредактировали в модалке действий — обновляем слоты, чтобы карточка
   // под модалкой сразу показала новую цифру (без перезахода на экран).
   const handleWeightSaved = (exerciseId, weight) => {
@@ -329,10 +348,8 @@ export default function WorkoutDay() {
    * передаём в state на путь возврата — он будет прочитан в state.returnTo
    * на ExerciseInfo, и оттуда переотправлен в WorkoutDay при backButton.
    */
-  const handleMenuInfo = () => {
-    if (!actionSlot) return
-    const slot = actionSlot
-    setActionSlot(null)
+  const goToInfo = (slot) => {
+    if (!slot) return
     navigate(`/exercise/${slot.exercise_id}`, {
       state: {
         returnTo: `/workout/${programId}/${day}`,
@@ -346,11 +363,8 @@ export default function WorkoutDay() {
    * Переход на страницу Сменить. Аналогично Инфо — сохраняем scrollY,
    * чтобы возврат был на ту же позицию (а не центрирование карточки).
    */
-  const handleMenuSwap = () => {
-    if (!actionSlot) return
-    const slot = actionSlot
-    setActionSlot(null)
-
+  const goToSwap = (slot) => {
+    if (!slot) return
     const programSlot = programSlots.find(s => s.order_num === slot.order_num)
     const defaultExerciseId = programSlot?.default_exercise_id || null
 
@@ -672,6 +686,7 @@ export default function WorkoutDay() {
                           isActive={activeOrderNums.has(slot.order_num)}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
+                          onDots={handleDots}
                         />
 
                         {/* Зелёная подсветка-обводка — индикатор "вот эту ты
@@ -711,8 +726,6 @@ export default function WorkoutDay() {
         <ExerciseActionMenu
           slot={actionSlot}
           onWeightSaved={handleWeightSaved}
-          onInfo={handleMenuInfo}
-          onSwap={handleMenuSwap}
           onClose={() => {
             const orderNum = actionSlot.order_num
             setActionSlot(null)
@@ -723,6 +736,34 @@ export default function WorkoutDay() {
             setGlowedOrderNum(orderNum)
             setTimeout(() => setGlowedOrderNum(null), 1600)
           }}
+        />
+      )}
+
+      {/* Компактное меню «⋯» у упражнения: заметка / техника / замена. */}
+      {dotsSlot && dotsAnchor && (
+        <AnchorMenu
+          anchorRect={dotsAnchor}
+          onClose={closeDots}
+          items={[
+            {
+              key: 'note',
+              icon: <UiIcon name="notes" size={20} color="var(--color-text-secondary)" />,
+              label: dotsHasNote ? 'Открыть заметку' : 'Добавить заметку',
+              onClick: () => { const s = dotsSlot; setTimeout(() => setActionSlot(s), 190) }
+            },
+            {
+              key: 'info',
+              icon: <UiIcon name="info" size={20} color="#3FA2F7" />,
+              label: 'Техника упражнения',
+              onClick: () => goToInfo(dotsSlot)
+            },
+            {
+              key: 'swap',
+              icon: <UiIcon name="change" size={20} color="#FF8C42" />,
+              label: 'Заменить упражнение',
+              onClick: () => goToSwap(dotsSlot)
+            }
+          ]}
         />
       )}
 

@@ -32,7 +32,7 @@ const TOP_SAFE_PX = 120
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = '#FFA94D'
 
-export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWeightSaved }) {
+export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const menuRef = useRef(null)
   const noteInputRef = useRef(null)
 
@@ -69,11 +69,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
     )
   }, [slot?.exercise_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Открыта ли сейчас клавиатура (редактируется вес или заметка). Пока true —
-  // первый тап по «Техника»/«Заменить» НЕ выполняет действие, а только гасит
-  // клавиатуру (как тап мимо инпута в iOS). Это та же идея что shouldIgnoreCardTap
-  // в днях тренировки, но локально для модалки.
-  const keyboardOpen = editingWeight || editingNote
 
   const handleWeightFocus = () => {
     setEditingWeight(true)
@@ -262,27 +257,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
   // Гасим тап если клавиатура открыта ИЛИ закрылась только что (< 350мс назад).
   // Это ловит кейс: тап по кнопке сперва сбрасывает фокус веса (blur), а потом
   // долетает click — без cooldown он бы провалился в переход.
-  const shouldIgnoreActionTap = () => {
-    if (keyboardOpen) return true
-    if (Date.now() - weightClosedAtRef.current < 350) return true
-    return false
-  }
-
-  const handleInfoTap = () => {
-    if (shouldIgnoreActionTap()) {
-      try { document.activeElement?.blur() } catch (e) { /* ignore */ }
-      return
-    }
-    onInfo?.()
-  }
-
-  const handleSwapTap = () => {
-    if (shouldIgnoreActionTap()) {
-      try { document.activeElement?.blur() } catch (e) { /* ignore */ }
-      return
-    }
-    onSwap?.()
-  }
 
   if (!slot) return null
 
@@ -444,22 +418,6 @@ export default function ExerciseActionMenu({ slot, onInfo, onSwap, onClose, onWe
           )}
         </div>
 
-        {/* Кнопки действий — под заметкой */}
-        <div style={styles.actionsBlock}>
-          <button onClick={handleInfoTap} className="press-tile" style={styles.actionButton}>
-            <span style={styles.actionIcon}>
-              <UiIcon name="info" size={20} color="#3FA2F7" />
-            </span>
-            <span style={styles.actionLabel}>Техника упражнения</span>
-          </button>
-
-          <button onClick={handleSwapTap} className="press-tile" style={styles.actionButton}>
-            <span style={styles.actionIcon}>
-              <UiIcon name="change" size={20} color="#FF8C42" />
-            </span>
-            <span style={styles.actionLabel}>Заменить упражнение</span>
-          </button>
-        </div>
         {/* Закрыть — с иконкой-крестиком. Лёгкий пресс (press-tile) + при
             удержании фон подкрашивается приглушённо-красным (серо-красный). */}
         <button

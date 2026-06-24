@@ -7,7 +7,9 @@ import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
-import ProgramActionMenu from './ProgramActionMenu'
+import AnchorMenu from './AnchorMenu'
+import UiIcon from './UiIcon'
+import PixelHeart from './PixelHeart'
 
 /**
  * Единая карточка программы — Главная / Избранное / Раздел.
@@ -119,18 +121,41 @@ export default function ProgramCard({
       )}
 
       {anchorRect && (
-        <ProgramActionMenu
+        <AnchorMenu
           anchorRect={anchorRect}
-          isFav={isFav}
-          onToggleFav={onToggleFav}
-          editable={prog.editable}
-          onEdit={handleEdit}
-          onShare={handleShare}
-          onDelete={handleDelete}
           onClose={closeMenu}
+          items={[
+            {
+              key: 'fav',
+              icon: <PixelHeart filled={isFav} size={20} />,
+              label: isFav ? 'Убрать из избранного' : 'Добавить в избранное',
+              haptic: 'medium',
+              onClick: () => onToggleFav?.()
+            },
+            ...(prog.editable ? [
+              { divider: true },
+              { key: 'edit', icon: <UiIcon name="change" size={20} color="#3FA2F7" />, label: 'Редактировать', onClick: handleEdit },
+              { key: 'share', icon: <UiIcon name="invite-friend" size={20} color="#9ED153" />, label: 'Поделиться', onClick: handleShare },
+              { key: 'delete', icon: <TrashIcon />, label: 'Удалить', labelColor: '#E84545', onClick: handleDelete }
+            ] : [])
+          ]}
         />
       )}
     </div>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#E84545" strokeWidth="1.6" strokeLinecap="round" fill="none">
+        <path d="M4 5.5 H16" />
+        <path d="M8 5.5 V4 H12 V5.5" />
+        <path d="M5.5 5.5 L6.2 16 H13.8 L14.5 5.5" />
+        <path d="M8.5 8.5 V13" />
+        <path d="M11.5 8.5 V13" />
+      </g>
+    </svg>
   )
 }
 

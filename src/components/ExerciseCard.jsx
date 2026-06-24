@@ -29,7 +29,7 @@ import UiIcon from './UiIcon'
  *  - глобальная защита от ложных активаций при открытой клавиатуре
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
-export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onDots }) {
   const {
     exercise_id,
     exercise_name,
@@ -217,9 +217,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  // Видимая кнопка «⋯» — дубль входа в меню (Инфо / Сменить), которое иначе
-  // только по long-press. stopPropagation, чтобы тап по ней не отметил
-  // упражнение выполненным и не запустил long-press карточки.
+  // Кнопка «⋯» — открывает компактное меню (заметка / техника / замена) у самой
+  // кнопки. Long-press по карточке открывает модалку заметки. stopPropagation,
+  // чтобы тап по «⋯» не отметил упражнение и не запустил long-press карточки.
+  const menuBtnRef = useRef(null)
   const handleMenuPointerDown = (e) => {
     e.stopPropagation()
     if (longPressTimer.current) {
@@ -231,8 +232,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const handleMenuClick = (e) => {
     e.stopPropagation()
     if (shouldIgnoreCardTap()) return
-    haptic.medium()
-    if (onLongPress) onLongPress(slot)
+    haptic.light()
+    if (onDots) onDots(slot, menuBtnRef.current?.getBoundingClientRect() || null)
   }
 
   return (
@@ -340,8 +341,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         <div style={styles.weightUnit}>кг</div>
       </div>
 
-      {/* Видимый дубль входа в меню «Инфо / Сменить» (помимо long-press). */}
+      {/* «⋯» — компактное меню (заметка / техника / замена) у кнопки. */}
       <button
+        ref={menuBtnRef}
         type="button"
         onClick={handleMenuClick}
         onPointerDown={handleMenuPointerDown}
