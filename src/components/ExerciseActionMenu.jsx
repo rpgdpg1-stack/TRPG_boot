@@ -25,15 +25,10 @@ import UiIcon from './UiIcon'
  *
  * Закрытие: тап по оверлею или Cancel.
  */
-// Безопасный верхний отступ под системную зону Telegram (кнопки Назад / …).
-// Модалка при подъёме не должна залезать выше этой границы.
-const TOP_SAFE_PX = 120
-
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = '#FFA94D'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
-  const menuRef = useRef(null)
   const noteInputRef = useRef(null)
 
   // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
@@ -158,38 +153,18 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     return () => { cancelled = true }
   }, [slot?.exercise_id])
 
-  // На сколько px поднять модалку при вводе заметки. Считается СИНХРОННО в
-  // обработчике тапа (startEditNote) и сетится в одном батче с editingNote —
-  // поэтому модалка появляется уже поднятой, в одном кадре с клавиатурой.
-  // Без отдельного эффекта = без второго ререндера = без прыжка.
-  const [noteLift, setNoteLift] = useState(0)
-
   const startEditNote = () => {
     haptic.light()
-
-    // Считаем подъём ПРЯМО СЕЙЧАС — модалка ещё на месте, можно замерить её
-    // верхнюю границу. Поднимаем настолько, чтобы освободить ~44% экрана под
-    // клавиатуру, но не выше TOP_SAFE_PX (иначе верх уедет под кнопки Telegram).
-    const vh = window.innerHeight
-    const desired = Math.round(vh * 0.44)
-    const rectTop = menuRef.current
-      ? menuRef.current.getBoundingClientRect().top
-      : TOP_SAFE_PX
-    const maxLift = Math.max(0, rectTop - TOP_SAFE_PX)
-    const lift = Math.min(desired, maxLift)
-
-    // Оба setState в одном обработчике → React батчит → ОДИН ререндер.
-    // Модалка сразу рисуется поднятой, редактор и клавиатура появляются
-    // одновременно. autoFocus на <textarea> поднимает клавиатуру в этом же кадре.
+    // Модалка прижата к верху (alignItems:flex-start) — клавиатура открывается
+    // под ней без подъёма/пере-центрирования, поэтому никакого transform-лифта
+    // и рывков. Просто включаем редактор.
     setDraft(note)
     setNoteError(false)
-    setNoteLift(lift)
     setEditingNote(true)
   }
 
   const cancelEditNote = () => {
     setEditingNote(false)
-    setNoteLift(0)
     setNoteError(false)
     setDraft('')
   }
@@ -224,7 +199,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
       haptic.success()
       setNote(draft.trim().slice(0, NOTE_MAX_LENGTH))
       setEditingNote(false)
-      setNoteLift(0)
     } else {
       haptic.error()
       setNoteError(true)
@@ -254,15 +228,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
       onClick={handleOverlayClick}
     >
       <div
-        ref={menuRef}
-        style={{
-          ...styles.menu,
-          // Подъём задаётся noteLift, который посчитан синхронно в startEditNote
-          // и засечен в одном батче с editingNote — модалка сразу появляется
-          // поднятой, без второго кадра. Для веса noteLift = 0 → модалка стоит.
-          transform: `translateY(-${noteLift}px)`,
-          transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
-        }}
+        style={styles.menu}
         onClick={(e) => e.stopPropagation()}
       >
 
@@ -407,7 +373,10 @@ const styles = {
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
-    alignItems: 'center',
+    // Модалка прижата к верху (не центрирована): при открытии клавиатуры
+    // ничего не подпрыгивает/не пере-центрируется — она просто стоит сверху,
+    // клавиатура открывается под ней. Высокая — скроллится внутри (overflow).
+    alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 9999,
     // Гасим скролл фона декларативно (touch-action), не трогая body — иначе
