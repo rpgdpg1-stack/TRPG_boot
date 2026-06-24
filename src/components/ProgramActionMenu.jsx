@@ -2,15 +2,29 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
+import FavCardBody from './FavCardBody'
+import PixelHeart from './PixelHeart'
 
 /**
- * Меню действий над пользовательской программой (long-press на карточке).
+ * Меню действий над программой (long-press или «⋯» на карточке).
  *
- * Визуально — то же окошко, что ExerciseActionMenu: затемнённый оверлей с
- * блюром, центрированная панель (радиус 33), кнопки действий с иконкой и
- * подписью, кнопка «Закрыть» с крестиком. Фон фиксируется через body.position.
+ * Как меню в дне тренировки: сверху мини-карточка программы (тот же FavCardBody)
+ * с сердечком-избранным в углу, ниже — действия. Для своей программы —
+ * Редактировать / Поделиться / Удалить; для встроенной — только сердечко + Закрыть.
+ * Фон фиксируется через body.position.
  */
-export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete, onClose }) {
+export default function ProgramActionMenu({
+  prog,
+  activeDay = null,
+  accent = 'var(--color-primary)',
+  isFav = false,
+  onToggleFav,
+  editable,
+  onEdit,
+  onShare,
+  onDelete,
+  onClose
+}) {
   const [closePressed, setClosePressed] = useState(false)
 
   useEffect(() => {
@@ -63,32 +77,46 @@ export default function ProgramActionMenu({ editable, onEdit, onShare, onDelete,
         onPointerDown={(e) => e.stopPropagation()}
       >
 
-        <div style={styles.actionsBlock}>
-          {editable && (
+        {/* Мини-карточка программы — сверху, как в дне тренировки. Сердечко в
+            углу переключает избранное (вместо «⋯» на самой карточке). */}
+        {prog && (
+          <div style={styles.miniCard}>
+            <FavCardBody entry={{ prog, activeDay }} accent={accent} />
+            <button
+              onClick={(e) => { e.stopPropagation(); haptic.medium(); onToggleFav?.() }}
+              style={styles.miniHeart}
+              aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
+            >
+              <PixelHeart filled={isFav} size={22} />
+            </button>
+          </div>
+        )}
+
+        {/* Действия — только для своей программы. */}
+        {editable && (
+          <div style={styles.actionsBlock}>
             <button onClick={run(onEdit)} className="press-tile" style={styles.actionButton}>
               <span style={styles.actionIcon}>
                 <UiIcon name="change" size={20} color="#3FA2F7" />
               </span>
               <span style={styles.actionLabel}>Редактировать</span>
             </button>
-          )}
 
-          {editable && (
             <button onClick={run(onShare)} className="press-tile" style={styles.actionButton}>
               <span style={styles.actionIcon}>
                 <UiIcon name="invite-friend" size={20} color="#9ED153" />
               </span>
               <span style={styles.actionLabel}>Поделиться</span>
             </button>
-          )}
 
-          <button onClick={run(onDelete)} className="press-tile" style={styles.actionButton}>
-            <span style={styles.actionIcon}>
-              <TrashIcon />
-            </span>
-            <span style={{ ...styles.actionLabel, color: '#E84545' }}>Удалить</span>
-          </button>
-        </div>
+            <button onClick={run(onDelete)} className="press-tile" style={styles.actionButton}>
+              <span style={styles.actionIcon}>
+                <TrashIcon />
+              </span>
+              <span style={{ ...styles.actionLabel, color: '#E84545' }}>Удалить</span>
+            </button>
+          </div>
+        )}
 
         <button
           onClick={onClose}
@@ -168,6 +196,36 @@ const styles = {
     alignItems: 'center',
     gap: '10px',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+  },
+  // Мини-карточка программы в шапке меню (тот же FavCardBody, чуть ниже карточки
+  // в списках). Сердечко в правом верхнем углу вместо «⋯».
+  miniCard: {
+    position: 'relative',
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    padding: '14px 16px',
+    paddingRight: '48px',
+    minHeight: '112px',
+    background: '#1C1C1C',
+    borderRadius: '24px',
+    textAlign: 'left'
+  },
+  miniHeart: {
+    position: 'absolute',
+    top: '12px',
+    right: '14px',
+    width: '28px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
   actionsBlock: {
     width: '100%',

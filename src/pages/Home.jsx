@@ -3,18 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import PlayerCard from '../components/PlayerCard'
 import DailyQuests from '../components/DailyQuests'
-import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts } from '../lib/storage'
+import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, getRecentWorkouts, toggleFavoriteProgram } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
-import { formatRelative } from '../utils/history'
+import ProgramCard from '../components/ProgramCard'
 import { EVENTS, on } from '../lib/events'
 import { readHomeLayout, loadHomeLayoutFromCloud } from '../lib/home-layout'
 import PixelHeart from '../components/PixelHeart'
 import HistoryRow from '../components/HistoryRow'
 import CategoryList from '../components/CategoryList'
-import FavCardBody from '../components/FavCardBody'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -213,6 +212,30 @@ export default function Home() {
     setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, { state: { fromHome: true } }), 80)
   }
 
+  // Перезагрузка избранного (после тоггла/удаления из меню карточки).
+  const reloadFavs = async () => {
+    const entries = await loadFavoritesEntries(async (slug) => {
+      const prog = getProgramBySlug(slug)
+      if (!prog) return null
+      const activeDay = await getActiveDay(slug)
+      return { prog, activeDay }
+    })
+    setFavorites(entries)
+    let slug = null
+    try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
+    if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
+    const idx = indexBySlug(entries, slug)
+    setFavIdx(Math.min(idx, Math.max(0, entries.length - 1)))
+    setFavLoaded(true)
+  }
+
+  const handleHomeFavToggle = async () => {
+    const fav = favorites[favIdx]
+    if (!fav) return
+    await toggleFavoriteProgram(fav.prog.category, fav.prog.slug)
+    await reloadFavs()
+  }
+
 
   // Рендер управляемых секций (порядок и видимость — из конфига `layout`).
   const renderCategories = () => (
@@ -308,7 +331,16 @@ export default function Home() {
               key={favIdx}
               className={slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined}
             >
-              <FavCard entry={favorites[favIdx]} onTap={handleFavOpen} />
+              <ProgramCard
+                prog={favorites[favIdx].prog}
+                glow
+                dots
+                lastTrained
+                isFav
+                onToggleFav={handleHomeFavToggle}
+                onOpen={handleFavOpen}
+                onDeleted={reloadFavs}
+              />
             </div>
           </div>
           {favorites.length > 1 && (
@@ -339,79 +371,6 @@ export default function Home() {
       </div>
     </div>
   )
-}
-
-function FavCard({ entry, onTap }) {
-  if (!entry) return null
-  const { prog } = entry
-  // Цвет раздела программы: силовая — зелёный, плавание — синий, и т.д.
-  // Им красим обводку, свечение, тег «НАЧАТЬ» и подсветку активного дня.
-  const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
-
-  const cardStyle = {
-    ...favCardStyles.card,
-    border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
-    boxShadow: `0 0 20px color-mix(in srgb, ${accent} 20%, transparent), inset 0 0 30px color-mix(in srgb, ${accent} 6%, transparent)`
-  }
-
-  // Когда программу (в т.ч. заплыв) последний раз делали — из CloudStorage,
-  // per-program ключ. Вместо кнопки «НАЧАТЬ» (карточка и так тапается целиком).
-  const lastDate = localGet(`program:${prog.slug}:last_day_date`)
-
-  return (
-    <div onClick={onTap} className="press-tile" style={cardStyle}>
-      <FavCardBody entry={entry} accent={accent} />
-
-      <div style={favCardStyles.lastTrained}>
-        {lastDate ? (
-          <>
-            <span style={favCardStyles.lastTrainedLabel}>ПОСЛЕДНЯЯ</span>
-            <span style={favCardStyles.lastTrainedValue}>{formatRelative(lastDate)}</span>
-          </>
-        ) : (
-          <span style={favCardStyles.lastTrainedValue}>Ещё не начинали</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-const favCardStyles = {
-  card: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '16px 18px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    width: '100%',
-    minHeight: '130px',
-    cursor: 'pointer'
-  },
-  lastTrained: {
-    flexShrink: 0,
-    alignSelf: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '3px',
-    textAlign: 'right',
-    maxWidth: '90px'
-  },
-  lastTrainedLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '9px',
-    letterSpacing: '1.5px',
-    color: 'rgba(255,255,255,0.32)'
-  },
-  lastTrainedValue: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    lineHeight: 1.25,
-    color: 'var(--color-text-secondary)'
-  }
 }
 
 const styles = {

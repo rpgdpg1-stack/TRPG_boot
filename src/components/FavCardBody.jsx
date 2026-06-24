@@ -15,6 +15,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  */
 export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) {
   const { prog, activeDay } = entry
+  const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
   // Свою программу показываем как ввёл юзер; встроенные нормализуем по регистру.
   const title = prog.title
@@ -31,7 +32,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) 
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
-        {prog.kind === 'swim' ? (
+        {available && (prog.kind === 'swim' ? (
           <div style={styles.daysRow}>
             <span style={styles.daysLabel}>
               {prog.data.durationMin} мин · {swimTotalMeters()} м
@@ -55,20 +56,28 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) 
               })}
             </div>
           </div>
-        )}
+        ))}
 
         {/* Места (Зал/Дом/Улица) — переключаемый тег. Для программ без мест
-            (заплыв) — обычные теги как раньше. */}
+            (заплыв) — обычные теги. «Скоро» — для будущих программ раздела. */}
         {places.length > 0 ? (
-          <PlaceSwitcher program={prog} />
-        ) : prog.tags && prog.tags.length > 0 ? (
           <div style={styles.tags}>
-            {prog.tags.map(tag => {
+            <PlaceSwitcher program={prog} />
+            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+          </div>
+        ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
+          <div style={styles.tags}>
+            {(prog.tags || []).map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
               return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
             })}
+            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
           </div>
         ) : null}
+
+        {prog.source === 'shared' && prog.authorName && (
+          <div style={styles.authorLine}>от {prog.authorName}</div>
+        )}
       </div>
     </>
   )
@@ -98,5 +107,22 @@ const styles = {
     fontSize: '11px',
     fontWeight: 700,
     color: 'var(--color-bg)'
+  },
+  soonTag: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    background: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 'var(--radius-small)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.3px'
+  },
+  authorLine: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)'
   }
 }

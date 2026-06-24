@@ -6,7 +6,7 @@ import { getProgramBySlug, getProgramsByCategory } from '../features/programs/re
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import UiIcon from './UiIcon'
 import PixelHeart from './PixelHeart'
-import FavCardBody from './FavCardBody'
+import ProgramCard from './ProgramCard'
 
 /**
  * Список избранного по разделам — общий для страницы «Избранное» и профиля.
@@ -40,17 +40,6 @@ export default function FavoritesList() {
 
   const entryByCategory = (catId) => entries.find(e => e.categoryId === catId) || null
 
-  const handleOpen = (entry) => {
-    haptic.light()
-    const { prog, activeDay } = entry
-    if (prog.kind === 'swim') {
-      setTimeout(() => navigate(`/swim/${prog.slug}`), 80)
-      return
-    }
-    const firstDay = prog.data?.days ? Object.keys(prog.data.days)[0] : 'A'
-    setTimeout(() => navigate(`/workout/${prog.slug}/${activeDay || firstDay}`), 80)
-  }
-
   const handleRemove = async (catId, slug) => {
     haptic.medium()
     await toggleFavoriteProgram(catId, slug)
@@ -77,31 +66,19 @@ export default function FavoritesList() {
             </div>
 
             {entry
-              ? <FavoriteCard entry={entry} onOpen={() => handleOpen(entry)} onRemove={() => handleRemove(catId, entry.prog.slug)} />
+              ? <ProgramCard
+                  prog={entry.prog}
+                  isFav
+                  onToggleFav={() => handleRemove(catId, entry.prog.slug)}
+                  onDeleted={load}
+                  heart="center"
+                  dots
+                />
               : <EmptyCard onAdd={() => handleAdd(catId)} />}
           </section>
         )
       })}
     </>
-  )
-}
-
-function FavoriteCard({ entry, onOpen, onRemove }) {
-  const { prog } = entry
-  // Цвет раздела — только для подсветки активного дня (обводки/свечения тут нет).
-  const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
-
-  return (
-    <div onClick={onOpen} className="press-tile" style={styles.card}>
-      <FavCardBody entry={entry} accent={accent} />
-      <button
-        onClick={(e) => { e.stopPropagation(); onRemove() }}
-        style={styles.heartBtn}
-        aria-label="Убрать из избранного"
-      >
-        <PixelHeart filled size={22} />
-      </button>
-    </div>
   )
 }
 
@@ -134,34 +111,6 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1.5px'
-  },
-  card: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '16px 18px',
-    paddingRight: '52px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    width: '100%',
-    minHeight: '130px',
-    textAlign: 'left'
-  },
-  heartBtn: {
-    position: 'absolute',
-    top: '50%',
-    right: '16px',
-    transform: 'translateY(-50%)',
-    width: '28px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer'
   },
   emptyCard: {
     display: 'flex',
