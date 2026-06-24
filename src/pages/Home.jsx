@@ -220,12 +220,14 @@ export default function Home() {
       const activeDay = await getActiveDay(slug)
       return { prog, activeDay }
     })
-    setFavorites(entries)
+    // Слаг считаем ДО setState, чтобы favorites и favIdx обновились в одном
+    // ререндере (иначе промежуточный кадр: новый список + старый индекс = краш).
     let slug = null
     try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
     if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
     const idx = indexBySlug(entries, slug)
-    setFavIdx(Math.min(idx, Math.max(0, entries.length - 1)))
+    setFavIdx(entries.length ? Math.min(Math.max(idx, 0), entries.length - 1) : 0)
+    setFavorites(entries)
     setFavLoaded(true)
   }
 
@@ -277,9 +279,12 @@ export default function Home() {
     quests: renderQuests
   }
 
+  // Индекс карусели, зажатый в границы — защита от рассинхрона favIdx/favorites
+  // (например, favIdx ещё старый, а список уже короче после удаления).
+  const favSafeIdx = favorites.length ? Math.min(Math.max(favIdx, 0), favorites.length - 1) : 0
   // Цвет раздела текущей избранной карточки — им красим активную точку-индикатор.
-  const favAccent = favorites[favIdx]?.prog
-    ? (CATEGORY_META[favorites[favIdx].prog.category]?.color || 'var(--color-primary)')
+  const favAccent = favorites[favSafeIdx]?.prog
+    ? (CATEGORY_META[favorites[favSafeIdx].prog.category]?.color || 'var(--color-primary)')
     : 'var(--color-primary)'
 
   return (
@@ -328,11 +333,11 @@ export default function Home() {
             style={styles.favSwipeArea}
           >
             <div
-              key={favIdx}
+              key={favSafeIdx}
               className={slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined}
             >
               <ProgramCard
-                prog={favorites[favIdx].prog}
+                prog={favorites[favSafeIdx].prog}
                 glow
                 dots
                 lastTrained
