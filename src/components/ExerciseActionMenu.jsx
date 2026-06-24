@@ -155,12 +155,16 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   const startEditNote = () => {
     haptic.light()
-    // Модалка прижата к верху (alignItems:flex-start) — клавиатура открывается
-    // под ней без подъёма/пере-центрирования, поэтому никакого transform-лифта
-    // и рывков. Просто включаем редактор.
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
+    // Выделяем весь текст СРАЗУ после тапа (как при правке веса), а не через
+    // onFocus — иначе на iOS из-за autoFocus/анимации клавиатуры выделение
+    // появляется с заметной задержкой. Пара попыток на случай, пока поле
+    // монтируется/получает фокус.
+    const selectAll = () => { try { noteInputRef.current?.select() } catch (e) { /* ignore */ } }
+    setTimeout(selectAll, 10)
+    setTimeout(selectAll, 70)
   }
 
   const cancelEditNote = () => {
@@ -308,7 +312,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 autoFocus
                 value={draft}
                 onChange={(e) => { setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH)); autoGrowNote(e.target) }}
-                onFocus={(e) => e.target.select()}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}
                 maxLength={NOTE_MAX_LENGTH}
