@@ -42,7 +42,8 @@ export default function SwapExercise() {
     currentExerciseId,
     currentExerciseName,
     defaultExerciseId,
-    muscleGroup
+    muscleGroup,
+    place = 'gym'
   } = stateData
 
   const [allExercises, setAllExercises] = useState([])
@@ -139,7 +140,7 @@ export default function SwapExercise() {
 
     setSaving(true)
     try {
-      const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId)
+      const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId, place)
       if (ok) {
         haptic.success()
         // Передаём в state информацию для WorkoutDay:

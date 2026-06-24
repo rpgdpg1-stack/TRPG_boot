@@ -362,6 +362,7 @@ export default function WorkoutDay() {
         currentExerciseName: slot.exercise_name,
         defaultExerciseId,
         muscleGroup: slot.muscle_group,
+        place,
         scrollY: getRealScrollY()
       }
     })

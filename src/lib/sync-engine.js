@@ -165,13 +165,16 @@ async function sendWeight(op, userId) {
  */
 async function sendSwap(op, userId) {
   const { program_id, day, order_num, exercise_id } = op.payload
+  // location появилось не сразу — у старых элементов очереди его может не быть.
+  const location = op.payload.location || 'gym'
 
   const { error } = await supabase.rpc('api_save_user_swap', {
     p_user_id: userId,
     p_program_id: program_id,
     p_day: day,
     p_order_num: order_num,
-    p_exercise_id: exercise_id
+    p_exercise_id: exercise_id,
+    p_location: location
   })
 
   if (error) {
@@ -179,10 +182,11 @@ async function sendSwap(op, userId) {
       user_id: userId,
       program_id,
       day,
+      location,
       order_num,
       exercise_id,
       updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,program_id,day,order_num' })
+    }, { onConflict: 'user_id,program_id,day,location,order_num' })
     if (upsertErr) {
       console.error('[sync] swap upsert error:', upsertErr)
       return false

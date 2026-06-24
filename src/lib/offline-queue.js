@@ -126,8 +126,8 @@ export function weightDedupKey(exerciseId) {
   return `${exerciseId}`
 }
 
-export function swapDedupKey(programId, day, orderNum) {
-  return `${programId}|${day}|${orderNum}`
+export function swapDedupKey(programId, day, orderNum, place = 'gym') {
+  return `${programId}|${day}|${place}|${orderNum}`
 }
 
 export function finishDedupKey(programId, day, finishedAtISO) {

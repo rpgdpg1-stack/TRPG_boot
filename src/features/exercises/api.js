@@ -59,7 +59,7 @@ export async function getExerciseById(exerciseId) {
  * ОФФЛАЙН → кладём в очередь, возвращаем true (засинкается позже).
  * ОНЛАЙН → шлём в Supabase, при успехе инвалидируем кеши.
  */
-export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
+export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, place = 'gym') {
   const user = getCurrentUser()
   if (!user) {
     console.warn('[exercises] saveExerciseSwap: no user')
@@ -80,9 +80,10 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
     enqueue('swap', {
       program_id: dbId,
       day,
+      location: place,
       order_num: orderNum,
       exercise_id: exerciseId
-    }, swapDedupKey(dbId, day, orderNum))
+    }, swapDedupKey(dbId, day, orderNum, place))
 
     cacheInvalidate(`workout-day:${user.id}:${programSlug}:`)
     console.log('[exercises] swap сохранён ОФФЛАЙН в очередь')
@@ -99,7 +100,8 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
       p_program_id: dbId,
       p_day: day,
       p_order_num: orderNum,
-      p_exercise_id: exerciseId
+      p_exercise_id: exerciseId,
+      p_location: place
     })
     if (!error) {
       success = true
@@ -115,10 +117,11 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId) {
       user_id: user.id,
       program_id: dbId,
       day,
+      location: place,
       order_num: orderNum,
       exercise_id: exerciseId,
       updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,program_id,day,order_num' })
+    }, { onConflict: 'user_id,program_id,day,location,order_num' })
 
     if (error) {
       console.error('[exercises] saveExerciseSwap upsert error:', error)

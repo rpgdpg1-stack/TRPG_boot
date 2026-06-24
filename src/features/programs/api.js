@@ -78,8 +78,9 @@ async function refreshAllExercises() {
   return exercises
 }
 
-async function loadUserSwaps(userId, dbId, day) {
-  const cacheKey = `user-swaps:${userId}:${dbId}:${day}`
+async function loadUserSwaps(userId, dbId, day, place = 'gym') {
+  // Место входит в ключ кеша — свапы Зал/Дом/Улица кешируются раздельно.
+  const cacheKey = `user-swaps:${userId}:${dbId}:${place}:${day}`
   const cached = cacheGet(cacheKey)
   if (cached) return cached
 
@@ -93,7 +94,8 @@ async function loadUserSwaps(userId, dbId, day) {
     const { data: swaps, error } = await supabase.rpc('api_get_user_swaps', {
       p_user_id: userId,
       p_program_id: dbId,
-      p_day: day
+      p_day: day,
+      p_location: place
     })
     if (!error && swaps) {
       for (const s of swaps) swapsByOrder[s.order_num] = s.exercise_id
@@ -171,7 +173,7 @@ export async function getWorkoutDay(programSlug, day, place = null) {
   if (!slotsRaw.length) return []
 
   const [swapsByOrder, exercises, weightsByEx] = await Promise.all([
-    loadUserSwaps(user.id, dbId, day),
+    loadUserSwaps(user.id, dbId, day, placeKey),
     loadAllExercises(),
     loadUserWeights(user.id)
   ])
