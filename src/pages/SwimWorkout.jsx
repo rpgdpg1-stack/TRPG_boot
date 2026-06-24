@@ -4,6 +4,7 @@ import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
 import { getProgramBySlug } from '../features/programs/registry'
 import { XP_REWARDS } from '../lib/levels'
+import { setLastCompletedDay } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import {
   SWIM_PROGRAM,
@@ -99,6 +100,9 @@ export default function SwimWorkout() {
         return
       }
       if (result.offline) {
+        // Фиксируем дату последней тренировки заплыва (CloudStorage), как в зале —
+        // иначе карточка показывает «Ещё не начинали».
+        await setLastCompletedDay(programId, 'main')
         haptic.warning()
         setFinishStatus('idle')
         setModal({ kind: 'offline' })
@@ -110,6 +114,7 @@ export default function SwimWorkout() {
         setModal({ kind: 'limit' })
         return
       }
+      await setLastCompletedDay(programId, 'main')
       haptic.success()
       setFinishStatus('idle')
       setModal({ kind: 'reward' })
