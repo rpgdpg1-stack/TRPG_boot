@@ -5,7 +5,6 @@ import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENG
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { haptic } from '../lib/telegram'
-import { useKeyboardInset } from '../lib/use-keyboard-inset'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
 
@@ -30,7 +29,6 @@ import UiIcon from './UiIcon'
 const NOTE_ICON_COLOR = '#FFA94D'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
-  const kbInset = useKeyboardInset()
   const noteInputRef = useRef(null)
 
   // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
@@ -223,14 +221,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   return (
     <div
-      style={{
-        ...styles.overlay,
-        // Высота клавиатуры в нижний паддинг → модалка поднимается над ней сама,
-        // iOS не скроллит поле (курсор не телепортируется). safe center в стилях
-        // не даёт обрезать верх высокой модалки.
-        paddingBottom: `calc(20px + ${kbInset}px)`,
-        transition: 'padding-bottom 0.22s ease'
-      }}
+      style={styles.overlay}
       onClick={handleOverlayClick}
     >
       <div
@@ -379,9 +370,7 @@ const styles = {
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
-    // safe center: при нехватке места (высокая модалка + клавиатура) выравнивает
-    // к верху вместо центра — не обрезает верх (как было при простом center).
-    alignItems: 'safe center',
+    alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
     // Гасим скролл фона декларативно (touch-action), не трогая body — иначе
