@@ -373,10 +373,7 @@ const styles = {
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
-    // Модалка прижата к верху (не центрирована): при открытии клавиатуры
-    // ничего не подпрыгивает/не пере-центрируется — она просто стоит сверху,
-    // клавиатура открывается под ней. Высокая — скроллится внутри (overflow).
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
     // Гасим скролл фона декларативно (touch-action), не трогая body — иначе
