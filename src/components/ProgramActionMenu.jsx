@@ -214,7 +214,7 @@ const styles = {
   },
   miniHeart: {
     position: 'absolute',
-    top: '12px',
+    bottom: '12px',
     right: '14px',
     width: '28px',
     height: '28px',

@@ -213,9 +213,8 @@ const styles = {
   },
   heartCenter: {
     position: 'absolute',
-    top: '50%',
-    right: '14px',
-    transform: 'translateY(-50%)',
+    bottom: '10px',
+    right: '12px',
     width: '28px',
     height: '28px',
     display: 'flex',
