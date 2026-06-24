@@ -158,18 +158,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     setDraft(note)
     setNoteError(false)
     setEditingNote(true)
-    // Фокус БЕЗ авто-прокрутки (preventScroll): иначе iOS прокручивает новое
-    // поле вверх, и подсветка выделения «прыгает» туда раньше текста. С
-    // preventScroll поле остаётся там, где тапнули — выделение появляется на
-    // месте, как у веса. Затем сразу выделяем весь текст.
-    const focusSelect = () => {
-      const el = noteInputRef.current
-      if (!el) return
-      try { el.focus({ preventScroll: true }) } catch (e) { el.focus() }
-      try { el.select() } catch (e) { /* ignore */ }
-    }
-    setTimeout(focusSelect, 0)
-    setTimeout(focusSelect, 60)
   }
 
   const cancelEditNote = () => {
@@ -314,8 +302,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             <>
               <textarea
                 ref={(el) => { noteInputRef.current = el; autoGrowNote(el) }}
+                autoFocus
                 value={draft}
                 onChange={(e) => { setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH)); autoGrowNote(e.target) }}
+                onFocus={(e) => { const len = e.target.value.length; e.target.setSelectionRange(len, len) }}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}
                 maxLength={NOTE_MAX_LENGTH}
