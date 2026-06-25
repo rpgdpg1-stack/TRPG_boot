@@ -12,12 +12,15 @@ import MuscleIcon from './MuscleIcon'
  *
  * Логика сохранения теперь в родителе (WorkoutDay), модалка только показывает UI.
  *
- * @param reward    - сколько мускулов начисляется
- * @param status    - 'idle' | 'saving' | 'error'
- * @param errorMsg  - текст ошибки если status === 'error'
- * @param onConfirm - вызывается при тапе на ОК/Повторить
+ * @param reward       - сколько мускулов начисляется
+ * @param status       - 'idle' | 'saving' | 'error'
+ * @param errorMsg     - текст ошибки если status === 'error'
+ * @param offline      - true → завершено без сети (ушло в очередь)
+ * @param alreadyToday - true → награда за сегодня уже была (лимит 1/день),
+ *                       поздравляем, но +150 не показываем
+ * @param onConfirm    - вызывается при тапе на ОК/Повторить
  */
-export default function WorkoutFinishedModal({ reward = 150, durationLabel = '', status = 'idle', errorMsg = '', offline = false, onConfirm }) {
+export default function WorkoutFinishedModal({ reward = 150, durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
   const sceneRef = useRef(null)
 
   // Спавним пиксельные искорки из огонька (как у горящих огоньков стрика)
@@ -110,7 +113,7 @@ export default function WorkoutFinishedModal({ reward = 150, durationLabel = '',
           <div style={styles.duration}>⏱ {durationLabel}</div>
         )}
 
-        {/* Ошибка → сообщение. Оффлайн → пояснение. Норма → бейдж награды. */}
+        {/* Тело: ошибка / оффлайн / лимит (награда уже была) / награда. */}
         {isError ? (
           <div style={styles.errorMessage}>
             {errorMsg || 'Проверь подключение к интернету и попробуй ещё раз.'}
@@ -118,10 +121,21 @@ export default function WorkoutFinishedModal({ reward = 150, durationLabel = '',
         ) : offline ? (
           <div style={styles.errorMessage}>
             Тренировка сохранена на телефоне.<br />
-            +{reward} <MuscleIcon size={16} earned={true} /> начислятся автоматически, как только появится интернет.
+            Данные обновятся, как только появится интернет.
           </div>
+        ) : alreadyToday ? (
+          <>
+            <div style={styles.praise}>Так держать! 💪</div>
+            <div style={styles.limitNote}>
+              За сегодня награда уже получена.<br />
+              Лимит — 1 тренировка в день.
+            </div>
+          </>
         ) : (
-          <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} flexTrigger={1} /></div>
+          <>
+            <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} flexTrigger={1} /></div>
+            <div style={styles.limitNote}>Награда начисляется за 1 тренировку в день.</div>
+          </>
         )}
 
         {/* Кнопка действия */}
@@ -239,6 +253,25 @@ const styles = {
     textAlign: 'center',
     lineHeight: 1.5,
     padding: '8px 4px'
+  },
+  // Поздравление без баллов (повторная тренировка за день).
+  praise: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '17px',
+    color: 'var(--color-text)',
+    letterSpacing: '0.5px',
+    textAlign: 'center'
+  },
+  // Мелкая серая заметка про лимит начисления баллов.
+  limitNote: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    lineHeight: 1.45,
+    opacity: 0.85
   },
   confirmButton: {
     marginTop: '8px',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
@@ -25,6 +25,11 @@ const NAME_PLACEHOLDER = 'Введите название'
  */
 export default function ProgramConstructor() {
   const navigate = useNavigate()
+  const location = useLocation()
+  // Откуда зашли в конструктор (главная / избранное / раздел) — туда же и
+  // возвращаемся (кнопка «Назад», «Не сохранять», после сохранения). Источник
+  // кладут ProgramCard и Category в location.state.from. Дефолт — силовой раздел.
+  const backTo = location.state?.from || '/category/gym'
 
   const existing = useMemo(() => getProgramBySlug('my'), [])
   const isEdit = !!existing
@@ -80,7 +85,7 @@ export default function ProgramConstructor() {
     } else {
       backButton.setHandler(() => {
         if (isDirty()) setConfirmExit(true)
-        else navigate('/category/gym')
+        else navigate(backTo)
       })
     }
     lockVerticalSwipes()
@@ -212,7 +217,7 @@ export default function ProgramConstructor() {
       await saveMyProgram(name.trim(), dayCount, payload)
       initialSnapshot.current = JSON.stringify({ name, dayCount, byLoc }) // зафиксировали как сохранённое
       haptic.success()
-      navigate('/category/gym')
+      navigate(backTo)
     } catch (e) {
       console.error('[constructor] save error:', e)
       haptic.error()
@@ -369,7 +374,10 @@ export default function ProgramConstructor() {
                       padding: '0 16px',
                       marginLeft: i === 0 ? 0 : '-5px',
                       zIndex: active ? 2 : 1,
-                      color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)',
+                      // Активное место — цвет самого места (зал — оранжевый,
+                      // дом — синий, улица — зелёный); красятся текст и иконка
+                      // (UiIcon наследует currentColor). Неактивные — как были.
+                      color: active ? meta.color : 'var(--color-text-inactive)',
                       fontSize: active ? '15px' : '13px'
                     }}
                   >
@@ -547,7 +555,7 @@ export default function ProgramConstructor() {
             <button
               className="press-tile"
               style={styles.exitDiscard}
-              onClick={() => { setConfirmExit(false); haptic.light(); navigate('/category/gym') }}
+              onClick={() => { setConfirmExit(false); haptic.light(); navigate(backTo) }}
             >
               Не сохранять
             </button>

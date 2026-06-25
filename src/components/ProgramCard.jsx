@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay } from '../lib/storage'
 import { localGet } from '../utils/storage'
@@ -36,6 +36,7 @@ export default function ProgramCard({
   lastTrained = false
 }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [activeDay, setActiveDay] = useState(null)
   const [anchorRect, setAnchorRect] = useState(null) // null = меню закрыто
   const dotsRef = useRef(null)
@@ -71,7 +72,9 @@ export default function ProgramCard({
   }
   const closeMenu = () => setAnchorRect(null)
 
-  const handleEdit = () => { haptic.light(); navigate('/constructor') }
+  // Передаём страницу-источник, чтобы конструктор вернул назад туда же
+  // (главная / избранное / раздел), а не всегда в силовой раздел.
+  const handleEdit = () => { haptic.light(); navigate('/constructor', { state: { from: location.pathname } }) }
   const handleShare = async () => { haptic.light(); await shareProgramLink(prog.dbId) }
   const handleDelete = async () => {
     const ok = await confirm('Удалить эту программу?')

@@ -126,7 +126,8 @@ export default function Category() {
 
   const handleCreateTap = () => {
     haptic.light()
-    if (id === 'gym') navigate('/constructor')
+    // Запоминаем раздел как источник — конструктор вернёт назад сюда же.
+    if (id === 'gym') navigate('/constructor', { state: { from: `/category/${id}` } })
   }
 
   const handleInfoTap = () => {

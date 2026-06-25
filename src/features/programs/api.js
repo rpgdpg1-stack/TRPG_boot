@@ -17,8 +17,14 @@ import { getCurrentWeekKey } from '../../utils/dates'
 import { getProgramBySlug, getProgramDaySlots } from './registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib/cache'
 import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
-import { isOnline } from '../../lib/network-status'
+import { isOnline, checkNow } from '../../lib/network-status'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
+
+// Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
+// оффлайн-очередь. Supabase-клиент сам не таймаутит, а в зале Wi-Fi часто
+// «живой» для navigator.onLine, но без реального доступа в интернет — без
+// этого экран «Сохранение…» висел бы бесконечно.
+const FINISH_TIMEOUT_MS = 7000
 
 async function loadAllExercises() {
   const cacheKey = 'exercises:all'
@@ -285,8 +291,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
   }
   const dbId = program.dbId
 
-  // ОФФЛАЙН: в очередь, выходим с флагом offline.
-  if (!isOnline()) {
+  // Положить завершение в оффлайн-очередь и вернуть флаг offline. Зовём и когда
+  // сети заведомо нет, и когда онлайн-запрос завис/упал (мёртвый Wi-Fi): иначе
+  // экран «Сохранение…» висел бы вечно. Безопасно — RPC при синке схлопнётся по
+  // лимиту «1 тренировка в день» (already_completed_today), повтора начислений нет.
+  const queueOfflineFinish = () => {
     const finishedAt = new Date().toISOString()
     enqueue('finish', {
       program_id: dbId,
@@ -294,8 +303,6 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
       exercise_ids: exerciseIds,
       reward
     }, finishDedupKey(dbId, day, finishedAt))
-
-    console.log('[programs] finishWorkout сохранён ОФФЛАЙН в очередь')
     return {
       offline: true,
       workoutId: null,
@@ -305,52 +312,83 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
     }
   }
 
-  const { data, error } = await supabase.rpc('api_finish_workout', {
-    p_user_id: user.id,
-    p_program_id: dbId,
-    p_day: day,
-    p_exercise_ids: exerciseIds,
-    p_reward: reward
-  })
-
-  if (error) {
-    console.error('[programs] api_finish_workout ERROR:', error)
-    return null
+  // ОФФЛАЙН (сеть заведомо недоступна): сразу в очередь.
+  if (!isOnline()) {
+    console.log('[programs] finishWorkout сохранён ОФФЛАЙН в очередь')
+    return queueOfflineFinish()
   }
 
-  const result = data?.[0]
-  if (!result) {
-    console.warn('[programs] no result from api_finish_workout')
-    return null
-  }
+  // ОНЛАЙН: атомарная RPC, но с таймаутом — если не ответила за FINISH_TIMEOUT_MS
+  // или упала по сети, считаем что интернета по факту нет → в очередь как оффлайн
+  // и фоном пере-проверяем статус сети (обновит OfflineBanner).
+  const TIMEOUT = Symbol('timeout')
+  let timer = null
+  try {
+    const rpcPromise = supabase.rpc('api_finish_workout', {
+      p_user_id: user.id,
+      p_program_id: dbId,
+      p_day: day,
+      p_exercise_ids: exerciseIds,
+      p_reward: reward
+    })
+    const timeoutPromise = new Promise(resolve => {
+      timer = setTimeout(() => resolve(TIMEOUT), FINISH_TIMEOUT_MS)
+    })
+    const raced = await Promise.race([rpcPromise, timeoutPromise])
 
-  console.log('[programs] workout finished:', result)
+    if (raced === TIMEOUT) {
+      console.warn('[programs] finishWorkout: RPC таймаут → оффлайн-очередь')
+      checkNow() // пере-оценить сеть в фоне → баннер «оффлайн»
+      return queueOfflineFinish()
+    }
 
-  setCurrentUser({
-    ...user,
-    total_muscles: result.new_total_muscles,
-    weekly_streak: result.new_weekly_streak,
-    weekly_streak_week: getCurrentWeekKey()
-  })
+    const { data, error } = raced
+    if (error) {
+      console.error('[programs] api_finish_workout ERROR:', error)
+      return null
+    }
 
-  cacheInvalidate('workout-day:')
-  cacheInvalidate(`muscle-history:${user.id}`)
-  cacheInvalidate(`leaderboard-friends:${user.id}`)
-  cacheInvalidate(`leaderboard-league:${user.id}`)
-  cacheInvalidate(`my-friend-place:${user.id}`)
+    const result = data?.[0]
+    if (!result) {
+      console.warn('[programs] no result from api_finish_workout')
+      return null
+    }
 
-  emit(EVENTS.USER_CHANGED, getCurrentUser())
+    console.log('[programs] workout finished:', result)
 
-  if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
-    console.log('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
-    emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
-  }
+    setCurrentUser({
+      ...user,
+      total_muscles: result.new_total_muscles,
+      weekly_streak: result.new_weekly_streak,
+      weekly_streak_week: getCurrentWeekKey()
+    })
 
-  return {
-    offline: false,
-    workoutId: result.workout_id,
-    newTotalMuscles: result.new_total_muscles,
-    newWeeklyStreak: result.new_weekly_streak,
-    alreadyCompletedToday: result.already_completed_today || false
+    cacheInvalidate('workout-day:')
+    cacheInvalidate(`muscle-history:${user.id}`)
+    cacheInvalidate(`leaderboard-friends:${user.id}`)
+    cacheInvalidate(`leaderboard-league:${user.id}`)
+    cacheInvalidate(`my-friend-place:${user.id}`)
+
+    emit(EVENTS.USER_CHANGED, getCurrentUser())
+
+    if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
+      console.log('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
+      emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
+    }
+
+    return {
+      offline: false,
+      workoutId: result.workout_id,
+      newTotalMuscles: result.new_total_muscles,
+      newWeeklyStreak: result.new_weekly_streak,
+      alreadyCompletedToday: result.already_completed_today || false
+    }
+  } catch (e) {
+    // Сетевой сбой во время запроса — тоже в очередь как оффлайн.
+    console.warn('[programs] finishWorkout: сетевой сбой → оффлайн-очередь:', e?.message)
+    checkNow()
+    return queueOfflineFinish()
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }

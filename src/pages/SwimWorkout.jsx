@@ -380,11 +380,9 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
             Бицепсы за сегодня уже начислены за другую тренировку.
           </div>
         ) : (
-          <div style={{ ...modalStyles.message, display: 'inline-flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px' }}>
-            <span>Заплыв сохранён на телефоне.</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              +{XP_REWARDS.WORKOUT_COMPLETE} <MuscleIcon size={15} earned={true} /> начислятся, как появится интернет.
-            </span>
+          <div style={modalStyles.message}>
+            Заплыв сохранён на телефоне.<br />
+            Данные обновятся, как только появится интернет.
           </div>
         )}
 

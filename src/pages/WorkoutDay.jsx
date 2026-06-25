@@ -75,6 +75,9 @@ export default function WorkoutDay() {
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
   const [finishedOffline, setFinishedOffline] = useState(false)
+  // true, если за сегодня награда уже была (лимит 1 тренировка/день) — тогда
+  // модалка поздравляет, но +150 не показывает.
+  const [alreadyToday, setAlreadyToday] = useState(false)
 
   const [actionSlot, setActionSlot] = useState(null)
   // Меню «⋯» у упражнения: заметка / техника / замена (привязано к кнопке).
@@ -448,6 +451,7 @@ export default function WorkoutDay() {
     haptic.medium()
     setShowConfirm(false)
     setShowFinishedModal(true)
+    runFinish()
   }
 
   const handleConfirmFinishCancel = () => {
@@ -460,11 +464,16 @@ export default function WorkoutDay() {
     setReloadTick(t => t + 1)
   }
 
-  const handleConfirmFinish = async () => {
+  // Сохранение тренировки. Идёт СРАЗУ при открытии модалки завершения, а её вид
+  // (награда / лимит / оффлайн / ошибка) определяется результатом — чтобы не
+  // обещать +150 до того, как сервер подтвердит начисление.
+  const runFinish = async () => {
     if (finishStatus === 'saving') return
 
     setFinishStatus('saving')
     setFinishErrorMsg('')
+    setFinishedOffline(false)
+    setAlreadyToday(false)
 
     try {
       const exerciseIds = slots
@@ -472,7 +481,7 @@ export default function WorkoutDay() {
         .map(s => s.exercise_id)
         .filter(Boolean)
 
-     const reward = XP_REWARDS.WORKOUT_COMPLETE
+      const reward = XP_REWARDS.WORKOUT_COMPLETE
       const result = await finishWorkout(programId, day, exerciseIds, reward)
 
       if (!result) {
@@ -482,30 +491,28 @@ export default function WorkoutDay() {
         return
       }
 
-      // Оффлайн-завершение: тренировка ушла в очередь, синканётся при сети.
-      // Прогресс галочек тоже чистим (тренировка считается завершённой локально),
-      // день фиксируем в цикле A/B/C. Показываем спец-сообщение в модалке.
+      // Тренировка засчитана локально в любом исходе (оффлайн / лимит / награда):
+      // фиксируем день в цикле A/B/C и чистим галочки прогресса.
+      await setLastCompletedDay(programId, day)
+      clearWorkoutProgress(programId, day, place)
+
+      // Оффлайн: ушло в очередь, синканётся при сети. Лимит «1 в день» оффлайн не
+      // проверить — поэтому без обещания баллов, просто «сохранено локально».
       if (result.offline) {
-        await setLastCompletedDay(programId, day)
-        clearWorkoutProgress(programId, day, place)
         haptic.warning()
         setFinishedOffline(true)
         setFinishStatus('idle')
-        // Не уходим с экрана сразу — модалка покажет "сохранено локально",
-        // юзер сам нажмёт ОК и уйдёт на главную.
         return
       }
 
-      await setLastCompletedDay(programId, day)
-      clearWorkoutProgress(programId, day, place)
+      // Онлайн: лимит «1 тренировка в день» держит сервер. already_completed_today
+      // → баллы за сегодня уже были, +150 не показываем (поздравляем без баллов).
+      setAlreadyToday(!!result.alreadyCompletedToday)
       haptic.success()
-
-      setShowFinishedModal(false)
       setFinishStatus('idle')
-      navigate('/')
 
     } catch (e) {
-      console.error('[WorkoutDay] handleConfirmFinish error:', e)
+      console.error('[WorkoutDay] runFinish error:', e)
       setFinishStatus('error')
       setFinishErrorMsg(e?.message || 'Что-то пошло не так. Попробуй ещё раз.')
       haptic.error()
@@ -796,15 +803,16 @@ export default function WorkoutDay() {
           status={finishStatus}
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
+          alreadyToday={alreadyToday}
           onConfirm={() => {
-            // Если завершили оффлайн — кнопка ОК просто уводит на главную
-            if (finishedOffline) {
-              setShowFinishedModal(false)
-              setFinishedOffline(false)
-              navigate('/')
+            // Ошибка → повторить сохранение. Иначе (награда / лимит / оффлайн) —
+            // закрыть модалку и уйти на главную.
+            if (finishStatus === 'error') {
+              runFinish()
               return
             }
-            handleConfirmFinish()
+            setShowFinishedModal(false)
+            navigate('/')
           }}
         />
       )}
@@ -1153,13 +1161,13 @@ function getRealScrollY() {
 }
 
 // Длительность без секунд — для шапки и модалки завершения. До часа: минуты
-// числом ("0", "1", "20"…); от часа: "ч:мм" ("1:05").
+// с подписью ("0 мин", "1 мин", "20 мин"); от часа: "ч + мин" ("1 ч", "1 ч 20 мин").
 function formatElapsedMin(totalSec) {
   const totalMin = Math.floor(totalSec / 60)
-  if (totalMin < 60) return String(totalMin)
+  if (totalMin < 60) return `${totalMin} мин`
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
-  return `${h}:${String(m).padStart(2, '0')}`
+  return m === 0 ? `${h} ч` : `${h} ч ${m} мин`
 }
 
 function groupByMuscleGroup(slots) {
