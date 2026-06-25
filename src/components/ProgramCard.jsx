@@ -33,7 +33,8 @@ export default function ProgramCard({
   onDeleted,
   glow = false,
   dots = false,
-  lastTrained = false
+  lastTrained = false,
+  bordered = true
 }) {
   const navigate = useNavigate()
   // Старт из localStorage (мгновенно, без мигания серый→зелёный);
@@ -93,7 +94,9 @@ export default function ProgramCard({
     paddingRight: `${padRight}px`,
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',
-    border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
+    // Цветная обводка-нитка — на главной и в избранном; в разделах (Category)
+    // выключаем через bordered={false}.
+    border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none',
     ...(glow ? {
       boxShadow: `0 0 20px color-mix(in srgb, ${accent} 20%, transparent), inset 0 0 30px color-mix(in srgb, ${accent} 6%, transparent)`
     } : {})

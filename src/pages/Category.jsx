@@ -171,6 +171,7 @@ export default function Category() {
             onToggleFav={() => handleFavoriteTap(prog.slug)}
             onDeleted={handleDeleted}
             dots
+            bordered={false}
           />
         ))}
       </div>
