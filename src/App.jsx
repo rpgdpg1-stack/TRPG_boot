@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
@@ -32,7 +32,7 @@ import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummaryShown } from './lib/rewards'
 import { getPendingBackups } from './lib/backups'
-import { loadFavoritesEntries, getActiveDay } from './lib/storage'
+import { loadFavoritesEntries, getActiveDay, getRecentWorkouts } from './lib/storage'
 import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
@@ -78,6 +78,8 @@ export default function App() {
         const activeDay = await getActiveDay(slug)
         return { prog, activeDay }
       }).catch(() => {})
+      // Прогреваем кеш истории (страница «История» стартует из него мгновенно).
+      getRecentWorkouts(100).catch(() => {})
     })
 
     // Глобальный детектор клавиатуры: вешаем body.keyboard-open пока она открыта.
@@ -125,6 +127,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="app">
+        <ScrollToTopOnNavigate />
         <OfflineBanner />
 
         <SettingsButtonController />
@@ -157,6 +160,23 @@ export default function App() {
       </div>
     </ErrorBoundary>
   )
+}
+
+/**
+ * Сброс скролла на верх при смене страницы — чтобы новый экран не «наследовал»
+ * позицию прокрутки предыдущего (баг: с прокрученной вниз главной заходишь в
+ * настройки — и они открыты внизу). Экран дня (/workout/) исключён: он сам
+ * управляет скроллом (восстановление позиции при возврате со «Сменить»/«Инфо»,
+ * скролл-на-верх при смене дня).
+ */
+function ScrollToTopOnNavigate() {
+  const { pathname } = useLocation()
+  useLayoutEffect(() => {
+    if (pathname.startsWith('/workout/')) return
+    window.scrollTo(0, 0)
+    document.scrollingElement?.scrollTo(0, 0)
+  }, [pathname])
+  return null
 }
 
 function SettingsButtonController() {

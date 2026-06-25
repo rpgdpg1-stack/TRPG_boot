@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
-import { loadFavoritesEntries, getActiveDay, toggleFavoriteProgram } from '../lib/storage'
+import { loadFavoritesEntries, getFavoritesEntriesSync, getActiveDay, toggleFavoriteProgram } from '../lib/storage'
 import { getProgramBySlug, getProgramsByCategory } from '../features/programs/registry'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import UiIcon from './UiIcon'
@@ -19,10 +19,21 @@ import ProgramCard from './ProgramCard'
 // Разделы, где есть хоть одна программа (там можно держать избранное).
 const FAV_CATEGORIES = CATEGORY_ORDER.filter(id => getProgramsByCategory(id).length > 0)
 
+// Синхронная сборка entry из localStorage/кеша — для мгновенного старта без
+// скелетона. activeDay уже посчитан внутри getFavoritesEntriesSync.
+function buildEntrySync(slug, activeDay) {
+  const prog = getProgramBySlug(slug)
+  if (!prog) return null
+  return { prog, activeDay }
+}
+
 export default function FavoritesList() {
   const navigate = useNavigate()
-  const [entries, setEntries] = useState([])
-  const [loaded, setLoaded] = useState(false)
+  // Старт синхронно (localStorage + кеш в памяти, прогретый App при старте) —
+  // без скелетона-мигания; load() ниже догонит из Cloud. Второй вызов берёт
+  // готовый кеш в памяти, поэтому дешёвый.
+  const [entries, setEntries] = useState(() => getFavoritesEntriesSync(buildEntrySync) || [])
+  const [loaded, setLoaded] = useState(() => getFavoritesEntriesSync(buildEntrySync) != null)
 
   const load = () => {
     loadFavoritesEntries(async (slug) => {

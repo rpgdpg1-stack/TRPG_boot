@@ -104,6 +104,7 @@ export async function syncQueue() {
     cacheInvalidate('workout-day:')
     cacheInvalidate(`user-weights:${user.id}`)
     cacheInvalidate(`user-swaps:`)
+    cacheInvalidate(`recent-workouts:${user.id}`)
   }
 
   console.log('[sync] завершён, отправлено:', syncedCount, 'ошибки:', hadError)

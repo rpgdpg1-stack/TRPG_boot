@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
-import { getRecentWorkouts } from '../lib/storage'
+import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import HistoryRow from '../components/HistoryRow'
+
+const HISTORY_LIMIT = 100
 
 /**
  * Полный список истории тренировок.
@@ -11,8 +13,11 @@ import HistoryRow from '../components/HistoryRow'
  */
 export default function History() {
   const navigate = useNavigate()
-  const [workouts, setWorkouts] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Старт из кеша в памяти (если уже грузили в этой сессии или прогрели при
+  // старте) — без мигания «Загрузка…». Сеть ниже догонит.
+  const cached = getRecentWorkoutsSync(HISTORY_LIMIT)
+  const [workouts, setWorkouts] = useState(cached || [])
+  const [loading, setLoading] = useState(cached == null)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -22,7 +27,7 @@ export default function History() {
   useEffect(() => {
     let cancelled = false
     const load = () => {
-      getRecentWorkouts(100).then(data => {
+      getRecentWorkouts(HISTORY_LIMIT).then(data => {
         if (!cancelled) {
           setWorkouts(data || [])
           setLoading(false)

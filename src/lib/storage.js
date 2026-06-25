@@ -144,6 +144,14 @@ export async function getTotalWorkouts() {
 export async function getRecentWorkouts(limit = 3) {
   const userId = getUserId()
   if (!userId) return []
+
+  // Кеш в памяти — повторные заходы на Историю/Профиль/Главную мгновенные,
+  // без мигания «Загрузка…». Инвалидируется при завершении тренировки
+  // (cacheInvalidate('recent-workouts:') в api/sync-engine).
+  const cacheKey = `recent-workouts:${userId}:${limit}`
+  const cached = cacheGet(cacheKey)
+  if (cached) return cached
+
   const { data, error } = await supabase
     .from('workouts')
     .select('finished_at, program_id, day')
@@ -152,7 +160,19 @@ export async function getRecentWorkouts(limit = 3) {
     .order('finished_at', { ascending: false })
     .limit(limit)
   if (error) { console.error('[storage] getRecentWorkouts error:', error); return [] }
-  return data || []
+  const result = data || []
+  cacheSet(cacheKey, result, TTL.MEDIUM)
+  return result
+}
+
+/**
+ * Синхронно: последние тренировки из кеша в памяти (или null если в этой сессии
+ * ещё не грузили). Для мгновенного старта Истории без «Загрузка…».
+ */
+export function getRecentWorkoutsSync(limit = 3) {
+  const userId = getUserId()
+  if (!userId) return null
+  return cacheGet(`recent-workouts:${userId}:${limit}`)
 }
 
 /* ============================================ */

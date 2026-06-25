@@ -158,6 +158,16 @@ export default function WorkoutDay() {
     return () => clearInterval(id)
   }, [day])
 
+  // Свежий заход на день открываем сверху. Возврат с «Сменить»/«Инфо» сюда не
+  // относится — там восстанавливается прежняя позиция скролла (см. эффект ниже).
+  // Глобальный ScrollToTop в App для /workout/ выключен (день рулит скроллом сам).
+  useLayoutEffect(() => {
+    if (location.state?.returnedFromOrderNum != null) return
+    window.scrollTo(0, 0)
+    document.scrollingElement?.scrollTo(0, 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // На странице тренировки таб-бара нет, а кнопка «Завершить» прибита к низу
   // со своим градиентом-подложкой. Глобальный нижний скрим (.app::after) тут
   // лишний (двойное затемнение) — гасим на время страницы.

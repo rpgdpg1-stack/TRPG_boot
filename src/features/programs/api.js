@@ -365,6 +365,7 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
 
     cacheInvalidate('workout-day:')
     cacheInvalidate(`muscle-history:${user.id}`)
+    cacheInvalidate(`recent-workouts:${user.id}`)
     cacheInvalidate(`leaderboard-friends:${user.id}`)
     cacheInvalidate(`leaderboard-league:${user.id}`)
     cacheInvalidate(`my-friend-place:${user.id}`)
