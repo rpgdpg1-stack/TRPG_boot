@@ -206,9 +206,14 @@ description: "Дизайн-система и UI/UX-конвенции проек
   `--tag-gym/home/outdoor`. Порядок фиксированный: зал → дом → улица. `getProgramPlaces(program)`
   → какие места заполнены (из `data.locations`; для Сплита по тегу 'зал').
 - У кастомной программы тег «своя» убран — вместо него показываются места из `data.locations`.
-- **PlaceSwitcher** (`components/PlaceSwitcher.jsx`) — тег выбранного места на карточках программы
-  (главная/избранное через `FavCardBody`, силовая через `Category`) и в шапке экрана дня. Тап
-  раскрывает остальные заполненные места в строку. Выбор — через хук `useProgramPlace(slug, places)`
+- **PlaceSwitcher** (`components/PlaceSwitcher.jsx`) — переключатель выбранного места на карточках
+  программы (главная/избранное через `FavCardBody`, силовая через `Category`) и в шапке экрана дня.
+  **Вид = сегмент-контрол мест из конструктора** (контейнер-пилюля `--color-surface-dim`+`--color-border`
+  +`blur(--blur-sm)`, `--radius-pill`; активная позиция залита `--color-surface-active` и покрашена
+  **цветом места** `getPlaceMeta(loc).color`, неактивные — `--color-text-inactive`; нахлёст −5 + zIndex
+  активного). Компактнее конструктора (item `minHeight 26`, font 12, icon 16). Свёрнуто — одна пилюля
+  (активное место); тап раскрывает остальные справа (серым), тап по другому — выбор+свёртка. Выбор —
+  через хук `useProgramPlace(slug, places)`
   (`lib/program-place.js`, ключ `program-place:<slug>`, CloudStorage, кросс-девайс), общий для карточек
   и тренировки. По умолчанию неконтролируемый; на экране дня — controlled (`value`+`onChange`), там же
   смена места перезагружает день (`getWorkoutDay(slug, day, place)` грузит набор из `data.locations`).
