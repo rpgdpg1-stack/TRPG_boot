@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
@@ -25,11 +25,11 @@ const NAME_PLACEHOLDER = 'Введите название'
  */
 export default function ProgramConstructor() {
   const navigate = useNavigate()
-  const location = useLocation()
-  // Откуда зашли в конструктор (главная / избранное / раздел) — туда же и
-  // возвращаемся (кнопка «Назад», «Не сохранять», после сохранения). Источник
-  // кладут ProgramCard и Category в location.state.from. Дефолт — силовой раздел.
-  const backTo = location.state?.from || '/category/gym'
+  // Возврат — шаг назад по истории (navigate(-1)), а не push на конкретный путь:
+  // конструктор всегда открывается ОДНИМ push'ем со страницы-источника (главная /
+  // избранное / раздел), поэтому предыдущая запись истории = эта страница. Push
+  // же плодил бы лишнюю запись, и «Назад» с источника возвращал бы снова в редактор.
+  const goBack = () => navigate(-1)
 
   const existing = useMemo(() => getProgramBySlug('my'), [])
   const isEdit = !!existing
@@ -85,7 +85,7 @@ export default function ProgramConstructor() {
     } else {
       backButton.setHandler(() => {
         if (isDirty()) setConfirmExit(true)
-        else navigate(backTo)
+        else goBack()
       })
     }
     lockVerticalSwipes()
@@ -217,7 +217,7 @@ export default function ProgramConstructor() {
       await saveMyProgram(name.trim(), dayCount, payload)
       initialSnapshot.current = JSON.stringify({ name, dayCount, byLoc }) // зафиксировали как сохранённое
       haptic.success()
-      navigate(backTo)
+      goBack()
     } catch (e) {
       console.error('[constructor] save error:', e)
       haptic.error()
@@ -555,7 +555,7 @@ export default function ProgramConstructor() {
             <button
               className="press-tile"
               style={styles.exitDiscard}
-              onClick={() => { setConfirmExit(false); haptic.light(); navigate(backTo) }}
+              onClick={() => { setConfirmExit(false); haptic.light(); goBack() }}
             >
               Не сохранять
             </button>
