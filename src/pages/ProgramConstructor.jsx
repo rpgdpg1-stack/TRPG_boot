@@ -525,9 +525,8 @@ export default function ProgramConstructor() {
             disabled={!canSave}
             variant="accent"
             hug
-            style={{ padding: '18px 24px' }}
           >
-            {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ'}
+            {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
           </ActionButton>
         </div>,
         document.body
@@ -636,9 +635,7 @@ const styles = {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
     background: 'linear-gradient(to top, var(--color-bg) 0%, rgba(13,12,12,0.85) 55%, rgba(13,12,12,0) 100%)',
-    // Две кнопки в ряд (слева «Добавить упражнения», справа «Сохранить») — как пара
-    // кнопок в модалке. Равная высота (stretch), по центру, hug по содержимому.
-    display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'stretch', gap: '10px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
   },
@@ -709,12 +706,12 @@ const styles = {
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
-    width: 'auto', padding: '18px 22px',
+    width: 'auto', padding: '18px 36px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: '5px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
     pointerEvents: 'auto'
   },
   limitToastWrap: {
