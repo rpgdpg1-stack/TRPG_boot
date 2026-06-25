@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
-import { getActiveDay } from '../lib/storage'
+import { getActiveDay, getActiveDaySync } from '../lib/storage'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
@@ -36,7 +36,9 @@ export default function ProgramCard({
   lastTrained = false
 }) {
   const navigate = useNavigate()
-  const [activeDay, setActiveDay] = useState(null)
+  // Старт из localStorage (мгновенно, без мигания серый→зелёный);
+  // getActiveDay ниже догонит из Cloud, если на другом устройстве сменилось.
+  const [activeDay, setActiveDay] = useState(() => getActiveDaySync(prog.slug))
   const [anchorRect, setAnchorRect] = useState(null) // null = меню закрыто
   const dotsRef = useRef(null)
 

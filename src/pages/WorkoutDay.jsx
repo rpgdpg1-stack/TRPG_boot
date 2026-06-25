@@ -398,6 +398,15 @@ export default function WorkoutDay() {
     })
   }
 
+  // Открыть день/набор места с самого верха. Зовём при намеренной смене дня
+  // (свайп/стрелки) и места — чтобы новый список начинался сверху, а не оставался
+  // на прежней позиции скролла. Возврат с Инфо/Смены сюда не попадает (там своя
+  // логика восстановления позиции).
+  const scrollToTop = () => {
+    window.scrollTo(0, 0)
+    document.scrollingElement?.scrollTo(0, 0)
+  }
+
   const goToDay = (targetDay, direction) => {
     if (targetDay === day) return
     haptic.light()
@@ -408,6 +417,7 @@ export default function WorkoutDay() {
       replace: true,
       state: location.state?.fromHome ? { fromHome: true } : null
     })
+    scrollToTop()
   }
 
   const touchStartX = useRef(null)
@@ -545,7 +555,7 @@ export default function WorkoutDay() {
           <div style={styles.topMetaRow}>
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
                 подгружает упражнения этого места из конструктора. */}
-            <PlaceSwitcher program={program} value={place} onChange={setPlace} />
+            <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             <span style={styles.timer}>{formatElapsedMin(elapsedSec)}</span>
           </div>
 

@@ -278,6 +278,17 @@ export async function getActiveDay(programId) {
   return nextDayInCycle(programId, lastCompleted)
 }
 
+/**
+ * Синхронно: активный день из localStorage (cloudSet дублирует туда же ключ
+ * last_day). Нужен для мгновенного старта карточки без мигания «серый→зелёный» —
+ * стартовое значение `useState`, а `getActiveDay` потом догонит из Cloud (кросс-
+ * девайс). Первый-первый запуск без локального ключа → null (как и раньше).
+ */
+export function getActiveDaySync(programId) {
+  const lastCompleted = localGet(`program:${programId}:last_day`)
+  return nextDayInCycle(programId, lastCompleted)
+}
+
 export async function setLastCompletedDay(programId, day) {
   const today = getTodayKey()
 

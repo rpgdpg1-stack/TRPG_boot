@@ -58,6 +58,12 @@ export default function ProgramConstructor() {
   const [limitNonce, setLimitNonce] = useState(0)
   const limitTimer = useRef(null)
 
+  // Поле имени + флаг фокуса: пока инпут в фокусе (клавиатура открыта), поверх
+  // экрана висит прозрачный перехватчик — первый тап по нему просто убирает
+  // клавиатуру (blur), не активируя контрол под ним (место/день и т.п.).
+  const nameRef = useRef(null)
+  const [nameFocused, setNameFocused] = useState(false)
+
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
 
@@ -301,9 +307,12 @@ export default function ProgramConstructor() {
         {/* Hug-блок: ширина по плейсхолдеру, растёт по тексту в одну строку
             (size в символах). Форма как неактивный таб-бар (без выделения). */}
         <input
+          ref={nameRef}
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onFocus={() => setNameFocused(true)}
+          onBlur={() => setNameFocused(false)}
           placeholder={NAME_PLACEHOLDER}
           maxLength={NAME_MAX}
           size={Math.max(name.length, NAME_PLACEHOLDER.length)}
@@ -486,6 +495,18 @@ export default function ProgramConstructor() {
         })}
       </div>
 
+      {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
+          первый тап только убирает клавиатуру (blur), контрол под ним не срабатывает.
+          onClick (а не pointerdown): слой остаётся до конца жеста, поэтому клик не
+          «проваливается» на кнопку под ним. */}
+      {nameFocused && createPortal(
+        <div
+          style={styles.kbCatcher}
+          onClick={() => nameRef.current?.blur()}
+        />,
+        document.body
+      )}
+
       {!kbOpen && createPortal(
         <div style={styles.dock}>
           <button
@@ -621,6 +642,7 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 40
   },
+  kbCatcher: { position: 'fixed', inset: 0, zIndex: 50, background: 'transparent' },
   header: { textAlign: 'center', margin: '0 0 20px' },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
