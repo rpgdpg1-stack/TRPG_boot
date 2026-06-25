@@ -189,7 +189,7 @@ const styles = {
   modal: {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(158, 209, 83, 0.2)',
-    borderRadius: '24px',
+    borderRadius: 'var(--radius-card)',
     padding: '32px 24px 24px',
     width: '100%',
     maxWidth: '320px',

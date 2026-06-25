@@ -14,6 +14,7 @@ import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
 import RankIcon from '../components/RankIcon'
 import UiIcon from '../components/UiIcon'
+import ModalButton from '../components/ModalButton'
 
 /**
  * Экран рейтинга.
@@ -391,9 +392,9 @@ function RulesModal({ onClose }) {
           </div>
         </div>
 
-        <button onClick={onClose} style={modalStyles.closeButton}>
+        <ModalButton onClick={onClose} style={{ marginTop: '10px' }}>
           ПОНЯТНО
-        </button>
+        </ModalButton>
       </div>
 
       <style>{`
@@ -686,17 +687,4 @@ const modalStyles = {
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   },
-  closeButton: {
-    width: '100%',
-    marginTop: '10px',
-    padding: '16px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 700,
-    letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)',
-    border: 'none'
-  }
 }

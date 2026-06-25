@@ -61,7 +61,7 @@ const styles = {
     maxWidth: '300px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-card)',
     padding: '22px 20px 18px',
     display: 'flex',
     flexDirection: 'column',

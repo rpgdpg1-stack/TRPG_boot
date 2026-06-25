@@ -352,10 +352,11 @@ const styles = {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
     background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
+    display: 'flex', justifyContent: 'center',
     pointerEvents: 'none'
   },
   doneBtn: {
-    width: '100%', padding: '18px', borderRadius: 'var(--radius-card)',
+    width: 'auto', padding: '18px 36px', borderRadius: 'var(--radius-card)',
     border: '1.5px dashed rgba(255,255,255,0.18)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',

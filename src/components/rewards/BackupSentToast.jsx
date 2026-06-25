@@ -121,7 +121,7 @@ const styles = {
     maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(158, 209, 83, 0.25)',
-    borderRadius: '28px',
+    borderRadius: 'var(--radius-card)',
     padding: '28px 24px 22px',
     display: 'flex',
     flexDirection: 'column',

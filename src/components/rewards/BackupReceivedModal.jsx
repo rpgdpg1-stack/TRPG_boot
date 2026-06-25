@@ -224,7 +224,7 @@ const styles = {
     overflowY: 'auto',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(158, 209, 83, 0.25)',
-    borderRadius: '28px',
+    borderRadius: 'var(--radius-card)',
     padding: '28px 20px 20px',
     display: 'flex',
     flexDirection: 'column',

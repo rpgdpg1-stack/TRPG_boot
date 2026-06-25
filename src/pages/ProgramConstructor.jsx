@@ -8,6 +8,7 @@ import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
+import ModalButton from '../components/ModalButton'
 import UiIcon from '../components/UiIcon'
 
 const LETTERS = ['A', 'B', 'C']
@@ -523,6 +524,7 @@ export default function ProgramConstructor() {
             onClick={handleSave}
             disabled={!canSave}
             variant="accent"
+            hug
           >
             {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
           </ActionButton>
@@ -557,36 +559,31 @@ export default function ProgramConstructor() {
             <div style={styles.exitTitle}>Сохранить изменения?</div>
             <div style={styles.exitText}>В программе есть несохранённые изменения.</div>
 
-            <button
-              className="press-tile"
-              style={styles.exitSave}
-              onClick={async () => {
-                if (!canSave) {
-                  // Нечего/нельзя сохранить (пустой день) — подсказываем, не выходим.
-                  haptic.error()
-                  window.alert('В каждом дне должно быть хотя бы одно упражнение.')
-                  return
-                }
-                setConfirmExit(false)
-                await handleSave()
-              }}
-            >
-              Сохранить
-            </button>
-            <button
-              className="press-tile"
-              style={styles.exitDiscard}
-              onClick={() => { setConfirmExit(false); haptic.light(); goBack() }}
-            >
-              Не сохранять
-            </button>
-            <button
-              className="press-tile"
-              style={styles.exitCancel}
-              onClick={() => setConfirmExit(false)}
-            >
-              Отмена
-            </button>
+            {/* Две кнопки в ряд (как нативный confirm). «Остаться» — тап мимо
+                модалки (overlay onClick). */}
+            <div style={styles.exitButtonsRow}>
+              <ModalButton
+                style={{ flex: 1 }}
+                onClick={() => { setConfirmExit(false); haptic.light(); goBack() }}
+              >
+                Не сохранять
+              </ModalButton>
+              <ModalButton
+                style={{ flex: 1 }}
+                onClick={async () => {
+                  if (!canSave) {
+                    // Нельзя сохранить (пустой день) — подсказываем, остаёмся.
+                    haptic.error()
+                    window.alert('В каждом дне должно быть хотя бы одно упражнение.')
+                    return
+                  }
+                  setConfirmExit(false)
+                  await handleSave()
+                }}
+              >
+                Сохранить
+              </ModalButton>
+            </div>
           </div>
         </div>,
         document.body
@@ -638,7 +635,7 @@ const styles = {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
     background: 'linear-gradient(to top, var(--color-bg) 0%, rgba(13,12,12,0.85) 55%, rgba(13,12,12,0) 100%)',
-    display: 'flex', flexDirection: 'column', gap: '12px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
   },
@@ -709,7 +706,7 @@ const styles = {
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
-    width: '100%', padding: '18px',
+    width: 'auto', padding: '18px 36px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
@@ -753,9 +750,9 @@ const styles = {
     width: '100%', maxWidth: '360px',
     background: 'rgba(34,34,34,0.98)',
     border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '33px',
-    padding: '24px 18px 16px',
-    display: 'flex', flexDirection: 'column', gap: '10px',
+    borderRadius: 'var(--radius-card)',
+    padding: '24px 18px 18px',
+    display: 'flex', flexDirection: 'column', gap: '8px',
     boxShadow: '0 8px 40px rgba(0,0,0,0.6)'
   },
   exitTitle: {
@@ -764,21 +761,9 @@ const styles = {
   },
   exitText: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '8px'
+    color: 'var(--color-text)', textAlign: 'center', marginBottom: '14px'
   },
-  exitSave: {
-    width: '100%', padding: '16px', border: 'none', borderRadius: 'var(--radius-medium)',
-    background: 'var(--color-primary)', color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 800, letterSpacing: '0.5px'
-  },
-  exitDiscard: {
-    width: '100%', padding: '16px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-medium)',
-    background: 'rgba(255,255,255,0.04)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700
-  },
-  exitCancel: {
-    width: '100%', padding: '12px', border: 'none', borderRadius: 'var(--radius-small)',
-    background: 'transparent', color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600
+  exitButtonsRow: {
+    display: 'flex', gap: '10px', width: '100%'
   }
 }

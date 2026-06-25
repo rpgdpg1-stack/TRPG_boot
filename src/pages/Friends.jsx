@@ -6,6 +6,7 @@ import { getFriendsList, togglePinFriend, PIN_LIMIT, invalidateFriendsListCache 
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
+import ActionButton from '../components/ActionButton'
 import BackupAllButton from '../components/BackupAllButton'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
@@ -140,10 +141,10 @@ export default function Friends() {
             Пригласи друзей через Telegram, следите<br />
             за прогрессом друг друга
           </div>
-          <button onClick={handleInviteTap} style={{ ...styles.inviteButton, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <ActionButton onClick={handleInviteTap} variant="accent" hug style={{ gap: '8px' }}>
             <UiIcon name="invite-friend" size={16} color="#0D0C0C" />
             ПРИГЛАСИТЬ ДРУГА
-          </button>
+          </ActionButton>
         </div>
       ) : (
         <>
@@ -175,10 +176,10 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <button onClick={handleInviteTap} className="press-tile" style={{ ...styles.inviteButtonSecondary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <UiIcon name="invite-friend" size={16} color="var(--color-primary)" />
+            <ActionButton onClick={handleInviteTap} variant="accent" hug style={{ gap: '8px' }}>
+              <UiIcon name="invite-friend" size={16} color="#0D0C0C" />
               Добавить друга
-            </button>
+            </ActionButton>
           </div>
         </>
       )}
@@ -343,35 +344,11 @@ const styles = {
     lineHeight: 1.5,
     marginBottom: '20px'
   },
-  inviteButton: {
-    padding: '12px 24px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-medium)',
-    border: 'none',
-    boxShadow: '0 4px 16px rgba(158, 209, 83, 0.3)'
-  },
   bottomInvite: {
     marginTop: '20px',
     paddingTop: '12px',
     display: 'flex',
     justifyContent: 'center'
-  },
-  inviteButtonSecondary: {
-    width: '100%',
-    padding: '16px',
-    background: 'rgba(158, 209, 83, 0.08)',
-    color: 'var(--color-primary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 700,
-    letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1px solid rgba(158, 209, 83, 0.25)'
   }
 }
 

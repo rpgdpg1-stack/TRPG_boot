@@ -199,7 +199,7 @@ const styles = {
     backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-card)',
     padding: '10px',
     zIndex: 60,
     boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)',

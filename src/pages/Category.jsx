@@ -6,6 +6,7 @@ import { toggleFavoriteProgram, getFavoriteProgramByCategory } from '../lib/stor
 import { getProgramsByCategory, programCountLabel } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
+import ModalButton from '../components/ModalButton'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -208,7 +209,7 @@ function CategoryInfoModal({ meta, onClose }) {
           ))}
         </div>
 
-        <button onClick={onClose} style={infoStyles.closeButton}>ПОНЯТНО</button>
+        <ModalButton onClick={onClose} style={{ marginTop: '20px' }}>ПОНЯТНО</ModalButton>
       </div>
 
       <style>{`
@@ -280,11 +281,5 @@ const infoStyles = {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
     lineHeight: 1.4, color: 'var(--color-text-secondary)'
   },
-  closeButton: {
-    width: '100%', marginTop: '20px', padding: '16px',
-    background: 'var(--color-primary)', color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)', border: 'none'
-  }
 }
 

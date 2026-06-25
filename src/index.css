@@ -255,6 +255,19 @@ body.keyboard-open .app::after { display: none; }
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Кнопка в модалках/диалогах (нативный серый стиль, как iOS-алерт
+   «Понятно/ОК/Отмена»). Без scale — при нажатии серый фон становится ярче
+   (как строки меню). Фон тут (а не инлайн), чтобы :active мог его перебить.
+   Компонент — components/ModalButton.jsx. */
+.modal-btn {
+  background: rgba(255, 255, 255, 0.13);
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-btn:active {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */
