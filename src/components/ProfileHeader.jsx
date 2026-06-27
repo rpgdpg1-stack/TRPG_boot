@@ -376,7 +376,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
-    gap: '14px',
+    gap: '8px',
     padding: '14px 16px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -486,14 +486,12 @@ const styles = {
     color: 'var(--color-text-secondary)',
     minHeight: '14px'  // резерв под строку — текст не сдвигает низ при появлении
   },
-  // Единый блок статистики: ячейки в ряд, сверху отделён линией.
+  // Блок статистики: 3 ячейки в ряд. Без линии-разделителя — подтянут к инфо
+  // выше (меньше воздуха); отступ от верхней панели даёт card gap.
   pills: {
     position: 'relative',
     display: 'flex',
-    alignItems: 'stretch',
-    marginTop: '6px',
-    paddingTop: '14px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+    alignItems: 'stretch'
   },
   // Ячейка статистики — без фона и обводки, прозрачная кнопка
   statCell: {
