@@ -93,6 +93,9 @@ const PLACEHOLDER_PROGRAMS = {
   ]
 }
 
+// Заголовок раздела в навбаре — sentence case («Силовая»), а не капс из меты.
+const toSentenceCase = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s)
+
 export default function Category() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -151,7 +154,7 @@ export default function Category() {
     <div className="page page-enter" style={styles.page}>
 
       <header style={styles.header}>
-        <ScreenTitle>{meta.title}</ScreenTitle>
+        <ScreenTitle>{toSentenceCase(meta.title)}</ScreenTitle>
         {/* Иконка раздела + инфо-кнопка + счётчик — на 16px ниже заголовка. */}
         <div style={styles.headerBody}>
           <button onClick={handleInfoTap} style={styles.infoButton} aria-label={`О разделе «${meta.title}»`}>

@@ -276,9 +276,12 @@ const styles = {
     margin: 0
   },
   cupButton: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
     width: '36px',
     height: '36px',
-    flexShrink: 0,
     background: 'transparent',
     border: 'none',
     display: 'flex',
@@ -286,18 +289,19 @@ const styles = {
     justifyContent: 'center',
     cursor: 'pointer'
   },
-  // Ряд под заголовком: счётчик друзей (слева) + кубок (справа), 16px от заголовка.
+  // Первая строка контента: счётчик друзей по центру, кубок абсолютно справа.
   subRow: {
+    position: 'relative',
     display: 'flex',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
     minHeight: '36px'
   },
   subInfo: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
-    textAlign: 'left',
+    textAlign: 'center',
     fontWeight: 500,
     minHeight: '14px'
   },

@@ -23,6 +23,7 @@ import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
+import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
 /**
@@ -115,6 +116,13 @@ export default function WorkoutDay() {
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
+  // Имя программы для навбара: кастомную/от друга показываем как ввёл юзер,
+  // встроенную — нормализуем регистр (СПЛИТ → Сплит), как на карточках.
+  const programTitle = program
+    ? (program.source === 'custom'
+        ? program.title
+        : program.title.charAt(0).toUpperCase() + program.title.slice(1).toLowerCase())
+    : ''
 
   // Выбранное место (Зал/Дом/Улица) — общий с карточками выбор. Упражнения дня
   // грузятся под него.
@@ -553,6 +561,9 @@ export default function WorkoutDay() {
 
   return (
     <div style={styles.page}>
+
+      {/* Имя программы в навбаре (по центру системных кнопок Telegram). */}
+      <ScreenTitle>{programTitle}</ScreenTitle>
 
       {/* Шапка дня закреплена сверху (sticky) — то же устройство, что карточка
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}

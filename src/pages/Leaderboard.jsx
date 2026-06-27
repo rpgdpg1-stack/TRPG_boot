@@ -451,9 +451,12 @@ const styles = {
     margin: 0
   },
   infoButton: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
     width: '36px',
     height: '36px',
-    flexShrink: 0,
     background: 'transparent',
     border: 'none',
     display: 'flex',
@@ -462,19 +465,22 @@ const styles = {
     cursor: 'pointer'
   },
 
-  // Сезон (тексты слева) + инфо-кнопка (справа) — первая строка контента.
+  // Сезон — текст по центру; инфо-кнопка абсолютно справа (боковой padding у
+  // текста, чтобы длинная строка не залезала под кнопку, и центр сохранялся).
   seasonRow: {
+    position: 'relative',
     display: 'flex',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '12px'
+    minHeight: '36px'
   },
   seasonTexts: {
-    flex: 1,
-    minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px'
+    alignItems: 'center',
+    gap: '2px',
+    textAlign: 'center',
+    padding: '0 40px'
   },
   seasonName: {
     fontFamily: 'var(--font-display)',

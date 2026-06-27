@@ -4,7 +4,6 @@ import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '..
 import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
-import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 
 /**
@@ -113,11 +112,7 @@ export default function Settings() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Шапка страницы: иконка + заголовок */}
-      <header style={styles.header}>
-        <ScreenTitle>Настройки</ScreenTitle>
-        <UiIcon name="settings" size={26} color="var(--color-text)" />
-      </header>
+      <ScreenTitle>Настройки</ScreenTitle>
 
       {groups.map((group, gIdx) => (
         <section key={group.title}>
@@ -157,12 +152,6 @@ export default function Settings() {
 
 const styles = {
   page: {},
-  header: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: '20px'
-  },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
