@@ -240,6 +240,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       {/* Кнопку прячем при открытой клавиатуре; показываем с задержкой при закрытии. */}
       {!kbOpen && (
         <div style={styles.footer}>
+          <div className="dock-scrim" />
           <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
             Добавить упражнения · {count}/{max}
           </button>
@@ -351,12 +352,14 @@ const styles = {
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)',
     display: 'flex', justifyContent: 'center',
-    pointerEvents: 'none'
+    pointerEvents: 'none',
+    // z-index → footer становится контекстом наложения, чтобы dock-scrim (z:-1)
+    // лёг внутри него (за кнопкой), а не за списком пикера.
+    zIndex: 2
   },
   doneBtn: {
-    width: 'auto', height: '63px', padding: '0 36px', borderRadius: 'var(--radius-card)',
+    width: 'auto', height: '48px', padding: '0 36px', borderRadius: 'var(--radius-card)',
     border: '1.5px dashed rgba(255,255,255,0.18)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',

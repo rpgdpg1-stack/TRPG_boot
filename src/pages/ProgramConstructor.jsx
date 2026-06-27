@@ -509,6 +509,7 @@ export default function ProgramConstructor() {
 
       {!kbOpen && createPortal(
         <div style={styles.dock}>
+          <div className="dock-scrim" />
           <button
             onClick={handleAddTap}
             className="press-tile"
@@ -633,7 +634,6 @@ const styles = {
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(to top, var(--color-bg) 0%, rgba(13,12,12,0.85) 55%, rgba(13,12,12,0) 100%)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
@@ -704,7 +704,7 @@ const styles = {
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
-    width: 'auto', height: '63px', flexShrink: 0, padding: '0 36px',
+    width: 'auto', height: '48px', flexShrink: 0, padding: '0 36px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',

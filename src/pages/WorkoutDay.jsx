@@ -762,6 +762,7 @@ export default function WorkoutDay() {
           липла к клавишам. */}
       {!loading && slots.length > 0 && !kbOpen && (
         <div style={styles.finishBar}>
+          <div className="dock-scrim" />
           <ActionButton
             onClick={handleFinishButtonTap}
             disabled={!canFinish}
@@ -1460,7 +1461,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     padding: '44px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13,12,12,0) 0%, rgba(13,12,12,0.35) 55%, rgba(13,12,12,0.8) 82%, var(--color-bg) 100%)',
     pointerEvents: 'none',
     zIndex: 40
   },

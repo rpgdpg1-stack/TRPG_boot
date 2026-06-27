@@ -38,7 +38,7 @@ export default function ActionButton({
 
 const styles = {
   base: {
-    height: '63px',
+    height: '48px',
     flexShrink: 0,
     padding: '0 24px',
     borderRadius: 'var(--radius-card)',

@@ -253,6 +253,7 @@ export default function SwapExercise() {
       </div>
 
       <div style={styles.bottomBar}>
+        <div className="dock-scrim" />
         <ActionButton
           onClick={handleConfirm}
           disabled={!selectedId || selectedId === currentExerciseId || saving || loading}
@@ -453,7 +454,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     padding: '44px 16px calc(16px + env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, rgba(13, 12, 12, 0) 0%, rgba(13, 12, 12, 0.35) 55%, rgba(13, 12, 12, 0.8) 82%, var(--color-bg) 100%)',
     zIndex: 50,
     pointerEvents: 'none'
   },

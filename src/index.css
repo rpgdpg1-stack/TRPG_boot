@@ -183,9 +183,13 @@ img, button { -webkit-user-drag: none; }
 }
 .app::before {
   top: 0;
+  /* Чуть ниже линии системных кнопок: затемнение держится сквозь заголовок и
+     гаснет ~16px ниже него (текст под заголовком при скролле мутный/тёмный,
+     сам заголовок выше по z — резкий). */
+  height: calc(var(--tg-safe-top) + 16px);
   background: linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
 }
 .app::after {
   bottom: 0;
@@ -203,6 +207,24 @@ body.hide-app-scrim .app::after { display: none; }
    затемнение над клавишами. Гасим его, пока клавиатура открыта (класс
    keyboard-open вешается из App по visualViewport). */
 body.keyboard-open .app::after { display: none; }
+
+/* Скрим-слой для нижних доков (день/конструктор/пикер/смена), где глобальный
+   .app::after скрыт (там свои прибитые кнопки). Тот же рецепт, что у краевого
+   скрима (градиент + блюр + маска, плавно, без линии), но как ОТДЕЛЬНЫЙ
+   absolute-слой внутри дока с z-index:-1 — чтобы блюрить контент за доком, но НЕ
+   обрезать маской сами кнопки (они выше по слою). Рендерится как
+   <div className="dock-scrim" /> первым ребёнком дока. */
+.dock-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+}
 
 .page {
   /* Единое правило отступов: верх контента — ровно на 16px ниже кнопок Telegram
