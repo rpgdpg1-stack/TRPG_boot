@@ -116,7 +116,7 @@ export default function Settings() {
       {/* Шапка страницы: иконка + заголовок */}
       <header style={styles.header}>
         <ScreenTitle>Настройки</ScreenTitle>
-        <UiIcon name="settings" size={26} color="var(--color-text)" style={{ marginTop: '16px' }} />
+        <UiIcon name="settings" size={26} color="var(--color-text)" />
       </header>
 
       {groups.map((group, gIdx) => (

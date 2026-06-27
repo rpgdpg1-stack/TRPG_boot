@@ -233,7 +233,7 @@ const styles = {
   page: {},
   header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' },
   // Блок под заголовком (16px): иконка раздела, счётчик, инфо-кнопка (справа).
-  headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '16px' },
+  headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' },
   infoButton: { position: 'absolute', top: 0, right: 0, width: '36px', height: '36px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },

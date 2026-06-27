@@ -300,9 +300,7 @@ export default function ProgramConstructor() {
 
   return (
     <div className="page page-enter" style={styles.page}>
-      <header style={styles.header}>
-        <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>
-      </header>
+      <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>
 
       <div style={styles.section}>
         <div style={styles.secLabel}>НАЗВАНИЕ</div>
@@ -641,7 +639,6 @@ const styles = {
     zIndex: 40
   },
   kbCatcher: { position: 'fixed', inset: 0, zIndex: 50, background: 'transparent' },
-  header: { textAlign: 'center', margin: '0 0 20px' },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     height: '52px', padding: '0 20px', maxWidth: '100%',

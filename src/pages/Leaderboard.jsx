@@ -462,9 +462,8 @@ const styles = {
     cursor: 'pointer'
   },
 
-  // Сезон (тексты слева) + инфо-кнопка (справа) — на 16px ниже заголовка.
+  // Сезон (тексты слева) + инфо-кнопка (справа) — первая строка контента.
   seasonRow: {
-    marginTop: '16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

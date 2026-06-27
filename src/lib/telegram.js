@@ -137,6 +137,12 @@ export function bindSafeArea() {
     if (tg.safeAreaInset == null && tg.contentSafeAreaInset == null) return
 
     document.documentElement.style.setProperty('--tg-safe-top', `${sys + ui + 8}px`)
+    // Полоса системных кнопок Telegram (Назад / …): от низа выреза устройства
+    // (sys) высотой ui. По центру этой полосы выравниваем заголовок-навбар
+    // (ScreenTitle), чтобы он встал в одну линию с кнопками. Контент при этом
+    // по-прежнему идёт ниже (paddingTop = var(--tg-safe-top)).
+    document.documentElement.style.setProperty('--tg-nav-top', `${sys}px`)
+    document.documentElement.style.setProperty('--tg-nav-height', `${ui}px`)
   }
 
   apply()

@@ -174,7 +174,7 @@ export default function Profile() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      <ScreenTitle style={{ marginBottom: '16px' }}>Профиль</ScreenTitle>
+      <ScreenTitle>Профиль</ScreenTitle>
 
       {/* Верх профиля */}
       <div style={styles.headerWrap}>

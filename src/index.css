@@ -97,6 +97,10 @@
   /* Safe-area под Telegram nav. Фолбэк для старых клиентов (до Bot API 8.0);
      на новых перезаписывается реальным значением из bindSafeArea() в telegram.js. */
   --tg-safe-top: 108px;
+  /* Полоса системных кнопок Telegram (для заголовка-навбара ScreenTitle).
+     Фолбэк ≈ типичный iPhone; на новых клиентах задаётся из bindSafeArea(). */
+  --tg-nav-top: 56px;
+  --tg-nav-height: 44px;
 }
 
 /* ============================================ */

@@ -291,7 +291,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: '16px',
     minHeight: '36px'
   },
   subInfo: {

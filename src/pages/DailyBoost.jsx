@@ -19,28 +19,8 @@ export default function DailyBoost() {
 
   return (
     <div className="page page-fade" style={{}}>
-      <header style={styles.header}>
-        <ScreenTitle>Дневной буст</ScreenTitle>
-      </header>
+      <ScreenTitle>Дневной буст</ScreenTitle>
       <DailyQuests />
     </div>
   )
-}
-
-const styles = {
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '20px'
-  },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: '26px',
-    color: 'var(--color-text)',
-    letterSpacing: '2px',
-    lineHeight: 1,
-    margin: 0
-  }
 }

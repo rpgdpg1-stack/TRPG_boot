@@ -36,7 +36,7 @@ const styles = {
     alignItems: 'center',
     marginBottom: '20px'
   },
-  headerIcon: { display: 'inline-flex', marginTop: '16px' },
+  headerIcon: { display: 'inline-flex' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,

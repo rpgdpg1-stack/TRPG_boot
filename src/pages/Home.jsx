@@ -185,7 +185,7 @@ export default function Home() {
 
       {/* Заголовок экрана + избранное — закреплено сверху (sticky). */}
       <div style={styles.playerSticky}>
-        <ScreenTitle style={{ marginBottom: '16px' }}>Тренировки</ScreenTitle>
+        <ScreenTitle>Тренировки</ScreenTitle>
         <button
           onClick={() => { haptic.light(); navigate('/favorites') }}
           style={styles.favHeaderBtn}
