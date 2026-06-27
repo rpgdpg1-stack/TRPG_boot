@@ -8,6 +8,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
+import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
 // Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
@@ -172,6 +173,8 @@ export default function Profile() {
 
   return (
     <div className="page page-fade" style={styles.page}>
+
+      <ScreenTitle style={{ marginBottom: '16px' }}>Профиль</ScreenTitle>
 
       {/* Верх профиля */}
       <div style={styles.headerWrap}>

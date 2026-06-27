@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import FavoritesList from '../components/FavoritesList'
 import PixelHeart from '../components/PixelHeart'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Страница «Избранное» (открывается тапом по заголовку ИЗБРАННОЕ на главной).
@@ -20,7 +21,7 @@ export default function Favorites() {
     <div className="page page-fade" style={{}}>
       <header style={styles.header}>
         <span style={styles.headerIcon}><PixelHeart filled size={26} /></span>
-        <h1 style={styles.title}>ИЗБРАННОЕ</h1>
+        <ScreenTitle>Избранное</ScreenTitle>
       </header>
 
       <FavoritesList />

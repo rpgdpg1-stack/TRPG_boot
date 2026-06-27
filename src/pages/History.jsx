@@ -4,6 +4,7 @@ import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import HistoryRow from '../components/HistoryRow'
+import ScreenTitle from '../components/ScreenTitle'
 
 const HISTORY_LIMIT = 100
 
@@ -42,7 +43,7 @@ export default function History() {
   return (
     <div className="page page-fade" style={styles.page}>
       <header style={styles.header}>
-        <h1 style={styles.title}>ИСТОРИЯ</h1>
+        <ScreenTitle>История</ScreenTitle>
         <div style={styles.subtitle}>ВСЕ ТРЕНИРОВКИ</div>
       </header>
 

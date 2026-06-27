@@ -7,6 +7,7 @@ import { getProgramsByCategory, programCountLabel } from '../features/programs/r
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -156,7 +157,7 @@ export default function Category() {
         <span style={styles.headerIcon}>
           <UiIcon name={meta.iconName} size={40} color={meta.color} />
         </span>
-        <h1 style={styles.title}>{meta.title}</h1>
+        <ScreenTitle>{meta.title}</ScreenTitle>
         <div style={styles.subtitle}>
           {realPrograms.length > 0 ? programCountLabel(id) : meta.subtitle}
         </div>

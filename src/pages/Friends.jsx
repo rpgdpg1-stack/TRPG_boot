@@ -7,6 +7,7 @@ import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
 import ActionButton from '../components/ActionButton'
+import ScreenTitle from '../components/ScreenTitle'
 import BackupAllButton from '../components/BackupAllButton'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
@@ -119,7 +120,7 @@ export default function Friends() {
 
       <header style={styles.header}>
         <div style={styles.titleRow}>
-          <h1 style={styles.title}>ДРУЗЬЯ</h1>
+          <ScreenTitle>Друзья</ScreenTitle>
           <button onClick={handleCupTap} style={styles.cupButton} aria-label="Открыть рейтинг">
             <UiIcon name="leaderboard" size={24} color="#FFD700" />
           </button>

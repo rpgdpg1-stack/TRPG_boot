@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import DailyQuests from '../components/DailyQuests'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Страница «Дневной буст» — ежедневные квесты.
@@ -19,7 +20,7 @@ export default function DailyBoost() {
   return (
     <div className="page page-fade" style={{}}>
       <header style={styles.header}>
-        <h1 style={styles.title}>ДНЕВНОЙ БУСТ</h1>
+        <ScreenTitle>Дневной буст</ScreenTitle>
       </header>
       <DailyQuests />
     </div>

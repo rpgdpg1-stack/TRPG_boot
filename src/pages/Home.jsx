@@ -9,6 +9,7 @@ import { localGet, localSet } from '../utils/storage'
 import ProgramCard from '../components/ProgramCard'
 import PixelHeart from '../components/PixelHeart'
 import CategoryList from '../components/CategoryList'
+import ScreenTitle from '../components/ScreenTitle'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
@@ -182,8 +183,9 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Избранное — закреплено сверху (sticky), на месте бывшей карточки игрока. */}
+      {/* Заголовок экрана + избранное — закреплено сверху (sticky). */}
       <div style={styles.playerSticky}>
+        <ScreenTitle style={{ marginBottom: '14px' }}>Тренировки</ScreenTitle>
         <button
           onClick={() => { haptic.light(); navigate('/favorites') }}
           style={styles.favHeaderBtn}

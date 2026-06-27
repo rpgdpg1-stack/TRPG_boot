@@ -5,6 +5,7 @@ import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
 import UiIcon from '../components/UiIcon'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран настроек.
@@ -115,7 +116,7 @@ export default function Settings() {
       {/* Шапка страницы: иконка + заголовок */}
       <header style={styles.header}>
         <UiIcon name="settings" size={26} color="var(--color-primary)" />
-        <h1 style={styles.title}>НАСТРОЙКИ</h1>
+        <ScreenTitle>Настройки</ScreenTitle>
       </header>
 
       {groups.map((group, gIdx) => (

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import CategoryList from '../components/CategoryList'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Страница «Разделы» — полный список разделов (категорий).
@@ -19,7 +20,7 @@ export default function Sections() {
   return (
     <div className="page page-fade" style={{}}>
       <header style={styles.header}>
-        <h1 style={styles.title}>РАЗДЕЛЫ</h1>
+        <ScreenTitle>Разделы</ScreenTitle>
       </header>
       <CategoryList />
     </div>

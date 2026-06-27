@@ -15,6 +15,7 @@ import BackupSentToast from '../components/rewards/BackupSentToast'
 import RankIcon from '../components/RankIcon'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран рейтинга.
@@ -209,7 +210,7 @@ export default function Leaderboard() {
 
       <header style={styles.header}>
         <div style={styles.titleRow}>
-          <h1 style={styles.title}>РЕЙТИНГ</h1>
+          <ScreenTitle>Рейтинг</ScreenTitle>
           <button onClick={handleInfoTap} style={styles.infoButton} aria-label="Правила">
             <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
           </button>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран "Восстановление" — карточки полезных советов по восстановлению,
@@ -98,7 +99,7 @@ export default function Recovery() {
 
       {/* Заголовок страницы */}
       <header style={styles.header}>
-        <h1 style={styles.title}>ВОССТАНОВЛЕНИЕ</h1>
+        <ScreenTitle>Восстановление</ScreenTitle>
         <div style={styles.subtitle}>СОВЕТЫ ДЛЯ ПРОГРЕССА</div>
       </header>
 

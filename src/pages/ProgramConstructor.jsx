@@ -9,6 +9,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
 import ModalButton from '../components/ModalButton'
+import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
 const LETTERS = ['A', 'B', 'C']
@@ -300,7 +301,7 @@ export default function ProgramConstructor() {
   return (
     <div className="page page-enter" style={styles.page}>
       <header style={styles.header}>
-        <h1 style={styles.title}>{isEdit ? 'РЕДАКТИРОВАТЬ' : 'СВОЯ ПРОГРАММА'}</h1>
+        <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>
       </header>
 
       <div style={styles.section}>

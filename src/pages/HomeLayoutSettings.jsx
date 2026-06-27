@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { HOME_SECTIONS, readHomeLayout, loadHomeLayoutFromCloud, saveHomeLayout } from '../lib/home-layout'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Настройка «Отображение на главной».
@@ -106,7 +107,7 @@ export default function HomeLayoutSettings() {
   return (
     <div className="page page-fade" style={styles.page}>
       <header style={styles.header}>
-        <h1 style={styles.title}>ОТОБРАЖЕНИЕ</h1>
+        <ScreenTitle>Отображение</ScreenTitle>
         <div style={styles.subtitle}>Что показывать на главной и в каком порядке</div>
       </header>
 

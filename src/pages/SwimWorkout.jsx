@@ -16,6 +16,7 @@ import {
   pluralPools
 } from '../data/programs/swim'
 import MuscleIcon from '../components/MuscleIcon'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном.
@@ -146,7 +147,7 @@ export default function SwimWorkout() {
       {/* Закреплённая шапка: заголовок + переключатель бассейна + дорожка */}
       <div style={styles.stickyHeader}>
         <header style={styles.header}>
-          <h1 style={styles.title}>ЗАПЛЫВ 45</h1>
+          <ScreenTitle>Заплыв 45</ScreenTitle>
           <div style={styles.subtitle}>{SWIM_PROGRAM.durationMin} мин · {totalMeters} м</div>
         </header>
 

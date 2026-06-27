@@ -7,6 +7,7 @@ import { getCurrentUser, refreshCurrentUser } from '../lib/auth'
 import LeagueBadgeIcon from '../components/LeagueBadgeIcon'
 import FramePreview from '../components/FramePreview'
 import TitleTag from '../components/TitleTag'
+import ScreenTitle from '../components/ScreenTitle'
 
 /**
  * Экран наград — три вкладки:
@@ -105,7 +106,7 @@ export default function Rewards() {
     <div className="page page-fade" style={styles.page}>
 
       <header style={styles.header}>
-        <h1 style={styles.title}>НАГРАДЫ</h1>
+        <ScreenTitle>Награды</ScreenTitle>
         <div style={styles.subtitle}>ТИТУЛЫ · РАМКИ · МЕДАЛИ СЕЗОНОВ</div>
       </header>
 

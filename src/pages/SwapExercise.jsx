@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import ActionButton from '../components/ActionButton'
+import ScreenTitle from '../components/ScreenTitle'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -202,7 +203,7 @@ export default function SwapExercise() {
       <div style={styles.stickyTop}>
 
         <header style={styles.header}>
-          <h1 style={styles.title}>СМЕНИТЬ УПРАЖНЕНИЕ</h1>
+          <ScreenTitle>Сменить упражнение</ScreenTitle>
           <div style={styles.subtitle}>Похожие на текущее</div>
         </header>
 
