@@ -168,7 +168,7 @@ src/
 │                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
 │                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
 │                   ProfileHeader ProgramActionMenu RankIcon RanksPopup SaveFriendProgramModal
-│                   StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
+│                   ScreenTitle StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal
 ├── data/programs/  split.js · swim.js
