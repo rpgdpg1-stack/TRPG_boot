@@ -150,73 +150,78 @@ export default function ProfileHeader({
   return (
     <div style={styles.card}>
 
-      {/* Крупный аватар по центру. Рамка по текущему рангу: 8/9/10 анимированные,
-          0–7 — обычная полоска цвета ранга. */}
-      <div
-        className={frame.className}
-        style={{
-          ...styles.avatarInner,
-          ...(frame.animated
-            ? {}
-            : { borderColor: frame.color, boxShadow: `0 0 16px ${frame.color}40` })
-        }}
-      >
-        {user?.photo_url ? (
-          <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
-        ) : (
-          <div style={styles.avatarPlaceholder}>
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
-        {frame.hasAsh && (
-          <span className="imm-ash"><i /><i /><i /><i /></span>
-        )}
-      </div>
+      {/* Верх — компактно: аватар слева, инфо-колонка справа (имя, ранг+место,
+          последняя тренировка). */}
+      <div style={styles.topPanel}>
 
-      {/* Имя */}
-      <div style={styles.nameRow}>
-        <span style={styles.name}>{displayName}</span>
-      </div>
-
-      {/* Ранг слева, место справа */}
-      <div style={styles.rankRow} data-rank-button-wrap>
-        <button
-          onClick={handleRankTap}
+        {/* Аватар. Рамка по текущему рангу: 8/9/10 анимированные, 0–7 — полоска
+            цвета ранга. */}
+        <div
+          className={frame.className}
           style={{
-            ...styles.rank,
-            color: rank.color,
-            cursor: interactive ? 'pointer' : 'default'
+            ...styles.avatarInner,
+            ...(frame.animated
+              ? {}
+              : { borderColor: frame.color, boxShadow: `0 0 14px ${frame.color}40` })
           }}
         >
-          <span
-            key={`rankpop-${rankPopTick}`}
-            style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopHeader 0.4s ease-out' : 'none' }}
-          >
-            <RankIcon level={level} size={20} />
-          </span>
-          {rank.name} {rank.subLevel}
-        </button>
+          {user?.photo_url ? (
+            <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
+          ) : (
+            <div style={styles.avatarPlaceholder}>
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          {frame.hasAsh && (
+            <span className="imm-ash"><i /><i /><i /><i /></span>
+          )}
+        </div>
 
-        {onPlaceTap ? (
-          <button onClick={handlePlace} style={styles.placeButton} aria-label="Открыть рейтинг">
-            🏆 <span style={{ color: placeColor }}>{placeText}</span>
-          </button>
-        ) : (
-          <span style={styles.placeStatic}>🏆 <span style={{ color: placeColor }}>{placeText}</span></span>
-        )}
+        <div style={styles.infoColumn}>
+          {/* Имя */}
+          <span style={styles.name}>{displayName}</span>
 
-        {interactive && showRanks && (
-          <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
-        )}
-      </div>
+          {/* Ранг слева, место справа */}
+          <div style={styles.rankRow} data-rank-button-wrap>
+            <button
+              onClick={handleRankTap}
+              style={{
+                ...styles.rank,
+                color: rank.color,
+                cursor: interactive ? 'pointer' : 'default'
+              }}
+            >
+              <span
+                key={`rankpop-${rankPopTick}`}
+                style={{ display: 'inline-flex', animation: rankPopTick ? 'rankIconPopHeader 0.4s ease-out' : 'none' }}
+              >
+                <RankIcon level={level} size={18} />
+              </span>
+              {rank.name} {rank.subLevel}
+            </button>
 
-      {/* Последняя тренировка — серым. Контейнер всегда занимает место
-          (минимальная высота), чтобы появление текста не сдвигало капсулы.
-          При загрузке (statsLoading) — короткая пульсирующая полоска вместо текста. */}
-      <div style={styles.lastWorkout}>
-        {statsLoading
-          ? <span style={styles.skeletonLine} />
-          : (lastWorkoutText || '')}
+            {onPlaceTap ? (
+              <button onClick={handlePlace} style={styles.placeButton} aria-label="Открыть рейтинг">
+                🏆 <span style={{ color: placeColor }}>{placeText}</span>
+              </button>
+            ) : (
+              <span style={styles.placeStatic}>🏆 <span style={{ color: placeColor }}>{placeText}</span></span>
+            )}
+
+            {interactive && showRanks && (
+              <RanksPopup currentLevel={level} onClose={() => setShowRanks(false)} />
+            )}
+          </div>
+
+          {/* Последняя тренировка — серым. Контейнер всегда занимает место
+              (минимальная высота), чтобы появление текста не сдвигало низ.
+              При загрузке (statsLoading) — короткая пульсирующая полоска. */}
+          <div style={styles.lastWorkout}>
+            {statsLoading
+              ? <span style={styles.skeletonLine} />
+              : (lastWorkoutText || '')}
+          </div>
+        </div>
       </div>
 
       {/* Единый блок статистики: 3 ячейки с вертикальными разделителями,
@@ -364,30 +369,37 @@ export default function ProfileHeader({
   )
 }
 
-const AVATAR_SIZE = 140
+const AVATAR_SIZE = 104
 
 const styles = {
   card: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
-    gap: '12px',
-    padding: '22px 18px 18px',
+    gap: '14px',
+    padding: '14px 16px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)',
     width: '100%'
   },
-  // Аватар по центру. Рамка по рангу (CSS-класс для 8/9/10).
+  // Верхняя панель: аватар слева, инфо-колонка справа.
+  topPanel: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  // Аватар слева. Рамка по рангу (CSS-класс для 8/9/10).
   avatarInner: {
     position: 'relative',
     width: `${AVATAR_SIZE}px`,
     height: `${AVATAR_SIZE}px`,
-    alignSelf: 'center',
-    borderRadius: '33px',
+    flexShrink: 0,
+    borderRadius: '29px',
     overflow: 'hidden',
     background: 'var(--color-bg)',
-    border: '3px solid',
+    border: '2.5px solid',
     transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
@@ -399,19 +411,20 @@ const styles = {
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '52px',
+    fontSize: '40px',
     color: 'var(--color-primary)'
   },
-  nameRow: {
+  // Инфо-колонка справа от аватара.
+  infoColumn: {
+    flex: 1,
+    minWidth: 0,
     display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: '8px',
-    padding: '0 2px'
+    flexDirection: 'column',
+    gap: '6px'
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
+    fontSize: '22px',
     fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.1,
@@ -425,8 +438,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '8px',
-    padding: '0 2px'
+    gap: '8px'
   },
   rank: {
     fontFamily: 'var(--font-display)',
@@ -469,12 +481,10 @@ const styles = {
   },
   lastWorkout: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: '12px',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
-    padding: '0 2px',
-    marginTop: '-4px',
-    minHeight: '14px'  // резерв под строку — текст не сдвигает капсулы при появлении
+    minHeight: '14px'  // резерв под строку — текст не сдвигает низ при появлении
   },
   // Единый блок статистики: ячейки в ряд, сверху отделён линией.
   pills: {
