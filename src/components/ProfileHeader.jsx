@@ -271,38 +271,6 @@ export default function ProfileHeader({
         </button>
 
         <button
-          onClick={(e) => togglePopup('streak', e)}
-          style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
-        >
-          <div style={styles.statFlameRow}>
-            {statsLoading ? (
-              <span style={styles.skeletonStat} />
-            ) : (
-              <>
-                <StreakFlame streak={streak || 0} />
-                <span style={styles.statCount}>x{streak ?? 0}</span>
-              </>
-            )}
-          </div>
-          <div style={styles.pillLabel}>СЕРИЯ</div>
-
-          {/* Попап СЕРИЯ */}
-          {interactive && activePopup === 'streak' && (
-            <div
-              style={{ ...styles.popup, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', border: '1px solid rgba(255, 140, 66, 0.35)' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
-                <StreakFlame streak={streak || 0} />
-                <span style={styles.streakCount}>x{streak || 0}</span>
-              </div>
-              <div style={styles.popupHint}>Сброс серии каждую неделю</div>
-            </div>
-          )}
-        </button>
-
-        <button
           onClick={() => togglePopup('workouts')}
           style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
         >
@@ -317,9 +285,9 @@ export default function ProfileHeader({
           </div>
           <div style={styles.pillLabel}>ТРЕНИРОВОК</div>
 
-          {/* Попап ТРЕНИРОВКИ */}
+          {/* Попап ТРЕНИРОВКИ — теперь средняя ячейка, попап по центру. */}
           {interactive && activePopup === 'workouts' && (
-            <div style={{ ...styles.popup, ...styles.popupAlignRight }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...styles.popup }} onClick={(e) => e.stopPropagation()}>
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ ТРЕНИРОВКИ</div>
               {recentWorkouts.length === 0 ? (
                 <div style={styles.popupEmpty}>
@@ -342,6 +310,38 @@ export default function ProfileHeader({
                   {totalWorkouts ?? 0} <span style={{ fontSize: '16px', lineHeight: 1 }}>🏋️</span>
                 </span>
               </div>
+            </div>
+          )}
+        </button>
+
+        <button
+          onClick={(e) => togglePopup('streak', e)}
+          style={{ ...styles.statCell, cursor: interactive ? 'pointer' : 'default' }}
+        >
+          <div style={styles.statFlameRow}>
+            {statsLoading ? (
+              <span style={styles.skeletonStat} />
+            ) : (
+              <>
+                <StreakFlame streak={streak || 0} />
+                <span style={styles.statCount}>x{streak ?? 0}</span>
+              </>
+            )}
+          </div>
+          <div style={styles.pillLabel}>СЕРИЯ</div>
+
+          {/* Попап СЕРИЯ — теперь крайняя правая ячейка, попап к правому краю. */}
+          {interactive && activePopup === 'streak' && (
+            <div
+              style={{ ...styles.popup, ...styles.popupAlignRight, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', border: '1px solid rgba(255, 140, 66, 0.35)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+                <StreakFlame streak={streak || 0} />
+                <span style={styles.streakCount}>x{streak || 0}</span>
+              </div>
+              <div style={styles.popupHint}>Сброс серии каждую неделю</div>
             </div>
           )}
         </button>
