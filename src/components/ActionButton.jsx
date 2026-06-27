@@ -38,7 +38,9 @@ export default function ActionButton({
 
 const styles = {
   base: {
-    padding: '18px',
+    height: '63px',
+    flexShrink: 0,
+    padding: '0 24px',
     borderRadius: 'var(--radius-card)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
@@ -55,7 +57,7 @@ const styles = {
   // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
   full: { width: '100%' },
   // По размеру контента (скругление облегает текст). Контейнер центрирует.
-  hug: { width: 'auto', padding: '18px 40px' },
+  hug: { width: 'auto', padding: '0 40px' },
   // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Сплошная тонкая рамка.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',

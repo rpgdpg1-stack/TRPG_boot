@@ -356,11 +356,12 @@ const styles = {
     pointerEvents: 'none'
   },
   doneBtn: {
-    width: 'auto', padding: '18px 36px', borderRadius: 'var(--radius-card)',
+    width: 'auto', height: '63px', padding: '0 36px', borderRadius: 'var(--radius-card)',
     border: '1.5px dashed rgba(255,255,255,0.18)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     pointerEvents: 'auto'
   },
   addBtnWrap: {

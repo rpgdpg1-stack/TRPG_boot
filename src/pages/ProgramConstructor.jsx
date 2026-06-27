@@ -704,12 +704,12 @@ const styles = {
   exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
-    width: 'auto', padding: '18px 36px',
+    width: 'auto', height: '63px', flexShrink: 0, padding: '0 36px',
     border: '1.5px dashed rgba(255,255,255,0.18)', borderRadius: 'var(--radius-card)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
     pointerEvents: 'auto'
   },
   limitToastWrap: {

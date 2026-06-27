@@ -82,7 +82,7 @@
   --font-display: 'Geist', system-ui, sans-serif; /* акцентный (бывш. пиксельный Tiny5): XP, ранги, титулы, цифры */
 
   /* Размеры таббара */
-  --tabbar-height: 72px;
+  --tabbar-height: 63px;
   --tabbar-bottom: 16px;
 
   /* Анимации */
@@ -162,22 +162,36 @@ img, button { -webkit-user-drag: none; }
   padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 60px);
 }
 
-/* Нижний fade-scrim над таб-баром: контент уходит под плавающие кнопки
-   плавно, а не обрывается. Фиксирован у низа экрана, по z-index ниже
-   таб-бара (100), но выше контента. pointer-events:none — тапы проходят
-   сквозь него к таб-бару и контенту. Высота покрывает зону под кнопками. */
+/* Единый fade-scrim у краёв экрана — сверху (под навбаром-заголовком) и снизу
+   (над таб-баром): затемнение + лёгкий блюр, чтобы контент при скролле уходил
+   под край плавно, без линии, а заголовок в навбаре оставался читаемым (он выше
+   по z, поэтому НЕ блюрится — блюрится только контент за скримом).
+   Одинаковая высота сверху и снизу (= var(--tg-safe-top)). Fixed, не прыгает при
+   скролле. pointer-events:none — тапы проходят сквозь. z ниже таб-бара (100) и
+   навбара (95), но выше контента. Маска гасит скрим к внутреннему краю без линии. */
+.app::before,
 .app::after {
   content: '';
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: calc(var(--tabbar-height) + var(--tabbar-bottom));
+  height: var(--tg-safe-top);
   pointer-events: none;
   z-index: 90;
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.5) 40%, rgba(13, 12, 12, 0) 100%);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.app::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+}
+.app::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
 }
 
 /* На конструкторе нижний таб-бар скрыт — этот fade-scrim не нужен, и именно

@@ -40,7 +40,7 @@ const styles = {
     justifyContent: 'center',
     padding: '0 56px',
     pointerEvents: 'none',
-    zIndex: 90
+    zIndex: 95
   },
   title: {
     margin: 0,
