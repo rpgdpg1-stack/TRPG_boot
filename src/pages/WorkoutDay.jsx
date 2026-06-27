@@ -1284,6 +1284,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '8px',
+    // Подтягиваем букву дня ближе к строке «Зал / минуты» (−6px к гэпу 12px).
+    marginTop: '-6px',
     touchAction: 'pan-y'
   },
   // Стрелки — прозрачные кнопки внутри общего блока (без своих пузырей).
