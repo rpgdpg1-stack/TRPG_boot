@@ -41,7 +41,7 @@ const styles = {
     height: '55px',
     flexShrink: 0,
     padding: '0 24px',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 800,

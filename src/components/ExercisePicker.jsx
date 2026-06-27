@@ -359,7 +359,7 @@ const styles = {
     zIndex: 2
   },
   doneBtn: {
-    width: 'auto', height: '55px', padding: '0 36px', borderRadius: 'var(--radius-card)',
+    width: 'auto', height: '55px', padding: '0 36px', borderRadius: 'var(--radius-pill)',
     border: '1.5px dashed rgba(255,255,255,0.18)',
     background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',

@@ -6,6 +6,7 @@ import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT } from '../lib/bac
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
+import ActionButton from './ActionButton'
 import MuscleIcon from './MuscleIcon'
 
 /**
@@ -148,14 +149,12 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           backupState === 'loading' ? (
             // Статус ещё не пришёл с сервера — нейтральный плейсхолдер той же
             // высоты, чтобы кнопка не прыгала «Подстраховать»→«Уже подстрахован».
-            <div style={{ ...styles.backupButton, ...styles.backupButtonDisabled, ...styles.backupButtonSkeleton }} />
+            <ActionButton disabled style={{ animation: 'profileSkeletonPulse 1.2s ease-in-out infinite' }} />
           ) : backupState === 'idle' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <button onClick={handleBackup} className="press-tile" style={styles.backupButton}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  Подстраховать <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
-                </span>
-              </button>
+              <ActionButton variant="accent" onClick={handleBackup} style={{ gap: '8px' }}>
+                Подстраховать <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
+              </ActionButton>
               {todayCount != null && (
                 <div style={styles.backupCounter}>
                   Сегодня {todayCount}/{BACKUP_DAILY_LIMIT}
@@ -163,13 +162,11 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
               )}
             </div>
           ) : (
-            <button disabled style={{ ...styles.backupButton, ...styles.backupButtonDisabled }}>
-              {buttonText}
-            </button>
+            <ActionButton disabled>{buttonText}</ActionButton>
           )
         )}
 
-        <button onClick={onClose} className="press-tile" style={styles.close}>ЗАКРЫТЬ</button>
+        <ActionButton variant="neutral" onClick={onClose}>ЗАКРЫТЬ</ActionButton>
       </div>
 
       <style>{`
@@ -211,39 +208,6 @@ const styles = {
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  backupButton: {
-    width: '100%',
-    minHeight: '56px',          // единая высота с close и disabled-вариантом
-    boxSizing: 'border-box',    // padding не распирает высоту сверх minHeight
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(158, 209, 83, 0.16)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    color: 'var(--color-primary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 800,
-    letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1px solid rgba(158, 209, 83, 0.35)',
-    cursor: 'pointer',
-    boxShadow: '0 4px 16px rgba(158, 209, 83, 0.12)'
-  },
-  backupButtonDisabled: {
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text-secondary)',
-    boxShadow: 'none',
-    cursor: 'default',
-    letterSpacing: '0.5px',
-    fontSize: '12px'
-  },
-  backupButtonSkeleton: {
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    animation: 'profileSkeletonPulse 1.2s ease-in-out infinite'
-  },
   backupCounter: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
@@ -251,23 +215,5 @@ const styles = {
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     letterSpacing: '0.5px'
-  },
-  close: {
-    width: '100%',
-    minHeight: '56px',          // единая высота со всеми кнопками подстраховки
-    boxSizing: 'border-box',
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    cursor: 'pointer'
   }
 }
