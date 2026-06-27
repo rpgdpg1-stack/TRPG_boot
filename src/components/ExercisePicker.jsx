@@ -351,7 +351,7 @@ const styles = {
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: '28px 16px calc(16px + env(safe-area-inset-bottom))',
+    padding: '28px 16px var(--tabbar-bottom)',
     display: 'flex', justifyContent: 'center',
     pointerEvents: 'none',
     // z-index → footer становится контекстом наложения, чтобы dock-scrim (z:-1)

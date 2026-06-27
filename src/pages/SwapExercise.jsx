@@ -453,7 +453,7 @@ const styles = {
     right: '0',
     display: 'flex',
     justifyContent: 'center',
-    padding: '44px 16px calc(16px + env(safe-area-inset-bottom))',
+    padding: '44px 16px var(--tabbar-bottom)',
     zIndex: 50,
     pointerEvents: 'none'
   },

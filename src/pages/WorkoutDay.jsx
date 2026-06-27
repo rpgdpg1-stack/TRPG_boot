@@ -1460,7 +1460,9 @@ const styles = {
     right: 0,
     display: 'flex',
     justifyContent: 'center',
-    padding: '44px 16px calc(16px + env(safe-area-inset-bottom))',
+    // Отступ от низа — как у таб-бара (var(--tabbar-bottom)), а не +safe-inset,
+    // иначе кнопка висит заметно выше таб-бара.
+    padding: '44px 16px var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
   },

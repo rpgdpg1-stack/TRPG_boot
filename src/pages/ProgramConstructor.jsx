@@ -633,7 +633,7 @@ const styles = {
   page: { padding: '0 16px 32px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '40px 16px calc(16px + env(safe-area-inset-bottom))',
+    padding: '40px 16px var(--tabbar-bottom)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
     pointerEvents: 'none',
     zIndex: 40
