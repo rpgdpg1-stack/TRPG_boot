@@ -193,7 +193,7 @@ const styles = {
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
     padding: 'var(--tg-safe-top) 16px calc(var(--tabbar-height) + 40px)',
