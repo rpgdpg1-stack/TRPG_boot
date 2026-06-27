@@ -115,8 +115,8 @@ export default function Settings() {
 
       {/* Шапка страницы: иконка + заголовок */}
       <header style={styles.header}>
-        <UiIcon name="settings" size={26} color="var(--color-primary)" />
         <ScreenTitle>Настройки</ScreenTitle>
+        <UiIcon name="settings" size={26} color="var(--color-text)" style={{ marginTop: '16px' }} />
       </header>
 
       {groups.map((group, gIdx) => (
@@ -159,9 +159,8 @@ const styles = {
   page: {},
   header: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
     marginBottom: '20px'
   },
   title: {

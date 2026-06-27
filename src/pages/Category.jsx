@@ -151,15 +151,18 @@ export default function Category() {
     <div className="page page-enter" style={styles.page}>
 
       <header style={styles.header}>
-        <button onClick={handleInfoTap} style={styles.infoButton} aria-label={`О разделе «${meta.title}»`}>
-          <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
-        </button>
-        <span style={styles.headerIcon}>
-          <UiIcon name={meta.iconName} size={40} color={meta.color} />
-        </span>
         <ScreenTitle>{meta.title}</ScreenTitle>
-        <div style={styles.subtitle}>
-          {realPrograms.length > 0 ? programCountLabel(id) : meta.subtitle}
+        {/* Иконка раздела + инфо-кнопка + счётчик — на 16px ниже заголовка. */}
+        <div style={styles.headerBody}>
+          <button onClick={handleInfoTap} style={styles.infoButton} aria-label={`О разделе «${meta.title}»`}>
+            <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
+          </button>
+          <span style={styles.headerIcon}>
+            <UiIcon name={meta.iconName} size={40} color={meta.color} />
+          </span>
+          <div style={styles.subtitle}>
+            {realPrograms.length > 0 ? programCountLabel(id) : meta.subtitle}
+          </div>
         </div>
       </header>
 
@@ -228,7 +231,9 @@ function CategoryInfoModal({ meta, onClose }) {
 
 const styles = {
   page: {},
-  header: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '24px' },
+  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' },
+  // Блок под заголовком (16px): иконка раздела, счётчик, инфо-кнопка (справа).
+  headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '16px' },
   infoButton: { position: 'absolute', top: 0, right: 0, width: '36px', height: '36px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },

@@ -9,13 +9,14 @@ import MuscleIcon from './MuscleIcon'
  * Полоса сплошная (без сегментов), с заполнением и свечением.
  * Цифры справа внутри полосы.
  */
-export default function XPBar({ progress = 0, color = '#9ED153', current = 0, needed = 300, flexTrigger = 0 }) {
+export default function XPBar({ progress = 0, color = '#9ED153', current = 0, needed = 300, flexTrigger = 0, animateIcon = true }) {
   return (
     <div style={styles.wrapper}>
-      {/* Иконка-валюта (бицепс) — бежевая. Анимация: сама раз в 15 сек (flex),
-          и разово при тапе на прогресс-бар (flexTrigger из PlayerCard). */}
+      {/* Иконка-валюта (бицепс) — бежевая. По умолчанию анимируется (сама раз в
+          15 сек + разово по flexTrigger). animateIcon=false → статичная (напр. в
+          попапе профиля, чтобы не дублировать анимацию тапнутого мускула). */}
       <span style={styles.icon}>
-        <MuscleIcon size={26} flex={true} flexTrigger={flexTrigger} />
+        <MuscleIcon size={26} flex={animateIcon} flexTrigger={animateIcon ? flexTrigger : 0} />
       </span>
 
       {/* Сама полоса */}

@@ -20,8 +20,8 @@ export default function Favorites() {
   return (
     <div className="page page-fade" style={{}}>
       <header style={styles.header}>
-        <span style={styles.headerIcon}><PixelHeart filled size={26} /></span>
         <ScreenTitle>Избранное</ScreenTitle>
+        <span style={styles.headerIcon}><PixelHeart filled size={26} /></span>
       </header>
 
       <FavoritesList />
@@ -32,12 +32,11 @@ export default function Favorites() {
 const styles = {
   header: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
     marginBottom: '20px'
   },
-  headerIcon: { display: 'inline-flex' },
+  headerIcon: { display: 'inline-flex', marginTop: '16px' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,

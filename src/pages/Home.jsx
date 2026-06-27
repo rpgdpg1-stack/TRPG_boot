@@ -185,15 +185,12 @@ export default function Home() {
 
       {/* Заголовок экрана + избранное — закреплено сверху (sticky). */}
       <div style={styles.playerSticky}>
-        <ScreenTitle style={{ marginBottom: '14px' }}>Тренировки</ScreenTitle>
+        <ScreenTitle style={{ marginBottom: '16px' }}>Тренировки</ScreenTitle>
         <button
           onClick={() => { haptic.light(); navigate('/favorites') }}
           style={styles.favHeaderBtn}
         >
           <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
-          <span style={{ display: 'inline-flex', marginLeft: '-2px', marginTop: '1px' }}>
-            <PixelHeart filled={favorites.length > 0} size={15} />
-          </span>
         </button>
 
         {!favLoaded ? (

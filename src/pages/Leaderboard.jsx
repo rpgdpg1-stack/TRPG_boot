@@ -209,19 +209,20 @@ export default function Leaderboard() {
     <div className="page page-fade" style={styles.page}>
 
       <header style={styles.header}>
-        <div style={styles.titleRow}>
-          <ScreenTitle>Рейтинг</ScreenTitle>
+        <ScreenTitle>Рейтинг</ScreenTitle>
+        {/* Сезон (слева) + инфо-кнопка (справа) — на 16px ниже заголовка. */}
+        <div style={styles.seasonRow}>
+          <div style={styles.seasonTexts}>
+            <span style={{ ...styles.seasonName, color: season.color }}>
+              Сезон: {season.emoji} {season.name}
+            </span>
+            <span style={styles.seasonEnd}>
+              До следующего сезона {nextSeason.name} {nextSeason.emoji} осталось: {daysLeft} {pluralDays(daysLeft)}
+            </span>
+          </div>
           <button onClick={handleInfoTap} style={styles.infoButton} aria-label="Правила">
             <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
           </button>
-        </div>
-        <div style={styles.seasonRow}>
-          <span style={{ ...styles.seasonName, color: season.color }}>
-            Сезон: {season.emoji} {season.name}
-          </span>
-          <span style={styles.seasonEnd}>
-            До следующего сезона {nextSeason.name} {nextSeason.emoji} осталось: {daysLeft} {pluralDays(daysLeft)}
-          </span>
         </div>
       </header>
 
@@ -450,10 +451,9 @@ const styles = {
     margin: 0
   },
   infoButton: {
-    position: 'absolute',
-    right: 0,
     width: '36px',
     height: '36px',
+    flexShrink: 0,
     background: 'transparent',
     border: 'none',
     display: 'flex',
@@ -461,12 +461,20 @@ const styles = {
     justifyContent: 'center',
     cursor: 'pointer'
   },
-  
+
+  // Сезон (тексты слева) + инфо-кнопка (справа) — на 16px ниже заголовка.
   seasonRow: {
-    marginTop: '8px',
+    marginTop: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px'
+  },
+  seasonTexts: {
+    flex: 1,
+    minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
     gap: '2px'
   },
   seasonName: {

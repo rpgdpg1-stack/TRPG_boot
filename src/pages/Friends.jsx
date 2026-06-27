@@ -119,14 +119,15 @@ export default function Friends() {
     <div className="page page-fade" style={styles.page}>
 
       <header style={styles.header}>
-        <div style={styles.titleRow}>
-          <ScreenTitle>Друзья</ScreenTitle>
+        <ScreenTitle>Друзья</ScreenTitle>
+        {/* Под заголовком (16px): слева счётчик, справа кубок — в одну линию. */}
+        <div style={styles.subRow}>
+          <span style={styles.subInfo}>
+            {loading ? '' : friends.length === 0 ? '' : `Друзей: ${friends.length}`}
+          </span>
           <button onClick={handleCupTap} style={styles.cupButton} aria-label="Открыть рейтинг">
             <UiIcon name="leaderboard" size={24} color="#FFD700" />
           </button>
-        </div>
-        <div style={styles.subInfo}>
-          {loading ? '' : friends.length === 0 ? '' : `Друзей: ${friends.length}`}
         </div>
       </header>
 
@@ -275,10 +276,9 @@ const styles = {
     margin: 0
   },
   cupButton: {
-    position: 'absolute',
-    right: 0,
     width: '36px',
     height: '36px',
+    flexShrink: 0,
     background: 'transparent',
     border: 'none',
     display: 'flex',
@@ -286,12 +286,19 @@ const styles = {
     justifyContent: 'center',
     cursor: 'pointer'
   },
+  // Ряд под заголовком: счётчик друзей (слева) + кубок (справа), 16px от заголовка.
+  subRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '16px',
+    minHeight: '36px'
+  },
   subInfo: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    marginTop: '8px',
+    textAlign: 'left',
     fontWeight: 500,
     minHeight: '14px'
   },

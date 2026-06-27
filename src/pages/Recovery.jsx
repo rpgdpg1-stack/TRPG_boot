@@ -190,7 +190,8 @@ const styles = {
     fontSize: '11px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
+    letterSpacing: '2px',
+    marginTop: '16px'
   },
   sectionsWrap: {
     display: 'flex',

@@ -235,7 +235,7 @@ export default function ProfileHeader({
           {interactive && activePopup === 'muscles' && (
             <div style={{ ...styles.popup, ...styles.popupAlignLeft, width: '290px', border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
               {/* Полоса прогресса (мускул + бар) — в верхней части попапа */}
-              <XPBar progress={xpBarProgress} color={rank.color} current={totalCurrent} needed={totalNeeded} flexTrigger={muscleFlexTick} />
+              <XPBar progress={xpBarProgress} color={rank.color} current={totalCurrent} needed={totalNeeded} animateIcon={false} />
               <div style={styles.popupDivider} />
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
               {recentHistory.length === 0 ? (
