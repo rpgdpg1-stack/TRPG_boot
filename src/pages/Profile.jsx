@@ -258,8 +258,13 @@ const styles = {
   page: {
     paddingTop: 'var(--tg-safe-top)'
   },
+  // Тот же блок, что друзья видят при тапе на тебя (PlayerProfileModal): там он
+  // ограничен maxWidth 340 — повторяем 1:1 (по центру), иначе на странице профиля
+  // он растягивался на всю ширину и выглядел крупнее. ProfileHeader тот же,
+  // размеры шрифтов фиксированы — разница была только в ширине контейнера.
   headerWrap: {
-    marginBottom: '20px'
+    maxWidth: '340px',
+    margin: '0 auto 20px'
   },
   inviteButton: {
     width: '100%',
