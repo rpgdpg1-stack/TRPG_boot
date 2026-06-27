@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
-import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel } from '../lib/levels'
+import { getLevelFromXP, getRankByLevel, getXPInCurrentLevel, getLevelProgress, getTotalXPProgress } from '../lib/levels'
 import { getLeagueByRankIndex, formatLeaguePlace } from '../lib/leagues'
 import { getProgramByDbId } from '../features/programs/registry'
 import { formatRelative } from '../utils/history'
 import RankIcon from './RankIcon'
 import RanksPopup from './RanksPopup'
+import XPBar from './XPBar'
 import StreakFlame from './StreakFlame'
 import MuscleIcon from './MuscleIcon'
 import { spawnFireSparks } from './ParticlesBg'
@@ -89,6 +90,11 @@ export default function ProfileHeader({
   const { current, needed } = getXPInCurrentLevel(xp)
   const nextRank = getRankByLevel(level + 1)
   const remainingToNext = Math.max(0, needed - current)
+
+  // Прогресс-бар (мускул + полоса) для попапа МУСКУЛЫ — как было у игрока на
+  // главной: заполнение по уровню, цифры — общий прогресс.
+  const xpBarProgress = getLevelProgress(xp)
+  const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
 
   // Рамка аватара по текущему рангу (8/9/10 — анимированные, 0–7 — полоска цвета ранга)
   const frame = getFrameByRankIndex(rankIndexFromMuscles(xp))
@@ -227,7 +233,10 @@ export default function ProfileHeader({
 
           {/* Попап МУСКУЛЫ */}
           {interactive && activePopup === 'muscles' && (
-            <div style={{ ...styles.popup, ...styles.popupAlignLeft, border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ ...styles.popup, ...styles.popupAlignLeft, width: '290px', border: `1px solid ${rank.color}66` }} onClick={(e) => e.stopPropagation()}>
+              {/* Полоса прогресса (мускул + бар) — в верхней части попапа */}
+              <XPBar progress={xpBarProgress} color={rank.color} current={totalCurrent} needed={totalNeeded} flexTrigger={muscleFlexTick} />
+              <div style={styles.popupDivider} />
               <div style={styles.popupTitle}>ПОСЛЕДНИЕ НАЧИСЛЕНИЯ</div>
               {recentHistory.length === 0 ? (
                 <div style={styles.popupEmpty}>

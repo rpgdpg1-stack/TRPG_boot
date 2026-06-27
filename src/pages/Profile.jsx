@@ -8,9 +8,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
-import XPBar from '../components/XPBar'
 import UiIcon from '../components/UiIcon'
-import { getLevelFromXP, getRankByLevel, getLevelProgress, getTotalXPProgress } from '../lib/levels'
 
 // Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
 // Дальше профиль не засоряем — пригласить всё равно можно из Рейтинга (вкладка «Друзья»).
@@ -172,13 +170,6 @@ export default function Profile() {
   // null = ещё не загрузили → показываем (для нового юзера это и есть «0 друзей»).
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
-  // Мускул + прогресс-бар (тот же XPBar, что был на главной у игрока) — под
-  // карточкой профиля. Прогресс/цвет считаем из мускулов, как в PlayerCard.
-  const level = getLevelFromXP(stats.xp)
-  const rank = getRankByLevel(level)
-  const xpProgress = getLevelProgress(stats.xp)
-  const { current: xpCurrent, needed: xpNeeded } = getTotalXPProgress(stats.xp)
-
   return (
     <div className="page page-fade" style={styles.page}>
 
@@ -199,11 +190,6 @@ export default function Profile() {
           interactive={true}
           onPlaceTap={handlePlaceTap}
         />
-
-        {/* Мускул + прогресс-бар (перенесён с главной, без серии). */}
-        <div style={styles.xpCard}>
-          <XPBar progress={xpProgress} color={rank.color} current={xpCurrent} needed={xpNeeded} />
-        </div>
       </div>
 
       {/* Пригласить друга — только пока друзей мало (< FRIENDS_INVITE_LIMIT).
@@ -278,17 +264,7 @@ const styles = {
   // размеры шрифтов фиксированы — разница была только в ширине контейнера.
   headerWrap: {
     maxWidth: '340px',
-    margin: '0 auto 20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px'
-  },
-  // Карточка с мускул+прогресс-баром под шапкой профиля (стиль как у шапки).
-  xpCard: {
-    padding: '16px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 'var(--radius-card)'
+    margin: '0 auto 20px'
   },
   inviteButton: {
     width: '100%',
