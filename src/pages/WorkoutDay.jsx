@@ -778,14 +778,18 @@ export default function WorkoutDay() {
           </div>
         </div>
 
-        {/* Закреплённая стеклянная пилюля текущей группы — абсолютна (НЕ в потоке,
-            отступы дня не меняет), появляется при скролле вниз и висит сразу под
-            карточкой дня. Стекло+блюр как у кнопок, без обводки. Контент скроллится
-            под ней и дальше под карточку дня. Текст сменяется на границе групп. */}
+        {/* Закреплённый заголовок группы — «челка»: то же затемнение, что у stickyFade
+            (градиент+blur, к низу в ноль), но hug-content под текстом — свисает чуть
+            ниже строки язычком и плавно растворяется. Текст поверх, чёткий. Абсолютна
+            (отступы дня не меняет), появляется при скролле вниз, текст сменяется на
+            границе групп. */}
         {!loading && pillGroup && (
           <div style={styles.groupPillRow} aria-hidden="true">
-            <div key={pillGroup} style={{ ...styles.groupPill, color: getMuscleGroupColors(pillGroup).accent }}>
-              {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
+            <div key={pillGroup} style={styles.groupTab}>
+              <div style={styles.groupTabFade} />
+              <span style={{ ...styles.groupTabText, color: getMuscleGroupColors(pillGroup).accent }}>
+                {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
+              </span>
             </div>
           </div>
         )}
@@ -1374,39 +1378,50 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Ряд для центрирования пилюли — абсолютный, сразу под карточкой дня (top:100%),
-  // НЕ в потоке (отступы списка не трогает). Контент скроллится под пилюлей.
+  // Ряд для центрирования челки — абсолютный, сразу под карточкой дня (top:100%),
+  // НЕ в потоке (отступы списка не трогает). Контент скроллится под челкой.
   groupPillRow: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    marginTop: '2px',
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
     zIndex: 31
   },
-  // Стеклянный чип группы — стекло+блюр как у кнопок, без обводки. Контент под ним
-  // виден размытым. key={pillGroup} ремаунтит чип → мягкая смена текста/появление.
-  groupPill: {
+  // «Челка» — hug-content язычок затемнения под текстом группы. Свисает чуть ниже
+  // строки и растворяется. key={pillGroup} ремаунтит → мягкая смена/появление.
+  groupTab: {
+    position: 'relative',
     display: 'inline-flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    minWidth: '110px',
-    height: '30px',
-    padding: '0 18px',
-    borderRadius: 'var(--radius-pill)',
-    background: 'rgba(34, 34, 34, 0.55)',
-    backdropFilter: 'blur(var(--blur-md)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(180%)',
+    padding: '5px 22px 18px',
+    animation: 'groupPillIn 0.22s ease-out'
+  },
+  // Затемнение челки — копия stickyFade (градиент var(--color-bg)→0 + blur + mask),
+  // заполняет весь язычок (включая свисающий хвост), лежит ПОД текстом.
+  groupTabFade: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%)'
+  },
+  // Текст группы — поверх затемнения, чёткий (не под маской).
+  groupTabText: {
+    position: 'relative',
+    zIndex: 1,
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     letterSpacing: '2px',
     lineHeight: 1,
-    whiteSpace: 'nowrap',
-    animation: 'groupPillIn 0.22s ease-out'
+    whiteSpace: 'nowrap'
   },
   // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
   stickyFade: {

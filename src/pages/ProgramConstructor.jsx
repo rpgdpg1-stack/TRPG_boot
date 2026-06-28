@@ -17,6 +17,11 @@ const MAX_PER_DAY = 10
 // Плейсхолдер группы, пока каталог не загружен (у упражнения ещё нет muscle_group):
 // такие упражнения собираются в одну секцию без заголовка.
 const UNKNOWN_GROUP = '—'
+// Авто-скролл при перетаскивании у краёв экрана: зоны (px от верх/низ вьюпорта) и
+// макс. скорость (px/кадр) — чтобы дотащить карточку до верха/низа списка.
+const EDGE_TOP_PX = 110     // под системными кнопками Telegram
+const EDGE_BOTTOM_PX = 130  // над доком кнопки «Сохранить»
+const EDGE_MAX_SPEED = 14
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
 
@@ -86,9 +91,10 @@ export default function ProgramConstructor() {
   // Перетаскивание упражнений внутри дня: тащим за «ручку», соседи плавно
   // расступаются, перетаскиваемая карточка приподнимается. Порядок применяется
   // при отпускании.
-  const [drag, setDrag] = useState(null) // { startIndex, targetIndex, dy, stride, startY }
+  const [drag, setDrag] = useState(null) // { startIndex, targetIndex, dy, stride, startY, startScrollY, pointerY, len }
   const dragRef = useRef(null)
   const rowRefs = useRef([])
+  const autoScrollRef = useRef(0)        // rAF-петля авто-скролла у краёв
 
   useEffect(() => {
     if (pickerOpen) {
@@ -264,33 +270,76 @@ export default function ProgramConstructor() {
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
     const el = rowRefs.current[idx]
     const stride = (el?.offsetHeight || 90) + 10 // высота строки + gap списка (10px)
-    const data = { startIndex: idx, targetIndex: idx, dy: 0, stride, startY: e.clientY }
+    const len = (byLoc[activeLoc]?.[activeIdx] || []).length
+    const data = {
+      startIndex: idx, targetIndex: idx, dy: 0, stride,
+      startY: e.clientY, startScrollY: window.scrollY, pointerY: e.clientY, len
+    }
     dragRef.current = data
     setDrag(data)
     haptic.medium()
+    startAutoScroll()
   }
 
-  const handleDragMove = (e) => {
+  // Пересчёт позиции из текущего пальца + текущего скролла (dy включает сдвиг
+  // страницы, чтобы карточка шла за пальцем даже когда авто-скролл крутит список).
+  const applyDrag = () => {
     const d = dragRef.current
     if (!d) return
-    const dy = e.clientY - d.startY
-    const len = (byLoc[activeLoc]?.[activeIdx] || []).length
+    const dy = (d.pointerY - d.startY) + (window.scrollY - d.startScrollY)
     let targetIndex = d.startIndex + Math.round(dy / d.stride)
-    targetIndex = Math.max(0, Math.min(len - 1, targetIndex))
+    targetIndex = Math.max(0, Math.min(d.len - 1, targetIndex))
     if (targetIndex !== d.targetIndex) haptic.selection()
     const next = { ...d, dy, targetIndex }
     dragRef.current = next
     setDrag(next)
   }
 
+  const handleDragMove = (e) => {
+    const d = dragRef.current
+    if (!d) return
+    d.pointerY = e.clientY
+    applyDrag()
+  }
+
   const handleDragEnd = (e) => {
     const d = dragRef.current
     if (!d) return
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
+    stopAutoScroll()
     if (d.targetIndex !== d.startIndex) moveItem(d.startIndex, d.targetIndex)
     dragRef.current = null
     setDrag(null)
   }
+
+  // Палец у верх/низ края → плавно подкручиваем страницу, пока тащим (даёт дотащить
+  // карточку до самого верха/низа списка). Палец стоит — список едет под ним,
+  // applyDrag держит карточку у пальца и пересчитывает позицию вставки.
+  const startAutoScroll = () => {
+    if (autoScrollRef.current) return
+    const tick = () => {
+      const d = dragRef.current
+      if (!d) { autoScrollRef.current = 0; return }
+      const y = d.pointerY
+      const vh = window.innerHeight
+      let speed = 0
+      if (y < EDGE_TOP_PX) speed = -EDGE_MAX_SPEED * Math.min(1, (EDGE_TOP_PX - y) / EDGE_TOP_PX)
+      else if (y > vh - EDGE_BOTTOM_PX) speed = EDGE_MAX_SPEED * Math.min(1, (y - (vh - EDGE_BOTTOM_PX)) / EDGE_BOTTOM_PX)
+      if (speed !== 0) {
+        const before = window.scrollY
+        window.scrollBy(0, speed)
+        if (window.scrollY !== before) applyDrag()
+      }
+      autoScrollRef.current = requestAnimationFrame(tick)
+    }
+    autoScrollRef.current = requestAnimationFrame(tick)
+  }
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current) { cancelAnimationFrame(autoScrollRef.current); autoScrollRef.current = 0 }
+  }
+
+  useEffect(() => () => stopAutoScroll(), [])
 
   // Сдвиг каждой строки во время перетаскивания (плавное расступание соседей).
   const rowDragStyle = (idx) => {
@@ -516,6 +565,18 @@ export default function ProgramConstructor() {
             </div>
           </div>
         ))}
+
+        {/* Кнопка добавления — в потоке, под последним упражнением (а не прибита к
+            низу). При пустом дне идёт под подсказкой «Пусто…». Лимит — тот же тост. */}
+        <button
+          onClick={handleAddTap}
+          className="press-tile"
+          style={{ ...styles.addButton, alignSelf: 'center' }}
+        >
+          {atLimit
+            ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
+            : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
+        </button>
       </div>
 
       {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
@@ -533,16 +594,6 @@ export default function ProgramConstructor() {
       {!kbOpen && createPortal(
         <div style={styles.dock}>
           <div className="dock-scrim" />
-          <button
-            onClick={handleAddTap}
-            className="press-tile"
-            style={styles.addButton}
-          >
-            {atLimit
-              ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
-              : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
-          </button>
-
           <ActionButton
             onClick={handleSave}
             disabled={!canSave}
@@ -672,7 +723,9 @@ function GripIcon() {
 }
 
 const styles = {
-  page: { padding: '0 16px 32px', paddingTop: 'var(--tg-safe-top)', minHeight: '100dvh' },
+  // Низ — место под прибитый док «Сохранить» (кнопка «Добавить» теперь в потоке,
+  // последним элементом списка, и должна прокручиваться выше дока).
+  page: { padding: '0 16px', paddingTop: 'var(--tg-safe-top)', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))', minHeight: '100dvh' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px var(--tabbar-bottom)',
