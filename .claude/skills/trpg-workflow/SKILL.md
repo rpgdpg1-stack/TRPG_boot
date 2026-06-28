@@ -117,6 +117,14 @@ camelCase — утилиты (`getTodayKey`).
   группы, напр. гиперэкстензия-спина, в шею). `getWorkoutDay` применяет свап ТОЛЬКО если
   `swapEx.sub_group === slot.sub_group && swapEx.type === slot.type`, иначе — `default` из
   конструктора. Упражнения живут строго по группе/подгруппе/типу.
+- Активная тренировка — одна на приложение (`lib/active-workout.js`, localStorage
+  `active-workout` = `{programId,day,place,startedAt}`). День «тренируется» только после тапа
+  «НАЧАТЬ ТРЕНИРОВКУ»: до старта таймер `0 мин` и не идёт, галочки не ставятся (только заметки
+  по long-press). После старта таймер = `now−startedAt` (переживает уход/возврат/смену дня),
+  кнопка → «ЗАВЕРШИТЬ», завершение чистит сессию. На других днях/программах «Начать» заблокирована
+  (одна за раз). Смена статуса — событие `onActiveWorkoutChange` (карточки `ProgramCard`/`FavCardBody`
+  показывают «▶ Продолжить · N мин» и ведут в активный день). Время форматируем `formatWorkoutMin`.
+  Заплыв (`SwimWorkout`) в эту модель НЕ входит — там мгновенное «Завершить» без таймера/сессии.
 - Оффлайн-сейв не должен висеть: `finishWorkout` гонит RPC с `FINISH_TIMEOUT_MS` (7с) через
   `Promise.race`; таймаут или сетевой throw → в оффлайн-очередь (как `!isOnline()`) + фоновый
   `checkNow()`. Нужно из-за «мёртвого Wi-Fi» в зале (navigator.onLine врёт). Оффлайн-тексты — без
@@ -179,7 +187,7 @@ src/
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js
 ├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            auth backups cache cloud-storage events frames friends-list friends leaderboard
+├── lib/            active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
 │                   leagues levels network-status notes offline-queue persistent-cache profile-cache
 │                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
 ├── pages/          Category ExerciseInfo Friends History Home Leaderboard Profile ProgramConstructor
