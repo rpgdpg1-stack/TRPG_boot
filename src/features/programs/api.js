@@ -188,8 +188,18 @@ export async function getWorkoutDay(programSlug, day, place = null) {
   for (const e of exercises) exById[e.id] = e
 
   const result = slotsRaw.map(slot => {
-    let exerciseId = swapsByOrder[slot.order_num]
-    let isSwapped = !!exerciseId
+    // Свап применяем ТОЛЬКО если он валиден для слота: упражнение есть в каталоге
+    // и совпадает по подгруппе+типу со слотом. Иначе это устаревший свап — после
+    // правки/перестановки программы в конструкторе order_num сместились, и свап
+    // (привязан к order_num) попал бы в чужой слот: упражнение другой группы
+    // (напр. гиперэкстензия-спина) затесалось бы в шею. В таком случае
+    // показываем default из конструктора — упражнения живут строго по группе.
+    const swapId = swapsByOrder[slot.order_num]
+    const swapEx = swapId ? exById[swapId] : null
+    const swapValid = !!swapEx && swapEx.sub_group === slot.sub_group && swapEx.type === slot.type
+
+    let exerciseId = swapValid ? swapId : null
+    let isSwapped = swapValid
 
     if (!exerciseId) {
       exerciseId = slot.default_exercise_id || null
