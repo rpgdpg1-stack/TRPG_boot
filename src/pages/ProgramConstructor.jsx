@@ -18,11 +18,8 @@ const MAX_PER_DAY = 10
 // такие упражнения собираются в одну секцию без заголовка.
 const UNKNOWN_GROUP = '—'
 // Перетаскивание: ширина жёлоба ручки (28) + gap обёртки (6) — на столько клон
-// карточки правее левого края строки. Зоны автоскролла у краёв экрана и скорость.
+// карточки правее левого края строки.
 const HANDLE_COL_PX = 34
-const EDGE_TOP_PX = 110     // под системными кнопками Telegram
-const EDGE_BOTTOM_PX = 180  // над доком кнопок «Добавить / Сохранить»
-const EDGE_MAX_SPEED = 16   // px за кадр
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
 
@@ -96,11 +93,13 @@ export default function ProgramConstructor() {
   // (FLIP), у краёв экрана включается автоскролл.
   const [drag, setDrag] = useState(null) // { id, grabOffsetY, left, width, height, pointerY }
   const dragRef = useRef(null)           // зеркало drag для обработчиков (без устаревания)
-  const orderRef = useRef([])            // актуальный порядок exId дня (для расчёта позиции)
-  const rowGeoRef = useRef(new Map())    // exId -> обёртка строки (замеры позиций + FLIP)
-  const flipPrevRef = useRef(new Map())  // exId -> прежний top (document-relative) для FLIP
+  const orderRef = useRef([])            // актуальный порядок exId дня
+  const rowGeoRef = useRef(new Map())    // exId -> обёртка строки (замеры offsetTop + анимация)
+  const flipPrevRef = useRef(new Map())  // exId -> прежний offsetTop (для доезда соседей)
+  const flipAnimRef = useRef(new Map())  // exId -> текущая Animation (чтобы не накладывались)
   const cloneRef = useRef(null)          // летящий за пальцем клон карточки
-  const autoScrollRef = useRef(0)        // rAF-петля автоскролла у краёв
+  const dayListRef = useRef(null)        // контейнер списка (границы клампа + offsetParent)
+  const dragRafRef = useRef(0)           // троттл pointermove до одного раза за кадр
 
   useEffect(() => {
     if (pickerOpen) {
@@ -273,51 +272,64 @@ export default function ProgramConstructor() {
   const inContainerPlaces = PLACES.filter(loc => placeFilled(loc) || (loc === activeLoc && placeTouched))
   const outsidePlaces = PLACES.filter(loc => !inContainerPlaces.includes(loc))
 
-  // Перенос активного упражнения на позицию insertion (индекс в массиве БЕЗ
-  // активного). Меняем порядок сразу — заголовки групп пересчитываются на лету.
-  const reorderActiveTo = (insertion) => {
-    const id = dragRef.current?.id
-    if (!id) return
-    setByLoc(prev => {
-      const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
-      const arr = next[activeLoc][activeIdx]
-      const from = arr.indexOf(id)
-      if (from < 0) return prev
-      arr.splice(from, 1)
-      arr.splice(insertion, 0, id)
-      return next
-    })
-  }
-
-  // Куда вставить активную карточку: считаем, у скольких НЕактивных строк середина
-  // выше пальца (по реальным rect'ам — корректно при разной высоте и заголовках).
-  const updateTarget = (pointerY) => {
+  // Верхняя координата клона (за пальцем), зажатая в границы списка — чтобы карточка
+  // не уезжала выше «УПРАЖНЕНИЯ» и ниже последней строки (без автоскролла).
+  const cloneTopPx = () => {
     const d = dragRef.current
-    if (!d) return
-    const order = orderRef.current
-    let insertion = 0
-    for (const exId of order) {
-      if (exId === d.id) continue
-      const el = rowGeoRef.current.get(exId)
-      if (!el) continue
-      const r = el.getBoundingClientRect()
-      if (r.top + r.height / 2 < pointerY) insertion++
+    if (!d) return 0
+    let top = d.pointerY - d.grabOffsetY
+    const list = dayListRef.current
+    if (list) {
+      const lr = list.getBoundingClientRect()
+      top = Math.max(lr.top, Math.min(lr.bottom - d.height, top))
     }
-    const without = order.filter(x => x !== d.id)
-    insertion = Math.max(0, Math.min(without.length, insertion))
-    const target = [...without.slice(0, insertion), d.id, ...without.slice(insertion)]
-    if (target.length === order.length && target.every((x, i) => x === order[i])) return
-    haptic.selection()
-    orderRef.current = target // синхронно, чтобы быстрый следующий расчёт не дёргался дважды
-    reorderActiveTo(insertion)
+    return top
   }
 
-  // Клон карточки летит за пальцем — позиционируем top императивно (без re-render
-  // на каждый pointermove; перерисовка только когда реально меняется порядок).
+  // Клон карточки летит за пальцем — top задаём императивно (в style его нет; иначе
+  // re-render при смене порядка сбрасывал бы позицию).
   const positionClone = () => {
-    const d = dragRef.current
     const el = cloneRef.current
-    if (d && el) el.style.top = `${d.pointerY - d.grabOffsetY}px`
+    if (el) el.style.top = `${cloneTopPx()}px`
+  }
+
+  // Сдвиг порядка на ОДНУ позицию (своп с соседом), когда центр клона переходит
+  // середину соседней карточки. Своп стабилен (нет осцилляции/дребезга): после него
+  // следующий сосед уже в целой карточке от пальца. Середины меряем по offsetTop —
+  // не зависит от текущих transform/анимаций, поэтому считается ровно.
+  const updateOrder = () => {
+    const d = dragRef.current
+    const list = dayListRef.current
+    if (!d || !list) return
+    const order = orderRef.current
+    const idx = order.indexOf(d.id)
+    if (idx < 0) return
+    const listTop = list.getBoundingClientRect().top
+    const center = cloneTopPx() + d.height / 2
+    const midOf = (exId) => {
+      const el = rowGeoRef.current.get(exId)
+      return el ? listTop + el.offsetTop + el.offsetHeight / 2 : null
+    }
+    let target = idx
+    if (idx > 0) {
+      const m = midOf(order[idx - 1])
+      if (m != null && center < m) target = idx - 1
+    }
+    if (target === idx && idx < order.length - 1) {
+      const m = midOf(order[idx + 1])
+      if (m != null && center > m) target = idx + 1
+    }
+    if (target === idx) return
+    haptic.selection()
+    const next = [...order]
+    const [item] = next.splice(idx, 1)
+    next.splice(target, 0, item)
+    orderRef.current = next // синхронно — следующий кадр видит свежий порядок
+    setByLoc(prev => {
+      const n = { ...prev, [activeLoc]: prev[activeLoc].map(dd => [...dd]) }
+      n[activeLoc][activeIdx] = next
+      return n
+    })
   }
 
   const handleDragStart = (e, exId) => {
@@ -337,81 +349,65 @@ export default function ProgramConstructor() {
     dragRef.current = data
     setDrag(data)
     haptic.medium()
-    startAutoScroll()
   }
 
+  // pointermove троттлим до одного раза за кадр (не молотим замеры/реордер по
+  // несколько раз на кадр — отсюда были лаги и «скакание»).
   const handleDragMove = (e) => {
     const d = dragRef.current
     if (!d) return
     d.pointerY = e.clientY
-    positionClone()
-    updateTarget(e.clientY)
+    if (!dragRafRef.current) {
+      dragRafRef.current = requestAnimationFrame(() => {
+        dragRafRef.current = 0
+        positionClone()
+        updateOrder()
+      })
+    }
   }
 
   const handleDragEnd = (e) => {
     if (!dragRef.current) return
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
-    stopAutoScroll()
+    if (dragRafRef.current) { cancelAnimationFrame(dragRafRef.current); dragRafRef.current = 0 }
     dragRef.current = null
     setDrag(null)
     haptic.light()
   }
 
-  // Автоскролл, когда палец у верхнего/нижнего края: тянем страницу, чтобы можно
-  // было дотащить карточку в самый низ или верх (где док/системные кнопки
-  // перекрывают список). Палец стоит — список едет под ним, позиция пересчитывается.
-  const startAutoScroll = () => {
-    if (autoScrollRef.current) return
-    const tick = () => {
-      const d = dragRef.current
-      if (!d) { autoScrollRef.current = 0; return }
-      const y = d.pointerY
-      const vh = window.innerHeight
-      let speed = 0
-      if (y < EDGE_TOP_PX) speed = -EDGE_MAX_SPEED * Math.min(1, (EDGE_TOP_PX - y) / EDGE_TOP_PX)
-      else if (y > vh - EDGE_BOTTOM_PX) speed = EDGE_MAX_SPEED * Math.min(1, (y - (vh - EDGE_BOTTOM_PX)) / EDGE_BOTTOM_PX)
-      if (speed !== 0) {
-        const before = window.scrollY
-        window.scrollBy(0, speed)
-        if (window.scrollY !== before) updateTarget(d.pointerY)
-      }
-      autoScrollRef.current = requestAnimationFrame(tick)
-    }
-    autoScrollRef.current = requestAnimationFrame(tick)
-  }
-
-  const stopAutoScroll = () => {
-    if (autoScrollRef.current) { cancelAnimationFrame(autoScrollRef.current); autoScrollRef.current = 0 }
-  }
-
-  // FLIP: после каждого пересчёта порядка соседние строки плавно доезжают на новые
-  // места (появился/исчез заголовок — строки под ним мягко съезжают). Активный
-  // плейсхолдер не анимируем — его «ведёт» палец-клон. Координату берём
-  // document-relative (rect.top + scrollY), чтобы автоскролл не давал ложных сдвигов.
+  // Доезд соседей на новые места (FLIP) через Web Animations API: меряем offsetTop
+  // (не зависит от transform/скролла), и на сдвиг запускаем el.animate от старого
+  // смещения к нулю. WAAPI сам ведёт жизненный цикл — нет гонки сброса transform
+  // (из-за неё были рывки). Активный плейсхолдер не анимируем — его ведёт клон.
   useLayoutEffect(() => {
     const prev = flipPrevRef.current
     const nextTops = new Map()
+    const activeId = dragRef.current?.id
     rowGeoRef.current.forEach((el, exId) => {
       if (!el) return
-      const top = el.getBoundingClientRect().top + window.scrollY
+      const top = el.offsetTop
       nextTops.set(exId, top)
-      if (drag && drag.id === exId) return
+      if (exId === activeId) return
       const old = prev.get(exId)
       if (old == null) return
       const delta = old - top
       if (Math.abs(delta) < 1) return
-      el.style.transition = 'none'
-      el.style.transform = `translateY(${delta}px)`
-      requestAnimationFrame(() => {
-        el.style.transition = 'transform 0.18s ease'
-        el.style.transform = ''
-      })
+      const running = flipAnimRef.current.get(exId)
+      if (running) running.cancel()
+      const anim = el.animate(
+        [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+        { duration: 170, easing: 'cubic-bezier(0.2, 0, 0, 1)' }
+      )
+      flipAnimRef.current.set(exId, anim)
+      anim.onfinish = () => { if (flipAnimRef.current.get(exId) === anim) flipAnimRef.current.delete(exId) }
     })
     flipPrevRef.current = nextTops
-    positionClone() // top клона задаём только императивно (в style его нет — иначе сброс)
+    positionClone() // top клона — только императивно (в style его нет)
   })
 
-  useEffect(() => () => stopAutoScroll(), [])
+  useEffect(() => () => {
+    if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current)
+  }, [])
 
   // Внутренность карточки упражнения — общий рендер для строки списка и для
   // летящего клона (чтобы клон выглядел один в один).
@@ -592,7 +588,7 @@ export default function ProgramConstructor() {
           заголовок на дне тренировки). Заголовки и строки идут плоско в одном
           контейнере, чтобы перетаскивание между группами не пересоздавало узлы. */}
       <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
-      <div style={styles.dayList}>
+      <div ref={dayListRef} style={styles.dayList}>
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
         )}
@@ -875,7 +871,9 @@ const styles = {
   // Плоский список: заголовки и строки — соседи с gap 10; у заголовка свой верхний
   // отступ, чтобы группы визуально отделялись (кроме первого — :first-child убирать
   // незачем, лишние 8px сверху не мешают).
-  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
+  // position:relative — чтобы offsetParent строк был именно список (offsetTop меряем
+  // относительно него, стабильно к скроллу/трансформам при перетаскивании).
+  dayList: { position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
   // Заголовок группы — по центру, в акцентном цвете группы (как на дне тренировки).
   groupHeader: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
