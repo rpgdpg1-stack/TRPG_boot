@@ -314,7 +314,7 @@ body.keyboard-open .app::after { display: none; }
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.45); }
 }
-.day-dot-pulse { animation: dayDotPulse 1.4s ease-in-out infinite; }
+.day-dot-pulse { animation: dayDotPulse 1.8s ease-in-out infinite; }
 
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
