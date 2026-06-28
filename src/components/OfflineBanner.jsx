@@ -132,11 +132,13 @@ function pluralChanges(n) {
 }
 
 const styles = {
-  // Контейнер во всю ширину, центрирует пилюлю. fixed сверху, отступ 16px
-  // от системной зоны Telegram — одинаково на всех экранах.
+  // Контейнер во всю ширину, центрирует пилюлю. Пилюлю опускаем в 16px-отступ
+  // между системными кнопками Telegram и контентом: её ЦЕНТР — в середине этого
+  // отступа (низ зоны --tg-safe-top минус 8px), translateY(-50%) центрирует по высоте.
   wrap: {
     position: 'fixed',
-    top: 'calc(env(safe-area-inset-top) + 6px)',
+    top: 'calc(var(--tg-safe-top) - 8px)',
+    transform: 'translateY(-50%)',
     left: 0,
     right: 0,
     display: 'flex',

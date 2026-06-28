@@ -110,8 +110,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    background: 'rgba(158, 209, 83, 0.10)',
-    border: '1px solid rgba(158, 209, 83, 0.30)',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.10)',
     borderRadius: 'var(--radius-card)',
     cursor: 'pointer',
     overflow: 'visible'
@@ -124,7 +124,7 @@ const styles = {
     fontWeight: 700,
     fontSize: '13px',
     letterSpacing: '0.5px',
-    color: 'var(--color-primary)'
+    color: 'var(--color-text)'
   },
   flyer: {
     position: 'absolute',

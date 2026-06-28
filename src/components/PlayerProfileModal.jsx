@@ -222,13 +222,14 @@ const styles = {
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  // Крестик в правом верхнем углу модалки — нейтральный серый кружок.
+  // Крестик в правом верхнем углу модалки — нейтральный серый кружок, ВНУТРИ
+  // карточки с отступом (не на скруглении угла).
   closeBtn: {
     position: 'absolute',
-    top: '2px',
-    right: '2px',
-    width: '32px',
-    height: '32px',
+    top: '14px',
+    right: '14px',
+    width: '30px',
+    height: '30px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
