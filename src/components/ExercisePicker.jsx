@@ -203,11 +203,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               <div style={{ ...styles.rowContent, opacity: disabled ? 0.4 : 1 }}>
                 <div style={styles.rowName}>{ex.name}</div>
                 <div style={styles.rowTags}>
+                  {/* Один тег — подгруппа, в цвете основной группы (как заголовок
+                      группы на дне тренировки). Имя группы — только в фильтр-чипах. */}
                   <span style={{ ...styles.rowTag, background: c.tag, color: '#fff' }}>
-                    {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
-                  </span>
-                  <span style={{ ...styles.rowTag, ...styles.rowTagSecondary }}>
-                    {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
+                    {toTitleCase(
+                      SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group ||
+                      MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group
+                    )}
                   </span>
                 </div>
               </div>
@@ -346,7 +348,6 @@ const styles = {
   rowName: { fontFamily: 'var(--font-geist)', fontSize: '13px', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   rowTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  rowTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   addBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: '18px', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {

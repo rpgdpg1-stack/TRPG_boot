@@ -286,8 +286,11 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
   }
 
   const colors = getMuscleGroupColors(muscleGroup)
-  const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[muscleGroup] || (muscleGroup || ''))
-  const subGroupLabel = toTitleCase(SUB_GROUP_LABELS[exercise.sub_group] || (exercise.sub_group || ''))
+  // Один тег — подгруппа, в цвете основной группы (имя группы тут не дублируем).
+  const tagLabel = toTitleCase(
+    SUB_GROUP_LABELS[exercise.sub_group] || exercise.sub_group ||
+    MUSCLE_GROUP_LABELS[muscleGroup] || muscleGroup || ''
+  )
 
   return (
     <button onClick={onTap} className="press-tile" style={{
@@ -312,14 +315,9 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
         </div>
 
         <div style={rowStyles.tagsRow}>
-          {groupLabel && (
+          {tagLabel && (
             <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF' }}>
-              {groupLabel}
-            </span>
-          )}
-          {subGroupLabel && (
-            <span style={{ ...rowStyles.tag, ...rowStyles.tagSecondary }}>
-              {subGroupLabel}
+              {tagLabel}
             </span>
           )}
         </div>
@@ -534,11 +532,6 @@ const rowStyles = {
     letterSpacing: '0.2px',
     lineHeight: '13px',
     whiteSpace: 'nowrap'
-  },
-  tagSecondary: {
-    background: 'rgba(255, 255, 255, 0.08)',
-    color: '#A0A0A0',
-    fontWeight: 600
   },
   meta: {
     fontFamily: 'var(--font-manrope)',

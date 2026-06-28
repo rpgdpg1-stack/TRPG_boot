@@ -14,6 +14,9 @@ import UiIcon from '../components/UiIcon'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
+// Плейсхолдер группы, пока каталог не загружен (у упражнения ещё нет muscle_group):
+// такие упражнения собираются в одну секцию без заголовка.
+const UNKNOWN_GROUP = '—'
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
 
@@ -237,6 +240,10 @@ export default function ProgramConstructor() {
   const currentDay = byLoc[activeLoc]?.[activeIdx] || []
   const atLimit = currentDay.length >= MAX_PER_DAY
 
+  // Упражнения дня, сгруппированные по основной группе мышц (по порядку
+  // добавления). Заголовки секций и единый тег-подгруппа держатся на этом.
+  const daySections = groupDayByMuscle(currentDay, exMap)
+
   // Места внутри контейнера-таб-бара (заполненные + активное после тапа) и
   // снаружи (пустые неактивные — голым текстом, как невыбранные табы).
   const inContainerPlaces = PLACES.filter(loc => placeFilled(loc) || (loc === activeLoc && placeTouched))
@@ -443,56 +450,72 @@ export default function ProgramConstructor() {
         </div>
       </div>
 
-      {/* Список упражнений дня */}
+      {/* Список упражнений дня — сгруппирован по основной группе мышц: по центру
+          заголовок группы (СПИНА / ГРУДЬ / …) в цвете группы, под ним её
+          упражнения. На карточке — один тег подгруппы в цвете группы (как
+          заголовок на дне тренировки). Перетаскивание/удаление работают по
+          сквозному «плоскому» индексу (idx в currentDay). */}
       <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
         )}
-        {currentDay.map((exId, idx) => {
-          const ex = exMap[exId]
-          const c = getMuscleGroupColors(ex?.muscle_group)
-          const isDragging = drag?.startIndex === idx
-          return (
-            <div
-              key={exId}
-              ref={(el) => { rowRefs.current[idx] = el }}
-              style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
-            >
-              <div
-                onPointerDown={(e) => handleDragStart(e, idx)}
-                onPointerMove={handleDragMove}
-                onPointerUp={handleDragEnd}
-                onPointerCancel={handleDragEnd}
-                style={styles.dragHandle}
-                aria-label="Перетащить"
-              >
-                <GripIcon />
-              </div>
-              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
-                <div style={styles.exPreview}>
-                  {ex?.preview_url
-                    ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                    : <div style={styles.exPreviewPlaceholder}>💪</div>}
-                </div>
-                <div style={styles.exContent}>
-                  <div style={styles.exName}>{ex?.name || exId}</div>
-                  {ex && (
-                    <div style={styles.exTags}>
-                      <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
-                        {toTitleCase(MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group)}
-                      </span>
-                      <span style={{ ...styles.exTag, ...styles.exTagSecondary }}>
-                        {toTitleCase(SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group)}
-                      </span>
+        {daySections.map((section, sIdx) => (
+          <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
+            {section.muscleGroup !== UNKNOWN_GROUP && (
+              <h3 style={{ ...styles.groupHeader, color: getMuscleGroupColors(section.muscleGroup).accent }}>
+                {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+              </h3>
+            )}
+            <div style={styles.sectionRows}>
+              {section.items.map(({ exId, idx }) => {
+                const ex = exMap[exId]
+                const c = getMuscleGroupColors(ex?.muscle_group)
+                const isDragging = drag?.startIndex === idx
+                const subLabel = toTitleCase(
+                  SUB_GROUP_LABELS[ex?.sub_group] || ex?.sub_group ||
+                  MUSCLE_GROUP_LABELS[ex?.muscle_group] || ex?.muscle_group || ''
+                )
+                return (
+                  <div
+                    key={exId}
+                    ref={(el) => { rowRefs.current[idx] = el }}
+                    style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
+                  >
+                    <div
+                      onPointerDown={(e) => handleDragStart(e, idx)}
+                      onPointerMove={handleDragMove}
+                      onPointerUp={handleDragEnd}
+                      onPointerCancel={handleDragEnd}
+                      style={styles.dragHandle}
+                      aria-label="Перетащить"
+                    >
+                      <GripIcon />
                     </div>
-                  )}
-                </div>
-                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
-              </div>
+                    <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
+                      <div style={styles.exPreview}>
+                        {ex?.preview_url
+                          ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
+                          : <div style={styles.exPreviewPlaceholder}>💪</div>}
+                      </div>
+                      <div style={styles.exContent}>
+                        <div style={styles.exName}>{ex?.name || exId}</div>
+                        {ex && subLabel && (
+                          <div style={styles.exTags}>
+                            <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
+                              {subLabel}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
@@ -597,6 +620,25 @@ function toTitleCase(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
+// Группировка упражнений дня по основной группе мышц (в порядке добавления):
+// подряд идущие упражнения одной группы образуют секцию. Сохраняем сквозной
+// «плоский» индекс каждого упражнения (idx в currentDay) — на нём держатся
+// перетаскивание и удаление. Пока каталог не загружен (нет muscle_group) —
+// упражнение попадает в секцию UNKNOWN_GROUP (рисуется без заголовка).
+function groupDayByMuscle(dayIds, exMap) {
+  const sections = []
+  let current = null
+  dayIds.forEach((exId, idx) => {
+    const mg = exMap[exId]?.muscle_group || UNKNOWN_GROUP
+    if (!current || current.muscleGroup !== mg) {
+      current = { muscleGroup: mg, items: [] }
+      sections.push(current)
+    }
+    current.items.push({ exId, idx })
+  })
+  return sections
+}
+
 // Дни одного места из existing.data.locations[loc] (или data.days для «Зал» —
 // фолбэк на старый кеш до перезагрузки из БД).
 function buildDaysForLoc(existing, locKey, dayCount) {
@@ -688,7 +730,16 @@ const styles = {
     transition: 'color 0.18s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
-  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
+  // Между секциями групп — больше воздуха (20), внутри секции ряды — 10 (совпадает
+  // со страйдом перетаскивания: высота строки + 10).
+  dayList: { display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '16px', paddingBottom: '0px' },
+  daySection: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  sectionRows: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  // Заголовок группы — по центру, в акцентном цвете группы (как на дне тренировки).
+  groupHeader: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
+    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: '2px 0'
+  },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
@@ -701,7 +752,6 @@ const styles = {
   exName: { fontFamily: 'var(--font-geist)', fontSize: '13px', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   exTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  exTagSecondary: { background: 'rgba(255,255,255,0.08)', color: '#A0A0A0', fontWeight: 600 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
     width: 'auto', height: '55px', flexShrink: 0, padding: '0 36px',

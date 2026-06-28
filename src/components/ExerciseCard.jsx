@@ -16,9 +16,9 @@ import UiIcon from './UiIcon'
  *
  * НОВЫЙ ВИЗУАЛ (правка от 15.05.2026):
  *  - Сверху картинка слева, справа — название упражнения крупно.
- *  - Под названием — два тега: цветной тег группы мышц (Спина / Грудь / ...)
- *    в цвете группы, и серый тег подгруппы (Ширина / Бицепс / ...).
- *  - Под тегами — серая подпись подходов (3×8-10).
+ *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
+ *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
+ *  - Под тегом — серая подпись подходов (3×8-10).
  *  - Справа цифра веса в АКЦЕНТНОМ цвете группы (не зелёная как раньше).
  *
  * Что СОХРАНЕНО без изменений:
@@ -72,13 +72,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group)
 
-  // Названия для тегов. Группу пишем как "Спина" (с заглавной),
-  // подгруппу — как в SUB_GROUP_LABELS, но тоже приводим к виду "Ширина".
-  const groupLabelRaw = MUSCLE_GROUP_LABELS[muscle_group] || (muscle_group || '').toUpperCase()
-  const subGroupLabelRaw = SUB_GROUP_LABELS[sub_group] || (sub_group || '').toUpperCase()
-
-  const groupLabel = toTitleCase(groupLabelRaw)
-  const subGroupLabel = toTitleCase(subGroupLabelRaw)
+  // Один тег — подгруппа («Ширина», «Бицепс»…), в цвете основной группы. Имя
+  // группы живёт в заголовке секции на дне тренировки, на карточке не дублируется.
+  // Если подгруппы нет — откатываемся на имя группы, чтобы тег не был пустым.
+  const tagLabel = toTitleCase(
+    SUB_GROUP_LABELS[sub_group] || sub_group ||
+    MUSCLE_GROUP_LABELS[muscle_group] || muscle_group || ''
+  )
 
   useEffect(() => {
     setLocalWeight(
@@ -288,16 +288,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           {exercise_name}
         </div>
 
-        {/* 2. Два тега в ряд: цветной тег группы + серый тег подгруппы */}
+        {/* 2. Один тег подгруппы в цвете основной группы */}
         <div style={styles.tagsRow}>
-          {groupLabel && (
+          {tagLabel && (
             <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
-              {groupLabel}
-            </span>
-          )}
-          {subGroupLabel && (
-            <span style={{ ...styles.tag, ...styles.tagSecondary }}>
-              {subGroupLabel}
+              {tagLabel}
             </span>
           )}
         </div>
@@ -435,7 +430,7 @@ const styles = {
     lineHeight: '19px',
     color: '#F0F0F0'
   },
-  // Ряд из двух тегов: группа (цветная) + подгруппа (серая)
+  // Ряд тега подгруппы (в цвете основной группы)
   tagsRow: {
     display: 'flex',
     flexDirection: 'row',
@@ -453,12 +448,6 @@ const styles = {
     letterSpacing: '0.3px',
     lineHeight: '15px',
     whiteSpace: 'nowrap'
-  },
-  // Серый тег подгруппы — фон полупрозрачный, текст приглушённый
-  tagSecondary: {
-    background: 'rgba(255, 255, 255, 0.08)',
-    color: '#B5B5B5',
-    fontWeight: 600
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
