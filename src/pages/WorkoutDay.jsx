@@ -662,22 +662,24 @@ export default function WorkoutDay() {
                   ))}
                 </div>
               )}
-              {/* Пейджер дней (день N из M): просматриваемый кружок — зелёный;
-                  день с ЗАПУЩЕННОЙ тренировкой — крупнее и пульсирует (видно, куда
-                  вернуться). Показываем только при 2+ днях. */}
+              {/* Пейджер дней (день N из M): просматриваемый кружок — зелёный без
+                  анимации. День с ЗАПУЩЕННОЙ тренировкой, КОГДА смотришь другой день,
+                  — светло-серый и мягко пульсирует размером (куда вернуться).
+                  Показываем только при 2+ днях. */}
               {days.length > 1 && (
                 <div style={styles.dayPager}>
                   {days.map((d, i) => {
                     const isViewed = i === currentDayIdx
-                    const isSession = isThisActive ? d === day : (!!active && active.programId === programId && d === active.day)
+                    const sessionDay = isThisActive ? day : (!!active && active.programId === programId ? active.day : null)
+                    const isSessionElsewhere = sessionDay === d && !isViewed
                     return (
                       <span
                         key={d}
-                        className={isSession ? 'day-dot-pulse' : undefined}
+                        className={isSessionElsewhere ? 'day-dot-pulse' : undefined}
                         style={{
                           ...styles.dayDot,
                           ...(isViewed ? styles.dayDotActive : null),
-                          ...(isSession ? styles.dayDotSession : null)
+                          ...(isSessionElsewhere ? styles.dayDotSession : null)
                         }}
                       />
                     )
@@ -1398,11 +1400,11 @@ const styles = {
     background: 'var(--color-primary)',
     transform: 'scale(1.15)'
   },
-  // День с ЗАПУЩЕННОЙ тренировкой: зелёный, крупнее, пульсирующее кольцо
-  // (класс .day-dot-pulse) — заметно даже когда смотришь другой день.
+  // День с ЗАПУЩЕННОЙ тренировкой (когда смотришь другой день): чуть светлее
+  // обычного серого, мягко пульсирует размером (анимация .day-dot-pulse —
+  // transform задаёт keyframe, тут его не ставим).
   dayDotSession: {
-    background: 'var(--color-primary)',
-    transform: 'scale(1.45)'
+    background: 'rgba(255, 255, 255, 0.5)'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
