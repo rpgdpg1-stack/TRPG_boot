@@ -460,6 +460,12 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+/* Смена текста в закреплённой пилюле группы (WorkoutDay) — мягкий заезд снизу. */
+@keyframes groupPillIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Скелетон загрузки: мягкий shimmer по плейсхолдерам (WorkoutDay SkeletonCard). */
 .skel {
   background: linear-gradient(90deg,

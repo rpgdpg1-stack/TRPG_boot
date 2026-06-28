@@ -115,6 +115,15 @@ export default function WorkoutDay() {
 
   const cardRefs = useRef(new Map())
 
+  // Закреплённая стеклянная пилюля текущей группы мышц: стоит на месте под шапкой
+  // дня, контент/заголовки уезжают под неё, а её текст плавно сменяется, когда
+  // заголовок следующей группы доходит до центра пилюли. activeSection — индекс
+  // активной секции; заголовок этой секции в контенте гасим (его показывает пилюля).
+  const [activeSection, setActiveSection] = useState(0)
+  const activeSectionRef = useRef(0)
+  const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер + гашение)
+  const groupPillRef = useRef(null)
+
   // Финал прогресса: счётчик 3-2-1 + искра на «голове» заливки и микро-салют на
   // 100%. Анимации событийные (вспышка на нажатие), чтобы ничего не мельтешило в
   // закреплённой шапке. sparkKey/finishKey — ремаунт частиц для повтора анимации.
@@ -291,6 +300,60 @@ export default function WorkoutDay() {
       if (s.exercise_id && getExerciseNoteCached(s.exercise_id) === null) {
         getExerciseNote(s.exercise_id).catch(() => {})
       }
+    }
+  }, [loading, slots])
+
+  // При смене дня/места сбрасываем активную группу на первую (день открывается
+  // сверху) — чтобы пилюля не моргнула прежним значением до пересчёта.
+  useLayoutEffect(() => {
+    activeSectionRef.current = 0
+    setActiveSection(0)
+  }, [day, place])
+
+  // Активная группа для пилюли + гашение заголовков, въезжающих под неё. Считаем
+  // по реальным позициям заголовков относительно центра пилюли: активная = последняя
+  // группа, чей заголовок дошёл до центра; её заголовок в контенте гасим (его
+  // показывает пилюля), следующие — плавно растворяются на подъезде. Опасити правим
+  // императивно (без ререндера на каждый кадр скролла), пилюлю — только при смене
+  // группы. Координаты — viewport-овые (пилюля закреплена, считать просто).
+  useLayoutEffect(() => {
+    if (loading || slots.length === 0) return
+    let raf = 0
+    const FADE_PX = 26
+    const compute = () => {
+      raf = 0
+      const pill = groupPillRef.current
+      if (!pill) return
+      const pr = pill.getBoundingClientRect()
+      const pillCenter = pr.top + pr.height / 2
+      const refs = sectionHeaderRefs.current
+      let active = 0
+      const tops = new Map()
+      refs.forEach((el, idx) => {
+        if (!el) return
+        const top = el.getBoundingClientRect().top
+        tops.set(idx, top)
+        if (top <= pillCenter + 0.5) active = Math.max(active, idx)
+      })
+      tops.forEach((top, idx) => {
+        const el = refs.get(idx)
+        if (!el) return
+        const op = idx === active ? 0 : Math.max(0, Math.min(1, (top - pillCenter) / FADE_PX))
+        el.style.opacity = String(op)
+      })
+      if (active !== activeSectionRef.current) {
+        activeSectionRef.current = active
+        setActiveSection(active)
+      }
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
+    compute()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
     }
   }, [loading, slots])
 
@@ -596,6 +659,11 @@ export default function WorkoutDay() {
   }
 
   const sections = groupByMuscleGroup(slots)
+  // Группа, которую показывает закреплённая пилюля (с защитой от устаревшего индекса
+  // при смене дня — секций могло стать меньше).
+  const pillGroup = sections.length
+    ? sections[Math.min(activeSection, sections.length - 1)].muscleGroup
+    : null
   const remaining = slots.length - activeOrderNums.size
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
@@ -617,6 +685,10 @@ export default function WorkoutDay() {
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
       <div style={styles.stickyHeader}>
 
+        {/* Непрозрачная подложка (safe-top + карточка дня), full-bleed — прячет
+            контент, что уезжает наверх. Сам stickyHeader теперь прозрачный, чтобы
+            под пилюлей-фростом был виден размытый контент. */}
+        <div style={styles.headerOpaque}>
         {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
             прогресс. Фон/строук как у карточки игрока на главной. */}
         <div style={styles.headerCard}>
@@ -724,6 +796,21 @@ export default function WorkoutDay() {
             </div>
           </div>
         </div>
+        </div>
+
+        {/* Закреплённая стеклянная пилюля текущей группы — стоит на месте под шапкой
+            дня; контент/заголовки уезжают под неё (full-bleed «фрост» размывает их
+            на всю ширину, без подглядывания по краям), а текст пилюли плавно
+            сменяется на границе групп. */}
+        {!loading && pillGroup && (
+          <div style={styles.groupPillRow} aria-hidden="true">
+            <div ref={groupPillRef} style={styles.groupPill}>
+              <span key={pillGroup} style={{ ...styles.groupPillText, color: getMuscleGroupColors(pillGroup).accent }}>
+                {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Fade-scrim под блоком дня: контент уходит под шапку плавно. */}
         <div style={styles.stickyFade} aria-hidden="true" />
@@ -764,10 +851,13 @@ export default function WorkoutDay() {
                 key={`${section.muscleGroup}-${sIdx}`}
                 style={styles.section}
               >
-                <h2 style={{
-                  ...styles.muscleHeader,
-                  color: getMuscleGroupColors(section.muscleGroup).accent
-                }}>
+                <h2
+                  ref={(el) => { if (el) sectionHeaderRefs.current.set(sIdx, el); else sectionHeaderRefs.current.delete(sIdx) }}
+                  style={{
+                    ...styles.muscleHeader,
+                    color: getMuscleGroupColors(section.muscleGroup).accent
+                  }}
+                >
                   {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
                 </h2>
 
@@ -1297,14 +1387,66 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 30,
-    background: 'var(--color-bg)',
-    // Верх карточки-шапки — ровно 16px ниже кнопок Telegram (зашито в var).
-    paddingTop: 'var(--tg-safe-top)',
+    // Фон НЕ задаём: stickyHeader прозрачный, чтобы под пилюлей-фростом был виден
+    // размытый контент. Непрозрачность даёт headerOpaque (safe-top + карточка дня).
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
+  },
+  // Непрозрачная подложка под safe-top + карточку дня (full-bleed). Прячет контент,
+  // что уезжает наверх (сам stickyHeader прозрачный).
+  headerOpaque: {
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    // Верх карточки-шапки — ровно 16px ниже кнопок Telegram (зашито в var).
+    paddingTop: 'var(--tg-safe-top)',
+    background: 'var(--color-bg)'
+  },
+  // Полоса с закреплённой пилюлей — full-bleed «фрост»: контент под ней размывается
+  // на всю ширину (без подглядывания по краям пилюли). При покое почти невидима —
+  // виден только сам стеклянный чип.
+  groupPillRow: {
+    position: 'relative',
+    zIndex: 2,
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    background: 'rgba(13, 12, 12, 0.15)',
+    backdropFilter: 'blur(var(--blur-md)) saturate(160%)',
+    WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(160%)'
+  },
+  // Сам стеклянный чип — без обводки, светлое полупрозрачное стекло + блюр.
+  groupPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '110px',
+    height: '30px',
+    padding: '0 18px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'rgba(255, 255, 255, 0.07)',
+    backdropFilter: 'blur(var(--blur-sm))',
+    WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    overflow: 'hidden'
+  },
+  groupPillText: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 600,
+    fontSize: '13px',
+    letterSpacing: '2px',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+    animation: 'groupPillIn 0.22s ease-out'
   },
   // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
   stickyFade: {
@@ -1469,14 +1611,18 @@ const styles = {
   // отступ 16px, значит у заголовка padding-left 18px → текст тоже на 34px.
   // Так при скролле пилюля-пузырёк появляется ВОКРУГ заголовка, а сам текст
   // не сдвигается.
+  // Заголовок группы в контенте — по центру (как в конструкторе). Опасити правит
+  // эффект-пилюля: активную группу гасит (её показывает пилюля), следующие
+  // плавно растворяет на подъезде под пилюлю.
   muscleHeader: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    padding: '4px 4px 4px 18px',
-    margin: 0
+    padding: '4px 4px',
+    margin: 0,
+    textAlign: 'center'
   },
   exerciseList: {
     display: 'flex',
