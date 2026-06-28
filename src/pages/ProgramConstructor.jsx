@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
@@ -17,6 +17,12 @@ const MAX_PER_DAY = 10
 // Плейсхолдер группы, пока каталог не загружен (у упражнения ещё нет muscle_group):
 // такие упражнения собираются в одну секцию без заголовка.
 const UNKNOWN_GROUP = '—'
+// Перетаскивание: ширина жёлоба ручки (28) + gap обёртки (6) — на столько клон
+// карточки правее левого края строки. Зоны автоскролла у краёв экрана и скорость.
+const HANDLE_COL_PX = 34
+const EDGE_TOP_PX = 110     // под системными кнопками Telegram
+const EDGE_BOTTOM_PX = 180  // над доком кнопок «Добавить / Сохранить»
+const EDGE_MAX_SPEED = 16   // px за кадр
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
 
@@ -83,12 +89,18 @@ export default function ProgramConstructor() {
   const isDirty = () =>
     initialSnapshot.current !== JSON.stringify({ name, dayCount, byLoc })
 
-  // Перетаскивание упражнений внутри дня: тащим за «ручку», соседи плавно
-  // расступаются, перетаскиваемая карточка приподнимается. Порядок применяется
-  // при отпускании.
-  const [drag, setDrag] = useState(null) // { startIndex, targetIndex, dy, stride, startY }
-  const dragRef = useRef(null)
-  const rowRefs = useRef([])
+  // Перетаскивание упражнений внутри дня — живая сортировка с пересчётом групп:
+  // тащим за «ручку», клон карточки летит за пальцем (fixed), на её месте — слот-
+  // плейсхолдер. Порядок в массиве меняется СРАЗУ при наведении на новую позицию,
+  // поэтому заголовки групп разъезжаются/слипаются вживую. Соседи доезжают плавно
+  // (FLIP), у краёв экрана включается автоскролл.
+  const [drag, setDrag] = useState(null) // { id, grabOffsetY, left, width, height, pointerY }
+  const dragRef = useRef(null)           // зеркало drag для обработчиков (без устаревания)
+  const orderRef = useRef([])            // актуальный порядок exId дня (для расчёта позиции)
+  const rowGeoRef = useRef(new Map())    // exId -> обёртка строки (замеры позиций + FLIP)
+  const flipPrevRef = useRef(new Map())  // exId -> прежний top (document-relative) для FLIP
+  const cloneRef = useRef(null)          // летящий за пальцем клон карточки
+  const autoScrollRef = useRef(0)        // rAF-петля автоскролла у краёв
 
   useEffect(() => {
     if (pickerOpen) {
@@ -239,70 +251,194 @@ export default function ProgramConstructor() {
 
   const currentDay = byLoc[activeLoc]?.[activeIdx] || []
   const atLimit = currentDay.length >= MAX_PER_DAY
+  // Держим порядок в ref синхронно — обработчики перетаскивания читают актуальный.
+  orderRef.current = currentDay
 
   // Упражнения дня, сгруппированные по основной группе мышц (по порядку
   // добавления). Заголовки секций и единый тег-подгруппа держатся на этом.
   const daySections = groupDayByMuscle(currentDay, exMap)
+  // Плоский список «заголовок | строка» — все в ОДНОМ контейнере (а не по секциям),
+  // чтобы при переносе между группами DOM-узел строки не пересоздавался и не терял
+  // pointer-capture. Заголовок ключуем по первому упражнению секции.
+  const flatNodes = []
+  daySections.forEach((section) => {
+    if (section.muscleGroup !== UNKNOWN_GROUP) {
+      flatNodes.push({ type: 'header', key: `h:${section.items[0]?.exId}`, group: section.muscleGroup })
+    }
+    section.items.forEach(it => flatNodes.push({ type: 'row', exId: it.exId }))
+  })
 
   // Места внутри контейнера-таб-бара (заполненные + активное после тапа) и
   // снаружи (пустые неактивные — голым текстом, как невыбранные табы).
   const inContainerPlaces = PLACES.filter(loc => placeFilled(loc) || (loc === activeLoc && placeTouched))
   const outsidePlaces = PLACES.filter(loc => !inContainerPlaces.includes(loc))
 
-  const moveItem = (from, to) => {
+  // Перенос активного упражнения на позицию insertion (индекс в массиве БЕЗ
+  // активного). Меняем порядок сразу — заголовки групп пересчитываются на лету.
+  const reorderActiveTo = (insertion) => {
+    const id = dragRef.current?.id
+    if (!id) return
     setByLoc(prev => {
       const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
       const arr = next[activeLoc][activeIdx]
-      const [item] = arr.splice(from, 1)
-      arr.splice(to, 0, item)
+      const from = arr.indexOf(id)
+      if (from < 0) return prev
+      arr.splice(from, 1)
+      arr.splice(insertion, 0, id)
       return next
     })
   }
 
-  const handleDragStart = (e, idx) => {
+  // Куда вставить активную карточку: считаем, у скольких НЕактивных строк середина
+  // выше пальца (по реальным rect'ам — корректно при разной высоте и заголовках).
+  const updateTarget = (pointerY) => {
+    const d = dragRef.current
+    if (!d) return
+    const order = orderRef.current
+    let insertion = 0
+    for (const exId of order) {
+      if (exId === d.id) continue
+      const el = rowGeoRef.current.get(exId)
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      if (r.top + r.height / 2 < pointerY) insertion++
+    }
+    const without = order.filter(x => x !== d.id)
+    insertion = Math.max(0, Math.min(without.length, insertion))
+    const target = [...without.slice(0, insertion), d.id, ...without.slice(insertion)]
+    if (target.length === order.length && target.every((x, i) => x === order[i])) return
+    haptic.selection()
+    orderRef.current = target // синхронно, чтобы быстрый следующий расчёт не дёргался дважды
+    reorderActiveTo(insertion)
+  }
+
+  // Клон карточки летит за пальцем — позиционируем top императивно (без re-render
+  // на каждый pointermove; перерисовка только когда реально меняется порядок).
+  const positionClone = () => {
+    const d = dragRef.current
+    const el = cloneRef.current
+    if (d && el) el.style.top = `${d.pointerY - d.grabOffsetY}px`
+  }
+
+  const handleDragStart = (e, exId) => {
     e.stopPropagation()
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
-    const el = rowRefs.current[idx]
-    const stride = (el?.offsetHeight || 90) + 10 // высота строки + gap списка (10px)
-    const data = { startIndex: idx, targetIndex: idx, dy: 0, stride, startY: e.clientY }
+    const wrap = rowGeoRef.current.get(exId)
+    if (!wrap) return
+    const r = wrap.getBoundingClientRect()
+    const data = {
+      id: exId,
+      pointerY: e.clientY,
+      grabOffsetY: e.clientY - r.top,
+      left: r.left + HANDLE_COL_PX,
+      width: r.width - HANDLE_COL_PX,
+      height: r.height
+    }
     dragRef.current = data
     setDrag(data)
     haptic.medium()
+    startAutoScroll()
   }
 
   const handleDragMove = (e) => {
     const d = dragRef.current
     if (!d) return
-    const dy = e.clientY - d.startY
-    const len = (byLoc[activeLoc]?.[activeIdx] || []).length
-    let targetIndex = d.startIndex + Math.round(dy / d.stride)
-    targetIndex = Math.max(0, Math.min(len - 1, targetIndex))
-    if (targetIndex !== d.targetIndex) haptic.selection()
-    const next = { ...d, dy, targetIndex }
-    dragRef.current = next
-    setDrag(next)
+    d.pointerY = e.clientY
+    positionClone()
+    updateTarget(e.clientY)
   }
 
   const handleDragEnd = (e) => {
-    const d = dragRef.current
-    if (!d) return
+    if (!dragRef.current) return
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* ignore */ }
-    if (d.targetIndex !== d.startIndex) moveItem(d.startIndex, d.targetIndex)
+    stopAutoScroll()
     dragRef.current = null
     setDrag(null)
+    haptic.light()
   }
 
-  // Сдвиг каждой строки во время перетаскивания (плавное расступание соседей).
-  const rowDragStyle = (idx) => {
-    if (!drag) return { transition: 'transform 0.18s ease', zIndex: 1 }
-    const { startIndex, targetIndex, dy, stride } = drag
-    if (idx === startIndex) {
-      return { transform: `translateY(${dy}px) scale(1.03)`, transition: 'none', zIndex: 20 }
+  // Автоскролл, когда палец у верхнего/нижнего края: тянем страницу, чтобы можно
+  // было дотащить карточку в самый низ или верх (где док/системные кнопки
+  // перекрывают список). Палец стоит — список едет под ним, позиция пересчитывается.
+  const startAutoScroll = () => {
+    if (autoScrollRef.current) return
+    const tick = () => {
+      const d = dragRef.current
+      if (!d) { autoScrollRef.current = 0; return }
+      const y = d.pointerY
+      const vh = window.innerHeight
+      let speed = 0
+      if (y < EDGE_TOP_PX) speed = -EDGE_MAX_SPEED * Math.min(1, (EDGE_TOP_PX - y) / EDGE_TOP_PX)
+      else if (y > vh - EDGE_BOTTOM_PX) speed = EDGE_MAX_SPEED * Math.min(1, (y - (vh - EDGE_BOTTOM_PX)) / EDGE_BOTTOM_PX)
+      if (speed !== 0) {
+        const before = window.scrollY
+        window.scrollBy(0, speed)
+        if (window.scrollY !== before) updateTarget(d.pointerY)
+      }
+      autoScrollRef.current = requestAnimationFrame(tick)
     }
-    let shift = 0
-    if (targetIndex > startIndex && idx > startIndex && idx <= targetIndex) shift = -stride
-    else if (targetIndex < startIndex && idx >= targetIndex && idx < startIndex) shift = stride
-    return { transform: `translateY(${shift}px)`, transition: 'transform 0.18s ease', zIndex: 1 }
+    autoScrollRef.current = requestAnimationFrame(tick)
+  }
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current) { cancelAnimationFrame(autoScrollRef.current); autoScrollRef.current = 0 }
+  }
+
+  // FLIP: после каждого пересчёта порядка соседние строки плавно доезжают на новые
+  // места (появился/исчез заголовок — строки под ним мягко съезжают). Активный
+  // плейсхолдер не анимируем — его «ведёт» палец-клон. Координату берём
+  // document-relative (rect.top + scrollY), чтобы автоскролл не давал ложных сдвигов.
+  useLayoutEffect(() => {
+    const prev = flipPrevRef.current
+    const nextTops = new Map()
+    rowGeoRef.current.forEach((el, exId) => {
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY
+      nextTops.set(exId, top)
+      if (drag && drag.id === exId) return
+      const old = prev.get(exId)
+      if (old == null) return
+      const delta = old - top
+      if (Math.abs(delta) < 1) return
+      el.style.transition = 'none'
+      el.style.transform = `translateY(${delta}px)`
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.18s ease'
+        el.style.transform = ''
+      })
+    })
+    flipPrevRef.current = nextTops
+    positionClone() // top клона задаём только императивно (в style его нет — иначе сброс)
+  })
+
+  useEffect(() => () => stopAutoScroll(), [])
+
+  // Внутренность карточки упражнения — общий рендер для строки списка и для
+  // летящего клона (чтобы клон выглядел один в один).
+  const renderExCardInner = (ex, exId) => {
+    const c = getMuscleGroupColors(ex?.muscle_group)
+    const subLabel = toTitleCase(
+      SUB_GROUP_LABELS[ex?.sub_group] || ex?.sub_group ||
+      MUSCLE_GROUP_LABELS[ex?.muscle_group] || ex?.muscle_group || ''
+    )
+    return (
+      <>
+        <div style={styles.exPreview}>
+          {ex?.preview_url
+            ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
+            : <div style={styles.exPreviewPlaceholder}>💪</div>}
+        </div>
+        <div style={styles.exContent}>
+          <div style={styles.exName}>{ex?.name || exId}</div>
+          {ex && subLabel && (
+            <div style={styles.exTags}>
+              <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>{subLabel}</span>
+            </div>
+          )}
+        </div>
+        <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+      </>
+    )
   }
 
   return (
@@ -453,70 +589,76 @@ export default function ProgramConstructor() {
       {/* Список упражнений дня — сгруппирован по основной группе мышц: по центру
           заголовок группы (СПИНА / ГРУДЬ / …) в цвете группы, под ним её
           упражнения. На карточке — один тег подгруппы в цвете группы (как
-          заголовок на дне тренировки). Перетаскивание/удаление работают по
-          сквозному «плоскому» индексу (idx в currentDay). */}
+          заголовок на дне тренировки). Заголовки и строки идут плоско в одном
+          контейнере, чтобы перетаскивание между группами не пересоздавало узлы. */}
       <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
         )}
-        {daySections.map((section, sIdx) => (
-          <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
-            {section.muscleGroup !== UNKNOWN_GROUP && (
-              <h3 style={{ ...styles.groupHeader, color: getMuscleGroupColors(section.muscleGroup).accent }}>
-                {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+        {flatNodes.map((node) => {
+          if (node.type === 'header') {
+            return (
+              <h3 key={node.key} style={{ ...styles.groupHeader, color: getMuscleGroupColors(node.group).accent }}>
+                {MUSCLE_GROUP_LABELS[node.group] || node.group.toUpperCase()}
               </h3>
-            )}
-            <div style={styles.sectionRows}>
-              {section.items.map(({ exId, idx }) => {
-                const ex = exMap[exId]
-                const c = getMuscleGroupColors(ex?.muscle_group)
-                const isDragging = drag?.startIndex === idx
-                const subLabel = toTitleCase(
-                  SUB_GROUP_LABELS[ex?.sub_group] || ex?.sub_group ||
-                  MUSCLE_GROUP_LABELS[ex?.muscle_group] || ex?.muscle_group || ''
-                )
-                return (
-                  <div
-                    key={exId}
-                    ref={(el) => { rowRefs.current[idx] = el }}
-                    style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
-                  >
-                    <div
-                      onPointerDown={(e) => handleDragStart(e, idx)}
-                      onPointerMove={handleDragMove}
-                      onPointerUp={handleDragEnd}
-                      onPointerCancel={handleDragEnd}
-                      style={styles.dragHandle}
-                      aria-label="Перетащить"
-                    >
-                      <GripIcon />
-                    </div>
-                    <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
-                      <div style={styles.exPreview}>
-                        {ex?.preview_url
-                          ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                          : <div style={styles.exPreviewPlaceholder}>💪</div>}
-                      </div>
-                      <div style={styles.exContent}>
-                        <div style={styles.exName}>{ex?.name || exId}</div>
-                        {ex && subLabel && (
-                          <div style={styles.exTags}>
-                            <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
-                              {subLabel}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
-                    </div>
-                  </div>
-                )
-              })}
+            )
+          }
+          const { exId } = node
+          const ex = exMap[exId]
+          const isActive = drag?.id === exId
+          return (
+            <div
+              key={exId}
+              ref={(el) => { if (el) rowGeoRef.current.set(exId, el); else rowGeoRef.current.delete(exId) }}
+              style={styles.exRowWrap}
+            >
+              <div
+                onPointerDown={(e) => handleDragStart(e, exId)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                style={{ ...styles.dragHandle, opacity: isActive ? 0.3 : 1 }}
+                aria-label="Перетащить"
+              >
+                <GripIcon />
+              </div>
+              {isActive ? (
+                <div style={{ ...styles.exCard, ...styles.exCardPlaceholder, height: drag.height }} />
+              ) : (
+                <div style={styles.exCard}>
+                  {renderExCardInner(ex, exId)}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      {/* Клон перетаскиваемой карточки — летит за пальцем (fixed). top задаётся
+          только императивно (positionClone), в style его нет — иначе re-render при
+          смене порядка сбрасывал бы позицию обратно к старту. */}
+      {drag && exMap[drag.id] && createPortal(
+        <div
+          ref={cloneRef}
+          style={{
+            ...styles.exCard,
+            ...styles.exCardDragging,
+            position: 'fixed',
+            left: drag.left,
+            width: drag.width,
+            height: drag.height,
+            margin: 0,
+            transform: 'scale(1.03)',
+            zIndex: 80,
+            pointerEvents: 'none',
+            willChange: 'top'
+          }}
+        >
+          {renderExCardInner(exMap[drag.id], drag.id)}
+        </div>,
+        document.body
+      )}
 
       {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
           первый тап только убирает клавиатуру (blur), контрол под ним не срабатывает.
@@ -730,20 +872,21 @@ const styles = {
     transition: 'color 0.18s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
-  // Между секциями групп — больше воздуха (20), внутри секции ряды — 10 (совпадает
-  // со страйдом перетаскивания: высота строки + 10).
-  dayList: { display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '16px', paddingBottom: '0px' },
-  daySection: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  sectionRows: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  // Плоский список: заголовки и строки — соседи с gap 10; у заголовка свой верхний
+  // отступ, чтобы группы визуально отделялись (кроме первого — :first-child убирать
+  // незачем, лишние 8px сверху не мешают).
+  dayList: { display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', paddingBottom: '0px' },
   // Заголовок группы — по центру, в акцентном цвете группы (как на дне тренировки).
   groupHeader: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
-    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: '2px 0'
+    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: '8px 0 2px'
   },
   emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
+  // Слот на месте перетаскиваемой карточки — пунктирная рамка, показывает, куда ляжет.
+  exCardPlaceholder: { background: 'rgba(255,255,255,0.03)', border: '1.5px dashed rgba(255,255,255,0.18)' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
