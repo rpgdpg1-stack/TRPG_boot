@@ -155,8 +155,12 @@ export default function WorkoutDay() {
   useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
   const isThisActive = !!active && active.programId === programId && active.day === day
   const sessionBlocked = !!active && !isThisActive
-  // Тост «сначала заверши текущую» при тапе на заблокированную «Начать».
+  // Тост «сначала заверши текущую» — показываем ТОЛЬКО по тапу на заблокированную
+  // «Начать», авто-скрытие через 2.6с (nonce перезапускает шейк на каждый тап).
   const [startBlockNonce, setStartBlockNonce] = useState(0)
+  const [startBlockHint, setStartBlockHint] = useState(false)
+  const startBlockTimer = useRef(null)
+  useEffect(() => () => { if (startBlockTimer.current) clearTimeout(startBlockTimer.current) }, [])
 
   useEffect(() => {
     // Если пришли из избранного на главной (state.fromHome) — кнопка "Назад"
@@ -499,10 +503,14 @@ export default function WorkoutDay() {
     startActiveWorkout(programId, day, place)
   }
 
-  // Тап по заблокированной «Начать» (активна другая тренировка) — подсказка.
+  // Тап по заблокированной «Начать» (активна другая тренировка) — подсказка
+  // (показ + шейк, авто-скрытие через 2.6с).
   const handleBlockedStart = () => {
     haptic.error()
+    setStartBlockHint(true)
     setStartBlockNonce(n => n + 1)
+    if (startBlockTimer.current) clearTimeout(startBlockTimer.current)
+    startBlockTimer.current = setTimeout(() => setStartBlockHint(false), 2600)
   }
 
   // Тап «Завершить» → сначала минимал-подтверждение (защита от случайного
@@ -654,19 +662,26 @@ export default function WorkoutDay() {
                   ))}
                 </div>
               )}
-              {/* Пейджер дней (день N из M): активный кружок — зелёный.
-                  Показываем только при 2+ днях. */}
+              {/* Пейджер дней (день N из M): просматриваемый кружок — зелёный;
+                  день с ЗАПУЩЕННОЙ тренировкой — крупнее и пульсирует (видно, куда
+                  вернуться). Показываем только при 2+ днях. */}
               {days.length > 1 && (
                 <div style={styles.dayPager}>
-                  {days.map((d, i) => (
-                    <span
-                      key={d}
-                      style={{
-                        ...styles.dayDot,
-                        ...(i === currentDayIdx ? styles.dayDotActive : null)
-                      }}
-                    />
-                  ))}
+                  {days.map((d, i) => {
+                    const isViewed = i === currentDayIdx
+                    const isSession = isThisActive ? d === day : (!!active && active.programId === programId && d === active.day)
+                    return (
+                      <span
+                        key={d}
+                        className={isSession ? 'day-dot-pulse' : undefined}
+                        style={{
+                          ...styles.dayDot,
+                          ...(isViewed ? styles.dayDotActive : null),
+                          ...(isSession ? styles.dayDotSession : null)
+                        }}
+                      />
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -804,11 +819,12 @@ export default function WorkoutDay() {
         <div style={styles.finishBar}>
           <div className="dock-scrim" />
 
-          {/* Подсказка, когда «Начать» заблокирована (идёт другая тренировка). */}
-          {sessionBlocked && (
+          {/* Подсказка только по тапу на заблокированную «Начать» (с названием
+              запущенного дня), сама прячется через пару секунд. */}
+          {sessionBlocked && startBlockHint && (
             <div style={styles.startBlockWrap}>
-              <div key={startBlockNonce} className={startBlockNonce ? 'shake-error' : undefined} style={styles.startBlockToast}>
-                Сначала заверши текущую тренировку
+              <div key={startBlockNonce} className="shake-error" style={styles.startBlockToast}>
+                Сначала заверши тренировку — день {active.day}
               </div>
             </div>
           )}
@@ -1381,6 +1397,12 @@ const styles = {
   dayDotActive: {
     background: 'var(--color-primary)',
     transform: 'scale(1.15)'
+  },
+  // День с ЗАПУЩЕННОЙ тренировкой: зелёный, крупнее, пульсирующее кольцо
+  // (класс .day-dot-pulse) — заметно даже когда смотришь другой день.
+  dayDotSession: {
+    background: 'var(--color-primary)',
+    transform: 'scale(1.45)'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
