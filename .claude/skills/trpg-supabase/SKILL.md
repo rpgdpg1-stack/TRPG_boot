@@ -86,7 +86,10 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
   `(program_id, location, day, order_num)` + CHECK на location.
 - `api_save_my_program(p_user_id, p_name, p_day_count int, p_days jsonb)` — `p_days` это объект по
   местам `{ "gym": [ ["ex_001",...] /*день A*/, ... ], "home": [...], "outdoor": [...] }`. Удаляет все
-  слоты программы и пересобирает; пустые дни/места пропускает; ≤10 упр/день.
+  слоты программы и пересобирает; пустые дни/места пропускает; ≤10 упр/день. Плюс чистит протухшие
+  `user_exercise_swaps` этой программы: после пересборки order_num смещаются и свап мог бы попасть в
+  чужой слот — остаются только совпавшие с новой раскладкой по (day, location, order_num)+sub_group+type.
+  Зеркальная защита на клиенте — в `getWorkoutDay` (см. trpg-workflow «грабли»).
 - `api_get_my_programs(p_user_id)` отдаёт по программе: `days` (набор **Зал**, для совместимости —
   экран дня читает его) **и** `locations` = `{ gym:{A:[...]}, home:{...}, outdoor:{...} }` (только
   непустые места).
