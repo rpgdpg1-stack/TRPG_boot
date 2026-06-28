@@ -115,14 +115,14 @@ export default function WorkoutDay() {
 
   const cardRefs = useRef(new Map())
 
-  // Закреплённая стеклянная пилюля текущей группы мышц: стоит на месте под шапкой
-  // дня, контент/заголовки уезжают под неё, а её текст плавно сменяется, когда
-  // заголовок следующей группы доходит до центра пилюли. activeSection — индекс
-  // активной секции; заголовок этой секции в контенте гасим (его показывает пилюля).
-  const [activeSection, setActiveSection] = useState(0)
-  const activeSectionRef = useRef(0)
-  const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер + гашение)
-  const groupPillRef = useRef(null)
+  // Стеклянная пилюля текущей группы. Заголовки групп в контенте — обычные (как
+  // всегда). Когда листаешь вниз и заголовок секции уходит под карточку дня —
+  // появляется закреплённая пилюля с этой группой (стекло+блюр как у кнопок, без
+  // обводки), её текст сменяется на следующую группу. -1 = пилюли нет (мы вверху).
+  const [activeSection, setActiveSection] = useState(-1)
+  const activeSectionRef = useRef(-1)
+  const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
+  const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
   // Финал прогресса: счётчик 3-2-1 + искра на «голове» заливки и микро-салют на
   // 100%. Анимации событийные (вспышка на нажатие), чтобы ничего не мельтешило в
@@ -303,43 +303,28 @@ export default function WorkoutDay() {
     }
   }, [loading, slots])
 
-  // При смене дня/места сбрасываем активную группу на первую (день открывается
-  // сверху) — чтобы пилюля не моргнула прежним значением до пересчёта.
+  // При смене дня/места прячем пилюлю (день открывается сверху).
   useLayoutEffect(() => {
-    activeSectionRef.current = 0
-    setActiveSection(0)
+    activeSectionRef.current = -1
+    setActiveSection(-1)
   }, [day, place])
 
-  // Активная группа для пилюли + гашение заголовков, въезжающих под неё. Считаем
-  // по реальным позициям заголовков относительно центра пилюли: активная = последняя
-  // группа, чей заголовок дошёл до центра; её заголовок в контенте гасим (его
-  // показывает пилюля), следующие — плавно растворяются на подъезде. Опасити правим
-  // императивно (без ререндера на каждый кадр скролла), пилюлю — только при смене
-  // группы. Координаты — viewport-овые (пилюля закреплена, считать просто).
+  // Какая группа в пилюле. Активная = последняя секция, чей заголовок ушёл под
+  // карточку дня (его верх выше низа шапки). Пока ни один не ушёл (мы вверху) —
+  // -1, пилюли нет. Считаем по позициям заголовков на scroll через rAF, пилюлю
+  // дёргаем только при смене группы. Заголовки в контенте НЕ трогаем (обычные).
   useLayoutEffect(() => {
-    if (loading || slots.length === 0) return
+    if (loading || slots.length === 0) { setActiveSection(-1); return }
     let raf = 0
-    const FADE_PX = 26
     const compute = () => {
       raf = 0
-      const pill = groupPillRef.current
-      if (!pill) return
-      const pr = pill.getBoundingClientRect()
-      const pillCenter = pr.top + pr.height / 2
+      const sticky = stickyHeaderRef.current
+      if (!sticky) return
+      const line = sticky.getBoundingClientRect().bottom
       const refs = sectionHeaderRefs.current
-      let active = 0
-      const tops = new Map()
+      let active = -1
       refs.forEach((el, idx) => {
-        if (!el) return
-        const top = el.getBoundingClientRect().top
-        tops.set(idx, top)
-        if (top <= pillCenter + 0.5) active = Math.max(active, idx)
-      })
-      tops.forEach((top, idx) => {
-        const el = refs.get(idx)
-        if (!el) return
-        const op = idx === active ? 0 : Math.max(0, Math.min(1, (top - pillCenter) / FADE_PX))
-        el.style.opacity = String(op)
+        if (el && el.getBoundingClientRect().top <= line) active = Math.max(active, idx)
       })
       if (active !== activeSectionRef.current) {
         activeSectionRef.current = active
@@ -659,10 +644,10 @@ export default function WorkoutDay() {
   }
 
   const sections = groupByMuscleGroup(slots)
-  // Группа, которую показывает закреплённая пилюля (с защитой от устаревшего индекса
-  // при смене дня — секций могло стать меньше).
-  const pillGroup = sections.length
-    ? sections[Math.min(activeSection, sections.length - 1)].muscleGroup
+  // Группа в пилюле — только когда есть «ушедшая под шапку» секция (activeSection ≥ 0);
+  // иначе пилюли нет (мы вверху).
+  const pillGroup = activeSection >= 0 && sections[activeSection]
+    ? sections[activeSection].muscleGroup
     : null
   const remaining = slots.length - activeOrderNums.size
   const canFinish = activeOrderNums.size > 0
@@ -683,12 +668,8 @@ export default function WorkoutDay() {
 
       {/* Шапка дня закреплена сверху (sticky) — то же устройство, что карточка
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
-      <div style={styles.stickyHeader}>
+      <div ref={stickyHeaderRef} style={styles.stickyHeader}>
 
-        {/* Непрозрачная подложка (safe-top + карточка дня), full-bleed — прячет
-            контент, что уезжает наверх. Сам stickyHeader теперь прозрачный, чтобы
-            под пилюлей-фростом был виден размытый контент. */}
-        <div style={styles.headerOpaque}>
         {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
             прогресс. Фон/строук как у карточки игрока на главной. */}
         <div style={styles.headerCard}>
@@ -796,18 +777,15 @@ export default function WorkoutDay() {
             </div>
           </div>
         </div>
-        </div>
 
-        {/* Закреплённая стеклянная пилюля текущей группы — стоит на месте под шапкой
-            дня; контент/заголовки уезжают под неё (full-bleed «фрост» размывает их
-            на всю ширину, без подглядывания по краям), а текст пилюли плавно
-            сменяется на границе групп. */}
+        {/* Закреплённая стеклянная пилюля текущей группы — абсолютна (НЕ в потоке,
+            отступы дня не меняет), появляется при скролле вниз и висит сразу под
+            карточкой дня. Стекло+блюр как у кнопок, без обводки. Контент скроллится
+            под ней и дальше под карточку дня. Текст сменяется на границе групп. */}
         {!loading && pillGroup && (
           <div style={styles.groupPillRow} aria-hidden="true">
-            <div ref={groupPillRef} style={styles.groupPill}>
-              <span key={pillGroup} style={{ ...styles.groupPillText, color: getMuscleGroupColors(pillGroup).accent }}>
-                {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
-              </span>
+            <div key={pillGroup} style={{ ...styles.groupPill, color: getMuscleGroupColors(pillGroup).accent }}>
+              {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
             </div>
           </div>
         )}
@@ -1387,45 +1365,30 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 30,
-    // Фон НЕ задаём: stickyHeader прозрачный, чтобы под пилюлей-фростом был виден
-    // размытый контент. Непрозрачность даёт headerOpaque (safe-top + карточка дня).
+    background: 'var(--color-bg)',
+    // Верх карточки-шапки — ровно 16px ниже кнопок Telegram (зашито в var).
+    paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Непрозрачная подложка под safe-top + карточку дня (full-bleed). Прячет контент,
-  // что уезжает наверх (сам stickyHeader прозрачный).
-  headerOpaque: {
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px',
-    // Верх карточки-шапки — ровно 16px ниже кнопок Telegram (зашито в var).
-    paddingTop: 'var(--tg-safe-top)',
-    background: 'var(--color-bg)'
-  },
-  // Полоса с закреплённой пилюлей — full-bleed «фрост»: контент под ней размывается
-  // на всю ширину (без подглядывания по краям пилюли). При покое почти невидима —
-  // виден только сам стеклянный чип.
+  // Ряд для центрирования пилюли — абсолютный, сразу под карточкой дня (top:100%),
+  // НЕ в потоке (отступы списка не трогает). Контент скроллится под пилюлей.
   groupPillRow: {
-    position: 'relative',
-    zIndex: 2,
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px',
-    paddingTop: '8px',
-    paddingBottom: '8px',
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: '2px',
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
-    background: 'rgba(13, 12, 12, 0.15)',
-    backdropFilter: 'blur(var(--blur-md)) saturate(160%)',
-    WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(160%)'
+    zIndex: 31
   },
-  // Сам стеклянный чип — без обводки, светлое полупрозрачное стекло + блюр.
+  // Стеклянный чип группы — стекло+блюр как у кнопок, без обводки. Контент под ним
+  // виден размытым. key={pillGroup} ремаунтит чип → мягкая смена текста/появление.
   groupPill: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -1434,12 +1397,9 @@ const styles = {
     height: '30px',
     padding: '0 18px',
     borderRadius: 'var(--radius-pill)',
-    background: 'rgba(255, 255, 255, 0.07)',
-    backdropFilter: 'blur(var(--blur-sm))',
-    WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    overflow: 'hidden'
-  },
-  groupPillText: {
+    background: 'rgba(34, 34, 34, 0.55)',
+    backdropFilter: 'blur(var(--blur-md)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(180%)',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
@@ -1611,9 +1571,8 @@ const styles = {
   // отступ 16px, значит у заголовка padding-left 18px → текст тоже на 34px.
   // Так при скролле пилюля-пузырёк появляется ВОКРУГ заголовка, а сам текст
   // не сдвигается.
-  // Заголовок группы в контенте — по центру (как в конструкторе). Опасити правит
-  // эффект-пилюля: активную группу гасит (её показывает пилюля), следующие
-  // плавно растворяет на подъезде под пилюлю.
+  // Заголовок группы в контенте — по центру (как в конструкторе). Обычный, в потоке;
+  // уезжая вверх, прячется под карточкой дня, а его группу подхватывает пилюля.
   muscleHeader: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
