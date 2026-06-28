@@ -13,7 +13,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  * им подсвечивается активный день. На главной он же даёт обводку/свечение карточки
  * (см. Home.FavCard), на странице избранного обводки нет — только подсветка дня.
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -32,7 +32,12 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)' }) 
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
-        {available && (prog.kind === 'swim' ? (
+        {available && (activeMin ? (
+          // Идёт активная тренировка по этой программе — зовём продолжить.
+          <div style={styles.daysRow}>
+            <span style={styles.activeLabel}>▶ Продолжить · {activeMin}</span>
+          </div>
+        ) : prog.kind === 'swim' ? (
           <div style={styles.daysRow}>
             <span style={styles.daysLabel}>
               {prog.data.durationMin} мин · {swimTotalMeters()} м
@@ -95,6 +100,7 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  activeLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },

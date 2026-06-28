@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
+import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin } from '../lib/active-workout'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
@@ -53,8 +54,27 @@ export default function ProgramCard({
     return () => { cancelled = true }
   }, [prog.slug, available])
 
+  // Активная тренировка по этой программе → на карточке «Продолжить · N мин»,
+  // тап ведёт сразу в активный день. Тикаем раз в 15с (минуты живые).
+  const [active, setActive] = useState(getActiveWorkout)
+  useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
+  const isActive = !!active && active.programId === prog.slug
+  const [, forceTick] = useState(0)
+  useEffect(() => {
+    if (!isActive) return
+    const id = setInterval(() => forceTick(t => t + 1), 15000)
+    return () => clearInterval(id)
+  }, [isActive])
+  const activeMin = isActive ? formatWorkoutMin(elapsedSecFrom(active.startedAt)) : null
+
   const handleTap = () => {
     if (anchorRect || !available) return
+    // Идёт активная тренировка по этой программе — сразу в активный день.
+    if (isActive) {
+      haptic.light()
+      setTimeout(() => navigate(`/workout/${prog.slug}/${active.day}`, { state: lastTrained ? { fromHome: true } : null }), 80)
+      return
+    }
     // Главная передаёт свой onOpen (свайп-гард + state fromHome). Остальные —
     // дефолтная навигация на тренировку/заплыв.
     if (onOpen) { onOpen(); return }
@@ -108,9 +128,9 @@ export default function ProgramCard({
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
-      <FavCardBody entry={{ prog, activeDay }} accent={accent} />
+      <FavCardBody entry={{ prog, activeDay }} accent={accent} activeMin={activeMin} />
 
-      {lastTrained && available && (
+      {lastTrained && available && !isActive && (
         <div style={styles.lastTrained}>
           {lastDate ? (
             <>

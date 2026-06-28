@@ -12,6 +12,14 @@ import { getDayMuscleTags } from '../utils/history'
 import { setLastCompletedDay } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import {
+  getActiveWorkout,
+  startActiveWorkout,
+  clearActiveWorkout,
+  onActiveWorkoutChange,
+  elapsedSecFrom,
+  formatWorkoutMin
+} from '../lib/active-workout'
+import {
   loadWorkoutProgress,
   saveWorkoutProgress,
   clearWorkoutProgress
@@ -140,6 +148,16 @@ export default function WorkoutDay() {
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
   const nextDay = currentDayIdx < days.length - 1 ? days[currentDayIdx + 1] : days[0]
 
+  // Активная сессия (одна на всё приложение). День «тренируется» (таймер тикает,
+  // галочки ставятся) только после тапа «Начать». isThisActive — этот ли день
+  // активен; sessionBlocked — активна ДРУГАЯ тренировка (тут «Начать» нельзя).
+  const [active, setActive] = useState(getActiveWorkout)
+  useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
+  const isThisActive = !!active && active.programId === programId && active.day === day
+  const sessionBlocked = !!active && !isThisActive
+  // Тост «сначала заверши текущую» при тапе на заблокированную «Начать».
+  const [startBlockNonce, setStartBlockNonce] = useState(0)
+
   useEffect(() => {
     // Если пришли из избранного на главной (state.fromHome) — кнопка "Назад"
     // ведёт на главную. Иначе как обычно — в категорию программы.
@@ -152,19 +170,21 @@ export default function WorkoutDay() {
     lockVerticalSwipes()
   }, [navigate, program, location.state])
 
+  // Галочки показываем/грузим только для активного дня. Неактивный день (другой
+  // или сессия не начата) — всегда пустой (0 отжатых), отмечать нельзя.
   useEffect(() => {
-    setActiveOrderNums(new Set(loadWorkoutProgress(programId, day, place)))
-  }, [programId, day, place])
+    setActiveOrderNums(isThisActive ? new Set(loadWorkoutProgress(programId, day, place)) : new Set())
+  }, [programId, day, place, isThisActive])
 
-  // Старт/сброс таймера тренировки: при заходе и при переключении дня.
+  // Таймер — только пока этот день активная сессия: elapsed = now − startedAt
+  // (переживает уход/возврат и смену дня). Неактивный день → 0, без тика.
   useEffect(() => {
-    setElapsedSec(0)
-    const start = Date.now()
-    const id = setInterval(() => {
-      setElapsedSec(Math.floor((Date.now() - start) / 1000))
-    }, 1000)
+    if (!isThisActive) { setElapsedSec(0); return }
+    const tick = () => setElapsedSec(elapsedSecFrom(active.startedAt))
+    tick()
+    const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [day])
+  }, [isThisActive, active?.startedAt])
 
   // Свежий заход на день открываем сверху. Возврат с «Сменить»/«Инфо» сюда не
   // относится — там восстанавливается прежняя позиция скролла (см. эффект ниже).
@@ -255,8 +275,9 @@ export default function WorkoutDay() {
   // переключении места не затереть прогресс нового места старыми галочками
   // (load-эффект выше сначала подставит правильный набор).
   useEffect(() => {
+    if (!isThisActive) return
     saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums))
-  }, [programId, day, activeOrderNums])
+  }, [programId, day, activeOrderNums, isThisActive])
 
   // Префетч заметок упражнений дня — греем кэш, чтобы меню «⋯» и модалка заметки
   // открывались без мигания «Добавить»→«Открыть».
@@ -334,6 +355,9 @@ export default function WorkoutDay() {
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
     if (actionSlot) return
+    // Галочки доступны только когда тренировка начата (этот день активен).
+    // Иначе тап ничего не делает (долгое нажатие — заметки — работает отдельно).
+    if (!isThisActive) { haptic.light(); return }
 
     setActiveOrderNums(prev => {
       const next = new Set(prev)
@@ -466,6 +490,21 @@ export default function WorkoutDay() {
     }
   }
 
+  // «Начать тренировку»: стартуем сессию для этого дня/места, обнуляем галочки
+  // (свежий старт), таймер пойдёт от startedAt (через эффект).
+  const handleStart = () => {
+    haptic.success()
+    clearWorkoutProgress(programId, day, place)
+    setActiveOrderNums(new Set())
+    startActiveWorkout(programId, day, place)
+  }
+
+  // Тап по заблокированной «Начать» (активна другая тренировка) — подсказка.
+  const handleBlockedStart = () => {
+    haptic.error()
+    setStartBlockNonce(n => n + 1)
+  }
+
   // Тап «Завершить» → сначала минимал-подтверждение (защита от случайного
   // раннего завершения). На «Завершить» в нём — праздничная модалка + сохранение.
   const handleFinishButtonTap = () => {
@@ -520,9 +559,10 @@ export default function WorkoutDay() {
       }
 
       // Тренировка засчитана локально в любом исходе (оффлайн / лимит / награда):
-      // фиксируем день в цикле A/B/C и чистим галочки прогресса.
+      // фиксируем день в цикле A/B/C, чистим галочки и закрываем активную сессию.
       await setLastCompletedDay(programId, day)
       clearWorkoutProgress(programId, day, place)
+      clearActiveWorkout()
 
       // Оффлайн: ушло в очередь, синканётся при сети. Лимит «1 в день» оффлайн не
       // проверить — поэтому без обещания баллов, просто «сохранено локально».
@@ -577,7 +617,7 @@ export default function WorkoutDay() {
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
                 подгружает упражнения этого места из конструктора. */}
             <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
-            <span style={styles.timer}>{formatElapsedMin(elapsedSec)}</span>
+            <span style={styles.timer}>{formatWorkoutMin(elapsedSec)}</span>
           </div>
 
           <div
@@ -763,14 +803,34 @@ export default function WorkoutDay() {
       {!loading && slots.length > 0 && !kbOpen && (
         <div style={styles.finishBar}>
           <div className="dock-scrim" />
-          <ActionButton
-            onClick={handleFinishButtonTap}
-            disabled={!canFinish}
-            variant={isAllDone ? 'accent' : 'neutral'}
-            hug
-          >
-            {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
-          </ActionButton>
+
+          {/* Подсказка, когда «Начать» заблокирована (идёт другая тренировка). */}
+          {sessionBlocked && (
+            <div style={styles.startBlockWrap}>
+              <div key={startBlockNonce} className={startBlockNonce ? 'shake-error' : undefined} style={styles.startBlockToast}>
+                Сначала заверши текущую тренировку
+              </div>
+            </div>
+          )}
+
+          {isThisActive ? (
+            <ActionButton
+              onClick={handleFinishButtonTap}
+              disabled={!canFinish}
+              variant={isAllDone ? 'accent' : 'neutral'}
+              hug
+            >
+              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+            </ActionButton>
+          ) : sessionBlocked ? (
+            <ActionButton onClick={handleBlockedStart} variant="dim" hug>
+              НАЧАТЬ ТРЕНИРОВКУ
+            </ActionButton>
+          ) : (
+            <ActionButton onClick={handleStart} variant="accent" hug>
+              НАЧАТЬ ТРЕНИРОВКУ
+            </ActionButton>
+          )}
         </div>
       )}
 
@@ -831,7 +891,7 @@ export default function WorkoutDay() {
       {showFinishedModal && (
         <WorkoutFinishedModal
           reward={XP_REWARDS.WORKOUT_COMPLETE}
-          durationLabel={formatElapsedMin(finishedSec)}
+          durationLabel={formatWorkoutMin(finishedSec)}
           status={finishStatus}
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
@@ -1192,16 +1252,6 @@ function getRealScrollY() {
   return window.scrollY
 }
 
-// Длительность без секунд — для шапки и модалки завершения. До часа: минуты
-// с подписью ("0 мин", "1 мин", "20 мин"); от часа: "ч + мин" ("1 ч", "1 ч 20 мин").
-function formatElapsedMin(totalSec) {
-  const totalMin = Math.floor(totalSec / 60)
-  if (totalMin < 60) return `${totalMin} мин`
-  const h = Math.floor(totalMin / 60)
-  const m = totalMin % 60
-  return m === 0 ? `${h} ч` : `${h} ч ${m} мин`
-}
-
 function groupByMuscleGroup(slots) {
   if (!slots.length) return []
   const sections = []
@@ -1467,6 +1517,31 @@ const styles = {
     padding: '44px 16px var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
+  },
+  // Подсказка над «Начать», когда идёт другая тренировка.
+  startBlockWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 'calc(100% + 4px)',
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none'
+  },
+  startBlockToast: {
+    maxWidth: '240px',
+    padding: '10px 14px',
+    background: 'rgba(232, 69, 69, 0.16)',
+    border: '1px solid rgba(232, 69, 69, 0.5)',
+    borderRadius: 'var(--radius-medium)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: 1.35,
+    color: '#FF6B6B',
+    textAlign: 'center'
   },
   dayTagsRow: {
     display: 'flex',
