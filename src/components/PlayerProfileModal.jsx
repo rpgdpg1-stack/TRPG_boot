@@ -131,6 +131,11 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   return createPortal(
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
+        {/* Серый крестик в верхнем правом углу — как принято в модалках. Тап по
+            фону тоже закрывает (overlay onClick). */}
+        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">
+          <CrossIcon />
+        </button>
         <ProfileHeader
           user={userObj}
           xp={row.total_muscles || 0}
@@ -166,7 +171,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           )
         )}
 
-        <ActionButton variant="neutral" onClick={onClose}>ЗАКРЫТЬ</ActionButton>
       </div>
 
       <style>{`
@@ -182,6 +186,15 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
       `}</style>
     </div>,
     document.body
+  )
+}
+
+/** Серый крестик-закрытие (тонкие линии, currentColor). */
+function CrossIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M3.5 3.5 L11.5 11.5 M11.5 3.5 L3.5 11.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 
@@ -201,12 +214,31 @@ const styles = {
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
   inner: {
+    position: 'relative',
     width: '100%',
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+  },
+  // Крестик в правом верхнем углу модалки — нейтральный серый кружок.
+  closeBtn: {
+    position: 'absolute',
+    top: '2px',
+    right: '2px',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: 'none',
+    borderRadius: '50%',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    zIndex: 5,
+    WebkitTapHighlightColor: 'transparent'
   },
   backupCounter: {
     fontFamily: 'var(--font-manrope)',

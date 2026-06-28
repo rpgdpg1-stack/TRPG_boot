@@ -398,11 +398,13 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
-    padding: '14px 14px 12px',
+    // Единая иерархия отступов: внешний паддинг 16, между блоками gap 16 (внутренние
+    // паддинги блоков — свои). Низ чуть меньше (14) — оптический баланс.
+    padding: '16px 16px 14px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '10px',
+    gap: '16px',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
@@ -574,10 +576,10 @@ const styles = {
     color: 'var(--color-text)'
   },
 
-  // Блок заметки — в самом низу модалки, под кнопками действий
+  // Блок заметки — под карточкой. Отступ задаёт gap модалки (16), своего marginTop
+  // не добавляем (иначе двойной отступ).
   noteBlock: {
-    width: '100%',
-    marginTop: '8px'
+    width: '100%'
   },
   noteSkeleton: {
     width: '100%',

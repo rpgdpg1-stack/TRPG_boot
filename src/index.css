@@ -466,6 +466,13 @@ body.keyboard-open .app::after { display: none; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Пульс таймера тренировки при смене цвета (старт/1ч/1ч30): увеличение и возврат. */
+@keyframes timerPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
 /* Скелетон загрузки: мягкий shimmer по плейсхолдерам (WorkoutDay SkeletonCard). */
 .skel {
   background: linear-gradient(90deg,

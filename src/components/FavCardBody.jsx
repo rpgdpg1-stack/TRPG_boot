@@ -32,6 +32,24 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
+        {/* Порядок: название → место (Зал/Дом/Улица) → дни / «Продолжить N» / мин·метры.
+            Место (переключаемый тег) идёт ВЫШЕ строки дней. Заплыв без мест — обычные
+            теги. «Скоро» — для будущих программ раздела. */}
+        {places.length > 0 ? (
+          <div style={styles.tags}>
+            <PlaceSwitcher program={prog} />
+            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+          </div>
+        ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
+          <div style={styles.tags}>
+            {(prog.tags || []).map(tag => {
+              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+              return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
+            })}
+            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+          </div>
+        ) : null}
+
         {available && (activeMin ? (
           // Идёт активная тренировка по этой программе — зовём продолжить.
           <div style={styles.daysRow}>
@@ -62,23 +80,6 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             </div>
           </div>
         ))}
-
-        {/* Места (Зал/Дом/Улица) — переключаемый тег. Для программ без мест
-            (заплыв) — обычные теги. «Скоро» — для будущих программ раздела. */}
-        {places.length > 0 ? (
-          <div style={styles.tags}>
-            <PlaceSwitcher program={prog} />
-            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-          </div>
-        ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
-          <div style={styles.tags}>
-            {(prog.tags || []).map(tag => {
-              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
-            })}
-            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-          </div>
-        ) : null}
 
         {prog.source === 'shared' && prog.authorName && (
           <div style={styles.authorLine}>от {prog.authorName}</div>

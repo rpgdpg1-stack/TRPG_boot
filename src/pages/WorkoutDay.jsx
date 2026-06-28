@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -63,6 +64,26 @@ import UiIcon from '../components/UiIcon'
 // чтобы позицию скролла можно было восстановить до отрисовки (без моргания).
 const slotsMemory = new Map()
 
+// Пороги цвета таймера тренировки: до 1 ч — зелёный (акцент), с 1 ч — оранжевый,
+// с 1 ч 30 мин — красный + поп-ап «пора завершать».
+const TIMER_ORANGE_SEC = 3600
+const TIMER_RED_SEC = 5400
+const TIMER_COLORS = {
+  off: 'var(--color-text-secondary)',
+  green: 'var(--color-primary)',
+  orange: '#F0883E',
+  red: '#E84545'
+}
+
+/** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
+function CrossIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -100,6 +121,13 @@ export default function WorkoutDay() {
   // finishedSec фиксирует длительность на момент «Завершить» — для модалки.
   const [elapsedSec, setElapsedSec] = useState(0)
   const [finishedSec, setFinishedSec] = useState(0)
+
+  // Цвет/пульс таймера по порогам + поп-ап перегрузки (1ч30) + крестик-отмена.
+  const [timerPulseKey, setTimerPulseKey] = useState(0)  // ремаунт span → пульс на смене тира
+  const prevTierRef = useRef(null)
+  const [showOverload, setShowOverload] = useState(false)
+  const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   // Эффекты возврата с других экранов:
   //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
@@ -198,6 +226,26 @@ export default function WorkoutDay() {
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [isThisActive, active?.startedAt])
+
+  // Тир таймера по порогам времени. Неактивный день — 'off' (серый, без пульса).
+  const timerTier = !isThisActive ? 'off'
+    : elapsedSec >= TIMER_RED_SEC ? 'red'
+    : elapsedSec >= TIMER_ORANGE_SEC ? 'orange'
+    : 'green'
+
+  // На СМЕНЕ тира — пульс таймера (увеличение+возврат); на 'red' (1ч30) — поп-ап
+  // «пора завершать» (один раз за сессию). Первый рендер не пульсирует.
+  useEffect(() => {
+    const prev = prevTierRef.current
+    prevTierRef.current = timerTier
+    if (prev === null || timerTier === prev) return
+    if (timerTier !== 'off') setTimerPulseKey(k => k + 1)
+    if (timerTier === 'red' && !overloadShownRef.current) {
+      overloadShownRef.current = true
+      setShowOverload(true)
+      haptic.warning()
+    }
+  }, [timerTier])
 
   // Свежий заход на день открываем сверху. Возврат с «Сменить»/«Инфо» сюда не
   // относится — там восстанавливается прежняя позиция скролла (см. эффект ниже).
@@ -548,7 +596,23 @@ export default function WorkoutDay() {
     haptic.success()
     clearWorkoutProgress(programId, day, place)
     setActiveOrderNums(new Set())
+    overloadShownRef.current = false
+    setShowOverload(false)
     startActiveWorkout(programId, day, place)
+  }
+
+  // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
+  // закрываем сессию БЕЗ сохранения (в историю не идёт, баллы не начисляются).
+  // Для «передумал / случайно начал / тестирую».
+  const handleCancelTap = () => { haptic.light(); setShowCancelConfirm(true) }
+  const handleCancelConfirm = () => {
+    haptic.medium()
+    clearWorkoutProgress(programId, day, place)
+    setActiveOrderNums(new Set())
+    overloadShownRef.current = false
+    setShowOverload(false)
+    clearActiveWorkout()
+    setShowCancelConfirm(false)
   }
 
   // Тап по заблокированной «Начать» (активна другая тренировка) — подсказка
@@ -678,8 +742,35 @@ export default function WorkoutDay() {
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
                 подгружает упражнения этого места из конструктора. */}
             <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
-            <span style={styles.timer}>{formatWorkoutMin(elapsedSec)}</span>
+            {/* Таймер по центру: зелёный (активна) → оранжевый (1ч) → красный (1ч30),
+                пульс на смене цвета (ремаунт по timerPulseKey). */}
+            <div style={styles.timerCenter}>
+              <span
+                key={timerPulseKey}
+                style={{
+                  ...styles.timer,
+                  color: TIMER_COLORS[timerTier],
+                  animation: timerPulseKey > 0 ? 'timerPulse 0.45s ease-out' : 'none'
+                }}
+              >
+                {formatWorkoutMin(elapsedSec)}
+              </span>
+            </div>
+            {/* Крестик «отменить тренировку» — только для активной сессии. */}
+            {isThisActive && (
+              <button onClick={handleCancelTap} style={styles.cancelBtn} className="press-tile" aria-label="Отменить тренировку">
+                <CrossIcon size={16} />
+              </button>
+            )}
           </div>
+
+          {/* Поп-ап перегрузки (1ч30) — под временем, не исчезает пока не тапнешь ОК. */}
+          {showOverload && (
+            <div style={styles.overloadPopup}>
+              <span style={styles.overloadText}>Чтобы не перегрузить организм — пора завершать.</span>
+              <button onClick={() => { haptic.light(); setShowOverload(false) }} style={styles.overloadOk} className="press-tile">ОК</button>
+            </div>
+          )}
 
           <div
             style={styles.headerRow}
@@ -976,6 +1067,25 @@ export default function WorkoutDay() {
           onConfirm={handleConfirmFinishYes}
           onCancel={handleConfirmFinishCancel}
         />
+      )}
+
+      {/* Подтверждение отмены тренировки (крестик): закрыть без сохранения. */}
+      {showCancelConfirm && createPortal(
+        <div style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
+          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.cancelTitle}>Отменить тренировку?</div>
+            <div style={styles.cancelText}>Прогресс не сохранится и в историю не попадёт.</div>
+            <div style={styles.cancelButtonsRow}>
+              <button onClick={() => { haptic.light(); setShowCancelConfirm(false) }} style={styles.cancelKeepBtn} className="press-tile">
+                Нет
+              </button>
+              <button onClick={handleCancelConfirm} style={styles.cancelYesBtn} className="press-tile">
+                Да, отменить
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {showFinishedModal && (
@@ -1451,10 +1561,23 @@ const styles = {
   },
   // Верхний ряд блока: место тренировки слева, таймер справа.
   topMetaRow: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: '30px',
     padding: '0 2px'
+  },
+  // Таймер строго по центру строки (место слева, крестик справа разной ширины).
+  timerCenter: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none'
   },
   timer: {
     fontFamily: 'var(--font-display)',
@@ -1462,7 +1585,97 @@ const styles = {
     fontSize: '15px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
-    fontVariantNumeric: 'tabular-nums'
+    fontVariantNumeric: 'tabular-nums',
+    transition: 'color 0.3s ease',
+    display: 'inline-block'
+  },
+  // Крестик «отменить тренировку» — нейтральный серый, в правом углу строки.
+  cancelBtn: {
+    width: '30px',
+    height: '30px',
+    flexShrink: 0,
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: 'none',
+    borderRadius: '50%',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Поп-ап перегрузки (1ч30) — под временем, красноватый, с кнопкой ОК. Отступ
+  // задаёт flex-gap карточки, своего marginTop не добавляем.
+  overloadPopup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 12px',
+    background: 'rgba(232, 69, 69, 0.14)',
+    border: '1px solid rgba(232, 69, 69, 0.4)',
+    borderRadius: 'var(--radius-medium)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)'
+  },
+  overloadText: {
+    flex: 1,
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    lineHeight: 1.35,
+    color: '#FF8C7A'
+  },
+  overloadOk: {
+    flexShrink: 0,
+    padding: '7px 18px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'rgba(255, 255, 255, 0.1)',
+    border: 'none',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    fontSize: '12px',
+    letterSpacing: '1px',
+    cursor: 'pointer'
+  },
+  // Модалка отмены тренировки.
+  cancelOverlay: {
+    position: 'fixed', inset: 0, zIndex: 300,
+    background: 'rgba(13, 12, 12, 0.75)',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px'
+  },
+  cancelModal: {
+    width: '100%', maxWidth: '340px',
+    background: 'rgba(34, 34, 34, 0.98)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: 'var(--radius-card)',
+    padding: '24px 18px 18px',
+    display: 'flex', flexDirection: 'column', gap: '8px',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+  },
+  cancelTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800,
+    color: 'var(--color-text)', textAlign: 'center'
+  },
+  cancelText: {
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '14px', lineHeight: 1.4
+  },
+  cancelButtonsRow: { display: 'flex', gap: '10px', width: '100%' },
+  cancelKeepBtn: {
+    flex: 1, padding: '14px', borderRadius: 'var(--radius-medium)',
+    background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: '13px',
+    fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
+  },
+  cancelYesBtn: {
+    flex: 1, padding: '14px', borderRadius: 'var(--radius-medium)',
+    background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
+    color: '#FF6B6B', fontFamily: 'var(--font-manrope)', fontSize: '13px',
+    fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
   },
   headerRow: {
     display: 'flex',
