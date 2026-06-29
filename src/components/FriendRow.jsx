@@ -18,10 +18,11 @@
 
 import { useRef, useState } from 'react'
 import { getLevelFromXP, getRankByLevel } from '../lib/levels'
-import { getLeagueByRankIndex } from '../lib/leagues'
+import { rankIndexFromMuscles } from '../lib/frames'
 import { formatRelative } from '../utils/history'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
+import RankFrame from './RankFrame'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
@@ -31,14 +32,12 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
     first_name,
     photo_url,
     total_muscles,
-    rank_index,
     last_workout_at,
     pinned_at
   } = friend
 
   const level = getLevelFromXP(total_muscles)
   const rank = getRankByLevel(level)
-  const leagueColor = getLeagueByRankIndex(rank_index).color
 
   const displayName = first_name || 'Игрок'
   const isPinned = !!pinned_at
@@ -108,8 +107,8 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
           : (isPinned ? 'rgba(255, 255, 255, 0.06)' : 'transparent')
       }}
     >
-      {/* Аватар — рамка в цвет лиги */}
-      <div style={{ ...styles.avatarWrap, borderColor: leagueColor }}>
+      {/* Аватар — рамка ранга (8/9/10 анимированные, 0–7 — полоска цвета). */}
+      <RankFrame rankIndex={rankIndexFromMuscles(total_muscles)} size={52} radius={16} borderWidth={2}>
         {photo_url ? (
           <img src={photo_url} alt="" style={styles.avatarImg} draggable={false} />
         ) : (
@@ -117,7 +116,7 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-      </div>
+      </RankFrame>
 
       {/* Имя + (ранг · последняя тренировка) */}
       <div style={styles.nameBlock}>
@@ -155,16 +154,6 @@ const styles = {
     transition: 'background 0.2s ease',
     cursor: 'pointer',
     touchAction: 'pan-y'
-  },
-  avatarWrap: {
-    width: '52px',
-    height: '52px',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    background: 'var(--color-card)',
-    flexShrink: 0,
-    border: '2px solid',
-    transition: 'border-color 0.3s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {

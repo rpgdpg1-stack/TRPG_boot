@@ -16,9 +16,10 @@
 
 import { useState } from 'react'
 import { getRankByLevel, getLevelFromXP } from '../lib/levels'
-import { getLeagueByRankIndex } from '../lib/leagues'
+import { rankIndexFromMuscles } from '../lib/frames'
 import RankIcon from './RankIcon'
 import MuscleIcon from './MuscleIcon'
+import RankFrame from './RankFrame'
 
 export default function LeaderboardRow({ row, isMe, onTap }) {
   const {
@@ -72,13 +73,9 @@ export default function LeaderboardRow({ row, isMe, onTap }) {
         )}
       </div>
 
-      {/* Аватар — мини-версия. Квадрат 40x40, скругление 12.
-          Рамка в цвет лиги (rank_index) — по дефолту рамка лиги, позже сюда
-          подставим выбранную в наградах сезонную рамку. */}
-      <div style={{
-        ...styles.avatarWrap,
-        borderColor: getLeagueByRankIndex(level >= 31 ? 10 : Math.floor((level - 1) / 3)).color
-      }}>
+      {/* Аватар — мини-версия (40x40, скругление 12). Рамка ранга: 8/9/10
+          анимированные (пульс свечения), 0–7 — полоска цвета ранга. */}
+      <RankFrame rankIndex={rankIndexFromMuscles(total_muscles)} size={40} radius={12} borderWidth={2}>
         {photo_url ? (
           <img src={photo_url} alt="" style={styles.avatarImg} draggable={false} />
         ) : (
@@ -86,7 +83,7 @@ export default function LeaderboardRow({ row, isMe, onTap }) {
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-      </div>
+      </RankFrame>
 
       {/* Имя + ранг под ним */}
       <div style={styles.nameBlock}>
@@ -134,16 +131,6 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
-  },
-  avatarWrap: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    background: 'var(--color-card)',
-    flexShrink: 0,
-    border: '2px solid',
-    transition: 'border-color 0.3s ease'
   },
   avatarImg: {
     width: '100%',

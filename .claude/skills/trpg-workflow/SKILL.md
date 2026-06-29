@@ -180,7 +180,7 @@ src/
 ├── components/     ActionButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
 │                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
 │                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
-│                   ProfileHeader ProgramActionMenu RankIcon RanksPopup SaveFriendProgramModal
+│                   ProfileHeader ProgramActionMenu RankFrame RankIcon RanksPopup SaveFriendProgramModal
 │                   ScreenTitle StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal

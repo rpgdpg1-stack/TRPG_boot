@@ -10,7 +10,8 @@ import XPBar from './XPBar'
 import StreakFlame from './StreakFlame'
 import MuscleIcon from './MuscleIcon'
 import { spawnFireSparks } from './ParticlesBg'
-import { getFrameByRankIndex, rankIndexFromMuscles } from '../lib/frames'
+import { rankIndexFromMuscles } from '../lib/frames'
+import RankFrame from './RankFrame'
 
 /**
  * Карточка-шапка профиля. Переиспользуется в двух местах:
@@ -96,8 +97,8 @@ export default function ProfileHeader({
   const xpBarProgress = getLevelProgress(xp)
   const { current: totalCurrent, needed: totalNeeded } = getTotalXPProgress(xp)
 
-  // Рамка аватара по текущему рангу (8/9/10 — анимированные, 0–7 — полоска цвета ранга)
-  const frame = getFrameByRankIndex(rankIndexFromMuscles(xp))
+  // Индекс ранга для рамки аватара (8/9/10 — анимированные, 0–7 — полоска цвета).
+  const avatarRankIndex = rankIndexFromMuscles(xp)
 
   // Попапы — только в интерактивном режиме. Автозакрытие 6с + тап вне плашки.
   useEffect(() => {
@@ -155,15 +156,14 @@ export default function ProfileHeader({
       <div style={styles.topPanel}>
 
         {/* Аватар. Рамка по текущему рангу: 8/9/10 анимированные, 0–7 — полоска
-            цвета ранга. */}
-        <div
-          className={frame.className}
-          style={{
-            ...styles.avatarInner,
-            ...(frame.animated
-              ? {}
-              : { borderColor: frame.color, boxShadow: `0 0 14px ${frame.color}40` })
-          }}
+            цвета ранга. Фото статично — пульсирует только свечение снаружи. */}
+        <RankFrame
+          rankIndex={avatarRankIndex}
+          size={AVATAR_SIZE}
+          radius={29}
+          borderWidth={2.5}
+          background="var(--color-bg)"
+          glow
         >
           {user?.photo_url ? (
             <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
@@ -172,10 +172,7 @@ export default function ProfileHeader({
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
-          {frame.hasAsh && (
-            <span className="imm-ash"><i /><i /><i /><i /></span>
-          )}
-        </div>
+        </RankFrame>
 
         <div style={styles.infoColumn}>
           {/* Имя */}
@@ -389,18 +386,6 @@ const styles = {
     flexDirection: 'row',
     alignItems: 'center',
     gap: '16px'
-  },
-  // Аватар слева. Рамка по рангу (CSS-класс для 8/9/10).
-  avatarInner: {
-    position: 'relative',
-    width: `${AVATAR_SIZE}px`,
-    height: `${AVATAR_SIZE}px`,
-    flexShrink: 0,
-    borderRadius: '29px',
-    overflow: 'hidden',
-    background: 'var(--color-bg)',
-    border: '2.5px solid',
-    transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
