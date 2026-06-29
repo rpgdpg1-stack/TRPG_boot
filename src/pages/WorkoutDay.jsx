@@ -807,21 +807,29 @@ export default function WorkoutDay() {
             </button>
 
             <div style={styles.dayCol}>
-              <div style={styles.dayLetterWrap}>
-                <span
-                  key={day}
-                  className={dayLetterAnimClass}
-                  style={{
-                    ...styles.dayLetter,
-                    ...(day === focusDay ? null : styles.dayLetterMuted)
-                  }}
-                >
-                  {day}
-                </span>
+              {/* Буква дня + «флажок» групп справа (стопкой, по высоте буквы:
+                  верхняя группа у верха буквы, нижняя — у низа). Ниже — пейджер. */}
+              <div style={styles.letterRow}>
+                <div style={styles.dayLetterWrap}>
+                  <span
+                    key={day}
+                    className={dayLetterAnimClass}
+                    style={{
+                      ...styles.dayLetter,
+                      ...(day === focusDay ? null : styles.dayLetterMuted)
+                    }}
+                  >
+                    {day}
+                  </span>
+                </div>
+                {dayTags.length > 0 && (
+                  <div key={`tags-${day}`} style={styles.dayFlag}>
+                    {dayTags.map(t => (
+                      <span key={t.key} style={styles.dayTagText}>{t.label.toUpperCase()}</span>
+                    ))}
+                  </div>
+                )}
               </div>
-              {/* Порядок в колонке дня: буква → пейджер → подпись групп (ноги/пресс).
-                  Пейджер дней (день N из M): просматриваемый — вытянутая пилюля,
-                  показываем только при 2+ днях. */}
               {days.length > 1 && (
                 <div style={styles.dayPager}>
                   {days.map((d, i) => {
@@ -845,16 +853,6 @@ export default function WorkoutDay() {
                       />
                     )
                   })}
-                </div>
-              )}
-              {dayTags.length > 0 && (
-                <div key={`tags-${day}`} style={styles.dayTagsRow}>
-                  {dayTags.map((t, i) => (
-                    <span key={t.key} style={styles.dayTagText}>
-                      {i > 0 && ', '}
-                      {t.label.toUpperCase()}
-                    </span>
-                  ))}
                 </div>
               )}
             </div>
@@ -1670,10 +1668,28 @@ const styles = {
     alignItems: 'center',
     gap: '6px'
   },
+  // Строка буквы дня: крупная буква + «флажок» групп справа (по высоте буквы).
+  letterRow: {
+    display: 'flex',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    gap: '8px'
+  },
   dayLetterWrap: {
     display: 'flex',
     alignItems: 'flex-end',
     justifyContent: 'center'
+  },
+  // Группы дня стопкой справа от буквы: верхняя у верха буквы, нижняя у низа
+  // (space-between по высоте буквы), без запятых, выравнивание по левому краю.
+  dayFlag: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: '4px',
+    paddingBottom: '4px',
+    maxWidth: '120px'
   },
   // Пейджер дней под буквой+тегами: показывает позицию (день N из M).
   dayPager: {
@@ -1871,20 +1887,14 @@ const styles = {
     color: '#FF6B6B',
     textAlign: 'center'
   },
-  dayTagsRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: '0',
-    maxWidth: '240px'
-  },
   dayTagText: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    lineHeight: 1.2
+    lineHeight: 1.1,
+    textAlign: 'left',
+    whiteSpace: 'nowrap'
   }
 }
