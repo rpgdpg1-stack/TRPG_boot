@@ -126,7 +126,16 @@ export default function WorkoutDay() {
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
+  const overloadTimer = useRef(null)                     // авто-скрытие поп-апа через 5 мин
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+
+  // Скрыть поп-ап перегрузки и снять таймер авто-скрытия.
+  const hideOverload = () => {
+    setShowOverload(false)
+    if (overloadTimer.current) { clearTimeout(overloadTimer.current); overloadTimer.current = null }
+  }
+  // Снять таймер авто-скрытия при размонтировании.
+  useEffect(() => () => { if (overloadTimer.current) clearTimeout(overloadTimer.current) }, [])
 
   // Эффекты возврата с других экранов:
   //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
@@ -243,6 +252,9 @@ export default function WorkoutDay() {
       overloadShownRef.current = true
       setShowOverload(true)
       haptic.warning()
+      // Сам исчезает через 5 мин, если не нажали ОК — чтоб не мозолил глаза.
+      if (overloadTimer.current) clearTimeout(overloadTimer.current)
+      overloadTimer.current = setTimeout(() => { setShowOverload(false); overloadTimer.current = null }, 5 * 60 * 1000)
     }
   }, [timerTier])
 
@@ -596,7 +608,7 @@ export default function WorkoutDay() {
     clearWorkoutProgress(programId, day, place)
     setActiveOrderNums(new Set())
     overloadShownRef.current = false
-    setShowOverload(false)
+    hideOverload()
     startActiveWorkout(programId, day, place)
   }
 
@@ -609,7 +621,7 @@ export default function WorkoutDay() {
     clearWorkoutProgress(programId, day, place)
     setActiveOrderNums(new Set())
     overloadShownRef.current = false
-    setShowOverload(false)
+    hideOverload()
     clearActiveWorkout()
     setShowCancelConfirm(false)
   }
@@ -767,11 +779,13 @@ export default function WorkoutDay() {
             )}
           </div>
 
-          {/* Поп-ап перегрузки (1ч30) — под временем, не исчезает пока не тапнешь ОК. */}
-          {showOverload && (
+          {/* Поп-ап перегрузки (1ч30) — под временем. Только на активном дне (где
+              идёт таймер): листая на другие дни, он не висит. Сам исчезает через
+              5 мин, либо по тапу ОК. */}
+          {isThisActive && showOverload && (
             <div style={styles.overloadPopup}>
               <span style={styles.overloadText}>Чтобы не перегрузить организм — пора завершать.</span>
-              <button onClick={() => { haptic.light(); setShowOverload(false) }} style={styles.overloadOk} className="press-tile">ОК</button>
+              <button onClick={() => { haptic.light(); hideOverload() }} style={styles.overloadOk} className="press-tile">ОК</button>
             </div>
           )}
 
