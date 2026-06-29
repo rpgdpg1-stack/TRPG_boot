@@ -51,11 +51,17 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         ) : null}
 
         {available && (activeMin ? (
-          // Идёт активная тренировка — всё в одну строку: крупный «плей»,
-          // «Продолжить N/M» (прогресс упражнений) и через отступ время.
+          // Идёт активная тренировка — статус-строка как в дне тренировки:
+          // слева N/M, по центру прогресс-полоска (зелёная заполненность по
+          // отжатым), справа время. Полоска тоньше, чем на дне.
           <div style={styles.activeRow}>
-            <span style={styles.activePlay}>▶</span>
-            <span style={styles.activeLabel}>Продолжить {activeDone}/{activeTotal}</span>
+            <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
+            <div style={styles.activeTrack}>
+              <div style={{
+                ...styles.activeFill,
+                width: `${activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0}%`
+              }} />
+            </div>
             <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
               {activeMin}
             </span>
@@ -106,12 +112,14 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  // Активная строка — строго одна линия: крупный «плей», «Продолжить N/M» слева,
-  // время прижато к правому краю карточки (marginLeft:auto).
-  activeRow: { display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'nowrap' },
-  activePlay: { fontFamily: 'var(--font-display)', fontSize: '26px', lineHeight: 1, color: 'var(--color-primary)', flexShrink: 0 },
-  activeLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '0.5px', whiteSpace: 'nowrap' },
-  activeTime: { marginLeft: 'auto', paddingLeft: '12px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
+  // Активная строка = статус тренировки (как в дне): N/M слева, полоска по
+  // центру (тоньше дневной — 5px), время справа. Полоска flex:1 — при длинном
+  // времени («1 ч 27 мин») сама ужимается.
+  activeRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' },
+  activeCount: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px', color: 'var(--color-text-secondary)', letterSpacing: '1px', whiteSpace: 'nowrap', flexShrink: 0 },
+  activeTrack: { flex: 1, minWidth: 0, height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' },
+  activeFill: { height: '100%', background: 'var(--color-primary)', borderRadius: '3px', transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)' },
+  activeTime: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
