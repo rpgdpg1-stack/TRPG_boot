@@ -32,9 +32,9 @@ const styles = {
   wrap: {
     position: 'relative',
     width: '100%',
-    maxWidth: '232px',
+    maxWidth: '224px',
     margin: '0 auto',
-    height: '92px',
+    height: '60px',
     pointerEvents: 'none'
   },
   card: {
@@ -44,43 +44,43 @@ const styles = {
     right: 0,
     display: 'flex',
     alignItems: 'center',
-    gap: '9px',
-    padding: '10px 12px',
-    height: '54px',
+    gap: '8px',
+    padding: '7px 11px',
+    height: '40px',
     background: 'var(--color-card)',
     border: '1px solid var(--color-border)',
-    borderRadius: '16px'
+    borderRadius: '13px'
   },
-  emoji: { fontSize: '18px', lineHeight: 1, flexShrink: 0 },
-  lines: { display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: 0 },
-  line: { height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.18)' },
+  emoji: { fontSize: '15px', lineHeight: 1, flexShrink: 0 },
+  lines: { display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 },
+  line: { height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.18)' },
   dots: {
     position: 'absolute',
-    top: '3px',
-    right: '11px',
+    top: '1px',
+    right: '10px',
     color: '#9A9A9A',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 700,
     lineHeight: 1,
     letterSpacing: '1px'
   },
   menu: {
     position: 'absolute',
-    top: '40px',
+    top: '27px',
     right: 0,
     display: 'flex',
     alignItems: 'center',
-    gap: '9px',
-    padding: '9px 12px',
+    gap: '8px',
+    padding: '7px 10px',
     background: 'rgba(28, 28, 30, 0.94)',
     border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '14px',
-    boxShadow: '0 10px 26px rgba(0,0,0,0.5)'
+    borderRadius: '12px',
+    boxShadow: '0 8px 22px rgba(0,0,0,0.5)'
   },
   menuHeart: { display: 'inline-flex', flexShrink: 0 },
   menuLabel: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: '11px',
     fontWeight: 600,
     color: 'var(--color-text)',
     whiteSpace: 'nowrap'
