@@ -837,19 +837,20 @@ export default function WorkoutDay() {
                 <div style={styles.dayPager}>
                   {days.map((d, i) => {
                     const isViewed = i === currentDayIdx
-                    // Точка дня «в фокусе» (не просматриваемого) — светло-серая;
-                    // пульсирует только если это ЗАПУЩЕННАЯ сессия (иначе просто
-                    // рекомендованный день — статичная светло-серая).
-                    const isFocusElsewhere = focusDay === d && !isViewed
-                    const isSessionElsewhere = sessionDayForProgram === d && !isViewed
+                    // Зелёная точка = «фокусный» день (активная сессия или
+                    // рекомендованный) — как и буква. Остальные дни серые.
+                    // Просматриваемый день чуть крупнее (показывает позицию).
+                    // Пульс — только у ЗАПУЩЕННОЙ сессии, когда смотришь другой день.
+                    const isFocus = focusDay === d
+                    const isSession = sessionDayForProgram === d
                     return (
                       <span
                         key={d}
-                        className={isSessionElsewhere ? 'day-dot-pulse' : undefined}
+                        className={(isFocus && isSession && !isViewed) ? 'day-dot-pulse' : undefined}
                         style={{
                           ...styles.dayDot,
-                          ...(isViewed ? styles.dayDotActive : null),
-                          ...(isFocusElsewhere ? styles.dayDotSession : null)
+                          ...(isFocus ? styles.dayDotFocus : null),
+                          ...(isViewed ? styles.dayDotViewed : null)
                         }}
                       />
                     )
@@ -1686,18 +1687,18 @@ const styles = {
     width: '6px',
     height: '6px',
     borderRadius: '50%',
-    background: 'rgba(255, 255, 255, 0.18)',
+    background: 'rgba(255, 255, 255, 0.3)',
     transition: 'background 0.25s ease, transform 0.25s ease'
   },
-  dayDotActive: {
-    background: 'var(--color-primary)',
-    transform: 'scale(1.15)'
+  // «Фокусный» день (активная сессия или рекомендованный) — зелёная точка, как
+  // и буква дня. Для запущенной сессии ещё мягко пульсирует размером (анимация
+  // .day-dot-pulse — transform задаёт keyframe, когда смотришь другой день).
+  dayDotFocus: {
+    background: 'var(--color-primary)'
   },
-  // Точка дня «в фокусе» (запущенная сессия или рекомендованный день), когда
-  // смотришь другой день: чуть светлее обычного серого. Для запущенной сессии
-  // ещё мягко пульсирует (анимация .day-dot-pulse — transform задаёт keyframe).
-  dayDotSession: {
-    background: 'rgba(255, 255, 255, 0.5)'
+  // Просматриваемый день — чуть крупнее (показывает позицию); цвет — по фокусу.
+  dayDotViewed: {
+    transform: 'scale(1.15)'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
