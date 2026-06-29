@@ -160,11 +160,9 @@ export default function WorkoutDay() {
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
-  // Финал прогресса: счётчик 3-2-1 + искра на «голове» заливки и микро-салют на
-  // 100%. Анимации событийные (вспышка на нажатие), чтобы ничего не мельтешило в
-  // закреплённой шапке. sparkKey/finishKey — ремаунт частиц для повтора анимации.
+  // Финал прогресса: только микро-салют на 100% (8/8). Счётчик 3-2-1 и искры на
+  // каждое нажатие убраны — мельтешили. finishKey — ремаунт частиц для повтора.
   const prevDoneRef = useRef(0)
-  const [sparkKey, setSparkKey] = useState(0)
   const [finishKey, setFinishKey] = useState(0)
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -401,18 +399,16 @@ export default function WorkoutDay() {
     }
   }, [loading, slots])
 
-  // Триггер искры/салюта. Только когда отжали ровно одно упражнение (now - prev
-  // === 1) — так не срабатывает на загрузке прогресса (скачок 0→N) и на снятии
-  // галочки. Осталось 3/2/1 → искра; осталось 0 → финальный салют.
+  // Триггер финального салюта. Только когда отжали ровно одно упражнение (now -
+  // prev === 1) и это последнее (осталось 0) — так не срабатывает на загрузке
+  // прогресса (скачок 0→N) и на снятии галочки.
   useEffect(() => {
     const prev = prevDoneRef.current
     const now = activeOrderNums.size
     prevDoneRef.current = now
     if (loading) return
     if (now - prev !== 1) return
-    const rem = slots.length - now
-    if (rem === 0) setFinishKey(k => k + 1)
-    else if (rem <= 3) setSparkKey(k => k + 1)
+    if (slots.length - now === 0) setFinishKey(k => k + 1)
   }, [activeOrderNums.size, slots.length, loading])
 
   // Возврат с "Сменить"/"Инфо": восстанавливаем ТОЧНУЮ позицию скролла ДО
@@ -724,7 +720,6 @@ export default function WorkoutDay() {
   const pillGroup = activeSection >= 0 && sections[activeSection]
     ? sections[activeSection].muscleGroup
     : null
-  const remaining = slots.length - activeOrderNums.size
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
@@ -876,12 +871,10 @@ export default function WorkoutDay() {
                 />
               </div>
 
-              {/* Финал: счётчик 3-2-1, искра на голове, салют на 100%. */}
+              {/* Финал: только салют на 100% (8/8). */}
               {!loading && slots.length > 0 && (
                 <ProgressFinale
                   pct={progressPct}
-                  remaining={remaining}
-                  sparkKey={sparkKey}
                   finishKey={finishKey}
                 />
               )}
@@ -1150,29 +1143,15 @@ function ReturnGlow() {
 }
 
 /**
- * Финал прогресс-бара: на финишной прямой (осталось 3/2/1) над «головой»
- * заливки стоит тусклый счётчик-обратный отсчёт, голова мягко светится и еле
- * заметно искрится. При каждом нажатии — одноразовая вспышка искр (sparkKey),
- * на 100% — микро-салют (finishKey). Всё лёгкое и не зацикленное (кроме очень
- * слабого твинкла), чтобы не отвлекать в закреплённой шапке.
+ * Финал прогресс-бара: только микро-салют на 100% (finishKey). Счётчик 3-2-1 и
+ * искры на каждое нажатие убраны — мельтешили.
  *
- * marker — нулевой по ширине якорь на позиции головы (left = pct%), частицы и
- * счётчик позиционируются от него. zIndex над дорожкой.
+ * marker — нулевой по ширине якорь на позиции головы (left = pct%), частицы
+ * позиционируются от него. zIndex над дорожкой.
  */
-function ProgressFinale({ pct, remaining, sparkKey, finishKey }) {
-  const inZone = remaining >= 1 && remaining <= 3
+function ProgressFinale({ pct, finishKey }) {
   return (
     <div style={{ ...finaleStyles.marker, left: `${pct}%` }} aria-hidden="true">
-      {inZone && <span style={finaleStyles.headGlow} />}
-      {inZone && (
-        <span
-          className="prog-twinkle"
-          style={{ ...finaleStyles.twinkle, animation: 'progTwinkle 1.9s ease-in-out infinite' }}
-        />
-      )}
-      {inZone && <span key={remaining} style={finaleStyles.count}>{remaining}</span>}
-
-      {sparkKey > 0 && <SparkBurst key={`s${sparkKey}`} />}
       {finishKey > 0 && <SparkBurst key={`f${finishKey}`} finale />}
     </div>
   )
@@ -1223,40 +1202,6 @@ const finaleStyles = {
     width: 0,
     pointerEvents: 'none',
     zIndex: 2
-  },
-  // Счётчик «осталось»: мельче и тусклее чем «7/9», читается как вторичный.
-  count: {
-    position: 'absolute',
-    bottom: 'calc(100% + 4px)',
-    left: 0,
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '11px',
-    letterSpacing: '0.5px',
-    color: 'var(--color-text-secondary)',
-    whiteSpace: 'nowrap',
-    animation: 'progCountIn 280ms ease-out both'
-  },
-  headGlow: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    width: '12px',
-    height: '12px',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(158, 209, 83, 0.55) 0%, rgba(158, 209, 83, 0) 70%)'
-  },
-  twinkle: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    width: '4px',
-    height: '4px',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '50%',
-    background: 'var(--color-primary)',
-    boxShadow: '0 0 5px rgba(158, 209, 83, 0.7)'
   },
   burst: {
     position: 'absolute',
