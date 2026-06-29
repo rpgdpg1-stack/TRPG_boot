@@ -819,20 +819,9 @@ export default function WorkoutDay() {
                   {day}
                 </span>
               </div>
-              {dayTags.length > 0 && (
-                <div key={`tags-${day}`} style={styles.dayTagsRow}>
-                  {dayTags.map((t, i) => (
-                    <span key={t.key} style={styles.dayTagText}>
-                      {i > 0 && ', '}
-                      {t.label.toUpperCase()}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {/* Пейджер дней (день N из M): просматриваемый кружок — зелёный без
-                  анимации. День с ЗАПУЩЕННОЙ тренировкой, КОГДА смотришь другой день,
-                  — светло-серый и мягко пульсирует размером (куда вернуться).
-                  Показываем только при 2+ днях. */}
+              {/* Порядок в колонке дня: буква → пейджер → подпись групп (ноги/пресс).
+                  Пейджер дней (день N из M): просматриваемый — вытянутая пилюля,
+                  показываем только при 2+ днях. */}
               {days.length > 1 && (
                 <div style={styles.dayPager}>
                   {days.map((d, i) => {
@@ -856,6 +845,16 @@ export default function WorkoutDay() {
                       />
                     )
                   })}
+                </div>
+              )}
+              {dayTags.length > 0 && (
+                <div key={`tags-${day}`} style={styles.dayTagsRow}>
+                  {dayTags.map((t, i) => (
+                    <span key={t.key} style={styles.dayTagText}>
+                      {i > 0 && ', '}
+                      {t.label.toUpperCase()}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
