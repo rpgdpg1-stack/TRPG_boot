@@ -757,20 +757,23 @@ export default function WorkoutDay() {
             <div style={styles.placeSlot}>
               <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
-            {/* Таймер по центру: зелёный (активна) → оранжевый (1ч) → красный (1ч30),
-                пульс на смене цвета (ремаунт по timerPulseKey). */}
-            <div style={styles.timerCenter}>
-              <span
-                key={timerPulseKey}
-                style={{
-                  ...styles.timer,
-                  color: TIMER_COLORS[timerTier],
-                  animation: timerPulseKey > 0 ? 'timerPulse 0.45s ease-out' : 'none'
-                }}
-              >
-                {formatWorkoutMin(elapsedSec)}
-              </span>
-            </div>
+            {/* Таймер по центру — только когда тренировка начата (этот день активен).
+                До старта таймера нет вовсе (не «0 мин» серым). Зелёный (активна) →
+                оранжевый (1ч) → красный (1ч30), пульс на смене цвета (timerPulseKey). */}
+            {isThisActive && (
+              <div style={styles.timerCenter}>
+                <span
+                  key={timerPulseKey}
+                  style={{
+                    ...styles.timer,
+                    color: TIMER_COLORS[timerTier],
+                    animation: timerPulseKey > 0 ? 'timerPulse 0.45s ease-out' : 'none'
+                  }}
+                >
+                  {formatWorkoutMin(elapsedSec)}
+                </span>
+              </div>
+            )}
             {/* Крестик «отменить тренировку» — только для активной сессии. */}
             {isThisActive && (
               <button onClick={handleCancelTap} style={styles.cancelBtn} className="press-tile" aria-label="Отменить тренировку">

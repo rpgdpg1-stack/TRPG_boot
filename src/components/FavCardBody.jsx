@@ -13,7 +13,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  * им подсвечивается активный день. На главной он же даёт обводку/свечение карточки
  * (см. Home.FavCard), на странице избранного обводки нет — только подсветка дня.
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0 }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -36,9 +36,16 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             Место (переключаемый тег) идёт ВЫШЕ строки дней. Заплыв без мест — обычные
             теги. «Скоро» — для будущих программ раздела. */}
         {places.length > 0 ? (
-          <div style={styles.tags}>
+          // Место (Зал/Дом) слева; во время активной тренировки — таймер по центру
+          // карточки (абсолютный, не зависит от ширины переключателя места).
+          <div style={styles.placeRow}>
             <PlaceSwitcher program={prog} />
             {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+            {activeMin && (
+              <span style={{ ...styles.placeTime, color: activeTimeColor || 'var(--color-primary)' }}>
+                {activeMin}
+              </span>
+            )}
           </div>
         ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
           <div style={styles.tags}>
@@ -51,12 +58,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         ) : null}
 
         {available && (activeMin ? (
-          // Идёт активная тренировка по этой программе — зовём продолжить.
-          // «Продолжить» всегда зелёный, цифры времени — по порогам таймера
-          // (зелёный <1ч → оранжевый 1–1:30 → красный ≥1:30).
+          // Идёт активная тренировка — зовём продолжить и показываем прогресс
+          // (сколько упражнений отжато из всех). Время — выше, в строке места.
           <div style={styles.daysRow}>
             <span style={styles.activeLabel}>
-              ▶ Продолжить · <span style={{ color: activeTimeColor || 'var(--color-primary)' }}>{activeMin}</span>
+              ▶ Продолжить: {activeDone}/{activeTotal}
             </span>
           </div>
         ) : prog.kind === 'swim' ? (
@@ -110,6 +116,20 @@ const styles = {
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
   tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  // Строка места: переключатель слева, таймер абсолютно по центру строки.
+  placeRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
+  placeTime: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '14px',
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none'
+  },
   tag: {
     display: 'inline-block',
     padding: '3px 9px',

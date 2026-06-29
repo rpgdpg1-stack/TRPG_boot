@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
 import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin, workoutTimerColor } from '../lib/active-workout'
+import { loadWorkoutProgress } from '../utils/workout-progress'
+import { getProgramDaySlots } from '../features/programs/registry'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
@@ -70,6 +72,10 @@ export default function ProgramCard({
   const activeSec = isActive ? elapsedSecFrom(active.startedAt) : 0
   const activeMin = isActive ? formatWorkoutMin(activeSec) : null
   const activeTimeColor = isActive ? workoutTimerColor(activeSec) : null
+  // Сколько упражнений уже отжато / всего в активном дне — для «Продолжить: 2/10».
+  // Читаем из localStorage по месту сессии (свой набор у каждого места).
+  const activeDone = isActive ? loadWorkoutProgress(active.programId, active.day, active.place).length : 0
+  const activeTotal = isActive ? getProgramDaySlots(active.programId, active.day, active.place).length : 0
 
   const handleTap = () => {
     if (anchorRect || !available) return
@@ -132,7 +138,7 @@ export default function ProgramCard({
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
-      <FavCardBody entry={{ prog, activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} />
+      <FavCardBody entry={{ prog, activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
       {lastTrained && available && !isActive && (
         <div style={styles.lastTrained}>
