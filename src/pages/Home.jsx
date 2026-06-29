@@ -204,7 +204,7 @@ export default function Home() {
             <span style={styles.favEmptyHeartWrap}>
               <PixelHeart filled={false} size={18} />
             </span>
-            Поставь сердце на программу внутри категории — она появится здесь
+            Добавь в избранное программу внутри раздела — она появится здесь
           </button>
         ) : (
           <div style={styles.favSlider}>
