@@ -740,8 +740,12 @@ export default function WorkoutDay() {
 
           <div style={styles.topMetaRow}>
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
-                подгружает упражнения этого места из конструктора. */}
-            <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
+                подгружает упражнения этого места из конструктора. В своём слое
+                выше таймера: раскрытые пилюли налезают на центр и должны быть
+                ПОВЕРХ цифры часы:минуты, а не под ней. */}
+            <div style={styles.placeSlot}>
+              <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
+            </div>
             {/* Таймер по центру: зелёный (активна) → оранжевый (1ч) → красный (1ч30),
                 пульс на смене цвета (ремаунт по timerPulseKey). */}
             <div style={styles.timerCenter}>
@@ -1544,12 +1548,19 @@ const styles = {
     minHeight: '30px',
     padding: '0 2px'
   },
+  // Слой переключателя места: выше таймера, чтобы раскрытые пилюли
+  // (зал/дом/улица) ложились ПОВЕРХ цифры часы:минуты, а не под ней.
+  placeSlot: {
+    position: 'relative',
+    zIndex: 2
+  },
   // Таймер строго по центру строки (место слева, крестик справа разной ширины).
   timerCenter: {
     position: 'absolute',
     left: '50%',
     top: '50%',
     transform: 'translate(-50%, -50%)',
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
