@@ -36,16 +36,9 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             Место (переключаемый тег) идёт ВЫШЕ строки дней. Заплыв без мест — обычные
             теги. «Скоро» — для будущих программ раздела. */}
         {places.length > 0 ? (
-          // Место (Зал/Дом) слева; во время активной тренировки — таймер по центру
-          // карточки (абсолютный, не зависит от ширины переключателя места).
-          <div style={styles.placeRow}>
+          <div style={styles.tags}>
             <PlaceSwitcher program={prog} />
             {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-            {activeMin && (
-              <span style={{ ...styles.placeTime, color: activeTimeColor || 'var(--color-primary)' }}>
-                {activeMin}
-              </span>
-            )}
           </div>
         ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
           <div style={styles.tags}>
@@ -58,11 +51,13 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         ) : null}
 
         {available && (activeMin ? (
-          // Идёт активная тренировка — зовём продолжить и показываем прогресс
-          // (сколько упражнений отжато из всех). Время — выше, в строке места.
-          <div style={styles.daysRow}>
-            <span style={styles.activeLabel}>
-              ▶ Продолжить: {activeDone}/{activeTotal}
+          // Идёт активная тренировка — всё в одну строку: крупный «плей»,
+          // «Продолжить N/M» (прогресс упражнений) и через отступ время.
+          <div style={styles.activeRow}>
+            <span style={styles.activePlay}>▶</span>
+            <span style={styles.activeLabel}>Продолжить {activeDone}/{activeTotal}</span>
+            <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
+              {activeMin}
             </span>
           </div>
         ) : prog.kind === 'swim' ? (
@@ -111,25 +106,15 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  // Активная строка: крупный «плей» + «Продолжить N/M» + время (с отступом).
+  activeRow: { display: 'flex', alignItems: 'center', gap: '7px' },
+  activePlay: { fontFamily: 'var(--font-display)', fontSize: '26px', lineHeight: 1, color: 'var(--color-primary)' },
   activeLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
+  activeTime: { marginLeft: '12px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
   tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  // Строка места: переключатель слева, таймер абсолютно по центру строки.
-  placeRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
-  placeTime: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '14px',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none'
-  },
   tag: {
     display: 'inline-block',
     padding: '3px 9px',
