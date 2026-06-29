@@ -106,11 +106,12 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  // Активная строка: крупный «плей» + «Продолжить N/M» + время (с отступом).
-  activeRow: { display: 'flex', alignItems: 'center', gap: '7px' },
-  activePlay: { fontFamily: 'var(--font-display)', fontSize: '26px', lineHeight: 1, color: 'var(--color-primary)' },
-  activeLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
-  activeTime: { marginLeft: '12px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap' },
+  // Активная строка — строго одна линия: крупный «плей», «Продолжить N/M» слева,
+  // время прижато к правому краю карточки (marginLeft:auto).
+  activeRow: { display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'nowrap' },
+  activePlay: { fontFamily: 'var(--font-display)', fontSize: '26px', lineHeight: 1, color: 'var(--color-primary)', flexShrink: 0 },
+  activeLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '0.5px', whiteSpace: 'nowrap' },
+  activeTime: { marginLeft: 'auto', paddingLeft: '12px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },

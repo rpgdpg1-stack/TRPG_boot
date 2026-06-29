@@ -117,7 +117,9 @@ export default function ProgramCard({
   }
 
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  const padRight = lastTrained ? 96 : dots ? 48 : 18
+  // Во время активной тренировки блока «последняя» нет — не резервируем под него
+  // 96px справа, иначе строка «Продолжить N/M … время» не влезает и переносится.
+  const padRight = (lastTrained && !isActive) ? 96 : dots ? 48 : 18
 
   const cardStyle = {
     ...styles.card,
