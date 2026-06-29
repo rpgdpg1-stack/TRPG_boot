@@ -18,7 +18,10 @@ import {
   clearActiveWorkout,
   onActiveWorkoutChange,
   elapsedSecFrom,
-  formatWorkoutMin
+  formatWorkoutMin,
+  TIMER_ORANGE_SEC,
+  TIMER_RED_SEC,
+  WORKOUT_TIMER_COLORS
 } from '../lib/active-workout'
 import {
   loadWorkoutProgress,
@@ -64,15 +67,11 @@ import UiIcon from '../components/UiIcon'
 // чтобы позицию скролла можно было восстановить до отрисовки (без моргания).
 const slotsMemory = new Map()
 
-// Пороги цвета таймера тренировки: до 1 ч — зелёный (акцент), с 1 ч — оранжевый,
-// с 1 ч 30 мин — красный + поп-ап «пора завершать».
-const TIMER_ORANGE_SEC = 3600
-const TIMER_RED_SEC = 5400
+// Цвета таймера: пороги/цвета общие (active-workout.js), 'off' (неактивный
+// день) — серый локально. С 1ч30 (red) — ещё поп-ап «пора завершать».
 const TIMER_COLORS = {
   off: 'var(--color-text-secondary)',
-  green: 'var(--color-primary)',
-  orange: '#F0883E',
-  red: '#E84545'
+  ...WORKOUT_TIMER_COLORS
 }
 
 /** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */

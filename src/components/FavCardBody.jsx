@@ -13,7 +13,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  * им подсвечивается активный день. На главной он же даёт обводку/свечение карточки
  * (см. Home.FavCard), на странице избранного обводки нет — только подсветка дня.
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -52,8 +52,12 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 
         {available && (activeMin ? (
           // Идёт активная тренировка по этой программе — зовём продолжить.
+          // «Продолжить» всегда зелёный, цифры времени — по порогам таймера
+          // (зелёный <1ч → оранжевый 1–1:30 → красный ≥1:30).
           <div style={styles.daysRow}>
-            <span style={styles.activeLabel}>▶ Продолжить · {activeMin}</span>
+            <span style={styles.activeLabel}>
+              ▶ Продолжить · <span style={{ color: activeTimeColor || 'var(--color-primary)' }}>{activeMin}</span>
+            </span>
           </div>
         ) : prog.kind === 'swim' ? (
           <div style={styles.daysRow}>

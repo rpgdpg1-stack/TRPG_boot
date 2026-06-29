@@ -80,3 +80,21 @@ export function formatWorkoutMin(totalSec) {
   const m = totalMin % 60
   return m === 0 ? `${h} ч` : `${h} ч ${m} мин`
 }
+
+// Пороги цвета таймера тренировки (сек): до 1 ч — зелёный, 1ч–1ч30 — оранжевый,
+// с 1ч30 — красный. Единый источник для таймера дня (WorkoutDay) и индикатора
+// «Продолжить · N» на карточках (главная/избранное/раздел).
+export const TIMER_ORANGE_SEC = 3600
+export const TIMER_RED_SEC = 5400
+export const WORKOUT_TIMER_COLORS = {
+  green: 'var(--color-primary)',
+  orange: '#F0883E',
+  red: '#E84545'
+}
+
+/** Цвет таймера по прошедшим секундам (зелёный → оранжевый → красный). */
+export function workoutTimerColor(sec) {
+  if (sec >= TIMER_RED_SEC) return WORKOUT_TIMER_COLORS.red
+  if (sec >= TIMER_ORANGE_SEC) return WORKOUT_TIMER_COLORS.orange
+  return WORKOUT_TIMER_COLORS.green
+}

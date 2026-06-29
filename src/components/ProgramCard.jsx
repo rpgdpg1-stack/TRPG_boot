@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
-import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin } from '../lib/active-workout'
+import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin, workoutTimerColor } from '../lib/active-workout'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
@@ -65,7 +65,11 @@ export default function ProgramCard({
     const id = setInterval(() => forceTick(t => t + 1), 15000)
     return () => clearInterval(id)
   }, [isActive])
-  const activeMin = isActive ? formatWorkoutMin(elapsedSecFrom(active.startedAt)) : null
+  // Прошедшее время + цвет по тем же порогам, что таймер дня (зелёный <1ч →
+  // оранжевый 1–1:30 → красный ≥1:30). Красим только цифры; «Продолжить» — зелёный.
+  const activeSec = isActive ? elapsedSecFrom(active.startedAt) : 0
+  const activeMin = isActive ? formatWorkoutMin(activeSec) : null
+  const activeTimeColor = isActive ? workoutTimerColor(activeSec) : null
 
   const handleTap = () => {
     if (anchorRect || !available) return
@@ -128,7 +132,7 @@ export default function ProgramCard({
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
-      <FavCardBody entry={{ prog, activeDay }} accent={accent} activeMin={activeMin} />
+      <FavCardBody entry={{ prog, activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} />
 
       {lastTrained && available && !isActive && (
         <div style={styles.lastTrained}>
