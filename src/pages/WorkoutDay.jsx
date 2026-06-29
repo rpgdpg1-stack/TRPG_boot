@@ -10,7 +10,7 @@ import PlaceSwitcher from '../components/PlaceSwitcher'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getDayMuscleTags } from '../utils/history'
-import { setLastCompletedDay } from '../lib/storage'
+import { setLastCompletedDay, getActiveDaySync } from '../lib/storage'
 import { XP_REWARDS } from '../lib/levels'
 import {
   getActiveWorkout,
@@ -198,6 +198,11 @@ export default function WorkoutDay() {
   useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
   const isThisActive = !!active && active.programId === programId && active.day === day
   const sessionBlocked = !!active && !isThisActive
+  // День «в фокусе» — зелёная буква и точка пейджера: активная сессия ЭТОЙ
+  // программы, иначе рекомендованный по циклу день. Совпадает с подсветкой дня
+  // на карточках главной/избранного.
+  const sessionDayForProgram = active && active.programId === programId ? active.day : null
+  const focusDay = sessionDayForProgram || getActiveDaySync(programId)
   // Тост «сначала заверши текущую» — показываем ТОЛЬКО по тапу на заблокированную
   // «Начать», авто-скрытие через 2.6с (nonce перезапускает шейк на каждый тап).
   const [startBlockNonce, setStartBlockNonce] = useState(0)
@@ -806,7 +811,10 @@ export default function WorkoutDay() {
                 <span
                   key={day}
                   className={dayLetterAnimClass}
-                  style={styles.dayLetter}
+                  style={{
+                    ...styles.dayLetter,
+                    ...(day === focusDay ? null : styles.dayLetterMuted)
+                  }}
                 >
                   {day}
                 </span>
@@ -829,8 +837,11 @@ export default function WorkoutDay() {
                 <div style={styles.dayPager}>
                   {days.map((d, i) => {
                     const isViewed = i === currentDayIdx
-                    const sessionDay = isThisActive ? day : (!!active && active.programId === programId ? active.day : null)
-                    const isSessionElsewhere = sessionDay === d && !isViewed
+                    // Точка дня «в фокусе» (не просматриваемого) — светло-серая;
+                    // пульсирует только если это ЗАПУЩЕННАЯ сессия (иначе просто
+                    // рекомендованный день — статичная светло-серая).
+                    const isFocusElsewhere = focusDay === d && !isViewed
+                    const isSessionElsewhere = sessionDayForProgram === d && !isViewed
                     return (
                       <span
                         key={d}
@@ -838,7 +849,7 @@ export default function WorkoutDay() {
                         style={{
                           ...styles.dayDot,
                           ...(isViewed ? styles.dayDotActive : null),
-                          ...(isSessionElsewhere ? styles.dayDotSession : null)
+                          ...(isFocusElsewhere ? styles.dayDotSession : null)
                         }}
                       />
                     )
@@ -1682,9 +1693,9 @@ const styles = {
     background: 'var(--color-primary)',
     transform: 'scale(1.15)'
   },
-  // День с ЗАПУЩЕННОЙ тренировкой (когда смотришь другой день): чуть светлее
-  // обычного серого, мягко пульсирует размером (анимация .day-dot-pulse —
-  // transform задаёт keyframe, тут его не ставим).
+  // Точка дня «в фокусе» (запущенная сессия или рекомендованный день), когда
+  // смотришь другой день: чуть светлее обычного серого. Для запущенной сессии
+  // ещё мягко пульсирует (анимация .day-dot-pulse — transform задаёт keyframe).
   dayDotSession: {
     background: 'rgba(255, 255, 255, 0.5)'
   },
@@ -1697,6 +1708,11 @@ const styles = {
     lineHeight: 1,
     textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
     display: 'inline-block'
+  },
+  // Не-фокусный день (не сегодняшний по плану и не активный) — серая буква.
+  dayLetterMuted: {
+    color: 'var(--color-text-secondary)',
+    textShadow: 'none'
   },
   // Прогресс: цифры 7 / 10 слева, длинная полоска справа — строкой внутри блока.
   progressRow: {
