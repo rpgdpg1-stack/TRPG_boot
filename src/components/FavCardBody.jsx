@@ -50,46 +50,51 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           </div>
         ) : null}
 
-        {available && (activeMin ? (
-          // Идёт активная тренировка — статус-строка как в дне тренировки:
-          // слева N/M, по центру прогресс-полоска (зелёная заполненность по
-          // отжатым), справа время. Полоска тоньше, чем на дне.
-          <div style={styles.activeRow}>
-            <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
-            <div style={styles.activeTrack}>
-              <div style={{
-                ...styles.activeFill,
-                width: `${activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0}%`
-              }} />
-            </div>
-            <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
-              {activeMin}
-            </span>
-          </div>
-        ) : prog.kind === 'swim' ? (
+        {available && (prog.kind === 'swim' ? (
           <div style={styles.daysRow}>
             <span style={styles.daysLabel}>
               {prog.data.durationMin} мин · {swimTotalMeters()} м
             </span>
           </div>
         ) : (
-          <div style={styles.daysRow}>
-            <span style={styles.daysLabel}>День:</span>
-            <div style={styles.daysList}>
-              {allDays.map(d => {
-                const isToday = !!activeDay && d === activeDay
-                return (
-                  <span key={d} style={{
-                    ...styles.dayLetter,
-                    color: isToday ? accent : 'rgba(255,255,255,0.35)',
-                    textShadow: isToday ? `0 0 6px color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
-                  }}>
-                    {d}
-                  </span>
-                )
-              })}
+          // Дни A/B/C с подсветкой активного — остаются всегда. Когда тренировка
+          // запущена, ниже добавляется строка-статус (N/M · полоска · время).
+          <>
+            <div style={styles.daysRow}>
+              <span style={styles.daysLabel}>День:</span>
+              <div style={styles.daysList}>
+                {allDays.map(d => {
+                  const isToday = !!activeDay && d === activeDay
+                  return (
+                    <span key={d} style={{
+                      ...styles.dayLetter,
+                      color: isToday ? accent : 'rgba(255,255,255,0.35)',
+                      textShadow: isToday ? `0 0 6px color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+                    }}>
+                      {d}
+                    </span>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+
+            {activeMin && (
+              // Статус активной тренировки как в дне: слева N/M, по центру тонкая
+              // прогресс-полоска (зелёная заполненность по отжатым), справа время.
+              <div style={styles.activeRow}>
+                <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
+                <div style={styles.activeTrack}>
+                  <div style={{
+                    ...styles.activeFill,
+                    width: `${activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0}%`
+                  }} />
+                </div>
+                <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
+                  {activeMin}
+                </span>
+              </div>
+            )}
+          </>
         ))}
 
         {prog.source === 'shared' && prog.authorName && (
