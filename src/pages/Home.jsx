@@ -7,7 +7,7 @@ import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import ProgramCard from '../components/ProgramCard'
-import PixelHeart from '../components/PixelHeart'
+import FavHint from '../components/FavHint'
 import CategoryList from '../components/CategoryList'
 import ScreenTitle from '../components/ScreenTitle'
 
@@ -201,10 +201,10 @@ export default function Home() {
             className="press-tile"
             style={styles.favEmpty}
           >
-            <span style={styles.favEmptyHeartWrap}>
-              <PixelHeart filled={false} size={18} />
+            <span style={styles.favEmptyText}>
+              Добавь в избранное программу внутри раздела — она появится здесь
             </span>
-            Добавь в избранное программу внутри раздела — она появится здесь
+            <FavHint />
           </button>
         ) : (
           <div style={styles.favSlider}>
@@ -318,23 +318,27 @@ const styles = {
     border: 'none',
     cursor: 'pointer'
   },
-  favEmptyHeartWrap: {
-    display: 'inline-flex',
-    verticalAlign: 'middle',
-    marginRight: '6px'
-  },
   favEmpty: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '18px',
     width: '100%',
-    padding: '16px 18px',
+    minHeight: '130px',
+    padding: '20px 18px',
     background: 'rgba(255,255,255,0.02)',
     border: '1px dashed rgba(255,255,255,0.1)',
     borderRadius: 'var(--radius-card)',
+    cursor: 'pointer'
+  },
+  favEmptyText: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.5,
-    cursor: 'pointer'
+    maxWidth: '264px'
   },
   favSkeleton: {
     minHeight: '130px',

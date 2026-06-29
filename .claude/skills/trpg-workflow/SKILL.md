@@ -178,7 +178,7 @@ src/
 ├── assets/ui/      SVG-иконки: cardio change cloud_done cloud_sync friends info invite-friend
 │                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
 ├── components/     ActionButton BackupAllButton BackupButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
-│                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
+│                   FavHint FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
 │                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
 │                   ProfileHeader ProgramActionMenu RankFrame RankIcon RanksPopup SaveFriendProgramModal
 │                   ScreenTitle StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal

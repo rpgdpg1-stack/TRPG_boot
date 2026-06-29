@@ -7,6 +7,7 @@ import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import UiIcon from './UiIcon'
 import PixelHeart from './PixelHeart'
 import ProgramCard from './ProgramCard'
+import FavHint from './FavHint'
 
 /**
  * Список избранного по разделам — общий для страницы «Избранное» и профиля.
@@ -95,8 +96,11 @@ export default function FavoritesList() {
 function EmptyCard({ onAdd }) {
   return (
     <button onClick={onAdd} className="press-tile" style={styles.emptyCard}>
-      <span style={styles.emptyHeart}><PixelHeart filled={false} size={20} /></span>
-      Добавить в избранное
+      <span style={styles.emptyTop}>
+        <span style={styles.emptyHeart}><PixelHeart filled={false} size={20} /></span>
+        Добавить в избранное
+      </span>
+      <FavHint />
     </button>
   )
 }
@@ -124,12 +128,13 @@ const styles = {
   },
   emptyCard: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
+    gap: '18px',
     width: '100%',
     minHeight: '130px',
-    padding: '16px 18px',
+    padding: '20px 18px',
     border: '1.5px dashed rgba(255,255,255,0.15)',
     borderRadius: 'var(--radius-card)',
     background: 'transparent',
@@ -140,5 +145,6 @@ const styles = {
     letterSpacing: '0.5px',
     cursor: 'pointer'
   },
+  emptyTop: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
   emptyHeart: { display: 'inline-flex' }
 }
