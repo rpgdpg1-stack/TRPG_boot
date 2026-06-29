@@ -137,7 +137,7 @@ const styles = {
   // отступа (низ зоны --tg-safe-top минус 8px), translateY(-50%) центрирует по высоте.
   wrap: {
     position: 'fixed',
-    top: 'calc(var(--tg-safe-top) - 8px)',
+    top: 'calc(var(--tg-safe-top) - 4px)',
     transform: 'translateY(-50%)',
     left: 0,
     right: 0,
@@ -146,16 +146,17 @@ const styles = {
     pointerEvents: 'none',  // пилюля не перехватывает тапы по контенту под ней
     zIndex: 9998
   },
-  // Сама пилюля — нейтральная серо-тёмная с блюром, цветная только иконка.
+  // Сама пилюля — стеклянная (прозрачный surface-dim + blur+saturate как у
+  // кнопок/переключателей), цветная только иконка.
   pill: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '7px',
     padding: '7px 14px 7px 11px',
-    background: 'rgba(34, 34, 34, 0.92)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--color-surface-dim)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    border: '1px solid var(--color-border)',
     borderRadius: '999px',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
     animation: 'offlinePillIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
