@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { backupAllPinned } from '../lib/backups'
 import MuscleIcon from './MuscleIcon'
+import BackupButton from './BackupButton'
 import BackupSentToast from './rewards/BackupSentToast'
 
 /**
@@ -61,30 +62,11 @@ export default function BackupAllButton({ onDone }) {
   return (
     <>
       {!hidden && (
-        <button onClick={handleTap} className="press-tile" style={styles.btn}>
-          <span style={styles.label}>
-            {flyer
-              ? `${flyer.count} ${pluralPins(flyer.count)} ${doneWord(flyer.count)}`
-              : 'Подстраховать всех'}
-            {!flyer && <MuscleIcon size={20} earned={true} />}
-          </span>
-
-          {flyer && (
-            <span key={flyer.key} style={styles.flyer}>
-              <MuscleIcon size={32} earned={true} flexTrigger={flyer.key} />
-              <span style={styles.flyerPlus}>+{flyer.bonus}</span>
-            </span>
-          )}
-
-          <style>{`
-            @keyframes backupAllFly {
-              0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-              15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
-              30%  { opacity: 1; transform: translate(-50%, -65%) scale(1.1); }
-              100% { opacity: 0; transform: translate(-50%, -200%) scale(0.95); }
-            }
-          `}</style>
-        </button>
+        <BackupButton onClick={handleTap} flyer={flyer} style={{ marginTop: '10px' }}>
+          {flyer
+            ? `${flyer.count} ${pluralPins(flyer.count)} ${doneWord(flyer.count)}`
+            : <>Подстраховать всех <MuscleIcon size={20} earned={true} /></>}
+        </BackupButton>
       )}
 
       {result && (
@@ -97,52 +79,4 @@ export default function BackupAllButton({ onDone }) {
       )}
     </>
   )
-}
-
-const styles = {
-  btn: {
-    position: 'relative',
-    width: '100%',
-    minHeight: '52px',
-    marginTop: '10px',
-    padding: '14px 18px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid rgba(255, 255, 255, 0.10)',
-    borderRadius: 'var(--radius-card)',
-    cursor: 'pointer',
-    overflow: 'visible'
-  },
-  label: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '13px',
-    letterSpacing: '0.5px',
-    color: 'var(--color-text)'
-  },
-  flyer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    pointerEvents: 'none',
-    zIndex: 5,
-    textShadow: '0 0 10px rgba(158, 209, 83, 0.7)',
-    filter: 'drop-shadow(0 0 10px rgba(250, 223, 190, 0.5))',
-    animation: 'backupAllFly 1.8s ease-out forwards'
-  },
-  flyerPlus: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '18px',
-    color: 'var(--color-primary)'
-  }
 }

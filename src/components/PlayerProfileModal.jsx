@@ -6,7 +6,7 @@ import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT } from '../lib/bac
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
-import ActionButton from './ActionButton'
+import BackupButton from './BackupButton'
 import MuscleIcon from './MuscleIcon'
 
 /**
@@ -37,7 +37,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   // backupState стартует 'loading' — кнопку подстраховки не рисуем, пока сервер
   // не сказал реальный статус (иначе мигает «Подстраховать» → «Уже подстрахован»).
   const [backupState, setBackupState] = useState('loading') // loading|idle|sending|already|limit
-  const [todayCount, setTodayCount] = useState(null)
   const [bicepsTick, setBicepsTick] = useState(0)
   const bicepsTimers = useRef([])
 
@@ -52,7 +51,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
       if (cancelled) return
       setPub(data)
       if (data) {
-        setTodayCount(data.today_backup_count ?? null)
         if (data.already_backed_today) {
           setBackupState('already')
         } else if ((data.today_backup_count ?? 0) >= (data.daily_backup_limit ?? BACKUP_DAILY_LIMIT)) {
@@ -107,7 +105,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
       setBackupState('already')
     } else if (result.error === 'daily_limit') {
       haptic.error()
-      if (result.todayCount != null) setTodayCount(result.todayCount)
       setBackupState('limit')
     } else {
       haptic.error()
@@ -116,10 +113,11 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
     }
   }
 
-  const limitLabel = `Лимит на сегодня · ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT}`
-  const buttonText = backupState === 'sending' ? 'ОТПРАВКА...'
-                   : backupState === 'already' ? 'УЖЕ ПОДСТРАХОВАН СЕГОДНЯ'
-                   : backupState === 'limit'   ? limitLabel
+  // Подпись статуса — обычным регистром, прямо ВНУТРИ кнопки. Лимит показываем
+  // только когда он реально достигнут (на любом игроке, кого пробуешь страховать).
+  const statusText = backupState === 'sending' ? 'Отправляю…'
+                   : backupState === 'already' ? 'Уже подстрахован сегодня'
+                   : backupState === 'limit'   ? `Лимит ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT} — возвращайся завтра`
                    : null
 
   // Место рядом с кубком — ВСЕГДА место в ЛИГЕ игрока (не среди друзей).
@@ -154,20 +152,13 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           backupState === 'loading' ? (
             // Статус ещё не пришёл с сервера — нейтральный плейсхолдер той же
             // высоты, чтобы кнопка не прыгала «Подстраховать»→«Уже подстрахован».
-            <ActionButton disabled style={{ animation: 'profileSkeletonPulse 1.2s ease-in-out infinite' }} />
+            <BackupButton disabled dim pulse>{' '}</BackupButton>
           ) : backupState === 'idle' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <ActionButton variant="accent" onClick={handleBackup} style={{ gap: '8px' }}>
-                Подстраховать <MuscleIcon size={26} earned={true} flexTrigger={bicepsTick} />
-              </ActionButton>
-              {todayCount != null && (
-                <div style={styles.backupCounter}>
-                  Сегодня {todayCount}/{BACKUP_DAILY_LIMIT}
-                </div>
-              )}
-            </div>
+            <BackupButton onClick={handleBackup}>
+              Подстраховать <MuscleIcon size={20} earned={true} flexTrigger={bicepsTick} />
+            </BackupButton>
           ) : (
-            <ActionButton disabled>{buttonText}</ActionButton>
+            <BackupButton disabled dim>{statusText}</BackupButton>
           )
         )}
 
@@ -178,10 +169,6 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
         @keyframes profileModalPanel {
           0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes profileSkeletonPulse {
-          0%, 100% { opacity: 0.4; }
-          50%      { opacity: 0.7; }
         }
       `}</style>
     </div>,
@@ -240,13 +227,5 @@ const styles = {
     cursor: 'pointer',
     zIndex: 5,
     WebkitTapHighlightColor: 'transparent'
-  },
-  backupCounter: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    letterSpacing: '0.5px'
   }
 }

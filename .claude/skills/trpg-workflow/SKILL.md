@@ -177,7 +177,7 @@ src/
 ├── assets/ranks/   11 SVG: rookie athlete sportsman coach machine titan elite champion legend immortal x3-champion
 ├── assets/ui/      SVG-иконки: cardio change cloud_done cloud_sync friends info invite-friend
 │                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
-├── components/     ActionButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
+├── components/     ActionButton BackupAllButton BackupButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
 │                   FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
 │                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
 │                   ProfileHeader ProgramActionMenu RankFrame RankIcon RanksPopup SaveFriendProgramModal
