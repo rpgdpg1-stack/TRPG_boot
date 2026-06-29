@@ -1467,10 +1467,14 @@ function groupByMuscleGroup(slots) {
 }
 
 const styles = {
+  // marginBottom гасит таб-баровский padding-bottom у .app (тут таб-бара нет) —
+  // иначе под последней карточкой копится двойной отступ («пропасть») + лишний
+  // скролл на коротком дне. Без min-height:100dvh страница ровно по контенту:
+  // мало упражнений → не скроллится; много → у низа ~10px до кнопки «Завершить».
   page: {
     padding: '0 16px',
-    paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
-    minHeight: '100dvh'
+    paddingBottom: '80px',
+    marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
   },
   // Шапка дня закреплена сверху — то же устройство, что playerSticky на главной:
   // sticky, сплошной фон зоны (чтобы контент не просвечивал), отступ под

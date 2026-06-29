@@ -723,9 +723,16 @@ function GripIcon() {
 }
 
 const styles = {
-  // Низ — место под прибитый док «Сохранить» (кнопка «Добавить» теперь в потоке,
-  // последним элементом списка, и должна прокручиваться выше дока).
-  page: { padding: '0 16px', paddingTop: 'var(--tg-safe-top)', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))', minHeight: '100dvh' },
+  // Низ — место под прибитый док «Сохранить» (кнопка «Добавить» в потоке,
+  // последним элементом списка, прокручивается выше дока).
+  // marginBottom гасит таб-баровский padding-bottom у .app (тут таб-бара нет),
+  // иначе под контентом копится двойной отступ → «пропасть» ~190px + лишний
+  // скролл на коротком списке. Без min-height:100dvh страница ровно по контенту:
+  // мало упражнений → не скроллится; много → у низа фикс-зазор (paddingBottom).
+  page: {
+    padding: '0 16px', paddingTop: 'var(--tg-safe-top)', paddingBottom: '100px',
+    marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
+  },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
     padding: '40px 16px var(--tabbar-bottom)',

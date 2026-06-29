@@ -345,12 +345,16 @@ function toTitleCase(str) {
 }
 
 const styles = {
-  // Страница: горизонтальные отступы, paddingBottom — под fixed кнопку "СМЕНИТЬ"
+  // Страница: горизонтальные отступы, paddingBottom — под fixed кнопку "СМЕНИТЬ".
+  // marginBottom гасит таб-баровский padding-bottom у .app (тут таб-бара нет) —
+  // иначе под списком копится двойной отступ + лишний скролл, когда альтернатив
+  // мало. Без min-height:100dvh страница ровно по контенту: мало карточек → не
+  // скроллится; много → у низа фикс-зазор (paddingBottom) и нормальный overscroll.
   page: {
     paddingLeft: '16px',
     paddingRight: '16px',
-    paddingBottom: '140px',
-    minHeight: '100dvh'
+    paddingBottom: '100px',
+    marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
   },
   // Единый sticky-блок. Растянут на всю ширину поверх горизонтального
   // padding'а страницы (margin -16px + padding 16px). Фон --color-bg

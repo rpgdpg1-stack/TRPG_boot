@@ -334,7 +334,7 @@ const styles = {
   },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: '2px 16px 110px',
+    padding: '2px 16px 100px',
     display: 'block',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
