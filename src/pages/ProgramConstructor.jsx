@@ -506,6 +506,9 @@ export default function ProgramConstructor() {
           сквозному «плоскому» индексу (idx в currentDay). */}
       <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
       <div style={styles.dayList}>
+        {currentDay.length === 0 && (
+          <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
+        )}
         {daySections.map((section, sIdx) => (
           <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
             {section.muscleGroup !== UNKNOWN_GROUP && (
@@ -568,7 +571,7 @@ export default function ProgramConstructor() {
         <button
           onClick={handleAddTap}
           className="press-tile"
-          style={{ ...styles.addButton, alignSelf: 'center' }}
+          style={styles.addButton}
         >
           {atLimit
             ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
@@ -790,6 +793,7 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
     letterSpacing: '2px', textAlign: 'center', margin: 0, padding: '2px 0'
   },
+  emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
@@ -803,7 +807,7 @@ const styles = {
   exTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
   addButton: {
-    width: 'auto', height: '55px', flexShrink: 0, padding: '0 36px',
+    width: '100%', height: '55px', flexShrink: 0, padding: '0 36px',
     border: '1px solid var(--color-border)', borderRadius: 'var(--radius-pill)',
     background: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',

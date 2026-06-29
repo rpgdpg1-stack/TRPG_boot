@@ -360,12 +360,12 @@ const styles = {
     zIndex: 2
   },
   doneBtn: {
-    width: 'auto', height: '55px', padding: '0 36px', borderRadius: 'var(--radius-pill)',
-    border: '1.5px dashed rgba(255,255,255,0.18)',
-    background: 'rgba(34,34,34,0.55)', color: 'var(--color-text-secondary)',
+    width: '100%', height: '55px', padding: '0 36px', borderRadius: 'var(--radius-pill)',
+    border: '1px solid var(--color-border)',
+    background: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     pointerEvents: 'auto'
   },
   addBtnWrap: {
