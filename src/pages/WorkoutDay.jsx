@@ -807,21 +807,19 @@ export default function WorkoutDay() {
             </button>
 
             <div style={styles.dayCol}>
-              {/* Буква дня + «флажок» групп справа (стопкой, по высоте буквы:
-                  верхняя группа у верха буквы, нижняя — у низа). Ниже — пейджер. */}
-              <div style={styles.letterRow}>
-                <div style={styles.dayLetterWrap}>
-                  <span
-                    key={day}
-                    className={dayLetterAnimClass}
-                    style={{
-                      ...styles.dayLetter,
-                      ...(day === focusDay ? null : styles.dayLetterMuted)
-                    }}
-                  >
-                    {day}
-                  </span>
-                </div>
+              {/* Буква дня строго по центру; «флажок» групп — абсолютно справа от
+                  буквы (не сдвигает её с центра), стопкой по высоте буквы. */}
+              <div style={styles.dayLetterWrap}>
+                <span
+                  key={day}
+                  className={dayLetterAnimClass}
+                  style={{
+                    ...styles.dayLetter,
+                    ...(day === focusDay ? null : styles.dayLetterMuted)
+                  }}
+                >
+                  {day}
+                </span>
                 {dayTags.length > 0 && (
                   <div key={`tags-${day}`} style={styles.dayFlag}>
                     {dayTags.map(t => (
@@ -1668,28 +1666,29 @@ const styles = {
     alignItems: 'center',
     gap: '6px'
   },
-  // Строка буквы дня: крупная буква + «флажок» групп справа (по высоте буквы).
-  letterRow: {
-    display: 'flex',
-    alignItems: 'stretch',
-    justifyContent: 'center',
-    gap: '8px'
-  },
+  // Буква дня по центру; флажок групп позиционируется абсолютно от неё.
   dayLetterWrap: {
-    display: 'flex',
+    position: 'relative',
+    display: 'inline-flex',
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
-  // Группы дня стопкой справа от буквы: верхняя у верха буквы, нижняя у низа
-  // (space-between по высоте буквы), без запятых, выравнивание по левому краю.
+  // Группы дня стопкой абсолютно справа от буквы (не двигают её с центра):
+  // верхняя у верха буквы, нижняя у низа (space-between по высоте буквы), без
+  // запятых, выравнивание по левому краю.
   dayFlag: {
+    position: 'absolute',
+    left: '100%',
+    top: 0,
+    bottom: 0,
+    marginLeft: '8px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop: '4px',
     paddingBottom: '4px',
-    maxWidth: '120px'
+    maxWidth: '110px'
   },
   // Пейджер дней под буквой+тегами: показывает позицию (день N из M).
   dayPager: {
