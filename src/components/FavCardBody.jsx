@@ -61,7 +61,6 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           // запущена, ниже добавляется строка-статус (N/M · полоска · время).
           <>
             <div style={styles.daysRow}>
-              <span style={styles.daysLabel}>День:</span>
               <div style={styles.daysList}>
                 {allDays.map(d => {
                   const isToday = !!activeDay && d === activeDay
