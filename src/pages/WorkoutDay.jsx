@@ -1722,15 +1722,15 @@ const styles = {
   },
   progressTrack: {
     width: '100%',
-    height: '7px',
+    height: '9px',
     background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '4px',
+    borderRadius: '5px',
     overflow: 'hidden'
   },
   progressFill: {
     height: '100%',
     background: 'var(--color-primary)',
-    borderRadius: '4px',
+    borderRadius: '5px',
     transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
   body: {
