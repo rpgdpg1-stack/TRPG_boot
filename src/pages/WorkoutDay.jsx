@@ -37,6 +37,7 @@ import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import { pluralizeExercises } from '../utils/plural'
 
 /**
  * Экран дня тренировки.
@@ -158,6 +159,7 @@ export default function WorkoutDay() {
   const [activeSection, setActiveSection] = useState(-1)
   const activeSectionRef = useRef(-1)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
+  const sectionsRef = useRef([])              // текущие секции (для замера последней карточки)
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
   // Финал прогресса: только микро-салют на 100% (8/8). Счётчик 3-2-1 и искры на
@@ -371,10 +373,11 @@ export default function WorkoutDay() {
     setActiveSection(-1)
   }, [day, place])
 
-  // Какая группа в пилюле. Активная = последняя секция, чей заголовок ушёл под
-  // карточку дня (его верх выше низа шапки). Пока ни один не ушёл (мы вверху) —
-  // -1, пилюли нет. Считаем по позициям заголовков на scroll через rAF, пилюлю
-  // дёргаем только при смене группы. Заголовки в контенте НЕ трогаем (обычные).
+  // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
+  // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
+  // только линия опускается ниже середины последней карточки группы — пилюля
+  // исчезает (даже если следующий заголовок ещё не доехал), и подхватится уже
+  // когда доедет следующий. Пока ни один не ушёл (мы вверху) — -1, пилюли нет.
   useLayoutEffect(() => {
     if (loading || slots.length === 0) { setActiveSection(-1); return }
     let raf = 0
@@ -383,11 +386,21 @@ export default function WorkoutDay() {
       const sticky = stickyHeaderRef.current
       if (!sticky) return
       const line = sticky.getBoundingClientRect().bottom
-      const refs = sectionHeaderRefs.current
+      const secs = sectionsRef.current
       let active = -1
-      refs.forEach((el, idx) => {
-        if (el && el.getBoundingClientRect().top <= line) active = Math.max(active, idx)
-      })
+      for (let idx = 0; idx < secs.length; idx++) {
+        const headerEl = sectionHeaderRefs.current.get(idx)
+        if (!headerEl || headerEl.getBoundingClientRect().top > line) continue
+        // Заголовок ушёл под шапку. Прошли ли середину последней карточки группы?
+        const slotsOfSec = secs[idx].slots
+        const lastSlot = slotsOfSec[slotsOfSec.length - 1]
+        const cardEl = lastSlot ? cardRefs.current.get(lastSlot.order_num) : null
+        if (cardEl) {
+          const r = cardEl.getBoundingClientRect()
+          if (line >= r.top + r.height / 2) continue // ниже середины → пилюля пропадает
+        }
+        active = idx
+      }
       if (active !== activeSectionRef.current) {
         activeSectionRef.current = active
         setActiveSection(active)
@@ -720,6 +733,7 @@ export default function WorkoutDay() {
   }
 
   const sections = groupByMuscleGroup(slots)
+  sectionsRef.current = sections
   // Группа в пилюле — только когда есть «ушедшая под шапку» секция (activeSection ≥ 0);
   // иначе пилюли нет (мы вверху).
   const pillGroup = activeSection >= 0 && sections[activeSection]
@@ -797,15 +811,7 @@ export default function WorkoutDay() {
             onTouchStart={handleHeaderTouchStart}
             onTouchEnd={handleHeaderTouchEnd}
           >
-            <button
-              onClick={() => goToDay(prevDay, 'prev')}
-              style={styles.arrowButton}
-              className="press-tile"
-              aria-label="Предыдущий день"
-            >
-              <ArrowLeft />
-            </button>
-
+            {/* Стрелки убраны — переключение дней свайпом (паттерн понятен). */}
             <div style={styles.dayCol}>
               {/* Буква дня строго по центру; «флажок» групп — абсолютно справа от
                   буквы (не сдвигает её с центра), стопкой по высоте буквы. */}
@@ -833,20 +839,22 @@ export default function WorkoutDay() {
                   {days.map((d, i) => {
                     const isViewed = i === currentDayIdx
                     // Просматриваемый день — вытянутая «пилюля» (как пейджер
-                    // избранного), остальные — кружочки. Цвет: зелёный = «фокусный»
-                    // день (активная сессия/рекомендованный, как буква); просмат-
-                    // риваемый неактивный — светлее серого; прочие — тусклее.
-                    // Пульс — только у ЗАПУЩЕННОЙ сессии, когда смотришь другой день.
+                    // избранного), остальные — кружочки. Зелёным «фокусный» день
+                    // горит ТОЛЬКО когда мы на нём (просматриваем). Ушли на другой
+                    // день — он обычный тусклый серый; и пульсирует, только если это
+                    // ЗАПУЩЕННАЯ сессия (рекомендованный без старта — просто серый).
                     const isFocus = focusDay === d
                     const isSession = sessionDayForProgram === d
+                    const isGreen = isFocus && isViewed
+                    const pulse = isSession && !isViewed
                     return (
                       <span
                         key={d}
-                        className={(isFocus && isSession && !isViewed) ? 'day-dot-pulse' : undefined}
+                        className={pulse ? 'day-dot-pulse' : undefined}
                         style={{
                           ...styles.dayDot,
                           width: isViewed ? '16px' : '6px',
-                          ...(isFocus ? styles.dayDotFocus : isViewed ? styles.dayDotViewed : null)
+                          ...(isGreen ? styles.dayDotFocus : isViewed ? styles.dayDotViewed : null)
                         }}
                       />
                     )
@@ -854,40 +862,41 @@ export default function WorkoutDay() {
                 </div>
               )}
             </div>
-
-            <button
-              onClick={() => goToDay(nextDay, 'next')}
-              style={styles.arrowButton}
-              className="press-tile"
-              aria-label="Следующий день"
-            >
-              <ArrowRight />
-            </button>
           </div>
 
-          <div style={styles.progressRow}>
-            <span style={styles.progressLabel}>
-              {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
-            </span>
-            <div style={styles.progressArea}>
-              <div style={styles.progressTrack}>
-                <div
-                  style={{
-                    ...styles.progressFill,
-                    width: `${progressPct}%`
-                  }}
-                />
+          {/* Прогресс-полоса и «N / M» — только когда тренировка НАЧАТА (этот день
+              активен). Пока не нажал «Начать» — просто «N упражнений» по левому краю. */}
+          {isThisActive ? (
+            <div style={styles.progressRow}>
+              <span style={styles.progressLabel}>
+                {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
+              </span>
+              <div style={styles.progressArea}>
+                <div style={styles.progressTrack}>
+                  <div
+                    style={{
+                      ...styles.progressFill,
+                      width: `${progressPct}%`
+                    }}
+                  />
+                </div>
+
+                {/* Финал: только салют на 100% (8/8). */}
+                {!loading && slots.length > 0 && (
+                  <ProgressFinale
+                    pct={progressPct}
+                    finishKey={finishKey}
+                  />
+                )}
               </div>
-
-              {/* Финал: только салют на 100% (8/8). */}
-              {!loading && slots.length > 0 && (
-                <ProgressFinale
-                  pct={progressPct}
-                  finishKey={finishKey}
-                />
-              )}
             </div>
-          </div>
+          ) : (
+            <div style={styles.progressRow}>
+              <span style={styles.progressLabel}>
+                {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
@@ -1395,22 +1404,6 @@ const skeletonStyles = {
   }
 }
 
-function ArrowLeft() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 5 L8 12 L15 19" stroke="rgba(255,255,255,0.62)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ArrowRight() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M9 5 L16 12 L9 19" stroke="rgba(255,255,255,0.62)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 // Реальная позиция скролла. ExerciseActionMenu на время открытого меню фиксирует
 // body (position:fixed; top:-scrollY) — тогда window.scrollY === 0, а настоящая
 // позиция спрятана в body.style.top. Иначе берём обычный window.scrollY.
@@ -1646,18 +1639,6 @@ const styles = {
     // Подтягиваем букву дня ближе к строке «Зал / минуты» (−6px к гэпу 12px).
     marginTop: '-6px',
     touchAction: 'pan-y'
-  },
-  // Стрелки — прозрачные кнопки внутри общего блока (без своих пузырей).
-  arrowButton: {
-    flexShrink: 0,
-    background: 'transparent',
-    border: 'none',
-    padding: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
   },
   dayCol: {
     flex: 1,

@@ -25,3 +25,15 @@ export function pluralizeWorkouts(count) {
   if (n1 === 1) return 'тренировка'
   return 'тренировок'
 }
+
+/**
+ * "1 упражнение", "2 упражнения", "5 упражнений"
+ */
+export function pluralizeExercises(count) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'упражнений'
+  if (n1 > 1 && n1 < 5) return 'упражнения'
+  if (n1 === 1) return 'упражнение'
+  return 'упражнений'
+}
