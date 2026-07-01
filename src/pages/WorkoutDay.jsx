@@ -833,10 +833,9 @@ export default function WorkoutDay() {
             onTouchEnd={handleHeaderTouchEnd}
           >
             {/* Стрелки и пейджер убраны — переключение дней свайпом. Тап по букве
-                открывает мини-пикер дней (A/B/C) из центра буквы. */}
+                открывает мини-пикер дней (A/B/C) из центра буквы. Буква строго по
+                центру (группы дня ушли в строку-описание ниже). */}
             <div style={styles.dayCol}>
-              {/* Буква дня строго по центру; «флажок» групп — абсолютно справа от
-                  буквы (не сдвигает её с центра), стопкой по высоте буквы. */}
               <div
                 ref={letterRef}
                 style={styles.dayLetterWrap}
@@ -854,13 +853,6 @@ export default function WorkoutDay() {
                 >
                   {day}
                 </span>
-                {dayTags.length > 0 && (
-                  <div key={`tags-${day}`} style={styles.dayFlag}>
-                    {dayTags.map(t => (
-                      <span key={t.key} style={styles.dayTagText}>{t.label.toUpperCase()}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -893,8 +885,10 @@ export default function WorkoutDay() {
             </div>
           ) : (
             <div style={styles.progressRow}>
-              <span style={styles.progressLabel}>
-                {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
+              <span style={styles.dayDescLabel}>
+                {loading
+                  ? '...'
+                  : `${dayTags.length ? dayTags.map(t => t.label.toUpperCase()).join(', ') + ' · ' : ''}${slots.length} ${pluralizeExercises(slots.length)}`}
               </span>
             </div>
           )}
@@ -912,8 +906,12 @@ export default function WorkoutDay() {
           </div>
         )}
 
+        {/* Сплошная чёрная полоска в зазоре под карточкой дня (всегда есть, даже
+            без заголовка) — чтобы контент не просвечивал в промежутке до фейда. */}
+        <div style={styles.stickySolid} aria-hidden="true" />
+
         {/* Fade-scrim под блоком дня: контент уходит под шапку плавно (градиент+blur),
-            опущен на 4px ниже — заголовок в стике читается чётче. */}
+            опущен ниже сплошной полоски — заголовок в стике читается чётче. */}
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
@@ -1603,10 +1601,10 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 31
   },
-  // «Челка» — текст группы под карточкой дня. Своего фона нет — затемнение даёт
-  // stickyFade ниже; paddingTop держит позицию текста (чуть опущен для читаемости).
+  // «Челка» — текст группы под карточкой дня. Своего фона нет — сплошная чёрная
+  // полоска (stickySolid) и stickyFade ниже дают затемнение; текст поверх них.
   groupTabText: {
-    paddingTop: '7px',
+    paddingTop: '5px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
@@ -1615,11 +1613,23 @@ const styles = {
     whiteSpace: 'nowrap',
     animation: 'groupPillIn 0.22s ease-out'
   },
+  // Сплошная чёрная полоска в зазоре сразу под карточкой дня — контент не
+  // просвечивает в промежутке до фейда. Всегда есть (даже без заголовка).
+  stickySolid: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    height: '6px',
+    background: 'var(--color-bg)',
+    pointerEvents: 'none',
+    zIndex: 30
+  },
   // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
-  // Опущен на 4px (top: 100% + 4px) — заголовок в стике читается чётче.
+  // Опущен на 6px (100% + 6px) — под сплошной полоской; заголовок читается чётче.
   stickyFade: {
     position: 'absolute',
-    top: 'calc(100% + 4px)',
+    top: 'calc(100% + 6px)',
     left: 0,
     right: 0,
     height: '28px',
@@ -1784,8 +1794,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px'
   },
-  // Буква дня по центру; флажок групп позиционируется абсолютно от неё.
-  // Кликабельна — тап открывает пикер дней.
+  // Буква дня строго по центру. Кликабельна — тап открывает пикер дней.
   dayLetterWrap: {
     position: 'relative',
     display: 'inline-flex',
@@ -1794,23 +1803,6 @@ const styles = {
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
     userSelect: 'none'
-  },
-  // Группы дня стопкой абсолютно справа от буквы (не двигают её с центра):
-  // верхняя у верха буквы, нижняя у низа (space-between по высоте буквы), без
-  // запятых, выравнивание по левому краю.
-  dayFlag: {
-    position: 'absolute',
-    left: '100%',
-    top: 0,
-    bottom: 0,
-    marginLeft: '8px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingTop: '4px',
-    paddingBottom: '4px',
-    maxWidth: '110px'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
@@ -1842,6 +1834,14 @@ const styles = {
     letterSpacing: '1px',
     flexShrink: 0,
     whiteSpace: 'nowrap'
+  },
+  // Описание дня до старта: «ГРУДЬ, ПЛЕЧИ · 8 упражнений» — слева, серым.
+  dayDescLabel: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 600,
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '1px'
   },
   // Обёртка над дорожкой: держит абсолютный слой финала (искра/счётчик/салют),
   // который НЕ обрезается (в отличие от самой дорожки с overflow: hidden).
@@ -1981,14 +1981,4 @@ const styles = {
     color: '#FF6B6B',
     textAlign: 'center'
   },
-  dayTagText: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    lineHeight: 1.1,
-    textAlign: 'left',
-    whiteSpace: 'nowrap'
-  }
 }
