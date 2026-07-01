@@ -854,6 +854,17 @@ export default function WorkoutDay() {
                   {day}
                 </span>
               </div>
+              {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
+                  дня). Видны всегда, в т.ч. во время тренировки. */}
+              {dayTags.length > 0 && (
+                <div key={`chips-${day}`} style={styles.dayChips}>
+                  {dayTags.map(t => (
+                    <span key={t.key} style={{ ...styles.dayChip, background: t.color }}>
+                      {t.label.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -884,11 +895,9 @@ export default function WorkoutDay() {
               </div>
             </div>
           ) : (
-            <div style={styles.progressRow}>
+            <div style={styles.countRow}>
               <span style={styles.dayDescLabel}>
-                {loading
-                  ? '...'
-                  : `${dayTags.length ? dayTags.map(t => t.label.toUpperCase()).join(', ') + ' · ' : ''}${slots.length} ${pluralizeExercises(slots.length)}`}
+                {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
               </span>
             </div>
           )}
@@ -1819,6 +1828,25 @@ const styles = {
     color: 'var(--color-text-secondary)',
     textShadow: 'none'
   },
+  // Чипы групп дня — по центру под буквой, в цвете группы, белый текст.
+  dayChips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: '6px'
+  },
+  dayChip: {
+    display: 'inline-block',
+    padding: '3px 9px',
+    borderRadius: '999px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '10px',
+    letterSpacing: '0.4px',
+    lineHeight: 1.3,
+    color: '#FFFFFF',
+    whiteSpace: 'nowrap'
+  },
   // Прогресс: цифры 7 / 10 слева, длинная полоска справа — строкой внутри блока.
   progressRow: {
     display: 'flex',
@@ -1835,7 +1863,13 @@ const styles = {
     flexShrink: 0,
     whiteSpace: 'nowrap'
   },
-  // Описание дня до старта: «ГРУДЬ, ПЛЕЧИ · 8 упражнений» — слева, серым.
+  // Счётчик упражнений до старта — по центру (баланс с центрированной буквой/чипами).
+  countRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '0 8px'
+  },
   dayDescLabel: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
