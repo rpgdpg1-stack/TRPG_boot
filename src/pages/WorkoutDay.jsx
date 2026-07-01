@@ -152,6 +152,11 @@ export default function WorkoutDay() {
 
   const cardRefs = useRef(new Map())
 
+  // Пикер дней (мини-модалка из центра буквы). letterRef — якорь для позиции,
+  // dayPickerRect != null → открыт.
+  const letterRef = useRef(null)
+  const [dayPickerRect, setDayPickerRect] = useState(null)
+
   // Стеклянная пилюля текущей группы. Заголовки групп в контенте — обычные (как
   // всегда). Когда листаешь вниз и заголовок секции уходит под карточку дня —
   // появляется закреплённая пилюля с этой группой (стекло+блюр как у кнопок, без
@@ -587,6 +592,22 @@ export default function WorkoutDay() {
     scrollToTop()
   }
 
+  // Тап по букве дня — открыть пикер (только если дней 2+). Якорь — рект буквы.
+  const openDayPicker = () => {
+    if (days.length <= 1) return
+    haptic.light()
+    const el = letterRef.current
+    if (el) setDayPickerRect(el.getBoundingClientRect())
+  }
+  // Выбор дня в пикере: закрыть и перейти (направление по порядку дней).
+  const pickDay = (d) => {
+    setDayPickerRect(null)
+    if (d === day) return
+    const from = days.indexOf(day)
+    const to = days.indexOf(d)
+    goToDay(d, to > from ? 'next' : 'prev')
+  }
+
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
 
@@ -811,11 +832,18 @@ export default function WorkoutDay() {
             onTouchStart={handleHeaderTouchStart}
             onTouchEnd={handleHeaderTouchEnd}
           >
-            {/* Стрелки убраны — переключение дней свайпом (паттерн понятен). */}
+            {/* Стрелки и пейджер убраны — переключение дней свайпом. Тап по букве
+                открывает мини-пикер дней (A/B/C) из центра буквы. */}
             <div style={styles.dayCol}>
               {/* Буква дня строго по центру; «флажок» групп — абсолютно справа от
                   буквы (не сдвигает её с центра), стопкой по высоте буквы. */}
-              <div style={styles.dayLetterWrap}>
+              <div
+                ref={letterRef}
+                style={styles.dayLetterWrap}
+                onClick={openDayPicker}
+                role={days.length > 1 ? 'button' : undefined}
+                aria-label={days.length > 1 ? 'Выбрать день' : undefined}
+              >
                 <span
                   key={day}
                   className={dayLetterAnimClass}
@@ -834,33 +862,6 @@ export default function WorkoutDay() {
                   </div>
                 )}
               </div>
-              {days.length > 1 && (
-                <div style={styles.dayPager}>
-                  {days.map((d, i) => {
-                    const isViewed = i === currentDayIdx
-                    // Просматриваемый день — вытянутая «пилюля» (как пейджер
-                    // избранного), остальные — кружочки. Зелёным «фокусный» день
-                    // горит ТОЛЬКО когда мы на нём (просматриваем). Ушли на другой
-                    // день — он обычный тусклый серый; и пульсирует, только если это
-                    // ЗАПУЩЕННАЯ сессия (рекомендованный без старта — просто серый).
-                    const isFocus = focusDay === d
-                    const isSession = sessionDayForProgram === d
-                    const isGreen = isFocus && isViewed
-                    const pulse = isSession && !isViewed
-                    return (
-                      <span
-                        key={d}
-                        className={pulse ? 'day-dot-pulse' : undefined}
-                        style={{
-                          ...styles.dayDot,
-                          width: isViewed ? '16px' : '6px',
-                          ...(isGreen ? styles.dayDotFocus : isViewed ? styles.dayDotViewed : null)
-                        }}
-                      />
-                    )
-                  })}
-                </div>
-              )}
             </div>
           </div>
 
@@ -1133,6 +1134,18 @@ export default function WorkoutDay() {
             setShowFinishedModal(false)
             navigate('/')
           }}
+        />
+      )}
+
+      {/* Мини-пикер дней — выскакивает из центра буквы дня. */}
+      {dayPickerRect && (
+        <DayPicker
+          days={days}
+          currentDay={day}
+          focusDay={focusDay}
+          anchorRect={dayPickerRect}
+          onPick={pickDay}
+          onClose={() => setDayPickerRect(null)}
         />
       )}
     </div>
@@ -1429,6 +1442,124 @@ function groupByMuscleGroup(slots) {
   return sections
 }
 
+/**
+ * Пикер дней — стеклянная мини-модалка, выскакивает из ЦЕНТРА буквы дня (растёт
+ * из неё, перекрывает её). Показывает все дни программы (A/B/C) по порядку:
+ * «фокусный» день зелёный (рекомендованный/активный), текущий — подсвечен. Тап по
+ * дню — переключение; тап по фону — закрытие (уезжает обратно в центр). Портал
+ * в body; позиция fixed по центру буквы (anchorRect).
+ */
+function DayPicker({ days, currentDay, focusDay, anchorRect, onPick, onClose }) {
+  const [entered, setEntered] = useState(false)
+  const [closing, setClosing] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  const requestClose = () => {
+    if (closing) return
+    setClosing(true)
+    setTimeout(() => onClose?.(), 170)
+  }
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') requestClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const cx = anchorRect.left + anchorRect.width / 2
+  const cy = anchorRect.top + anchorRect.height / 2
+  const shown = entered && !closing
+
+  return createPortal(
+    <div style={pickerStyles.overlay} onClick={requestClose}>
+      <div
+        style={{
+          ...pickerStyles.panel,
+          left: `${cx}px`,
+          top: `${cy}px`,
+          opacity: shown ? 1 : 0,
+          transform: `translate(-50%, -50%) scale(${shown ? 1 : 0.5})`
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {days.map(d => {
+          const isFocus = d === focusDay
+          const isCurrent = d === currentDay
+          return (
+            <button
+              key={d}
+              onClick={() => { haptic.light(); onPick(d) }}
+              className="press-tile"
+              style={{
+                ...pickerStyles.cell,
+                ...(isFocus ? pickerStyles.cellFocus : isCurrent ? pickerStyles.cellCurrent : null)
+              }}
+            >
+              {d}
+            </button>
+          )
+        })}
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+const pickerStyles = {
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 9999,
+    background: 'transparent',
+    touchAction: 'none'
+  },
+  panel: {
+    position: 'fixed',
+    display: 'flex',
+    gap: '6px',
+    padding: '7px',
+    background: 'rgba(28, 28, 30, 0.72)',
+    backdropFilter: 'blur(22px) saturate(1.6)',
+    WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: '0 14px 44px rgba(0, 0, 0, 0.55)',
+    transformOrigin: 'center',
+    transition: 'opacity 0.16s ease, transform 0.19s cubic-bezier(0.2, 0.7, 0.3, 1)'
+  },
+  cell: {
+    width: '46px',
+    height: '46px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '50%',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    fontSize: '22px',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Фокусный день — зелёным (акцент + лёгкая заливка), как буква.
+  cellFocus: {
+    color: 'var(--color-primary)',
+    background: 'rgba(158, 209, 83, 0.16)'
+  },
+  // Текущий (просматриваемый) день — подсвечен нейтрально (видно, где мы).
+  cellCurrent: {
+    color: 'var(--color-text)',
+    background: 'rgba(255, 255, 255, 0.08)'
+  }
+}
+
 const styles = {
   // marginBottom гасит таб-баровский padding-bottom у .app (тут таб-бара нет) —
   // иначе под последней карточкой копится двойной отступ («пропасть») + лишний
@@ -1649,11 +1780,15 @@ const styles = {
     gap: '6px'
   },
   // Буква дня по центру; флажок групп позиционируется абсолютно от неё.
+  // Кликабельна — тап открывает пикер дней.
   dayLetterWrap: {
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'flex-end',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none'
   },
   // Группы дня стопкой абсолютно справа от буквы (не двигают её с центра):
   // верхняя у верха буквы, нижняя у низа (space-between по высоте буквы), без
@@ -1671,33 +1806,6 @@ const styles = {
     paddingTop: '4px',
     paddingBottom: '4px',
     maxWidth: '110px'
-  },
-  // Пейджер дней под буквой+тегами: показывает позицию (день N из M).
-  dayPager: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    marginTop: '2px'
-  },
-  // Пейджер как у избранного: высота 6, radius 3 — кружок (6×6) или «пилюля»
-  // (16×6, у просматриваемого дня). Ширину задаём инлайн.
-  dayDot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '3px',
-    background: 'rgba(255, 255, 255, 0.22)',
-    transition: 'width 0.25s ease, background 0.25s ease'
-  },
-  // «Фокусный» день (активная сессия или рекомендованный) — зелёный, как и буква
-  // дня. Для запущенной сессии ещё мягко пульсирует (.day-dot-pulse, когда
-  // смотришь другой день).
-  dayDotFocus: {
-    background: 'var(--color-primary)'
-  },
-  // Просматриваемый неактивный день — светлее обычного серого (видно позицию).
-  dayDotViewed: {
-    background: 'rgba(255, 255, 255, 0.55)'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
