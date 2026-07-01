@@ -316,6 +316,13 @@ body.keyboard-open .app::after { display: none; }
 }
 .day-dot-pulse { animation: dayDotPulse 1.8s ease-in-out infinite; }
 
+/* Лёгкий пульс буквы рекомендованного дня в пикере (не текущего): «вернись сюда». */
+@keyframes dayPickerPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+.day-picker-pulse { animation: dayPickerPulse 1.4s ease-in-out infinite; }
+
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */
