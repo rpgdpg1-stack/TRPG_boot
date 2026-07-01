@@ -1016,6 +1016,7 @@ export default function WorkoutDay() {
               onClick={handleFinishButtonTap}
               disabled={!canFinish}
               variant={isAllDone ? 'accent' : 'neutral'}
+              progress={isAllDone ? null : progressPct}
               hug
             >
               {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}

@@ -142,6 +142,12 @@ export default function ProgramCard({
     >
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
+      {/* Бейдж «Продолжить» — когда по этой программе идёт тренировка. В левом
+          верхнем углу (правый занят «⋯»), «прикреплён» к верхнему краю карточки. */}
+      {isActive && available && (
+        <span style={styles.continueBadge}>▶ Продолжить</span>
+      )}
+
       {lastTrained && available && !isActive && (
         <div style={styles.lastTrained}>
           {lastDate ? (
@@ -210,6 +216,27 @@ const styles = {
     width: '100%',
     minHeight: '130px',
     textAlign: 'left'
+  },
+  continueBadge: {
+    position: 'absolute',
+    top: '-8px',
+    left: '16px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 10px',
+    background: 'var(--color-primary)',
+    color: '#0D0C0C',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '10px',
+    letterSpacing: '0.5px',
+    lineHeight: 1,
+    borderRadius: 'var(--radius-pill)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+    whiteSpace: 'nowrap',
+    textTransform: 'uppercase',
+    zIndex: 4
   },
   lastTrained: {
     position: 'absolute',

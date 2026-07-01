@@ -19,19 +19,29 @@ export default function ActionButton({
   children,
   style,
   className = '',
+  progress = null,
   ...rest
 }) {
   const look = disabled ? styles.dim : (styles[variant] || styles.neutral)
+  // Прогресс-заливка за текстом (например, «Завершить»: фон светло-серым
+  // растёт по мере отметки упражнений). Только для активной кнопки.
+  const showFill = progress != null && !disabled
+  const pct = Math.max(0, Math.min(100, progress || 0))
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={`press-tile ${className}`.trim()}
-      style={{ ...styles.base, ...(hug ? styles.hug : styles.full), ...look, ...style }}
+      style={{ ...styles.base, ...(hug ? styles.hug : styles.full), ...look, ...(showFill ? styles.clip : null), ...style }}
       {...rest}
     >
-      {children}
+      {showFill ? (
+        <>
+          <span style={{ ...styles.fill, width: `${pct}%` }} aria-hidden="true" />
+          <span style={styles.label}>{children}</span>
+        </>
+      ) : children}
     </button>
   )
 }
@@ -82,5 +92,17 @@ const styles = {
     background: 'var(--color-primary)',
     border: '1.5px solid var(--color-primary-dark)',
     color: '#0D0C0C'
-  }
+  },
+  // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
+  clip: { position: 'relative', overflow: 'hidden' },
+  fill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    background: 'rgba(255, 255, 255, 0.12)',
+    transition: 'width 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+    pointerEvents: 'none'
+  },
+  label: { position: 'relative', zIndex: 1 }
 }
