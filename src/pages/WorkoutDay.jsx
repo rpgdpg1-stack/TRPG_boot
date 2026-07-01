@@ -900,17 +900,21 @@ export default function WorkoutDay() {
           )}
         </div>
 
-        {/* Закреплённый заголовок текущей группы — сплошная чёрная полоса (без
-            градиента) во всю ширину: заголовок с отступом от карточки дня, контент
-            заезжает ПОД полосу. Абсолютн (отступы списка не меняет), появляется при
-            скролле, текст сменяется на границе групп. */}
+        {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
+            затемнение даёт общий stickyFade ниже, текст ложится поверх него. Абсолютн
+            (отступы дня не меняет), появляется при скролле вниз, текст сменяется на
+            границе групп. */}
         {!loading && pillGroup && (
-          <div style={styles.groupStickyBand} aria-hidden="true">
+          <div style={styles.groupPillRow} aria-hidden="true">
             <span key={pillGroup} style={{ ...styles.groupTabText, color: getMuscleGroupColors(pillGroup).accent }}>
               {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
             </span>
           </div>
         )}
+
+        {/* Fade-scrim под блоком дня: контент уходит под шапку плавно (градиент+blur),
+            опущен на 4px ниже — заголовок в стике читается чётче. */}
+        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       <div style={styles.body}>
@@ -1587,26 +1591,22 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Закреплённый заголовок группы — сплошная чёрная полоса во всю ширину экрана
-  // (left/right −16 гасят боковой паддинг шапки), сразу под карточкой дня (top:100%).
-  // paddingTop даёт отступ заголовка от карточки; paddingBottom — сплошную зону,
-  // под которую заезжает контент. НЕ в потоке (отступы списка не трогает).
-  groupStickyBand: {
+  // Ряд для центрирования челки — абсолютный, сразу под карточкой дня (top:100%),
+  // НЕ в потоке (отступы списка не трогает). Контент скроллится под челкой.
+  groupPillRow: {
     position: 'absolute',
     top: '100%',
-    left: '-16px',
-    right: '-16px',
-    paddingTop: '18px',
-    paddingBottom: '14px',
-    background: 'var(--color-bg)',
+    left: 0,
+    right: 0,
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
     zIndex: 31
   },
-  // Текст заголовка группы в закреплённой полосе. key={pillGroup} ремаунтит →
-  // мягкая смена/появление (отступ задаёт полоса, своего paddingTop нет).
+  // «Челка» — текст группы под карточкой дня. Своего фона нет — затемнение даёт
+  // stickyFade ниже; paddingTop держит позицию текста (чуть опущен для читаемости).
   groupTabText: {
+    paddingTop: '7px',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
@@ -1614,6 +1614,22 @@ const styles = {
     lineHeight: 1,
     whiteSpace: 'nowrap',
     animation: 'groupPillIn 0.22s ease-out'
+  },
+  // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
+  // Опущен на 4px (top: 100% + 4px) — заголовок в стике читается чётче.
+  stickyFade: {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    left: 0,
+    right: 0,
+    height: '28px',
+    pointerEvents: 'none',
+    zIndex: 29,
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
   // Один целиковый блок — фон и строук как у карточки игрока на главной.
   // Тень не нужна — переход даёт фейд под блоком (как на главной).
