@@ -238,12 +238,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Крестик-закрытие в правом верхнем углу (хит-зона 44px, кружок 30px) —
-            единый вид с другими модалками/экраном тренировки. */}
-        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">
-          <span style={styles.closeBtnInner}><CrossIcon /></span>
-        </button>
-
         {/* Карточка-шапка: как карточка упражнения в днях тренировки, но
             вместо статичной миниатюры — зацикленное видео. Вес тут же
             отображается и редактируется. Большое видео — по кнопке «Техника». */}
@@ -363,6 +357,16 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         </div>
 
       </div>
+
+      {/* Крестик-закрытие ПОД модалкой, по центру — крупнее (кружок 46px, хит-зона
+          56px): низ экрана удобнее для большого пальца. Отдельный «пузырёк». */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose() }}
+        style={styles.closeBtn}
+        aria-label="Закрыть"
+      >
+        <span style={styles.closeBtnInner}><CrossIcon size={20} /></span>
+      </button>
     </div>
   )
 }
@@ -384,7 +388,9 @@ const styles = {
     background: 'rgba(13, 12, 12, 0.75)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
+    // Колонка: модалка сверху, крестик-пузырёк под ней по центру.
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
@@ -392,10 +398,9 @@ const styles = {
     // ломается sticky-шапка. Скролл самой высокой модалки разрешён через
     // touch-action:pan-y на ней (см. menu).
     touchAction: 'none',
-    // Верхний отступ = системная зона Telegram + запас. Так даже высокая
-    // модалка (видео + карточка + заметка) при центрировании не залезет
-    // под кнопки Telegram сверху.
-    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px',
+    // Верхний отступ = системная зона Telegram + запас; низ = safe-area + запас,
+    // чтобы крестик-пузырёк под модалкой не прилипал к самому низу экрана.
+    padding: 'calc(env(safe-area-inset-top) + 30px) 20px calc(env(safe-area-inset-bottom) + 20px)',
     overflowY: 'auto',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
@@ -414,9 +419,8 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
-    // Сверху 40 — под крестик-закрытие в правом верхнем углу (как в других
-    // модалках); снизу 24 (заметке чуть больше воздуха); по бокам 16.
-    padding: '40px 16px 24px',
+    // Симметричные отступы 24 сверху/снизу, 16 по бокам (крестик вынесен под модалку).
+    padding: '24px 16px 24px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -424,14 +428,13 @@ const styles = {
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
-  // Крестик: хит-зона 44×44 (прозрачная), видимый серый кружок 30px внутри —
-  // как крестик на экране тренировки и в PlayerProfileModal.
+  // Крестик-закрытие ПОД модалкой по центру: крупный «пузырёк» — видимый кружок
+  // 46px, хит-зона 56px, зазор от модалки сверху. Низ удобен для большого пальца.
   closeBtn: {
-    position: 'absolute',
-    top: '6px',
-    right: '6px',
-    width: '44px',
-    height: '44px',
+    flexShrink: 0,
+    marginTop: '14px',
+    width: '56px',
+    height: '56px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -439,16 +442,15 @@ const styles = {
     border: 'none',
     padding: 0,
     cursor: 'pointer',
-    zIndex: 5,
     WebkitTapHighlightColor: 'transparent'
   },
   closeBtnInner: {
-    width: '30px',
-    height: '30px',
+    width: '46px',
+    height: '46px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.06)',
+    background: 'rgba(255, 255, 255, 0.08)',
     borderRadius: '50%',
     color: 'var(--color-text-secondary)'
   },
