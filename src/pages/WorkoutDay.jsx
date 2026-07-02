@@ -75,6 +75,12 @@ const TIMER_COLORS = {
   ...WORKOUT_TIMER_COLORS
 }
 
+// Оценка длительности силовой тренировки: одно упражнение ≈ 3 рабочих подхода
+// (8–12 повторов) с ~2 мин отдыха между подходами + подход/переход к снаряду.
+// ~2 мин работы (3×~40с) + ~4 мин отдых (2×~120с) + ~1 мин переход ≈ 7 мин/упр.
+// Общая оценка дня = число упражнений × это значение (напр. 8 → ~56 мин, 10 → ~1 ч 10 мин).
+const EST_MIN_PER_EXERCISE = 7
+
 /** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
 function CrossIcon({ size = 16 }) {
   return (
@@ -823,7 +829,7 @@ export default function WorkoutDay() {
             ) : (!loading && slots.length > 0) ? (
               <div style={styles.timerCenter}>
                 <span style={styles.estimate}>
-                  <ClockIcon size={13} /> ≈ {formatWorkoutMin(Math.max(20, slots.length * 6) * 60)}
+                  <ClockIcon size={13} /> ≈ {formatWorkoutMin(slots.length * EST_MIN_PER_EXERCISE * 60)}
                 </span>
               </div>
             ) : null}
@@ -874,9 +880,9 @@ export default function WorkoutDay() {
                 </span>
               </div>
               {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
-                  дня). Во время тренировки приглушены (фокус на прогрессе). */}
+                  дня). Всегда слегка приглушены (и в активном, и в неактивном). */}
               {dayTags.length > 0 && (
-                <div key={`chips-${day}`} style={{ ...styles.dayChips, opacity: isThisActive ? 0.45 : 1 }}>
+                <div key={`chips-${day}`} style={styles.dayChips}>
                   {dayTags.map(t => (
                     <span key={t.key} style={{ ...styles.dayChip, background: t.color }}>
                       {t.label.toUpperCase()}
@@ -1056,7 +1062,7 @@ export default function WorkoutDay() {
               progress={isAllDone ? null : progressPct}
               hug
             >
-              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : `ЗАВЕРШИТЬ · ${activeOrderNums.size}/${slots.length}`}
+              {`ЗАВЕРШИТЬ · ${isAllDone ? '✓' : `${activeOrderNums.size}/${slots.length}`}`}
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
@@ -1871,11 +1877,13 @@ const styles = {
     textShadow: 'none'
   },
   // Чипы групп дня — по центру под буквой, в цвете группы, белый текст.
+  // Всегда слегка приглушены (opacity), как и подгруппы на карточках упражнений.
   dayChips: {
     display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: '6px'
+    gap: '6px',
+    opacity: 0.5
   },
   dayChip: {
     display: 'inline-block',

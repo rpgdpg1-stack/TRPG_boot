@@ -416,14 +416,14 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  // Тонкая строка недельного статуса под заголовком.
+  // Тонкая строка недельного статуса под заголовком — по центру экрана.
   weekStatus: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.2px',
-    paddingLeft: '4px',
+    textAlign: 'center',
     marginTop: '2px',
     marginBottom: '10px'
   },
