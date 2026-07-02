@@ -551,7 +551,7 @@ export default function ProgramConstructor() {
                         <div style={styles.exName}>{ex?.name || exId}</div>
                         {ex && subLabel && (
                           <div style={styles.exTags}>
-                            <span style={{ ...styles.exTag, background: c.tag, color: '#fff' }}>
+                            <span style={{ ...styles.exTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
                               {subLabel}
                             </span>
                           </div>

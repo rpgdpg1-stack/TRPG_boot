@@ -35,14 +35,11 @@ export default function ExerciseHeaderCard({
         <div style={styles.name}>{name}</div>
 
         <div style={styles.tagsRow}>
-          {groupLabel && (
-            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
-              {groupLabel}
-            </span>
-          )}
-          {subGroupLabel && (
-            <span style={{ ...styles.tag, ...styles.tagSecondary }}>
-              {subGroupLabel}
+          {/* Один тег — подгруппа в цвете основной группы, opacity 0.7 (как на
+              карточках упражнений в дне тренировки). */}
+          {(subGroupLabel || groupLabel) && (
+            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF', opacity: 0.7 }}>
+              {subGroupLabel || groupLabel}
             </span>
           )}
         </div>

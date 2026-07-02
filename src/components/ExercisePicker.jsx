@@ -161,6 +161,9 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           <div style={styles.subChipsRow}>
             {activeSubs.map(sub => {
               const active = activeSub === sub
+              // Активная подгруппа заливается цветом СВОЕЙ группы (спина/грудь…),
+              // а не общим зелёным.
+              const gc = getMuscleGroupColors(activeGroup)
               return (
                 <button
                   key={sub}
@@ -168,8 +171,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   className="press-tile"
                   style={{
                     ...styles.subChip,
-                    background: active ? 'var(--color-primary)' : 'rgba(255,255,255,0.10)',
-                    color: active ? '#0D0C0C' : 'var(--color-text-secondary)'
+                    background: active ? gc.tag : 'rgba(255,255,255,0.10)',
+                    color: active ? '#fff' : 'var(--color-text-secondary)'
                   }}
                 >
                   {toTitleCase(SUB_GROUP_LABELS[sub] || sub)}
@@ -205,7 +208,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                 <div style={styles.rowTags}>
                   {/* Один тег — подгруппа, в цвете основной группы (как заголовок
                       группы на дне тренировки). Имя группы — только в фильтр-чипах. */}
-                  <span style={{ ...styles.rowTag, background: c.tag, color: '#fff' }}>
+                  <span style={{ ...styles.rowTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
                     {toTitleCase(
                       SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group ||
                       MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group

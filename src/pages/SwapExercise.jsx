@@ -316,7 +316,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
 
         <div style={rowStyles.tagsRow}>
           {tagLabel && (
-            <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF' }}>
+            <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF', opacity: 0.7 }}>
               {tagLabel}
             </span>
           )}
