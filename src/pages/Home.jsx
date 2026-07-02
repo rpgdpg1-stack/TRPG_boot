@@ -9,23 +9,52 @@ import { localGet, localSet } from '../utils/storage'
 import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
 import CategoryList from '../components/CategoryList'
+import DailyQuests from '../components/DailyQuests'
 import ScreenTitle from '../components/ScreenTitle'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
 const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 
-// Заголовок секции (РАЗДЕЛЫ) — кликабельный, ведёт на страницу секции.
-function SectionHeader({ title, onTap }) {
+// Свёрнутость секций главной (РАЗДЕЛЫ / ДНЕВНОЙ БУСТ) — кросс-девайс через
+// CloudStorage (+ локальный кеш для мгновенного старта). JSON-карта { key: true }.
+const COLLAPSE_KEY = 'home-sections-collapsed'
+function readCollapsedSync() {
+  try { return JSON.parse(localGet(COLLAPSE_KEY) || '{}') || {} } catch { return {} }
+}
+
+// Заголовок секции с шевроном справа — тап сворачивает/разворачивает.
+function SectionToggle({ title, collapsed, onToggle }) {
   return (
-    <button onClick={onTap} style={homeSectionStyles.headerBtn}>{title}</button>
+    <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
+      <span style={homeSectionStyles.toggleTitle}>{title}</span>
+      <HomeChevron collapsed={collapsed} />
+    </button>
+  )
+}
+
+// Шеврон: вниз = свёрнуто, вверх (rotate 180) = раскрыто.
+function HomeChevron({ collapsed }) {
+  return (
+    <span style={{
+      display: 'inline-flex',
+      transition: 'transform 0.25s var(--ease-ios)',
+      transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)'
+    }}>
+      <svg width="14" height="8" viewBox="0 0 14 8" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1 L7 6 L13 1" fill="none" stroke="var(--color-text-secondary)"
+          strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   )
 }
 
 const homeSectionStyles = {
-  headerBtn: {
-    display: 'block', width: '100%', textAlign: 'left', padding: '0 4px',
-    marginTop: '20px', marginBottom: '12px',
-    background: 'transparent', border: 'none', cursor: 'pointer',
+  toggleBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    width: '100%', padding: '0 4px', marginTop: '20px', marginBottom: '12px',
+    background: 'transparent', border: 'none', cursor: 'pointer'
+  },
+  toggleTitle: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
     color: 'var(--color-text-secondary)', letterSpacing: '3px'
   }
@@ -48,9 +77,10 @@ function indexBySlug(entries, slug) {
 /**
  * Главная — Тренировки.
  *
- * Лаконичная структура: ИЗБРАННОЕ (закреплено сверху) → РАЗДЕЛЫ.
- * Карточка игрока теперь живёт только на странице Профиль; История и Дневной
- * буст доступны из Профиля/таб-бара, на главной их нет.
+ * Структура: ИЗБРАННОЕ (закреплено сверху) → РАЗДЕЛЫ → ДНЕВНОЙ БУСТ.
+ * РАЗДЕЛЫ и ДНЕВНОЙ БУСТ сворачиваются тапом по заголовку (шеврон справа),
+ * состояние кросс-девайс (CloudStorage, ключ home-sections-collapsed).
+ * Дневной буст (DailyQuests) продублирован здесь и в Профиле.
  *
  * Избранное: карусель программ, листается СВАЙПОМ влево/вправо (с вибро),
  * снизу точки-индикаторы. Последняя пролистанная карточка запоминается
@@ -72,11 +102,34 @@ export default function Home() {
   // Направление лёгкой анимации заезда карточки избранного при смене слайда.
   const [slideDir, setSlideDir] = useState(null)
 
+  // Свёрнутость секций (РАЗДЕЛЫ / ДНЕВНОЙ БУСТ): старт из локального кеша,
+  // догоняем из облака. true = свёрнуто.
+  const [collapsed, setCollapsed] = useState(readCollapsedSync)
+
   useEffect(() => {
     window.scrollTo(0, 0)
     backButton.hide()
     lockVerticalSwipes()
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    cloudGet(COLLAPSE_KEY).then(v => {
+      if (cancelled || !v) return
+      try { setCollapsed(JSON.parse(v) || {}) } catch { /* ignore */ }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const toggleSection = (key) => {
+    haptic.light()
+    setCollapsed(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      localSet(COLLAPSE_KEY, JSON.stringify(next))
+      cloudSet(COLLAPSE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
 
   // Фоновое обновление избранного (вдруг менялось с другого устройства).
   useEffect(() => {
@@ -251,10 +304,21 @@ export default function Home() {
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      {/* Скроллящийся контент: разделы */}
+      {/* Скроллящийся контент: разделы + дневной буст (обе секции сворачиваются) */}
       <div style={styles.scrollSection}>
-        <SectionHeader title="РАЗДЕЛЫ" onTap={() => { haptic.light(); navigate('/sections') }} />
-        <CategoryList />
+        <SectionToggle
+          title="РАЗДЕЛЫ"
+          collapsed={!!collapsed.sections}
+          onToggle={() => toggleSection('sections')}
+        />
+        {!collapsed.sections && <CategoryList />}
+
+        <SectionToggle
+          title="ДНЕВНОЙ БУСТ"
+          collapsed={!!collapsed.boost}
+          onToggle={() => toggleSection('boost')}
+        />
+        {!collapsed.boost && <DailyQuests />}
       </div>
     </div>
   )

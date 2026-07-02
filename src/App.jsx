@@ -16,7 +16,6 @@ import SwapExercise from './pages/SwapExercise'
 import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
-import HomeLayoutSettings from './pages/HomeLayoutSettings'
 import Favorites from './pages/Favorites'
 import Sections from './pages/Sections'
 import DailyBoost from './pages/DailyBoost'
@@ -145,7 +144,6 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/settings/home-layout" element={<HomeLayoutSettings />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rewards" element={<Rewards />} />
