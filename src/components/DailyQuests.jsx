@@ -28,7 +28,6 @@ import MuscleIcon from './MuscleIcon'
  */
 
 const SLOT_XP = 20
-const TOTAL_DAY_REWARD = SLOT_XP * 3 // 60
 
 // openBootHour — час «суток буста» (от 03:00 МСК), с которого слот открыт.
 const BOOST_POOLS = [
@@ -266,9 +265,6 @@ export default function DailyQuests() {
             onPointerCancel={() => { pointerStartRef.current = null }}
             style={styles.allDoneBlock}
           >
-            <div style={{ ...styles.allDoneReward, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              +{TOTAL_DAY_REWARD} <MuscleIcon size={18} earned={true} /> получено
-            </div>
             <div style={styles.allDoneCheck}>✔ День пройден</div>
             <Chevron expanded={expanded} />
           </div>
@@ -564,14 +560,6 @@ const styles = {
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
     userSelect: 'none'
-  },
-  allDoneReward: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px',
-    textShadow: '0 0 6px rgba(158, 209, 83, 0.3)'
   },
   allDoneCheck: {
     fontFamily: 'var(--font-manrope)',

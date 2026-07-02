@@ -14,6 +14,7 @@ import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
 import CategoryList from '../components/CategoryList'
 import DailyQuests, { getDailyBoostSummarySync } from '../components/DailyQuests'
+import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
@@ -31,10 +32,6 @@ function readWeeklyCount() {
   const u = getCurrentUser()
   if (!u || u.weekly_streak_week !== getCurrentWeekKey()) return 0
   return u.weekly_streak || 0
-}
-function weeklyStatusText(count) {
-  if (count > 0) return `На этой неделе — ${count} ${pluralizeWorkouts(count)}`
-  return 'Начни тренировку — стань лучшей версией себя'
 }
 
 // Заголовок секции с шевроном справа — тап сворачивает/разворачивает.
@@ -270,8 +267,22 @@ export default function Home() {
       <div style={styles.playerSticky}>
         <ScreenTitle>Тренировки</ScreenTitle>
 
-        {/* Тонкая строка-статус недели (мотивация / прогресс). */}
-        <div style={styles.weekStatus}>{weeklyStatusText(weeklyCount)}</div>
+        {/* Статус недели в серой пилюле: огонёк-серия ×N + «тренировка»
+            (или зовущая фраза при 0). Огонёк — тот же, что в профиле (по уровню). */}
+        <div style={styles.weekStatusWrap}>
+          <div style={styles.weekStatus}>
+            {weeklyCount > 0 ? (
+              <>
+                <span>На этой неделе</span>
+                <StreakFlame streak={weeklyCount} />
+                <span style={styles.weekMult}>×{weeklyCount}</span>
+                <span>{pluralizeWorkouts(weeklyCount)}</span>
+              </>
+            ) : (
+              'Начни тренировку — стань лучшей версией себя'
+            )}
+          </div>
+        </div>
 
         {/* ИЗБРАННОЕ — заголовок-label (не кликается) + «Все ›» справа. */}
         <div style={styles.favHeaderRow}>
@@ -416,16 +427,31 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  // Тонкая строка недельного статуса под заголовком — по центру экрана.
+  // Статус недели — серая пилюля по центру экрана.
+  weekStatusWrap: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '2px',
+    marginBottom: '10px'
+  },
   weekStatus: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '5px 14px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
-    letterSpacing: '0.2px',
-    textAlign: 'center',
-    marginTop: '2px',
-    marginBottom: '10px'
+    letterSpacing: '0.2px'
+  },
+  weekMult: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '12px',
+    color: '#FF8C42'
   },
   // Строка заголовка ИЗБРАННОЕ: label слева, «Все ›» справа.
   favHeaderRow: {
