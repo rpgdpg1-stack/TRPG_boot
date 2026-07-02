@@ -28,6 +28,15 @@ import UiIcon from './UiIcon'
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = '#FFA94D'
 
+/** Крестик-закрытие (тонкие линии, currentColor) — единый вид во всех модалках. */
+function CrossIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
 
@@ -229,6 +238,12 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         onClick={(e) => e.stopPropagation()}
       >
 
+        {/* Крестик-закрытие в правом верхнем углу (хит-зона 44px, кружок 30px) —
+            единый вид с другими модалками/экраном тренировки. */}
+        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">
+          <span style={styles.closeBtnInner}><CrossIcon /></span>
+        </button>
+
         {/* Карточка-шапка: как карточка упражнения в днях тренировки, но
             вместо статичной миниатюры — зацикленное видео. Вес тут же
             отображается и редактируется. Большое видео — по кнопке «Техника». */}
@@ -391,6 +406,7 @@ const styles = {
   // даёт отступы 20px по бокам, как раз сопоставимо с полями страницы).
   // maxWidth убран, чтобы модалка не была уже карточек.
   menu: {
+    position: 'relative',
     width: '100%',
     maxHeight: '100%',
     overflowY: 'auto',
@@ -398,15 +414,43 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '33px',
-    // Единая иерархия отступов: внешний паддинг 16, между блоками gap 16 (внутренние
-    // паддинги блоков — свои). Низ чуть меньше (14) — оптический баланс.
-    padding: '16px 16px 14px',
+    // Сверху 40 — под крестик-закрытие в правом верхнем углу (как в других
+    // модалках); снизу 24 (заметке чуть больше воздуха); по бокам 16.
+    padding: '40px 16px 24px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: '16px',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+  },
+  // Крестик: хит-зона 44×44 (прозрачная), видимый серый кружок 30px внутри —
+  // как крестик на экране тренировки и в PlayerProfileModal.
+  closeBtn: {
+    position: 'absolute',
+    top: '6px',
+    right: '6px',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    zIndex: 5,
+    WebkitTapHighlightColor: 'transparent'
+  },
+  closeBtnInner: {
+    width: '30px',
+    height: '30px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: '50%',
+    color: 'var(--color-text-secondary)'
   },
   // Карточка-шапка — вид карточки упражнения из дней тренировки.
   card: {

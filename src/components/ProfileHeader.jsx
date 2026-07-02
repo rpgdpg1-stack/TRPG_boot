@@ -321,7 +321,7 @@ export default function ProfileHeader({
             ) : (
               <>
                 <StreakFlame streak={streak || 0} />
-                <span style={styles.statCount}>x{streak ?? 0}</span>
+                <span style={{ ...styles.statCount, color: (streak || 0) >= 1 ? '#FF8C42' : 'rgba(255, 255, 255, 0.4)' }}>x{streak ?? 0}</span>
               </>
             )}
           </div>
@@ -336,7 +336,7 @@ export default function ProfileHeader({
               <div style={styles.popupTitle}>СЕРИЯ ТРЕНИРОВОК В НЕДЕЛЮ</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
                 <StreakFlame streak={streak || 0} />
-                <span style={styles.streakCount}>x{streak || 0}</span>
+                <span style={{ ...styles.streakCount, color: (streak || 0) >= 1 ? '#FF8C42' : 'rgba(255, 255, 255, 0.4)' }}>x{streak || 0}</span>
               </div>
               <div style={styles.popupHint}>Сброс серии каждую неделю</div>
             </div>

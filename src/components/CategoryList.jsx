@@ -77,6 +77,8 @@ export default function CategoryList() {
               {cat.comingSoon && <span style={styles.soonTag}>Скоро</span>}
             </div>
           </div>
+
+          <div style={styles.arrow}>›</div>
         </div>
       ))}
     </div>
@@ -115,5 +117,7 @@ const styles = {
   content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' },
-  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' }
+  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
+  // Стрелка-шеврон строки — приглушённо-серая (как в списках Telegram).
+  arrow: { fontSize: '22px', color: 'rgba(255, 255, 255, 0.25)', flexShrink: 0, lineHeight: 1 }
 }

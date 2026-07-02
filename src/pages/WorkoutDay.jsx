@@ -1055,14 +1055,17 @@ export default function WorkoutDay() {
           )}
 
           {isThisActive ? (
+            // Ширина кнопки фиксирована (240px) — не прыгает между «6/7» и «✓»,
+            // текст центрируется внутри. «·» убрана, между словом и счётчиком 2 пробела.
             <ActionButton
               onClick={handleFinishButtonTap}
               disabled={!canFinish}
               variant={isAllDone ? 'accent' : 'neutral'}
               progress={isAllDone ? null : progressPct}
               hug
+              style={{ width: '240px', paddingLeft: '16px', paddingRight: '16px', whiteSpace: 'pre' }}
             >
-              {`ЗАВЕРШИТЬ · ${isAllDone ? '✓' : `${activeOrderNums.size}/${slots.length}`}`}
+              {`ЗАВЕРШИТЬ${'\u00A0\u00A0'}${isAllDone ? '✓' : `${activeOrderNums.size}/${slots.length}`}`}
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
@@ -1176,6 +1179,7 @@ export default function WorkoutDay() {
           days={days}
           currentDay={day}
           focusDay={focusDay}
+          sessionDay={sessionDayForProgram}
           anchorRect={dayPickerRect}
           onPick={pickDay}
           onClose={() => setDayPickerRect(null)}
@@ -1482,7 +1486,7 @@ function groupByMuscleGroup(slots) {
  * дню — переключение; тап по фону — закрытие (уезжает обратно в центр). Портал
  * в body; позиция fixed по центру буквы (anchorRect).
  */
-function DayPicker({ days, currentDay, focusDay, anchorRect, onPick, onClose }) {
+function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick, onClose }) {
   const [entered, setEntered] = useState(false)
   const [closing, setClosing] = useState(false)
 
@@ -1521,21 +1525,22 @@ function DayPicker({ days, currentDay, focusDay, anchorRect, onPick, onClose }) 
         onClick={(e) => e.stopPropagation()}
       >
         {days.map(d => {
+          const isSession = !!sessionDay && d === sessionDay
           const isFocus = d === focusDay
           const isCurrent = d === currentDay
-          // Текущий день — серый кружок (нейтральная подсветка «мы тут»); буква
-          // зелёная, только если этот день ещё и фокусный. Фокусный день, когда мы
-          // НЕ на нём, — без кружка, тусклый серый, но слегка пульсирует («вернись»).
-          const pulse = isFocus && !isCurrent
+          // ЗАПУЩЕННЫЙ день (активная сессия) — крупная зелёная буква (×2) + пульс,
+          // чтобы бросалась в глаза «вернись сюда». Рекомендуемый день — БЕЗ пульса,
+          // просто зелёный, когда стоишь на нём. Текущий (не запущенный) — серый кружок.
           return (
             <button
               key={d}
               onClick={() => { haptic.light(); onPick(d) }}
-              className={`press-tile${pulse ? ' day-picker-pulse' : ''}`}
+              className={`press-tile${isSession ? ' day-picker-pulse' : ''}`}
               style={{
                 ...pickerStyles.cell,
-                ...(isCurrent ? pickerStyles.cellCurrent : null),
-                ...(isCurrent && isFocus ? pickerStyles.cellCurrentFocus : null)
+                ...(isCurrent && !isSession ? pickerStyles.cellCurrent : null),
+                ...(isFocus && isCurrent ? pickerStyles.cellCurrentFocus : null),
+                ...(isSession ? pickerStyles.cellSession : null)
               }}
             >
               {d}
@@ -1594,6 +1599,13 @@ const pickerStyles = {
   // Если текущий день ещё и фокусный — буква зелёная (кружок остаётся серым).
   cellCurrentFocus: {
     color: 'var(--color-primary)'
+  },
+  // Запущенный день сессии — крупная зелёная буква (×~2), без кружка; ещё пульсирует
+  // (класс day-picker-pulse) — «вернись сюда, тренировка идёт».
+  cellSession: {
+    color: 'var(--color-primary)',
+    background: 'transparent',
+    fontSize: '40px'
   }
 }
 
@@ -1883,7 +1895,7 @@ const styles = {
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: '6px',
-    opacity: 0.5
+    opacity: 0.7
   },
   dayChip: {
     display: 'inline-block',

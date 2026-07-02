@@ -449,7 +449,7 @@ const styles = {
     lineHeight: '15px',
     whiteSpace: 'nowrap',
     // Слегка приглушён, как чипы групп в шапке дня (единый спокойный вид).
-    opacity: 0.5
+    opacity: 0.7
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
