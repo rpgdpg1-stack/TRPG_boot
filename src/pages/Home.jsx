@@ -6,10 +6,14 @@ import { getProgramBySlug } from '../features/programs/registry'
 import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
+import { getCurrentUser } from '../lib/auth'
+import { getCurrentWeekKey } from '../utils/dates'
+import { pluralizeWorkouts } from '../utils/plural'
+import { EVENTS, on } from '../lib/events'
 import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
 import CategoryList from '../components/CategoryList'
-import DailyQuests from '../components/DailyQuests'
+import DailyQuests, { getDailyBoostSummarySync } from '../components/DailyQuests'
 import ScreenTitle from '../components/ScreenTitle'
 
 // Ключ последней пролистанной избранной программы (синкается между устройствами)
@@ -20,6 +24,17 @@ const FAV_LAST_SLUG_KEY = 'fav-last-slug'
 const COLLAPSE_KEY = 'home-sections-collapsed'
 function readCollapsedSync() {
   try { return JSON.parse(localGet(COLLAPSE_KEY) || '{}') || {} } catch { return {} }
+}
+
+// Тренировок на этой неделе (weekly_streak = дни с тренировкой, 1 на день).
+function readWeeklyCount() {
+  const u = getCurrentUser()
+  if (!u || u.weekly_streak_week !== getCurrentWeekKey()) return 0
+  return u.weekly_streak || 0
+}
+function weeklyStatusText(count) {
+  if (count > 0) return `На этой неделе — ${count} ${pluralizeWorkouts(count)}`
+  return 'Начни тренировку — стань лучшей версией себя'
 }
 
 // Заголовок секции с шевроном справа — тап сворачивает/разворачивает.
@@ -121,15 +136,30 @@ export default function Home() {
     return () => { cancelled = true }
   }, [])
 
-  const toggleSection = (key) => {
+  const setCollapse = (key, value) => {
     haptic.light()
     setCollapsed(prev => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev, [key]: value }
       localSet(COLLAPSE_KEY, JSON.stringify(next))
       cloudSet(COLLAPSE_KEY, JSON.stringify(next))
       return next
     })
   }
+
+  // Живое обновление недельного статуса и сводки буста (профиль/квесты меняются).
+  const [, bumpTick] = useState(0)
+  useEffect(() => {
+    const bump = () => bumpTick(t => t + 1)
+    const off1 = on(EVENTS.USER_CHANGED, bump)
+    const off2 = on(EVENTS.USER_READY, bump)
+    return () => { off1(); off2() }
+  }, [])
+
+  // Разделы — по умолчанию раскрыты; Дневной буст — по умолчанию свёрнут (компактно).
+  const sectionsCollapsed = !!collapsed.sections
+  const boostCollapsed = collapsed.boost !== false
+  const weeklyCount = readWeeklyCount()
+  const boost = getDailyBoostSummarySync()
 
   // Фоновое обновление избранного (вдруг менялось с другого устройства).
   useEffect(() => {
@@ -239,12 +269,17 @@ export default function Home() {
       {/* Заголовок экрана + избранное — закреплено сверху (sticky). */}
       <div style={styles.playerSticky}>
         <ScreenTitle>Тренировки</ScreenTitle>
-        <button
-          onClick={() => { haptic.light(); navigate('/favorites') }}
-          style={styles.favHeaderBtn}
-        >
+
+        {/* Тонкая строка-статус недели (мотивация / прогресс). */}
+        <div style={styles.weekStatus}>{weeklyStatusText(weeklyCount)}</div>
+
+        {/* ИЗБРАННОЕ — заголовок-label (не кликается) + «Все ›» справа. */}
+        <div style={styles.favHeaderRow}>
           <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
-        </button>
+          <button onClick={() => { haptic.light(); navigate('/favorites') }} style={styles.seeAllBtn}>
+            Все ›
+          </button>
+        </div>
 
         {!favLoaded ? (
           <div style={styles.favSkeleton} />
@@ -308,17 +343,27 @@ export default function Home() {
       <div style={styles.scrollSection}>
         <SectionToggle
           title="РАЗДЕЛЫ"
-          collapsed={!!collapsed.sections}
-          onToggle={() => toggleSection('sections')}
+          collapsed={sectionsCollapsed}
+          onToggle={() => setCollapse('sections', !sectionsCollapsed)}
         />
-        {!collapsed.sections && <CategoryList />}
+        {!sectionsCollapsed && <CategoryList />}
 
+        {/* Дневной буст — компактно: в заголовке прогресс N/3 · +N💪, разворачивается по тапу. */}
         <SectionToggle
-          title="ДНЕВНОЙ БУСТ"
-          collapsed={!!collapsed.boost}
-          onToggle={() => toggleSection('boost')}
+          title={
+            <span style={styles.boostTitle}>
+              ДНЕВНОЙ БУСТ
+              {boost.total > 0 && (
+                <span style={styles.boostBadge}>
+                  {boost.done}/{boost.total}{boost.remainingReward > 0 ? ` · +${boost.remainingReward}💪` : ' ✓'}
+                </span>
+              )}
+            </span>
+          }
+          collapsed={boostCollapsed}
+          onToggle={() => setCollapse('boost', !boostCollapsed)}
         />
-        {!collapsed.boost && <DailyQuests />}
+        {!boostCollapsed && <DailyQuests />}
       </div>
     </div>
   )
@@ -371,16 +416,44 @@ const styles = {
     marginBottom: '12px',
     paddingLeft: '4px'
   },
-  favHeaderBtn: {
+  // Тонкая строка недельного статуса под заголовком.
+  weekStatus: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    letterSpacing: '0.2px',
+    paddingLeft: '4px',
+    marginTop: '2px',
+    marginBottom: '10px'
+  },
+  // Строка заголовка ИЗБРАННОЕ: label слева, «Все ›» справа.
+  favHeaderRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    justifyContent: 'space-between',
     marginTop: 0,
     marginBottom: '12px',
-    paddingLeft: '4px',
+    paddingLeft: '4px'
+  },
+  seeAllBtn: {
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    padding: '2px 4px'
+  },
+  // Заголовок Дневного буста со сводкой.
+  boostTitle: { display: 'inline-flex', alignItems: 'center', gap: '10px' },
+  boostBadge: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '12px',
+    letterSpacing: '0.5px',
+    color: 'var(--color-primary)'
   },
   favEmpty: {
     display: 'flex',

@@ -13,7 +13,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  * им подсвечивается активный день. На главной он же даёт обводку/свечение карточки
  * (см. Home.FavCard), на странице избранного обводки нет — только подсветка дня.
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0 }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, showLast = false, lastLabel = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -57,8 +57,9 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             </span>
           </div>
         ) : (
-          // Дни A/B/C с подсветкой активного — остаются всегда. Когда тренировка
-          // запущена, ниже добавляется строка-статус (N/M · полоска · время).
+          // Дни A/B/C с подсветкой активного — остаются всегда. Ниже — ЕДИНЫЙ слот
+          // (не прыгает между состояниями): активна тренировка → статус
+          // (N/M · полоска · время); иначе на главной → «Последняя · N».
           <>
             <div style={styles.daysRow}>
               <div style={styles.daysList}>
@@ -77,10 +78,10 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
               </div>
             </div>
 
-            {activeMin && (
+            {activeMin ? (
               // Статус активной тренировки как в дне: слева N/M, по центру тонкая
               // прогресс-полоска (зелёная заполненность по отжатым), справа время.
-              <div style={styles.activeRow}>
+              <div style={styles.metaRow}>
                 <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
                 <div style={styles.activeTrack}>
                   <div style={{
@@ -92,7 +93,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                   {activeMin}
                 </span>
               </div>
-            )}
+            ) : showLast ? (
+              <div style={styles.metaRow}>
+                {lastLabel && <span style={styles.lastText}>Последняя · {lastLabel}</span>}
+              </div>
+            ) : null}
           </>
         ))}
 
@@ -116,10 +121,10 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  // Активная строка = статус тренировки (как в дне): N/M слева, полоска по
-  // центру (тоньше дневной — 5px), время справа. Полоска flex:1 — при длинном
-  // времени («1 ч 27 мин») сама ужимается.
-  activeRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' },
+  // Единый нижний слот — одинаковая высота в активном и неактивном состоянии
+  // (чтобы карточка не прыгала при старте/отмене).
+  metaRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', minHeight: '18px' },
+  lastText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.2px', whiteSpace: 'nowrap' },
   activeCount: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px', color: 'var(--color-text-secondary)', letterSpacing: '1px', whiteSpace: 'nowrap', flexShrink: 0 },
   activeTrack: { flex: 1, minWidth: 0, height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' },
   activeFill: { height: '100%', background: 'var(--color-primary)', borderRadius: '3px', transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)' },

@@ -84,6 +84,16 @@ function CrossIcon({ size = 16 }) {
   )
 }
 
+/** Иконка часов (тонкий контур, currentColor) — для оценки длительности до старта. */
+function ClockIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 4.6 V8 L10.4 9.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -790,12 +800,14 @@ export default function WorkoutDay() {
                 выше таймера: раскрытые пилюли налезают на центр и должны быть
                 ПОВЕРХ цифры часы:минуты, а не под ней. */}
             <div style={styles.placeSlot}>
-              <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
+              {/* Во время активной сессии место залочено (у мест разные наборы —
+                  смена посреди тренировки сбила бы прогресс). */}
+              <PlaceSwitcher program={program} value={place} locked={isThisActive} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
-            {/* Таймер по центру — только когда тренировка начата (этот день активен).
-                До старта таймера нет вовсе (не «0 мин» серым). Зелёный (активна) →
-                оранжевый (1ч) → красный (1ч30), пульс на смене цвета (timerPulseKey). */}
-            {isThisActive && (
+            {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
+                смене цвета); до старта — часы + примерная длительность (баланс
+                строки + подсказка «сколько займёт»). */}
+            {isThisActive ? (
               <div style={styles.timerCenter}>
                 <span
                   key={timerPulseKey}
@@ -808,11 +820,18 @@ export default function WorkoutDay() {
                   {formatWorkoutMin(elapsedSec)}
                 </span>
               </div>
-            )}
-            {/* Крестик «отменить тренировку» — только для активной сессии. */}
+            ) : (!loading && slots.length > 0) ? (
+              <div style={styles.timerCenter}>
+                <span style={styles.estimate}>
+                  <ClockIcon size={13} /> ≈ {formatWorkoutMin(Math.max(20, slots.length * 6) * 60)}
+                </span>
+              </div>
+            ) : null}
+            {/* Крестик «отменить тренировку» — только для активной сессии. Хит-зона
+                44px (потные пальцы в зале), видимый кружок 30px внутри. */}
             {isThisActive && (
-              <button onClick={handleCancelTap} style={styles.cancelBtn} className="press-tile" aria-label="Отменить тренировку">
-                <CrossIcon size={16} />
+              <button onClick={handleCancelTap} style={styles.cancelBtn} aria-label="Отменить тренировку">
+                <span style={styles.cancelBtnInner} className="press-tile"><CrossIcon size={16} /></span>
               </button>
             )}
           </div>
@@ -855,9 +874,9 @@ export default function WorkoutDay() {
                 </span>
               </div>
               {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
-                  дня). Видны всегда, в т.ч. во время тренировки. */}
+                  дня). Во время тренировки приглушены (фокус на прогрессе). */}
               {dayTags.length > 0 && (
-                <div key={`chips-${day}`} style={styles.dayChips}>
+                <div key={`chips-${day}`} style={{ ...styles.dayChips, opacity: isThisActive ? 0.45 : 1 }}>
                   {dayTags.map(t => (
                     <span key={t.key} style={{ ...styles.dayChip, background: t.color }}>
                       {t.label.toUpperCase()}
@@ -1037,7 +1056,7 @@ export default function WorkoutDay() {
               progress={isAllDone ? null : progressPct}
               hug
             >
-              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : `ЗАВЕРШИТЬ · ${activeOrderNums.size}/${slots.length}`}
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
@@ -1698,21 +1717,44 @@ const styles = {
     transition: 'color 0.3s ease',
     display: 'inline-block'
   },
-  // Крестик «отменить тренировку» — нейтральный серый, в правом углу строки.
+  // Крестик «отменить тренировку»: хит-зона 44×44 (прозрачная), видимый серый
+  // кружок 30px внутри. marginRight −7 держит кружок у правого края строки.
   cancelBtn: {
-    width: '30px',
-    height: '30px',
+    width: '44px',
+    height: '44px',
     flexShrink: 0,
     marginLeft: 'auto',
+    marginRight: '-7px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  cancelBtnInner: {
+    width: '30px',
+    height: '30px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'rgba(255, 255, 255, 0.06)',
-    border: 'none',
     borderRadius: '50%',
+    color: 'var(--color-text-secondary)'
+  },
+  // Оценка длительности до старта (часы + «≈ N мин»), серым по центру строки.
+  estimate: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 600,
+    fontSize: '13px',
     color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap'
   },
   // Поп-ап перегрузки (1ч30) — под временем, красноватый, с кнопкой ОК. Отступ
   // задаёт flex-gap карточки, своего marginTop не добавляем.

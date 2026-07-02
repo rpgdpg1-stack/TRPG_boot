@@ -116,6 +116,23 @@ function pickTodaysQuests(dayKey) {
   })
 }
 
+/**
+ * Сводка дневного буста на сегодня (для компактного виджета на главной):
+ * сколько слотов закрыто из 3 и сколько 💪 ещё можно забрать. Читает тот же
+ * набор квестов и localStorage-прогресс, что и сам компонент.
+ */
+export function getDailyBoostSummarySync() {
+  const quests = pickTodaysQuests(getTodayKey())
+  const completed = getDailyQuestsSync()
+  let done = 0
+  let remainingReward = 0
+  for (const q of quests) {
+    if (completed[q.id]) done++
+    else remainingReward += q.xp
+  }
+  return { done, total: quests.length, remainingReward }
+}
+
 // Человекочитаемое время открытия слота для подписи «Откроется в HH:00».
 function openLabel(openBootHour) {
   const mskHour = (openBootHour + 3) % 24

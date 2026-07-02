@@ -116,10 +116,11 @@ export default function ProgramCard({
     if (success && onDeleted) onDeleted()
   }
 
+  // «Последняя тренировка» теперь живёт в едином нижнем слоте FavCardBody (а не
+  // абсолютным блоком справа) — так карточка не прыгает между активным/неактивным.
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  // Во время активной тренировки блока «последняя» нет — не резервируем под него
-  // 96px справа, иначе строка «Продолжить N/M … время» не влезает и переносится.
-  const padRight = (lastTrained && !isActive) ? 96 : dots ? 48 : 18
+  const lastLabel = lastDate ? formatRelative(lastDate) : null
+  const padRight = dots ? 48 : 18
 
   const cardStyle = {
     ...styles.card,
@@ -140,25 +141,12 @@ export default function ProgramCard({
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
+      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} showLast={lastTrained && available && !isActive} lastLabel={lastLabel} />
 
       {/* Бейдж «Продолжить» — когда по этой программе идёт тренировка. В левом
           верхнем углу (правый занят «⋯»), «прикреплён» к верхнему краю карточки. */}
       {isActive && available && (
         <span style={styles.continueBadge}>▶ Продолжить</span>
-      )}
-
-      {lastTrained && available && !isActive && (
-        <div style={styles.lastTrained}>
-          {lastDate ? (
-            <>
-              <span style={styles.ltLabel}>ПОСЛЕДНЯЯ</span>
-              <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
-            </>
-          ) : (
-            <span style={styles.ltValue}>Ещё не начинали</span>
-          )}
-        </div>
       )}
 
       {dots && available && (
@@ -237,32 +225,6 @@ const styles = {
     whiteSpace: 'nowrap',
     textTransform: 'uppercase',
     zIndex: 4
-  },
-  lastTrained: {
-    position: 'absolute',
-    top: '50%',
-    right: '14px',
-    transform: 'translateY(-50%)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '3px',
-    textAlign: 'right',
-    maxWidth: '90px'
-  },
-  ltLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '9px',
-    letterSpacing: '1.5px',
-    color: 'rgba(255,255,255,0.32)'
-  },
-  ltValue: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    lineHeight: 1.25,
-    color: 'var(--color-text-secondary)'
   },
   dotsBtn: {
     position: 'absolute',

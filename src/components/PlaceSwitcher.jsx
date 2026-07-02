@@ -23,7 +23,7 @@ import UiIcon from './UiIcon'
  * Тап по переключателю не должен срабатывать как тап по карточке — глушим
  * всплытие (stopPropagation) на всех интеракциях.
  */
-export default function PlaceSwitcher({ program, value: cValue, onChange }) {
+export default function PlaceSwitcher({ program, value: cValue, onChange, locked = false }) {
   const places = useMemo(() => getProgramPlaces(program), [program])
   const [iValue, iSet] = useProgramPlace(program?.slug || '', places)
   const [open, setOpen] = useState(false)
@@ -35,6 +35,7 @@ export default function PlaceSwitcher({ program, value: cValue, onChange }) {
 
   const pick = (e, loc) => {
     e.stopPropagation()
+    if (locked) { setOpen(false); return }
     if (loc !== value) {
       haptic.selection()
       if (!controlled) iSet(loc)
@@ -45,15 +46,16 @@ export default function PlaceSwitcher({ program, value: cValue, onChange }) {
 
   const toggle = (e) => {
     e.stopPropagation()
-    if (places.length <= 1) return
+    // locked (идёт тренировка) — место менять нельзя, тег статичный.
+    if (places.length <= 1 || locked) return
     haptic.light()
     setOpen(o => !o)
   }
 
   // Свёрнуто — только выбранное; раскрыто — выбранное первым, затем остальные
-  // (выезжают справа). Одно место — всегда статичная пилюля.
+  // (выезжают справа). Одно место / locked — всегда статичная пилюля.
   const ordered = open ? [value, ...places.filter(p => p !== value)] : [value]
-  const multi = places.length > 1
+  const multi = places.length > 1 && !locked
 
   // Вид — как сегмент-контрол мест в конструкторе: контейнер-пилюля (фон/обводка
   // таб-бара), активная позиция залита `surface-active` и покрашена цветом места,

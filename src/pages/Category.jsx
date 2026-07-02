@@ -81,15 +81,13 @@ const CATEGORIES_META = {
 
 const PLACEHOLDER_PROGRAMS = {
   cardio: [
-    { slug: 'running', title: 'Бег', tags: [], available: false, comingSoon: true },
-    { slug: 'hiit',    title: 'HIIT', tags: [], available: false, comingSoon: true }
+    { slug: 'running', title: 'Бег', tags: [], available: false, comingSoon: true }
   ],
   pool: [
     { slug: 'cardio-pool', title: 'Кардио план', tags: [], available: false, comingSoon: true }
   ],
   stretch: [
-    { slug: 'yoga',    title: 'Йога',    tags: [], available: false, comingSoon: true },
-    { slug: 'pilates', title: 'Пилатес', tags: [], available: false, comingSoon: true }
+    { slug: 'yoga', title: 'Йога', tags: [], available: false, comingSoon: true }
   ]
 }
 
