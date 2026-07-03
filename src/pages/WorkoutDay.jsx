@@ -195,6 +195,13 @@ export default function WorkoutDay() {
 
   const cardRefs = useRef(new Map())
 
+  // Начальное позиционирование скролла отработало (один раз за монтирование). Пока
+  // false — НЕ сохраняем позицию (иначе первый заход перезатёр бы сохранённое место
+  // нулём до того, как восстановление успеет его прочитать). Ставится в restore-эффекте.
+  const didInitialScrollRef = useRef(false)
+  // Отложенное позиционирование при свайпе/пикере дней (см. goToDay + эффект ниже).
+  const pendingScrollRef = useRef(null)
+
   // Пикер дней (мини-модалка из центра буквы). letterRef — якорь для позиции,
   // dayPickerRect != null → открыт.
   const letterRef = useRef(null)
@@ -437,17 +444,20 @@ export default function WorkoutDay() {
     if (!isThisActive) { setHeaderScrollY(0); return }
     let raf = 0
     let lastSave = 0
-    let latest = window.scrollY || document.scrollingElement?.scrollTop || 0
+    const liveY = () => window.scrollY || document.scrollingElement?.scrollTop || 0
     const compute = () => {
       raf = 0
-      const y = window.scrollY || document.scrollingElement?.scrollTop || 0
-      latest = y
+      const y = liveY()
       setHeaderScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
+      // Сохраняем ТОЛЬКО после того, как восстановление позиции отработало — иначе
+      // первый заход перезатёр бы сохранённое место нулём (страница ещё сверху).
       const now = Date.now()
-      if (now - lastSave > 250) { lastSave = now; saveActiveScroll(programId, day, placeRef.current, y) }
+      if (didInitialScrollRef.current && now - lastSave > 250) { lastSave = now; saveActiveScroll(programId, day, placeRef.current, y) }
     }
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
-    const flush = () => saveActiveScroll(programId, day, placeRef.current, latest)
+    // flush читает ЖИВУЮ позицию (не захваченную) — на случай ухода сразу после
+    // восстановления, когда scroll-событие ещё не успело обновить состояние.
+    const flush = () => { if (didInitialScrollRef.current) saveActiveScroll(programId, day, placeRef.current, liveY()) }
     compute()
     window.addEventListener('scroll', onScroll, { passive: true })
     document.addEventListener('visibilitychange', flush)
@@ -532,7 +542,6 @@ export default function WorkoutDay() {
   // Telegram, назад из настроек/друзей) — восстановить сохранённую позицию скролла,
   // как только слоты дня в DOM. Один раз за монтирование (didInitialScrollRef).
   // Возврат с Инфо/Смены сюда не относится (у него свой эффект выше).
-  const didInitialScrollRef = useRef(false)
   useLayoutEffect(() => {
     if (didInitialScrollRef.current) return
     if (location.state?.returnedFromOrderNum != null) { didInitialScrollRef.current = true; return }
@@ -551,7 +560,6 @@ export default function WorkoutDay() {
   // день); число — восстановить (свайп обратно на активный день). Ждём, пока slots
   // станут именно слотами целевого дня (slots === кэш этого ключа) — иначе спозиционируем
   // по слотам предыдущего дня (промежуточный рендер) и промахнёмся по высоте.
-  const pendingScrollRef = useRef(null)
   useLayoutEffect(() => {
     const p = pendingScrollRef.current
     if (p == null || p.day !== day) return
