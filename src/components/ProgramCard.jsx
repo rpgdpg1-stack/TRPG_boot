@@ -116,11 +116,11 @@ export default function ProgramCard({
     if (success && onDeleted) onDeleted()
   }
 
-  // Правый блок (по центру по высоте, справа) — «Последняя · N», ТОЛЬКО когда
-  // тренировка НЕ активна. При активной время/N/M — в строке с буквой (FavCardBody).
+  // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
+  // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  const showRight = available && !isActive && lastTrained && lastDate
-  const padRight = showRight ? 92 : dots ? 48 : 18
+  const showRight = available && (isActive || (lastTrained && lastDate))
+  const padRight = showRight ? 96 : dots ? 48 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -153,11 +153,19 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
-      {/* Правый блок «Последняя» — по центру по высоте, справа (когда не активна). */}
+      {/* Правый блок — по центру по высоте, справа. */}
       {showRight && (
         <div style={styles.rightBlock}>
-          <span style={styles.ltLabel}>Последняя</span>
-          <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
+          {isActive ? (
+            <span style={styles.continueTag}>
+              <PlayIcon size={10} /> Продолжить
+            </span>
+          ) : (
+            <>
+              <span style={styles.ltLabel}>Последняя</span>
+              <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
+            </>
+          )}
         </div>
       )}
 
@@ -187,6 +195,14 @@ export default function ProgramCard({
         />
       )}
     </div>
+  )
+}
+
+function PlayIcon({ size = 10 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <path d="M3 2.2 L9.4 6 L3 9.8 Z" />
+    </svg>
   )
 }
 
@@ -242,6 +258,21 @@ const styles = {
     textAlign: 'right',
     maxWidth: '84px',
     pointerEvents: 'none'
+  },
+  // Тег «▶ Продолжить» — акцентный зелёный (лёгкая заливка), play + текст.
+  continueTag: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '5px 11px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'rgba(158, 209, 83, 0.16)',
+    color: 'var(--color-primary)',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '12px',
+    letterSpacing: '0.3px',
+    whiteSpace: 'nowrap'
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },

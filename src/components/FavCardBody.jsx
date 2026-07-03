@@ -2,6 +2,7 @@ import { getProgramEmoji, getProgramTagColor, getProgramPlaces } from '../featur
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import PlaceSwitcher from './PlaceSwitcher'
+import ClockIcon from './ClockIcon'
 
 /**
  * Тело карточки программы — общее для главной, избранного и раздела.
@@ -77,7 +78,9 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 }}>
                   {activeDay}
                 </span>
-                <span style={{ ...styles.activeStat, color: activeTimeColor || 'var(--color-primary)' }}>{activeMin}</span>
+                <span style={{ ...styles.activeStat, ...styles.activeTimeStat, color: activeTimeColor || 'var(--color-primary)' }}>
+                  <ClockIcon size={13} />{activeMin}
+                </span>
                 <span style={{ ...styles.activeStat, color: 'var(--color-text-secondary)' }}>{activeDone}/{activeTotal}</span>
               </div>
             ) : (
@@ -126,6 +129,7 @@ const styles = {
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
   activeRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' },
   activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
+  activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },

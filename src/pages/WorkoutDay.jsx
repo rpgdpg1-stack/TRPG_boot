@@ -37,6 +37,7 @@ import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
 
 /**
@@ -90,16 +91,6 @@ function CrossIcon({ size = 16 }) {
   )
 }
 
-/** Иконка часов (тонкий контур, currentColor) — для оценки длительности до старта. */
-function ClockIcon({ size = 13 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M8 4.6 V8 L10.4 9.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -138,20 +129,24 @@ export default function WorkoutDay() {
   const [elapsedSec, setElapsedSec] = useState(0)
   const [finishedSec, setFinishedSec] = useState(0)
 
-  // Пульсы (.pop-scale) — transient-флаги, чтобы НЕ проигрывались на ремаунте при
-  // свайпе на активный день. Буква: пульсирует на свайпе-на-активный И на старте
-  // (startPulse — nonce для ремаунта буквы, т.к. буква и так ремаунтится посменно).
-  // Время: ТОЛЬКО на старте и на реальном пересечении порога (timePulse). Счётчик:
-  // ТОЛЬКО на старте (startedPulse).
-  const [startPulse, setStartPulse] = useState(0)
-  const [startedPulse, setStartedPulse] = useState(false)
-  const [timePulse, setTimePulse] = useState(false)
+  // Пульсы (.pop-scale) — transient-флаги (не проигрываются на ремаунте при свайпе).
+  //  - на СТАРТЕ пульсируют вместе: время + счётчик + крестик (НЕ буква);
+  //  - время — ещё на реальном пересечении порога;
+  //  - БУКВА — только на свайпе НА активный день (не на старте).
+  const [startedPulse, setStartedPulse] = useState(false)  // счётчик N/M
+  const [timePulse, setTimePulse] = useState(false)        // время
+  const [crossPulse, setCrossPulse] = useState(false)      // крестик (появление)
+  const [letterPulse, setLetterPulse] = useState(false)    // буква (свайп на активный)
   const pulseTimers = useRef({})
   const firePulse = (setter, key, ms = 700) => {
     setter(true)
     if (pulseTimers.current[key]) clearTimeout(pulseTimers.current[key])
     pulseTimers.current[key] = setTimeout(() => setter(false), ms)
   }
+  // Крестик отмены: «растущее» нажатие с отменой при уводе пальца (как в модалке).
+  const cancelBtnRef = useRef(null)
+  const cancelArmedRef = useRef(false)
+  const [cancelGrow, setCancelGrow] = useState(false)
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
@@ -601,6 +596,10 @@ export default function WorkoutDay() {
     if (targetDay === day) return
     haptic.light()
     setSlideDir(direction === 'next' ? 'right' : 'left')
+    // Свайп НА запущенный день сессии — буква пульсирует («вот он, активный»).
+    if (active && active.programId === programId && active.day === targetDay) {
+      firePulse(setLetterPulse, 'letter')
+    }
     // Пробрасываем fromHome дальше, чтобы после переключения дней кнопка
     // "Назад" всё ещё вела на главную (если зашли из избранного).
     navigate(`/workout/${programId}/${targetDay}`, {
@@ -663,16 +662,33 @@ export default function WorkoutDay() {
     overloadShownRef.current = false
     hideOverload()
     startActiveWorkout(programId, day, place)
-    // Пульс-акцент «тренировка началась»: буква дня + время + счётчик — вместе.
-    setStartPulse(n => n + 1)
+    // Пульс-акцент «тренировка началась»: время + счётчик + крестик (появляется).
+    // Буква на старте НЕ пульсирует — только когда потом свайпнешь на активный день.
     firePulse(setTimePulse, 'time')
     firePulse(setStartedPulse, 'count')
+    firePulse(setCrossPulse, 'cross')
   }
 
   // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
   // закрываем сессию БЕЗ сохранения (в историю не идёт, баллы не начисляются).
   // Для «передумал / случайно начал / тестирую».
   const handleCancelTap = () => { haptic.light(); setShowCancelConfirm(true) }
+  // «Растущее» нажатие крестика (grow + отмена при уводе пальца), как в модалке.
+  const cancelDown = () => { cancelArmedRef.current = true; setCancelGrow(true) }
+  const cancelMove = (e) => {
+    if (!cancelArmedRef.current) return
+    const r = cancelBtnRef.current?.getBoundingClientRect()
+    if (!r) return
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+    if (!inside) { cancelArmedRef.current = false; setCancelGrow(false) }
+  }
+  const cancelUp = () => {
+    const armed = cancelArmedRef.current
+    cancelArmedRef.current = false
+    setCancelGrow(false)
+    if (armed) handleCancelTap()
+  }
+  const cancelCancel = () => { cancelArmedRef.current = false; setCancelGrow(false) }
   const handleCancelConfirm = () => {
     haptic.medium()
     clearWorkoutProgress(programId, day, place)
@@ -828,9 +844,9 @@ export default function WorkoutDay() {
               <div style={styles.timerCenter}>
                 <span
                   className={timePulse ? 'pop-scale' : undefined}
-                  style={{ ...styles.timer, color: TIMER_COLORS[timerTier] }}
+                  style={{ ...styles.timer, ...styles.timerWithClock, color: TIMER_COLORS[timerTier] }}
                 >
-                  {formatWorkoutMin(elapsedSec)}
+                  <ClockIcon size={14} />{formatWorkoutMin(elapsedSec)}
                 </span>
               </div>
             ) : (!loading && slots.length > 0) ? (
@@ -840,11 +856,29 @@ export default function WorkoutDay() {
                 </span>
               </div>
             ) : null}
-            {/* Крестик «отменить тренировку» — только для активной сессии. Хит-зона
-                44px (потные пальцы в зале), видимый кружок 30px внутри. */}
+            {/* Крестик «отменить тренировку» — только для активной сессии. Absolute
+                справа (не раздувает строку), хит-зона 44px, видимый кружок как тег
+                места. Появляется с «попом» (crossPulse), нажатие — «растущее» с отменой. */}
             {isThisActive && (
-              <button onClick={handleCancelTap} style={styles.cancelBtn} aria-label="Отменить тренировку">
-                <span style={styles.cancelBtnInner} className="press-tile"><CrossIcon size={16} /></span>
+              <button
+                ref={cancelBtnRef}
+                onPointerDown={cancelDown}
+                onPointerMove={cancelMove}
+                onPointerUp={cancelUp}
+                onPointerCancel={cancelCancel}
+                style={styles.cancelBtn}
+                aria-label="Отменить тренировку"
+              >
+                <span
+                  className={(!cancelGrow && crossPulse) ? 'pop-scale' : undefined}
+                  style={{
+                    ...styles.cancelBtnInner,
+                    ...(cancelGrow ? { transform: 'scale(1.14)' } : null),
+                    transition: 'transform 0.16s var(--ease-ios)'
+                  }}
+                >
+                  <CrossIcon size={16} />
+                </span>
               </button>
             )}
           </div>
@@ -871,13 +905,14 @@ export default function WorkoutDay() {
               <div
                 ref={letterRef}
                 style={styles.dayLetterWrap}
+                className={letterPulse ? 'pop-scale' : undefined}
                 onClick={openDayPicker}
                 role={days.length > 1 ? 'button' : undefined}
                 aria-label={days.length > 1 ? 'Выбрать день' : undefined}
               >
                 <span
-                  key={`${day}-${startPulse}`}
-                  className={isThisActive ? 'pop-scale' : dayLetterAnimClass}
+                  key={day}
+                  className={isThisActive ? undefined : dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
                     ...(day === focusDay
@@ -1597,14 +1632,14 @@ const styles = {
     flexDirection: 'column',
     gap: '12px'
   },
-  // Верхний ряд блока: место тренировки слева, таймер справа.
+  // Верхний ряд: место слева (в потоке), таймер и крестик — absolute (не влияют
+  // на высоту ряда → блок не растёт при появлении крестика). Высота = высота тега.
   topMetaRow: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: '30px',
-    padding: '0 2px'
+    minHeight: '32px',
+    padding: 0
   },
   // Слой переключателя места: выше таймера, чтобы раскрытые пилюли
   // (зал/дом/улица) ложились ПОВЕРХ цифры часы:минуты, а не под ней.
@@ -1627,21 +1662,25 @@ const styles = {
   timer: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '16px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
     fontVariantNumeric: 'tabular-nums',
     transition: 'color 0.3s ease',
     display: 'inline-block'
   },
-  // Крестик «отменить тренировку»: хит-зона 44×44 (прозрачная), видимый серый
-  // кружок 30px внутри. marginRight −7 держит кружок у правого края строки.
+  // Таймер с иконкой часов — inline-flex.
+  timerWithClock: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
+  // Крестик «отменить»: absolute справа (не раздувает ряд), хит-зона 44px, видимый
+  // кружок 32px как тег места. right:-7 → кружок ровно у правого края (симметрия с тегом).
   cancelBtn: {
+    position: 'absolute',
+    right: '-7px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 3,
     width: '44px',
     height: '44px',
-    flexShrink: 0,
-    marginLeft: 'auto',
-    marginRight: '-7px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1649,11 +1688,12 @@ const styles = {
     border: 'none',
     padding: 0,
     cursor: 'pointer',
+    touchAction: 'none',
     WebkitTapHighlightColor: 'transparent'
   },
   cancelBtnInner: {
-    width: '30px',
-    height: '30px',
+    width: '32px',
+    height: '32px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1819,23 +1859,27 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   // Счётчик упражнений («N упражнений») — по центру (баланс с буквой/чипами).
+  // Фикс. высота — чтобы блок не рос от увеличения шрифта (13→16 при старте):
+  // шрифт растёт «из геометрического центра», высота строки та же.
   countRow: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    height: '22px',
     padding: '0 8px'
   },
   dayDescLabel: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
+    lineHeight: 1,
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
   },
-  // «N/M» в тренировке — крупнее и жирнее, как активный таймер.
+  // «N/M» в тренировке — крупнее и жирнее, как активный таймер (растёт из центра).
   dayCountActive: {
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '16px',
     fontVariantNumeric: 'tabular-nums'
   },
   body: {
