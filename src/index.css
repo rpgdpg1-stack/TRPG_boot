@@ -285,17 +285,6 @@ body.keyboard-open .app::after { display: none; }
   transition: transform 60ms var(--press-ease);
 }
 
-/* «Растущее» нажатие (обратное press-tile): пока палец на элементе (:active) он
-   УВЕЛИЧИВАется и плавно возвращается при отпускании/уводе пальца. Тап закрывает,
-   увод пальцем в сторону — отменяет. Для крестика-пузырька под медиа-модалкой. */
-.press-pop {
-  transition: transform 0.16s var(--ease-ios);
-  -webkit-tap-highlight-color: transparent;
-}
-.press-pop:active {
-  transform: scale(1.14);
-  transition: transform 80ms var(--ease-ios);
-}
 
 /* Строка в сгруппированной карточке (как в Telegram): без scale,
    при нажатии — серая подсветка фона. */

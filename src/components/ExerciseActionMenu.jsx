@@ -175,6 +175,28 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     setDraft('')
   }
 
+  // Крестик-закрытие: «растущее» нажатие с ОТМЕНОЙ при уводе пальца. На тач
+  // указатель неявно захватывается кнопкой (CSS :active/leave не срабатывают),
+  // поэтому «внутри/снаружи» определяем сами — хит-тестом по координатам пальца.
+  const closeBtnRef = useRef(null)
+  const closeArmedRef = useRef(false)
+  const [closeGrow, setCloseGrow] = useState(false)
+  const closePointerDown = () => { closeArmedRef.current = true; setCloseGrow(true) }
+  const closePointerMove = (e) => {
+    if (!closeArmedRef.current) return
+    const r = closeBtnRef.current?.getBoundingClientRect()
+    if (!r) return
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+    if (!inside) { closeArmedRef.current = false; setCloseGrow(false) }  // увёл палец — вернуть и НЕ закрывать
+  }
+  const closePointerUp = () => {
+    const armed = closeArmedRef.current
+    closeArmedRef.current = false
+    setCloseGrow(false)
+    if (armed) onClose()  // отпустил на крестике — закрыть
+  }
+  const closePointerCancel = () => { closeArmedRef.current = false; setCloseGrow(false) }
+
   // Тап мимо модалки. Если в фокусе инпут (вес/заметка) — blur (гасит клавиатуру,
   // вес сохраняется через onBlur), затем закрываем. Позиция вернётся в эффекте
   // выше без дёрганья шапки.
@@ -363,16 +385,26 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
       </div>
 
       {/* Крестик-закрытие ПОД модалкой, по центру — крупнее (кружок 46px, хит-зона
-          56px): низ экрана удобнее для большого пальца. Отдельный «пузырёк».
-          press-pop — «растущее» нажатие: палец на нём → увеличивается, тап закрывает,
-          увод пальцем в сторону — возвращается. */}
+          56px): низ экрана удобнее для большого пальца. «Растущее» нажатие: палец на
+          нём → увеличивается; отпустил на нём → закрывает; увёл палец в сторону →
+          возвращается и НЕ закрывает (onClick только глушит всплытие к оверлею). */}
       <button
-        onClick={(e) => { e.stopPropagation(); onClose() }}
-        style={styles.closeBtn}
-        className="press-pop"
+        ref={closeBtnRef}
+        onPointerDown={closePointerDown}
+        onPointerMove={closePointerMove}
+        onPointerUp={closePointerUp}
+        onPointerCancel={closePointerCancel}
+        onClick={(e) => e.stopPropagation()}
+        style={{ ...styles.closeBtn, touchAction: 'none' }}
         aria-label="Закрыть"
       >
-        <span style={styles.closeBtnInner}><CrossIcon size={20} /></span>
+        <span style={{
+          ...styles.closeBtnInner,
+          transform: closeGrow ? 'scale(1.14)' : 'scale(1)',
+          transition: 'transform 0.16s var(--ease-ios)'
+        }}>
+          <CrossIcon size={20} />
+        </span>
       </button>
     </div>
   )

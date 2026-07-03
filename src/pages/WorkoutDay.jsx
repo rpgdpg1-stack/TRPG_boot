@@ -1025,11 +1025,11 @@ export default function WorkoutDay() {
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
-              НАЧАТЬ ТРЕНИРОВКУ
+              НАЧАТЬ
             </ActionButton>
           ) : (
             <ActionButton onClick={handleStart} variant="accent" hug>
-              НАЧАТЬ ТРЕНИРОВКУ
+              НАЧАТЬ
             </ActionButton>
           )}
         </div>
