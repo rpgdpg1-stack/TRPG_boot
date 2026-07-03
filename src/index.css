@@ -340,15 +340,6 @@ body.keyboard-open .app::after { display: none; }
 }
 .pop-scale { animation: popScale 0.62s ease-in-out; }
 
-/* Баннер «<Группа> завершена» на месте буквы дня: fade-in с блюром, держится ~1с,
-   плавно исчезает. Буква под ним параллельно гаснет/возвращается (opacity-transition). */
-@keyframes groupDoneBanner {
-  0%   { opacity: 0; filter: blur(6px); transform: translate(-50%, -50%) scale(0.96); }
-  14%  { opacity: 1; filter: blur(0);   transform: translate(-50%, -50%) scale(1); }
-  86%  { opacity: 1; filter: blur(0);   transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; filter: blur(3px); transform: translate(-50%, -50%) scale(1); }
-}
-
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */

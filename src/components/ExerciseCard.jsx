@@ -526,9 +526,9 @@ const styles = {
   activeOverlay: {
     position: 'absolute',
     inset: 0,
-    background: 'rgba(0, 0, 0, 0.32)',
-    backdropFilter: 'grayscale(0.8) blur(1.5px)',
-    WebkitBackdropFilter: 'grayscale(0.8) blur(1.5px)',
+    background: 'rgba(0, 0, 0, 0.4)',
+    backdropFilter: 'grayscale(1) blur(1.9px)',
+    WebkitBackdropFilter: 'grayscale(1) blur(1.9px)',
     borderRadius: '33px',
     transition: 'opacity 0.35s ease',
     zIndex: 6
