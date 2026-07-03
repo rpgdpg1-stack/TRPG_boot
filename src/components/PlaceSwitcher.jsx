@@ -23,7 +23,7 @@ import UiIcon from './UiIcon'
  * Тап по переключателю не должен срабатывать как тап по карточке — глушим
  * всплытие (stopPropagation) на всех интеракциях.
  */
-export default function PlaceSwitcher({ program, value: cValue, onChange, locked = false }) {
+export default function PlaceSwitcher({ program, value: cValue, onChange, locked = false, tag = false }) {
   const places = useMemo(() => getProgramPlaces(program), [program])
   const [iValue, iSet] = useProgramPlace(program?.slug || '', places)
   const [open, setOpen] = useState(false)
@@ -32,6 +32,18 @@ export default function PlaceSwitcher({ program, value: cValue, onChange, locked
   const value = controlled ? cValue : iValue
 
   if (places.length === 0) return null
+
+  // Статичный тег (карточки главной/избранного): только показываем выбранное место
+  // (его выбирают ВНУТРИ тренировки), без переключателя-контейнера/обводки и тапа.
+  if (tag) {
+    const meta = getPlaceMeta(value)
+    return (
+      <span style={{ ...styles.staticTag, color: meta.color }} onClick={(e) => e.stopPropagation()}>
+        <UiIcon name={meta.icon} size={16} />
+        {meta.label}
+      </span>
+    )
+  }
 
   const pick = (e, loc) => {
     e.stopPropagation()
@@ -91,6 +103,16 @@ export default function PlaceSwitcher({ program, value: cValue, onChange, locked
 }
 
 const styles = {
+  // Статичный тег места (карточки): вид активного сегмента, но БЕЗ контейнера/обводки.
+  staticTag: {
+    display: 'inline-flex', alignItems: 'center', gap: '5px',
+    minHeight: '26px', padding: '0 10px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px',
+    whiteSpace: 'nowrap'
+  },
   // Hug-обёртка: пилюля по содержимому, не растягивает карточку.
   wrap: { display: 'inline-flex' },
   // Контейнер-таб-бар (как нижний таб-бар / места в конструкторе).

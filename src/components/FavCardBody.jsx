@@ -26,6 +26,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
     : ''
   const emoji = getProgramEmoji(prog.slug)
   const places = getProgramPlaces(prog)
+  // Цвет буквы дня = акцент ПЕРВОЙ группы мышц этого дня (спина/грудь/ноги…).
+  const dayColor = (d) => {
+    const g = prog.data?.days?.[d]?.[0]?.muscle_group
+    return (g && getMuscleGroupColors(g).accent) || accent
+  }
 
   return (
     <>
@@ -33,15 +38,8 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
-        {/* Порядок: название → место (Зал/Дом/Улица) → дни / «Продолжить N» / мин·метры.
-            Место (переключаемый тег) идёт ВЫШЕ строки дней. Заплыв без мест — обычные
-            теги. «Скоро» — для будущих программ раздела. */}
-        {places.length > 0 ? (
-          <div style={styles.tags}>
-            <PlaceSwitcher program={prog} />
-            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
-          </div>
-        ) : (prog.tags && prog.tags.length > 0) || prog.comingSoon ? (
+        {/* Теги для НЕ-мест (заплыв / «Скоро») — обычные теги. */}
+        {places.length === 0 && ((prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
           <div style={styles.tags}>
             {(prog.tags || []).map(tag => {
               const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
@@ -49,7 +47,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             })}
             {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
           </div>
-        ) : null}
+        )}
 
         {available && (prog.kind === 'swim' ? (
           <div style={styles.daysRow}>
@@ -57,30 +55,48 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
               {prog.data.durationMin} мин · {swimTotalMeters()} м
             </span>
           </div>
-        ) : (
-          // Дни A/B/C с подсветкой активного — остаются всегда. Ниже — ЕДИНЫЙ слот
-          // (не прыгает между состояниями): активна тренировка → статус
-          // (N/M · полоска · время); иначе на главной → «Последняя · N».
+        ) : activeMin ? (
+          // Идёт тренировка: крупная буква активного дня (в цвете первой группы),
+          // справа N/M, ещё правее время; ниже — статичный тег места. Прогресс —
+          // заливкой ВСЕЙ карточки (ProgramCard), отдельной полоски нет.
           <>
+            <div style={styles.activeRow}>
+              <span style={{
+                ...styles.dayLetter, ...styles.dayLetterActive,
+                color: dayColor(activeDay),
+                textShadow: `0 0 6px color-mix(in srgb, ${dayColor(activeDay)} 45%, transparent)`
+              }}>
+                {activeDay}
+              </span>
+              <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
+              <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
+                {activeMin}
+              </span>
+            </div>
+            {places.length > 0 && (
+              <div style={styles.tags}><PlaceSwitcher program={prog} tag /></div>
+            )}
+          </>
+        ) : (
+          // Не активна: статичный тег места → дни A/B/C (подсветка рекомендованного
+          // в цвете его группы) → «Последняя · N».
+          <>
+            {places.length > 0 && (
+              <div style={styles.tags}>
+                <PlaceSwitcher program={prog} tag />
+                {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+              </div>
+            )}
             <div style={styles.daysRow}>
               <div style={styles.daysList}>
-                {/* Идёт тренировка — показываем ТОЛЬКО активный день, крупнее и в
-                    акценте (зелёный у силовой); серые остальные буквы прячем.
-                    Не активна — обычный ряд A/B/C с подсветкой рекомендованного. */}
-                {(activeMin ? [activeDay].filter(Boolean) : allDays).map(d => {
+                {allDays.map(d => {
                   const isToday = !!activeDay && d === activeDay
-                  const isActiveOne = !!activeMin && d === activeDay
-                  const hl = isToday || isActiveOne
-                  // Цвет подсвеченного дня = цвет ПЕРВОЙ группы мышц этого дня
-                  // (спина/грудь/ноги…), а не общий акцент.
-                  const dGroup = prog.data?.days?.[d]?.[0]?.muscle_group
-                  const dColor = (dGroup && getMuscleGroupColors(dGroup).accent) || accent
+                  const dColor = dayColor(d)
                   return (
                     <span key={d} style={{
                       ...styles.dayLetter,
-                      ...(isActiveOne ? styles.dayLetterActive : null),
-                      color: hl ? dColor : 'rgba(255,255,255,0.35)',
-                      textShadow: hl ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
+                      color: isToday ? dColor : 'rgba(255,255,255,0.35)',
+                      textShadow: isToday ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
                     }}>
                       {d}
                     </span>
@@ -88,27 +104,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 })}
               </div>
             </div>
-
-            {activeMin ? (
-              // Статус активной тренировки как в дне: слева N/M, по центру тонкая
-              // прогресс-полоска (зелёная заполненность по отжатым), справа время.
-              <div style={styles.metaRow}>
-                <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
-                <div style={styles.activeTrack}>
-                  <div style={{
-                    ...styles.activeFill,
-                    width: `${activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0}%`
-                  }} />
-                </div>
-                <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
-                  {activeMin}
-                </span>
-              </div>
-            ) : showLast ? (
+            {showLast && (
               <div style={styles.metaRow}>
                 {lastLabel && <span style={styles.lastText}>Последняя · {lastLabel}</span>}
               </div>
-            ) : null}
+            )}
           </>
         ))}
 
@@ -121,8 +121,9 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 }
 
 const styles = {
-  emoji: { fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
-  content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
+  // position/zIndex — чтобы контент был ПОВЕРХ заливки-прогресса карточки (ProgramCard).
+  emoji: { position: 'relative', zIndex: 1, fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
+  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
   title: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '18px',
@@ -132,14 +133,12 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  // Единый нижний слот — одинаковая высота в активном и неактивном состоянии
-  // (чтобы карточка не прыгала при старте/отмене).
+  // Активная строка: крупная буква дня + N/M + время в одну линию.
+  activeRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'nowrap' },
   metaRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', minHeight: '18px' },
   lastText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.2px', whiteSpace: 'nowrap' },
-  activeCount: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px', color: 'var(--color-text-secondary)', letterSpacing: '1px', whiteSpace: 'nowrap', flexShrink: 0 },
-  activeTrack: { flex: 1, minWidth: 0, height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' },
-  activeFill: { height: '100%', background: 'var(--color-primary)', borderRadius: '3px', transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)' },
-  activeTime: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
+  activeCount: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
+  activeTime: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },

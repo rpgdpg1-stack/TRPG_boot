@@ -122,11 +122,16 @@ export default function ProgramCard({
   const lastLabel = lastDate ? formatRelative(lastDate) : null
   const padRight = dots ? 48 : 18
 
+  // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
+  const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
+
   const cardStyle = {
     ...styles.card,
     paddingRight: `${padRight}px`,
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',
+    // overflow hidden — клип заливки-прогресса по скруглению.
+    overflow: 'hidden',
     // Цветная обводка-нитка — на главной и в избранном; в разделах (Category)
     // выключаем через bordered={false}.
     border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none',
@@ -141,13 +146,12 @@ export default function ProgramCard({
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} showLast={lastTrained && available && !isActive} lastLabel={lastLabel} />
-
-      {/* Бейдж «Продолжить» — когда по этой программе идёт тренировка. В левом
-          верхнем углу (правый занят «⋯»), «прикреплён» к верхнему краю карточки. */}
+      {/* Заливка-прогресс: светло-серый фон растёт по мере отжатых упражнений. */}
       {isActive && available && (
-        <span style={styles.continueBadge}>▶ Продолжить</span>
+        <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
+
+      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} showLast={lastTrained && available && !isActive} lastLabel={lastLabel} />
 
       {dots && available && (
         <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
@@ -205,26 +209,16 @@ const styles = {
     minHeight: '130px',
     textAlign: 'left'
   },
-  continueBadge: {
+  // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
+  cardFill: {
     position: 'absolute',
-    top: '-8px',
-    left: '16px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    padding: '4px 10px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '10px',
-    letterSpacing: '0.5px',
-    lineHeight: 1,
-    borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
-    whiteSpace: 'nowrap',
-    textTransform: 'uppercase',
-    zIndex: 4
+    left: 0,
+    top: 0,
+    bottom: 0,
+    background: 'rgba(255, 255, 255, 0.08)',
+    transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
+    pointerEvents: 'none',
+    zIndex: 0
   },
   dotsBtn: {
     position: 'absolute',
