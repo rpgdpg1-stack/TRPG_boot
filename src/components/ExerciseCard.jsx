@@ -384,7 +384,7 @@ const styles = {
     padding: '16px',
     gap: '16px',
     width: '100%',
-    minHeight: '150px',
+    minHeight: '132px',
     borderRadius: '33px',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
@@ -392,8 +392,8 @@ const styles = {
   preview: {
     position: 'relative',
     flexShrink: 0,
-    width: '118px',
-    height: '118px',
+    width: '100px',
+    height: '100px',
     borderRadius: '33px',
     overflow: 'hidden',
     background: '#FFFFFF',
@@ -410,14 +410,14 @@ const styles = {
     objectFit: 'cover'
   },
   previewPlaceholder: {
-    fontSize: '40px',
+    fontSize: '34px',
     opacity: 0.4
   },
   // Текстовая колонка: название сверху, теги, подходы внизу
   content: {
     flex: 1,
     minWidth: 0,
-    height: '118px',
+    height: '100px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -425,9 +425,9 @@ const styles = {
   },
   exerciseName: {
     fontFamily: 'var(--font-geist)',
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 700,
-    lineHeight: '19px',
+    lineHeight: '18px',
     color: '#F0F0F0'
   },
   // Ряд тега подгруппы (в цвете основной группы)
@@ -462,7 +462,7 @@ const styles = {
   weightBlock: {
     flexShrink: 0,
     width: '38px',
-    height: '118px',
+    height: '100px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',

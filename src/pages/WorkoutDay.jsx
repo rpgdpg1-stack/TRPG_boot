@@ -148,7 +148,7 @@ export default function WorkoutDay() {
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
-  const overloadTimer = useRef(null)                     // авто-скрытие поп-апа через 5 мин
+  const overloadTimer = useRef(null)                     // авто-скрытие поп-апа через 45 сек
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   // Скрыть поп-ап перегрузки и снять таймер авто-скрытия.
@@ -184,6 +184,9 @@ export default function WorkoutDay() {
   // обводки), её текст сменяется на следующую группу. -1 = пилюли нет (мы вверху).
   const [activeSection, setActiveSection] = useState(-1)
   const activeSectionRef = useRef(-1)
+  // Скролл-позиция для компактной шапки (только активная сессия): на скролле вниз
+  // сперва гаснут чипы групп, потом ужимается буква дня — акцент на счётчик + время.
+  const [headerScrollY, setHeaderScrollY] = useState(0)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const sectionsRef = useRef([])              // текущие секции (для замера последней карточки)
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
@@ -285,9 +288,9 @@ export default function WorkoutDay() {
       overloadShownRef.current = true
       setShowOverload(true)
       haptic.warning()
-      // Сам исчезает через 5 мин, если не нажали ОК — чтоб не мозолил глаза.
+      // Сам исчезает через 45 сек, если не нажали ОК — он информирующий, не блокирующий.
       if (overloadTimer.current) clearTimeout(overloadTimer.current)
-      overloadTimer.current = setTimeout(() => { setShowOverload(false); overloadTimer.current = null }, 5 * 60 * 1000)
+      overloadTimer.current = setTimeout(() => { setShowOverload(false); overloadTimer.current = null }, 45 * 1000)
     }
   }, [timerTier])
 
@@ -400,6 +403,22 @@ export default function WorkoutDay() {
     activeSectionRef.current = -1
     setActiveSection(-1)
   }, [day, place])
+
+  // Компактная шапка: следим за scrollY только когда этот день активен. Неактивный
+  // день (или скролл наверху) — шапка в полный размер (headerScrollY = 0).
+  useEffect(() => {
+    if (!isThisActive) { setHeaderScrollY(0); return }
+    let raf = 0
+    const compute = () => {
+      raf = 0
+      const y = window.scrollY || document.scrollingElement?.scrollTop || 0
+      setHeaderScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
+    compute()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [isThisActive])
 
   // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
   // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
@@ -805,6 +824,13 @@ export default function WorkoutDay() {
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
+  // Компактная шапка (только активная сессия). chipsShrink гасит чипы групп ПЕРВЫМИ
+  // (0→44px скролла), letterShrink ужимает букву чуть позже (28→132px), 45px → 24px.
+  // В покое (не активен) — всё в полный размер.
+  const chipsShrink = isThisActive ? Math.min(1, headerScrollY / 44) : 0
+  const letterShrink = isThisActive ? Math.min(1, Math.max(0, (headerScrollY - 28) / 104)) : 0
+  const dayLetterSize = 45 - letterShrink * 21
+
   const dayLetterAnimClass = slideDir === 'right'
     ? 'day-letter-slide-in-right'
     : 'day-letter-slide-in-left'
@@ -885,7 +911,7 @@ export default function WorkoutDay() {
           </div>
 
           {/* Поп-ап перегрузки (1ч30) — ПЛАВАЮЩИЙ поверх карточки (перекрывает букву),
-              не раздувает блок. Только на активном дне; сам исчезает через 5 мин или
+              не раздувает блок. Только на активном дне; сам исчезает через 45 сек или
               по тапу ОК. */}
           {isThisActive && showOverload && (
             <div style={styles.overloadPopup}>
@@ -917,7 +943,8 @@ export default function WorkoutDay() {
                     ...styles.dayLetter,
                     ...(day === focusDay
                       ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
-                      : styles.dayLetterMuted)
+                      : styles.dayLetterMuted),
+                    fontSize: `${dayLetterSize}px`
                   }}
                 >
                   {day}
@@ -926,7 +953,16 @@ export default function WorkoutDay() {
               {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
                   дня). Всегда слегка приглушены (и в активном, и в неактивном). */}
               {dayTags.length > 0 && (
-                <div key={`chips-${day}`} style={styles.dayChips}>
+                <div
+                  key={`chips-${day}`}
+                  style={{
+                    ...styles.dayChips,
+                    opacity: 0.7 * (1 - chipsShrink),
+                    maxHeight: `${(1 - chipsShrink) * 40}px`,
+                    marginTop: `${-6 * chipsShrink}px`,
+                    overflow: 'hidden'
+                  }}
+                >
                   {dayTags.map(t => (
                     <span key={t.key} style={{ ...styles.dayChip, background: t.color }}>
                       {t.label.toUpperCase()}
@@ -950,6 +986,12 @@ export default function WorkoutDay() {
             </span>
           </div>
           </div>{/* headerCardInner */}
+
+          {/* Тонкая зелёная полоска прогресса по низу шапки — чёткий второй сигнал к
+              тихой заливке фона (сколько упражнений отжато). Только в активной сессии. */}
+          {isThisActive && (
+            <div style={{ ...styles.headerProgressLine, width: `${progressPct}%` }} aria-hidden="true" />
+          )}
         </div>
 
         {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
@@ -1347,14 +1389,14 @@ const skeletonStyles = {
     alignItems: 'center',
     gap: '16px',
     padding: '16px',
-    minHeight: '150px',
+    minHeight: '132px',
     borderRadius: '33px',
     background: '#1C1C1C'
   },
   thumb: {
     flexShrink: 0,
-    width: '118px',
-    height: '118px',
+    width: '100px',
+    height: '100px',
     borderRadius: '33px'
   },
   lines: {
@@ -1623,6 +1665,21 @@ const styles = {
     transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none',
     zIndex: 0
+  },
+  // Тонкая зелёная полоска прогресса по низу шапки (второй сигнал к заливке фона).
+  // Ширина = процент отжатых упражнений, плавно едет тем же ease, что и заливка.
+  headerProgressLine: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    height: '2.5px',
+    background: 'var(--color-primary)',
+    borderTopRightRadius: '2px',
+    borderBottomRightRadius: '2px',
+    boxShadow: '0 0 8px rgba(158, 209, 83, 0.55)',
+    transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
+    pointerEvents: 'none',
+    zIndex: 2
   },
   // Контент карточки поверх заливки.
   headerCardInner: {
