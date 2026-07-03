@@ -779,9 +779,15 @@ export default function WorkoutDay() {
           игрока на главной: сплошной фон зоны + фейд-переход под блоком. */}
       <div ref={stickyHeaderRef} style={styles.stickyHeader}>
 
-        {/* Один целиковый блок: место+таймер сверху, стрелки + день с группами,
-            прогресс. Фон/строук как у карточки игрока на главной. */}
+        {/* Один целиковый блок: место+таймер сверху, буква дня с группами, счётчик.
+            Фон/строук как у карточки игрока на главной. Во время тренировки ФОН
+            карточки плавно заполняется светло-серым по мере отжатых упражнений
+            (весь прогресс дня — тут, а не полоской). */}
         <div style={styles.headerCard}>
+          {isThisActive && (
+            <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
+          )}
+          <div style={styles.headerCardInner}>
 
           <div style={styles.topMetaRow}>
             {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
@@ -875,13 +881,16 @@ export default function WorkoutDay() {
             </div>
           </div>
 
-          {/* Всегда просто «N упражнений» по центру. Верхний прогресс-бар и «N / M»
-              убраны — прогресс живёт в кнопке «Завершить» внизу. */}
+          {/* Счётчик по центру: до старта «N упражнений»; в тренировке — «N/M»
+              (без слова, прогресс показывает заливка фона карточки). */}
           <div style={styles.countRow}>
             <span style={styles.dayDescLabel}>
-              {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
+              {loading ? '...'
+                : isThisActive ? `${activeOrderNums.size}/${slots.length}`
+                : `${slots.length} ${pluralizeExercises(slots.length)}`}
             </span>
           </div>
+          </div>{/* headerCardInner */}
         </div>
 
         {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
@@ -1011,25 +1020,23 @@ export default function WorkoutDay() {
           )}
 
           {isThisActive ? (
-            // Ширина кнопки фиксирована (240px) — не прыгает между «6/7» и «✓»,
-            // текст центрируется внутри. «·» убрана, между словом и счётчиком 2 пробела.
+            // Прогресс — заливкой шапки дня, не в кнопке. Кнопка hug: серая до 100%,
+            // зелёная с галочкой на 100%.
             <ActionButton
               onClick={handleFinishButtonTap}
               disabled={!canFinish}
               variant={isAllDone ? 'accent' : 'neutral'}
-              progress={isAllDone ? null : progressPct}
               hug
-              style={{ width: '240px', paddingLeft: '16px', paddingRight: '16px', whiteSpace: 'pre' }}
             >
-              {`ЗАВЕРШИТЬ${'\u00A0\u00A0'}${isAllDone ? '✓' : `${activeOrderNums.size}/${slots.length}`}`}
+              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
-              НАЧАТЬ
+              НАЧАТЬ ТРЕНИРОВКУ
             </ActionButton>
           ) : (
             <ActionButton onClick={handleStart} variant="accent" hug>
-              НАЧАТЬ
+              НАЧАТЬ ТРЕНИРОВКУ
             </ActionButton>
           )}
         </div>
@@ -1536,15 +1543,35 @@ const styles = {
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
   // Один целиковый блок — фон и строук как у карточки игрока на главной.
-  // Тень не нужна — переход даёт фейд под блоком (как на главной).
+  // position:relative + overflow:hidden — под заливку-прогресс (headerFill),
+  // клип по скруглению. Раскладку контента держит headerCardInner.
   headerCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
+    position: 'relative',
+    overflow: 'hidden',
     padding: '14px 16px',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 'var(--radius-card)'
+  },
+  // Заливка-прогресс: светло-серый фон растёт слева по мере отжатых упражнений
+  // (весь прогресс дня). Плавно, за текстом (zIndex 0). Клипается overflow карточки.
+  headerFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    background: 'rgba(255, 255, 255, 0.08)',
+    transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
+    pointerEvents: 'none',
+    zIndex: 0
+  },
+  // Контент карточки поверх заливки.
+  headerCardInner: {
+    position: 'relative',
+    zIndex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
   },
   // Верхний ряд блока: место тренировки слева, таймер справа.
   topMetaRow: {
