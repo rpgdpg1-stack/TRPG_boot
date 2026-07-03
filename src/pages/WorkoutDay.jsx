@@ -140,6 +140,11 @@ export default function WorkoutDay() {
 
   // Цвет/пульс таймера по порогам + поп-ап перегрузки (1ч30) + крестик-отмена.
   const [timerPulseKey, setTimerPulseKey] = useState(0)  // ремаунт span → пульс на смене тира
+  // Пульс-«поп» буквы дня: при заходе (свайпе) на активный день И при старте
+  // (startPulse — nonce для ремаунта буквы). Счётчик пульсирует ТОЛЬКО при старте
+  // (transient-флаг startedPulse), а не на свайпе. Время — через timerPulseKey.
+  const [startPulse, setStartPulse] = useState(0)
+  const [startedPulse, setStartedPulse] = useState(false)
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
@@ -272,7 +277,9 @@ export default function WorkoutDay() {
   useEffect(() => {
     const prev = prevTierRef.current
     prevTierRef.current = timerTier
-    if (prev === null || timerTier === prev) return
+    // Пульс таймера — ТОЛЬКО на реальном пересечении порога (green→orange→red).
+    // Заход на активный день (off→green) не пульсирует время (пульсирует буква).
+    if (prev === null || prev === 'off' || timerTier === prev) return
     if (timerTier !== 'off') setTimerPulseKey(k => k + 1)
     if (timerTier === 'red' && !overloadShownRef.current) {
       overloadShownRef.current = true
@@ -649,6 +656,11 @@ export default function WorkoutDay() {
     overloadShownRef.current = false
     hideOverload()
     startActiveWorkout(programId, day, place)
+    // Пульс-акцент «тренировка началась»: буква дня + время + счётчик.
+    setStartPulse(n => n + 1)
+    setTimerPulseKey(k => k + 1)
+    setStartedPulse(true)
+    setTimeout(() => setStartedPulse(false), 500)
   }
 
   // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
@@ -862,8 +874,8 @@ export default function WorkoutDay() {
                 aria-label={days.length > 1 ? 'Выбрать день' : undefined}
               >
                 <span
-                  key={day}
-                  className={dayLetterAnimClass}
+                  key={`${day}-${startPulse}`}
+                  className={isThisActive ? 'pop-scale' : dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
                     ...(day === focusDay
@@ -891,7 +903,10 @@ export default function WorkoutDay() {
           {/* Счётчик по центру: до старта «N упражнений»; в тренировке — «N/M»
               (без слова, прогресс показывает заливка фона карточки). */}
           <div style={styles.countRow}>
-            <span style={{ ...styles.dayDescLabel, ...(isThisActive ? styles.dayCountActive : null) }}>
+            <span
+              className={startedPulse ? 'pop-scale' : undefined}
+              style={{ ...styles.dayDescLabel, ...(isThisActive ? styles.dayCountActive : null) }}
+            >
               {loading ? '...'
                 : isThisActive ? `${activeOrderNums.size}/${slots.length}`
                 : `${slots.length} ${pluralizeExercises(slots.length)}`}
