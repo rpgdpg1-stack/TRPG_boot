@@ -129,14 +129,12 @@ export default function WorkoutDay() {
   const [elapsedSec, setElapsedSec] = useState(0)
   const [finishedSec, setFinishedSec] = useState(0)
 
-  // Пульсы (.pop-scale) — transient-флаги (не проигрываются на ремаунте при свайпе).
-  //  - на СТАРТЕ пульсируют вместе: время + счётчик + крестик (НЕ буква);
-  //  - время — ещё на реальном пересечении порога;
-  //  - БУКВА — только на свайпе НА активный день (не на старте).
+  // Пульсы (.pop-scale) — transient-флаги. На СТАРТЕ и при СВАЙПЕ на активный день
+  // пульсируют вместе: время + счётчик + крестик. Буква НЕ пульсирует никогда.
+  // Время — ещё на реальном пересечении порога.
   const [startedPulse, setStartedPulse] = useState(false)  // счётчик N/M
   const [timePulse, setTimePulse] = useState(false)        // время
-  const [crossPulse, setCrossPulse] = useState(false)      // крестик (появление)
-  const [letterPulse, setLetterPulse] = useState(false)    // буква (свайп на активный)
+  const [crossPulse, setCrossPulse] = useState(false)      // крестик
   const pulseTimers = useRef({})
   const firePulse = (setter, key, ms = 700) => {
     setter(true)
@@ -596,9 +594,12 @@ export default function WorkoutDay() {
     if (targetDay === day) return
     haptic.light()
     setSlideDir(direction === 'next' ? 'right' : 'left')
-    // Свайп НА запущенный день сессии — буква пульсирует («вот он, активный»).
+    // Свайп НА запущенный день сессии — та же анимация, что при старте: пульсируют
+    // время + счётчик + крестик (буква НЕ пульсирует). «Вот он, активный день».
     if (active && active.programId === programId && active.day === targetDay) {
-      firePulse(setLetterPulse, 'letter')
+      firePulse(setTimePulse, 'time')
+      firePulse(setStartedPulse, 'count')
+      firePulse(setCrossPulse, 'cross')
     }
     // Пробрасываем fromHome дальше, чтобы после переключения дней кнопка
     // "Назад" всё ещё вела на главную (если зашли из избранного).
@@ -905,14 +906,13 @@ export default function WorkoutDay() {
               <div
                 ref={letterRef}
                 style={styles.dayLetterWrap}
-                className={letterPulse ? 'pop-scale' : undefined}
                 onClick={openDayPicker}
                 role={days.length > 1 ? 'button' : undefined}
                 aria-label={days.length > 1 ? 'Выбрать день' : undefined}
               >
                 <span
                   key={day}
-                  className={isThisActive ? undefined : dayLetterAnimClass}
+                  className={dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
                     ...(day === focusDay

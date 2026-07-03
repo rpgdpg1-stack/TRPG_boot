@@ -157,9 +157,7 @@ export default function ProgramCard({
       {showRight && (
         <div style={styles.rightBlock}>
           {isActive ? (
-            <span style={styles.continueTag}>
-              <PlayIcon size={10} /> Продолжить
-            </span>
+            <span style={styles.continuePlay}><PlayIcon size={28} /></span>
           ) : (
             <>
               <span style={styles.ltLabel}>Последняя</span>
@@ -198,10 +196,17 @@ export default function ProgramCard({
   )
 }
 
-function PlayIcon({ size = 10 }) {
+// Плей-треугольник со скруглёнными углами (fill + round join), currentColor.
+function PlayIcon({ size = 28 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-      <path d="M3 2.2 L9.4 6 L3 9.8 Z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        d="M8 5.6 L18 12 L8 18.4 Z"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -259,20 +264,11 @@ const styles = {
     maxWidth: '84px',
     pointerEvents: 'none'
   },
-  // Тег «▶ Продолжить» — акцентный зелёный (лёгкая заливка), play + текст.
-  continueTag: {
+  // «Продолжить» — просто зелёный плей-треугольник (что тренировка запущена).
+  continuePlay: {
     display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '5px 11px',
-    borderRadius: 'var(--radius-pill)',
-    background: 'rgba(158, 209, 83, 0.16)',
     color: 'var(--color-primary)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '12px',
-    letterSpacing: '0.3px',
-    whiteSpace: 'nowrap'
+    filter: 'drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 35%, transparent))'
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },
