@@ -116,11 +116,11 @@ export default function ProgramCard({
     if (success && onDeleted) onDeleted()
   }
 
-  // «Последняя тренировка» теперь живёт в едином нижнем слоте FavCardBody (а не
-  // абсолютным блоком справа) — так карточка не прыгает между активным/неактивным.
+  // Правый блок (по центру по высоте, справа): при активной тренировке — время
+  // (сверху) + N/M (снизу); иначе на главной — «Последняя · N».
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  const lastLabel = lastDate ? formatRelative(lastDate) : null
-  const padRight = dots ? 48 : 18
+  const showRight = available && (isActive || (lastTrained && lastDate))
+  const padRight = showRight ? 92 : dots ? 48 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -151,7 +151,24 @@ export default function ProgramCard({
         <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
 
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} showLast={lastTrained && available && !isActive} lastLabel={lastLabel} />
+      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} />
+
+      {/* Правый блок — по центру по высоте, справа. Шрифт цифр — Manrope 800 (как вес). */}
+      {showRight && (
+        <div style={styles.rightBlock}>
+          {isActive ? (
+            <>
+              <span style={{ ...styles.rightTime, color: activeTimeColor || 'var(--color-primary)' }}>{activeMin}</span>
+              <span style={styles.rightCount}>{activeDone}/{activeTotal}</span>
+            </>
+          ) : (
+            <>
+              <span style={styles.ltLabel}>Последняя</span>
+              <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {dots && available && (
         <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
@@ -220,6 +237,26 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
+  // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
+  rightBlock: {
+    position: 'absolute',
+    top: '50%',
+    right: '16px',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '3px',
+    textAlign: 'right',
+    maxWidth: '84px',
+    pointerEvents: 'none'
+  },
+  // Цифры (время/N/M) — шрифт Manrope 800, как редактируемый вес.
+  rightTime: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
+  rightCount: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '13px', color: 'var(--color-text-secondary)', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
+  ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
+  ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },
   dotsBtn: {
     position: 'absolute',
     top: '8px',

@@ -4,17 +4,17 @@ import { swimTotalMeters } from '../data/programs/swim'
 import PlaceSwitcher from './PlaceSwitcher'
 
 /**
- * Тело карточки избранной программы — общее для главной и страницы «Избранное».
+ * Тело карточки программы — общее для главной, избранного и раздела.
  *
- * Рисует: эмодзи + контент (название, строка дней А/Б/В с подсветкой активного,
- * либо мин·метры для заплыва, теги программы). Обёртку (карточка, обводка,
- * правый блок «НАЧАТЬ»/сердце) рисует вызывающий — здесь только содержимое.
+ * Слева: эмодзи + контент (название → тег места → дни A/B/C, либо мин·метры для
+ * заплыва). Иерархия ОДИНАКОВА в активном и неактивном состоянии — меняется лишь
+ * буква активного дня (крупнее/жирнее). Правый блок (время/прогресс/«последняя»)
+ * и заливку-прогресс рисует вызывающий (`ProgramCard`).
  *
- * `accent` — цвет раздела (var(--color-primary) / var(--cat-pool) / …):
- * им подсвечивается активный день. На главной он же даёт обводку/свечение карточки
- * (см. Home.FavCard), на странице избранного обводки нет — только подсветка дня.
+ * `accent` — цвет раздела (фолбэк для буквы дня). `activeMin` — truthy, если идёт
+ * тренировка по этой программе (тогда показываем ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, showLast = false, lastLabel = null }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -38,7 +38,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
-        {/* Теги для НЕ-мест (заплыв / «Скоро») — обычные теги. */}
+        {/* Теги для НЕ-мест (заплыв / «Скоро»). */}
         {places.length === 0 && ((prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
           <div style={styles.tags}>
             {(prog.tags || []).map(tag => {
@@ -55,31 +55,10 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
               {prog.data.durationMin} мин · {swimTotalMeters()} м
             </span>
           </div>
-        ) : activeMin ? (
-          // Идёт тренировка: крупная буква активного дня (в цвете первой группы),
-          // справа N/M, ещё правее время; ниже — статичный тег места. Прогресс —
-          // заливкой ВСЕЙ карточки (ProgramCard), отдельной полоски нет.
-          <>
-            <div style={styles.activeRow}>
-              <span style={{
-                ...styles.dayLetter, ...styles.dayLetterActive,
-                color: dayColor(activeDay),
-                textShadow: `0 0 6px color-mix(in srgb, ${dayColor(activeDay)} 45%, transparent)`
-              }}>
-                {activeDay}
-              </span>
-              <span style={styles.activeCount}>{activeDone}/{activeTotal}</span>
-              <span style={{ ...styles.activeTime, color: activeTimeColor || 'var(--color-primary)' }}>
-                {activeMin}
-              </span>
-            </div>
-            {places.length > 0 && (
-              <div style={styles.tags}><PlaceSwitcher program={prog} tag /></div>
-            )}
-          </>
         ) : (
-          // Не активна: статичный тег места → дни A/B/C (подсветка рекомендованного
-          // в цвете его группы) → «Последняя · N».
+          // Иерархия: тег места (статичный, не тапается) → дни. Идёт тренировка —
+          // показываем ТОЛЬКО активный день, крупнее и жирнее; иначе — ряд A/B/C с
+          // подсветкой рекомендованного. Цвет подсвеченного дня — по его первой группе.
           <>
             {places.length > 0 && (
               <div style={styles.tags}>
@@ -89,14 +68,17 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
             )}
             <div style={styles.daysRow}>
               <div style={styles.daysList}>
-                {allDays.map(d => {
+                {(activeMin ? [activeDay].filter(Boolean) : allDays).map(d => {
                   const isToday = !!activeDay && d === activeDay
+                  const isActiveOne = !!activeMin && d === activeDay
+                  const hl = isToday || isActiveOne
                   const dColor = dayColor(d)
                   return (
                     <span key={d} style={{
                       ...styles.dayLetter,
-                      color: isToday ? dColor : 'rgba(255,255,255,0.35)',
-                      textShadow: isToday ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
+                      ...(isActiveOne ? styles.dayLetterActive : null),
+                      color: hl ? dColor : 'rgba(255,255,255,0.35)',
+                      textShadow: hl ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
                     }}>
                       {d}
                     </span>
@@ -104,11 +86,6 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 })}
               </div>
             </div>
-            {showLast && (
-              <div style={styles.metaRow}>
-                {lastLabel && <span style={styles.lastText}>Последняя · {lastLabel}</span>}
-              </div>
-            )}
           </>
         ))}
 
@@ -121,7 +98,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 }
 
 const styles = {
-  // position/zIndex — чтобы контент был ПОВЕРХ заливки-прогресса карточки (ProgramCard).
+  // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
   emoji: { position: 'relative', zIndex: 1, fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
   content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
   title: {
@@ -133,16 +110,10 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-  // Активная строка: крупная буква дня + N/M + время в одну линию.
-  activeRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'nowrap' },
-  metaRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', minHeight: '18px' },
-  lastText: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.2px', whiteSpace: 'nowrap' },
-  activeCount: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
-  activeTime: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
-  // Активный (запущенный) день на карточке — крупнее и жирнее (виден статус).
+  // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
   dayLetterActive: { fontSize: '22px', fontWeight: 800 },
   tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   tag: {
