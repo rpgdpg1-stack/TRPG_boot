@@ -1666,17 +1666,18 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
-  // Тонкая зелёная полоска прогресса по низу шапки (второй сигнал к заливке фона).
+  // Тонкая полоска прогресса по низу шапки (второй сигнал к заливке фона). Светло-
+  // серый — тот же, что подпись подходов «3×8-10» на карточках (#A8A8A8), не акцент.
   // Ширина = процент отжатых упражнений, плавно едет тем же ease, что и заливка.
   headerProgressLine: {
     position: 'absolute',
     left: 0,
     bottom: 0,
     height: '2.5px',
-    background: 'var(--color-primary)',
+    background: '#A8A8A8',
     borderTopRightRadius: '2px',
     borderBottomRightRadius: '2px',
-    boxShadow: '0 0 8px rgba(158, 209, 83, 0.55)',
+    boxShadow: '0 0 6px rgba(168, 168, 168, 0.35)',
     transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none',
     zIndex: 2
