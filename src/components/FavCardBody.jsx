@@ -73,8 +73,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
               <div style={styles.activeRow}>
                 <span style={{
                   ...styles.dayLetter, ...styles.dayLetterActive,
-                  color: dayColor(activeDay),
-                  textShadow: `0 0 6px color-mix(in srgb, ${dayColor(activeDay)} 45%, transparent)`
+                  color: dayColor(activeDay)
                 }}>
                   {activeDay}
                 </span>
@@ -92,8 +91,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                     return (
                       <span key={d} style={{
                         ...styles.dayLetter,
-                        color: isToday ? dColor : 'rgba(255,255,255,0.35)',
-                        textShadow: isToday ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
+                        color: isToday ? dColor : 'rgba(255,255,255,0.35)'
                       }}>
                         {d}
                       </span>
