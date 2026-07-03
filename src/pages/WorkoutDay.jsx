@@ -138,13 +138,20 @@ export default function WorkoutDay() {
   const [elapsedSec, setElapsedSec] = useState(0)
   const [finishedSec, setFinishedSec] = useState(0)
 
-  // Цвет/пульс таймера по порогам + поп-ап перегрузки (1ч30) + крестик-отмена.
-  const [timerPulseKey, setTimerPulseKey] = useState(0)  // ремаунт span → пульс на смене тира
-  // Пульс-«поп» буквы дня: при заходе (свайпе) на активный день И при старте
-  // (startPulse — nonce для ремаунта буквы). Счётчик пульсирует ТОЛЬКО при старте
-  // (transient-флаг startedPulse), а не на свайпе. Время — через timerPulseKey.
+  // Пульсы (.pop-scale) — transient-флаги, чтобы НЕ проигрывались на ремаунте при
+  // свайпе на активный день. Буква: пульсирует на свайпе-на-активный И на старте
+  // (startPulse — nonce для ремаунта буквы, т.к. буква и так ремаунтится посменно).
+  // Время: ТОЛЬКО на старте и на реальном пересечении порога (timePulse). Счётчик:
+  // ТОЛЬКО на старте (startedPulse).
   const [startPulse, setStartPulse] = useState(0)
   const [startedPulse, setStartedPulse] = useState(false)
+  const [timePulse, setTimePulse] = useState(false)
+  const pulseTimers = useRef({})
+  const firePulse = (setter, key, ms = 700) => {
+    setter(true)
+    if (pulseTimers.current[key]) clearTimeout(pulseTimers.current[key])
+    pulseTimers.current[key] = setTimeout(() => setter(false), ms)
+  }
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
@@ -277,10 +284,10 @@ export default function WorkoutDay() {
   useEffect(() => {
     const prev = prevTierRef.current
     prevTierRef.current = timerTier
-    // Пульс таймера — ТОЛЬКО на реальном пересечении порога (green→orange→red).
+    // Пульс времени — ТОЛЬКО на реальном пересечении порога (green→orange→red).
     // Заход на активный день (off→green) не пульсирует время (пульсирует буква).
     if (prev === null || prev === 'off' || timerTier === prev) return
-    if (timerTier !== 'off') setTimerPulseKey(k => k + 1)
+    if (timerTier !== 'off') firePulse(setTimePulse, 'time')
     if (timerTier === 'red' && !overloadShownRef.current) {
       overloadShownRef.current = true
       setShowOverload(true)
@@ -656,11 +663,10 @@ export default function WorkoutDay() {
     overloadShownRef.current = false
     hideOverload()
     startActiveWorkout(programId, day, place)
-    // Пульс-акцент «тренировка началась»: буква дня + время + счётчик.
+    // Пульс-акцент «тренировка началась»: буква дня + время + счётчик — вместе.
     setStartPulse(n => n + 1)
-    setTimerPulseKey(k => k + 1)
-    setStartedPulse(true)
-    setTimeout(() => setStartedPulse(false), 500)
+    firePulse(setTimePulse, 'time')
+    firePulse(setStartedPulse, 'count')
   }
 
   // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
@@ -821,12 +827,8 @@ export default function WorkoutDay() {
             {isThisActive ? (
               <div style={styles.timerCenter}>
                 <span
-                  key={timerPulseKey}
-                  style={{
-                    ...styles.timer,
-                    color: TIMER_COLORS[timerTier],
-                    animation: timerPulseKey > 0 ? 'timerPulse 0.45s ease-out' : 'none'
-                  }}
+                  className={timePulse ? 'pop-scale' : undefined}
+                  style={{ ...styles.timer, color: TIMER_COLORS[timerTier] }}
                 >
                   {formatWorkoutMin(elapsedSec)}
                 </span>

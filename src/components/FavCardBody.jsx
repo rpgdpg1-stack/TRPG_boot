@@ -14,7 +14,7 @@ import PlaceSwitcher from './PlaceSwitcher'
  * `accent` — цвет раздела (фолбэк для буквы дня). `activeMin` — truthy, если идёт
  * тренировка по этой программе (тогда показываем ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0 }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -66,26 +66,39 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
               </div>
             )}
-            <div style={styles.daysRow}>
-              <div style={styles.daysList}>
-                {(activeMin ? [activeDay].filter(Boolean) : allDays).map(d => {
-                  const isToday = !!activeDay && d === activeDay
-                  const isActiveOne = !!activeMin && d === activeDay
-                  const hl = isToday || isActiveOne
-                  const dColor = dayColor(d)
-                  return (
-                    <span key={d} style={{
-                      ...styles.dayLetter,
-                      ...(isActiveOne ? styles.dayLetterActive : null),
-                      color: hl ? dColor : 'rgba(255,255,255,0.35)',
-                      textShadow: hl ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
-                    }}>
-                      {d}
-                    </span>
-                  )
-                })}
+            {activeMin ? (
+              // Идёт тренировка: буква активного дня + время + N/M в ОДНУ строку,
+              // по центру буквы. Время и N/M — одинаковым шрифтом (Manrope 800).
+              <div style={styles.activeRow}>
+                <span style={{
+                  ...styles.dayLetter, ...styles.dayLetterActive,
+                  color: dayColor(activeDay),
+                  textShadow: `0 0 6px color-mix(in srgb, ${dayColor(activeDay)} 45%, transparent)`
+                }}>
+                  {activeDay}
+                </span>
+                <span style={{ ...styles.activeStat, color: activeTimeColor || 'var(--color-primary)' }}>{activeMin}</span>
+                <span style={{ ...styles.activeStat, color: 'var(--color-text-secondary)' }}>{activeDone}/{activeTotal}</span>
               </div>
-            </div>
+            ) : (
+              <div style={styles.daysRow}>
+                <div style={styles.daysList}>
+                  {allDays.map(d => {
+                    const isToday = !!activeDay && d === activeDay
+                    const dColor = dayColor(d)
+                    return (
+                      <span key={d} style={{
+                        ...styles.dayLetter,
+                        color: isToday ? dColor : 'rgba(255,255,255,0.35)',
+                        textShadow: isToday ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
+                      }}>
+                        {d}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </>
         ))}
 
@@ -110,6 +123,9 @@ const styles = {
     lineHeight: 1.1
   },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
+  activeRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' },
+  activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },

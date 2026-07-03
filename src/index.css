@@ -331,14 +331,14 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 1; transform: translateY(-50%) scale(1); }
 }
 
-/* Пульс-«поп»: увеличивается и возвращается (буква активного дня при заходе/старте,
-   время/счётчик при старте). Один проход. */
+/* Пульс-«поп»: плавно увеличивается и возвращается (буква активного дня при
+   заходе/старте, время/счётчик при старте). Один проход, помягче/помедленнее. */
 @keyframes popScale {
   0%   { transform: scale(1); }
-  45%  { transform: scale(1.22); }
+  50%  { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
-.pop-scale { animation: popScale 0.42s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.pop-scale { animation: popScale 0.62s ease-in-out; }
 
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
