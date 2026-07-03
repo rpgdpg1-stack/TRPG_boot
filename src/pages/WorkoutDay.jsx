@@ -69,6 +69,28 @@ import { pluralizeExercises } from '../utils/plural'
 // чтобы позицию скролла можно было восстановить до отрисовки (без моргания).
 const slotsMemory = new Map()
 
+// Память позиции скролла ЗАПУЩЕННОГО дня — localStorage, поэтому переживает не
+// только уход/возврат по приложению, но и полный перезапуск Telegram (вылет).
+// Ключ по programId/day/place. Только активная сессия: на неё возвращаемся в то же
+// место (через главную «Продолжить», свайп на активный день, назад из настроек и т.п.);
+// неактивные дни (другой день/программа) всегда открываются сверху. Чистится на
+// старте/завершении/отмене тренировки — чтобы старое значение не всплыло в новой сессии.
+const SCROLL_KEY = 'workout-scroll'
+function saveActiveScroll(programId, day, place, y) {
+  try { localStorage.setItem(`${SCROLL_KEY}:${programId}/${day}/${place}`, String(Math.round(y))) } catch { /* ignore */ }
+}
+function loadActiveScroll(programId, day, place) {
+  try {
+    const v = localStorage.getItem(`${SCROLL_KEY}:${programId}/${day}/${place}`)
+    if (v == null) return null
+    const n = parseInt(v, 10)
+    return Number.isFinite(n) ? n : null
+  } catch { return null }
+}
+function clearActiveScroll(programId, day, place) {
+  try { localStorage.removeItem(`${SCROLL_KEY}:${programId}/${day}/${place}`) } catch { /* ignore */ }
+}
+
 // Цвета таймера: пороги/цвета общие (active-workout.js), 'off' (неактивный
 // день) — серый локально. С 1ч30 (red) — ещё поп-ап «пора завершать».
 const TIMER_COLORS = {
@@ -299,6 +321,9 @@ export default function WorkoutDay() {
   // Глобальный ScrollToTop в App для /workout/ выключен (день рулит скроллом сам).
   useLayoutEffect(() => {
     if (location.state?.returnedFromOrderNum != null) return
+    // Активный день — не гнать наверх: его позицию выставит restore-эффект ниже
+    // (вернёт на сохранённое место). Неактивный — открываем сверху.
+    if (isThisActive) return
     window.scrollTo(0, 0)
     document.scrollingElement?.scrollTo(0, 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -404,21 +429,37 @@ export default function WorkoutDay() {
     setActiveSection(-1)
   }, [day, place])
 
-  // Компактная шапка: следим за scrollY только когда этот день активен. Неактивный
-  // день (или скролл наверху) — шапка в полный размер (headerScrollY = 0).
+  // Компактная шапка + память скролла активного дня: следим за scrollY только когда
+  // этот день активен. Неактивный день (или скролл наверху) — шапка в полный размер
+  // (headerScrollY = 0). Параллельно сохраняем позицию в localStorage (троттл 250мс) —
+  // чтобы вернуться в то же место; флаш при сворачивании/закрытии и при уходе с дня.
   useEffect(() => {
     if (!isThisActive) { setHeaderScrollY(0); return }
     let raf = 0
+    let lastSave = 0
+    let latest = window.scrollY || document.scrollingElement?.scrollTop || 0
     const compute = () => {
       raf = 0
       const y = window.scrollY || document.scrollingElement?.scrollTop || 0
+      latest = y
       setHeaderScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
+      const now = Date.now()
+      if (now - lastSave > 250) { lastSave = now; saveActiveScroll(programId, day, placeRef.current, y) }
     }
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
+    const flush = () => saveActiveScroll(programId, day, placeRef.current, latest)
     compute()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
-  }, [isThisActive])
+    document.addEventListener('visibilitychange', flush)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      document.removeEventListener('visibilitychange', flush)
+      window.removeEventListener('pagehide', flush)
+      if (raf) cancelAnimationFrame(raf)
+      flush() // уход с дня/размонтирование — сохранить финальную позицию
+    }
+  }, [isThisActive, programId, day])
 
   // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
   // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
@@ -486,6 +527,41 @@ export default function WorkoutDay() {
       if (cardEl) cardEl.scrollIntoView({ behavior: 'auto', block: 'center' })
     }
   }, [loading, slots.length, location.state])
+
+  // Заход НА активный день (свежий вход, «Продолжить» с главной после вылета
+  // Telegram, назад из настроек/друзей) — восстановить сохранённую позицию скролла,
+  // как только слоты дня в DOM. Один раз за монтирование (didInitialScrollRef).
+  // Возврат с Инфо/Смены сюда не относится (у него свой эффект выше).
+  const didInitialScrollRef = useRef(false)
+  useLayoutEffect(() => {
+    if (didInitialScrollRef.current) return
+    if (location.state?.returnedFromOrderNum != null) { didInitialScrollRef.current = true; return }
+    if (!isThisActive) { if (!loading) didInitialScrollRef.current = true; return }
+    if (loading || !slots.length) return
+    didInitialScrollRef.current = true
+    const y = loadActiveScroll(programId, day, placeRef.current)
+    if (y != null && y > 0) {
+      window.scrollTo(0, y)
+      document.scrollingElement?.scrollTo(0, y)
+    }
+  }, [loading, slots.length, location.state, isThisActive, programId, day])
+
+  // Свайп/пикер дней внутри страницы (goToDay): позиционируем ПОСЛЕ подстановки
+  // слотов целевого дня. pendingScrollRef = { day, y }: 'top' — сверху (неактивный
+  // день); число — восстановить (свайп обратно на активный день). Ждём, пока slots
+  // станут именно слотами целевого дня (slots === кэш этого ключа) — иначе спозиционируем
+  // по слотам предыдущего дня (промежуточный рендер) и промахнёмся по высоте.
+  const pendingScrollRef = useRef(null)
+  useLayoutEffect(() => {
+    const p = pendingScrollRef.current
+    if (p == null || p.day !== day) return
+    if (loading || !slots.length) return
+    if (slots !== slotsMemory.get(`${programId}/${day}/${place}`)) return
+    pendingScrollRef.current = null
+    const y = p.y === 'top' ? 0 : p.y
+    window.scrollTo(0, y)
+    document.scrollingElement?.scrollTo(0, y)
+  }, [day, place, loading, slots, programId])
 
   // Эффекты подсветки карточки, с которой уходил (press + glow + змейка свапа),
   // и очистка state из истории, чтобы повтор не сработал при свайпе дней.
@@ -612,13 +688,22 @@ export default function WorkoutDay() {
   const goToDay = (targetDay, direction) => {
     if (targetDay === day) return
     haptic.light()
+    // Уходим с активного дня — зафиксировать его позицию (вернёмся сюда — откроем тут же).
+    if (isThisActive) saveActiveScroll(programId, day, placeRef.current, getRealScrollY())
     setSlideDir(direction === 'next' ? 'right' : 'left')
+    const targetIsActive = active && active.programId === programId && active.day === targetDay
     // Свайп НА запущенный день сессии — та же анимация, что при старте: пульсируют
     // время + счётчик + крестик (буква НЕ пульсирует). «Вот он, активный день».
-    if (active && active.programId === programId && active.day === targetDay) {
+    if (targetIsActive) {
       firePulse(setTimePulse, 'time')
       firePulse(setStartedPulse, 'count')
       firePulse(setCrossPulse, 'cross')
+    }
+    // Активный целевой день — восстановить сохранённую позицию; прочие — сверху.
+    // Ставит restore-эффект по слотам целевого дня (не гоним scrollToTop сразу).
+    pendingScrollRef.current = {
+      day: targetDay,
+      y: targetIsActive ? (loadActiveScroll(programId, targetDay, placeRef.current) ?? 'top') : 'top'
     }
     // Пробрасываем fromHome дальше, чтобы после переключения дней кнопка
     // "Назад" всё ещё вела на главную (если зашли из избранного).
@@ -626,7 +711,6 @@ export default function WorkoutDay() {
       replace: true,
       state: location.state?.fromHome ? { fromHome: true } : null
     })
-    scrollToTop()
   }
 
   // Тап по букве дня — открыть пикер (только если дней 2+). Якорь — рект буквы.
@@ -678,6 +762,7 @@ export default function WorkoutDay() {
   const handleStart = () => {
     haptic.success()
     clearWorkoutProgress(programId, day, place)
+    clearActiveScroll(programId, day, place) // свежий старт — без старой позиции скролла
     setActiveOrderNums(new Set())
     overloadShownRef.current = false
     hideOverload()
@@ -712,6 +797,7 @@ export default function WorkoutDay() {
   const handleCancelConfirm = () => {
     haptic.medium()
     clearWorkoutProgress(programId, day, place)
+    clearActiveScroll(programId, day, place)
     setActiveOrderNums(new Set())
     overloadShownRef.current = false
     hideOverload()
@@ -786,6 +872,7 @@ export default function WorkoutDay() {
       // фиксируем день в цикле A/B/C, чистим галочки и закрываем активную сессию.
       await setLastCompletedDay(programId, day)
       clearWorkoutProgress(programId, day, place)
+      clearActiveScroll(programId, day, place)
       clearActiveWorkout()
 
       // Оффлайн: ушло в очередь, синканётся при сети. Лимит «1 в день» оффлайн не
