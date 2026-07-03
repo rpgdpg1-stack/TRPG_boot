@@ -363,10 +363,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
       </div>
 
       {/* Крестик-закрытие ПОД модалкой, по центру — крупнее (кружок 46px, хит-зона
-          56px): низ экрана удобнее для большого пальца. Отдельный «пузырёк». */}
+          56px): низ экрана удобнее для большого пальца. Отдельный «пузырёк».
+          press-pop — «растущее» нажатие: палец на нём → увеличивается, тап закрывает,
+          увод пальцем в сторону — возвращается. */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose() }}
         style={styles.closeBtn}
+        className="press-pop"
         aria-label="Закрыть"
       >
         <span style={styles.closeBtnInner}><CrossIcon size={20} /></span>
