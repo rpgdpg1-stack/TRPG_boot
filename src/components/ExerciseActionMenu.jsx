@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
@@ -193,6 +193,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     el.style.height = `${el.scrollHeight}px`
   }
 
+  // Подгоняем высоту ОДИН раз при входе в режим правки и при смене текста —
+  // через layout-эффект (до отрисовки), а НЕ в ref-колбэке (иначе height='auto'
+  // сбрасывался на каждый ререндер при фокусе/клавиатуре → каретка дребезжала).
+  useLayoutEffect(() => {
+    if (editingNote) autoGrowNote(noteInputRef.current)
+  }, [editingNote, draft])
+
   const handleSaveNote = async () => {
     if (savingNote) return
     setSavingNote(true)
@@ -307,10 +314,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           ) : editingNote ? (
             <>
               <textarea
-                ref={(el) => { noteInputRef.current = el; autoGrowNote(el) }}
+                ref={(el) => { noteInputRef.current = el }}
                 autoFocus
                 value={draft}
-                onChange={(e) => { setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH)); autoGrowNote(e.target) }}
+                onChange={(e) => setDraft(e.target.value.slice(0, NOTE_MAX_LENGTH))}
                 onFocus={(e) => { const len = e.target.value.length; e.target.setSelectionRange(len, len) }}
                 placeholder="Например: не круглить спину, хват шире плеч"
                 style={styles.noteTextarea}

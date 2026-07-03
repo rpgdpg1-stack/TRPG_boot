@@ -1528,9 +1528,14 @@ function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick,
           const isSession = !!sessionDay && d === sessionDay
           const isFocus = d === focusDay
           const isCurrent = d === currentDay
-          // ЗАПУЩЕННЫЙ день (активная сессия) — крупная зелёная буква (×2) + пульс,
-          // чтобы бросалась в глаза «вернись сюда». Рекомендуемый день — БЕЗ пульса,
-          // просто зелёный, когда стоишь на нём. Текущий (не запущенный) — серый кружок.
+          // ЗАПУЩЕННЫЙ день — пульсирует с ОБЫЧНОГО размера (×1.5 и обратно): зелёный,
+          // если стоишь на нём, иначе просто серый (ты не на нём). Текущий (не
+          // запущенный) день — белая буква на сером кружке («ты тут»); зелёная, если
+          // это ещё и фокусный/рекомендованный. Прочие — серые, без пульса.
+          const color = (isCurrent && isFocus) ? 'var(--color-primary)'
+            : isCurrent ? 'var(--color-text)'
+            : 'var(--color-text-secondary)'
+          const circle = isCurrent && !isSession
           return (
             <button
               key={d}
@@ -1538,9 +1543,8 @@ function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick,
               className={`press-tile${isSession ? ' day-picker-pulse' : ''}`}
               style={{
                 ...pickerStyles.cell,
-                ...(isCurrent && !isSession ? pickerStyles.cellCurrent : null),
-                ...(isFocus && isCurrent ? pickerStyles.cellCurrentFocus : null),
-                ...(isSession ? pickerStyles.cellSession : null)
+                color,
+                ...(circle ? pickerStyles.cellCircle : null)
               }}
             >
               {d}
@@ -1591,21 +1595,9 @@ const pickerStyles = {
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
-  // Текущий (просматриваемый) день — серый кружок (нейтральная подсветка).
-  cellCurrent: {
-    color: 'var(--color-text)',
+  // Серый кружок под текущим (просматриваемым, не запущенным) днём — «ты тут».
+  cellCircle: {
     background: 'rgba(255, 255, 255, 0.10)'
-  },
-  // Если текущий день ещё и фокусный — буква зелёная (кружок остаётся серым).
-  cellCurrentFocus: {
-    color: 'var(--color-primary)'
-  },
-  // Запущенный день сессии — крупная зелёная буква (×~2), без кружка; ещё пульсирует
-  // (класс day-picker-pulse) — «вернись сюда, тренировка идёт».
-  cellSession: {
-    color: 'var(--color-primary)',
-    background: 'transparent',
-    fontSize: '40px'
   }
 }
 

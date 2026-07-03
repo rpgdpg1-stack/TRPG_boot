@@ -119,12 +119,16 @@ camelCase — утилиты (`getTodayKey`).
   конструктора. Упражнения живут строго по группе/подгруппе/типу.
 - Активная тренировка — одна на приложение (`lib/active-workout.js`, localStorage
   `active-workout` = `{programId,day,place,startedAt}`). День «тренируется» только после тапа
-  «НАЧАТЬ ТРЕНИРОВКУ»: до старта таймер `0 мин` и не идёт, галочки не ставятся (только заметки
-  по long-press). После старта таймер = `now−startedAt` (переживает уход/возврат/смену дня),
-  кнопка → «ЗАВЕРШИТЬ», завершение чистит сессию. На других днях/программах «Начать» заблокирована
-  (одна за раз). Смена статуса — событие `onActiveWorkoutChange` (карточки `ProgramCard`/`FavCardBody`
-  показывают «▶ Продолжить · N мин» и ведут в активный день). Время форматируем `formatWorkoutMin`.
-  Заплыв (`SwimWorkout`) в эту модель НЕ входит — там мгновенное «Завершить» без таймера/сессии.
+  «НАЧАТЬ ТРЕНИРОВКУ»: до старта таймера НЕТ вовсе (вместо него часы + оценка `≈ N мин`), галочки
+  не ставятся (только заметки по long-press). После старта таймер = `now−startedAt` (переживает
+  уход/возврат/смену дня), цвет до 1ч — серый (не зелёный, чтоб не спорить с зелёной буквой дня),
+  1ч→оранж, 1ч30→красный. Кнопка → «ЗАВЕРШИТЬ · N/M», завершение чистит сессию. На других
+  днях/программах «Начать» заблокирована (одна за раз). Смена статуса — событие `onActiveWorkoutChange`
+  (карточки `ProgramCard`/`FavCardBody` показывают статус-строку `N/M · полоска · время` + бейдж
+  «▶ Продолжить» и ведут в активный день). Время форматируем `formatWorkoutMin`. Заплыв (`SwimWorkout`)
+  в эту модель НЕ входит — там мгновенное «Завершить» без таймера/сессии.
+- Подсветка дня едина на карточках и в шапке дня: «фокусный» день = активная сессия программы, иначе
+  рекомендованный по циклу (`getActiveDaySync`/`nextDayInCycle`). См. trpg-ui «Шапка дня» (буква/DayPicker).
 - Оффлайн-сейв не должен висеть: `finishWorkout` гонит RPC с `FINISH_TIMEOUT_MS` (7с) через
   `Promise.race`; таймаут или сетевой throw → в оффлайн-очередь (как `!isOnline()`) + фоновый
   `checkNow()`. Нужно из-за «мёртвого Wi-Fi» в зале (navigator.onLine врёт). Оффлайн-тексты — без
@@ -177,10 +181,11 @@ src/
 ├── assets/ranks/   11 SVG: rookie athlete sportsman coach machine titan elite champion legend immortal x3-champion
 ├── assets/ui/      SVG-иконки: cardio change cloud_done cloud_sync friends info invite-friend
 │                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
-├── components/     ActionButton BackupAllButton BackupButton DailyQuests ExerciseActionMenu ExerciseCard ExercisePicker ExerciseVideo
-│                   FavHint FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton MuscleIcon
-│                   OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
-│                   ProfileHeader ProgramActionMenu RankFrame RankIcon RanksPopup SaveFriendProgramModal
+├── components/     ActionButton AnchorMenu BackupAllButton BackupButton CategoryList DailyQuests ExerciseActionMenu
+│                   ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody FavHint FavoritesList
+│                   FinishConfirmModal FramePreview FriendRow HistoryRow LeaderboardRow LeagueBadgeIcon ModalButton
+│                   MuscleIcon OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
+│                   ProfileHeader ProgramActionMenu ProgramCard RankFrame RankIcon RanksPopup SaveFriendProgramModal
 │                   ScreenTitle StreakFlame TabBar TitleTag UiIcon XPBar WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal
@@ -190,8 +195,8 @@ src/
 ├── lib/            active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
 │                   leagues levels network-status notes offline-queue persistent-cache profile-cache
 │                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
-├── pages/          Category ExerciseInfo Friends History Home Leaderboard Profile ProgramConstructor
-│                   Recovery Rewards Settings SwapExercise SwimWorkout WorkoutDay
+├── pages/          Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile
+│                   ProgramConstructor Recovery Rewards Sections Settings SwapExercise SwimWorkout WorkoutDay
 └── utils/          dates history plural season storage workout-progress
 
 supabase/

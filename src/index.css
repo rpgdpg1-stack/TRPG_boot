@@ -316,10 +316,11 @@ body.keyboard-open .app::after { display: none; }
 }
 .day-dot-pulse { animation: dayDotPulse 1.8s ease-in-out infinite; }
 
-/* Лёгкий пульс буквы рекомендованного дня в пикере (не текущего): «вернись сюда». */
+/* Пульс буквы запущенного дня в пикере: растёт с обычного размера в ~1.5× и
+   обратно (не фикс. крупный размер) — «вернись сюда, тренировка идёт». */
 @keyframes dayPickerPulse {
   0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.12); }
+  50%      { transform: scale(1.5); }
 }
 .day-picker-pulse { animation: dayPickerPulse 1.4s ease-in-out infinite; }
 
