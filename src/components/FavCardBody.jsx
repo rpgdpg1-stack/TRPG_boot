@@ -1,4 +1,5 @@
 import { getProgramEmoji, getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import PlaceSwitcher from './PlaceSwitcher'
 
@@ -69,12 +70,17 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 {(activeMin ? [activeDay].filter(Boolean) : allDays).map(d => {
                   const isToday = !!activeDay && d === activeDay
                   const isActiveOne = !!activeMin && d === activeDay
+                  const hl = isToday || isActiveOne
+                  // Цвет подсвеченного дня = цвет ПЕРВОЙ группы мышц этого дня
+                  // (спина/грудь/ноги…), а не общий акцент.
+                  const dGroup = prog.data?.days?.[d]?.[0]?.muscle_group
+                  const dColor = (dGroup && getMuscleGroupColors(dGroup).accent) || accent
                   return (
                     <span key={d} style={{
                       ...styles.dayLetter,
                       ...(isActiveOne ? styles.dayLetterActive : null),
-                      color: (isToday || isActiveOne) ? accent : 'rgba(255,255,255,0.35)',
-                      textShadow: (isToday || isActiveOne) ? `0 0 6px color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+                      color: hl ? dColor : 'rgba(255,255,255,0.35)',
+                      textShadow: hl ? `0 0 6px color-mix(in srgb, ${dColor} 45%, transparent)` : 'none'
                     }}>
                       {d}
                     </span>

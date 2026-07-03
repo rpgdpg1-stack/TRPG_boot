@@ -204,6 +204,11 @@ export default function WorkoutDay() {
   const programSlots = useMemo(() => getProgramDaySlots(programId, day, place), [programId, day, place])
 
   const dayTags = useMemo(() => getDayMuscleTags(program?.dbId, day), [program, day])
+  // Акцентный цвет дня = цвет ПЕРВОЙ группы мышц дня (спина/грудь/ноги…). Им
+  // красится крупная буква активного/фокусного дня (не общим зелёным).
+  const dayGroupAccent = dayTags[0]
+    ? getMuscleGroupColors(dayTags[0].key).accent
+    : 'var(--color-primary)'
 
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
@@ -861,7 +866,9 @@ export default function WorkoutDay() {
                   className={dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
-                    ...(day === focusDay ? null : styles.dayLetterMuted)
+                    ...(day === focusDay
+                      ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
+                      : styles.dayLetterMuted)
                   }}
                 >
                   {day}
@@ -884,7 +891,7 @@ export default function WorkoutDay() {
           {/* Счётчик по центру: до старта «N упражнений»; в тренировке — «N/M»
               (без слова, прогресс показывает заливка фона карточки). */}
           <div style={styles.countRow}>
-            <span style={styles.dayDescLabel}>
+            <span style={{ ...styles.dayDescLabel, ...(isThisActive ? styles.dayCountActive : null) }}>
               {loading ? '...'
                 : isThisActive ? `${activeOrderNums.size}/${slots.length}`
                 : `${slots.length} ${pluralizeExercises(slots.length)}`}
@@ -1028,15 +1035,15 @@ export default function WorkoutDay() {
               variant={isAllDone ? 'accent' : 'neutral'}
               hug
             >
-              {isAllDone ? '✓ ЗАВЕРШИТЬ ТРЕНИРОВКУ' : 'ЗАВЕРШИТЬ ТРЕНИРОВКУ'}
+              {isAllDone ? '✓ ЗАВЕРШИТЬ' : 'ЗАВЕРШИТЬ'}
             </ActionButton>
           ) : sessionBlocked ? (
             <ActionButton onClick={handleBlockedStart} variant="dim" hug>
-              НАЧАТЬ ТРЕНИРОВКУ
+              НАЧАТЬ
             </ActionButton>
           ) : (
             <ActionButton onClick={handleStart} variant="accent" hug>
-              НАЧАТЬ ТРЕНИРОВКУ
+              НАЧАТЬ
             </ActionButton>
           )}
         </div>
@@ -1807,6 +1814,12 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
+  },
+  // «N/M» в тренировке — крупнее и жирнее, как активный таймер.
+  dayCountActive: {
+    fontWeight: 700,
+    fontSize: '15px',
+    fontVariantNumeric: 'tabular-nums'
   },
   body: {
     paddingTop: '20px'
