@@ -290,6 +290,7 @@ const styles = {
     lineHeight: 1,
     letterSpacing: '1px',
     cursor: 'pointer',
+    opacity: 0.7,
     WebkitTapHighlightColor: 'transparent',
     zIndex: 2
   }

@@ -82,6 +82,15 @@ const TIMER_COLORS = {
 // Общая оценка дня = число упражнений × это значение (напр. 8 → ~56 мин, 10 → ~1 ч 10 мин).
 const EST_MIN_PER_EXERCISE = 7
 
+/** Галочка (currentColor) — для баннера «<Группа> завершена». */
+function CheckIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 /** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
 function CrossIcon({ size = 16 }) {
   return (
@@ -500,18 +509,45 @@ export default function WorkoutDay() {
     // Иначе тап ничего не делает (долгое нажатие — заметки — работает отдельно).
     if (!isThisActive) { haptic.light(); return }
 
-    setActiveOrderNums(prev => {
-      const next = new Set(prev)
-      if (next.has(slot.order_num)) {
-        next.delete(slot.order_num)
-        haptic.light()
-      } else {
-        next.add(slot.order_num)
-        haptic.success()
+    const next = new Set(activeOrderNums)
+    if (next.has(slot.order_num)) {
+      next.delete(slot.order_num)
+      haptic.light()
+    } else {
+      next.add(slot.order_num)
+      haptic.success()
+      // Завершена ли ГРУППА мышц (все её упражнения отжаты) — баннер «Спина завершена».
+      const groupSlots = slots.filter(s => s.muscle_group === slot.muscle_group)
+      if (groupSlots.length && groupSlots.every(s => next.has(s.order_num))) {
+        showGroupDone(slot.muscle_group)
       }
-      return next
-    })
+      // Весь день отжат → вспышка буквы (после баннера группы).
+      if (slots.length && slots.every(s => next.has(s.order_num))) {
+        if (allDoneTimer.current) clearTimeout(allDoneTimer.current)
+        allDoneTimer.current = setTimeout(() => firePulse(setLetterFlash, 'flash', 900), 1650)
+      }
+    }
+    setActiveOrderNums(next)
   }
+
+  // Баннер «<Группа> завершена» поверх буквы: буква гаснет, баннер fade-in с блюром,
+  // держится ~1с, гаснет; буква возвращается. Всё в шапке (не поверх интерфейса).
+  const [groupDone, setGroupDone] = useState(null)  // { label, color }
+  const [letterFlash, setLetterFlash] = useState(false)
+  const groupDoneTimer = useRef(null)
+  const allDoneTimer = useRef(null)
+  const showGroupDone = (group) => {
+    setGroupDone({
+      label: MUSCLE_GROUP_LABELS[group] || group,
+      color: getMuscleGroupColors(group).accent
+    })
+    if (groupDoneTimer.current) clearTimeout(groupDoneTimer.current)
+    groupDoneTimer.current = setTimeout(() => setGroupDone(null), 1600)
+  }
+  useEffect(() => () => {
+    if (groupDoneTimer.current) clearTimeout(groupDoneTimer.current)
+    if (allDoneTimer.current) clearTimeout(allDoneTimer.current)
+  }, [])
 
   const handleCardLongPress = (slot) => {
     if (showFinishedModal) return
@@ -906,7 +942,8 @@ export default function WorkoutDay() {
               <div
                 ref={letterRef}
                 style={styles.dayLetterWrap}
-                onClick={openDayPicker}
+                className={letterFlash ? 'pop-scale' : undefined}
+                onClick={groupDone ? undefined : openDayPicker}
                 role={days.length > 1 ? 'button' : undefined}
                 aria-label={days.length > 1 ? 'Выбрать день' : undefined}
               >
@@ -915,6 +952,8 @@ export default function WorkoutDay() {
                   className={dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
+                    opacity: groupDone ? 0 : 1,
+                    transition: 'opacity 0.2s ease',
                     ...(day === focusDay
                       ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
                       : styles.dayLetterMuted)
@@ -922,6 +961,12 @@ export default function WorkoutDay() {
                 >
                   {day}
                 </span>
+                {/* Баннер «<Группа> завершена» на месте буквы (fade + блюр, ~1.6с). */}
+                {groupDone && (
+                  <div key={groupDone.label} style={{ ...styles.groupDoneBanner, color: groupDone.color }}>
+                    <CheckIcon size={16} /> {groupDone.label} завершена
+                  </div>
+                )}
               </div>
               {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
                   дня). Всегда слегка приглушены (и в активном, и в неактивном). */}
@@ -1821,6 +1866,23 @@ const styles = {
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
     userSelect: 'none'
+  },
+  // Баннер «<Группа> завершена» — на месте буквы (absolute по центру), в цвет группы.
+  groupDoneBanner: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    whiteSpace: 'nowrap',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '17px',
+    letterSpacing: '0.5px',
+    pointerEvents: 'none',
+    animation: 'groupDoneBanner 1.6s ease-in-out'
   },
   dayLetter: {
     fontFamily: 'var(--font-display)',
