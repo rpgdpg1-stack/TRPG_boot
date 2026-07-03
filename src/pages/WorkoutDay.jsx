@@ -183,11 +183,6 @@ export default function WorkoutDay() {
   const sectionsRef = useRef([])              // текущие секции (для замера последней карточки)
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
-  // Финал прогресса: только микро-салют на 100% (8/8). Счётчик 3-2-1 и искры на
-  // каждое нажатие убраны — мельтешили. finishKey — ремаунт частиц для повтора.
-  const prevDoneRef = useRef(0)
-  const [finishKey, setFinishKey] = useState(0)
-
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
   // Имя программы для навбара: кастомную/от друга показываем как ввёл юзер,
@@ -437,18 +432,6 @@ export default function WorkoutDay() {
       if (raf) cancelAnimationFrame(raf)
     }
   }, [loading, slots])
-
-  // Триггер финального салюта. Только когда отжали ровно одно упражнение (now -
-  // prev === 1) и это последнее (осталось 0) — так не срабатывает на загрузке
-  // прогресса (скачок 0→N) и на снятии галочки.
-  useEffect(() => {
-    const prev = prevDoneRef.current
-    const now = activeOrderNums.size
-    prevDoneRef.current = now
-    if (loading) return
-    if (now - prev !== 1) return
-    if (slots.length - now === 0) setFinishKey(k => k + 1)
-  }, [activeOrderNums.size, slots.length, loading])
 
   // Возврат с "Сменить"/"Инфо": восстанавливаем ТОЧНУЮ позицию скролла ДО
   // отрисовки (useLayoutEffect) — без моргания и без «прыжка наверх». Слоты к
@@ -806,9 +789,8 @@ export default function WorkoutDay() {
                 выше таймера: раскрытые пилюли налезают на центр и должны быть
                 ПОВЕРХ цифры часы:минуты, а не под ней. */}
             <div style={styles.placeSlot}>
-              {/* Во время активной сессии место залочено (у мест разные наборы —
-                  смена посреди тренировки сбила бы прогресс). */}
-              <PlaceSwitcher program={program} value={place} locked={isThisActive} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
+              {/* Место можно менять даже во время активной сессии (по просьбе). */}
+              <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
             {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
                 смене цвета); до старта — часы + примерная длительность (баланс
@@ -893,39 +875,13 @@ export default function WorkoutDay() {
             </div>
           </div>
 
-          {/* Прогресс-полоса и «N / M» — только когда тренировка НАЧАТА (этот день
-              активен). Пока не нажал «Начать» — просто «N упражнений» по левому краю. */}
-          {isThisActive ? (
-            <div style={styles.progressRow}>
-              <span style={styles.progressLabel}>
-                {loading ? '...' : `${activeOrderNums.size} / ${slots.length}`}
-              </span>
-              <div style={styles.progressArea}>
-                <div style={styles.progressTrack}>
-                  <div
-                    style={{
-                      ...styles.progressFill,
-                      width: `${progressPct}%`
-                    }}
-                  />
-                </div>
-
-                {/* Финал: только салют на 100% (8/8). */}
-                {!loading && slots.length > 0 && (
-                  <ProgressFinale
-                    pct={progressPct}
-                    finishKey={finishKey}
-                  />
-                )}
-              </div>
-            </div>
-          ) : (
-            <div style={styles.countRow}>
-              <span style={styles.dayDescLabel}>
-                {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
-              </span>
-            </div>
-          )}
+          {/* Всегда просто «N упражнений» по центру. Верхний прогресс-бар и «N / M»
+              убраны — прогресс живёт в кнопке «Завершить» внизу. */}
+          <div style={styles.countRow}>
+            <span style={styles.dayDescLabel}>
+              {loading ? '...' : `${slots.length} ${pluralizeExercises(slots.length)}`}
+            </span>
+          </div>
         </div>
 
         {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
@@ -1208,106 +1164,6 @@ export default function WorkoutDay() {
  */
 function ReturnGlow() {
   return <div style={glowStyles.wrap} aria-hidden="true" />
-}
-
-/**
- * Финал прогресс-бара: только микро-салют на 100% (finishKey). Счётчик 3-2-1 и
- * искры на каждое нажатие убраны — мельтешили.
- *
- * marker — нулевой по ширине якорь на позиции головы (left = pct%), частицы
- * позиционируются от него. zIndex над дорожкой.
- */
-function ProgressFinale({ pct, finishKey }) {
-  return (
-    <div style={{ ...finaleStyles.marker, left: `${pct}%` }} aria-hidden="true">
-      {finishKey > 0 && <SparkBurst key={`f${finishKey}`} finale />}
-    </div>
-  )
-}
-
-/**
- * Вспышка искр из точки головы. Обычная (на нажатие) — 4 искры, узкий разлёт.
- * Финальная (на 100%) — 8 искр пошире/подольше + центральная вспышка-«пых».
- * Направления раскладываем по кругу, дистанцию пишем в CSS-переменные --tx/--ty,
- * keyframe progSparkFly разносит и гасит частицу за один проход (forwards).
- */
-function SparkBurst({ finale = false }) {
-  const n = finale ? 8 : 4
-  const spread = finale ? 17 : 9
-  const dur = finale ? 780 : 560
-  const base = finale ? -Math.PI / 2 : -0.6
-  const parts = Array.from({ length: n }, (_, i) => {
-    const ang = base + (Math.PI * 2 * i) / n
-    return {
-      tx: (Math.cos(ang) * spread).toFixed(1),
-      ty: (Math.sin(ang) * spread).toFixed(1)
-    }
-  })
-  return (
-    <span style={finaleStyles.burst}>
-      {finale && <span style={finaleStyles.flash} />}
-      {parts.map((p, i) => (
-        <span
-          key={i}
-          style={{
-            ...finaleStyles.particle,
-            ...(finale ? finaleStyles.particleFinale : null),
-            '--tx': `${p.tx}px`,
-            '--ty': `${p.ty}px`,
-            animationDuration: `${dur}ms`
-          }}
-        />
-      ))}
-    </span>
-  )
-}
-
-const finaleStyles = {
-  marker: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 0,
-    pointerEvents: 'none',
-    zIndex: 2
-  },
-  burst: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: 0
-  },
-  particle: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    width: '3px',
-    height: '3px',
-    borderRadius: '50%',
-    background: 'var(--color-primary)',
-    boxShadow: '0 0 4px rgba(158, 209, 83, 0.8)',
-    transform: 'translate(-50%, -50%)',
-    animationName: 'progSparkFly',
-    animationTimingFunction: 'cubic-bezier(0.2, 0.6, 0.3, 1)',
-    animationFillMode: 'forwards'
-  },
-  particleFinale: {
-    width: '3.5px',
-    height: '3.5px',
-    boxShadow: '0 0 6px rgba(158, 209, 83, 0.9)'
-  },
-  flash: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    width: '16px',
-    height: '16px',
-    transform: 'translate(-50%, -50%)',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(158, 209, 83, 0.8) 0%, rgba(158, 209, 83, 0) 70%)',
-    animation: 'progFlash 600ms ease-out forwards'
-  }
 }
 
 const glowStyles = {
@@ -1901,23 +1757,7 @@ const styles = {
     color: '#FFFFFF',
     whiteSpace: 'nowrap'
   },
-  // Прогресс: цифры 7 / 10 слева, длинная полоска справа — строкой внутри блока.
-  progressRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '0 8px'
-  },
-  progressLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '1px',
-    flexShrink: 0,
-    whiteSpace: 'nowrap'
-  },
-  // Счётчик упражнений до старта — по центру (баланс с центрированной буквой/чипами).
+  // Счётчик упражнений («N упражнений») — по центру (баланс с буквой/чипами).
   countRow: {
     display: 'flex',
     justifyContent: 'center',
@@ -1930,25 +1770,6 @@ const styles = {
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
-  },
-  // Обёртка над дорожкой: держит абсолютный слой финала (искра/счётчик/салют),
-  // который НЕ обрезается (в отличие от самой дорожки с overflow: hidden).
-  progressArea: {
-    flex: 1,
-    position: 'relative'
-  },
-  progressTrack: {
-    width: '100%',
-    height: '9px',
-    background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '5px',
-    overflow: 'hidden'
-  },
-  progressFill: {
-    height: '100%',
-    background: 'var(--color-primary)',
-    borderRadius: '5px',
-    transition: 'width 0.4s cubic-bezier(0.32, 0.72, 0, 1)'
   },
   body: {
     paddingTop: '20px'

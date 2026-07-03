@@ -63,13 +63,18 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           <>
             <div style={styles.daysRow}>
               <div style={styles.daysList}>
-                {allDays.map(d => {
+                {/* Идёт тренировка — показываем ТОЛЬКО активный день, крупнее и в
+                    акценте (зелёный у силовой); серые остальные буквы прячем.
+                    Не активна — обычный ряд A/B/C с подсветкой рекомендованного. */}
+                {(activeMin ? [activeDay].filter(Boolean) : allDays).map(d => {
                   const isToday = !!activeDay && d === activeDay
+                  const isActiveOne = !!activeMin && d === activeDay
                   return (
                     <span key={d} style={{
                       ...styles.dayLetter,
-                      color: isToday ? accent : 'rgba(255,255,255,0.35)',
-                      textShadow: isToday ? `0 0 6px color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+                      ...(isActiveOne ? styles.dayLetterActive : null),
+                      color: (isToday || isActiveOne) ? accent : 'rgba(255,255,255,0.35)',
+                      textShadow: (isToday || isActiveOne) ? `0 0 6px color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
                     }}>
                       {d}
                     </span>
@@ -132,6 +137,8 @@ const styles = {
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
+  // Активный (запущенный) день на карточке — крупнее и жирнее (виден статус).
+  dayLetterActive: { fontSize: '22px', fontWeight: 800 },
   tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   tag: {
     display: 'inline-block',
