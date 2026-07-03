@@ -830,9 +830,9 @@ export default function WorkoutDay() {
             )}
           </div>
 
-          {/* Поп-ап перегрузки (1ч30) — под временем. Только на активном дне (где
-              идёт таймер): листая на другие дни, он не висит. Сам исчезает через
-              5 мин, либо по тапу ОК. */}
+          {/* Поп-ап перегрузки (1ч30) — ПЛАВАЮЩИЙ поверх карточки (перекрывает букву),
+              не раздувает блок. Только на активном дне; сам исчезает через 5 мин или
+              по тапу ОК. */}
           {isThisActive && showOverload && (
             <div style={styles.overloadPopup}>
               <span style={styles.overloadText}>Чтобы не перегрузить организм — пора завершать.</span>
@@ -1651,16 +1651,26 @@ const styles = {
   },
   // Поп-ап перегрузки (1ч30) — под временем, красноватый, с кнопкой ОК. Отступ
   // задаёт flex-gap карточки, своего marginTop не добавляем.
+  // Поп-ап перегрузки — ПЛАВАЮЩИЙ поверх карточки (не раздувает блок): absolute,
+  // по центру над буквой, лёгкий блюр-подложка, выше контента. Появляется «попом».
   overloadPopup: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 6,
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
     padding: '10px 12px',
-    background: 'rgba(232, 69, 69, 0.14)',
-    border: '1px solid rgba(232, 69, 69, 0.4)',
+    background: 'rgba(232, 69, 69, 0.28)',
+    border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-medium)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)'
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    boxShadow: '0 8px 26px rgba(0, 0, 0, 0.45)',
+    animation: 'overloadPopIn 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },
   overloadText: {
     flex: 1,

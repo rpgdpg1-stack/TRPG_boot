@@ -325,6 +325,12 @@ body.keyboard-open .app::after { display: none; }
 }
 .day-picker-pulse { animation: dayPickerPulse 1.4s ease-in-out infinite; }
 
+/* Появление плавающего поп-апа перегрузки (1ч30) поверх карточки дня. */
+@keyframes overloadPopIn {
+  0%   { opacity: 0; transform: translateY(-50%) scale(0.9); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */
