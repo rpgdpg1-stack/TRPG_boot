@@ -418,13 +418,16 @@ body.keyboard-open .app::after { display: none; }
   animation: dayLetterInLeft 0.32s var(--ease-ios) both;
 }
 
+/* ТОЛЬКО transform (без opacity): fill-mode both у класса держит финальный кадр,
+   и если тут анимировать opacity до 1 — он перебьёт инлайновый opacity 0.4 у
+   неактивных дней (буквы A/B светились бы на 100%). Прозрачностью рулит инлайн. */
 @keyframes dayLetterInRight {
-  from { opacity: 0; transform: translateX(40px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(40px); }
+  to   { transform: translateX(0); }
 }
 @keyframes dayLetterInLeft {
-  from { opacity: 0; transform: translateX(-40px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(-40px); }
+  to   { transform: translateX(0); }
 }
 
 /* Лёгкий горизонтальный заезд (карусель избранного и т.п.) */
