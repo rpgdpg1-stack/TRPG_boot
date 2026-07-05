@@ -484,6 +484,15 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+/* Стрелка «повысил вес» (WeightRaiseFlash): мягко проявляется с подъёмом, держится,
+   гаснет на хвосте (82→100%) — синхронно с транзишеном зелёного цвета цифры. */
+@keyframes weightRaiseArrow {
+  0%   { opacity: 0; transform: translateY(calc(-50% + 4px)); }
+  10%  { opacity: 1; transform: translateY(-50%); }
+  82%  { opacity: 1; transform: translateY(-50%); }
+  100% { opacity: 0; transform: translateY(-50%); }
+}
+
 /* Смена текста в закреплённой пилюле группы (WorkoutDay) — мягкий заезд снизу. */
 @keyframes groupPillIn {
   from { opacity: 0; transform: translateY(4px); }

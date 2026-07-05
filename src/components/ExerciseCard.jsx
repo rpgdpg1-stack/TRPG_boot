@@ -9,6 +9,7 @@ import {
   shouldIgnoreCardTap
 } from '../lib/weight-editing-state'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
+import { useWeightRaiseFlash, WEIGHT_NEUTRAL_COLOR, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import UiIcon from './UiIcon'
 
 /**
@@ -19,7 +20,9 @@ import UiIcon from './UiIcon'
  *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
  *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
  *  - Под тегом — серая подпись подходов (3×8-10).
- *  - Справа цифра веса в АКЦЕНТНОМ цвете группы (не зелёная как раньше).
+ *  - Справа цифра веса — ВСЕГДА нейтральная (WEIGHT_NEUTRAL_COLOR, как название):
+ *    цветом кодируем только «только что поднял вес» — зелёная вспышка со стрелкой
+ *    ↑ на ~2.5с (useWeightRaiseFlash), потом гаснет обратно в нейтральный.
  *
  * Что СОХРАНЕНО без изменений:
  *  - long-press → onLongPress(slot) для меню "Инфо / Сменить"
@@ -46,6 +49,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     user_weight_kg !== null && user_weight_kg !== undefined ? user_weight_kg : 0
   )
   const inputRef = useRef(null)
+
+  // Вспышка «повысил вес»: зелёная стрелка + зелёная цифра на ~2.5с (только на
+  // реальное повышение после blur/Enter; понижение/равный/0 — без индикации).
+  const raise = useWeightRaiseFlash()
 
   // Кроссфейд превью при смене упражнения (свап): старое изображение держим
   // снизу, новое сверху плавно проявляем по onLoad — без «промаргивания»/бланка.
@@ -188,6 +195,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Вес не изменился — не пиликаем (ложный фидбек "сохранил").
     if (rounded === localWeight) return
 
+    // Повышение → зелёная вспышка со стрелкой (понижение — молча, без индикации).
+    if (rounded > localWeight) raise.trigger()
+
     setLocalWeight(rounded)
 
     try {
@@ -308,6 +318,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         onPointerDown={handleWeightPointerDown}
       >
         <div style={styles.weightInputWrap}>
+          {/* Стрелка ↑ «повысил вес» — слева от числа, по высоте цифры. */}
+          {raise.arrow}
           <input
             ref={inputRef}
             type="text"
@@ -322,13 +334,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             onPointerDown={(e) => e.stopPropagation()}
             style={{
               ...styles.weightInput,
-              color: colors.accent,
-              caretColor: colors.accent,
+              color: WEIGHT_NEUTRAL_COLOR,
+              caretColor: 'var(--color-primary)',
               opacity: editing ? 1 : 0
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: colors.accent }}>
+            <div style={{ ...styles.weightValue, color: raise.color, transition: WEIGHT_COLOR_TRANSITION }}>
               {localWeight}
             </div>
           )}

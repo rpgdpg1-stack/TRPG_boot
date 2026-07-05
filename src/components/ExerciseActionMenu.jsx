@@ -4,6 +4,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
+import { useWeightRaiseFlash, WEIGHT_NEUTRAL_COLOR, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
@@ -61,6 +62,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const [localWeight, setLocalWeight] = useState(
     slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
   )
+  // Вспышка «повысил вес» — как на карточке упражнения (зелёная стрелка + цифра).
+  const raise = useWeightRaiseFlash()
 
   // Сбрасываем локальный вес ТОЛЬКО при смене упражнения (exercise_id).
   // user_weight_kg намеренно НЕ в зависимостях: иначе эффект перезатирал бы
@@ -108,6 +111,9 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
     const rounded = norm.value
     if (rounded === localWeight) return
+
+    // Повышение → зелёная вспышка со стрелкой (понижение — молча).
+    if (rounded > localWeight) raise.trigger()
 
     setLocalWeight(rounded)
     try {
@@ -302,6 +308,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={styles.weightInputWrap}>
+              {/* Стрелка ↑ «повысил вес» — слева от числа, как на карточке. */}
+              {raise.arrow}
               <input
                 ref={weightInputRef}
                 type="text"
@@ -314,13 +322,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 onKeyDown={handleWeightKeyDown}
                 style={{
                   ...styles.weightInput,
-                  color: colors.accent,
-                  caretColor: colors.accent,
+                  color: WEIGHT_NEUTRAL_COLOR,
+                  caretColor: 'var(--color-primary)',
                   opacity: editingWeight ? 1 : 0
                 }}
               />
               {!editingWeight && (
-                <div style={{ ...styles.weightValue, color: colors.accent }}>
+                <div style={{ ...styles.weightValue, color: raise.color, transition: WEIGHT_COLOR_TRANSITION }}>
                   {localWeight}
                 </div>
               )}
