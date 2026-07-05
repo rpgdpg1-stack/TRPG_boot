@@ -4,7 +4,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
-import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
+import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION, WEIGHT_DOWN_OPACITY } from './WeightRaiseFlash'
 import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
@@ -308,8 +308,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={styles.weightInputWrap}>
-              {/* Стрелка ↑ «повысил вес» — слева от числа, как на карточке. */}
-              {raise.arrow}
+              {/* Стрелка изменения веса — слева от числа, как на карточке. */}
+              {raise.arrowFor(colors.accent)}
               <input
                 ref={weightInputRef}
                 type="text"
@@ -328,7 +328,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 }}
               />
               {!editingWeight && (
-                <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
+                <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), opacity: raise.flash === 'down' ? WEIGHT_DOWN_OPACITY : 1, transition: WEIGHT_COLOR_TRANSITION }}>
                   {localWeight}
                 </div>
               )}

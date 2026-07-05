@@ -9,7 +9,7 @@ import {
   shouldIgnoreCardTap
 } from '../lib/weight-editing-state'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
-import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
+import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION, WEIGHT_DOWN_OPACITY } from './WeightRaiseFlash'
 import UiIcon from './UiIcon'
 
 /**
@@ -319,8 +319,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         onPointerDown={handleWeightPointerDown}
       >
         <div style={styles.weightInputWrap}>
-          {/* Стрелка ↑ «повысил вес» — слева от числа, по высоте цифры. */}
-          {raise.arrow}
+          {/* Стрелка изменения веса — слева от числа, по высоте цифры. */}
+          {raise.arrowFor(colors.accent)}
           <input
             ref={inputRef}
             type="text"
@@ -341,7 +341,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
+            <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), opacity: raise.flash === 'down' ? WEIGHT_DOWN_OPACITY : 1, transition: WEIGHT_COLOR_TRANSITION }}>
               {localWeight}
             </div>
           )}

@@ -243,10 +243,11 @@ overloadPopIn`), НЕ раздувает блок; висит пока не та
   исторически (быстрое считывание). Изменение веса (blur/Enter) → КОРОТКАЯ вспышка ~2с, затем цвет
   возвращается к цвету группы: ПОВЫШЕНИЕ (новое > старого) → зелёная стрелка ↑ + зелёное число
   (`--color-primary`, keyframes `weightRaiseArrow` с лёгким подъёмом); ПОНИЖЕНИЕ (новое < старого) →
-  серая стрелка ↓ + серое число (`WEIGHT_DOWN_COLOR` #8A8A8A, темнее текста, keyframes `weightLowerArrow` —
-  только opacity, БЕЗ яркости). Равный/0 — без вспышки, красного нет. Ничего не хранится. Общий хук
-  `useWeightRaiseFlash()` в `components/WeightRaiseFlash.jsx`: `trigger('up'|'down')` + `colorFor(accent)`
-  (цвет с учётом вспышки). Применяется в `ExerciseCard` и `ExerciseActionMenu`.
+  стрелка ↓ + число В ЦВЕТЕ ГРУППЫ, но ПРИГЛУШЁННЫЕ до `WEIGHT_DOWN_OPACITY` (0.45) — «сероватый акцент»,
+  keyframes `weightLowerArrow` (opacity, пик 0.45, БЕЗ яркости/подъёма). Равный/0 — без вспышки, красного
+  нет. Ничего не хранится. Общий хук `useWeightRaiseFlash()` в `components/WeightRaiseFlash.jsx`:
+  `trigger('up'|'down')`, `colorFor(accent)` (цвет числа), `arrowFor(accent)` (стрелка); понижение —
+  компонент накидывает `opacity: WEIGHT_DOWN_OPACITY`. Применяется в `ExerciseCard` и `ExerciseActionMenu`.
 - **Фильтр-чипы в пикере (`ExercisePicker`) — НЕ теги, свои правила, БЕЗ opacity (яркие):** верхний ряд
   групп — активный чип залит цветом СВОЕЙ группы (`getMuscleGroupColors(group).tag`, белый текст);
   ряд подгрупп активной группы — активная подгруппа тоже заливается **цветом группы** (`.tag`), НЕ общим

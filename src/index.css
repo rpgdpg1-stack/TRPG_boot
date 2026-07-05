@@ -493,12 +493,12 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 0; transform: translateY(-50%); }
 }
 
-/* Стрелка «понизил вес» (WeightRaiseFlash): без подъёма/яркости — только мягкое
-   появление и затухание (opacity), серый цвет задаётся инлайн. */
+/* Стрелка «понизил вес» (WeightRaiseFlash): без подъёма/яркости — мягкое появление
+   и затухание, пик на 45% (приглушённый акцент группы, цвет задаётся инлайн). */
 @keyframes weightLowerArrow {
   0%   { opacity: 0; }
-  18%  { opacity: 1; }
-  82%  { opacity: 1; }
+  18%  { opacity: 0.45; }
+  82%  { opacity: 0.45; }
   100% { opacity: 0; }
 }
 
