@@ -20,8 +20,8 @@ import { useEffect, useRef, useState } from 'react'
 
 // Транзишен цвета цифры — мягкий переход к/от цвета группы.
 export const WEIGHT_COLOR_TRANSITION = 'color 0.4s ease'
-// Понижение: светло-серый, приглушённый (не темнее обычного текста).
-export const WEIGHT_DOWN_COLOR = '#C8C8C8'
+// Понижение: приглушённый серый, заметно темнее обычного текста (стрелка + число).
+export const WEIGHT_DOWN_COLOR = '#8A8A8A'
 
 const FLASH_MS = 2000 // стрелка + цвет держатся ~2с
 

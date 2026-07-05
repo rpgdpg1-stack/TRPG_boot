@@ -243,7 +243,7 @@ overloadPopIn`), НЕ раздувает блок; висит пока не та
   исторически (быстрое считывание). Изменение веса (blur/Enter) → КОРОТКАЯ вспышка ~2с, затем цвет
   возвращается к цвету группы: ПОВЫШЕНИЕ (новое > старого) → зелёная стрелка ↑ + зелёное число
   (`--color-primary`, keyframes `weightRaiseArrow` с лёгким подъёмом); ПОНИЖЕНИЕ (новое < старого) →
-  серая стрелка ↓ + светло-серое число (`WEIGHT_DOWN_COLOR` #C8C8C8, keyframes `weightLowerArrow` —
+  серая стрелка ↓ + серое число (`WEIGHT_DOWN_COLOR` #8A8A8A, темнее текста, keyframes `weightLowerArrow` —
   только opacity, БЕЗ яркости). Равный/0 — без вспышки, красного нет. Ничего не хранится. Общий хук
   `useWeightRaiseFlash()` в `components/WeightRaiseFlash.jsx`: `trigger('up'|'down')` + `colorFor(accent)`
   (цвет с учётом вспышки). Применяется в `ExerciseCard` и `ExerciseActionMenu`.
