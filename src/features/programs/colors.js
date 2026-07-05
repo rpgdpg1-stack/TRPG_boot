@@ -21,7 +21,7 @@ export const MUSCLE_GROUP_COLORS = {
   biceps:    { tag: '#3D6FA3', accent: '#4B90C9' },
   triceps:   { tag: '#3D6FA3', accent: '#4B90C9' },
   shoulders: { tag: '#31ABB7', accent: '#31ABB7' },
-  legs:      { tag: '#46C85D', accent: '#46C85D' },
+  legs:      { tag: '#34A04D', accent: '#34A04D' },
   glutes:    { tag: '#607345', accent: '#9ED153' },
   abs:       { tag: '#58436B', accent: '#8F67B4' },
   forearms:  { tag: '#835B76', accent: '#B07EA0' },
