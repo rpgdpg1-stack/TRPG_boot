@@ -20,8 +20,9 @@ import UiIcon from './UiIcon'
  *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
  *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
  *  - Под тегом — серая подпись подходов (3×8-10).
- *  - Справа цифра веса — в АКЦЕНТНОМ цвете группы. Повышение веса → короткая
- *    зелёная вспышка со стрелкой ↑ на ~2с (useWeightRaiseFlash), потом цвет
+ *  - Справа цифра веса — в АКЦЕНТНОМ цвете группы. Изменение веса → короткая
+ *    вспышка ~2с (useWeightRaiseFlash): повышение — зелёная стрелка ↑ + зелёное
+ *    число; понижение — серая стрелка ↓ + светло-серое число; потом цвет
  *    возвращается к цвету группы.
  *
  * Что СОХРАНЕНО без изменений:
@@ -195,8 +196,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Вес не изменился — не пиликаем (ложный фидбек "сохранил").
     if (rounded === localWeight) return
 
-    // Повышение → короткая зелёная вспышка со стрелкой (понижение — без вспышки).
-    if (rounded > localWeight) raise.trigger()
+    // Повышение → зелёная вспышка ↑; понижение → мягкая серая вспышка ↓ (обе ~2с).
+    raise.trigger(rounded > localWeight ? 'up' : 'down')
 
     setLocalWeight(rounded)
 
@@ -340,7 +341,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: raise.active ? 'var(--color-primary)' : colors.accent, transition: WEIGHT_COLOR_TRANSITION }}>
+            <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
               {localWeight}
             </div>
           )}

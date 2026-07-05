@@ -112,8 +112,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     const rounded = norm.value
     if (rounded === localWeight) return
 
-    // Повышение → короткая зелёная вспышка со стрелкой (понижение — без вспышки).
-    if (rounded > localWeight) raise.trigger()
+    // Повышение → зелёная вспышка ↑; понижение → мягкая серая вспышка ↓ (обе ~2с).
+    raise.trigger(rounded > localWeight ? 'up' : 'down')
 
     setLocalWeight(rounded)
     try {
@@ -328,7 +328,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 }}
               />
               {!editingWeight && (
-                <div style={{ ...styles.weightValue, color: raise.active ? 'var(--color-primary)' : colors.accent, transition: WEIGHT_COLOR_TRANSITION }}>
+                <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
                   {localWeight}
                 </div>
               )}

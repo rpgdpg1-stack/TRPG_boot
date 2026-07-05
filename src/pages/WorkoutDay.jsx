@@ -430,18 +430,20 @@ export default function WorkoutDay() {
     }
   }, [loading, slots])
 
-  // При смене дня/места прячем пилюлю (день открывается сверху).
+  // При смене дня/места прячем пилюлю и раскрываем шапку в полный размер (новый
+  // день открывается сверху; для активного дня трекер тут же подстроит под
+  // восстановленную позицию).
   useLayoutEffect(() => {
     activeSectionRef.current = -1
     setActiveSection(-1)
+    setHeaderScrollY(0)
   }, [day, place])
 
-  // Компактная шапка + память скролла активного дня: следим за scrollY только когда
-  // этот день активен. Неактивный день (или скролл наверху) — шапка в полный размер
-  // (headerScrollY = 0). Параллельно сохраняем позицию в localStorage (троттл 250мс) —
-  // чтобы вернуться в то же место; флаш при сворачивании/закрытии и при уходе с дня.
+  // Компактная шапка (для ЛЮБОГО дня — активного и нет) + память скролла активного
+  // дня: следим за scrollY всегда, шапка сжимается на скролле вниз одинаково.
+  // Сохранение позиции в localStorage (троттл 250мс) — ТОЛЬКО для активного дня
+  // (флаш при сворачивании/закрытии и при уходе с дня).
   useEffect(() => {
-    if (!isThisActive) { setHeaderScrollY(0); return }
     let raf = 0
     let lastSave = 0
     const liveY = () => window.scrollY || document.scrollingElement?.scrollTop || 0
@@ -449,15 +451,17 @@ export default function WorkoutDay() {
       raf = 0
       const y = liveY()
       setHeaderScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
-      // Сохраняем ТОЛЬКО после того, как восстановление позиции отработало — иначе
-      // первый заход перезатёр бы сохранённое место нулём (страница ещё сверху).
-      const now = Date.now()
-      if (didInitialScrollRef.current && now - lastSave > 250) { lastSave = now; saveActiveScroll(programId, day, placeRef.current, y) }
+      // Сохраняем ТОЛЬКО для активного дня и только после того, как восстановление
+      // позиции отработало — иначе первый заход перезатёр бы место нулём.
+      if (isThisActive && didInitialScrollRef.current) {
+        const now = Date.now()
+        if (now - lastSave > 250) { lastSave = now; saveActiveScroll(programId, day, placeRef.current, y) }
+      }
     }
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
     // flush читает ЖИВУЮ позицию (не захваченную) — на случай ухода сразу после
     // восстановления, когда scroll-событие ещё не успело обновить состояние.
-    const flush = () => { if (didInitialScrollRef.current) saveActiveScroll(programId, day, placeRef.current, liveY()) }
+    const flush = () => { if (isThisActive && didInitialScrollRef.current) saveActiveScroll(programId, day, placeRef.current, liveY()) }
     compute()
     window.addEventListener('scroll', onScroll, { passive: true })
     document.addEventListener('visibilitychange', flush)
@@ -467,7 +471,7 @@ export default function WorkoutDay() {
       document.removeEventListener('visibilitychange', flush)
       window.removeEventListener('pagehide', flush)
       if (raf) cancelAnimationFrame(raf)
-      flush() // уход с дня/размонтирование — сохранить финальную позицию
+      flush() // уход с дня/размонтирование — сохранить финальную позицию (активный день)
     }
   }, [isThisActive, programId, day])
 
@@ -919,11 +923,11 @@ export default function WorkoutDay() {
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
-  // Компактная шапка (только активная сессия). chipsShrink гасит чипы групп ПЕРВЫМИ
-  // (0→44px скролла), letterShrink ужимает букву чуть позже (28→132px), 45px → 24px.
-  // В покое (не активен) — всё в полный размер.
-  const chipsShrink = isThisActive ? Math.min(1, headerScrollY / 44) : 0
-  const letterShrink = isThisActive ? Math.min(1, Math.max(0, (headerScrollY - 28) / 104)) : 0
+  // Компактная шапка (для ЛЮБОГО дня — активного и нет). chipsShrink гасит чипы
+  // групп ПЕРВЫМИ (0→44px скролла), letterShrink ужимает букву чуть позже
+  // (28→132px), 45px → 24px. Наверху страницы — всё в полный размер.
+  const chipsShrink = Math.min(1, headerScrollY / 44)
+  const letterShrink = Math.min(1, Math.max(0, (headerScrollY - 28) / 104))
   const dayLetterSize = 45 - letterShrink * 21
 
   const dayLetterAnimClass = slideDir === 'right'
