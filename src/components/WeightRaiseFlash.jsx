@@ -9,21 +9,20 @@ import { useEffect, useRef, useState } from 'react'
  * КОРОТКУЮ вспышку ~2с, затем цвет возвращается к цвету группы:
  *  - ПОВЫШЕНИЕ (новое > старого) → слева зелёная стрелка ↑ + число зеленеет
  *    (--color-primary), с лёгким «подъёмом» стрелки (keyframes weightRaiseArrow).
- *  - ПОНИЖЕНИЕ (новое < старого) → слева стрелка ↓ + число В ЦВЕТЕ ГРУППЫ, но
- *    ПРИГЛУШЁННЫЕ до WEIGHT_DOWN_OPACITY (~45%) — читается как «сероватый акцент»,
- *    БЕЗ яркой анимации, мягкое появление (keyframes weightLowerArrow).
+ *  - ПОНИЖЕНИЕ (новое < старого) → слева стрелка ↓ + число в фиксированном сером
+ *    (WEIGHT_DOWN_COLOR), БЕЗ яркой анимации — мягкое появление (weightLowerArrow).
  * Равный/0 — без вспышки. Ничего не хранится.
  *
  * Хук: `trigger('up'|'down')`, `flash` ('up'|'down'|null), `colorFor(accent)`
- * (цвет числа) и `arrowFor(accent)` (готовая стрелка).
+ * (цвет числа с учётом вспышки) и готовая `arrow`.
  */
 
-// Транзишен числа — мягкий переход цвета и прозрачности к/от состояния группы.
-export const WEIGHT_COLOR_TRANSITION = 'color 0.4s ease, opacity 0.4s ease'
-// Понижение: акцент группы, приглушённый до ~45% (похоже на серый).
-export const WEIGHT_DOWN_OPACITY = 0.45
+// Транзишен цвета цифры — мягкий переход к/от цвета группы.
+export const WEIGHT_COLOR_TRANSITION = 'color 0.4s ease'
+// Понижение: фиксированный серый — ярче приглушённого текста, но не белый.
+export const WEIGHT_DOWN_COLOR = '#B0B0B0'
 
-const FLASH_MS = 2000 // стрелка + состояние держатся ~2с
+const FLASH_MS = 2000 // стрелка + цвет держатся ~2с
 
 export function useWeightRaiseFlash() {
   const [flash, setFlash] = useState(null) // 'up' | 'down' | null
@@ -45,21 +44,22 @@ export function useWeightRaiseFlash() {
   return {
     trigger,
     flash,
-    // Цвет числа: повышение — зелёный; иначе (понижение/покой) — цвет группы
-    // (понижение отличается прозрачностью, её накидывает компонент по `flash`).
-    colorFor: (accent) => flash === 'up' ? 'var(--color-primary)' : accent,
-    arrowFor: (accent) => arrowNonce > 0 ? <FlashArrow key={arrowNonce} dir={flash} accent={accent} /> : null
+    // Цвет числа: повышение — зелёный, понижение — серый, иначе цвет группы.
+    colorFor: (accent) => flash === 'up' ? 'var(--color-primary)'
+      : flash === 'down' ? WEIGHT_DOWN_COLOR
+      : accent,
+    arrow: arrowNonce > 0 ? <FlashArrow key={arrowNonce} dir={flash} /> : null
   }
 }
 
 /** Стрелка изменения слева от числа веса (по высоте цифры). Анимация в index.css. */
-function FlashArrow({ dir, accent }) {
+function FlashArrow({ dir }) {
   const down = dir === 'down'
   return (
     <span
       style={{
         ...arrowStyles.wrap,
-        color: down ? accent : 'var(--color-primary)',
+        color: down ? WEIGHT_DOWN_COLOR : 'var(--color-primary)',
         animation: `${down ? 'weightLowerArrow' : 'weightRaiseArrow'} 2s ease forwards`
       }}
       aria-hidden="true"
