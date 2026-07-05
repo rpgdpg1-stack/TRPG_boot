@@ -269,7 +269,11 @@ export default function WorkoutDay() {
   // программы, иначе рекомендованный по циклу день. Совпадает с подсветкой дня
   // на карточках главной/избранного.
   const sessionDayForProgram = active && active.programId === programId ? active.day : null
-  const focusDay = sessionDayForProgram || getActiveDaySync(programId)
+  // Фокус-день (буква 100% + свечение): запущенная сессия ЭТОЙ программы →
+  // запущенный день; иначе рекомендованный по циклу; если истории ещё нет
+  // (getActiveDaySync=null, свежая программа) — первый день, чтобы «рекомендованный»
+  // всегда был подсвечен, а не все дни разом opacity. Прочие дни — opacity.
+  const focusDay = sessionDayForProgram || getActiveDaySync(programId) || days[0]
   // Тост «сначала заверши текущую» — показываем ТОЛЬКО по тапу на заблокированную
   // «Начать», авто-скрытие через 2.6с (nonce перезапускает шейк на каждый тап).
   const [startBlockNonce, setStartBlockNonce] = useState(0)
