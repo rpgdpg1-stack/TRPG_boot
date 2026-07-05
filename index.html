@@ -7,7 +7,7 @@
     <!-- Цвет статус-бара и системных областей iOS/Android.
          Должен совпадать с --color-bg чтобы не было видимых "швов" между
          приложением и системным UI Telegram. -->
-    <meta name="theme-color" content="#0D0C0C" />
+    <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
@@ -32,7 +32,7 @@
     <!-- Цвет фона страницы ставим из CSS-переменной сразу, до загрузки JS,
          чтобы при медленном интернете не было белой вспышки. -->
     <style>
-      html, body { background: #0D0C0C; color-scheme: dark; }
+      html, body { background: #000000; color-scheme: dark; }
     </style>
   </head>
   <body>
@@ -43,7 +43,7 @@
          не поднялось за BOOT_TIMEOUT_MS (белый экран / повисший лоадер / битый старый
          чанк из кеша Telegram). Стили инлайн и без внешних шрифтов — работает, даже
          если основной бандл/CSS не загрузились. -->
-    <div id="boot-fallback" style="display:none; position:fixed; inset:0; z-index:100000; background:#0D0C0C; color:#F0F0F0; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <div id="boot-fallback" style="display:none; position:fixed; inset:0; z-index:100000; background:#000000; color:#F0F0F0; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
       <div style="font-size:56px; line-height:1; margin-bottom:16px;">🔄</div>
       <div style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить</div>
       <div style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:24px;">

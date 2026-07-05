@@ -5,7 +5,7 @@
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
-const APP_BG = '#0D0C0C'
+const APP_BG = '#000000'
 
 // Текущие обработчики кнопок — нужны чтобы корректно их удалять при смене.
 // offClick() без аргумента в новых версиях Telegram может не работать —
