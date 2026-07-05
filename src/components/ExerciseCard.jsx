@@ -9,7 +9,7 @@ import {
   shouldIgnoreCardTap
 } from '../lib/weight-editing-state'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
-import { useWeightRaiseFlash, WEIGHT_NEUTRAL_COLOR, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
+import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import UiIcon from './UiIcon'
 
 /**
@@ -20,10 +20,9 @@ import UiIcon from './UiIcon'
  *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
  *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
  *  - Под тегом — серая подпись подходов (3×8-10).
- *  - Справа цифра веса — нейтральная (WEIGHT_NEUTRAL_COLOR, как название);
- *    зелёная — пока «повышенный вес не отработан»: повысил → стрелка ↑ + зелёный
- *    держится (localStorage), гаснет при первой галочке «выполнено» в другой день
- *    (полная модель — в WeightRaiseFlash.jsx).
+ *  - Справа цифра веса — в АКЦЕНТНОМ цвете группы. Повышение веса → короткая
+ *    зелёная вспышка со стрелкой ↑ на ~2с (useWeightRaiseFlash), потом цвет
+ *    возвращается к цвету группы.
  *
  * Что СОХРАНЕНО без изменений:
  *  - long-press → onLongPress(slot) для меню "Инфо / Сменить"
@@ -51,9 +50,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
-  // Индикатор «повысил вес»: стрелка-вспышка + число зеленеет и держится
-  // (localStorage), гаснет при первой галочке «выполнено» в другой день.
-  const raise = useWeightRaiseFlash(exercise_id)
+  // Вспышка «повысил вес»: зелёная стрелка + зелёное число на ~2с, затем цвет
+  // возвращается к цвету группы (только на повышение после blur/Enter).
+  const raise = useWeightRaiseFlash()
 
   // Кроссфейд превью при смене упражнения (свап): старое изображение держим
   // снизу, новое сверху плавно проявляем по onLoad — без «промаргивания»/бланка.
@@ -177,7 +176,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Стерли всё → ставим 0. Если вес и так был 0 — нечего сохранять.
     if (norm.cleared) {
       if (localWeight !== 0) {
-        raise.reset() // обнуление — снять зелёный индикатор
         setLocalWeight(0)
         try {
           await saveExerciseWeight(exercise_id, 0)
@@ -197,9 +195,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Вес не изменился — не пиликаем (ложный фидбек "сохранил").
     if (rounded === localWeight) return
 
-    // Повышение → стрелка + зелёный держится; понижение → индикатор гаснет сразу.
+    // Повышение → короткая зелёная вспышка со стрелкой (понижение — без вспышки).
     if (rounded > localWeight) raise.trigger()
-    else raise.reset()
 
     setLocalWeight(rounded)
 
@@ -337,13 +334,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             onPointerDown={(e) => e.stopPropagation()}
             style={{
               ...styles.weightInput,
-              color: WEIGHT_NEUTRAL_COLOR,
-              caretColor: 'var(--color-primary)',
+              color: colors.accent,
+              caretColor: colors.accent,
               opacity: editing ? 1 : 0
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: raise.color, transition: WEIGHT_COLOR_TRANSITION }}>
+            <div style={{ ...styles.weightValue, color: raise.active ? 'var(--color-primary)' : colors.accent, transition: WEIGHT_COLOR_TRANSITION }}>
               {localWeight}
             </div>
           )}

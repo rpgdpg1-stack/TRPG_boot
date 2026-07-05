@@ -234,15 +234,13 @@ overloadPopIn`), НЕ раздувает блок; висит пока не та
   а также **`ExerciseActionMenu`** (долгий тап) и **`ExerciseHeaderCard`** (техника упражнения) — в этих
   двух РАНЬШЕ было два чипа (группа+подгруппа), теперь ТОЛЬКО подгруппа в цвете группы, `opacity 0.7`.
   Чипы групп дня в шапке (`WorkoutDay.dayChips`) — тоже `opacity 0.7`.
-- **Цвет числа веса — нейтральный `#F0F0F0`** (как название упражнения), НЕ в цвете группы —
-  группу кодирует только чип. Зелёный (`--color-primary`) кодирует одно: «повышенный вес ещё не
-  отработан». Модель: повышение (blur/Enter, новое > старого) → стрелка ↑ слева (разовая вспышка
-  ~2.5с, keyframes `weightRaiseArrow`) + число зеленеет и ДЕРЖИТСЯ (localStorage
-  `weight-raised:<exercise_id>` = день повышения `getTodayKey`); галочка «выполнено» в день
-  повышения НЕ сбрасывает; первая галочка в другой день — гасит (`clearWeightRaisedOnDone` из
-  `WorkoutDay.handleCardTap`); понижение/0 — сброс сразу, красного нет. Общий хук
-  `useWeightRaiseFlash(exerciseId)` в `components/WeightRaiseFlash.jsx` (подписка-эмиттер синкает
-  карточку и модалку). Применяется в `ExerciseCard` и `ExerciseActionMenu`.
+- **Цвет числа веса — АКЦЕНТНЫЙ цвет основной группы** (`getMuscleGroupColors().accent`), как
+  исторически (быстрое считывание). Повышение веса (blur/Enter, новое > старого) → КОРОТКАЯ вспышка
+  прогресса: слева стрелка ↑ + число зеленеет (`--color-primary`) на ~2с (keyframes `weightRaiseArrow`,
+  транзишен `WEIGHT_COLOR_TRANSITION`), затем цвет возвращается к цвету группы. Понижение/равный/0 —
+  без вспышки, красного нет. Ничего не хранится (чисто мгновенная реакция). Общий хук
+  `useWeightRaiseFlash()` в `components/WeightRaiseFlash.jsx` (`active` → цвет выбирает компонент:
+  `active ? --color-primary : colors.accent`). Применяется в `ExerciseCard` и `ExerciseActionMenu`.
 - **Фильтр-чипы в пикере (`ExercisePicker`) — НЕ теги, свои правила, БЕЗ opacity (яркие):** верхний ряд
   групп — активный чип залит цветом СВОЕЙ группы (`getMuscleGroupColors(group).tag`, белый текст);
   ряд подгрупп активной группы — активная подгруппа тоже заливается **цветом группы** (`.tag`), НЕ общим

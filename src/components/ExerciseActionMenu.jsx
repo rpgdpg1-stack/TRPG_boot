@@ -4,7 +4,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
-import { useWeightRaiseFlash, WEIGHT_NEUTRAL_COLOR, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
+import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import { haptic } from '../lib/telegram'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
@@ -62,8 +62,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const [localWeight, setLocalWeight] = useState(
     slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
   )
-  // Индикатор «повысил вес» — как на карточке (стрелка + зелёный держится).
-  const raise = useWeightRaiseFlash(slot?.exercise_id)
+  // Вспышка «повысил вес» — как на карточке (зелёная стрелка + число на ~2с).
+  const raise = useWeightRaiseFlash()
 
   // Сбрасываем локальный вес ТОЛЬКО при смене упражнения (exercise_id).
   // user_weight_kg намеренно НЕ в зависимостях: иначе эффект перезатирал бы
@@ -95,7 +95,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
     if (norm.cleared) {
       if (localWeight !== 0) {
-        raise.reset() // обнуление — снять зелёный индикатор
         setLocalWeight(0)
         try {
           await saveExerciseWeight(slot.exercise_id, 0)
@@ -113,9 +112,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     const rounded = norm.value
     if (rounded === localWeight) return
 
-    // Повышение → стрелка + зелёный держится; понижение → индикатор гаснет сразу.
+    // Повышение → короткая зелёная вспышка со стрелкой (понижение — без вспышки).
     if (rounded > localWeight) raise.trigger()
-    else raise.reset()
 
     setLocalWeight(rounded)
     try {
@@ -324,13 +322,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 onKeyDown={handleWeightKeyDown}
                 style={{
                   ...styles.weightInput,
-                  color: WEIGHT_NEUTRAL_COLOR,
-                  caretColor: 'var(--color-primary)',
+                  color: colors.accent,
+                  caretColor: colors.accent,
                   opacity: editingWeight ? 1 : 0
                 }}
               />
               {!editingWeight && (
-                <div style={{ ...styles.weightValue, color: raise.color, transition: WEIGHT_COLOR_TRANSITION }}>
+                <div style={{ ...styles.weightValue, color: raise.active ? 'var(--color-primary)' : colors.accent, transition: WEIGHT_COLOR_TRANSITION }}>
                   {localWeight}
                 </div>
               )}
