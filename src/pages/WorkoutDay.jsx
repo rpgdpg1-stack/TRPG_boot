@@ -1063,13 +1063,14 @@ export default function WorkoutDay() {
                 </span>
               </div>
               {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
-                  дня). Всегда слегка приглушены (и в активном, и в неактивном). */}
+                  дня). Базовое приглушение 0.7; на НЕфокусном дне сверху ещё ×0.4 —
+                  тем же множителем, что и буква, чтобы весь блок читался как неактивный. */}
               {dayTags.length > 0 && (
                 <div
                   key={`chips-${day}`}
                   style={{
                     ...styles.dayChips,
-                    opacity: 0.7 * (1 - chipsShrink),
+                    opacity: 0.7 * (1 - chipsShrink) * (day === focusDay ? 1 : 0.4),
                     maxHeight: `${(1 - chipsShrink) * 40}px`,
                     marginTop: `${-6 * chipsShrink}px`,
                     overflow: 'hidden'
