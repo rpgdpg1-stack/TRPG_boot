@@ -114,6 +114,13 @@ export default function App() {
     }
   }, [])
 
+  // Сигнал загрузочному «сторожу» в index.html: приложение прошло загрузчик и
+  // живо. Пока флаг не встал, сторож через 15с покажет экран-спасатель с кнопкой
+  // «Перезапустить» (белый экран / повисший лоадер / старый чанк из кеша Telegram).
+  useEffect(() => {
+    if (!loading) window.__APP_BOOTED__ = true
+  }, [loading])
+
   if (loading) {
     return (
       <Loader

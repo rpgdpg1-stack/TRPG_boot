@@ -37,8 +37,19 @@ export default class ErrorBoundary extends Component {
   }
 
   handleReload = () => {
-    // Перезагружаем страницу — Telegram Mini App запустит приложение заново
-    window.location.reload()
+    // Жёсткая перезагрузка со сбросом кешей + cache-busting URL — иначе Telegram
+    // мог бы снова поднять тот же битый/старый бандл из кеша WebView.
+    try {
+      if (window.caches && window.caches.keys) {
+        window.caches.keys().then(ks => ks.forEach(k => window.caches.delete(k)))
+      }
+    } catch (e) { /* ignore */ }
+    window.location.replace(window.location.pathname + '?r=' + Date.now())
+  }
+
+  handleClose = () => {
+    // Выход в бота Telegram — оттуда чистый повторный вход.
+    try { window.Telegram?.WebApp?.close() } catch (e) { /* ignore */ }
   }
 
   render() {
@@ -70,6 +81,10 @@ export default class ErrorBoundary extends Component {
 
         <button onClick={this.handleReload} style={styles.button}>
           ПЕРЕЗАПУСТИТЬ
+        </button>
+
+        <button onClick={this.handleClose} style={styles.closeButton}>
+          Закрыть приложение
         </button>
       </div>
     )
@@ -147,5 +162,16 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+  },
+  closeButton: {
+    marginTop: '4px',
+    padding: '10px 20px',
+    background: 'transparent',
+    color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 500,
+    border: 'none',
+    cursor: 'pointer'
   }
 }

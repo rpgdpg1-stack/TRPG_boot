@@ -98,6 +98,13 @@ camelCase — утилиты (`getTodayKey`).
 ## Известные грабли (не наступать)
 
 - Клавиатура iOS → высота через `visualViewport`.
+- Telegram-кеш WebView отдаёт СТАРЫЙ `index.html` (древняя итерация зависает, «Назад» мёртвая):
+  `vercel.json` держит `no-store` на `/` и `/index.html`, `immutable` на `/assets/*` (хешированы).
+  Плюс загрузочный «сторож» в `index.html`: если за 15с не встал `window.__APP_BOOTED__`
+  (ставит `App.jsx` после загрузчика) — показывает `#boot-fallback` с кнопкой «Перезапустить»
+  (жёсткая перезагрузка: сброс `caches` + `location.replace(pathname + '?r=' + Date.now())`) и
+  «Закрыть приложение» (`tg.close()`). Та же жёсткая перезагрузка — в `ErrorBoundary`. НЕ возвращать
+  `window.location.reload()` — он тянет тот же битый бандл из кеша.
 - Скролл в модалках → `data-scrollable` + `onTouchMove`.
 - Inline SVG с `currentColor` → `import.meta.glob` с `?raw` + `dangerouslySetInnerHTML`.
 - Завершение квеста → `pointerUp` с порогом `TAP_THRESHOLD_PX = 8`.

@@ -38,5 +38,76 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Экран-спасатель. Показывается загрузочным «сторожем» ниже, если приложение
+         не поднялось за BOOT_TIMEOUT_MS (белый экран / повисший лоадер / битый старый
+         чанк из кеша Telegram). Стили инлайн и без внешних шрифтов — работает, даже
+         если основной бандл/CSS не загрузились. -->
+    <div id="boot-fallback" style="display:none; position:fixed; inset:0; z-index:100000; background:#0D0C0C; color:#F0F0F0; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <div style="font-size:56px; line-height:1; margin-bottom:16px;">🔄</div>
+      <div style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить</div>
+      <div style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:24px;">
+        Возможно, Telegram показывает старую версию. Перезапустите приложение — это загрузит свежую.
+      </div>
+      <button id="boot-restart" style="padding:14px 34px; background:#9ED153; color:#0D0C0C; font-size:14px; font-weight:700; letter-spacing:1px; border:none; border-radius:26px;">
+        ПЕРЕЗАПУСТИТЬ
+      </button>
+      <button id="boot-close" style="margin-top:14px; padding:10px 20px; background:transparent; color:#9A9A9A; font-size:13px; border:none;">
+        Закрыть приложение
+      </button>
+    </div>
+
+    <script>
+      (function () {
+        // Сколько ждём поднятия приложения, прежде чем показать спасатель.
+        var BOOT_TIMEOUT_MS = 15000;
+
+        // Жёсткая перезагрузка со сбросом кешей + cache-busting URL — чтобы Telegram
+        // взял свежий index.html/бандл, а не старый из кеша WebView.
+        function hardReload() {
+          try {
+            if (window.caches && caches.keys) {
+              caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+            }
+          } catch (e) { /* ignore */ }
+          location.replace(location.pathname + '?r=' + Date.now());
+        }
+
+        function el(id) { return document.getElementById(id); }
+
+        function wire() {
+          var r = el('boot-restart');
+          if (r) r.addEventListener('click', hardReload);
+          var c = el('boot-close');
+          if (c) c.addEventListener('click', function () {
+            try { window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close(); } catch (e) { /* ignore */ }
+          });
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', wire);
+        } else {
+          wire();
+        }
+
+        // Приложение выставляет window.__APP_BOOTED__ = true, когда прошло загрузчик
+        // (App.jsx). Если за таймаут флаг не встал — показываем спасатель.
+        setTimeout(function () {
+          if (!window.__APP_BOOTED__) {
+            var f = el('boot-fallback');
+            if (f) f.style.display = 'flex';
+          }
+        }, BOOT_TIMEOUT_MS);
+
+        // Если приложение поднялось уже ПОСЛЕ показа спасателя (медленная сеть) —
+        // прячем его обратно.
+        var iv = setInterval(function () {
+          if (window.__APP_BOOTED__) {
+            var f = el('boot-fallback');
+            if (f) f.style.display = 'none';
+            clearInterval(iv);
+          }
+        }, 1000);
+      })();
+    </script>
   </body>
 </html>
