@@ -12,7 +12,7 @@ import { pluralizeWorkouts } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
 import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
-import CategoryList from '../components/CategoryList'
+import CategorySwiper from '../components/CategorySwiper'
 import DailyQuests, { getDailyBoostSummarySync } from '../components/DailyQuests'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
@@ -35,11 +35,13 @@ function readWeeklyCount() {
 }
 
 // Заголовок секции с шевроном справа — тап сворачивает/разворачивает.
-function SectionToggle({ title, collapsed, onToggle }) {
+function SectionToggle({ title, collapsed, onToggle, centered = false }) {
   return (
-    <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
+    <button onClick={onToggle} style={{ ...homeSectionStyles.toggleBtn, ...(centered ? homeSectionStyles.toggleBtnCentered : null) }}>
       <span style={homeSectionStyles.toggleTitle}>{title}</span>
-      <HomeChevron collapsed={collapsed} />
+      <span style={centered ? homeSectionStyles.chevronAbs : undefined}>
+        <HomeChevron collapsed={collapsed} />
+      </span>
     </button>
   )
 }
@@ -69,7 +71,11 @@ const homeSectionStyles = {
   toggleTitle: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
     color: 'var(--color-text-secondary)', letterSpacing: '3px'
-  }
+  },
+  // Центрированный заголовок раздела (РАЗДЕЛЫ над свайпером): текст по центру,
+  // шеврон сворачивания — абсолютно справа, чтобы не сдвигал центр.
+  toggleBtnCentered: { justifyContent: 'center', position: 'relative' },
+  chevronAbs: { position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', display: 'inline-flex' }
 }
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
@@ -356,8 +362,9 @@ export default function Home() {
           title="РАЗДЕЛЫ"
           collapsed={sectionsCollapsed}
           onToggle={() => setCollapse('sections', !sectionsCollapsed)}
+          centered
         />
-        {!sectionsCollapsed && <CategoryList />}
+        {!sectionsCollapsed && <CategorySwiper />}
 
         {/* Дневной буст — компактно: в заголовке прогресс N/3 · +N💪, разворачивается по тапу. */}
         <SectionToggle

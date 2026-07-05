@@ -505,6 +505,15 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 0; }
 }
 
+/* Свайпер разделов на главной (CategorySwiper): текст кросс-фейдится, иконка выезжает.
+   Next = свайп вперёд (старое уходит влево), Prev = назад (старое уходит вправо). */
+@keyframes catFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes catFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes catIconOutNext { from { transform: translateX(0); }     to { transform: translateX(-100%); } }
+@keyframes catIconInNext  { from { transform: translateX(100%); }  to { transform: translateX(0); } }
+@keyframes catIconOutPrev { from { transform: translateX(0); }     to { transform: translateX(100%); } }
+@keyframes catIconInPrev  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
 /* Смена текста в закреплённой пилюле группы (WorkoutDay) — мягкий заезд снизу. */
 @keyframes groupPillIn {
   from { opacity: 0; transform: translateY(4px); }
