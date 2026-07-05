@@ -20,9 +20,10 @@ import UiIcon from './UiIcon'
  *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
  *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
  *  - Под тегом — серая подпись подходов (3×8-10).
- *  - Справа цифра веса — ВСЕГДА нейтральная (WEIGHT_NEUTRAL_COLOR, как название):
- *    цветом кодируем только «только что поднял вес» — зелёная вспышка со стрелкой
- *    ↑ на ~2.5с (useWeightRaiseFlash), потом гаснет обратно в нейтральный.
+ *  - Справа цифра веса — нейтральная (WEIGHT_NEUTRAL_COLOR, как название);
+ *    зелёная — пока «повышенный вес не отработан»: повысил → стрелка ↑ + зелёный
+ *    держится (localStorage), гаснет при первой галочке «выполнено» в другой день
+ *    (полная модель — в WeightRaiseFlash.jsx).
  *
  * Что СОХРАНЕНО без изменений:
  *  - long-press → onLongPress(slot) для меню "Инфо / Сменить"
@@ -50,9 +51,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   )
   const inputRef = useRef(null)
 
-  // Вспышка «повысил вес»: зелёная стрелка + зелёная цифра на ~2.5с (только на
-  // реальное повышение после blur/Enter; понижение/равный/0 — без индикации).
-  const raise = useWeightRaiseFlash()
+  // Индикатор «повысил вес»: стрелка-вспышка + число зеленеет и держится
+  // (localStorage), гаснет при первой галочке «выполнено» в другой день.
+  const raise = useWeightRaiseFlash(exercise_id)
 
   // Кроссфейд превью при смене упражнения (свап): старое изображение держим
   // снизу, новое сверху плавно проявляем по onLoad — без «промаргивания»/бланка.
@@ -176,6 +177,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Стерли всё → ставим 0. Если вес и так был 0 — нечего сохранять.
     if (norm.cleared) {
       if (localWeight !== 0) {
+        raise.reset() // обнуление — снять зелёный индикатор
         setLocalWeight(0)
         try {
           await saveExerciseWeight(exercise_id, 0)
@@ -195,8 +197,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     // Вес не изменился — не пиликаем (ложный фидбек "сохранил").
     if (rounded === localWeight) return
 
-    // Повышение → зелёная вспышка со стрелкой (понижение — молча, без индикации).
+    // Повышение → стрелка + зелёный держится; понижение → индикатор гаснет сразу.
     if (rounded > localWeight) raise.trigger()
+    else raise.reset()
 
     setLocalWeight(rounded)
 

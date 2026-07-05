@@ -1,43 +1,94 @@
 import { useEffect, useRef, useState } from 'react'
+import { getTodayKey } from '../utils/dates'
 
 /**
- * Вспышка «повысил вес» — общая механика для карточки упражнения (ExerciseCard)
+ * Индикатор «повысил вес» — общая механика для карточки упражнения (ExerciseCard)
  * и модалки долгого нажатия (ExerciseActionMenu).
  *
- * Правило: цветом кодируем ТОЛЬКО факт «только что поднял вес». Число веса всегда
- * нейтральное (WEIGHT_NEUTRAL_COLOR — мягкий белый, как название упражнения).
- * При повышении (новое > старого, после blur/Enter): слева от числа проявляется
- * зелёная стрелка ↑, само число зеленеет (--color-primary); ~2с держится, затем
- * стрелка и зелёный ГАСНУТ ВМЕСТЕ → число возвращается в нейтральный.
- * Понижение / равный / 0 / первый раз — никакой индикации. НИЧЕГО не храним:
- * чисто мгновенная реакция, живёт в состоянии компонента.
+ * Правило: цветом кодируем ТОЛЬКО факт «поднял вес и ещё не отработал его».
+ * Число веса по умолчанию нейтральное (WEIGHT_NEUTRAL_COLOR — мягкий белый,
+ * как название упражнения). Паттерн:
+ *  - Повышение (новое > старого, после blur/Enter) → стрелка ↑ (разовая вспышка
+ *    ~2.5с) + число зеленеет и ДЕРЖИТСЯ зелёным (localStorage, ключ по exercise_id
+ *    с днём повышения getTodayKey).
+ *  - Отметка «выполнено» в ТОТ ЖЕ день (день повышения) зелёный НЕ сбрасывает,
+ *    сколько бы раз ни тапали.
+ *  - Первая отметка «выполнено» в ЛЮБОЙ СЛЕДУЮЩИЙ день → зелёный гаснет
+ *    (clearWeightRaisedOnDone зовёт WorkoutDay при отжатии галочки) — вес
+ *    отработан и становится обычной рабочей базой.
+ *  - Новое повышение — цикл заново (дата перезаписывается на сегодня).
+ *  - Понижение / стирание в 0 → сброс сразу, без индикации (красного нет).
  */
 
 export const WEIGHT_NEUTRAL_COLOR = '#F0F0F0'
-// Транзишен цвета цифры — гаснет синхронно с хвостом анимации стрелки.
+// Транзишен цвета цифры — мягкое загорание/затухание зелёного.
 export const WEIGHT_COLOR_TRANSITION = 'color 0.45s ease'
 
-const FLASH_TOTAL_MS = 2500        // стрелка: полный цикл анимации (fade-out на 82→100%)
-const GREEN_FADE_START_MS = 2050   // зелёный начинает гаснуть тут (0.45s → закончат вместе)
+const ARROW_TOTAL_MS = 2500 // стрелка: разовая вспышка (fade-out на 82→100% в keyframes)
+const LS_PREFIX = 'weight-raised:' // localStorage: weight-raised:<exercise_id> = todayKey повышения
 
-export function useWeightRaiseFlash() {
-  const [green, setGreen] = useState(false)
+// ---- localStorage + подписка (карточка и модалка видят сбросы друг друга) ----
+
+const listeners = new Set()
+const notify = (exerciseId) => listeners.forEach(fn => fn(exerciseId))
+
+function getRaisedDay(exerciseId) {
+  if (!exerciseId) return null
+  try { return localStorage.getItem(LS_PREFIX + exerciseId) } catch { return null }
+}
+
+function markRaised(exerciseId) {
+  if (!exerciseId) return
+  try { localStorage.setItem(LS_PREFIX + exerciseId, getTodayKey()) } catch { /* ignore */ }
+  notify(exerciseId)
+}
+
+function clearRaised(exerciseId) {
+  if (!exerciseId) return
+  try { localStorage.removeItem(LS_PREFIX + exerciseId) } catch { /* ignore */ }
+  notify(exerciseId)
+}
+
+/**
+ * Отжатие галочки «выполнено» (WorkoutDay.handleCardTap): если повышение было
+ * в ДРУГОЙ день — зелёный гаснет (вес отработан). В день повышения — остаётся.
+ */
+export function clearWeightRaisedOnDone(exerciseId) {
+  const day = getRaisedDay(exerciseId)
+  if (day && day !== getTodayKey()) clearRaised(exerciseId)
+}
+
+// ---- хук для компонентов с числом веса ----
+
+export function useWeightRaiseFlash(exerciseId) {
+  const [green, setGreen] = useState(() => !!getRaisedDay(exerciseId))
   const [arrowNonce, setArrowNonce] = useState(0) // >0 = стрелка в DOM; ремаунт по значению
-  const timersRef = useRef([])
-  useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
+  const arrowTimer = useRef(null)
+  useEffect(() => () => { if (arrowTimer.current) clearTimeout(arrowTimer.current) }, [])
 
+  // Ресинк при смене упражнения (свап) и при сбросе из другого места
+  // (галочка в WorkoutDay, второй экземпляр в модалке).
+  useEffect(() => {
+    setGreen(!!getRaisedDay(exerciseId))
+    const fn = (id) => { if (id === exerciseId) setGreen(!!getRaisedDay(exerciseId)) }
+    listeners.add(fn)
+    return () => listeners.delete(fn)
+  }, [exerciseId])
+
+  // Повышение веса: зафиксировать (localStorage, сегодняшний день) + вспышка стрелки.
   const trigger = () => {
-    timersRef.current.forEach(clearTimeout)
-    setGreen(true)
-    setArrowNonce(n => n + 1) // новый key → анимация перезапускается даже при повторном повышении
-    timersRef.current = [
-      setTimeout(() => setGreen(false), GREEN_FADE_START_MS),
-      setTimeout(() => setArrowNonce(0), FLASH_TOTAL_MS)
-    ]
+    markRaised(exerciseId)
+    setArrowNonce(n => n + 1) // новый key → анимация перезапускается при повторном повышении
+    if (arrowTimer.current) clearTimeout(arrowTimer.current)
+    arrowTimer.current = setTimeout(() => setArrowNonce(0), ARROW_TOTAL_MS)
   }
+
+  // Понижение/обнуление веса: снять индикатор сразу.
+  const reset = () => clearRaised(exerciseId)
 
   return {
     trigger,
+    reset,
     color: green ? 'var(--color-primary)' : WEIGHT_NEUTRAL_COLOR,
     arrow: arrowNonce > 0 ? <RaiseArrow key={arrowNonce} /> : null
   }

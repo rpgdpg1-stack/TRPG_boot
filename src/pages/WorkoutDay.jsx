@@ -29,6 +29,7 @@ import {
   clearWorkoutProgress
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
+import { clearWeightRaisedOnDone } from '../components/WeightRaiseFlash'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import AnchorMenu from '../components/AnchorMenu'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
@@ -602,6 +603,10 @@ export default function WorkoutDay() {
     // Галочки доступны только когда тренировка начата (этот день активен).
     // Иначе тап ничего не делает (долгое нажатие — заметки — работает отдельно).
     if (!isThisActive) { haptic.light(); return }
+
+    // Отжатие галочки гасит зелёный индикатор «повысил вес», если повышение было
+    // в другой день (в день повышения — остаётся, вес «отрабатывается» позже).
+    if (!activeOrderNums.has(slot.order_num)) clearWeightRaisedOnDone(slot.exercise_id)
 
     setActiveOrderNums(prev => {
       const next = new Set(prev)

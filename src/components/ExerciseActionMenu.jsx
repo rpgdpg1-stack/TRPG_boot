@@ -62,8 +62,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const [localWeight, setLocalWeight] = useState(
     slot?.user_weight_kg !== null && slot?.user_weight_kg !== undefined ? slot.user_weight_kg : 0
   )
-  // Вспышка «повысил вес» — как на карточке упражнения (зелёная стрелка + цифра).
-  const raise = useWeightRaiseFlash()
+  // Индикатор «повысил вес» — как на карточке (стрелка + зелёный держится).
+  const raise = useWeightRaiseFlash(slot?.exercise_id)
 
   // Сбрасываем локальный вес ТОЛЬКО при смене упражнения (exercise_id).
   // user_weight_kg намеренно НЕ в зависимостях: иначе эффект перезатирал бы
@@ -95,6 +95,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
     if (norm.cleared) {
       if (localWeight !== 0) {
+        raise.reset() // обнуление — снять зелёный индикатор
         setLocalWeight(0)
         try {
           await saveExerciseWeight(slot.exercise_id, 0)
@@ -112,8 +113,9 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     const rounded = norm.value
     if (rounded === localWeight) return
 
-    // Повышение → зелёная вспышка со стрелкой (понижение — молча).
+    // Повышение → стрелка + зелёный держится; понижение → индикатор гаснет сразу.
     if (rounded > localWeight) raise.trigger()
+    else raise.reset()
 
     setLocalWeight(rounded)
     try {
