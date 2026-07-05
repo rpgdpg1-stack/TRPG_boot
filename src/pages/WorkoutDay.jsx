@@ -247,6 +247,13 @@ export default function WorkoutDay() {
     ? getMuscleGroupColors(dayTags[0].key).accent
     : 'var(--color-primary)'
 
+  // Акцент ЛЮБОГО дня программы (по первой группе) — для пикера дней: в попапе
+  // каждый день красится своим цветом на 100%.
+  const accentForDay = (d) => {
+    const tags = getDayMuscleTags(program?.dbId, d)
+    return tags[0] ? getMuscleGroupColors(tags[0].key).accent : 'var(--color-primary)'
+  }
+
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]
   const nextDay = currentDayIdx < days.length - 1 ? days[currentDayIdx + 1] : days[0]
@@ -1040,9 +1047,11 @@ export default function WorkoutDay() {
                   className={dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
+                    // Фокусный (рекомендованный/активный) день — акцент группы 100% + свечение;
+                    // прочие — тот же акцент, но приглушённый прозрачностью (не серым).
                     ...(day === focusDay
                       ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
-                      : styles.dayLetterMuted),
+                      : { color: dayGroupAccent, opacity: 0.4, textShadow: 'none' }),
                     fontSize: `${dayLetterSize}px`
                   }}
                 >
@@ -1335,8 +1344,8 @@ export default function WorkoutDay() {
         <DayPicker
           days={days}
           currentDay={day}
-          focusDay={focusDay}
           sessionDay={sessionDayForProgram}
+          colorForDay={accentForDay}
           anchorRect={dayPickerRect}
           onPick={pickDay}
           onClose={() => setDayPickerRect(null)}
@@ -1543,7 +1552,7 @@ function groupByMuscleGroup(slots) {
  * дню — переключение; тап по фону — закрытие (уезжает обратно в центр). Портал
  * в body; позиция fixed по центру буквы (anchorRect).
  */
-function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick, onClose }) {
+function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPick, onClose }) {
   const [entered, setEntered] = useState(false)
   const [closing, setClosing] = useState(false)
 
@@ -1583,15 +1592,12 @@ function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick,
       >
         {days.map(d => {
           const isSession = !!sessionDay && d === sessionDay
-          const isFocus = d === focusDay
           const isCurrent = d === currentDay
-          // ЗАПУЩЕННЫЙ день — пульсирует с ОБЫЧНОГО размера (×1.5 и обратно): зелёный,
-          // если стоишь на нём, иначе просто серый (ты не на нём). Текущий (не
-          // запущенный) день — белая буква на сером кружке («ты тут»); зелёная, если
-          // это ещё и фокусный/рекомендованный. Прочие — серые, без пульса.
-          const color = (isCurrent && isFocus) ? 'var(--color-primary)'
-            : isCurrent ? 'var(--color-text)'
-            : 'var(--color-text-secondary)'
+          // В попапе каждый день — в СВОЁМ акцентном цвете группы на 100% (не белый,
+          // не серый). Текущий (просматриваемый) выделен серым кружком («ты тут»),
+          // запущенный день сессии — пульсирует (×1.5 и обратно). Гашение прозрачностью
+          // — только на самой странице, тут все дни на полном цвете.
+          const dColor = colorForDay ? colorForDay(d) : 'var(--color-primary)'
           const circle = isCurrent && !isSession
           return (
             <button
@@ -1600,7 +1606,7 @@ function DayPicker({ days, currentDay, focusDay, sessionDay, anchorRect, onPick,
               className={`press-tile${isSession ? ' day-picker-pulse' : ''}`}
               style={{
                 ...pickerStyles.cell,
-                color,
+                color: dColor,
                 ...(circle ? pickerStyles.cellCircle : null)
               }}
             >

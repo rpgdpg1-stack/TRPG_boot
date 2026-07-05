@@ -87,11 +87,13 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 <div style={styles.daysList}>
                   {allDays.map(d => {
                     const isToday = !!activeDay && d === activeDay
-                    const dColor = dayColor(d)
+                    // Все дни — в своём акцентном цвете группы; рекомендованный на
+                    // 100%, остальные приглушены прозрачностью (видно, что не активны).
                     return (
                       <span key={d} style={{
                         ...styles.dayLetter,
-                        color: isToday ? dColor : 'rgba(255,255,255,0.35)'
+                        color: dayColor(d),
+                        opacity: isToday ? 1 : 0.4
                       }}>
                         {d}
                       </span>
