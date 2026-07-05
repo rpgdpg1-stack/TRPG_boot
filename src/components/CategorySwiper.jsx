@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { programCountLabel } from '../features/programs/registry'
+import { localGet, localSet } from '../utils/storage'
+import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import UiIcon from './UiIcon'
+
+// Ключ памяти выбранного раздела — как у избранного: localStorage (мгновенно) +
+// Telegram CloudStorage (кросс-девайс). Хранит id раздела (gym/pool/cardio/stretch).
+const LAST_CAT_KEY = 'category-swiper-last'
+const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
 
 /**
  * Свайпер разделов на главной — одна карточка-раздел, листается влево/вправо
@@ -32,7 +39,8 @@ export default function CategorySwiper() {
     soon: id === 'cardio' || id === 'stretch'
   }))
 
-  const [idx, setIdx] = useState(0)
+  // Старт из локального кеша (мгновенно, без мигания на первый раздел).
+  const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
   // anim = { from, dir } во время перехода; null в покое.
   const [anim, setAnim] = useState(null)
   const animTimer = useRef(null)
@@ -40,12 +48,26 @@ export default function CategorySwiper() {
 
   useEffect(() => () => { if (animTimer.current) clearTimeout(animTimer.current) }, [])
 
+  // Догоняем из облака (выбор мог быть сделан на другом устройстве). Без анимации —
+  // просто встаём на нужный раздел.
+  useEffect(() => {
+    let alive = true
+    cloudGet(LAST_CAT_KEY).then(id => {
+      if (alive && id && CATEGORY_ORDER.includes(id)) setIdx(idxOfCat(id))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   const go = (next, dir) => {
     if (next === idx) return
     haptic.light()
     if (animTimer.current) clearTimeout(animTimer.current)
     setAnim({ from: idx, dir })
     setIdx(next)
+    // Запоминаем выбранный раздел — локально (мгновенно) и в облако (кросс-девайс).
+    const id = CATEGORY_ORDER[next]
+    localSet(LAST_CAT_KEY, id)
+    cloudSet(LAST_CAT_KEY, id)
     animTimer.current = setTimeout(() => setAnim(null), ANIM_MS)
   }
 
