@@ -1593,10 +1593,10 @@ function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPi
         {days.map(d => {
           const isSession = !!sessionDay && d === sessionDay
           const isCurrent = d === currentDay
-          // В попапе каждый день — в СВОЁМ акцентном цвете группы на 100% (не белый,
-          // не серый). Текущий (просматриваемый) выделен серым кружком («ты тут»),
-          // запущенный день сессии — пульсирует (×1.5 и обратно). Гашение прозрачностью
-          // — только на самой странице, тут все дни на полном цвете.
+          // Акцентный на 100% — только ТЕКУЩИЙ (просматриваемый) день; он же выделен
+          // серым кружком («ты тут»), либо пульсирует, если это запущенный день сессии.
+          // Остальные — тем же акцентом группы, но приглушены прозрачностью, пока не
+          // перейдёшь на них.
           const dColor = colorForDay ? colorForDay(d) : 'var(--color-primary)'
           const circle = isCurrent && !isSession
           return (
@@ -1607,6 +1607,7 @@ function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPi
               style={{
                 ...pickerStyles.cell,
                 color: dColor,
+                opacity: isCurrent ? 1 : 0.4,
                 ...(circle ? pickerStyles.cellCircle : null)
               }}
             >
