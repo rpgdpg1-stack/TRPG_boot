@@ -98,13 +98,21 @@ camelCase — утилиты (`getTodayKey`).
 ## Известные грабли (не наступать)
 
 - Клавиатура iOS → высота через `visualViewport`.
-- Telegram-кеш WebView отдаёт СТАРЫЙ `index.html` (древняя итерация зависает, «Назад» мёртвая):
-  `vercel.json` держит `no-store` на `/` и `/index.html`, `immutable` на `/assets/*` (хешированы).
-  Плюс загрузочный «сторож» в `index.html`: если за 15с не встал `window.__APP_BOOTED__`
-  (ставит `App.jsx` после загрузчика) — показывает `#boot-fallback` с кнопкой «Перезапустить»
-  (жёсткая перезагрузка: сброс `caches` + `location.replace(pathname + '?r=' + Date.now())`) и
-  «Закрыть приложение» (`tg.close()`). Та же жёсткая перезагрузка — в `ErrorBoundary`. НЕ возвращать
+- Telegram-кеш WebView отдаёт СТАРЫЙ `index.html`/бандл (древняя итерация зависает, «Назад» мёртвая).
+  Три слоя защиты:
+  (1) `vercel.json`: `no-store` на ВСЕ документные пути `/((?!assets/).*)` — не только `/`, ведь WebView
+  восстанавливает свёрнутую страницу по её реальному URL (`/workout/...`), который через rewrite тоже
+  отдаёт index.html; `immutable` на `/assets/*` (хешированы).
+  (2) Загрузочный «сторож» в `index.html`: если за 15с не встал `window.__APP_BOOTED__` (ставит
+  `App.jsx` после загрузчика) — показывает `#boot-fallback` с кнопкой «Перезапустить» (жёсткая
+  перезагрузка: сброс `caches` + `location.replace(pathname + '?r=' + Date.now())`) и «Закрыть
+  приложение» (`tg.close()`). Та же жёсткая перезагрузка — в `ErrorBoundary`. НЕ возвращать
   `window.location.reload()` — он тянет тот же битый бандл из кеша.
+  (3) Вахтёр версии `lib/version-check.js` (старт в App): iOS-Telegram восстанавливает замороженный
+  WebView со старым бандлом БЕЗ сетевых запросов — заголовки/сторож бессильны. В бандл вшит
+  `__BUILD_ID__` (define в `vite.config.js`, рядом генерится `dist/version.json` с тем же id);
+  на пробуждении после ≥60с в фоне фетчим `/version.json` (no-store), id не совпал → hardReload.
+  Кулдаун 2 мин в sessionStorage от зацикливания; ошибки сети молча глотаются (оффлайн не трогаем).
 - Скролл в модалках → `data-scrollable` + `onTouchMove`.
 - Inline SVG с `currentColor` → `import.meta.glob` с `?raw` + `dangerouslySetInnerHTML`.
 - Завершение квеста → `pointerUp` с порогом `TAP_THRESHOLD_PX = 8`.
@@ -200,7 +208,7 @@ src/
 ├── features/exercises/  api.js · weight-format.js
 ├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
 ├── lib/            active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
-│                   leagues levels network-status notes offline-queue persistent-cache profile-cache
+│                   leagues levels network-status notes offline-queue persistent-cache profile-cache version-check
 │                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
 ├── pages/          Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile
 │                   ProgramConstructor Recovery Rewards Sections Settings SwapExercise SwimWorkout WorkoutDay

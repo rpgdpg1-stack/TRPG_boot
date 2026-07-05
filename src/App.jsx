@@ -40,6 +40,7 @@ import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
 import { checkAndResetSeasonIfNeeded } from './lib/season-reset'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
+import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
 
@@ -50,6 +51,7 @@ export default function App() {
   if (authPromiseRef.current === null) {
     initTelegram()
     startNetworkMonitor() // запускаем детектор сети как можно раньше
+    startVersionWatch()   // вахтёр версии: пробуждение из фона → сверка сборки с сервером
     hydrateUserProgramsFromCache() // свои программы из кэша — доступны сразу, в т.ч. оффлайн
     authPromiseRef.current = ensureAuth().catch(err => {
       console.error('[App] ensureAuth failed:', err)

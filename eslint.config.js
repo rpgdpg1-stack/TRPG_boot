@@ -26,6 +26,8 @@ export default [
       sourceType: 'module',
       globals: {
         ...globals.browser,
+        // ID сборки, вшивается vite define (vite.config.js) — см. lib/version-check.js
+        __BUILD_ID__: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
