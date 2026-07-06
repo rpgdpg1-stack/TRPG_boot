@@ -33,7 +33,7 @@ import RankFrame from './RankFrame'
 
 const SOURCE_LABELS = {
   workout:      'Тренировка',
-  quest:        'Дневной буст',
+  quest:        'Активности',
   streak:       'Бонус за серию',
   backup:       'Подстраховка',
   backup_bonus: 'Поддержка друга',

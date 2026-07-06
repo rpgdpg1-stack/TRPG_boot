@@ -3,7 +3,7 @@ import { haptic } from '../lib/telegram'
 import { getDailyQuests, getDailyQuestsSync, completeQuest } from '../lib/storage'
 import { getTodayKey } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
-import PixelCheckbox from './PixelCheckbox'
+import UiIcon from './UiIcon'
 import MuscleIcon from './MuscleIcon'
 
 /**
@@ -281,7 +281,7 @@ export default function DailyQuests() {
               {quests.map(quest => (
                 <div key={quest.id} style={styles.questRowDone}>
                   <div style={styles.checkboxWrap}>
-                    <PixelCheckbox checked={true} size={20} />
+                    <UiIcon name="check" size={20} color="var(--color-primary)" />
                   </div>
                   <span style={styles.taskEmojiDone}>{quest.emoji}</span>
                   <div style={styles.textColDone}>
@@ -327,8 +327,10 @@ export default function DailyQuests() {
                   filter: locked ? 'blur(4px)' : 'none',
                   opacity: locked ? 0.5 : 1
                 }}>
+                  {/* Чистая галочка: до выполнения слот пуст (нет чекбокса), после
+                      тапа появляется зелёная галочка, строка гаснет в серый. */}
                   <div style={styles.checkboxWrap}>
-                    <PixelCheckbox checked={isDone} size={20} />
+                    {isDone && <UiIcon name="check" size={20} color="var(--color-primary)" />}
                   </div>
 
                   <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : 1 }}>

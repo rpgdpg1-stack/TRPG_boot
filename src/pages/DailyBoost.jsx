@@ -5,9 +5,8 @@ import DailyQuests from '../components/DailyQuests'
 import ScreenTitle from '../components/ScreenTitle'
 
 /**
- * Страница «Дневной буст» — ежедневные квесты.
- * Открывается тапом по заголовку ДНЕВНОЙ БУСТ на главной и живёт в профиле.
- * Контент — общий компонент DailyQuests (тот же, что на главной).
+ * Страница «Активности» — ежедневные активности (утро/день/вечер).
+ * Открывается из профиля; контент — общий компонент DailyQuests (как на главной).
  */
 export default function DailyBoost() {
   const navigate = useNavigate()
@@ -19,7 +18,7 @@ export default function DailyBoost() {
 
   return (
     <div className="page page-fade" style={{}}>
-      <ScreenTitle>Дневной буст</ScreenTitle>
+      <ScreenTitle>Активности</ScreenTitle>
       <DailyQuests />
     </div>
   )

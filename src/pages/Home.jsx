@@ -12,7 +12,7 @@ import { EVENTS, on } from '../lib/events'
 import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
 import CategorySwiper from '../components/CategorySwiper'
-import DailyQuests, { getDailyBoostSummarySync } from '../components/DailyQuests'
+import DailyQuests from '../components/DailyQuests'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 
@@ -159,7 +159,6 @@ export default function Home() {
   const sectionsCollapsed = !!collapsed.sections
   const boostCollapsed = collapsed.boost !== false
   const weeklyCount = readWeeklyCount()
-  const boost = getDailyBoostSummarySync()
 
   // Фоновое обновление избранного (вдруг менялось с другого устройства).
   useEffect(() => {
@@ -342,18 +341,9 @@ export default function Home() {
         />
         <Collapsible open={!sectionsCollapsed}><CategorySwiper /></Collapsible>
 
-        {/* Дневной буст — компактно: в заголовке прогресс N/3 · +N💪, разворачивается по тапу. */}
+        {/* Активности — просто заголовок (без статуса N/3), всё внутри карточки. */}
         <SectionToggle
-          title={
-            <span style={styles.boostTitle}>
-              Дневной буст
-              {boost.total > 0 && (
-                <span style={styles.boostBadge}>
-                  {boost.done}/{boost.total}{boost.remainingReward > 0 ? ` · +${boost.remainingReward}💪` : ' ✓'}
-                </span>
-              )}
-            </span>
-          }
+          title="Активности"
           onToggle={() => setCollapse('boost', !boostCollapsed)}
         />
         <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
@@ -449,15 +439,6 @@ const styles = {
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
     padding: '2px 4px'
-  },
-  // Заголовок Дневного буста со сводкой.
-  boostTitle: { display: 'inline-flex', alignItems: 'center', gap: '10px' },
-  boostBadge: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '12px',
-    letterSpacing: '0.5px',
-    color: 'var(--color-primary)'
   },
   favEmpty: {
     display: 'flex',
