@@ -6,6 +6,7 @@ import { getProgramBySlug } from '../features/programs/registry'
 import { XP_REWARDS } from '../lib/levels'
 import { setLastCompletedDay } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
+import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import {
   SWIM_PROGRAM,
   SWIM_STROKES,
@@ -15,27 +16,27 @@ import {
 } from '../data/programs/swim'
 import MuscleIcon from '../components/MuscleIcon'
 import ScreenTitle from '../components/ScreenTitle'
+import UiIcon from '../components/UiIcon'
+import ClockIcon from '../components/ClockIcon'
+import ActionButton from '../components/ActionButton'
 
 /**
- * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном.
+ * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
+ * силовой (WorkoutDay): закреплённая шапка-карточка вверху (сужается на скролле),
+ * блоки-карточки, закреплённая кнопка «Завершить» внизу.
  *
- * Никаких галочек: человек смотрит что и каким стилем плыть, переключает
- * длину бассейна (25/50 м — меняются только числа бассейнов, метраж тот же),
- * и по факту в конце жмёт «Завершить заплыв» → +150 💪 (как за тренировку).
+ * Никаких галочек: смотришь что и каким стилем плыть, крутишь длину бассейна
+ * (25/50 — меняются только числа бассейнов, метраж тот же) и число кругов основы
+ * (пересчитывает метры), в конце жмёшь «Завершить» → +150 💪.
  *
- * Лимит на бонусы общий со всеми разделами — держит api_finish_workout
- * (одна засчитанная тренировка в сутки). Если за сегодня уже была любая
- * тренировка — заплыв завершится, но мускулы не начислятся, модалка скажет
- * про лимит.
+ * Лимит на бонусы общий — держит api_finish_workout (одна засчитанная в сутки).
  */
 
 const POOL_KEY = (slug) => `swim-pool:${slug}`
 const REPS_KEY = (slug) => `swim-reps:${slug}`
-// Какой блок можно повторять (редактируемое число кругов основы).
 const MAIN_ID = 'main'
 const MIN_REPS = 1
 const MAX_REPS = 12
-// Метры одного круга блока (без повторов).
 const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
 function formatDistance(m) {
@@ -58,19 +59,26 @@ export default function SwimWorkout() {
     return SWIM_PROGRAM.pools.includes(saved) ? saved : SWIM_PROGRAM.defaultPool
   })
 
-  const [modal, setModal] = useState(null)            // null | { kind }
-  const [finishStatus, setFinishStatus] = useState('idle') // 'idle' | 'saving' | 'error'
+  const [modal, setModal] = useState(null)
+  const [finishStatus, setFinishStatus] = useState('idle')
+  const [compact, setCompact] = useState(false)
 
-  // Число повторов основы — единственное редактируемое поле заплыва. Меняешь его
-  // после тренировки под факт (сколько кругов реально проплыл) → пересчитываются
-  // метры и бассейны, и именно этот метраж уходит в историю по «Завершить».
+  // Число повторов основы — единственное редактируемое поле. Стартуем мгновенно
+  // из localStorage, догоняем кросс-девайс из CloudStorage; пишем в оба (как вес).
   const [mainReps, setMainReps] = useState(() => {
     const saved = parseInt(localGet(REPS_KEY(programId)), 10)
     const def = SWIM_PROGRAM.blocks.find(b => b.id === MAIN_ID)?.repeat || 1
     return Number.isFinite(saved) && saved >= MIN_REPS && saved <= MAX_REPS ? saved : def
   })
 
-  const repsFor = (block) => (block.id === MAIN_ID ? mainReps : (block.repeat || 1))
+  useEffect(() => {
+    let cancelled = false
+    cloudGet(REPS_KEY(programId)).then(v => {
+      const n = parseInt(v, 10)
+      if (!cancelled && Number.isFinite(n) && n >= MIN_REPS && n <= MAX_REPS) setMainReps(n)
+    })
+    return () => { cancelled = true }
+  }, [programId])
 
   const totalMeters = useMemo(
     () => SWIM_PROGRAM.blocks.reduce(
@@ -84,7 +92,11 @@ export default function SwimWorkout() {
   const changeReps = (delta) => {
     setMainReps(prev => {
       const next = Math.min(MAX_REPS, Math.max(MIN_REPS, prev + delta))
-      if (next !== prev) { haptic.selection(); localSet(REPS_KEY(programId), String(next)) }
+      if (next !== prev) {
+        haptic.selection()
+        localSet(REPS_KEY(programId), String(next))
+        cloudSet(REPS_KEY(programId), String(next))
+      }
       return next
     })
   }
@@ -99,6 +111,23 @@ export default function SwimWorkout() {
     lockVerticalSwipes()
     window.scrollTo(0, 0)
   }, [navigate, program, location.state])
+
+  // Прячем нижний краевой скрим (у нас своя прибитая кнопка-док).
+  useEffect(() => {
+    document.body.classList.add('hide-app-scrim')
+    return () => document.body.classList.remove('hide-app-scrim')
+  }, [])
+
+  // Сжатие шапки на скролле (как в дне силовой).
+  useEffect(() => {
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => { raf = 0; setCompact(window.scrollY > 24) })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [])
 
   if (!program || program.kind !== 'swim') {
     return (
@@ -131,8 +160,6 @@ export default function SwimWorkout() {
         return
       }
       if (result.offline) {
-        // Фиксируем дату последней тренировки заплыва (CloudStorage), как в зале —
-        // иначе карточка показывает «Ещё не начинали».
         await setLastCompletedDay(programId, 'main')
         haptic.warning()
         setFinishStatus('idle')
@@ -163,124 +190,102 @@ export default function SwimWorkout() {
   }
 
   const handleModalConfirm = () => {
-    if (modal?.kind === 'error') {
-      runFinish()
-      return
-    }
+    if (modal?.kind === 'error') { runFinish(); return }
     setModal(null)
     navigate('/')
   }
 
   return (
     <div style={styles.page}>
+      <ScreenTitle>Заплыв 45</ScreenTitle>
 
-      {/* Закреплённая шапка: заголовок + переключатель бассейна + дорожка */}
+      {/* Закреплённая шапка-карточка: синяя волна + стеклянная обводка */}
       <div style={styles.stickyHeader}>
-        <header style={styles.header}>
-          <ScreenTitle>Заплыв 45</ScreenTitle>
-          <div style={styles.subtitle}>{SWIM_PROGRAM.durationMin} мин · {totalMeters} м</div>
-        </header>
+        <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
+          <div style={styles.wave} aria-hidden="true" />
+          <div style={styles.headerInner}>
+            {/* Верхний ряд: тег бассейна слева, часы по центру */}
+            <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
+              <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
+              <span style={styles.clock}>
+                <ClockIcon size={13} />≈{SWIM_PROGRAM.durationMin} мин
+              </span>
+            </div>
 
-        <div style={styles.poolSwitch}>
-          {SWIM_PROGRAM.pools.map(len => (
-            <button
-              key={len}
-              onClick={() => handlePoolTap(len)}
-              style={{
-                ...styles.poolButton,
-                background: pool === len ? 'var(--cat-pool)' : 'transparent',
-                color: pool === len ? '#0D0C0C' : 'var(--color-text-secondary)',
-                fontWeight: pool === len ? 800 : 600
-              }}
-            >
-              Бассейн {len} м
-            </button>
-          ))}
+            {/* Центр: метры + бассейны, пунктир по центру текста */}
+            <div style={{ ...styles.metersWrap, ...(compact ? styles.metersWrapCompact : {}) }}>
+              <div style={styles.metersDashes} aria-hidden="true" />
+              <span style={{ ...styles.metersText, ...(compact ? styles.metersTextCompact : {}) }}>
+                {totalMeters} метров · {totalPools} {pluralPools(totalPools)}
+              </span>
+            </div>
+          </div>
         </div>
-
-        <PoolLane label={`${totalMeters} м · ${totalPools} ${pluralPools(totalPools)}`} />
       </div>
 
       <div style={styles.body}>
-
         {SWIM_PROGRAM.blocks.map(block => {
-          const bMeters = oneRoundMeters(block) * repsFor(block)
+          const bMeters = oneRoundMeters(block) * (block.id === MAIN_ID ? mainReps : (block.repeat || 1))
           const editable = block.id === MAIN_ID
           return (
-            <section key={block.id} style={styles.block}>
-              <div style={styles.blockHeader}>
+            <section key={block.id} style={styles.blockCard}>
+              <div style={styles.blockHead}>
                 <span style={styles.blockTitle}>{block.index} · {block.title}</span>
                 <span style={styles.blockMeta}>{block.hint} · {bMeters} м</span>
               </div>
 
-              {editable ? (
-                <div style={styles.repeatStepper}>
-                  <span style={styles.repeatLabel}>↻ ПОВТОРИТЬ</span>
-                  <button
-                    onClick={() => changeReps(-1)}
-                    disabled={mainReps <= MIN_REPS}
-                    style={{ ...styles.repeatBtn, opacity: mainReps <= MIN_REPS ? 0.35 : 1 }}
-                    className="press-tile"
-                    aria-label="Меньше повторов"
-                  >−</button>
-                  <span style={styles.repeatValue}>{mainReps}</span>
-                  <button
-                    onClick={() => changeReps(1)}
-                    disabled={mainReps >= MAX_REPS}
-                    style={{ ...styles.repeatBtn, opacity: mainReps >= MAX_REPS ? 0.35 : 1 }}
-                    className="press-tile"
-                    aria-label="Больше повторов"
-                  >+</button>
-                  <span style={styles.repeatLabel}>РАЗ</span>
-                </div>
-              ) : (block.repeat > 1 && (
-                <div style={styles.repeatBadge}>↻ ПОВТОРИТЬ {block.repeat} РАЗ</div>
-              ))}
-
-              <div style={styles.swimList}>
-                {block.swims.map(sw => {
+              <div style={styles.blockBody}>
+                {block.swims.map((sw, i) => {
                   const meta = SWIM_STROKES[sw.stroke]
                   const pools = poolsForMeters(sw.meters, pool)
                   const color = strokeColor(sw.stroke)
                   return (
-                    <div key={sw.id} style={styles.swimRow}>
-                      <div style={styles.swimContent}>
-                        <div style={styles.swimName}>
-                          <span style={{ color }}>{meta.label}</span>
-                          <span style={styles.swimDot}> · </span>
-                          {pools} {pluralPools(pools)}
+                    <div key={sw.id}>
+                      {i > 0 && <div style={styles.rowDivider} />}
+                      <div style={styles.swimRow}>
+                        <div style={styles.swimContent}>
+                          <div style={styles.swimName}>
+                            <span style={{ color }}>{meta.label}</span>
+                            <span style={styles.swimDot}> · </span>
+                            {pools} {pluralPools(pools)}
+                          </div>
+                          <div style={styles.swimNote}>{sw.note}</div>
                         </div>
-                        <div style={styles.swimNote}>{sw.note}</div>
+                        <span style={{ ...styles.swimIconWrap, color }}>
+                          <SwimmerIcon stroke={sw.stroke} size={34} />
+                        </span>
                       </div>
-
-                      {/* Иконка стиля справа — в цвете стиля */}
-                      <span style={{ ...styles.swimIconWrap, color }}>
-                        <SwimmerIcon stroke={sw.stroke} size={34} />
-                      </span>
                     </div>
                   )
                 })}
-              </div>
 
-              {block.footnote && <div style={styles.footnote}>{block.footnote}</div>}
+                {editable && (
+                  <div style={styles.stepper}>
+                    <button
+                      onClick={() => changeReps(-1)}
+                      disabled={mainReps <= MIN_REPS}
+                      style={{ ...styles.stepBtn, opacity: mainReps <= MIN_REPS ? 0.35 : 1 }}
+                      className="press-tile"
+                      aria-label="Меньше повторов"
+                    >−</button>
+                    <span style={styles.stepLabel}>Повторить {mainReps} раз</span>
+                    <button
+                      onClick={() => changeReps(1)}
+                      disabled={mainReps >= MAX_REPS}
+                      style={{ ...styles.stepBtn, opacity: mainReps >= MAX_REPS ? 0.35 : 1 }}
+                      className="press-tile"
+                      aria-label="Больше повторов"
+                    >+</button>
+                  </div>
+                )}
+
+                {block.footnote && <div style={styles.footnote}>{block.footnote}</div>}
+              </div>
             </section>
           )
         })}
 
-        {/* Итого */}
-        <div style={styles.totalRow}>
-          <span style={styles.totalLabel}>Итого</span>
-          <span style={styles.totalValue}>{totalMeters} м · {totalPools} {pluralPools(totalPools)}</span>
-        </div>
-
-        {/* Завершить */}
-        <div style={styles.finishWrap}>
-          <button onClick={handleFinishTap} style={styles.finishButton}>
-            ЗАВЕРШИТЬ ЗАПЛЫВ
-          </button>
-        </div>
-
-        {/* Рекомендации */}
+        {/* Советы */}
         <div style={styles.tipsBlock}>
           <div style={styles.tipsTitle}>СОВЕТЫ</div>
           <Tip>Хочешь бодрее — повтори основу 6 раз (≈850 м). Мягче для старта — 4 раза (≈650 м).</Tip>
@@ -291,6 +296,19 @@ export default function SwimWorkout() {
         </div>
       </div>
 
+      {/* Закреплённая кнопка «Завершить» (как док в дне силовой), синяя */}
+      <div style={styles.finishBar}>
+        <div className="dock-scrim" />
+        <ActionButton
+          onClick={handleFinishTap}
+          variant="accent"
+          hug
+          style={{ background: 'var(--cat-pool)', borderColor: '#1C5C97' }}
+        >
+          ЗАВЕРШИТЬ
+        </ActionButton>
+      </div>
+
       {modal && (
         <SwimFinishedModal
           kind={modal.kind}
@@ -299,6 +317,54 @@ export default function SwimWorkout() {
           onConfirm={handleModalConfirm}
         />
       )}
+
+      <style>{`
+        @keyframes poolShine {
+          0%   { transform: translateX(-120%); }
+          100% { transform: translateX(220%); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+/**
+ * Переключатель длины бассейна (25/50) — вид как тег места (PlaceSwitcher):
+ * свёрнуто одна пилюля (активная), тап раскрывает вторую справа, выбор — свёртка.
+ */
+function PoolLenSwitcher({ pool, pools, onPick }) {
+  const [open, setOpen] = useState(false)
+  const multi = pools.length > 1
+  const ordered = open ? [pool, ...pools.filter(p => p !== pool)] : [pool]
+
+  return (
+    <div style={plsStyles.wrap} onClick={(e) => e.stopPropagation()}>
+      <div style={plsStyles.group}>
+        {ordered.map((len, i) => {
+          const active = len === pool
+          return (
+            <button
+              key={len}
+              className="press-tile"
+              onClick={(e) => {
+                e.stopPropagation()
+                if (i === 0) { if (multi) { haptic.light(); setOpen(o => !o) } }
+                else { onPick(len); setOpen(false) }
+              }}
+              style={{
+                ...plsStyles.item,
+                ...(active ? plsStyles.itemActive : {}),
+                marginLeft: i === 0 ? 0 : '-5px',
+                zIndex: active ? 2 : 1,
+                color: active ? 'var(--cat-pool)' : 'var(--color-text-inactive)'
+              }}
+            >
+              <UiIcon name="swimming" size={15} />
+              {len} м
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -313,43 +379,12 @@ function Tip({ children }) {
 }
 
 /**
- * Декоративная «дорожка бассейна» — чисто визуал (галочек/прогресса нет).
- * Синяя вода + пунктирная разметка дорожки + плавный блик слева направо.
- */
-function PoolLane({ label }) {
-  return (
-    <div style={laneStyles.wrap}>
-      <div style={laneStyles.water}>
-        <div style={laneStyles.dashes} />
-        <div style={laneStyles.shine} />
-        <span style={laneStyles.label}>{label}</span>
-      </div>
-      <style>{`
-        @keyframes poolShine {
-          0%   { transform: translateX(-120%); }
-          100% { transform: translateX(220%); }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-/**
- * Иконка пловца — взята из исходного SVG-памятки, координаты нормализованы
- * под общий viewBox 30×26, цвет через currentColor (красится цветом стиля).
- *  - crawl  — кроль (рука в гребке вверх)
- *  - breast — брасс (руки вперёд)
- *  - back   — спина (рука назад + волна снизу)
+ * Иконка пловца (crawl/breast/back) — координаты нормализованы под viewBox 30×26,
+ * цвет через currentColor.
  */
 function SwimmerIcon({ stroke, size = 34 }) {
-  const common = {
-    stroke: 'currentColor',
-    strokeWidth: 1.6,
-    strokeLinecap: 'round',
-    fill: 'none'
-  }
+  const common = { stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', fill: 'none' }
   const dot = { fill: 'currentColor', stroke: 'none' }
-
   return (
     <svg width={size} height={size} viewBox="0 0 30 26" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
       {stroke === 'crawl' && (
@@ -387,9 +422,6 @@ function SwimmerIcon({ stroke, size = 34 }) {
   )
 }
 
-/**
- * Модалка завершения. reward / limit / offline / error.
- */
 function SwimFinishedModal({ kind, distance, status, onConfirm }) {
   const isError = kind === 'error'
   const isSaving = status === 'saving'
@@ -464,68 +496,117 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 }
 
 const styles = {
-  page: { padding: '0 16px 40px', minHeight: '100dvh' },
+  page: { padding: '0 16px 130px', minHeight: '100dvh' },
   stickyHeader: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     background: 'var(--color-bg)',
-    // Верх шапки — ровно 16px ниже кнопок Telegram (зашито в var).
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '14px',
+    paddingBottom: '12px',
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  header: { textAlign: 'center', marginBottom: '14px' },
-  title: {
+  // Синяя карточка-«вода» со стеклянной обводкой (вся заливка/волна на весь блок).
+  headerCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-card)',
+    padding: '14px 16px 16px',
+    background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
+    border: '1px solid rgba(63, 162, 247, 0.45)',
+    boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.25), 0 6px 24px rgba(28, 92, 151, 0.25)',
+    transition: 'padding 0.28s var(--ease-ios)'
+  },
+  headerCardCompact: { padding: '8px 16px 10px' },
+  // Блик-волна поверх всей карточки.
+  wave: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0,
+    width: '40%',
+    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)',
+    animation: 'poolShine 3.2s ease-in-out infinite',
+    pointerEvents: 'none'
+  },
+  headerInner: { position: 'relative', zIndex: 1 },
+  topRow: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    minHeight: '30px',
+    maxHeight: '40px',
+    opacity: 1,
+    overflow: 'visible',
+    transition: 'max-height 0.28s var(--ease-ios), opacity 0.2s ease, margin 0.28s var(--ease-ios)'
+  },
+  topRowCompact: { maxHeight: 0, opacity: 0, overflow: 'hidden', marginBottom: '-4px' },
+  clock: {
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    fontSize: '13px',
+    color: 'rgba(255, 255, 255, 0.72)',
+    whiteSpace: 'nowrap'
+  },
+  metersWrap: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '44px',
+    marginTop: '8px',
+    transition: 'height 0.28s var(--ease-ios), margin 0.28s var(--ease-ios)'
+  },
+  metersWrapCompact: { height: '30px', marginTop: '2px' },
+  metersDashes: {
+    position: 'absolute',
+    left: 0, right: 0,
+    top: '50%',
+    height: '2px',
+    transform: 'translateY(-50%)',
+    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 12px, transparent 12px 26px)',
+    opacity: 0.7
+  },
+  metersText: {
+    position: 'relative',
+    zIndex: 1,
+    padding: '0 14px',
+    // Подложка цвета воды — чтобы пунктир «прерывался» текстом.
+    background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '32px',
-    color: 'var(--cat-pool)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    margin: 0,
-    textShadow: '0 0 12px rgba(63, 162, 247, 0.3)'
-  },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    marginTop: '6px'
-  },
-  poolSwitch: {
-    display: 'flex',
-    gap: '6px',
-    padding: '4px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: '14px',
-    marginBottom: '12px'
-  },
-  poolButton: {
-    flex: 1,
-    padding: '10px',
-    borderRadius: '10px',
-    border: 'none',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: '20px',
+    color: '#FFFFFF',
     letterSpacing: '0.5px',
-    transition: 'background 0.2s ease, color 0.2s ease',
-    cursor: 'pointer'
+    whiteSpace: 'nowrap',
+    textShadow: '0 1px 6px rgba(0, 0, 0, 0.4)',
+    transition: 'font-size 0.28s var(--ease-ios)'
   },
+  metersTextCompact: { fontSize: '16px' },
+
   body: { paddingTop: '16px' },
-  block: { marginBottom: '22px' },
-  blockHeader: {
+
+  // Блок = одна карточка 33px: тёмная шапка + светлые упражнения + степпер.
+  blockCard: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden',
+    marginBottom: '16px'
+  },
+  blockHead: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    padding: '8px 14px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 'var(--radius-medium)',
-    marginBottom: '10px'
+    padding: '12px 16px',
+    background: 'rgba(0, 0, 0, 0.22)'
   },
   blockTitle: {
     fontFamily: 'var(--font-manrope)',
@@ -538,68 +619,13 @@ const styles = {
     fontSize: '11px',
     color: 'var(--color-text-secondary)'
   },
-  repeatBadge: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    letterSpacing: '1.5px',
-    color: 'var(--cat-pool)',
-    background: 'rgba(63, 162, 247, 0.1)',
-    border: '1px solid rgba(63, 162, 247, 0.25)',
-    borderRadius: 'var(--radius-small)',
-    padding: '6px 12px',
-    textAlign: 'center',
-    marginBottom: '10px'
-  },
-  repeatStepper: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    background: 'rgba(63, 162, 247, 0.1)',
-    border: '1px solid rgba(63, 162, 247, 0.25)',
-    borderRadius: 'var(--radius-small)',
-    padding: '4px 12px',
-    marginBottom: '10px'
-  },
-  repeatLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    letterSpacing: '1.5px',
-    color: 'var(--cat-pool)'
-  },
-  repeatBtn: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    border: 'none',
-    background: 'rgba(63, 162, 247, 0.18)',
-    color: 'var(--cat-pool)',
-    fontSize: '20px',
-    fontWeight: 700,
-    lineHeight: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer'
-  },
-  repeatValue: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: '18px',
-    color: 'var(--cat-pool)',
-    minWidth: '20px',
-    textAlign: 'center'
-  },
-  swimList: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  blockBody: { padding: '6px 16px 14px' },
+  rowDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 -4px' },
   swimRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '12px 14px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-medium)'
+    padding: '11px 0'
   },
   swimContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
   swimName: {
@@ -622,56 +648,58 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
+  // Крупный степпер-пилюля во всю ширину блока (внизу «Основы»).
+  stepper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '10px',
+    height: '48px',
+    marginTop: '12px',
+    padding: '0 8px',
+    background: 'rgba(63, 162, 247, 0.12)',
+    border: '1px solid rgba(63, 162, 247, 0.3)',
+    borderRadius: 'var(--radius-pill)'
+  },
+  stepBtn: {
+    width: '40px',
+    height: '40px',
+    flexShrink: 0,
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(63, 162, 247, 0.22)',
+    color: 'var(--cat-pool)',
+    fontSize: '22px',
+    fontWeight: 700,
+    lineHeight: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer'
+  },
+  stepLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    fontSize: '15px',
+    letterSpacing: '0.5px',
+    color: 'var(--cat-pool)',
+    whiteSpace: 'nowrap'
+  },
   footnote: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
-    padding: '8px 14px 0'
+    paddingTop: '10px',
+    textAlign: 'center'
   },
-  totalRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '14px 16px',
-    background: 'rgba(63, 162, 247, 0.06)',
-    border: '1px solid rgba(63, 162, 247, 0.2)',
-    borderRadius: 'var(--radius-card)',
-    marginTop: '4px'
-  },
-  totalLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
-    color: 'var(--color-text)',
-    letterSpacing: '1px'
-  },
-  totalValue: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
-    color: 'var(--cat-pool)',
-    letterSpacing: '0.5px'
-  },
-  finishWrap: { marginTop: '24px' },
-  finishButton: {
-    width: '100%',
-    padding: '18px',
-    background: 'var(--cat-pool)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1px solid var(--cat-pool)',
-    boxShadow: '0 4px 20px rgba(63, 162, 247, 0.3)',
-    cursor: 'pointer'
-  },
+
   tipsBlock: {
-    marginTop: '28px',
+    marginTop: '12px',
     padding: '16px 18px',
-    background: 'rgba(255, 255, 255, 0.02)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
   },
   tipsTitle: {
@@ -690,6 +718,20 @@ const styles = {
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   },
+
+  // Прибитая кнопка-док (как «Завершить/Начать» в дне силовой).
+  finishBar: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '44px 16px var(--tabbar-bottom)',
+    pointerEvents: 'none',
+    zIndex: 40
+  },
+
   errorBlock: {
     padding: '40px 20px',
     paddingTop: 'calc(var(--tg-safe-top) + 40px)',
@@ -701,45 +743,27 @@ const styles = {
   }
 }
 
-const laneStyles = {
-  wrap: { padding: '0 2px' },
-  water: {
+const plsStyles = {
+  wrap: { display: 'inline-flex' },
+  group: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: '3px', width: 'auto',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
+  },
+  item: {
     position: 'relative',
-    height: '40px',
-    borderRadius: 'var(--radius-medium)',
-    overflow: 'hidden',
-    background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
-    border: '1px solid rgba(63, 162, 247, 0.35)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: 'inset 0 0 18px rgba(0, 0, 0, 0.25)'
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+    minHeight: '26px', padding: '0 11px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease'
   },
-  dashes: {
-    position: 'absolute',
-    left: 0, right: 0,
-    top: '50%',
-    height: '2px',
-    transform: 'translateY(-50%)',
-    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 12px, transparent 12px 26px)',
-    opacity: 0.7
-  },
-  shine: {
-    position: 'absolute',
-    top: 0, bottom: 0,
-    width: '40%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)',
-    animation: 'poolShine 3.2s ease-in-out infinite'
-  },
-  label: {
-    position: 'relative',
-    zIndex: 2,
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: '#FFFFFF',
-    letterSpacing: '1px',
-    textShadow: '0 1px 4px rgba(0, 0, 0, 0.5)'
+  itemActive: {
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   }
 }
 
@@ -790,33 +814,28 @@ const modalStyles = {
     fontWeight: 700,
     fontSize: '22px',
     color: 'var(--color-primary)',
-    letterSpacing: '1px',
-    padding: '8px 16px',
-    background: 'rgba(158, 209, 83, 0.1)',
-    border: '1px solid rgba(158, 209, 83, 0.3)',
-    borderRadius: 'var(--radius-medium)',
-    textShadow: '0 0 10px rgba(158, 209, 83, 0.5)'
+    letterSpacing: '1px'
   },
   message: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    lineHeight: 1.5,
-    padding: '0 4px'
+    lineHeight: 1.5
   },
   button: {
-    marginTop: '8px',
+    marginTop: '4px',
     width: '100%',
     padding: '14px',
     background: 'var(--cat-pool)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    borderRadius: 'var(--radius-medium)',
-    border: 'none'
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '2px',
+    borderRadius: 'var(--radius-pill)',
+    border: 'none',
+    cursor: 'pointer'
   },
   buttonError: { background: '#FF8C42' }
 }

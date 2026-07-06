@@ -265,9 +265,9 @@ function DayDetail({ data, onClose }) {
               if (diff >= 1) minutes = diff
             }
             const metaParts = []
-            if (minutes != null) metaParts.push(`${minutes} мин`)
-            if (w.distance_m) metaParts.push(`${w.distance_m} м`)
-            metaParts.push(formatTimeMsk(w.finished_at))
+            if (minutes != null) metaParts.push(<span key="min">{minutes} мин</span>)
+            if (w.distance_m) metaParts.push(<span key="dist" style={{ color: 'var(--cat-pool)', fontWeight: 700 }}>{w.distance_m} м</span>)
+            metaParts.push(<span key="time">{formatTimeMsk(w.finished_at)}</span>)
             return (
               <div key={i} style={dstyles.item}>
                 <Badge iconName={b.iconName} color={b.color} size={30} icon={16} />
@@ -281,7 +281,11 @@ function DayDetail({ data, onClose }) {
                       </>
                     )}
                   </div>
-                  <div style={dstyles.itemMeta}>{metaParts.join(' · ')}</div>
+                  <div style={dstyles.itemMeta}>
+                    {metaParts.map((p, mi) => (
+                      <span key={mi}>{mi > 0 && <span style={{ opacity: 0.5 }}> · </span>}{p}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
             )
