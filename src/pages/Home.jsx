@@ -159,6 +159,7 @@ export default function Home() {
   // Разделы — по умолчанию раскрыты; Дневной буст — по умолчанию свёрнут (компактно).
   const sectionsCollapsed = !!collapsed.sections
   const boostCollapsed = collapsed.boost !== false
+  const historyCollapsed = !!collapsed.history // по умолчанию раскрыта
   const weeklyCount = readWeeklyCount()
 
   // Фоновое обновление избранного (вдруг менялось с другого устройства).
@@ -349,10 +350,12 @@ export default function Home() {
         />
         <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
 
-        {/* История — тот же календарь, что на странице /history */}
-        <div style={{ marginTop: '20px' }}>
-          <HistoryCalendar heading="История" />
-        </div>
+        {/* История — сворачиваемый календарь (как Разделы/Активности) */}
+        <SectionToggle
+          title="История"
+          onToggle={() => setCollapse('history', !historyCollapsed)}
+        />
+        <Collapsible open={!historyCollapsed}><HistoryCalendar /></Collapsible>
       </div>
     </div>
   )
