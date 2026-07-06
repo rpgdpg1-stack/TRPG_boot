@@ -45,7 +45,7 @@ export default function DailyQuests() {
   const [winIdx, setWinIdx] = useState(() => getCurrentWindowIndex())
   const [slideDir, setSlideDir] = useState(null)
   const [animating, setAnimating] = useState(null)
-  const [floatingRewards, setFloatingRewards] = useState([])
+  const [fly, setFly] = useState(0) // тик полёта +20 (когда ВСЁ окно выполнено)
   const [menuAnchor, setMenuAnchor] = useState(null)
 
   const swipe = useRef({ x: null })
@@ -99,6 +99,13 @@ export default function DailyQuests() {
     else goWindow(winIdx - 1)
   }
 
+  // +20 улетает вверх ТОЛЬКО когда все показанные задания окна выполнены (и есть
+  // рекомендуемая — за неё и даётся награда; за свои баллов нет).
+  const maybeFly = (win, recDone, custDone) => {
+    const hasRec = config.showRecommended && !!getRecommendedForWindow(win.id)
+    if (hasRec && recDone && custDone) setFly(f => f + 1)
+  }
+
   // Тап по рекомендуемой — выполнить (награда через completeQuest).
   const tapRecommended = async (rec, win) => {
     if (!rec || completed[rec.id] || animating || !isWindowOpen(win)) return
@@ -106,11 +113,8 @@ export default function DailyQuests() {
     setAnimating(rec.id)
     const result = await completeQuest(rec.id, SLOT_XP)
     setCompleted(result.completed)
-    if (result.wasNew) {
-      const key = Date.now()
-      setFloatingRewards(prev => [...prev, { id: rec.id, xp: SLOT_XP, key }])
-      setTimeout(() => setFloatingRewards(prev => prev.filter(r => r.key !== key)), 1100)
-    }
+    const hasCust = config.showCustom && !!config.custom[win.id]
+    maybeFly(win, true, hasCust ? !!customDone[win.id] : true)
     setTimeout(() => setAnimating(null), 600)
   }
 
@@ -119,6 +123,9 @@ export default function DailyQuests() {
     if (customDone[win.id] || !isWindowOpen(win)) return
     haptic.success()
     setCustomDoneState(setCustomDone(win.id, true))
+    const recItem = getRecommendedForWindow(win.id)
+    const hasRec = config.showRecommended && !!recItem
+    maybeFly(win, hasRec ? !!completed[recItem.id] : true, true)
   }
 
   const toggleRecommended = () => {
@@ -168,7 +175,6 @@ export default function DailyQuests() {
                   benefit={rec.benefit}
                   done={!!completed[rec.id]}
                   scale={animating === rec.id}
-                  reward={floatingRewards.find(r => r.id === rec.id)}
                   onTap={() => tapRecommended(rec, win)}
                 />
               )}
@@ -185,6 +191,13 @@ export default function DailyQuests() {
           )}
         </div>
       </div>
+
+      {/* +20 улетает вверх, когда всё окно выполнено. */}
+      {fly > 0 && (
+        <span key={fly} style={styles.windowFly}>
+          +{SLOT_XP} <MuscleIcon size={22} earned={true} />
+        </span>
+      )}
 
       {menuAnchor && (
         <AnchorMenu
@@ -212,7 +225,7 @@ export default function DailyQuests() {
 
 /** Строка активности: слева слот галочки (пуст → зелёная галочка), эмодзи/звезда,
     текст (название + польза), справа — награда (только у рекомендуемой). */
-function Row({ emoji, star, title, benefit, done, scale, reward, onTap }) {
+function Row({ emoji, star, title, benefit, done, scale, onTap }) {
   const startRef = useRef(null)
   const onDown = (e) => { startRef.current = { x: e.clientX, y: e.clientY } }
   const onUp = (e) => {
@@ -247,16 +260,9 @@ function Row({ emoji, star, title, benefit, done, scale, reward, onTap }) {
         {benefit && <span style={{ ...styles.benefit, opacity: done ? 0.5 : 1 }}>{benefit}</span>}
       </div>
       {!star && (
-        <div style={styles.rewardWrap}>
-          <span style={{ ...styles.reward, opacity: done ? 0.5 : 1, textDecoration: done ? 'line-through' : 'none' }}>
-            +{SLOT_XP} <MuscleIcon size={18} earned={done} />
-          </span>
-          {reward && (
-            <span key={reward.key} style={styles.floatingReward}>
-              +{reward.xp} <MuscleIcon size={18} earned={true} />
-            </span>
-          )}
-        </div>
+        <span style={{ ...styles.reward, opacity: done ? 0.5 : 1, textDecoration: done ? 'line-through' : 'none' }}>
+          +{SLOT_XP} <MuscleIcon size={18} earned={done} />
+        </span>
       )}
     </button>
   )
@@ -366,8 +372,8 @@ const styles = {
     lineHeight: 1.2,
     color: 'var(--color-text-secondary)'
   },
-  rewardWrap: { position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center' },
   reward: {
+    flexShrink: 0,
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '12px',
@@ -378,20 +384,23 @@ const styles = {
     alignItems: 'center',
     gap: '4px'
   },
-  floatingReward: {
+  // +20 улетает вверх от центра карточки, когда всё окно выполнено.
+  windowFly: {
     position: 'absolute',
-    bottom: '100%',
+    top: '40%',
     left: '50%',
+    transform: 'translateX(-50%)',
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
+    fontWeight: 700,
+    fontSize: '18px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
+    zIndex: 3,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '5px',
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rewardFloatUp 1.1s ease-out forwards'
   }
