@@ -486,6 +486,68 @@ export default function WorkoutDay() {
     }
   }, [isThisActive, programId, day])
 
+  // Доводка шапки после отпускания пальца: если остановились В ЗОНЕ сжатия
+  // (0<scrollY<180), сама плавно доезжает — вниз-скролл → до пилюли, вверх → наверх.
+  // Так «любой скролл вниз» сам собирается в пилюлю, а не застревает наполовину.
+  useEffect(() => {
+    const COLLAPSE_END = 180
+    let idleTimer = 0
+    let snapRaf = 0
+    let snapping = false
+    let prevY = window.scrollY || 0
+    let dir = 1
+
+    const cancelSnap = () => { if (snapRaf) { cancelAnimationFrame(snapRaf); snapRaf = 0 } snapping = false }
+
+    const animateTo = (target) => {
+      const startY = window.scrollY || 0
+      const dist = target - startY
+      if (Math.abs(dist) < 1) return
+      const t0 = performance.now()
+      const dur = 320
+      snapping = true
+      const step = (now) => {
+        const p = Math.min(1, (now - t0) / dur)
+        const e = 1 - Math.pow(1 - p, 3) // easeOutCubic
+        window.scrollTo(0, startY + dist * e)
+        if (p < 1) snapRaf = requestAnimationFrame(step)
+        else { snapRaf = 0; snapping = false }
+      }
+      snapRaf = requestAnimationFrame(step)
+    }
+
+    const settle = () => {
+      if (snapping) return
+      const y = window.scrollY || 0
+      if (y <= 2 || y >= COLLAPSE_END) return
+      animateTo(dir >= 0 ? COLLAPSE_END : 0)
+    }
+
+    const onScroll = () => {
+      const y = window.scrollY || 0
+      if (!snapping) {
+        if (y > prevY + 0.5) dir = 1
+        else if (y < prevY - 0.5) dir = -1
+      }
+      prevY = y
+      if (snapping) return
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(settle, 140)
+    }
+
+    // Палец коснулся — прервать доводку (юзер снова управляет).
+    const onTouchStart = () => { cancelSnap(); clearTimeout(idleTimer) }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('touchstart', onTouchStart)
+      clearTimeout(idleTimer)
+      cancelSnap()
+    }
+  }, [])
+
   // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
   // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
   // только линия опускается ниже середины последней карточки группы — пилюля
@@ -965,7 +1027,15 @@ export default function WorkoutDay() {
             (весь прогресс дня — тут, а не полоской). */}
         <div style={{ ...styles.headerCard, padding: `${14 - rowCollapse * 6}px 16px` }}>
           {isThisActive && (
-            <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
+            <div
+              style={{
+                ...styles.headerFill,
+                width: `${progressPct}%`,
+                // Тот же светлый тон, но в оттенке акцента дня (грудь→оранж, спина→красн…).
+                background: `linear-gradient(0deg, color-mix(in srgb, ${dayGroupAccent} 22%, transparent), color-mix(in srgb, ${dayGroupAccent} 22%, transparent)), rgba(255,255,255,0.07)`
+              }}
+              aria-hidden="true"
+            />
           )}
           <div style={styles.headerCardInner}>
 
@@ -989,7 +1059,7 @@ export default function WorkoutDay() {
                   color: dayGroupAccent,
                   opacity: rowCollapse,
                   maxWidth: `${rowCollapse * 26}px`,
-                  marginRight: `${rowCollapse * 7}px`
+                  marginRight: `${rowCollapse * 13}px`
                 }}>{day}</span>
 
                 {isThisActive ? (
@@ -1010,7 +1080,7 @@ export default function WorkoutDay() {
                   ...styles.rowCount,
                   opacity: rowCollapse,
                   maxWidth: `${rowCollapse * 80}px`,
-                  marginLeft: `${rowCollapse * 7}px`
+                  marginLeft: `${rowCollapse * 13}px`
                 }}>
                   {isThisActive
                     ? `${activeOrderNums.size}/${slots.length}`
