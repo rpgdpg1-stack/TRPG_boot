@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
@@ -12,8 +11,8 @@ import {
   workoutCategoryMeta, describeWorkout, getDayMuscleTags
 } from '../utils/history'
 
-const HISTORY_LIMIT = 100
-const MIN_OFFSET = -1 // -1 = предыдущий месяц; глубже не листаем
+const HISTORY_LIMIT = 500 // с запасом на катящийся год истории
+const MAX_MONTHS_BACK = 11 // катящееся окно: текущий месяц + до 11 назад (год)
 
 // Акцентный цвет силового дня = цвет первой группы мышц (как на карточках/в шапке).
 function strengthAccent(workout) {
@@ -59,7 +58,6 @@ function metaForKey(key) {
  * heading — если задан, сверху секция-заголовок + «Все ›» на /history.
  */
 export default function HistoryCalendar({ heading }) {
-  const navigate = useNavigate()
   const cached = getRecentWorkoutsSync(HISTORY_LIMIT)
   const [workouts, setWorkouts] = useState(cached || [])
   const [offset, setOffset] = useState(0)
@@ -84,12 +82,28 @@ export default function HistoryCalendar({ heading }) {
     return map
   }, [workouts])
 
+  // Самый ранний месяц с тренировкой (в «год*12+месяц») — нижняя граница листания.
+  const earliestYM = useMemo(() => {
+    let min = null
+    for (const w of workouts) {
+      if (!w.finished_at) continue
+      const p = mskParts(w.finished_at)
+      const ym = p.y * 12 + p.m
+      if (min === null || ym < min) min = ym
+    }
+    return min
+  }, [workouts])
+
   const today = mskParts(new Date().toISOString())
   const base = new Date(Date.UTC(today.y, today.m + offset, 1))
   const viewY = base.getUTCFullYear()
   const viewM = base.getUTCMonth()
   const daysInMonth = new Date(Date.UTC(viewY, viewM + 1, 0)).getUTCDate()
   const firstDow = (new Date(Date.UTC(viewY, viewM, 1)).getUTCDay() + 6) % 7
+
+  // Докуда можно листать назад: до первого месяца с тренировкой, но не глубже года.
+  const todayYM = today.y * 12 + today.m
+  const minOffset = earliestYM === null ? 0 : Math.max(-MAX_MONTHS_BACK, earliestYM - todayYM)
 
   const dayKeyOf = (d) => `${viewY}-${String(viewM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 
@@ -107,7 +121,7 @@ export default function HistoryCalendar({ heading }) {
 
   const totalMonth = summary.reduce((s, c) => s + c.count, 0)
 
-  const goPrev = () => { if (offset > MIN_OFFSET) { setOffset(offset - 1); haptic.selection() } }
+  const goPrev = () => { if (offset > minOffset) { setOffset(offset - 1); haptic.selection() } }
   const goNext = () => { if (offset < 0) { setOffset(offset + 1); haptic.selection() } }
 
   let touch = null
@@ -138,15 +152,14 @@ export default function HistoryCalendar({ heading }) {
       {heading && (
         <div style={styles.headingRow}>
           <span style={styles.heading}>{heading}</span>
-          <button onClick={() => { haptic.light(); navigate('/history') }} style={styles.seeAll}>Все ›</button>
         </div>
       )}
 
       <div style={styles.card}>
         <div style={styles.monthNav}>
           <button
-            style={{ ...styles.chev, opacity: offset > MIN_OFFSET ? 1 : 0.25 }}
-            className="press-tile" onClick={goPrev} disabled={offset <= MIN_OFFSET}
+            style={{ ...styles.chev, opacity: offset > minOffset ? 1 : 0.25 }}
+            className="press-tile" onClick={goPrev} disabled={offset <= minOffset}
             aria-label="Предыдущий месяц"
           >‹</button>
           <div style={styles.monthTitle}>{MONTHS_RU[viewM]} {viewY}</div>
@@ -289,11 +302,6 @@ const styles = {
   heading: {
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '15px',
     color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
-  },
-  seeAll: {
-    background: 'transparent', border: 'none', padding: '4px 2px',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
-    color: 'var(--color-text-secondary)'
   },
   card: {
     background: 'var(--surface)',
