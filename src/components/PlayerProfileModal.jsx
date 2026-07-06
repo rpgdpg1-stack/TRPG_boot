@@ -2,11 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
-import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT } from '../lib/backups'
+import { backupUser, getUserPublicProfile, BACKUP_DAILY_LIMIT, BACKUP_BONUS } from '../lib/backups'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
-import BackupButton from './BackupButton'
 import MuscleIcon from './MuscleIcon'
 
 /**
@@ -38,6 +37,7 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   // не сказал реальный статус (иначе мигает «Подстраховать» → «Уже подстрахован»).
   const [backupState, setBackupState] = useState('loading') // loading|idle|sending|already|limit
   const [bicepsTick, setBicepsTick] = useState(0)
+  const [fly, setFly] = useState(0) // тик «полёта» мускула +20 (по тапу подстраховки)
   const bicepsTimers = useRef([])
 
   useEffect(() => {
@@ -95,11 +95,13 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
   const handleBackup = async () => {
     if (backupState !== 'idle') return
     haptic.medium()
+    setFly(f => f + 1) // мускул +20 летит вверх сразу (оптимистично)
     setBackupState('sending')
 
     const result = await backupUser(row.user_id)
     if (result.success) {
       haptic.success()
+      setBackupState('already') // строка станет «Сегодня уже помог», если модалка осталась
       onBackupDone?.(row.first_name || 'Игрок')
     } else if (result.error === 'already_today') {
       setBackupState('already')
@@ -113,12 +115,34 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
     }
   }
 
-  // Подпись статуса — обычным регистром, прямо ВНУТРИ кнопки. Лимит показываем
-  // только когда он реально достигнут (на любом игроке, кого пробуешь страховать).
-  const statusText = backupState === 'sending' ? 'Отправляю…'
-                   : backupState === 'already' ? 'Уже подстрахован сегодня'
-                   : backupState === 'limit'   ? `Лимит ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT} — возвращайся завтра`
-                   : null
+  // Строка действия ВНУТРИ карточки профиля (Apple Card): разделитель сверху даёт
+  // ProfileHeader, тут — тапабельный текст «Подстраховать» + мускул / статус.
+  const tappable = backupState === 'idle'
+  const backupRow = isSelf ? null : (
+    <div
+      onClick={tappable ? handleBackup : undefined}
+      className={tappable ? 'tg-row' : undefined}
+      style={{
+        ...styles.actionRow,
+        color: tappable ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+        cursor: tappable ? 'pointer' : 'default'
+      }}
+    >
+      {backupState === 'loading' ? <span style={{ opacity: 0 }}>—</span>
+        : backupState === 'sending' ? 'Отправляю…'
+        : backupState === 'already' ? 'Сегодня уже помог'
+        : backupState === 'limit'   ? `Лимит ${BACKUP_DAILY_LIMIT}/${BACKUP_DAILY_LIMIT} — возвращайся завтра`
+        : (<>Подстраховать <MuscleIcon size={20} earned={true} flexTrigger={bicepsTick} /></>)}
+
+      {/* Мускул +20 улетает вверх по тапу (как при «подстраховать всех»). */}
+      {fly > 0 && (
+        <span key={fly} style={styles.flyer}>
+          <MuscleIcon size={30} earned={true} flexTrigger={fly} />
+          <span style={styles.flyerPlus}>+{BACKUP_BONUS}</span>
+        </span>
+      )}
+    </div>
+  )
 
   // Место рядом с кубком — ВСЕГДА место в ЛИГЕ игрока (не среди друзей).
   // Друзья и обе вкладки рейтинга кладут его в league_place; на старых
@@ -146,21 +170,8 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
           lastWorkout={pub?.last_workout || null}
           statsLoading={pub === null}
           interactive={false}
+          bottomAction={backupRow}
         />
-
-        {!isSelf && (
-          backupState === 'loading' ? (
-            // Статус ещё не пришёл с сервера — нейтральный плейсхолдер той же
-            // высоты, чтобы кнопка не прыгала «Подстраховать»→«Уже подстрахован».
-            <BackupButton disabled dim pulse>{' '}</BackupButton>
-          ) : backupState === 'idle' ? (
-            <BackupButton onClick={handleBackup}>
-              Подстраховать <MuscleIcon size={20} earned={true} flexTrigger={bicepsTick} />
-            </BackupButton>
-          ) : (
-            <BackupButton disabled dim>{statusText}</BackupButton>
-          )
-        )}
 
       </div>
 
@@ -169,6 +180,11 @@ export default function PlayerProfileModal({ row, onClose, onBackupDone }) {
         @keyframes profileModalPanel {
           0%   { opacity: 0; transform: scale(0.9) translateY(10px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes backupFlyUp {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+          15%  { opacity: 1; transform: translate(-50%, -70%) scale(1.2); }
+          100% { opacity: 0; transform: translate(-50%, -240%) scale(0.95); }
         }
       `}</style>
     </div>,
@@ -186,6 +202,43 @@ function CrossIcon() {
 }
 
 const styles = {
+  // Строка «Подстраховать» — часть карточки (Apple Card): не кнопка, а тапабельный
+  // текст; высота ~54px, снизу скруглённые углы под карточку, press-подсветка .tg-row.
+  actionRow: {
+    position: 'relative',
+    minHeight: '54px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '14px',
+    letterSpacing: '0.5px',
+    borderBottomLeftRadius: 'calc(var(--radius-card) - 1px)',
+    borderBottomRightRadius: 'calc(var(--radius-card) - 1px)',
+    WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none'
+  },
+  // Улетающий вверх мускул +20 (по центру строки).
+  flyer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    pointerEvents: 'none',
+    zIndex: 5,
+    filter: 'drop-shadow(0 0 10px rgba(250, 223, 190, 0.5))',
+    animation: 'backupFlyUp 1.6s ease-out forwards'
+  },
+  flyerPlus: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '18px',
+    color: 'var(--color-primary)'
+  },
   overlay: {
     position: 'fixed',
     top: 0, left: 0, right: 0, bottom: 0,

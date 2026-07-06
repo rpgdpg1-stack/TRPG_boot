@@ -68,7 +68,8 @@ export default function ProfileHeader({
   recentWorkouts = [],
   interactive = false,
   statsLoading = false,      // true → показать скелетон вместо стрика/тренировок/посл. тренировки
-  onPlaceTap = null
+  onPlaceTap = null,
+  bottomAction = null        // нода-«строка действия» ВНУТРИ карточки снизу (разделитель + зона)
 }) {
   const [showRanks, setShowRanks] = useState(false)
   const [rankPopTick, setRankPopTick] = useState(0)
@@ -345,6 +346,13 @@ export default function ProfileHeader({
 
       </div>
 
+      {/* Строка действия ВНУТРИ карточки (напр. «Подстраховать» в модалке друга):
+          full-bleed разделитель-хайрлайн + переданная зона — ощущается как
+          продолжение карточки (Apple Card), без внешнего отступа. */}
+      {bottomAction && (
+        <div style={styles.bottomAction}>{bottomAction}</div>
+      )}
+
       <style>{`
         @keyframes rankIconPopHeader {
           0%   { transform: scale(1); }
@@ -379,6 +387,15 @@ const styles = {
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     width: '100%'
+  },
+  // Строка действия внутри карточки: гасим боковые/нижний паддинги (full-bleed до
+  // краёв), поджимаем к контенту (−6 от flex-gap 16), сверху разделитель-хайрлайн.
+  bottomAction: {
+    marginTop: '-6px',
+    marginLeft: '-16px',
+    marginRight: '-16px',
+    marginBottom: '-16px',
+    borderTop: '1px solid var(--border-hairline)'
   },
   // Верхняя панель: аватар слева, инфо-колонка справа.
   topPanel: {
