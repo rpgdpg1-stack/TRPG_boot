@@ -12,7 +12,8 @@ import {
   SWIM_STROKES,
   strokeColor,
   poolsForMeters,
-  pluralPools
+  pluralPools,
+  swimMinutesForMeters
 } from '../data/programs/swim'
 import MuscleIcon from '../components/MuscleIcon'
 import ScreenTitle from '../components/ScreenTitle'
@@ -218,7 +219,7 @@ export default function SwimWorkout() {
           <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
             <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
             <span style={styles.clock}>
-              <ClockIcon size={13} />≈{SWIM_PROGRAM.durationMin} мин
+              <ClockIcon size={13} />≈{swimMinutesForMeters(totalMeters)} мин
             </span>
           </div>
 
@@ -240,7 +241,7 @@ export default function SwimWorkout() {
             <section key={block.id} style={styles.blockCard}>
               <div style={styles.blockHead}>
                 <span style={styles.blockTitle}>{block.index} · {block.title}</span>
-                <span style={styles.blockMeta}>{block.hint} · {bMeters} м</span>
+                <span style={styles.blockMeta}>≈{swimMinutesForMeters(bMeters)} мин · {bMeters} м</span>
               </div>
 
               <div style={styles.blockBody}>

@@ -83,6 +83,17 @@ export function swimTotalMeters() {
   return SWIM_PROGRAM.blocks.reduce((sum, b) => sum + blockMeters(b), 0)
 }
 
+/**
+ * Приблизительное время (мин) на дистанцию — растёт с числом кругов. Привязка:
+ * базовый метраж (5 кругов основы = 750 м) соответствует durationMin (45 мин),
+ * дальше линейно по метрам. Не зависит от длины бассейна (метраж тот же).
+ */
+export function swimMinutesForMeters(meters) {
+  const base = swimTotalMeters()
+  if (!base) return SWIM_PROGRAM.durationMin
+  return Math.round((meters * SWIM_PROGRAM.durationMin) / base)
+}
+
 /** Сколько бассейнов составляет дистанция в выбранном бассейне. */
 export function poolsForMeters(meters, poolLen) {
   return Math.round(meters / poolLen)
