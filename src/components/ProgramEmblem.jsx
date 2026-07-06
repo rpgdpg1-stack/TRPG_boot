@@ -29,6 +29,8 @@ function emblemChar(title) {
 export default function ProgramEmblem({ program, size = 44 }) {
   const color = categoryColor(program?.category, program?.kind)
   const ch = emblemChar(program?.title)
+  // «Скоро»/недоступная программа — эмблема чуть приглушена.
+  const dim = program?.comingSoon || program?.available === false
   return (
     <span
       style={{
@@ -36,6 +38,7 @@ export default function ProgramEmblem({ program, size = 44 }) {
         height: `${size}px`,
         borderRadius: `${Math.round(size * 0.3)}px`,
         background: color,
+        opacity: dim ? 0.6 : 1,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',

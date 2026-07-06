@@ -104,7 +104,11 @@ export default function Category() {
   const meta = CATEGORIES_META[id]
 
   const realPrograms = getProgramsByCategory(id)
-  const placeholderPrograms = realPrograms.length === 0 ? (PLACEHOLDER_PROGRAMS[id] || []) : []
+  // Прокидываем category в плейсхолдеры (ключ = раздел) — чтобы эмблема взяла
+  // цвет раздела (кардио — оранжевый, растяжка — розовый), а не дефолтный зелёный.
+  const placeholderPrograms = realPrograms.length === 0
+    ? (PLACEHOLDER_PROGRAMS[id] || []).map(p => ({ ...p, category: id }))
+    : []
   const programs = [...realPrograms, ...placeholderPrograms]
   const hasCustom = realPrograms.some(p => p.source === 'custom')
 
