@@ -40,6 +40,9 @@ const MIN_REPS = 1
 const MAX_REPS = 12
 const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
+// Флажки-гирлянда над водой (декор): чередуем белый/голубой.
+const PENNANTS = Array.from({ length: 14 }, (_, i) => (i % 2 ? '#9FD4FF' : '#FFFFFF'))
+
 function formatDistance(m) {
   if (m >= 1000) {
     const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
@@ -212,6 +215,18 @@ export default function SwimWorkout() {
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
           <div style={styles.wave} aria-hidden="true" />
+          {/* Гирлянда флажков над водой */}
+          <div style={styles.garland} aria-hidden="true">
+            <div style={styles.garlandString} />
+            <div style={styles.garlandRow}>
+              {PENNANTS.map((c, i) => (
+                <span
+                  key={i}
+                  style={{ ...styles.pennant, borderTopColor: c, animationDelay: `${(i % 5) * 0.2}s` }}
+                />
+              ))}
+            </div>
+          </div>
           {/* Пунктирная дорожка — ровно по вертикальному центру блока */}
           <div style={styles.dashes} aria-hidden="true" />
 
@@ -332,6 +347,10 @@ export default function SwimWorkout() {
         @keyframes poolShine {
           0%   { transform: translateX(-120%); }
           100% { transform: translateX(220%); }
+        }
+        @keyframes pennantSway {
+          0%, 100% { transform: rotate(-6deg); }
+          50%      { transform: rotate(6deg); }
         }
       `}</style>
     </div>
@@ -554,9 +573,45 @@ const styles = {
     opacity: 0.7,
     zIndex: 0
   },
+  // Гирлянда флажков у верхней кромки карточки.
+  garland: {
+    position: 'absolute',
+    top: '3px',
+    left: 0,
+    right: 0,
+    height: '14px',
+    zIndex: 1,
+    pointerEvents: 'none'
+  },
+  garlandString: {
+    position: 'absolute',
+    top: 0,
+    left: '10px',
+    right: '10px',
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.45)'
+  },
+  garlandRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '0 16px'
+  },
+  pennant: {
+    width: 0,
+    height: 0,
+    borderLeft: '5px solid transparent',
+    borderRight: '5px solid transparent',
+    borderTop: '9px solid #FFFFFF',
+    transformOrigin: 'top center',
+    animation: 'pennantSway 2.8s ease-in-out infinite'
+  },
   topRow: {
     position: 'absolute',
-    top: '12px',
+    top: '14px',
     left: '16px',
     right: '16px',
     zIndex: 2,
