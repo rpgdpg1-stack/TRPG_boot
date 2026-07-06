@@ -940,6 +940,10 @@ export default function WorkoutDay() {
   const chipsShrink = Math.min(1, headerScrollY / 44)
   const letterShrink = Math.min(1, Math.max(0, (headerScrollY - 28) / 104))
   const dayLetterSize = 45 - letterShrink * 21
+  // Третья стадия (после ужатия буквы, >132px): схлопывание в одну строку-пилюлю —
+  // место-тег гаснет, большая буква и счётчик уходят по высоте, а в центр строки
+  // рядом с временем «въезжают» буква дня (слева) и счётчик (справа).
+  const rowCollapse = Math.min(1, Math.max(0, (headerScrollY - 132) / 48))
 
   const dayLetterAnimClass = slideDir === 'right'
     ? 'day-letter-slide-in-right'
@@ -959,7 +963,7 @@ export default function WorkoutDay() {
             Фон/строук как у карточки игрока на главной. Во время тренировки ФОН
             карточки плавно заполняется светло-серым по мере отжатых упражнений
             (весь прогресс дня — тут, а не полоской). */}
-        <div style={styles.headerCard}>
+        <div style={{ ...styles.headerCard, padding: `${14 - rowCollapse * 6}px 16px` }}>
           {isThisActive && (
             <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
           )}
@@ -970,29 +974,50 @@ export default function WorkoutDay() {
                 подгружает упражнения этого места из конструктора. В своём слое
                 выше таймера: раскрытые пилюли налезают на центр и должны быть
                 ПОВЕРХ цифры часы:минуты, а не под ней. */}
-            <div style={styles.placeSlot}>
+            <div style={{ ...styles.placeSlot, opacity: 1 - rowCollapse, pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto' }}>
               {/* Место можно менять даже во время активной сессии (по просьбе). */}
               <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
             {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
                 смене цвета); до старта — часы + примерная длительность (баланс
                 строки + подсказка «сколько займёт»). */}
-            {isThisActive ? (
+            {(isThisActive || (!loading && slots.length > 0)) && (
               <div style={styles.timerCenter}>
-                <span
-                  className={timePulse ? 'pop-scale' : undefined}
-                  style={{ ...styles.timer, ...styles.timerWithClock, color: TIMER_COLORS[timerTier] }}
-                >
-                  <ClockIcon size={14} />{formatWorkoutMin(elapsedSec)}
+                {/* Буква дня — въезжает слева при полном сжатии в строку */}
+                <span style={{
+                  ...styles.rowLetter,
+                  color: dayGroupAccent,
+                  opacity: rowCollapse,
+                  maxWidth: `${rowCollapse * 26}px`,
+                  marginRight: `${rowCollapse * 7}px`
+                }}>{day}</span>
+
+                {isThisActive ? (
+                  <span
+                    className={timePulse ? 'pop-scale' : undefined}
+                    style={{ ...styles.timer, ...styles.timerWithClock, color: TIMER_COLORS[timerTier] }}
+                  >
+                    <ClockIcon size={14} />{formatWorkoutMin(elapsedSec)}
+                  </span>
+                ) : (
+                  <span style={styles.estimate}>
+                    <ClockIcon size={13} /> ≈ {formatWorkoutMin(slots.length * EST_MIN_PER_EXERCISE * 60)}
+                  </span>
+                )}
+
+                {/* Счётчик — въезжает справа при полном сжатии */}
+                <span style={{
+                  ...styles.rowCount,
+                  opacity: rowCollapse,
+                  maxWidth: `${rowCollapse * 80}px`,
+                  marginLeft: `${rowCollapse * 7}px`
+                }}>
+                  {isThisActive
+                    ? `${activeOrderNums.size}/${slots.length}`
+                    : `${slots.length} упр`}
                 </span>
               </div>
-            ) : (!loading && slots.length > 0) ? (
-              <div style={styles.timerCenter}>
-                <span style={styles.estimate}>
-                  <ClockIcon size={13} /> ≈ {formatWorkoutMin(slots.length * EST_MIN_PER_EXERCISE * 60)}
-                </span>
-              </div>
-            ) : null}
+            )}
             {/* Крестик «отменить тренировку» — только для активной сессии. Absolute
                 справа (не раздувает строку), хит-зона 44px, видимый кружок как тег
                 места. Появляется с «попом» (crossPulse), нажатие — «растущее» с отменой. */}
@@ -1031,7 +1056,14 @@ export default function WorkoutDay() {
           )}
 
           <div
-            style={styles.headerRow}
+            style={{
+              ...styles.headerRow,
+              maxHeight: `${(1 - rowCollapse) * 150}px`,
+              opacity: 1 - rowCollapse,
+              marginTop: `${-6 - 6 * rowCollapse}px`,
+              overflow: 'hidden',
+              pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto'
+            }}
             onTouchStart={handleHeaderTouchStart}
             onTouchEnd={handleHeaderTouchEnd}
           >
@@ -1088,7 +1120,13 @@ export default function WorkoutDay() {
 
           {/* Счётчик по центру: до старта «N упражнений»; в тренировке — «N/M»
               (без слова, прогресс показывает заливка фона карточки). */}
-          <div style={styles.countRow}>
+          <div style={{
+            ...styles.countRow,
+            height: `${(1 - rowCollapse) * 22}px`,
+            opacity: 1 - rowCollapse,
+            marginTop: `${-12 * rowCollapse}px`,
+            overflow: 'hidden'
+          }}>
             <span
               className={startedPulse ? 'pop-scale' : undefined}
               style={{ ...styles.dayDescLabel, ...(isThisActive ? styles.dayCountActive : null) }}
@@ -1814,6 +1852,28 @@ const styles = {
   },
   // Таймер с иконкой часов — inline-flex.
   timerWithClock: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
+  // Буква дня в сжатой строке (въезжает слева от времени).
+  rowLetter: {
+    display: 'inline-block',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    fontSize: '19px',
+    lineHeight: 1
+  },
+  // Счётчик в сжатой строке (въезжает справа от времени).
+  rowCount: {
+    display: 'inline-block',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '14px',
+    lineHeight: 1,
+    color: 'var(--color-text-secondary)',
+    fontVariantNumeric: 'tabular-nums'
+  },
   // Крестик «отменить»: absolute справа (не раздувает ряд), хит-зона 44px, видимый
   // кружок 32px как тег места. right:-7 → кружок ровно у правого края (симметрия с тегом).
   cancelBtn: {
