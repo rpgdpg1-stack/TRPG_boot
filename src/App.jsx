@@ -203,7 +203,9 @@ function SettingsButtonController() {
 
 function BottomTabBar() {
   const location = useLocation()
+  // Экраны со своей прибитой кнопкой-доком внизу — таб-бар не показываем.
   if (location.pathname.startsWith('/constructor')) return null
+  if (location.pathname.startsWith('/swim/')) return null
   return <TabBar />
 }
 

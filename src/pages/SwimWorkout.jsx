@@ -47,6 +47,14 @@ function formatDistance(m) {
   return `${m} м`
 }
 
+// Крупная строка метража в шапке: до 1000 — «750 метров», от 1000 — «1 км» / «1 км 50 м».
+function formatSwimMeters(m) {
+  if (m < 1000) return `${m} метров`
+  const km = Math.floor(m / 1000)
+  const rest = m % 1000
+  return rest === 0 ? `${km} км` : `${km} км ${rest} м`
+}
+
 export default function SwimWorkout() {
   const { programId } = useParams()
   const navigate = useNavigate()
@@ -203,22 +211,23 @@ export default function SwimWorkout() {
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
           <div style={styles.wave} aria-hidden="true" />
-          <div style={styles.headerInner}>
-            {/* Верхний ряд: тег бассейна слева, часы по центру */}
-            <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
-              <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
-              <span style={styles.clock}>
-                <ClockIcon size={13} />≈{SWIM_PROGRAM.durationMin} мин
-              </span>
-            </div>
+          {/* Пунктирная дорожка — ровно по вертикальному центру блока */}
+          <div style={styles.dashes} aria-hidden="true" />
 
-            {/* Центр: метры + бассейны, пунктир по центру текста */}
-            <div style={{ ...styles.metersWrap, ...(compact ? styles.metersWrapCompact : {}) }}>
-              <div style={styles.metersDashes} aria-hidden="true" />
-              <span style={{ ...styles.metersText, ...(compact ? styles.metersTextCompact : {}) }}>
-                {totalMeters} метров · {totalPools} {pluralPools(totalPools)}
-              </span>
-            </div>
+          {/* Верхний ряд: тег бассейна слева, часы по центру */}
+          <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
+            <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
+            <span style={styles.clock}>
+              <ClockIcon size={13} />≈{SWIM_PROGRAM.durationMin} мин
+            </span>
+          </div>
+
+          {/* Крупный метраж по центру (сквозь пунктир) + бассейны под ним */}
+          <div style={{ ...styles.metersMain, ...(compact ? styles.metersMainCompact : {}) }}>
+            {formatSwimMeters(totalMeters)}
+          </div>
+          <div style={{ ...styles.metersSub, ...(compact ? styles.metersSubCompact : {}) }}>
+            {totalPools} {pluralPools(totalPools)}
           </div>
         </div>
       </div>
@@ -496,7 +505,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 }
 
 const styles = {
-  page: { padding: '0 16px 130px', minHeight: '100dvh' },
+  page: { padding: '0 16px 100px', minHeight: '100dvh' },
   stickyHeader: {
     position: 'sticky',
     top: 0,
@@ -510,17 +519,20 @@ const styles = {
     paddingRight: '16px'
   },
   // Синяя карточка-«вода» со стеклянной обводкой (вся заливка/волна на весь блок).
+  // Дети позиционируются абсолютно: метраж — ровно по центру, часы/тег — сверху.
   headerCard: {
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 'var(--radius-card)',
-    padding: '14px 16px 16px',
+    minHeight: '112px',
+    paddingLeft: '16px',
+    paddingRight: '16px',
     background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
     border: '1px solid rgba(63, 162, 247, 0.45)',
     boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.25), 0 6px 24px rgba(28, 92, 151, 0.25)',
-    transition: 'padding 0.28s var(--ease-ios)'
+    transition: 'min-height 0.28s var(--ease-ios)'
   },
-  headerCardCompact: { padding: '8px 16px 10px' },
+  headerCardCompact: { minHeight: '76px' },
   // Блик-волна поверх всей карточки.
   wave: {
     position: 'absolute',
@@ -530,18 +542,28 @@ const styles = {
     animation: 'poolShine 3.2s ease-in-out infinite',
     pointerEvents: 'none'
   },
-  headerInner: { position: 'relative', zIndex: 1 },
+  // Пунктир — по вертикальному центру всей карточки, за текстом.
+  dashes: {
+    position: 'absolute',
+    left: 0, right: 0,
+    top: '50%',
+    height: '2px',
+    transform: 'translateY(-50%)',
+    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 12px, transparent 12px 26px)',
+    opacity: 0.7,
+    zIndex: 0
+  },
   topRow: {
-    position: 'relative',
+    position: 'absolute',
+    top: '12px',
+    left: '16px',
+    right: '16px',
+    zIndex: 2,
     display: 'flex',
     alignItems: 'center',
-    minHeight: '30px',
-    maxHeight: '40px',
-    opacity: 1,
-    overflow: 'visible',
-    transition: 'max-height 0.28s var(--ease-ios), opacity 0.2s ease, margin 0.28s var(--ease-ios)'
+    transition: 'opacity 0.2s ease'
   },
-  topRowCompact: { maxHeight: 0, opacity: 0, overflow: 'hidden', marginBottom: '-4px' },
+  topRowCompact: { opacity: 0, pointerEvents: 'none' },
   clock: {
     position: 'absolute',
     left: '50%',
@@ -555,41 +577,41 @@ const styles = {
     color: 'rgba(255, 255, 255, 0.72)',
     whiteSpace: 'nowrap'
   },
-  metersWrap: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '44px',
-    marginTop: '8px',
-    transition: 'height 0.28s var(--ease-ios), margin 0.28s var(--ease-ios)'
-  },
-  metersWrapCompact: { height: '30px', marginTop: '2px' },
-  metersDashes: {
+  // Крупный метраж — центр карточки (сквозь пунктир), белым.
+  metersMain: {
     position: 'absolute',
-    left: 0, right: 0,
     top: '50%',
-    height: '2px',
+    left: '16px',
+    right: '16px',
     transform: 'translateY(-50%)',
-    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 12px, transparent 12px 26px)',
-    opacity: 0.7
-  },
-  metersText: {
-    position: 'relative',
     zIndex: 1,
-    padding: '0 14px',
-    // Подложка цвета воды — чтобы пунктир «прерывался» текстом.
-    background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
+    textAlign: 'center',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '20px',
+    fontSize: '26px',
     color: '#FFFFFF',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
-    textShadow: '0 1px 6px rgba(0, 0, 0, 0.4)',
+    textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
     transition: 'font-size 0.28s var(--ease-ios)'
   },
-  metersTextCompact: { fontSize: '16px' },
+  metersMainCompact: { fontSize: '19px' },
+  // Бассейны — под метражом, шрифтом как часы.
+  metersSub: {
+    position: 'absolute',
+    top: 'calc(50% + 20px)',
+    left: '16px',
+    right: '16px',
+    zIndex: 1,
+    textAlign: 'center',
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    fontSize: '13px',
+    color: 'rgba(255, 255, 255, 0.72)',
+    whiteSpace: 'nowrap',
+    transition: 'top 0.28s var(--ease-ios)'
+  },
+  metersSubCompact: { top: 'calc(50% + 15px)' },
 
   body: { paddingTop: '16px' },
 
