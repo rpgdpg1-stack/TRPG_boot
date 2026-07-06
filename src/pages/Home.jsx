@@ -13,6 +13,7 @@ import ProgramCard from '../components/ProgramCard'
 import FavHint from '../components/FavHint'
 import CategorySwiper from '../components/CategorySwiper'
 import DailyQuests from '../components/DailyQuests'
+import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 
@@ -347,6 +348,11 @@ export default function Home() {
           onToggle={() => setCollapse('boost', !boostCollapsed)}
         />
         <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
+
+        {/* История — тот же календарь, что на странице /history */}
+        <div style={{ marginTop: '20px' }}>
+          <HistoryCalendar heading="История" />
+        </div>
       </div>
     </div>
   )

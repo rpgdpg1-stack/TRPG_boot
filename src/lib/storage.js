@@ -154,7 +154,7 @@ export async function getRecentWorkouts(limit = 3) {
 
   const { data, error } = await supabase
     .from('workouts')
-    .select('finished_at, program_id, day')
+    .select('finished_at, started_at, program_id, day')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .order('finished_at', { ascending: false })
