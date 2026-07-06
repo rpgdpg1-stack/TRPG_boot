@@ -40,15 +40,9 @@ const MIN_REPS = 1
 const MAX_REPS = 12
 const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
-// Гирлянда над водой: горизонтальная ниточка, флажки вниз. Белый — по центру,
-// красные — от центра к краям (чередование). Развёрнуто много, сжато — 3.
-const PENNANT_EXPANDED = 9
-function pennantColors(n) {
-  const mid = (n - 1) / 2
-  return Array.from({ length: n }, (_, i) =>
-    Math.round(Math.abs(i - mid)) % 2 === 0 ? '#FFFFFF' : '#E84545'
-  )
-}
+// Боковые вертикальные гирлянды: 3 флажка (красный / белый-центр / красный),
+// обе остриём ВЛЕВО.
+const SIDE_PENNANTS = ['#E84545', '#FFFFFF', '#E84545']
 
 function formatDistance(m) {
   if (m >= 1000) {
@@ -222,12 +216,20 @@ export default function SwimWorkout() {
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
           <div style={styles.wave} aria-hidden="true" />
-          {/* Гирлянда флажков над водой: во всю ширину, флажки вниз (сжато — 3) */}
-          <div style={styles.garland} aria-hidden="true">
-            <div style={styles.garlandString} />
-            <div style={styles.garlandRow}>
-              {pennantColors(compact ? 3 : PENNANT_EXPANDED).map((c, i) => (
-                <span key={i} style={{ ...styles.pennant, borderTopColor: c, animationDelay: `${(i % 4) * 0.22}s` }} />
+          {/* Боковые вертикальные гирлянды — обе остриём влево */}
+          <div style={styles.garlandLeft} aria-hidden="true">
+            <div style={{ ...styles.stringVert, right: 0 }} />
+            <div style={styles.colRight}>
+              {SIDE_PENNANTS.map((c, i) => (
+                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.25}s` }} />
+              ))}
+            </div>
+          </div>
+          <div style={styles.garlandRight} aria-hidden="true">
+            <div style={{ ...styles.stringVert, right: 0 }} />
+            <div style={styles.colRight}>
+              {SIDE_PENNANTS.map((c, i) => (
+                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.25}s` }} />
               ))}
             </div>
           </div>
@@ -577,26 +579,31 @@ const styles = {
     opacity: 0.7,
     zIndex: 0
   },
-  // Горизонтальная гирлянда над водой (флажки вниз).
-  garland: {
-    position: 'absolute', top: '3px', left: 0, right: 0, height: '14px',
+  // Боковые вертикальные гирлянды: у левого и правого края, обе остриём влево.
+  garlandLeft: {
+    position: 'absolute', left: '2px', top: '8px', width: '11px', height: '58px',
     zIndex: 1, pointerEvents: 'none'
   },
-  garlandString: {
-    position: 'absolute', top: 0, left: '12px', right: '12px', height: '1px',
+  garlandRight: {
+    position: 'absolute', right: '4px', top: '8px', width: '12px', height: '58px',
+    zIndex: 1, pointerEvents: 'none'
+  },
+  stringVert: {
+    position: 'absolute', top: 0, bottom: 0, width: '1px',
     background: 'rgba(255, 255, 255, 0.45)'
   },
-  garlandRow: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    display: 'flex', justifyContent: 'space-between', padding: '0 16px'
+  // Флажки прижаты к ниточке справа (база справа), апекс — влево.
+  colRight: {
+    position: 'absolute', right: '1px', top: 0, bottom: 0,
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-around', alignItems: 'flex-end'
   },
-  // Флажок остриём ВНИЗ: цветной верхний бордер, висит на ниточке.
-  pennant: {
+  // Флажок остриём ВЛЕВО: цветной правый бордер, база справа у ниточки.
+  pennantLeft: {
     width: 0, height: 0,
-    borderLeft: '5px solid transparent',
-    borderRight: '5px solid transparent',
-    borderTop: '9px solid #FFFFFF',
-    transformOrigin: 'top center',
+    borderTop: '5px solid transparent',
+    borderBottom: '5px solid transparent',
+    borderRight: '8px solid #FFFFFF',
+    transformOrigin: 'right center',
     animation: 'pennantSway 2.8s ease-in-out infinite'
   },
   topRow: {
