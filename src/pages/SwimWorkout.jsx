@@ -10,8 +10,6 @@ import {
   SWIM_PROGRAM,
   SWIM_STROKES,
   strokeColor,
-  swimTotalMeters,
-  blockMeters,
   poolsForMeters,
   pluralPools
 } from '../data/programs/swim'
@@ -32,6 +30,13 @@ import ScreenTitle from '../components/ScreenTitle'
  */
 
 const POOL_KEY = (slug) => `swim-pool:${slug}`
+const REPS_KEY = (slug) => `swim-reps:${slug}`
+// Какой блок можно повторять (редактируемое число кругов основы).
+const MAIN_ID = 'main'
+const MIN_REPS = 1
+const MAX_REPS = 12
+// Метры одного круга блока (без повторов).
+const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
 function formatDistance(m) {
   if (m >= 1000) {
@@ -56,8 +61,33 @@ export default function SwimWorkout() {
   const [modal, setModal] = useState(null)            // null | { kind }
   const [finishStatus, setFinishStatus] = useState('idle') // 'idle' | 'saving' | 'error'
 
-  const totalMeters = useMemo(() => swimTotalMeters(), [])
+  // Число повторов основы — единственное редактируемое поле заплыва. Меняешь его
+  // после тренировки под факт (сколько кругов реально проплыл) → пересчитываются
+  // метры и бассейны, и именно этот метраж уходит в историю по «Завершить».
+  const [mainReps, setMainReps] = useState(() => {
+    const saved = parseInt(localGet(REPS_KEY(programId)), 10)
+    const def = SWIM_PROGRAM.blocks.find(b => b.id === MAIN_ID)?.repeat || 1
+    return Number.isFinite(saved) && saved >= MIN_REPS && saved <= MAX_REPS ? saved : def
+  })
+
+  const repsFor = (block) => (block.id === MAIN_ID ? mainReps : (block.repeat || 1))
+
+  const totalMeters = useMemo(
+    () => SWIM_PROGRAM.blocks.reduce(
+      (s, b) => s + oneRoundMeters(b) * (b.id === MAIN_ID ? mainReps : (b.repeat || 1)),
+      0
+    ),
+    [mainReps]
+  )
   const totalPools = poolsForMeters(totalMeters, pool)
+
+  const changeReps = (delta) => {
+    setMainReps(prev => {
+      const next = Math.min(MAX_REPS, Math.max(MIN_REPS, prev + delta))
+      if (next !== prev) { haptic.selection(); localSet(REPS_KEY(programId), String(next)) }
+      return next
+    })
+  }
 
   useEffect(() => {
     const fromHome = location.state?.fromHome === true
@@ -92,7 +122,7 @@ export default function SwimWorkout() {
     setModal({ kind: 'pending' })
 
     try {
-      const result = await finishWorkout(programId, 'main', [], XP_REWARDS.WORKOUT_COMPLETE)
+      const result = await finishWorkout(programId, 'main', [], XP_REWARDS.WORKOUT_COMPLETE, totalMeters)
 
       if (!result) {
         setFinishStatus('error')
@@ -174,7 +204,8 @@ export default function SwimWorkout() {
       <div style={styles.body}>
 
         {SWIM_PROGRAM.blocks.map(block => {
-          const bMeters = blockMeters(block)
+          const bMeters = oneRoundMeters(block) * repsFor(block)
+          const editable = block.id === MAIN_ID
           return (
             <section key={block.id} style={styles.block}>
               <div style={styles.blockHeader}>
@@ -182,9 +213,29 @@ export default function SwimWorkout() {
                 <span style={styles.blockMeta}>{block.hint} · {bMeters} м</span>
               </div>
 
-              {block.repeat > 1 && (
+              {editable ? (
+                <div style={styles.repeatStepper}>
+                  <span style={styles.repeatLabel}>↻ ПОВТОРИТЬ</span>
+                  <button
+                    onClick={() => changeReps(-1)}
+                    disabled={mainReps <= MIN_REPS}
+                    style={{ ...styles.repeatBtn, opacity: mainReps <= MIN_REPS ? 0.35 : 1 }}
+                    className="press-tile"
+                    aria-label="Меньше повторов"
+                  >−</button>
+                  <span style={styles.repeatValue}>{mainReps}</span>
+                  <button
+                    onClick={() => changeReps(1)}
+                    disabled={mainReps >= MAX_REPS}
+                    style={{ ...styles.repeatBtn, opacity: mainReps >= MAX_REPS ? 0.35 : 1 }}
+                    className="press-tile"
+                    aria-label="Больше повторов"
+                  >+</button>
+                  <span style={styles.repeatLabel}>РАЗ</span>
+                </div>
+              ) : (block.repeat > 1 && (
                 <div style={styles.repeatBadge}>↻ ПОВТОРИТЬ {block.repeat} РАЗ</div>
-              )}
+              ))}
 
               <div style={styles.swimList}>
                 {block.swims.map(sw => {
@@ -499,6 +550,47 @@ const styles = {
     padding: '6px 12px',
     textAlign: 'center',
     marginBottom: '10px'
+  },
+  repeatStepper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    background: 'rgba(63, 162, 247, 0.1)',
+    border: '1px solid rgba(63, 162, 247, 0.25)',
+    borderRadius: 'var(--radius-small)',
+    padding: '4px 12px',
+    marginBottom: '10px'
+  },
+  repeatLabel: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 600,
+    fontSize: '12px',
+    letterSpacing: '1.5px',
+    color: 'var(--cat-pool)'
+  },
+  repeatBtn: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    border: 'none',
+    background: 'rgba(63, 162, 247, 0.18)',
+    color: 'var(--cat-pool)',
+    fontSize: '20px',
+    fontWeight: 700,
+    lineHeight: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer'
+  },
+  repeatValue: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    fontSize: '18px',
+    color: 'var(--cat-pool)',
+    minWidth: '20px',
+    textAlign: 'center'
   },
   swimList: { display: 'flex', flexDirection: 'column', gap: '6px' },
   swimRow: {

@@ -286,7 +286,7 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  *
  * ОНЛАЙН: как раньше — атомарная RPC, BADGE_EARNED при выдаче значка.
  */
-export async function finishWorkout(programSlug, day, exerciseIds, reward = 150) {
+export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null) {
   console.log('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
 
   const user = getCurrentUser()
@@ -319,7 +319,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
       day,
       exercise_ids: exerciseIds,
       reward,
-      started_at: startedAt
+      started_at: startedAt,
+      distance_m: distanceM
     }, finishDedupKey(dbId, day, finishedAt))
     return {
       offline: true,
@@ -348,7 +349,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
       p_day: day,
       p_exercise_ids: exerciseIds,
       p_reward: reward,
-      p_started_at: startedAt
+      p_started_at: startedAt,
+      p_distance_m: distanceM
     })
     const timeoutPromise = new Promise(resolve => {
       timer = setTimeout(() => resolve(TIMEOUT), FINISH_TIMEOUT_MS)
