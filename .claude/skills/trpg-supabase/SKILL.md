@@ -95,6 +95,24 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
   непустые места).
 - Существующие данные (Сплит + старые «Свои») мигрированы в `location='gym'`.
 
+## История тренировок (`workouts`) и `api_finish_workout`
+
+- Таблица `workouts` (user_id, program_id, day, started_at, finished_at, muscles_earned,
+  notes, **distance_m**). `started_at` = реальный старт сессии (для длительности =
+  `finished_at − started_at`); **distance_m** = метраж заплыва (плавание).
+- `api_finish_workout(p_user_id, p_program_id, p_day, p_exercise_ids, p_reward,
+  p_finished_at DEFAULT now(), p_started_at DEFAULT NULL, p_distance_m DEFAULT NULL)`.
+  `started_at := COALESCE(p_started_at, p_finished_at)` (силовая шлёт реальный старт из
+  активной сессии; заплыв — null → длительность 0, меряется метрами). При добавлении
+  параметра — **DROP старого оверлоуда + CREATE** (иначе PostgREST не выберет функцию из
+  двух кандидатов с дефолтами → ambiguous). После пересоздания — заново REVOKE/GRANT.
+- **Лимит пока ГЛОБАЛЬНЫЙ**: 1 засчитанная тренировка в сутки (Москва) на всё, второй раз
+  `already_completed_today=true` без нового ряда/баллов. TODO (просил Дмитрий): лимит **на
+  раздел** (силовая + плавание раздельно) + жёсткая блокировка кнопки «Завершить». См.
+  [[proj-trpg-history-calendar]].
+- История в UI — месячный календарь `components/HistoryCalendar.jsx` (на `/history` и внизу
+  главной), показывает 2 месяца, данные из `getRecentWorkouts` (тянет started_at + distance_m).
+
 ## Медиа (Selectel S3, бакет `trpg`)
 
 - Cache-Control `public, max-age=31536000, immutable`.
