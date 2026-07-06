@@ -2,6 +2,7 @@ import { getProgramTagColor, getProgramPlaces } from '../features/programs/regis
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import PlaceSwitcher from './PlaceSwitcher'
+import PoolTag from './PoolTag'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
 
@@ -39,13 +40,15 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
-        {/* Теги для НЕ-мест (заплыв / «Скоро»). */}
-        {places.length === 0 && ((prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
+        {/* Теги для НЕ-мест: заплыв — тег «Бассейн» (как тег места), иначе теги/«Скоро». */}
+        {places.length === 0 && (prog.kind === 'swim' || (prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
           <div style={styles.tags}>
-            {(prog.tags || []).map(tag => {
-              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
-            })}
+            {prog.kind === 'swim'
+              ? <PoolTag />
+              : (prog.tags || []).map(tag => {
+                  const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+                  return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
+                })}
             {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
           </div>
         )}
