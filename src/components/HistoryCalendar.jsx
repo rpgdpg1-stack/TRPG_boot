@@ -329,8 +329,8 @@ const styles = {
   cellEmpty: { aspectRatio: '1 / 1' },
   cell: {
     position: 'relative', aspectRatio: '1 / 1', borderRadius: 'var(--radius-medium)',
-    border: 'none', padding: '4px', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: '3px', overflow: 'hidden'
+    border: 'none', padding: '5px 4px', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'flex-start', gap: '3px', overflow: 'hidden'
   },
   cellNum: { fontFamily: 'var(--font-display)', fontSize: '15px', lineHeight: 1 },
   marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }
