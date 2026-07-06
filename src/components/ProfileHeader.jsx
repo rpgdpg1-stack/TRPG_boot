@@ -375,8 +375,8 @@ const styles = {
     alignItems: 'stretch',
     gap: '16px',
     padding: '14px 16px 16px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     width: '100%'
   },
@@ -441,8 +441,8 @@ const styles = {
   placeButton: {
     flexShrink: 0,
     padding: '3px 10px',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
@@ -455,8 +455,8 @@ const styles = {
   placeStatic: {
     flexShrink: 0,
     padding: '3px 10px',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-display)',
     fontWeight: 600,

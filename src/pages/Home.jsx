@@ -497,7 +497,7 @@ const styles = {
     width: '100%',
     minHeight: '130px',
     padding: '10px 18px',
-    background: 'rgba(255,255,255,0.02)',
+    background: 'var(--surface)',
     border: '1px dashed rgba(255,255,255,0.1)',
     borderRadius: 'var(--radius-card)',
     cursor: 'pointer'

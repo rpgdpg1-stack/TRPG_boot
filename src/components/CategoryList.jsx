@@ -62,7 +62,7 @@ export default function CategoryList() {
           onPointerCancel={handleCancel}
           style={{
             ...styles.row,
-            borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+            borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)',
             background: pressedId === cat.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent'
           }}
         >
@@ -89,7 +89,7 @@ const styles = {
   group: {
     display: 'flex',
     flexDirection: 'column',
-    background: 'rgba(255, 255, 255, 0.03)',
+    background: 'var(--surface)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },

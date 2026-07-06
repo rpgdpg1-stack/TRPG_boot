@@ -413,8 +413,8 @@ const styles = {
   container: {
     position: 'relative',
     padding: '8px 14px',
-    background: 'rgba(255, 255, 255, 0.02)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
   },
   list: {

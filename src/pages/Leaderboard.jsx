@@ -500,7 +500,7 @@ const styles = {
     gap: '4px',
     marginBottom: '16px',
     padding: '4px',
-    background: 'rgba(255, 255, 255, 0.03)',
+    background: 'var(--surface)',
     borderRadius: 'var(--radius-card)'
   },
   tab: {
@@ -564,7 +564,7 @@ const styles = {
   },
   // Разделитель между строками — тонкая линия сверху у всех кроме первой
   rowDivider: {
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+    borderTop: '1px solid var(--border-hairline)'
   },
   empty: {
     textAlign: 'center',
@@ -658,8 +658,8 @@ const modalStyles = {
     width: '100%',
     maxWidth: '340px',
     flexShrink: 0,
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: '24px 22px 18px',
     display: 'flex',
@@ -685,7 +685,7 @@ const modalStyles = {
   section: {
     width: '100%',
     padding: '10px 0',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+    borderBottom: '1px solid var(--border-hairline)'
   },
   sectionTitle: {
     fontFamily: 'var(--font-display)',

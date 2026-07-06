@@ -154,8 +154,8 @@ const styles = {
     width: '100%',
     height: '150px',
     borderRadius: 'var(--radius-card)',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
     overflow: 'hidden',
     cursor: 'pointer',
     touchAction: 'pan-y'

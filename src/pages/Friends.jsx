@@ -322,7 +322,7 @@ const styles = {
     overflow: 'hidden'
   },
   rowDivider: {
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+    borderTop: '1px solid var(--border-hairline)'
   },
   empty: {
     textAlign: 'center',
@@ -380,8 +380,8 @@ const pinStyles = {
   modal: {
     width: '100%',
     maxWidth: '300px',
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: '24px 22px 18px',
     display: 'flex',

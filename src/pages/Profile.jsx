@@ -227,7 +227,7 @@ export default function Profile() {
                 className="tg-row"
                 style={{
                   ...styles.row,
-                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)'
                 }}
               >
                 {item.icon.startsWith('ui:') ? (
