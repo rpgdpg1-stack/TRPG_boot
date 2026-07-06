@@ -345,8 +345,8 @@ export default function SwimWorkout() {
 
       <style>{`
         @keyframes poolShine {
-          0%   { transform: translateX(-120%); }
-          100% { transform: translateX(220%); }
+          0%   { transform: translateX(-140%); }
+          100% { transform: translateX(240%); }
         }
         @keyframes pennantSway {
           0%, 100% { transform: rotate(-6deg); }
@@ -559,7 +559,7 @@ const styles = {
     top: 0, bottom: 0, left: 0,
     width: '40%',
     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)',
-    animation: 'poolShine 3.2s ease-in-out infinite',
+    animation: 'poolShine 3.7s linear infinite',
     pointerEvents: 'none'
   },
   // Пунктир — по вертикальному центру всей карточки, за текстом.
