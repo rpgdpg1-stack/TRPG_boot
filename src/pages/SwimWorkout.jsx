@@ -40,8 +40,8 @@ const MIN_REPS = 1
 const MAX_REPS = 12
 const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
-// Флажки-гирлянда над водой (декор): чередуем белый/голубой.
-const PENNANTS = Array.from({ length: 14 }, (_, i) => (i % 2 ? '#9FD4FF' : '#FFFFFF'))
+// Боковые гирлянды (декор): вертикальная ниточка по краю, 3 флажка (2 красных + белый).
+const SIDE_PENNANTS = ['#E84545', '#FFFFFF', '#E84545']
 
 function formatDistance(m) {
   if (m >= 1000) {
@@ -215,15 +215,20 @@ export default function SwimWorkout() {
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
           <div style={styles.wave} aria-hidden="true" />
-          {/* Гирлянда флажков над водой */}
-          <div style={styles.garland} aria-hidden="true">
-            <div style={styles.garlandString} />
-            <div style={styles.garlandRow}>
-              {PENNANTS.map((c, i) => (
-                <span
-                  key={i}
-                  style={{ ...styles.pennant, borderTopColor: c, animationDelay: `${(i % 5) * 0.2}s` }}
-                />
+          {/* Боковые вертикальные гирлянды флажков (у скруглений), смотрят внутрь */}
+          <div style={styles.garlandLeft} aria-hidden="true">
+            <div style={{ ...styles.stringVert, left: 0 }} />
+            <div style={styles.colLeft}>
+              {SIDE_PENNANTS.map((c, i) => (
+                <span key={i} style={{ ...styles.pennantRight, borderLeftColor: c, animationDelay: `${i * 0.25}s` }} />
+              ))}
+            </div>
+          </div>
+          <div style={styles.garlandRight} aria-hidden="true">
+            <div style={{ ...styles.stringVert, right: 0 }} />
+            <div style={styles.colRight}>
+              {SIDE_PENNANTS.map((c, i) => (
+                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.25}s` }} />
               ))}
             </div>
           </div>
@@ -573,40 +578,43 @@ const styles = {
     opacity: 0.7,
     zIndex: 0
   },
-  // Гирлянда флажков у верхней кромки карточки.
-  garland: {
-    position: 'absolute',
-    top: '3px',
-    left: 0,
-    right: 0,
-    height: '14px',
-    zIndex: 1,
-    pointerEvents: 'none'
+  // Боковые вертикальные гирлянды у скруглений (лево/право).
+  garlandLeft: {
+    position: 'absolute', left: '4px', top: '8px', width: '12px', height: '58px',
+    zIndex: 1, pointerEvents: 'none'
   },
-  garlandString: {
-    position: 'absolute',
-    top: 0,
-    left: '10px',
-    right: '10px',
-    height: '1px',
+  garlandRight: {
+    position: 'absolute', right: '4px', top: '8px', width: '12px', height: '58px',
+    zIndex: 1, pointerEvents: 'none'
+  },
+  stringVert: {
+    position: 'absolute', top: 0, bottom: 0, width: '1px',
     background: 'rgba(255, 255, 255, 0.45)'
   },
-  garlandRow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '0 16px'
+  colLeft: {
+    position: 'absolute', left: '1px', top: 0, bottom: 0,
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-around', alignItems: 'flex-start'
   },
-  pennant: {
-    width: 0,
-    height: 0,
-    borderLeft: '5px solid transparent',
-    borderRight: '5px solid transparent',
-    borderTop: '9px solid #FFFFFF',
-    transformOrigin: 'top center',
+  colRight: {
+    position: 'absolute', right: '1px', top: 0, bottom: 0,
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-around', alignItems: 'flex-end'
+  },
+  // Флажок остриём ВПРАВО (левая гирлянда): цветной левый бордер, база слева у ниточки.
+  pennantRight: {
+    width: 0, height: 0,
+    borderTop: '5px solid transparent',
+    borderBottom: '5px solid transparent',
+    borderLeft: '8px solid #FFFFFF',
+    transformOrigin: 'left center',
+    animation: 'pennantSway 2.8s ease-in-out infinite'
+  },
+  // Флажок остриём ВЛЕВО (правая гирлянда): цветной правый бордер, база справа у ниточки.
+  pennantLeft: {
+    width: 0, height: 0,
+    borderTop: '5px solid transparent',
+    borderBottom: '5px solid transparent',
+    borderRight: '8px solid #FFFFFF',
+    transformOrigin: 'right center',
     animation: 'pennantSway 2.8s ease-in-out infinite'
   },
   topRow: {
