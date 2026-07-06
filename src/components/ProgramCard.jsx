@@ -17,8 +17,6 @@ import PixelHeart from './PixelHeart'
 /**
  * Единая карточка программы — Главная / Избранное / Раздел.
  * Различия пропсами:
- *  - glow        — обводка раздела со свечением (только Главная). Иначе — та же
- *                  обводка-«нитка» без свечения.
  *  - dots        — «⋯» в правом верхнем углу → компактное меню программы
  *                  (избранное / редактировать / поделиться / удалить).
  *  - lastTrained — серая надпись «последняя тренировка N дней назад» (Главная).
@@ -34,7 +32,6 @@ export default function ProgramCard({
   onToggleFav,
   onOpen,
   onDeleted,
-  glow = false,
   dots = false,
   lastTrained = false,
   bordered = true
@@ -132,12 +129,9 @@ export default function ProgramCard({
     cursor: available ? 'pointer' : 'default',
     // overflow hidden — клип заливки-прогресса по скруглению.
     overflow: 'hidden',
-    // Цветная обводка-нитка — на главной и в избранном; в разделах (Category)
-    // выключаем через bordered={false}.
-    border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none',
-    ...(glow ? {
-      boxShadow: `0 0 20px color-mix(in srgb, ${accent} 20%, transparent), inset 0 0 30px color-mix(in srgb, ${accent} 6%, transparent)`
-    } : {})
+    // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
+    // (Category) выключаем через bordered={false}. Свечение убрано — только обводка.
+    border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
   }
 
   return (

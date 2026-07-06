@@ -33,48 +33,46 @@ function readWeeklyCount() {
   return u.weekly_streak || 0
 }
 
-// Заголовок секции с шевроном справа — тап сворачивает/разворачивает.
-function SectionToggle({ title, collapsed, onToggle, centered = false }) {
+// Заголовок сворачиваемой секции — БЕЗ стрелки: тап по самому тексту сворачивает/
+// разворачивает. Кнопка обнимает текст (не на всю ширину) — жмётся именно область слова.
+function SectionToggle({ title, onToggle }) {
   return (
-    <button onClick={onToggle} style={{ ...homeSectionStyles.toggleBtn, ...(centered ? homeSectionStyles.toggleBtnCentered : null) }}>
+    <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
       <span style={homeSectionStyles.toggleTitle}>{title}</span>
-      <span style={centered ? homeSectionStyles.chevronAbs : undefined}>
-        <HomeChevron collapsed={collapsed} />
-      </span>
     </button>
   )
 }
 
-// Шеврон: вниз = свёрнуто, вверх (rotate 180) = раскрыто.
-function HomeChevron({ collapsed }) {
+// Плавное сворачивание/разворачивание по высоте (grid-rows 0fr↔1fr, ~220мс).
+// Контент внутри — overflow:hidden + min-height:0, иначе не сожмётся.
+function Collapsible({ open, children }) {
   return (
-    <span style={{
-      display: 'inline-flex',
-      transition: 'transform 0.25s var(--ease-ios)',
-      transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)'
+    <div style={{
+      display: 'grid',
+      gridTemplateRows: open ? '1fr' : '0fr',
+      opacity: open ? 1 : 0,
+      transition: 'grid-template-rows 0.22s var(--ease-ios), opacity 0.22s ease'
     }}>
-      <svg width="14" height="8" viewBox="0 0 14 8" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 1 L7 6 L13 1" fill="none" stroke="var(--color-text-secondary)"
-          strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </span>
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>
+        {children}
+      </div>
+    </div>
   )
 }
 
 const homeSectionStyles = {
+  // Кнопка обнимает текст (width:auto, слева) — тап именно по слову-заголовку.
   toggleBtn: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    width: '100%', padding: '0 4px', marginTop: '20px', marginBottom: '12px',
+    display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start',
+    padding: '0 4px', marginTop: '20px', marginBottom: '12px',
     background: 'transparent', border: 'none', cursor: 'pointer'
   },
+  // Заголовок секции: обычный регистр (Первая заглавная), manrope 700, 60% белого,
+  // без капса и трекинга — виден, но не спорит с названиями программ/карточками.
   toggleTitle: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
-    color: 'var(--color-text-secondary)', letterSpacing: '3px'
-  },
-  // Центрированный заголовок раздела (РАЗДЕЛЫ над свайпером): текст по центру,
-  // шеврон сворачивания — абсолютно справа, чтобы не сдвигал центр.
-  toggleBtnCentered: { justifyContent: 'center', position: 'relative' },
-  chevronAbs: { position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', display: 'inline-flex' }
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '15px',
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
+  }
 }
 
 // Синхронная сборка избранного из localStorage для мгновенного первого рендера.
@@ -285,9 +283,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ИЗБРАННОЕ — заголовок-label (не кликается) + «Все ›» справа. */}
+        {/* Избранное — заголовок-label (НЕ сворачивается) + «Все ›» справа. */}
         <div style={styles.favHeaderRow}>
-          <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>ИЗБРАННОЕ</span>
+          <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>Избранное</span>
           <button onClick={() => { haptic.light(); navigate('/favorites') }} style={styles.seeAllBtn}>
             Все ›
           </button>
@@ -319,7 +317,6 @@ export default function Home() {
               >
                 <ProgramCard
                   prog={favorites[favSafeIdx].prog}
-                  glow
                   dots
                   lastTrained
                   isFav
@@ -336,21 +333,20 @@ export default function Home() {
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      {/* Скроллящийся контент: разделы + дневной буст (обе секции сворачиваются) */}
+      {/* Скроллящийся контент: разделы + дневной буст (обе секции сворачиваются
+          тапом по заголовку, плавно; избранное выше — не сворачивается). */}
       <div style={styles.scrollSection}>
         <SectionToggle
-          title="РАЗДЕЛЫ"
-          collapsed={sectionsCollapsed}
+          title="Разделы"
           onToggle={() => setCollapse('sections', !sectionsCollapsed)}
-          centered
         />
-        {!sectionsCollapsed && <CategorySwiper />}
+        <Collapsible open={!sectionsCollapsed}><CategorySwiper /></Collapsible>
 
         {/* Дневной буст — компактно: в заголовке прогресс N/3 · +N💪, разворачивается по тапу. */}
         <SectionToggle
           title={
             <span style={styles.boostTitle}>
-              ДНЕВНОЙ БУСТ
+              Дневной буст
               {boost.total > 0 && (
                 <span style={styles.boostBadge}>
                   {boost.done}/{boost.total}{boost.remainingReward > 0 ? ` · +${boost.remainingReward}💪` : ' ✓'}
@@ -358,10 +354,9 @@ export default function Home() {
               )}
             </span>
           }
-          collapsed={boostCollapsed}
           onToggle={() => setCollapse('boost', !boostCollapsed)}
         />
-        {!boostCollapsed && <DailyQuests />}
+        <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
       </div>
     </div>
   )
@@ -401,11 +396,11 @@ const styles = {
     position: 'relative'
   },
   sectionHeader: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '3px',
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    fontSize: '15px',
+    color: 'rgba(255, 255, 255, 0.6)',
+    letterSpacing: '0.2px',
     marginTop: '20px',
     marginBottom: '12px',
     paddingLeft: '4px'
