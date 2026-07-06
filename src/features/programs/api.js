@@ -19,6 +19,7 @@ import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib
 import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 import { isOnline, checkNow } from '../../lib/network-status'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
+import { getActiveWorkout } from '../../lib/active-workout'
 
 // Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
 // оффлайн-очередь. Supabase-клиент сам не таймаутит, а в зале Wi-Fi часто
@@ -301,6 +302,12 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
   }
   const dbId = program.dbId
 
+  // Реальное начало сессии (для длительности тренировки). Берём из активной
+  // сессии, если она про эту же программу; у заплыва сессии нет → null (started_at
+  // на сервере упадёт в finished_at, длительность 0 — заплыв меряется метрами).
+  const active = getActiveWorkout()
+  const startedAt = active && active.programId === programSlug ? active.startedAt : null
+
   // Положить завершение в оффлайн-очередь и вернуть флаг offline. Зовём и когда
   // сети заведомо нет, и когда онлайн-запрос завис/упал (мёртвый Wi-Fi): иначе
   // экран «Сохранение…» висел бы вечно. Безопасно — RPC при синке схлопнётся по
@@ -311,7 +318,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
       program_id: dbId,
       day,
       exercise_ids: exerciseIds,
-      reward
+      reward,
+      started_at: startedAt
     }, finishDedupKey(dbId, day, finishedAt))
     return {
       offline: true,
@@ -339,7 +347,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150)
       p_program_id: dbId,
       p_day: day,
       p_exercise_ids: exerciseIds,
-      p_reward: reward
+      p_reward: reward,
+      p_started_at: startedAt
     })
     const timeoutPromise = new Promise(resolve => {
       timer = setTimeout(() => resolve(TIMEOUT), FINISH_TIMEOUT_MS)
