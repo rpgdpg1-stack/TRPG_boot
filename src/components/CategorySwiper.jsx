@@ -102,19 +102,6 @@ export default function CategorySwiper() {
         {anim && <Layer cat={cats[anim.from]} role="out" dir={anim.dir} />}
         <Layer cat={cats[idx]} role={anim ? 'in' : 'static'} dir={anim?.dir} />
       </div>
-
-      {/* Точки-индикатор: активная шире и в цвете раздела. */}
-      <div style={styles.dots}>
-        {cats.map((c, i) => (
-          <span
-            key={c.id}
-            style={{
-              ...styles.dot,
-              ...(i === idx ? { width: '16px', background: c.color } : null)
-            }}
-          />
-        ))}
-      </div>
     </div>
   )
 }
@@ -211,18 +198,4 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
   },
-  dots: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    marginTop: '12px'
-  },
-  dot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '999px',
-    background: 'rgba(255, 255, 255, 0.2)',
-    transition: 'width 0.25s var(--ease-ios), background 0.25s ease'
-  }
 }

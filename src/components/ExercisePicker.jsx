@@ -329,11 +329,7 @@ const styles = {
     height: '24px',
     zIndex: 5,
     pointerEvents: 'none',
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
-    backdropFilter: 'blur(3px)',
-    WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+    background: 'var(--scrim-sticky)'
   },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',

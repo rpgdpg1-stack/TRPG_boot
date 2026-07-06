@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, toggleFavoriteProgram } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
-import { CATEGORY_META } from '../features/programs/categories'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import { getCurrentUser } from '../lib/auth'
@@ -261,10 +260,6 @@ export default function Home() {
 
   // Индекс карусели, зажатый в границы.
   const favSafeIdx = favorites.length ? Math.min(Math.max(favIdx, 0), favorites.length - 1) : 0
-  // Цвет раздела текущей избранной карточки — им красим активную точку-индикатор.
-  const favAccent = favorites[favSafeIdx]?.prog
-    ? (CATEGORY_META[favorites[favSafeIdx].prog.category]?.color || 'var(--color-primary)')
-    : 'var(--color-primary)'
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -334,21 +329,6 @@ export default function Home() {
                 />
               </div>
             </div>
-            {favorites.length > 1 && (
-              <div style={styles.favDots}>
-                {favorites.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { haptic.light(); goFav(i, i > favIdx ? 'right' : 'left') }}
-                    style={{
-                      ...styles.favDot,
-                      background: i === favIdx ? favAccent : 'rgba(255,255,255,0.2)',
-                      width: i === favIdx ? '16px' : '6px'
-                    }}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -412,14 +392,10 @@ const styles = {
     top: '100%',
     left: 0,
     right: 0,
-    height: '28px',
+    height: '24px',
     pointerEvents: 'none',
     zIndex: 19,
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
-    backdropFilter: 'blur(3px)',
-    WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+    background: 'var(--scrim-sticky)'
   },
   scrollSection: {
     position: 'relative'
@@ -523,20 +499,5 @@ const styles = {
   },
   favSwipeArea: {
     touchAction: 'pan-y'
-  },
-  favDots: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: '6px',
-    marginTop: '8px'
-  },
-  favDot: {
-    height: '6px',
-    borderRadius: '3px',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    transition: 'width 0.25s ease, background 0.25s ease'
   }
 }
