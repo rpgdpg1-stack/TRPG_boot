@@ -187,6 +187,10 @@ export default function WorkoutDay() {
   //   swappedOrderNum — карточка играет анимацию "змейки" (только swap)
   const [pressedOrderNum, setPressedOrderNum] = useState(null)
   const [glowedOrderNum, setGlowedOrderNum] = useState(null)
+  // Тап по пилюле (сжатая шапка): «растущее» нажатие + цикл по неотжатым.
+  const [pillArmed, setPillArmed] = useState(false)
+  const pillCycleRef = useRef(0)
+  const headerCardRef = useRef(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
 
   // Открыта ли клавиатура (ввод веса на карточке). Пока true — прибитую к низу
@@ -448,6 +452,7 @@ export default function WorkoutDay() {
     activeSectionRef.current = -1
     setActiveSection(-1)
     setHeaderScrollY(0)
+    pillCycleRef.current = 0
   }, [day, place])
 
   // Компактная шапка (для ЛЮБОГО дня — активного и нет) + память скролла активного
@@ -486,6 +491,25 @@ export default function WorkoutDay() {
     }
   }, [isThisActive, programId, day])
 
+  // Компенсатор сжатия шапки: sticky-шапка на скролле теряет высоту, и контент
+  // «засасывало» вверх под закреп (первое упражнение пропадало). Спейсер под
+  // шапкой растёт ровно на потерянную высоту — упражнения остаются на месте,
+  // сжатие «поглощает» скролл (как большие заголовки в iOS).
+  const headerFullHRef = useRef(0)
+  const [headerSpacer, setHeaderSpacer] = useState(0)
+  useLayoutEffect(() => {
+    const el = stickyHeaderRef.current
+    if (!el) return
+    const h = el.offsetHeight
+    if (headerScrollY <= 1) headerFullHRef.current = h // наверху шапка полная — эталон
+    const full = headerFullHRef.current
+    const next = full > 0 ? Math.max(0, full - h) : 0
+    setHeaderSpacer(prev => (Math.abs(prev - next) > 0.5 ? next : prev))
+  }, [headerScrollY, loading, slots.length, day, place])
+
+  // Тап по пилюле глушит снап-доводку на время плавного скролла к упражнению.
+  const snapSuppressRef = useRef(0)
+
   // Доводка шапки после отпускания пальца: если остановились В ЗОНЕ сжатия
   // (0<scrollY<180), сама плавно доезжает — вниз-скролл → до пилюли, вверх → наверх.
   // Так «любой скролл вниз» сам собирается в пилюлю, а не застревает наполовину.
@@ -518,6 +542,7 @@ export default function WorkoutDay() {
 
     const settle = () => {
       if (snapping) return
+      if (Date.now() < snapSuppressRef.current) return // идёт скролл от тапа по пилюле
       const y = window.scrollY || 0
       if (y <= 2 || y >= COLLAPSE_END) return
       animateTo(dir >= 0 ? COLLAPSE_END : 0)
@@ -1007,6 +1032,47 @@ export default function WorkoutDay() {
   // рядом с временем «въезжают» буква дня (слева) и счётчик (справа).
   const rowCollapse = Math.min(1, Math.max(0, (headerScrollY - 132) / 48))
 
+  // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
+  // плавный скролл к следующему НЕотжатому (по кругу сверху вниз) + зелёная
+  // подсветка-обводка. Нажатие «растущее» с отменой при уводе пальца (как крестик).
+  const remainingCount = slots.length - activeOrderNums.size
+  const pillTapEnabled = isThisActive && rowCollapse >= 0.95 && remainingCount >= 1 && remainingCount <= 3
+  const pillDown = (e) => {
+    if (!pillTapEnabled) return
+    if (cancelBtnRef.current && cancelBtnRef.current.contains(e.target)) return
+    setPillArmed(true)
+  }
+  const pillMove = (e) => {
+    if (!pillArmed) return
+    const el = headerCardRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+      setPillArmed(false)
+    }
+  }
+  const pillUp = () => {
+    if (!pillArmed) return
+    setPillArmed(false)
+    const remaining = slots.filter(s => !activeOrderNums.has(s.order_num))
+    if (remaining.length === 0) return
+    const target = remaining[pillCycleRef.current % remaining.length]
+    pillCycleRef.current += 1
+    const cardEl = cardRefs.current.get(target.order_num)
+    const headEl = stickyHeaderRef.current
+    if (!cardEl || !headEl) return
+    haptic.selection()
+    snapSuppressRef.current = Date.now() + 900
+    // Центрируем карточку в зоне МЕЖДУ низом закрепа и низом экрана.
+    const headBottom = headEl.getBoundingClientRect().bottom
+    const zoneCenter = headBottom + (window.innerHeight - headBottom) / 2
+    const cr = cardEl.getBoundingClientRect()
+    const top = (window.scrollY || 0) + (cr.top + cr.height / 2) - zoneCenter
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    setGlowedOrderNum(target.order_num)
+    setTimeout(() => setGlowedOrderNum(null), 1600)
+  }
+
   const dayLetterAnimClass = slideDir === 'right'
     ? 'day-letter-slide-in-right'
     : 'day-letter-slide-in-left'
@@ -1025,17 +1091,21 @@ export default function WorkoutDay() {
             Фон/строук как у карточки игрока на главной. Во время тренировки ФОН
             карточки плавно заполняется светло-серым по мере отжатых упражнений
             (весь прогресс дня — тут, а не полоской). */}
-        <div style={{ ...styles.headerCard, padding: `${14 - rowCollapse * 6}px 16px` }}>
+        <div
+          ref={headerCardRef}
+          onPointerDown={pillDown}
+          onPointerMove={pillMove}
+          onPointerUp={pillUp}
+          onPointerCancel={() => setPillArmed(false)}
+          style={{
+            ...styles.headerCard,
+            padding: `${14 - rowCollapse * 6}px 16px`,
+            transform: pillArmed ? 'scale(1.03)' : 'scale(1)',
+            transition: 'transform 0.16s var(--ease-ios)'
+          }}
+        >
           {isThisActive && (
-            <div
-              style={{
-                ...styles.headerFill,
-                width: `${progressPct}%`,
-                // Тот же светлый тон, но в оттенке акцента дня (грудь→оранж, спина→красн…).
-                background: `linear-gradient(0deg, color-mix(in srgb, ${dayGroupAccent} 22%, transparent), color-mix(in srgb, ${dayGroupAccent} 22%, transparent)), rgba(255,255,255,0.07)`
-              }}
-              aria-hidden="true"
-            />
+            <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
           )}
           <div style={styles.headerCardInner}>
 
@@ -1229,6 +1299,9 @@ export default function WorkoutDay() {
             опущен ниже сплошной полоски — заголовок в стике читается чётче. */}
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
+
+      {/* Компенсатор сжатия шапки: держит контент на месте (см. эффект headerSpacer). */}
+      <div style={{ height: `${headerSpacer}px` }} aria-hidden="true" />
 
       <div style={styles.body}>
 
