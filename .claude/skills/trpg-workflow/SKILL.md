@@ -200,7 +200,7 @@ src/
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody FavHint FavoritesList
 │                   FinishConfirmModal FramePreview FriendRow HistoryCalendar LeaderboardRow LeagueBadgeIcon ModalButton
 │                   MuscleIcon OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
-│                   ProfileHeader ProgramActionMenu ProgramCard RankFrame RankIcon RanksPopup SaveFriendProgramModal
+│                   ProfileHeader ProgramActionMenu ProgramCard ProgramEmblem RankFrame RankIcon RanksPopup SaveFriendProgramModal
 │                   ScreenTitle StreakFlame TabBar TitleTag UiIcon WeightRaiseFlash XPBar WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal

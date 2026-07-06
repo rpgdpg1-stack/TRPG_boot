@@ -1,8 +1,9 @@
-import { getProgramEmoji, getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
+import { getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import PlaceSwitcher from './PlaceSwitcher'
 import ClockIcon from './ClockIcon'
+import ProgramEmblem from './ProgramEmblem'
 
 /**
  * Тело карточки программы — общее для главной, избранного и раздела.
@@ -25,7 +26,6 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         ? prog.title
         : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
-  const emoji = getProgramEmoji(prog.slug)
   const places = getProgramPlaces(prog)
   // Цвет буквы дня = акцент ПЕРВОЙ группы мышц этого дня (спина/грудь/ноги…).
   const dayColor = (d) => {
@@ -35,7 +35,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 
   return (
     <>
-      <span style={styles.emoji}>{emoji}</span>
+      <span style={styles.emblemWrap}><ProgramEmblem program={prog} size={44} /></span>
       <div style={styles.content}>
         <div style={styles.title}>{title}</div>
 
@@ -115,7 +115,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 
 const styles = {
   // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
-  emoji: { position: 'relative', zIndex: 1, fontSize: '34px', lineHeight: 1, flexShrink: 0, width: '48px', textAlign: 'center' },
+  emblemWrap: { position: 'relative', zIndex: 1, flexShrink: 0, width: '48px', display: 'flex', justifyContent: 'center' },
   content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
   title: {
     fontFamily: 'var(--font-manrope)',
