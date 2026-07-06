@@ -22,10 +22,11 @@ function strengthAccent(workout) {
 }
 
 // Бейдж раздела на конкретную тренировку: чёрная иконка на цветном прямоугольнике.
+// Цвет = цвет РАЗДЕЛА (силовая — зелёный, как заголовки), НЕ группы мышц. Акцент
+// группы остаётся только для буквы дня в попапе.
 function badgeFor(workout) {
   const meta = workoutCategoryMeta(workout)
-  const color = meta.key === 'strength' ? strengthAccent(workout) : meta.color
-  return { iconName: meta.iconName, color }
+  return { iconName: meta.iconName, color: meta.color }
 }
 
 // Прямоугольный бейдж с чёрной иконкой (единый вид: ячейка, сводка, попап).
@@ -175,6 +176,7 @@ export default function HistoryCalendar({ heading }) {
               <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'rgba(255,255,255,0.35)' }}>{w}</div>
             ))}
           </div>
+          <div style={styles.weekDivider} aria-hidden="true" />
 
           <div key={offset} className="page-fade" style={styles.grid}>
             {cells.map((d, i) => {
@@ -202,11 +204,17 @@ export default function HistoryCalendar({ heading }) {
                   }}>{d}</span>
                   {has && (
                     <span style={styles.marks}>
-                      {list.slice(0, 2).map((w, wi) => {
-                        const b = badgeFor(w)
-                        return <Badge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
-                      })}
-                      {list.length > 2 && <span style={styles.markMore}>+{list.length - 2}</span>}
+                      {list.length <= 2
+                        ? list.map((w, wi) => {
+                            const b = badgeFor(w)
+                            return <Badge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
+                          })
+                        : list.map((w, wi) => {
+                            const b = badgeFor(w)
+                            // 3+ тренировок в день — крошечные квадратики без иконок,
+                            // подробности в попапе по тапу.
+                            return <span key={wi} style={{ width: '8px', height: '8px', borderRadius: '2px', background: b.color }} />
+                          })}
                     </span>
                   )}
                 </button>
@@ -314,18 +322,18 @@ const styles = {
   summaryChip: { display: 'inline-flex', alignItems: 'center', gap: '6px' },
   summaryCount: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px' },
   summaryEmpty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '7px' },
+  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '6px' },
   weekLabel: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px' },
+  weekDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 2px 8px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' },
   cellEmpty: { aspectRatio: '1 / 1' },
   cell: {
     position: 'relative', aspectRatio: '1 / 1', borderRadius: 'var(--radius-medium)',
-    border: 'none', padding: '5px', display: 'flex', flexDirection: 'column',
-    alignItems: 'flex-start', justifyContent: 'space-between', overflow: 'hidden'
+    border: 'none', padding: '4px', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: '3px', overflow: 'hidden'
   },
   cellNum: { fontFamily: 'var(--font-display)', fontSize: '15px', lineHeight: 1 },
-  marks: { display: 'flex', alignItems: 'center', gap: '3px', flexWrap: 'wrap' },
-  markMore: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, color: 'var(--color-text-secondary)' }
+  marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }
 }
 
 const dstyles = {
