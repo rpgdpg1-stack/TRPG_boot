@@ -1751,8 +1751,10 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
     padding: '14px 16px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    // Зелёный «характер» силовой: мягкое лаймовое свечение из верхнего угла +
+    // лёгкий изумрудный вертикальный вток. Спокойно (низкая альфа) — смотреть долго.
+    background: 'radial-gradient(130% 100% at 15% -15%, rgba(158, 209, 83, 0.13), transparent 55%), linear-gradient(180deg, rgba(93, 187, 99, 0.06) 0%, rgba(255, 255, 255, 0.02) 62%)',
+    border: '1px solid rgba(158, 209, 83, 0.14)',
     borderRadius: 'var(--radius-card)'
   },
   // Заливка-прогресс: светло-серый фон растёт слева по мере отжатых упражнений
