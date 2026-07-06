@@ -25,6 +25,49 @@ function daysAgo(iso) {
   return Math.round((b - a) / 86400000)
 }
 
+/* ============================================ */
+/* Календарь истории (месячная сетка)           */
+/* ============================================ */
+
+// Названия месяцев (именительный — для заголовка «Июль 2026»).
+export const MONTHS_RU = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+]
+
+// Дни недели, понедельник первым (как принято в РФ).
+export const WEEKDAYS_RU = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+/**
+ * Разложить ISO-таймстамп на части по МОСКОВСКОМУ времени (UTC+3).
+ * Приложение живёт по Москве (лимиты/сутки), поэтому и день, на который падает
+ * тренировка, считаем по Москве — сдвигаем на +3ч и читаем UTC-части.
+ * Возвращает { y, m (0–11), d, hh, min }.
+ */
+export function mskParts(iso) {
+  const shifted = new Date(new Date(iso).getTime() + 3 * 3600 * 1000)
+  return {
+    y: shifted.getUTCFullYear(),
+    m: shifted.getUTCMonth(),
+    d: shifted.getUTCDate(),
+    hh: shifted.getUTCHours(),
+    min: shifted.getUTCMinutes()
+  }
+}
+
+// Ключ дня по Москве: "2026-07-06".
+export function mskDayKey(iso) {
+  const { y, m, d } = mskParts(iso)
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
+// Время по Москве: "10:05".
+export function formatTimeMsk(iso) {
+  if (!iso) return ''
+  const { hh, min } = mskParts(iso)
+  return `${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+}
+
 // "02.05.26"
 export function formatWorkoutDateShort(iso) {
   if (!iso) return ''
@@ -82,6 +125,29 @@ export function describeWorkout(workout) {
     variant: workout.day || ''
   }
 }
+/**
+ * Категория тренировки для календаря/сводки: иконка (SVG из assets/ui), цвет
+ * раздела и человекочитаемый лейбл. Силовая (gym и любая своя силовая) → power/зелёный,
+ * плавание → swimming/pool, кардио/растяжка — свои цвета. Fallback — силовая.
+ */
+export function workoutCategoryMeta(workout) {
+  const prog = getProgramByDbId(workout.program_id)
+  const cat = prog?.category
+  if (prog?.kind === 'swim' || cat === 'pool') {
+    return { key: 'pool', iconName: 'swimming', color: 'var(--cat-pool)', label: 'Плавание' }
+  }
+  if (cat === 'cardio') {
+    return { key: 'cardio', iconName: 'cardio', color: 'var(--cat-cardio)', label: 'Кардио' }
+  }
+  if (cat === 'stretch') {
+    return { key: 'stretch', iconName: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка' }
+  }
+  return { key: 'strength', iconName: 'power', color: 'var(--color-primary)', label: 'Силовая' }
+}
+
+// Порядок разделов в сводке месяца.
+export const CATEGORY_ORDER = ['strength', 'pool', 'cardio', 'stretch']
+
 /**
  * Уникальные группы мышц дня программы — для тегов в истории и в дне.
  * Возвращает [{ key, label, color }] в порядке появления, без дублей.
