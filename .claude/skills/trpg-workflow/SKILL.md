@@ -207,7 +207,7 @@ src/
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js
 ├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
+├── lib/            activities active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
 │                   leagues levels network-status notes offline-queue persistent-cache profile-cache version-check
 │                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
 ├── pages/          Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile

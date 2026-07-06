@@ -1,164 +1,62 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { getDailyQuests, getDailyQuestsSync, completeQuest } from '../lib/storage'
-import { getTodayKey } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
+import {
+  WINDOWS, SLOT_XP,
+  getActivitiesConfigSync, fetchActivitiesConfig, saveActivitiesConfig,
+  getCurrentWindowIndex, isWindowOpen, windowOpenLabel,
+  getRecommendedForWindow, getCustomDone, setCustomDone
+} from '../lib/activities'
+import AnchorMenu from './AnchorMenu'
 import UiIcon from './UiIcon'
 import MuscleIcon from './MuscleIcon'
 
 /**
- * Дневной буст — 3 слота на день: утро / день / вечер.
+ * Виджет «Активности» на главной — ОДНА карточка текущего окна (утро/день/вечер),
+ * листается свайпом влево/вправо. В окне: рекомендуемая активность (если включены
+ * рекомендации) и/или своя (если включены и заданы). Тап по строке — выполнено:
+ * чистая зелёная галочка + строка гаснет в серый. За рекомендуемую — награда через
+ * completeQuest; за свою баллов нет. ⋯ справа — показать/скрыть рекомендации и
+ * добавить свою (→ страница конструктора /daily-boost).
  *
- * Из каждого пула привычек на конкретный день детерминированно (по ключу дня)
- * выбирается ОДНА привычка. Набор стабилен в течение дня и меняется со сбросом
- * в 03:00 МСК — так из 22 привычек идёт ротация, но экран компактный.
- *
- * Окна открытия считаем в «часах суток буста» — той же системе, что getTodayKey
- * (сдвиг −3ч, сутки стартуют в 03:00 МСК). Час буста = 0 в 03:00, 9 в 12:00,
- * 15 в 18:00. В 00:00–02:59 МСК час буста = 21..23 — это хвост прошедших суток,
- * там открыто всё, как и должно быть до сброса.
- *   🌅 утро  — bootHour 0  (доступно с 03:00 МСК)
- *   ☀️ день  — bootHour 9  (с 12:00 МСК)
- *   🌙 вечер — bootHour 15 (с 18:00 МСК)
- * Окна НЕ сгорают: пропустил утро, зашёл вечером — оно всё ещё доступно.
- *
- * XP: каждый закрытый слот +20, все три за день +40 бонусом → итого 100.
- * Бонус начисляется автоматически при закрытии третьего слота, пишется
- * отдельным quest_id 'boost_full_day' (reward=40), чтобы не задвоился.
+ * Прошлые/будущие окна доступны свайпом: будущее (по времени) — под блюром с
+ * подписью «Откроется в HH:00».
  */
+const TAP_THRESHOLD_PX = 8
 
-const SLOT_XP = 20
-
-// openBootHour — час «суток буста» (от 03:00 МСК), с которого слот открыт.
-const BOOST_POOLS = [
-  {
-    period: 'morning',
-    periodEmoji: '🌅',
-    periodLabel: 'Утро',
-    openBootHour: 0, // 03:00 МСК
-    items: [
-      { id: 'm_water',   emoji: '💧',   title: 'Выпить стакан воды',     benefit: 'запуск метаболизма' },
-      { id: 'm_light',   emoji: '🌞',   title: '5 минут дневного света',  benefit: 'циркадный ритм' },
-      { id: 'm_protein', emoji: '🥚',   title: 'Белок на завтрак',        benefit: 'сытость и энергия' },
-      { id: 'm_pushups', emoji: '💪🏻', title: '10 отжиманий от пола',    benefit: 'разбудить мышцы' },
-      { id: 'm_teeth',   emoji: '🦷',   title: 'Почистить зубы',          benefit: 'гигиена и ритуал' },
-      { id: 'm_goal',    emoji: '🗒️',   title: 'Записать 1 цель на день', benefit: 'фокус внимания' },
-      { id: 'm_silence', emoji: '🧘🏻', title: '5 минут тишины',          benefit: 'снять утренний шум' }
-    ]
-  },
-  {
-    period: 'day',
-    periodEmoji: '☀️',
-    periodLabel: 'День',
-    openBootHour: 9, // 12:00 МСК
-    items: [
-      { id: 'd_walk',    emoji: '🚶', title: '10 минут ходьбы',         benefit: 'кровообращение' },
-      { id: 'd_fruit',   emoji: '🍎', title: 'Съесть фрукт',            benefit: 'витамины' },
-      { id: 'd_veggies', emoji: '🥗', title: 'Добавить овощи к еде',    benefit: 'клетчатка' },
-      { id: 'd_move',    emoji: '🧍', title: 'Встать и размяться 2 мин', benefit: 'снять застой' },
-      { id: 'd_squats',  emoji: '🏋️', title: '20 приседаний',           benefit: 'тонизировать ноги' },
-      { id: 'd_eyes',    emoji: '👁️', title: 'Смотреть вдаль 1 мин',    benefit: 'отдых для глаз' },
-      { id: 'd_water',   emoji: '💧', title: 'Выпить ещё стакан воды',  benefit: 'дневная гидратация' },
-      { id: 'd_music',   emoji: '🎧', title: 'Послушать любимую песню', benefit: 'поднять настроение' }
-    ]
-  },
-  {
-    period: 'evening',
-    periodEmoji: '🌙',
-    periodLabel: 'Вечер',
-    openBootHour: 15, // 18:00 МСК
-    items: [
-      { id: 'e_stretch', emoji: '🤸',     title: '10 минут растяжки',              benefit: 'снять напряжение' },
-      { id: 'e_breath',  emoji: '😮‍💨', title: '10 глубоких вдохов',             benefit: 'успокоить нервы' },
-      { id: 'e_screen',  emoji: '📵',     title: 'Убрать телефон за час до сна',   benefit: 'качество сна' },
-      { id: 'e_sleep',   emoji: '😴',     title: 'Лечь спать вовремя',             benefit: 'восстановление' },
-      { id: 'e_shower',  emoji: '🚿',     title: 'Контрастный душ',                benefit: 'тонус сосудов' },
-      { id: 'e_skin',    emoji: '🧴',     title: 'Увлажнить кожу',                 benefit: 'уход и ритуал' },
-      { id: 'e_plank',   emoji: '📋',     title: 'Планка 30–60 сек',               benefit: 'сильный кор' }
-    ]
-  }
-]
-
-// Детерминированный хеш строки в неотрицательное число (FNV-подобный).
-function hashKey(str) {
-  let h = 2166136261
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i)
-    h = Math.imul(h, 16777619)
-  }
-  return Math.abs(h)
-}
-
-// Час «суток буста» от 03:00 МСК. 03:00 → 0, 12:00 → 9, 18:00 → 15,
-// 00:00–02:59 → 21..23 (хвост прошедших суток). Та же система, что getTodayKey.
-function getBoostHour() {
-  const now = new Date()
-  // Текущее МСК-время: к UTC прибавляем 3ч (нейтрализуя локальный пояс телефона).
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000
-  const msk = new Date(utcMs + 3 * 3600000)
-  return (msk.getHours() - 3 + 24) % 24
-}
-
-// Выбрать привычки на сегодня — по одной из каждого пула, детерминированно.
-function pickTodaysQuests(dayKey) {
-  return BOOST_POOLS.map((pool, poolIdx) => {
-    const idx = hashKey(`${dayKey}:${pool.period}:${poolIdx}`) % pool.items.length
-    const item = pool.items[idx]
-    return {
-      ...item,
-      period: pool.period,
-      periodEmoji: pool.periodEmoji,
-      periodLabel: pool.periodLabel,
-      openBootHour: pool.openBootHour,
-      xp: SLOT_XP
-    }
-  })
-}
-
-/**
- * Сводка дневного буста на сегодня (для компактного виджета на главной):
- * сколько слотов закрыто из 3 и сколько 💪 ещё можно забрать. Читает тот же
- * набор квестов и localStorage-прогресс, что и сам компонент.
- */
-export function getDailyBoostSummarySync() {
-  const quests = pickTodaysQuests(getTodayKey())
-  const completed = getDailyQuestsSync()
-  let done = 0
-  let remainingReward = 0
-  for (const q of quests) {
-    if (completed[q.id]) done++
-    else remainingReward += q.xp
-  }
-  return { done, total: quests.length, remainingReward }
-}
-
-// Человекочитаемое время открытия слота для подписи «Откроется в HH:00».
-function openLabel(openBootHour) {
-  const mskHour = (openBootHour + 3) % 24
-  return `${String(mskHour).padStart(2, '0')}:00`
+/** Звёздочка — маркер СВОЕЙ активности. */
+function StarIcon({ size = 18, color = '#FFD25A' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3 L14.6 8.6 L20.7 9.3 L16.2 13.5 L17.4 19.5 L12 16.5 L6.6 19.5 L7.8 13.5 L3.3 9.3 L9.4 8.6 Z"
+        fill={color} stroke={color} strokeWidth="1" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 export default function DailyQuests() {
-  const [quests] = useState(() => pickTodaysQuests(getTodayKey()))
+  const navigate = useNavigate()
 
+  const [config, setConfig] = useState(getActivitiesConfigSync)
   const [completed, setCompleted] = useState(() => getDailyQuestsSync())
+  const [customDone, setCustomDoneState] = useState(() => getCustomDone())
+  const [winIdx, setWinIdx] = useState(() => getCurrentWindowIndex())
+  const [slideDir, setSlideDir] = useState(null)
   const [animating, setAnimating] = useState(null)
   const [floatingRewards, setFloatingRewards] = useState([])
+  const [menuAnchor, setMenuAnchor] = useState(null)
 
-  const [boostHour, setBoostHour] = useState(() => getBoostHour())
+  const swipe = useRef({ x: null })
+  const menuBtnRef = useRef(null)
 
-  const [expanded, setExpanded] = useState(false)
+  // Рекомендуемые дня — по одной на окно (детерминированно).
+  const recByWindow = WINDOWS.map(w => getRecommendedForWindow(w.id))
 
-  const lastTapRef = useRef({})
-  const expandedListRef = useRef(null)
-  const [expandedHeight, setExpandedHeight] = useState(0)
-
-  const TAP_THRESHOLD_PX = 8
-  const pointerStartRef = useRef(null)
-  const containerRef = useRef(null)
-
+  // Прогресс рекомендуемых (сервер/локально) — как раньше.
   useEffect(() => {
-    const loadQuests = () => {
+    const load = () => {
       getDailyQuests().then(result => {
         setCompleted(prev => {
           const prevDone = Object.keys(prev).length
@@ -168,263 +66,263 @@ export default function DailyQuests() {
         })
       })
     }
-    loadQuests()
-    const offReady = on(EVENTS.USER_READY, loadQuests)
-    const offChanged = on(EVENTS.USER_CHANGED, loadQuests)
+    load()
+    const offReady = on(EVENTS.USER_READY, load)
+    const offChanged = on(EVENTS.USER_CHANGED, load)
     return () => { offReady(); offChanged() }
   }, [])
 
-  // Тикаем час буста раз в минуту — слот сам разблокируется на 12:00/18:00.
+  // Догоняем конфиг из облака + слушаем изменения из конструктора.
   useEffect(() => {
-    const t = setInterval(() => setBoostHour(getBoostHour()), 60000)
-    return () => clearInterval(t)
+    fetchActivitiesConfig().then(cfg => { if (cfg) setConfig(cfg) })
+    const onCfg = () => setConfig(getActivitiesConfigSync())
+    window.addEventListener('activities-changed', onCfg)
+    return () => window.removeEventListener('activities-changed', onCfg)
   }, [])
 
-  const isSlotOpen = (q) => boostHour >= q.openBootHour
-
-  const allSlotsDone = quests.every(q => completed[q.id])
-  const dayComplete = allSlotsDone
-
-  useEffect(() => {
-    if (!dayComplete) setExpanded(false)
-  }, [dayComplete])
-
-  useEffect(() => {
-    if (!expandedListRef.current) return
-    setExpandedHeight(expandedListRef.current.scrollHeight)
-  }, [expanded, dayComplete])
-
-  useEffect(() => {
-    if (!expanded) return
-    const handleOutside = (e) => {
-      if (containerRef.current?.contains(e.target)) return
-      setExpanded(false)
-    }
-    document.addEventListener('pointerdown', handleOutside)
-    return () => document.removeEventListener('pointerdown', handleOutside)
-  }, [expanded])
-
-  const handleQuestPointerDown = (quest, e) => {
-    pointerStartRef.current = { x: e.clientX, y: e.clientY }
+  const goWindow = (idx) => {
+    const clamped = Math.max(0, Math.min(WINDOWS.length - 1, idx))
+    if (clamped === winIdx) return
+    setSlideDir(clamped > winIdx ? 'right' : 'left')
+    setWinIdx(clamped)
+    haptic.light()
   }
 
-  const handleQuestPointerUp = async (quest, e) => {
-    const start = pointerStartRef.current
-    pointerStartRef.current = null
-    if (!start) return
-    // Если палец уехал дальше порога — это скролл, не тап.
-    const dx = Math.abs(e.clientX - start.x)
-    const dy = Math.abs(e.clientY - start.y)
-    if (dx > TAP_THRESHOLD_PX || dy > TAP_THRESHOLD_PX) return
+  const onTouchStart = (e) => { swipe.current.x = e.touches[0].clientX }
+  const onTouchEnd = (e) => {
+    const startX = swipe.current.x
+    swipe.current.x = null
+    if (startX === null) return
+    const dx = e.changedTouches[0].clientX - startX
+    if (Math.abs(dx) < 45) return
+    if (dx < 0) goWindow(winIdx + 1)
+    else goWindow(winIdx - 1)
+  }
 
-    const now = Date.now()
-    if (lastTapRef.current[quest.id] && now - lastTapRef.current[quest.id] < 300) return
-    lastTapRef.current[quest.id] = now
-
-    if (completed[quest.id] || animating || !isSlotOpen(quest) || dayComplete) return
-
+  // Тап по рекомендуемой — выполнить (награда через completeQuest).
+  const tapRecommended = async (rec, win) => {
+    if (!rec || completed[rec.id] || animating || !isWindowOpen(win)) return
     haptic.success()
-    setAnimating(quest.id)
-
-    const result = await completeQuest(quest.id, quest.xp)
+    setAnimating(rec.id)
+    const result = await completeQuest(rec.id, SLOT_XP)
     setCompleted(result.completed)
-
     if (result.wasNew) {
-      const rewardKey = Date.now()
-      setFloatingRewards(prev => [...prev, { id: quest.id, xp: quest.xp, key: rewardKey }])
-      setTimeout(() => {
-        setFloatingRewards(prev => prev.filter(r => r.key !== rewardKey))
-      }, 1100)
+      const key = Date.now()
+      setFloatingRewards(prev => [...prev, { id: rec.id, xp: SLOT_XP, key }])
+      setTimeout(() => setFloatingRewards(prev => prev.filter(r => r.key !== key)), 1100)
     }
-
     setTimeout(() => setAnimating(null), 600)
   }
 
-  const handleAllDonePointerDown = (e) => {
-    pointerStartRef.current = { x: e.clientX, y: e.clientY }
+  // Тап по своей — просто отметить (баллов нет).
+  const tapCustom = (win) => {
+    if (customDone[win.id] || !isWindowOpen(win)) return
+    haptic.success()
+    setCustomDoneState(setCustomDone(win.id, true))
   }
-  const handleAllDonePointerUp = (e) => {
-    const start = pointerStartRef.current
-    pointerStartRef.current = null
-    if (!start) return
-    const dx = Math.abs(e.clientX - start.x)
-    const dy = Math.abs(e.clientY - start.y)
-    if (dx > TAP_THRESHOLD_PX || dy > TAP_THRESHOLD_PX) return
+
+  const toggleRecommended = () => {
+    setMenuAnchor(null)
+    setConfig(saveActivitiesConfig({ ...config, showRecommended: !config.showRecommended }))
     haptic.light()
-    setExpanded(prev => !prev)
   }
 
-  return (
-    <div ref={containerRef} style={styles.container}>
+  const win = WINDOWS[winIdx]
+  const rec = recByWindow[winIdx]
+  const custom = config.showCustom ? config.custom[win.id] : null
+  const open = isWindowOpen(win)
+  const showRec = config.showRecommended && rec
+  const nothing = !showRec && !custom
 
-      {dayComplete ? (
-        <>
-          <div
-            onPointerDown={handleAllDonePointerDown}
-            onPointerUp={handleAllDonePointerUp}
-            onPointerCancel={() => { pointerStartRef.current = null }}
-            style={styles.allDoneBlock}
-          >
-            <div style={styles.allDoneCheck}>✔ День пройден</div>
-            <Chevron expanded={expanded} />
+  const slideClass = slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined
+
+  return (
+    <div style={styles.container}>
+      {/* ⋯ меню справа сверху. */}
+      <button
+        ref={menuBtnRef}
+        onClick={() => setMenuAnchor(menuBtnRef.current?.getBoundingClientRect() || null)}
+        style={styles.menuBtn}
+        aria-label="Меню активностей"
+      >⋯</button>
+
+      <div style={styles.swipeArea} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div key={winIdx} className={slideClass}>
+          {/* Шапка окна: эмодзи + название + (закрыто → время открытия). */}
+          <div style={styles.winHeader}>
+            <span style={styles.winEmoji}>{win.emoji}</span>
+            <span style={styles.winLabel}>{win.label}</span>
+            {!open && <span style={styles.winLocked}>· откроется в {windowOpenLabel(win)}</span>}
           </div>
 
-          <div
-            style={{
-              ...styles.expandWrap,
-              maxHeight: expanded ? `${expandedHeight}px` : '0px',
-              opacity: expanded ? 1 : 0
-            }}
-            aria-hidden={!expanded}
-          >
-            <div ref={expandedListRef} style={styles.expandInner}>
-              {quests.map(quest => (
-                <div key={quest.id} style={styles.questRowDone}>
-                  <div style={styles.checkboxWrap}>
-                    <UiIcon name="check" size={20} color="var(--color-primary)" />
-                  </div>
-                  <span style={styles.taskEmojiDone}>{quest.emoji}</span>
-                  <div style={styles.textColDone}>
-                    <span style={styles.questTextDone}>{quest.title}</span>
-                    <span style={styles.benefitTextDone}>{quest.benefit}</span>
-                  </div>
-                  <span style={{ ...styles.rewardBadgeDone, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    +{quest.xp} <MuscleIcon size={18} earned={true} />
-                  </span>
-                </div>
-              ))}
+          {nothing ? (
+            <div style={styles.emptyHint}>
+              {config.showRecommended ? 'Пусто — добавь свою активность' : 'Активности скрыты'}
             </div>
-          </div>
-        </>
-      ) : (
-        <div style={styles.list}>
-          {quests.map(quest => {
-            const isDone = completed[quest.id]
-            const isAnimating = animating === quest.id
-            const open = isSlotOpen(quest)
-            const reward = floatingRewards.find(r => r.id === quest.id)
-            const locked = !open && !isDone
-
-            return (
-              <button
-                key={quest.id}
-                data-quest-row
-                onPointerDown={(e) => handleQuestPointerDown(quest, e)}
-                onPointerUp={(e) => handleQuestPointerUp(quest, e)}
-                onPointerCancel={() => { pointerStartRef.current = null }}
-                disabled={isDone || locked}
-                style={{
-                  ...styles.questRow,
-                  position: 'relative',
-                  opacity: isDone ? 0.5 : 1,
-                  cursor: isDone || locked ? 'default' : 'pointer',
-                  transform: isAnimating ? 'scale(0.97)' : 'scale(1)'
-                }}
-              >
-                {/* Содержимое слота. Под блюром, если слот ещё закрыт по времени. */}
-                <div style={{
-                  ...styles.slotInner,
-                  filter: locked ? 'blur(4px)' : 'none',
-                  opacity: locked ? 0.5 : 1
-                }}>
-                  {/* Чистая галочка: до выполнения слот пуст (нет чекбокса), после
-                      тапа появляется зелёная галочка, строка гаснет в серый. */}
-                  <div style={styles.checkboxWrap}>
-                    {isDone && <UiIcon name="check" size={20} color="var(--color-primary)" />}
-                  </div>
-
-                  <span style={{ ...styles.taskEmoji, opacity: isDone ? 0.5 : 1 }}>
-                    {quest.emoji}
-                  </span>
-
-                  <div style={styles.textCol}>
-                    <span style={{
-                      ...styles.questText,
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      color: isDone ? 'var(--color-text-secondary)' : 'var(--color-text)'
-                    }}>
-                      {quest.title}
-                    </span>
-                    <span style={{ ...styles.benefitText, opacity: isDone ? 0.4 : 1 }}>
-                      {quest.benefit}
-                    </span>
-                  </div>
-
-                  <div style={styles.rewardBadgeWrap}>
-                    <span style={{
-                      ...styles.rewardBadge,
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      opacity: isDone ? 0.55 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      +{quest.xp} <MuscleIcon size={18} earned={isDone} />
-                    </span>
-
-                    {reward && (
-                      <span key={reward.key} style={styles.floatingReward}>
-                        +{reward.xp} <MuscleIcon size={18} earned={true} />
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Плашка времени поверх блюра — только для закрытого слота. */}
-                {locked && (
-                  <div style={styles.lockedOverlay}>
-                    <span style={styles.lockedOverlayText}>
-                      Откроется в {openLabel(quest.openBootHour)} {quest.periodEmoji}
-                    </span>
-                  </div>
-                )}
-              </button>
-            )
-          })}
+          ) : (
+            <div style={{ ...styles.rows, filter: open ? 'none' : 'blur(3px)', opacity: open ? 1 : 0.55 }}>
+              {showRec && (
+                <Row
+                  emoji={rec.emoji}
+                  title={rec.title}
+                  benefit={rec.benefit}
+                  done={!!completed[rec.id]}
+                  scale={animating === rec.id}
+                  reward={floatingRewards.find(r => r.id === rec.id)}
+                  onTap={() => tapRecommended(rec, win)}
+                />
+              )}
+              {custom && (
+                <Row
+                  star
+                  title={custom.title}
+                  benefit={custom.benefit}
+                  done={!!customDone[win.id]}
+                  onTap={() => tapCustom(win)}
+                />
+              )}
+            </div>
+          )}
         </div>
-      )}
-
       </div>
-  )
-}
 
-function Chevron({ expanded }) {
-  return (
-    <div
-      style={{
-        marginTop: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '14px',
-        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)'
-      }}
-    >
-      <svg width="14" height="8" viewBox="0 0 14 8" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 1 L7 6 L13 1" fill="none" stroke="var(--color-text-secondary)"
-          strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      {menuAnchor && (
+        <AnchorMenu
+          anchorRect={menuAnchor}
+          onClose={() => setMenuAnchor(null)}
+          items={[
+            {
+              key: 'toggle',
+              icon: <UiIcon name={config.showRecommended ? 'info' : 'power'} size={18} color="var(--color-text-secondary)" />,
+              label: config.showRecommended ? 'Скрыть рекомендации' : 'Показать рекомендации',
+              onClick: toggleRecommended
+            },
+            {
+              key: 'add',
+              icon: <StarIcon size={16} />,
+              label: 'Добавить свою активность',
+              onClick: () => { setMenuAnchor(null); navigate('/daily-boost') }
+            }
+          ]}
+        />
+      )}
     </div>
   )
 }
 
-
+/** Строка активности: слева слот галочки (пуст → зелёная галочка), эмодзи/звезда,
+    текст (название + польза), справа — награда (только у рекомендуемой). */
+function Row({ emoji, star, title, benefit, done, scale, reward, onTap }) {
+  const startRef = useRef(null)
+  const onDown = (e) => { startRef.current = { x: e.clientX, y: e.clientY } }
+  const onUp = (e) => {
+    const s = startRef.current; startRef.current = null
+    if (!s) return
+    if (Math.abs(e.clientX - s.x) > TAP_THRESHOLD_PX || Math.abs(e.clientY - s.y) > TAP_THRESHOLD_PX) return
+    if (!done) onTap?.()
+  }
+  return (
+    <button
+      onPointerDown={onDown}
+      onPointerUp={onUp}
+      onPointerCancel={() => { startRef.current = null }}
+      disabled={done}
+      style={{
+        ...styles.row,
+        opacity: done ? 0.5 : 1,
+        cursor: done ? 'default' : 'pointer',
+        transform: scale ? 'scale(0.97)' : 'scale(1)'
+      }}
+    >
+      <div style={styles.checkWrap}>
+        {done && <UiIcon name="check" size={20} color="var(--color-primary)" />}
+      </div>
+      <span style={styles.rowIcon}>
+        {star ? <StarIcon size={20} /> : emoji}
+      </span>
+      <div style={styles.textCol}>
+        <span style={{ ...styles.title, color: done ? 'var(--color-text-secondary)' : 'var(--color-text)', textDecoration: done ? 'line-through' : 'none' }}>
+          {title}
+        </span>
+        {benefit && <span style={{ ...styles.benefit, opacity: done ? 0.5 : 1 }}>{benefit}</span>}
+      </div>
+      {!star && (
+        <div style={styles.rewardWrap}>
+          <span style={{ ...styles.reward, opacity: done ? 0.5 : 1, textDecoration: done ? 'line-through' : 'none' }}>
+            +{SLOT_XP} <MuscleIcon size={18} earned={done} />
+          </span>
+          {reward && (
+            <span key={reward.key} style={styles.floatingReward}>
+              +{reward.xp} <MuscleIcon size={18} earned={true} />
+            </span>
+          )}
+        </div>
+      )}
+    </button>
+  )
+}
 
 const styles = {
   container: {
     position: 'relative',
-    padding: '8px 14px',
+    padding: '10px 14px 12px',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
   },
-  list: {
+  menuBtn: {
+    position: 'absolute',
+    top: '4px',
+    right: '10px',
+    width: '34px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--color-text-secondary)',
+    fontSize: '20px',
+    lineHeight: 1,
+    cursor: 'pointer',
+    zIndex: 2,
+    WebkitTapHighlightColor: 'transparent'
+  },
+  swipeArea: { touchAction: 'pan-y' },
+  winHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '2px 4px 8px'
+  },
+  winEmoji: { fontSize: '17px', lineHeight: 1 },
+  winLabel: {
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
+    fontSize: '15px',
+    color: 'var(--color-text)',
+    letterSpacing: '0.2px'
+  },
+  winLocked: {
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 500,
+    fontSize: '11px',
+    color: 'var(--color-text-secondary)'
+  },
+  rows: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '6px',
+    transition: 'filter 0.3s ease, opacity 0.3s ease'
   },
-  questRow: {
+  emptyHint: {
+    padding: '16px 6px',
+    textAlign: 'center',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)'
+  },
+  row: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
@@ -432,11 +330,11 @@ const styles = {
     background: 'transparent',
     width: '100%',
     textAlign: 'left',
-    transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease',
+    border: 'none',
     borderRadius: 'var(--radius-medium)',
-    border: 'none'
+    transition: 'transform 90ms cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s ease'
   },
-  checkboxWrap: {
+  checkWrap: {
     position: 'relative',
     flexShrink: 0,
     width: '20px',
@@ -445,99 +343,41 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  // Крупное эмодзи задания, центрируется по вертикали относительно двух строк.
-  taskEmoji: {
+  rowIcon: {
     fontSize: '24px',
     lineHeight: 1,
     flexShrink: 0,
     width: '30px',
-    textAlign: 'center',
-    alignSelf: 'center',
-    transition: 'opacity 0.3s ease'
-  },
-  taskEmojiDone: {
-    fontSize: '20px',
-    lineHeight: 1,
-    flexShrink: 0,
-    width: '30px',
-    textAlign: 'center',
-    alignSelf: 'center',
-    opacity: 0.55
-  },
-  
-  // Колонка текста: задание сверху, польза снизу.
-  textCol: {
-    flex: 1,
-    minWidth: 0,
     display: 'flex',
-    flexDirection: 'column',
-    gap: '2px'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  textColDone: {
-    flex: 1,
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1px'
-  },
-  questText: {
+  textCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  title: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '14px',
     fontWeight: 600,
-    lineHeight: 1.2,
-    transition: 'color 0.3s ease, text-decoration 0.3s ease'
+    lineHeight: 1.2
   },
-  // Польза — мелкий приглушённый шрифт под заданием.
-  benefitText: {
+  benefit: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     fontWeight: 500,
     lineHeight: 1.2,
-    color: 'var(--color-text-secondary)',
-    transition: 'opacity 0.3s ease'
+    color: 'var(--color-text-secondary)'
   },
-  // Обёртка содержимого слота (под блюр уходит целиком).
-  slotInner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    width: '100%',
-    transition: 'filter 0.3s ease, opacity 0.3s ease'
-  },
-  // Плашка поверх заблокированного слота с временем открытия.
-  lockedOverlay: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'none'
-  },
-  lockedOverlayText: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: 'var(--color-text)',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    textShadow: '0 1px 4px rgba(0,0,0,0.5)'
-  },
-  rewardBadgeWrap: {
-    position: 'relative',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center'
-  },
-  rewardBadge: {
+  rewardWrap: { position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center' },
+  reward: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '12px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
-    transition: 'opacity 0.3s ease, text-decoration 0.3s ease'
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px'
   },
-  
   floatingReward: {
     position: 'absolute',
     bottom: '100%',
@@ -549,71 +389,10 @@ const styles = {
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
-    textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
-    animation: 'rewardFloatUp 1.1s ease-out forwards'
-  },
-  
-  allDoneBlock: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
-    padding: '6px 4px 2px',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    userSelect: 'none'
-  },
-  allDoneCheck: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    fontWeight: 500
-  },
-  expandWrap: {
-    overflow: 'hidden',
-    transition: 'max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease'
-  },
-  expandInner: {
-    paddingTop: '8px',
-    marginTop: '4px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px'
-  },
-  questRowDone: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '4px 6px',
-    opacity: 0.55
-  },
-  
-  questTextDone: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    textDecoration: 'line-through',
-    lineHeight: 1.2
-  },
-  benefitTextDone: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    opacity: 0.7,
-    lineHeight: 1.2
-  },
-  rewardBadgeDone: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    color: 'var(--color-primary)',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    textDecoration: 'line-through',
-    opacity: 0.6,
-    alignSelf: 'center'
+    textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
+    animation: 'rewardFloatUp 1.1s ease-out forwards'
   }
 }
