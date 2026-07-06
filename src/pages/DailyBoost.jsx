@@ -5,7 +5,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import {
   WINDOWS,
-  ACTIVITY_TITLE_MAX, ACTIVITY_BENEFIT_MAX,
+  ACTIVITY_TITLE_MAX, ACTIVITY_BENEFIT_MAX, CUSTOM_PER_WINDOW_MAX,
   getActivitiesConfigSync, fetchActivitiesConfig, saveActivitiesConfig,
   getRecommendedForWindow
 } from '../lib/activities'
@@ -54,14 +54,24 @@ export default function DailyBoost() {
   const update = (patch) => setConfig(saveActivitiesConfig({ ...config, ...patch }))
   const toggle = (key) => { haptic.light(); update({ [key]: !config[key] }) }
 
-  const saveCustom = (winId, data) => {
+  const genId = () => 'c' + Math.random().toString(36).slice(2, 8)
+
+  const addCustom = (winId, data) => {
     haptic.success()
+    const list = config.custom[winId] || []
+    if (list.length >= CUSTOM_PER_WINDOW_MAX) return
     // Добавил свою — автоматически включаем показ «Моих».
-    update({ showCustom: true, custom: { ...config.custom, [winId]: data } })
+    update({ showCustom: true, custom: { ...config.custom, [winId]: [...list, { id: genId(), ...data }] } })
   }
-  const removeCustom = (winId) => {
+  const editCustom = (winId, itemId, data) => {
+    haptic.success()
+    const list = (config.custom[winId] || []).map(it => it.id === itemId ? { ...it, ...data } : it)
+    update({ custom: { ...config.custom, [winId]: list } })
+  }
+  const removeCustom = (winId, itemId) => {
     haptic.light()
-    update({ custom: { ...config.custom, [winId]: null } })
+    const list = (config.custom[winId] || []).filter(it => it.id !== itemId)
+    update({ custom: { ...config.custom, [winId]: list } })
   }
 
   return (
@@ -86,7 +96,7 @@ export default function DailyBoost() {
           <Check on={config.showCustom} />
           <div style={styles.toggleText}>
             <span style={styles.toggleTitle}>Мои активности</span>
-            <span style={styles.toggleSub}>Свои — по одной на окно</span>
+            <span style={styles.toggleSub}>Свои — до 3 на каждое окно</span>
           </div>
         </button>
       </div>
@@ -94,7 +104,7 @@ export default function DailyBoost() {
       {/* Окна */}
       {WINDOWS.map(win => {
         const rec = getRecommendedForWindow(win.id)
-        const custom = config.custom[win.id]
+        const customs = config.custom[win.id] || []
         return (
           <div key={win.id} style={styles.section}>
             <div style={styles.sectionHeader}>
@@ -114,19 +124,14 @@ export default function DailyBoost() {
               </div>
             )}
 
-            {/* Своя */}
-            {custom ? (
-              <div style={{ ...styles.customRow, opacity: config.showCustom ? 1 : 0.4 }}>
-                <StarIcon size={20} />
-                <div style={styles.textCol}>
-                  <span style={styles.recTitle}>{custom.title}</span>
-                  {custom.benefit && <span style={styles.recBenefit}>{custom.benefit}</span>}
-                </div>
-                <button onClick={() => removeCustom(win.id)} style={styles.removeBtn} aria-label="Удалить">✕</button>
-              </div>
-            ) : (
-              <CustomEditor onSave={(data) => saveCustom(win.id, data)} />
-            )}
+            {/* Свои (до 3): тап по существующей — редактировать, ✕ — удалить. */}
+            <WindowCustoms
+              items={customs}
+              dim={!config.showCustom}
+              onAdd={(data) => addCustom(win.id, data)}
+              onEdit={(id, data) => editCustom(win.id, id, data)}
+              onRemove={(id) => removeCustom(win.id, id)}
+            />
           </div>
         )
       })}
@@ -136,21 +141,56 @@ export default function DailyBoost() {
   )
 }
 
-/** Инлайн-редактор своей активности: название (обяз.) + описание (опц.) → «Добавить». */
-function CustomEditor({ onSave }) {
-  const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('')
-  const [benefit, setBenefit] = useState('')
+/** Свои активности окна (до 3): существующие — тап редактирует, ✕ удаляет; ниже —
+    «Добавить свою», пока не достигнут лимит. */
+function WindowCustoms({ items, dim, onAdd, onEdit, onRemove }) {
+  const [editingId, setEditingId] = useState(null) // id элемента | 'new' | null
+  const canAdd = items.length < CUSTOM_PER_WINDOW_MAX
 
-  if (!open) {
-    return (
-      <button onClick={() => { haptic.light(); setOpen(true) }} style={styles.addBtn} className="tg-row">
-        <StarIcon size={16} />
-        <span>Добавить свою</span>
-      </button>
-    )
-  }
+  return (
+    <div style={{ ...styles.customsWrap, opacity: dim ? 0.45 : 1 }}>
+      {items.map(it => (
+        editingId === it.id ? (
+          <CustomEditor
+            key={it.id}
+            initialTitle={it.title}
+            initialBenefit={it.benefit || ''}
+            saveLabel="Сохранить"
+            onSave={(data) => { onEdit(it.id, data); setEditingId(null) }}
+            onCancel={() => setEditingId(null)}
+          />
+        ) : (
+          <div key={it.id} style={styles.customRow}>
+            <StarIcon size={20} />
+            <button style={styles.customTap} onClick={() => { haptic.light(); setEditingId(it.id) }}>
+              <span style={styles.recTitle}>{it.title}</span>
+              {it.benefit && <span style={styles.recBenefit}>{it.benefit}</span>}
+            </button>
+            <button onClick={() => onRemove(it.id)} style={styles.removeBtn} aria-label="Удалить">✕</button>
+          </div>
+        )
+      ))}
 
+      {editingId === 'new' ? (
+        <CustomEditor
+          saveLabel="Добавить"
+          onSave={(data) => { onAdd(data); setEditingId(null) }}
+          onCancel={() => setEditingId(null)}
+        />
+      ) : canAdd ? (
+        <button onClick={() => { haptic.light(); setEditingId('new') }} style={styles.addBtn} className="tg-row">
+          <StarIcon size={16} />
+          <span>Добавить свою</span>
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+/** Форма своей активности: название (обяз.) + описание (опц.). */
+function CustomEditor({ initialTitle = '', initialBenefit = '', saveLabel = 'Добавить', onSave, onCancel }) {
+  const [title, setTitle] = useState(initialTitle)
+  const [benefit, setBenefit] = useState(initialBenefit)
   const canSave = title.trim().length > 0
   return (
     <div style={styles.editor}>
@@ -170,12 +210,12 @@ function CustomEditor({ onSave }) {
         style={{ ...styles.input, fontSize: '12px' }}
       />
       <div style={styles.editorButtons}>
-        <button onClick={() => { setOpen(false); setTitle(''); setBenefit('') }} style={styles.cancelBtn}>Отмена</button>
+        <button onClick={onCancel} style={styles.cancelBtn}>Отмена</button>
         <button
           onClick={() => { if (canSave) onSave({ title: title.trim(), benefit: benefit.trim() || null }) }}
           disabled={!canSave}
           style={{ ...styles.saveBtn, opacity: canSave ? 1 : 0.4 }}
-        >Добавить</button>
+        >{saveLabel}</button>
       </div>
     </div>
   )
@@ -253,13 +293,18 @@ const styles = {
     letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
 
+  customsWrap: { display: 'flex', flexDirection: 'column', gap: '6px', transition: 'opacity 0.2s ease' },
   customRow: {
     display: 'flex', alignItems: 'center', gap: '10px',
     padding: '12px 14px',
     background: 'var(--surface-raised)',
     border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-medium)',
-    transition: 'opacity 0.2s ease'
+    borderRadius: 'var(--radius-medium)'
+  },
+  // Тапабельная зона текста своей активности (открывает редактирование).
+  customTap: {
+    flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px',
+    background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0
   },
   removeBtn: {
     flexShrink: 0, width: '28px', height: '28px', borderRadius: '50%',

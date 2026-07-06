@@ -80,11 +80,11 @@ export default function DailyQuests() {
     return () => window.removeEventListener('activities-changed', onCfg)
   }, [])
 
-  const goWindow = (idx) => {
-    const clamped = Math.max(0, Math.min(WINDOWS.length - 1, idx))
-    if (clamped === winIdx) return
-    setSlideDir(clamped > winIdx ? 'right' : 'left')
-    setWinIdx(clamped)
+  // Бесконечная карусель окон (как свайпер разделов): dir 1 — вперёд, -1 — назад.
+  const goWindow = (dir) => {
+    const n = WINDOWS.length
+    setSlideDir(dir > 0 ? 'right' : 'left')
+    setWinIdx((winIdx + dir + n) % n)
     haptic.light()
   }
 
@@ -95,37 +95,26 @@ export default function DailyQuests() {
     if (startX === null) return
     const dx = e.changedTouches[0].clientX - startX
     if (Math.abs(dx) < 45) return
-    if (dx < 0) goWindow(winIdx + 1)
-    else goWindow(winIdx - 1)
+    goWindow(dx < 0 ? 1 : -1)
   }
 
-  // +20 улетает вверх ТОЛЬКО когда все показанные задания окна выполнены (и есть
-  // рекомендуемая — за неё и даётся награда; за свои баллов нет).
-  const maybeFly = (win, recDone, custDone) => {
-    const hasRec = config.showRecommended && !!getRecommendedForWindow(win.id)
-    if (hasRec && recDone && custDone) setFly(f => f + 1)
-  }
-
-  // Тап по рекомендуемой — выполнить (награда через completeQuest).
+  // Тап по рекомендуемой — выполнить (награда через completeQuest, +20 улетает
+  // ВВЕРХ из строки как фидбек начисления). Тик fly сбрасываем после анимации.
   const tapRecommended = async (rec, win) => {
     if (!rec || completed[rec.id] || animating || !isWindowOpen(win)) return
     haptic.success()
     setAnimating(rec.id)
     const result = await completeQuest(rec.id, SLOT_XP)
     setCompleted(result.completed)
-    const hasCust = config.showCustom && !!config.custom[win.id]
-    maybeFly(win, true, hasCust ? !!customDone[win.id] : true)
+    if (result.wasNew) { setFly(Date.now()); setTimeout(() => setFly(0), 1100) }
     setTimeout(() => setAnimating(null), 600)
   }
 
-  // Тап по своей — просто отметить (баллов нет).
-  const tapCustom = (win) => {
-    if (customDone[win.id] || !isWindowOpen(win)) return
+  // Тап по своей — просто отметить (баллов нет, полёта нет).
+  const tapCustom = (item, win) => {
+    if (customDone[item.id] || !isWindowOpen(win)) return
     haptic.success()
-    setCustomDoneState(setCustomDone(win.id, true))
-    const recItem = getRecommendedForWindow(win.id)
-    const hasRec = config.showRecommended && !!recItem
-    maybeFly(win, hasRec ? !!completed[recItem.id] : true, true)
+    setCustomDoneState(setCustomDone(item.id, true))
   }
 
   const toggleRecommended = () => {
@@ -136,10 +125,10 @@ export default function DailyQuests() {
 
   const win = WINDOWS[winIdx]
   const rec = recByWindow[winIdx]
-  const custom = config.showCustom ? config.custom[win.id] : null
+  const customs = config.showCustom ? (config.custom[win.id] || []) : []
   const open = isWindowOpen(win)
   const showRec = config.showRecommended && rec
-  const nothing = !showRec && !custom
+  const nothing = !showRec && customs.length === 0
 
   const slideClass = slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined
 
@@ -175,29 +164,24 @@ export default function DailyQuests() {
                   benefit={rec.benefit}
                   done={!!completed[rec.id]}
                   scale={animating === rec.id}
+                  fly={fly}
                   onTap={() => tapRecommended(rec, win)}
                 />
               )}
-              {custom && (
+              {customs.map(item => (
                 <Row
+                  key={item.id}
                   star
-                  title={custom.title}
-                  benefit={custom.benefit}
-                  done={!!customDone[win.id]}
-                  onTap={() => tapCustom(win)}
+                  title={item.title}
+                  benefit={item.benefit}
+                  done={!!customDone[item.id]}
+                  onTap={() => tapCustom(item, win)}
                 />
-              )}
+              ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* +20 улетает вверх, когда всё окно выполнено. */}
-      {fly > 0 && (
-        <span key={fly} style={styles.windowFly}>
-          +{SLOT_XP} <MuscleIcon size={22} earned={true} />
-        </span>
-      )}
 
       {menuAnchor && (
         <AnchorMenu
@@ -225,7 +209,7 @@ export default function DailyQuests() {
 
 /** Строка активности: слева слот галочки (пуст → зелёная галочка), эмодзи/звезда,
     текст (название + польза), справа — награда (только у рекомендуемой). */
-function Row({ emoji, star, title, benefit, done, scale, onTap }) {
+function Row({ emoji, star, title, benefit, done, scale, fly, onTap }) {
   const startRef = useRef(null)
   const onDown = (e) => { startRef.current = { x: e.clientX, y: e.clientY } }
   const onUp = (e) => {
@@ -259,11 +243,12 @@ function Row({ emoji, star, title, benefit, done, scale, onTap }) {
         </span>
         {benefit && <span style={{ ...styles.benefit, opacity: done ? 0.5 : 1 }}>{benefit}</span>}
       </div>
-      {!star && (
-        <span style={{ ...styles.reward, opacity: done ? 0.5 : 1, textDecoration: done ? 'line-through' : 'none' }}>
-          +{SLOT_XP} <MuscleIcon size={18} earned={done} />
+      {/* +20 улетает из строки по тапу (только у рекомендуемой; статичного бейджа нет). */}
+      {fly ? (
+        <span key={fly} style={styles.rowFly}>
+          +{SLOT_XP} <MuscleIcon size={18} earned={true} />
         </span>
-      )}
+      ) : null}
     </button>
   )
 }
@@ -276,10 +261,12 @@ const styles = {
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
   },
+  // ⋯ — 1:1 как на карточке программы (ProgramCard.dotsBtn): та же позиция/размер,
+  // тот же AnchorMenu → попап выезжает идентично избранному.
   menuBtn: {
     position: 'absolute',
-    top: '4px',
-    right: '10px',
+    top: '8px',
+    right: '12px',
     width: '34px',
     height: '28px',
     display: 'flex',
@@ -287,10 +274,14 @@ const styles = {
     justifyContent: 'center',
     background: 'transparent',
     border: 'none',
-    color: 'var(--color-text-secondary)',
-    fontSize: '20px',
+    padding: 0,
+    color: '#9A9A9A',
+    fontSize: '22px',
+    fontWeight: 700,
     lineHeight: 1,
+    letterSpacing: '1px',
     cursor: 'pointer',
+    opacity: 0.7,
     zIndex: 2,
     WebkitTapHighlightColor: 'transparent'
   },
@@ -329,6 +320,7 @@ const styles = {
     color: 'var(--color-text-secondary)'
   },
   row: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
@@ -372,27 +364,14 @@ const styles = {
     lineHeight: 1.2,
     color: 'var(--color-text-secondary)'
   },
-  reward: {
-    flexShrink: 0,
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
-    color: 'var(--color-primary)',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px'
-  },
-  // +20 улетает вверх от центра карточки, когда всё окно выполнено.
-  windowFly: {
+  // +20 улетает вверх из строки по тапу (правый край, где раньше был бейдж).
+  rowFly: {
     position: 'absolute',
-    top: '40%',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    right: '10px',
+    top: '2px',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '18px',
+    fontSize: '15px',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
@@ -400,8 +379,8 @@ const styles = {
     zIndex: 3,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: '4px',
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
-    animation: 'rewardFloatUp 1.1s ease-out forwards'
+    animation: 'rowRewardFly 1.1s ease-out forwards'
   }
 }

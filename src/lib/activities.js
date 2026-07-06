@@ -35,22 +35,39 @@ export const WINDOWS = [
 const CONFIG_KEY = 'activities-config'
 const CUSTOM_DONE_PREFIX = 'activities-custom-done:' // + dayKey
 
+export const CUSTOM_PER_WINDOW_MAX = 3
+
 const DEFAULT_CONFIG = {
   showRecommended: true,
   showCustom: false,
-  custom: { morning: null, day: null, evening: null }
+  custom: { morning: [], day: [], evening: [] }
+}
+
+// Своя активность → { id, title, benefit|null }. Миграция: раньше было по одной
+// (объект), теперь массив до 3. Бэкфилл id для старых записей.
+function normCustom(rawCustom) {
+  const out = { morning: [], day: [], evening: [] }
+  for (const w of ['morning', 'day', 'evening']) {
+    const v = rawCustom?.[w]
+    const arr = Array.isArray(v) ? v : (v && v.title ? [v] : [])
+    out[w] = arr
+      .map((it, i) => (it && it.title) ? {
+        id: it.id || `${w}_${i}_${hashKey(String(it.title))}`,
+        title: String(it.title).slice(0, ACTIVITY_TITLE_MAX),
+        benefit: it.benefit ? String(it.benefit).slice(0, ACTIVITY_BENEFIT_MAX) : null
+      } : null)
+      .filter(Boolean)
+      .slice(0, CUSTOM_PER_WINDOW_MAX)
+  }
+  return out
 }
 
 function normalize(cfg) {
-  if (!cfg || typeof cfg !== 'object') return { ...DEFAULT_CONFIG }
+  if (!cfg || typeof cfg !== 'object') return { showRecommended: true, showCustom: false, custom: normCustom(null) }
   return {
     showRecommended: cfg.showRecommended !== false,
     showCustom: cfg.showCustom === true,
-    custom: {
-      morning: cfg.custom?.morning || null,
-      day: cfg.custom?.day || null,
-      evening: cfg.custom?.evening || null
-    }
+    custom: normCustom(cfg.custom)
   }
 }
 
