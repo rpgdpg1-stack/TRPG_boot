@@ -555,9 +555,9 @@ const styles = {
     minHeight: '112px',
     paddingLeft: '16px',
     paddingRight: '16px',
-    background: 'linear-gradient(180deg, rgba(46,127,196,0.5) 0%, rgba(28,92,151,0.6) 100%)',
-    backdropFilter: 'blur(16px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+    background: 'linear-gradient(180deg, rgba(46,127,196,0.38) 0%, rgba(28,92,151,0.46) 100%)',
+    backdropFilter: 'blur(14px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(14px) saturate(180%)',
     border: '1px solid rgba(63, 162, 247, 0.45)',
     boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
     transition: 'min-height 0.28s var(--ease-ios)'
