@@ -86,12 +86,17 @@ const styles = {
     border: '1.5px solid rgba(255, 255, 255, 0.20)',
     color: 'var(--color-text-secondary)'
   },
-  // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в
-  // инфо-попапе рейтинга), сплошная рамка чуть темнее заливки для чёткого края.
+  // Стеклянный акцент: ПОЛУПРОЗРАЧНАЯ заливка акцентного цвета + backdrop-blur —
+  // тот же приём, что стеклянная шапка заплыва (контент просвечивает размытым).
+  // Цвет по умолчанию зелёный (--color-primary); переопределяется через `style`
+  // (напр. голубой у «Завершить» заплыва). Текст белый — на затемнённом стекле читается.
   accent: {
-    background: 'var(--color-primary)',
+    background: 'color-mix(in srgb, var(--color-primary) 55%, transparent)',
+    backdropFilter: 'blur(14px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(14px) saturate(180%)',
     border: '1.5px solid var(--color-primary-dark)',
-    color: '#0D0C0C'
+    color: '#FFFFFF',
+    textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
   clip: { position: 'relative', overflow: 'hidden' },
