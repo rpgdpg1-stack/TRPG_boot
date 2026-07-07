@@ -13,6 +13,8 @@ import FavCardBody from './FavCardBody'
 import AnchorMenu from './AnchorMenu'
 import UiIcon from './UiIcon'
 import PixelHeart from './PixelHeart'
+import WaterChrome from './WaterChrome'
+import { SWIM_PROGRAM, swimTotalMeters } from '../data/programs/swim'
 
 /**
  * Единая карточка программы — Главная / Избранное / Раздел.
@@ -45,6 +47,8 @@ export default function ProgramCard({
 
   const available = prog.available !== false
   const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
+  // Заплыв — «водяная» карточка (стекло+волна+флажки, как шапка заплыва).
+  const isSwim = prog.kind === 'swim'
 
   useEffect(() => {
     if (!available) return
@@ -127,11 +131,21 @@ export default function ProgramCard({
     paddingRight: `${padRight}px`,
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',
-    // overflow hidden — клип заливки-прогресса по скруглению.
+    // overflow hidden — клип заливки-прогресса/декора по скруглению.
     overflow: 'hidden',
-    // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
-    // (Category) выключаем через bordered={false}. Свечение убрано — только обводка.
-    border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+    // Заплыв — голубое стекло (как шапка заплыва); иначе обычная карточка.
+    ...(isSwim
+      ? {
+          background: 'linear-gradient(180deg, rgba(46,127,196,0.38) 0%, rgba(28,92,151,0.46) 100%)',
+          backdropFilter: 'blur(14px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(180%)',
+          border: bordered ? '1px solid rgba(63, 162, 247, 0.45)' : 'none'
+        }
+      : {
+          // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
+          // (Category) выключаем через bordered={false}.
+          border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+        })
   }
 
   return (
@@ -145,7 +159,14 @@ export default function ProgramCard({
         <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
 
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
+      {isSwim ? (
+        <>
+          <WaterChrome dashes />
+          <SwimFavContent prog={prog} />
+        </>
+      ) : (
+        <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
+      )}
 
       {/* Правый блок — по центру по высоте, справа. */}
       {showRight && (
@@ -186,6 +207,24 @@ export default function ProgramCard({
           ]}
         />
       )}
+    </div>
+  )
+}
+
+// Контент водяной карточки заплыва: заголовок + тег длины бассейна + мин·метры.
+function SwimFavContent({ prog }) {
+  const pool = parseInt(localGet(`swim-pool:${prog.slug}`), 10) || SWIM_PROGRAM.defaultPool
+  const title = prog.title ? prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase() : 'Заплыв'
+  const min = prog.data?.durationMin || SWIM_PROGRAM.durationMin
+  const meters = swimTotalMeters()
+  return (
+    <div style={styles.swimContent}>
+      <div style={styles.swimTitle}>{title}</div>
+      <span style={styles.swimTag}>
+        <UiIcon name="swimming" size={15} color="#FFFFFF" />
+        {pool} м
+      </span>
+      <div style={styles.swimMeta}>{min} мин · {meters} м</div>
     </div>
   )
 }
@@ -231,6 +270,48 @@ const styles = {
     width: '100%',
     minHeight: '130px',
     textAlign: 'left'
+  },
+  // Водяная карточка заплыва: контент поверх волны/флажков.
+  swimContent: {
+    position: 'relative',
+    zIndex: 2,
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '8px'
+  },
+  swimTitle: {
+    fontFamily: 'var(--font-geist)',
+    fontWeight: 700,
+    fontSize: '17px',
+    lineHeight: 1.1,
+    color: '#FFFFFF',
+    textShadow: '0 1px 6px rgba(0, 0, 0, 0.35)'
+  },
+  swimTag: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    minHeight: '26px',
+    padding: '0 10px',
+    borderRadius: 'var(--radius-pill)',
+    background: 'rgba(255, 255, 255, 0.16)',
+    backdropFilter: 'blur(var(--blur-sm))',
+    WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '12px',
+    letterSpacing: '0.5px',
+    color: '#FFFFFF',
+    whiteSpace: 'nowrap'
+  },
+  swimMeta: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'rgba(255, 255, 255, 0.8)'
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {

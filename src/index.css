@@ -369,6 +369,17 @@ body.keyboard-open .app::after { display: none; }
 }
 .btn-morph { animation: btnMorph 0.46s var(--ease-ios); }
 
+/* «Водяная» карточка (WaterChrome): блик-волна слева-направо + покачивание флажков.
+   Используется и в шапке заплыва, и в карточке заплыва в избранном. */
+@keyframes poolShine {
+  0%   { transform: translateX(-140%); }
+  100% { transform: translateX(240%); }
+}
+@keyframes pennantSway {
+  0%, 100% { transform: rotate(-15deg); }
+  50%      { transform: rotate(15deg); }
+}
+
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */

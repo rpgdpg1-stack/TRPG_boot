@@ -20,6 +20,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import ActionButton from '../components/ActionButton'
+import WaterChrome from '../components/WaterChrome'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -42,8 +43,6 @@ const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
 // Боковые вертикальные гирлянды: 3 флажка (красный / белый-центр / красный),
 // обе остриём ВЛЕВО.
-// Флажки боковой гирлянды: чередуем красный/белый. Больше на высоком блоке.
-const sidePennants = (n) => Array.from({ length: n }, (_, i) => (i % 2 ? '#FFFFFF' : '#E84545'))
 
 function formatDistance(m) {
   if (m >= 1000) {
@@ -216,27 +215,8 @@ export default function SwimWorkout() {
       {/* Закреплённая шапка-карточка: синяя волна + стеклянная обводка */}
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
-          <div style={styles.wave} aria-hidden="true" />
-          {/* Боковые вертикальные гирлянды — обе остриём влево. Длина по высоте
-              блока (обрезаются скруглением сверху/снизу), флажков больше на высоком. */}
-          <div style={styles.garlandLeft} aria-hidden="true">
-            <div style={{ ...styles.stringVert, right: 0 }} />
-            <div style={styles.colRight}>
-              {sidePennants(compact ? 3 : 6).map((c, i) => (
-                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.22}s` }} />
-              ))}
-            </div>
-          </div>
-          <div style={styles.garlandRight} aria-hidden="true">
-            <div style={{ ...styles.stringVert, right: 0 }} />
-            <div style={styles.colRight}>
-              {sidePennants(compact ? 3 : 6).map((c, i) => (
-                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.22}s` }} />
-              ))}
-            </div>
-          </div>
-          {/* Пунктирная дорожка — ровно по вертикальному центру блока */}
-          <div style={styles.dashes} aria-hidden="true" />
+          {/* Волна + боковые гирлянды флажков + пунктир — общий компонент */}
+          <WaterChrome dashes />
 
           {/* Верхний ряд: тег бассейна слева, часы по центру */}
           <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
@@ -350,17 +330,6 @@ export default function SwimWorkout() {
           onConfirm={handleModalConfirm}
         />
       )}
-
-      <style>{`
-        @keyframes poolShine {
-          0%   { transform: translateX(-140%); }
-          100% { transform: translateX(240%); }
-        }
-        @keyframes pennantSway {
-          0%, 100% { transform: rotate(-15deg); }
-          50%      { transform: rotate(15deg); }
-        }
-      `}</style>
     </div>
   )
 }
@@ -563,53 +532,6 @@ const styles = {
     transition: 'min-height 0.28s var(--ease-ios)'
   },
   headerCardCompact: { minHeight: '76px' },
-  // Блик-волна поверх всей карточки.
-  wave: {
-    position: 'absolute',
-    top: 0, bottom: 0, left: 0,
-    width: '40%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)',
-    animation: 'poolShine 3.7s linear infinite',
-    pointerEvents: 'none'
-  },
-  // Пунктир — по вертикальному центру всей карточки, за текстом.
-  dashes: {
-    position: 'absolute',
-    left: 0, right: 0,
-    top: '50%',
-    height: '2px',
-    transform: 'translateY(-50%)',
-    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 12px, transparent 12px 26px)',
-    opacity: 0.7,
-    zIndex: 0
-  },
-  // Боковые вертикальные гирлянды: у левого и правого края, обе остриём влево.
-  garlandLeft: {
-    position: 'absolute', left: '2px', top: '-6px', bottom: '-6px', width: '11px',
-    zIndex: 1, pointerEvents: 'none'
-  },
-  garlandRight: {
-    position: 'absolute', right: '4px', top: '-6px', bottom: '-6px', width: '12px',
-    zIndex: 1, pointerEvents: 'none'
-  },
-  stringVert: {
-    position: 'absolute', top: 0, bottom: 0, width: '1px',
-    background: 'rgba(255, 255, 255, 0.45)'
-  },
-  // Флажки прижаты к ниточке справа (база справа), апекс — влево.
-  colRight: {
-    position: 'absolute', right: '1px', top: 0, bottom: 0,
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-around', alignItems: 'flex-end'
-  },
-  // Флажок остриём ВЛЕВО: цветной правый бордер, база справа у ниточки.
-  pennantLeft: {
-    width: 0, height: 0,
-    borderTop: '5px solid transparent',
-    borderBottom: '5px solid transparent',
-    borderRight: '8px solid #FFFFFF',
-    transformOrigin: 'right center',
-    animation: 'pennantSway 2.8s ease-in-out infinite'
-  },
   topRow: {
     position: 'absolute',
     top: '14px',
