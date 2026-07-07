@@ -167,7 +167,6 @@ export default function WorkoutDay() {
   collapseRef.current = collapse
   const collapseRafRef = useRef(0)
   const prevDayKeyRef = useRef(null)
-  const prevActiveForCollapseRef = useRef(null)
   const [btnMorph, setBtnMorph] = useState(false) // squish-морф кнопки Начать→Завершить
   const pulseTimers = useRef({})
   const firePulse = (setter, key, ms = 700) => {
@@ -223,9 +222,11 @@ export default function WorkoutDay() {
   const letterRef = useRef(null)
   const [dayPickerRect, setDayPickerRect] = useState(null)
 
-  // Скролл-позиция (для ужатия буквы дня на НЕактивном дне). Стики-заголовок группы
-  // убран — заголовки групп в контенте обычные.
-  const [scrollY, setScrollY] = useState(0)
+  // Две высоты шапки НЕактивного дня: наверху высокая, при скролле вниз — компактная
+  // (но НЕ пилюля). Булев со ЗНАЧИТЕЛЬНЫМ гистерезисом (вход >30px, выход <10px),
+  // чтобы не мигало на границе. Апдейтит скролл-лисенер.
+  const [headerMin, setHeaderMin] = useState(false)
+  const headerMinRef = useRef(false)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const sectionsRef = useRef([])              // текущие секции
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
@@ -455,7 +456,8 @@ export default function WorkoutDay() {
   // день открывается сверху; для активного дня трекер тут же подстроит под
   // восстановленную позицию).
   useLayoutEffect(() => {
-    setScrollY(0)
+    setHeaderMin(false)
+    headerMinRef.current = false
     pillCycleRef.current = 0
   }, [day, place])
 
@@ -470,7 +472,11 @@ export default function WorkoutDay() {
     const compute = () => {
       raf = 0
       const y = liveY()
-      setScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
+      // Две высоты шапки с гистерезисом: компактная при y>30, высокая при y<10.
+      let min = headerMinRef.current
+      if (min && y < 10) min = false
+      else if (!min && y > 30) min = true
+      if (min !== headerMinRef.current) { headerMinRef.current = min; setHeaderMin(min) }
       // Сохраняем ТОЛЬКО для активного дня и только после того, как восстановление
       // позиции отработало — иначе первый заход перезатёр бы место нулём.
       if (isThisActive && didInitialScrollRef.current) {
@@ -764,27 +770,31 @@ export default function WorkoutDay() {
     setTimeout(() => setBtnMorph(false), 460)
   }
 
-  // Морф шапки по состоянию: навигация/первый заход — мгновенно; старт/завершение
-  // (isThisActive меняется на том же дне) — плавная анимация collapse 0↔1. По
-  // достижении пилюли (target=1) — grow-пульс времени/счётчика/крестика.
+  // Целевое сжатие: активный день — пилюля (1); неактивный — ДВЕ высоты: компактная
+  // (0.6 — буква мелкая, НО не пилюля) при скролле вниз / высокая (0) наверху.
+  const collapseTarget = isThisActive ? 1 : (headerMin ? 0.6 : 0)
+
+  // Морф шапки к целевому сжатию: навигация/первый заход — мгновенно; смена цели
+  // (снап между двумя высотами ИЛИ старт/завершение) — плавный твин ИЗ ТЕКУЩЕГО
+  // значения (из компактной сразу в пилюлю, без скачка в высокую). По достижении
+  // пилюли (target=1) — grow-пульс времени/счётчика/крестика.
   useEffect(() => {
     const dayKey = `${programId}:${day}:${place}`
-    const target = isThisActive ? 1 : 0
     const first = prevDayKeyRef.current === null
     const dayChanged = prevDayKeyRef.current !== dayKey
-    const activeChanged = prevActiveForCollapseRef.current !== isThisActive
     prevDayKeyRef.current = dayKey
-    prevActiveForCollapseRef.current = isThisActive
 
     if (collapseRafRef.current) { cancelAnimationFrame(collapseRafRef.current); collapseRafRef.current = 0 }
 
     // Первый заход / смена дня-места — сразу в нужное состояние, без анимации.
-    if (first || dayChanged) { setCollapse(target); return }
-    if (!activeChanged) return
+    if (first || dayChanged) { setCollapse(collapseTarget); return }
 
     const start = collapseRef.current
+    const target = collapseTarget
+    if (Math.abs(target - start) < 0.001) return
     const t0 = performance.now()
-    const dur = 480
+    // К пилюле / от пилюли (старт/финиш) — 480мс; переключение двух высот — 260мс.
+    const dur = (target >= 0.999 || start >= 0.999) ? 480 : 260
     const step = (now) => {
       const p = Math.min(1, (now - t0) / dur)
       const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2 // easeInOutQuad
@@ -792,8 +802,8 @@ export default function WorkoutDay() {
       if (p < 1) { collapseRafRef.current = requestAnimationFrame(step) }
       else {
         collapseRafRef.current = 0
-        if (target === 1) {
-          // Пилюля собралась — проиграть «пиксель-арт» увеличение значений.
+        if (target >= 0.999) {
+          // Пилюля собралась — проиграть увеличение значений.
           firePulse(setTimePulse, 'time')
           firePulse(setStartedPulse, 'count')
           firePulse(setCrossPulse, 'cross')
@@ -802,7 +812,7 @@ export default function WorkoutDay() {
     }
     collapseRafRef.current = requestAnimationFrame(step)
     return () => { if (collapseRafRef.current) cancelAnimationFrame(collapseRafRef.current) }
-  }, [isThisActive, day, place, programId])
+  }, [collapseTarget, day, place, programId])
 
   // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
   // закрываем сессию БЕЗ сохранения (в историю не идёт, баллы не начисляются).
@@ -936,15 +946,11 @@ export default function WorkoutDay() {
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
-  // Сжатие шапки:
-  //  • НЕактивный день — большая информативная шапка (без чипов групп); при скролле
-  //    вниз буква дня ПОСТЕПЕННО ужимается (45→24), пилюли нет (как в старой версии).
-  //  • Активный день — морф в компактную пилюлю по СОСТОЯНИЮ (collapse 0→1) после
-  //    «Начать»; после завершения — обратно. Буква → строка-пилюля.
-  const scrollShrink = Math.min(1, Math.max(0, (scrollY - 28) / 104))
-  const letterShrink = isThisActive
-    ? Math.min(1, Math.max(0, collapse / 0.6))
-    : scrollShrink
+  // Всё сжатие идёт от анимированного `collapse` (к целевому `collapseTarget`):
+  //  • НЕактивный: 0 (высокая) ↔ 0.6 (компактная, буква 24, НЕ пилюля).
+  //  • Активный: →1 (пилюля). letterShrink 0→1 при collapse 0→0.6; rowCollapse
+  //    (строка-пилюля) — только на активном дне, 0.5→1.
+  const letterShrink = Math.min(1, Math.max(0, collapse / 0.6))
   const dayLetterSize = 45 - letterShrink * 21
   const rowCollapse = isThisActive ? Math.min(1, Math.max(0, (collapse - 0.5) / 0.5)) : 0
 
