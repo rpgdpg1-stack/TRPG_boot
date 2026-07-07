@@ -491,21 +491,12 @@ export default function WorkoutDay() {
     }
   }, [isThisActive, programId, day])
 
-  // Компенсатор сжатия шапки: sticky-шапка на скролле теряет высоту, и контент
-  // «засасывало» вверх под закреп (первое упражнение пропадало). Спейсер под
-  // шапкой растёт ровно на потерянную высоту — упражнения остаются на месте,
-  // сжатие «поглощает» скролл (как большие заголовки в iOS).
-  const headerFullHRef = useRef(0)
-  const [headerSpacer, setHeaderSpacer] = useState(0)
-  useLayoutEffect(() => {
-    const el = stickyHeaderRef.current
-    if (!el) return
-    const h = el.offsetHeight
-    if (headerScrollY <= 1) headerFullHRef.current = h // наверху шапка полная — эталон
-    const full = headerFullHRef.current
-    const next = full > 0 ? Math.max(0, full - h) : 0
-    setHeaderSpacer(prev => (Math.abs(prev - next) > 0.5 ? next : prev))
-  }, [headerScrollY, loading, slots.length, day, place])
+  // Пока шапка СЖИМАЕТСЯ (scrollY 0→180), контент НЕ должен заходить под закреп:
+  // спейсер под шапкой = сам скролл (min(scrollY,180)) → скролл «поглощается»
+  // сжатием, контент стоит на месте (24px-отступ от низа шапки сохраняется), и
+  // только когда шапка стала полноценной пилюлей (≥180) — дальше контент уже
+  // уходит под пилюлю (спейсер зафиксирован на 180). Как большие заголовки iOS.
+  const headerSpacer = Math.min(headerScrollY, 180)
 
   // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
   // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
@@ -1078,13 +1069,19 @@ export default function WorkoutDay() {
                   </span>
                 )}
 
-                {/* Счётчик — въезжает справа при полном сжатии */}
-                <span style={{
-                  ...styles.rowCount,
-                  opacity: rowCollapse,
-                  maxWidth: `${rowCollapse * 80}px`,
-                  marginLeft: `${rowCollapse * 13}px`
-                }}>
+                {/* Счётчик — въезжает справа при полном сжатии. Размер/вес — как у
+                    времени рядом (активно 16/700, до старта 13/600). Пульс на старте. */}
+                <span
+                  className={startedPulse ? 'pop-scale' : undefined}
+                  style={{
+                    ...styles.rowCount,
+                    fontSize: isThisActive ? '16px' : '13px',
+                    fontWeight: isThisActive ? 700 : 600,
+                    opacity: rowCollapse,
+                    maxWidth: `${rowCollapse * 80}px`,
+                    marginLeft: `${rowCollapse * 13}px`
+                  }}
+                >
                   {isThisActive
                     ? `${activeOrderNums.size}/${slots.length}`
                     : `${slots.length} упр`}
