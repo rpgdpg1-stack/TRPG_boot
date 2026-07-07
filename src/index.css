@@ -211,6 +211,8 @@ img, button { -webkit-user-drag: none; }
 }
 .app::after {
   bottom: 0;
+  /* Нижний скрим в 2 раза ниже верхнего (по просьбе) — верхний не трогаем. */
+  height: calc(var(--tg-safe-top) / 2);
   background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
   mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);

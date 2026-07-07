@@ -1186,15 +1186,8 @@ export default function WorkoutDay() {
           </div>{/* headerCardInner */}
         </div>
 
-        {/* Стики-заголовок группы убран — заголовки групп в контенте обычные. */}
-
-        {/* Сплошная чёрная полоска в зазоре под карточкой дня (всегда есть) —
-            чтобы контент не просвечивал в промежутке до фейда. */}
-        <div style={styles.stickySolid} aria-hidden="true" />
-
-        {/* Fade-scrim под блоком дня: контент уходит под шапку плавно (градиент+blur),
-            опущен ниже сплошной полоски — заголовок в стике читается чётче. */}
-        <div style={styles.stickyFade} aria-hidden="true" />
+        {/* Затемнение-скрим под шапкой убран — шапка сама стеклянная (блюр), контент
+            скроллится прямо под ней. */}
       </div>
 
       <div style={styles.body}>
@@ -1763,7 +1756,7 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 30,
-    background: 'var(--color-bg)',
+    // Фон-заливки НЕТ — контент скроллится прямо под шапкой; сама карточка стеклянная.
     // Верх карточки-шапки — ровно 16px ниже кнопок Telegram (зашито в var).
     paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
@@ -1827,9 +1820,14 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
     padding: '14px 16px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 'var(--radius-card)'
+    // Матовое стекло (как таб-бар / кнопка с блюром): контент скроллится под шапкой
+    // и просвечивает размытым. Полупрозрачный фон + backdrop-blur + бордер + тень.
+    background: 'rgba(28, 28, 30, 0.55)',
+    backdropFilter: 'blur(16px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 'var(--radius-card)',
+    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.28)'
   },
   // Заливка-прогресс: светло-серый фон растёт слева по мере отжатых упражнений
   // (весь прогресс дня). Плавно, за текстом (zIndex 0). Клипается overflow карточки.
