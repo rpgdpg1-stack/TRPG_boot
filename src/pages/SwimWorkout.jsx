@@ -538,7 +538,7 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 30,
-    background: 'var(--color-bg)',
+    // Фон-заливки НЕТ — контент скроллится прямо под шапкой (как в дне силовой).
     paddingTop: 'var(--tg-safe-top)',
     paddingBottom: '12px',
     marginLeft: '-16px',
@@ -546,8 +546,8 @@ const styles = {
     paddingLeft: '16px',
     paddingRight: '16px'
   },
-  // Синяя карточка-«вода» со стеклянной обводкой (вся заливка/волна на весь блок).
-  // Дети позиционируются абсолютно: метраж — ровно по центру, часы/тег — сверху.
+  // Синяя карточка-«вода» — теперь ПОЛУПРОЗРАЧНОЕ стекло: наш голубой остаётся, но
+  // с прозрачностью + backdrop-blur, контент просвечивает размытым (как в силовой).
   headerCard: {
     position: 'relative',
     overflow: 'hidden',
@@ -555,9 +555,11 @@ const styles = {
     minHeight: '112px',
     paddingLeft: '16px',
     paddingRight: '16px',
-    background: 'linear-gradient(180deg, #2E7FC4 0%, #1C5C97 100%)',
+    background: 'linear-gradient(180deg, rgba(46,127,196,0.5) 0%, rgba(28,92,151,0.6) 100%)',
+    backdropFilter: 'blur(16px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
     border: '1px solid rgba(63, 162, 247, 0.45)',
-    boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.25), 0 6px 24px rgba(28, 92, 151, 0.25)',
+    boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
     transition: 'min-height 0.28s var(--ease-ios)'
   },
   headerCardCompact: { minHeight: '76px' },
