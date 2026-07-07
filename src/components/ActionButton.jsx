@@ -86,15 +86,13 @@ const styles = {
     border: '1.5px solid rgba(255, 255, 255, 0.20)',
     color: 'var(--color-text-secondary)'
   },
-  // Акцент = как серая «Завершить» (полупрозрачная серая + блюр), НО текст в
-  // акцентном цвете (`--color-primary`; переопределяется через `style`, напр. голубой
-  // у «Завершить» заплыва). «Готово/доступно» читается по цветному тексту.
+  // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в инфо-попапе
+  // рейтинга), сплошная рамка чуть темнее заливки. Цвет переопределяется через `style`
+  // (напр. «Завершить» заплыва — голубой). БЕЗ блюра — обычная залитая кнопка.
   accent: {
-    background: 'rgba(34, 34, 34, 0.55)',
-    backdropFilter: 'blur(var(--blur-md))',
-    WebkitBackdropFilter: 'blur(var(--blur-md))',
-    border: '1.5px solid rgba(255, 255, 255, 0.20)',
-    color: 'var(--color-primary)'
+    background: 'var(--color-primary)',
+    border: '1.5px solid var(--color-primary-dark)',
+    color: '#0D0C0C'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
   clip: { position: 'relative', overflow: 'hidden' },

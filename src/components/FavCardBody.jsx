@@ -90,13 +90,12 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
                 <div style={styles.daysList}>
                   {allDays.map(d => {
                     const isToday = !!activeDay && d === activeDay
-                    // Все дни — в своём акцентном цвете группы; рекомендованный на
-                    // 100%, остальные приглушены прозрачностью (видно, что не активны).
+                    // Рекомендованный день — в акцентном цвете группы; остальные —
+                    // СЕРЫМ (как счётчик), чтобы не пестрило множеством цветов.
                     return (
                       <span key={d} style={{
                         ...styles.dayLetter,
-                        color: dayColor(d),
-                        opacity: isToday ? 1 : 0.4
+                        color: isToday ? dayColor(d) : 'var(--color-text-secondary)'
                       }}>
                         {d}
                       </span>

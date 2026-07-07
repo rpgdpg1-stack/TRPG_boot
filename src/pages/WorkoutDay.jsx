@@ -1151,10 +1151,10 @@ export default function WorkoutDay() {
                   style={{
                     ...styles.dayLetter,
                     // Фокусный (рекомендованный/активный) день — акцент группы 100% + свечение;
-                    // прочие — тот же акцент, но приглушённый прозрачностью (не серым).
+                    // прочие — СЕРЫМ (как счётчик), чтобы не пестрило множеством цветов.
                     ...(day === focusDay
                       ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
-                      : { color: dayGroupAccent, opacity: 0.4, textShadow: 'none' }),
+                      : { color: 'var(--color-text-secondary)', textShadow: 'none' }),
                     fontSize: `${dayLetterSize}px`
                   }}
                 >
@@ -1667,11 +1667,12 @@ function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPi
         {days.map(d => {
           const isSession = !!sessionDay && d === sessionDay
           const isCurrent = d === currentDay
-          // Акцентный на 100% — только ТЕКУЩИЙ (просматриваемый) день; он же выделен
+          // Акцентный цвет группы — только ТЕКУЩИЙ (просматриваемый) день; он же выделен
           // серым кружком («ты тут»), либо пульсирует, если это запущенный день сессии.
-          // Остальные — тем же акцентом группы, но приглушены прозрачностью, пока не
-          // перейдёшь на них.
-          const dColor = colorForDay ? colorForDay(d) : 'var(--color-primary)'
+          // Остальные — СЕРЫМ (как счётчик), чтобы не пестрило множеством цветов.
+          const dColor = isCurrent
+            ? (colorForDay ? colorForDay(d) : 'var(--color-primary)')
+            : 'var(--color-text-secondary)'
           const circle = isCurrent && !isSession
           return (
             <button
@@ -1681,7 +1682,6 @@ function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPi
               style={{
                 ...pickerStyles.cell,
                 color: dColor,
-                opacity: isCurrent ? 1 : 0.4,
                 ...(circle ? pickerStyles.cellCircle : null)
               }}
             >

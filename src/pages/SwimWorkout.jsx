@@ -336,7 +336,7 @@ export default function SwimWorkout() {
           onClick={handleFinishTap}
           variant="accent"
           hug
-          style={{ color: 'var(--cat-pool)' }}
+          style={{ background: 'var(--cat-pool)', borderColor: '#1C5C97' }}
         >
           ЗАВЕРШИТЬ
         </ActionButton>
