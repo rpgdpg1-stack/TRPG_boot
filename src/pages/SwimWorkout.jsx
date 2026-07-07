@@ -42,7 +42,8 @@ const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
 // Боковые вертикальные гирлянды: 3 флажка (красный / белый-центр / красный),
 // обе остриём ВЛЕВО.
-const SIDE_PENNANTS = ['#E84545', '#FFFFFF', '#E84545']
+// Флажки боковой гирлянды: чередуем красный/белый. Больше на высоком блоке.
+const sidePennants = (n) => Array.from({ length: n }, (_, i) => (i % 2 ? '#FFFFFF' : '#E84545'))
 
 function formatDistance(m) {
   if (m >= 1000) {
@@ -216,20 +217,21 @@ export default function SwimWorkout() {
       <div style={styles.stickyHeader}>
         <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
           <div style={styles.wave} aria-hidden="true" />
-          {/* Боковые вертикальные гирлянды — обе остриём влево */}
+          {/* Боковые вертикальные гирлянды — обе остриём влево. Длина по высоте
+              блока (обрезаются скруглением сверху/снизу), флажков больше на высоком. */}
           <div style={styles.garlandLeft} aria-hidden="true">
             <div style={{ ...styles.stringVert, right: 0 }} />
             <div style={styles.colRight}>
-              {SIDE_PENNANTS.map((c, i) => (
-                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.25}s` }} />
+              {sidePennants(compact ? 3 : 6).map((c, i) => (
+                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.22}s` }} />
               ))}
             </div>
           </div>
           <div style={styles.garlandRight} aria-hidden="true">
             <div style={{ ...styles.stringVert, right: 0 }} />
             <div style={styles.colRight}>
-              {SIDE_PENNANTS.map((c, i) => (
-                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.25}s` }} />
+              {sidePennants(compact ? 3 : 6).map((c, i) => (
+                <span key={i} style={{ ...styles.pennantLeft, borderRightColor: c, animationDelay: `${i * 0.22}s` }} />
               ))}
             </div>
           </div>
@@ -355,8 +357,8 @@ export default function SwimWorkout() {
           100% { transform: translateX(240%); }
         }
         @keyframes pennantSway {
-          0%, 100% { transform: rotate(-6deg); }
-          50%      { transform: rotate(6deg); }
+          0%, 100% { transform: rotate(-15deg); }
+          50%      { transform: rotate(15deg); }
         }
       `}</style>
     </div>
@@ -581,11 +583,11 @@ const styles = {
   },
   // Боковые вертикальные гирлянды: у левого и правого края, обе остриём влево.
   garlandLeft: {
-    position: 'absolute', left: '2px', top: '8px', width: '11px', height: '58px',
+    position: 'absolute', left: '2px', top: '-6px', bottom: '-6px', width: '11px',
     zIndex: 1, pointerEvents: 'none'
   },
   garlandRight: {
-    position: 'absolute', right: '4px', top: '8px', width: '12px', height: '58px',
+    position: 'absolute', right: '4px', top: '-6px', bottom: '-6px', width: '12px',
     zIndex: 1, pointerEvents: 'none'
   },
   stringVert: {

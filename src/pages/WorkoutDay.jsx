@@ -223,14 +223,11 @@ export default function WorkoutDay() {
   const letterRef = useRef(null)
   const [dayPickerRect, setDayPickerRect] = useState(null)
 
-  // Стеклянная пилюля текущей группы. Заголовки групп в контенте — обычные (как
-  // всегда). Когда листаешь вниз и заголовок секции уходит под карточку дня —
-  // появляется закреплённая пилюля с этой группой (стекло+блюр как у кнопок, без
-  // обводки), её текст сменяется на следующую группу. -1 = пилюли нет (мы вверху).
-  const [activeSection, setActiveSection] = useState(-1)
-  const activeSectionRef = useRef(-1)
+  // Скролл-позиция (для ужатия буквы дня на НЕактивном дне). Стики-заголовок группы
+  // убран — заголовки групп в контенте обычные.
+  const [scrollY, setScrollY] = useState(0)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
-  const sectionsRef = useRef([])              // текущие секции (для замера последней карточки)
+  const sectionsRef = useRef([])              // текущие секции
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
@@ -458,8 +455,7 @@ export default function WorkoutDay() {
   // день открывается сверху; для активного дня трекер тут же подстроит под
   // восстановленную позицию).
   useLayoutEffect(() => {
-    activeSectionRef.current = -1
-    setActiveSection(-1)
+    setScrollY(0)
     pillCycleRef.current = 0
   }, [day, place])
 
@@ -474,6 +470,7 @@ export default function WorkoutDay() {
     const compute = () => {
       raf = 0
       const y = liveY()
+      setScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
       // Сохраняем ТОЛЬКО для активного дня и только после того, как восстановление
       // позиции отработало — иначе первый заход перезатёр бы место нулём.
       if (isThisActive && didInitialScrollRef.current) {
@@ -499,49 +496,6 @@ export default function WorkoutDay() {
   }, [isThisActive, programId, day])
 
 
-  // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
-  // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
-  // только линия опускается ниже середины последней карточки группы — пилюля
-  // исчезает (даже если следующий заголовок ещё не доехал), и подхватится уже
-  // когда доедет следующий. Пока ни один не ушёл (мы вверху) — -1, пилюли нет.
-  useLayoutEffect(() => {
-    if (loading || slots.length === 0) { setActiveSection(-1); return }
-    let raf = 0
-    const compute = () => {
-      raf = 0
-      const sticky = stickyHeaderRef.current
-      if (!sticky) return
-      const line = sticky.getBoundingClientRect().bottom
-      const secs = sectionsRef.current
-      let active = -1
-      for (let idx = 0; idx < secs.length; idx++) {
-        const headerEl = sectionHeaderRefs.current.get(idx)
-        if (!headerEl || headerEl.getBoundingClientRect().top > line) continue
-        // Заголовок ушёл под шапку. Прошли ли середину последней карточки группы?
-        const slotsOfSec = secs[idx].slots
-        const lastSlot = slotsOfSec[slotsOfSec.length - 1]
-        const cardEl = lastSlot ? cardRefs.current.get(lastSlot.order_num) : null
-        if (cardEl) {
-          const r = cardEl.getBoundingClientRect()
-          if (line >= r.top + r.height / 2) continue // ниже середины → пилюля пропадает
-        }
-        active = idx
-      }
-      if (active !== activeSectionRef.current) {
-        activeSectionRef.current = active
-        setActiveSection(active)
-      }
-    }
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
-    compute()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-      if (raf) cancelAnimationFrame(raf)
-    }
-  }, [loading, slots])
 
   // Возврат с "Сменить"/"Инфо": восстанавливаем ТОЧНУЮ позицию скролла ДО
   // отрисовки (useLayoutEffect) — без моргания и без «прыжка наверх». Слоты к
@@ -976,25 +930,23 @@ export default function WorkoutDay() {
 
   const sections = groupByMuscleGroup(slots)
   sectionsRef.current = sections
-  // Группа в пилюле — только когда есть «ушедшая под шапку» секция (activeSection ≥ 0);
-  // иначе пилюли нет (мы вверху).
-  const pillGroup = activeSection >= 0 && sections[activeSection]
-    ? sections[activeSection].muscleGroup
-    : null
   const canFinish = activeOrderNums.size > 0
   const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
-  // Сжатие шапки управляется НЕ скроллом, а СОСТОЯНИЕМ (collapse 0→1): до старта
-  // тренировки шапка большая и информативная (0), после «Начать» плавно сворачивается
-  // в компактную пилюлю (1) и остаётся ей при скролле, после завершения — обратно.
-  // Три стадии внутри collapse: чипы гаснут → буква ужимается → строка-пилюля.
-  const chipsShrink = Math.min(1, collapse / 0.33)
-  const letterShrink = Math.min(1, Math.max(0, (collapse - 0.2) / 0.5))
+  // Сжатие шапки:
+  //  • НЕактивный день — большая информативная шапка (без чипов групп); при скролле
+  //    вниз буква дня ПОСТЕПЕННО ужимается (45→24), пилюли нет (как в старой версии).
+  //  • Активный день — морф в компактную пилюлю по СОСТОЯНИЮ (collapse 0→1) после
+  //    «Начать»; после завершения — обратно. Буква → строка-пилюля.
+  const scrollShrink = Math.min(1, Math.max(0, (scrollY - 28) / 104))
+  const letterShrink = isThisActive
+    ? Math.min(1, Math.max(0, collapse / 0.6))
+    : scrollShrink
   const dayLetterSize = 45 - letterShrink * 21
-  const rowCollapse = Math.min(1, Math.max(0, (collapse - 0.68) / 0.32))
+  const rowCollapse = isThisActive ? Math.min(1, Math.max(0, (collapse - 0.5) / 0.5)) : 0
 
   // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
   // плавный скролл к следующему НЕотжатому (по кругу сверху вниз) + зелёная
@@ -1203,27 +1155,7 @@ export default function WorkoutDay() {
                   {day}
                 </span>
               </div>
-              {/* Группы дня — чипы в цвете группы, по центру под буквой (идентичность
-                  дня). Базовое приглушение 0.7; на НЕфокусном дне сверху ещё ×0.4 —
-                  тем же множителем, что и буква, чтобы весь блок читался как неактивный. */}
-              {dayTags.length > 0 && (
-                <div
-                  key={`chips-${day}`}
-                  style={{
-                    ...styles.dayChips,
-                    opacity: 0.7 * (1 - chipsShrink) * (day === focusDay ? 1 : 0.4),
-                    maxHeight: `${(1 - chipsShrink) * 40}px`,
-                    marginTop: `${-6 * chipsShrink}px`,
-                    overflow: 'hidden'
-                  }}
-                >
-                  {dayTags.map(t => (
-                    <span key={t.key} style={{ ...styles.dayChip, background: t.color }}>
-                      {t.label.toUpperCase()}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {/* Чипы групп под буквой убраны (по просьбе): шапка чище. */}
             </div>
           </div>
 
@@ -1248,20 +1180,10 @@ export default function WorkoutDay() {
           </div>{/* headerCardInner */}
         </div>
 
-        {/* Закреплённый заголовок текущей группы — только ТЕКСТ (без своего фона):
-            затемнение даёт общий stickyFade ниже, текст ложится поверх него. Абсолютн
-            (отступы дня не меняет), появляется при скролле вниз, текст сменяется на
-            границе групп. */}
-        {!loading && pillGroup && (
-          <div style={styles.groupPillRow} aria-hidden="true">
-            <span key={pillGroup} style={{ ...styles.groupTabText, color: getMuscleGroupColors(pillGroup).accent }}>
-              {MUSCLE_GROUP_LABELS[pillGroup] || pillGroup.toUpperCase()}
-            </span>
-          </div>
-        )}
+        {/* Стики-заголовок группы убран — заголовки групп в контенте обычные. */}
 
-        {/* Сплошная чёрная полоска в зазоре под карточкой дня (всегда есть, даже
-            без заголовка) — чтобы контент не просвечивал в промежутке до фейда. */}
+        {/* Сплошная чёрная полоска в зазоре под карточкой дня (всегда есть) —
+            чтобы контент не просвечивал в промежутке до фейда. */}
         <div style={styles.stickySolid} aria-hidden="true" />
 
         {/* Fade-scrim под блоком дня: контент уходит под шапку плавно (градиент+blur),
