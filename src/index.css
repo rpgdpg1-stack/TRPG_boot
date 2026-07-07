@@ -358,6 +358,15 @@ body.keyboard-open .app::after { display: none; }
 }
 .pop-scale { animation: popScale 0.62s ease-in-out; }
 
+/* Морф кнопки «Начать» → «Завершить»: короткий squish на старте (цвет меняется
+   через собственные CSS-переходы ActionButton). */
+@keyframes btnMorph {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+.btn-morph { animation: btnMorph 0.46s var(--ease-ios); }
+
 /* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
    заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
    !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */

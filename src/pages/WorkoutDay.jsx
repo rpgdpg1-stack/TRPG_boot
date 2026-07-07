@@ -157,6 +157,18 @@ export default function WorkoutDay() {
   const [startedPulse, setStartedPulse] = useState(false)  // счётчик N/M
   const [timePulse, setTimePulse] = useState(false)        // время
   const [crossPulse, setCrossPulse] = useState(false)      // крестик
+  // Сжатие шапки по состоянию (0=большая, 1=пилюля). Морф на старте/завершении.
+  // Инициализация без мигания: активный день сразу пилюля.
+  const [collapse, setCollapse] = useState(() => {
+    const a = getActiveWorkout()
+    return (a && a.programId === programId && a.day === day) ? 1 : 0
+  })
+  const collapseRef = useRef(0)
+  collapseRef.current = collapse
+  const collapseRafRef = useRef(0)
+  const prevDayKeyRef = useRef(null)
+  const prevActiveForCollapseRef = useRef(null)
+  const [btnMorph, setBtnMorph] = useState(false) // squish-морф кнопки Начать→Завершить
   const pulseTimers = useRef({})
   const firePulse = (setter, key, ms = 700) => {
     setter(true)
@@ -217,9 +229,6 @@ export default function WorkoutDay() {
   // обводки), её текст сменяется на следующую группу. -1 = пилюли нет (мы вверху).
   const [activeSection, setActiveSection] = useState(-1)
   const activeSectionRef = useRef(-1)
-  // Скролл-позиция для компактной шапки (только активная сессия): на скролле вниз
-  // сперва гаснут чипы групп, потом ужимается буква дня — акцент на счётчик + время.
-  const [headerScrollY, setHeaderScrollY] = useState(0)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const sectionsRef = useRef([])              // текущие секции (для замера последней карточки)
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
@@ -451,7 +460,6 @@ export default function WorkoutDay() {
   useLayoutEffect(() => {
     activeSectionRef.current = -1
     setActiveSection(-1)
-    setHeaderScrollY(0)
     pillCycleRef.current = 0
   }, [day, place])
 
@@ -466,7 +474,6 @@ export default function WorkoutDay() {
     const compute = () => {
       raf = 0
       const y = liveY()
-      setHeaderScrollY(prev => (Math.abs(prev - y) > 0.5 ? y : prev))
       // Сохраняем ТОЛЬКО для активного дня и только после того, как восстановление
       // позиции отработало — иначе первый заход перезатёр бы место нулём.
       if (isThisActive && didInitialScrollRef.current) {
@@ -491,12 +498,6 @@ export default function WorkoutDay() {
     }
   }, [isThisActive, programId, day])
 
-  // Пока шапка СЖИМАЕТСЯ (scrollY 0→180), контент НЕ должен заходить под закреп:
-  // спейсер под шапкой = сам скролл (min(scrollY,180)) → скролл «поглощается»
-  // сжатием, контент стоит на месте (24px-отступ от низа шапки сохраняется), и
-  // только когда шапка стала полноценной пилюлей (≥180) — дальше контент уже
-  // уходит под пилюлю (спейсер зафиксирован на 180). Как большие заголовки iOS.
-  const headerSpacer = Math.min(headerScrollY, 180)
 
   // Какая группа в пилюле. Секция активна, когда её заголовок УШЁЛ под карточку
   // дня (верх ≤ линии), НО мы ещё не прошли середину её ПОСЛЕДНЕЙ карточки. Как
@@ -804,10 +805,50 @@ export default function WorkoutDay() {
     startActiveWorkout(programId, day, place)
     // Пульс-акцент «тренировка началась»: время + счётчик + крестик (появляется).
     // Буква на старте НЕ пульсирует — только когда потом свайпнешь на активный день.
-    firePulse(setTimePulse, 'time')
-    firePulse(setStartedPulse, 'count')
-    firePulse(setCrossPulse, 'cross')
+    // Пульс значений НЕ здесь: он играет в конце морфа шапки в пилюлю (см. эффект ниже).
+    setBtnMorph(true)
+    setTimeout(() => setBtnMorph(false), 460)
   }
+
+  // Морф шапки по состоянию: навигация/первый заход — мгновенно; старт/завершение
+  // (isThisActive меняется на том же дне) — плавная анимация collapse 0↔1. По
+  // достижении пилюли (target=1) — grow-пульс времени/счётчика/крестика.
+  useEffect(() => {
+    const dayKey = `${programId}:${day}:${place}`
+    const target = isThisActive ? 1 : 0
+    const first = prevDayKeyRef.current === null
+    const dayChanged = prevDayKeyRef.current !== dayKey
+    const activeChanged = prevActiveForCollapseRef.current !== isThisActive
+    prevDayKeyRef.current = dayKey
+    prevActiveForCollapseRef.current = isThisActive
+
+    if (collapseRafRef.current) { cancelAnimationFrame(collapseRafRef.current); collapseRafRef.current = 0 }
+
+    // Первый заход / смена дня-места — сразу в нужное состояние, без анимации.
+    if (first || dayChanged) { setCollapse(target); return }
+    if (!activeChanged) return
+
+    const start = collapseRef.current
+    const t0 = performance.now()
+    const dur = 480
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur)
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2 // easeInOutQuad
+      setCollapse(start + (target - start) * e)
+      if (p < 1) { collapseRafRef.current = requestAnimationFrame(step) }
+      else {
+        collapseRafRef.current = 0
+        if (target === 1) {
+          // Пилюля собралась — проиграть «пиксель-арт» увеличение значений.
+          firePulse(setTimePulse, 'time')
+          firePulse(setStartedPulse, 'count')
+          firePulse(setCrossPulse, 'cross')
+        }
+      }
+    }
+    collapseRafRef.current = requestAnimationFrame(step)
+    return () => { if (collapseRafRef.current) cancelAnimationFrame(collapseRafRef.current) }
+  }, [isThisActive, day, place, programId])
 
   // Крестик «отменить тренировку» (только для активной): тап → подтверждение →
   // закрываем сессию БЕЗ сохранения (в историю не идёт, баллы не начисляются).
@@ -946,16 +987,14 @@ export default function WorkoutDay() {
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
-  // Компактная шапка (для ЛЮБОГО дня — активного и нет). chipsShrink гасит чипы
-  // групп ПЕРВЫМИ (0→44px скролла), letterShrink ужимает букву чуть позже
-  // (28→132px), 45px → 24px. Наверху страницы — всё в полный размер.
-  const chipsShrink = Math.min(1, headerScrollY / 44)
-  const letterShrink = Math.min(1, Math.max(0, (headerScrollY - 28) / 104))
+  // Сжатие шапки управляется НЕ скроллом, а СОСТОЯНИЕМ (collapse 0→1): до старта
+  // тренировки шапка большая и информативная (0), после «Начать» плавно сворачивается
+  // в компактную пилюлю (1) и остаётся ей при скролле, после завершения — обратно.
+  // Три стадии внутри collapse: чипы гаснут → буква ужимается → строка-пилюля.
+  const chipsShrink = Math.min(1, collapse / 0.33)
+  const letterShrink = Math.min(1, Math.max(0, (collapse - 0.2) / 0.5))
   const dayLetterSize = 45 - letterShrink * 21
-  // Третья стадия (после ужатия буквы, >132px): схлопывание в одну строку-пилюлю —
-  // место-тег гаснет, большая буква и счётчик уходят по высоте, а в центр строки
-  // рядом с временем «въезжают» буква дня (слева) и счётчик (справа).
-  const rowCollapse = Math.min(1, Math.max(0, (headerScrollY - 132) / 48))
+  const rowCollapse = Math.min(1, Math.max(0, (collapse - 0.68) / 0.32))
 
   // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
   // плавный скролл к следующему НЕотжатому (по кругу сверху вниз) + зелёная
@@ -1230,9 +1269,6 @@ export default function WorkoutDay() {
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      {/* Компенсатор сжатия шапки: держит контент на месте (см. эффект headerSpacer). */}
-      <div style={{ height: `${headerSpacer}px` }} aria-hidden="true" />
-
       <div style={styles.body}>
 
         {error && (
@@ -1338,26 +1374,27 @@ export default function WorkoutDay() {
             </div>
           )}
 
-          {isThisActive ? (
-            // Прогресс — заливкой шапки дня, не в кнопке. Кнопка hug: серая до 100%,
-            // зелёная с галочкой на 100%.
-            <ActionButton
-              onClick={handleFinishButtonTap}
-              disabled={!canFinish}
-              variant={isAllDone ? 'accent' : 'neutral'}
-              hug
-            >
-              {isAllDone ? '✓ ЗАВЕРШИТЬ' : 'ЗАВЕРШИТЬ'}
-            </ActionButton>
-          ) : sessionBlocked ? (
-            <ActionButton onClick={handleBlockedStart} variant="dim" hug>
-              НАЧАТЬ
-            </ActionButton>
-          ) : (
-            <ActionButton onClick={handleStart} variant="accent" hug>
-              НАЧАТЬ
-            </ActionButton>
-          )}
+          {/* Одна кнопка на все состояния — «Начать» плавно морфится в «Завершить»
+              (цвет через CSS-переход ActionButton + squish-анимация btn-morph на
+              старте), а не подменяется. Прогресс — заливкой шапки, не в кнопке. */}
+          {(() => {
+            const p = isThisActive
+              ? { onClick: handleFinishButtonTap, disabled: !canFinish, variant: isAllDone ? 'accent' : 'neutral', label: isAllDone ? '✓ ЗАВЕРШИТЬ' : 'ЗАВЕРШИТЬ' }
+              : sessionBlocked
+                ? { onClick: handleBlockedStart, variant: 'dim', label: 'НАЧАТЬ' }
+                : { onClick: handleStart, variant: 'accent', label: 'НАЧАТЬ' }
+            return (
+              <ActionButton
+                onClick={p.onClick}
+                disabled={p.disabled}
+                variant={p.variant}
+                hug
+                className={btnMorph ? 'btn-morph' : ''}
+              >
+                {p.label}
+              </ActionButton>
+            )
+          })()}
         </div>
       )}
 
