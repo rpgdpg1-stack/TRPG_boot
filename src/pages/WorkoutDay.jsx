@@ -195,10 +195,8 @@ export default function WorkoutDay() {
   useEffect(() => () => { if (overloadTimer.current) clearTimeout(overloadTimer.current) }, [])
 
   // Эффекты возврата с других экранов:
-  //   pressedOrderNum — карточка играет press-эффект (scale 0.97 → 1)
-  //   glowedOrderNum  — карточка светится зелёной обводкой и плавно гаснет
+  //   glowedOrderNum  — карточка подсвечивается светло-серой заливкой и плавно гаснет
   //   swappedOrderNum — карточка играет анимацию "змейки" (только swap)
-  const [pressedOrderNum, setPressedOrderNum] = useState(null)
   const [glowedOrderNum, setGlowedOrderNum] = useState(null)
   // Тап по пилюле (сжатая шапка): «растущее» нажатие + цикл по неотжатым.
   const [pillArmed, setPillArmed] = useState(false)
@@ -578,9 +576,6 @@ export default function WorkoutDay() {
     if (returnedFrom == null) return
 
     const wasSwapped = stateData.wasSwapped
-
-    setPressedOrderNum(returnedFrom)
-    setTimeout(() => setPressedOrderNum(null), 350)
 
     setGlowedOrderNum(returnedFrom)
     setTimeout(() => setGlowedOrderNum(null), 1600)
@@ -1263,7 +1258,6 @@ export default function WorkoutDay() {
 
                 <div style={styles.exerciseList}>
                   {section.slots.map(slot => {
-                    const isPressed = pressedOrderNum === slot.order_num
                     const isGlowed = glowedOrderNum === slot.order_num
                     const isSwapped = swappedOrderNum === slot.order_num
                     return (
@@ -1273,11 +1267,7 @@ export default function WorkoutDay() {
                           if (el) cardRefs.current.set(slot.order_num, el)
                           else cardRefs.current.delete(slot.order_num)
                         }}
-                        style={{
-                          position: 'relative',
-                          transform: isPressed ? 'scale(0.97)' : 'scale(1)',
-                          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}
+                        style={{ position: 'relative' }}
                       >
                         <ExerciseCard
                           slot={slot}
@@ -1287,10 +1277,9 @@ export default function WorkoutDay() {
                           onDots={handleDots}
                         />
 
-                        {/* Зелёная подсветка-обводка — индикатор "вот эту ты
-                            нажимал и сюда вернулся". Плавно появляется и гаснет.
-                            Радиус 33px совпадает с border-radius карточки. */}
-                        {isGlowed && <ReturnGlow />}
+                        {/* «Недавно тронутое» — светло-серая заливка карточки:
+                            вернулся к ней / тапнул по прогресс-бару. Плавно гаснет. */}
+                        {isGlowed && <ReturnHighlight />}
 
                         {isSwapped && <SwapAnimationOverlay />}
                       </div>
@@ -1352,10 +1341,8 @@ export default function WorkoutDay() {
           onClose={() => {
             const orderNum = actionSlot.order_num
             setActionSlot(null)
-            // Тот же эффект что при возврате с Инфо/Смены: лёгкий press
-            // + зелёная подсветка-обводка карточки которую долго тапнули.
-            setPressedOrderNum(orderNum)
-            setTimeout(() => setPressedOrderNum(null), 350)
+            // Тот же эффект что при возврате с Инфо/Смены: светло-серая заливка
+            // карточки, которую долго тапнули (без пресс-эффекта).
             setGlowedOrderNum(orderNum)
             setTimeout(() => setGlowedOrderNum(null), 1600)
           }}
@@ -1472,20 +1459,18 @@ export default function WorkoutDay() {
  * pointerEvents: none — клики проходят сквозь, карточка остаётся тапабельной.
  * border-radius 33px = радиус карточки, иначе обводка не повторит форму.
  */
-function ReturnGlow() {
+function ReturnHighlight() {
   return <div style={glowStyles.wrap} aria-hidden="true" />
 }
 
 const glowStyles = {
+  // «Недавно тронутое»: светло-серая заливка ВСЕЙ карточки (как закреплённый друг),
+  // плавно появляется и затухает. Без обводки/свечения/пресс-эффекта.
   wrap: {
     position: 'absolute',
-    top: -1,
-    left: -1,
-    right: -1,
-    bottom: -1,
-    borderRadius: '34px',
-    border: '1.5px solid var(--color-primary)',
-    boxShadow: '0 0 18px rgba(158, 209, 83, 0.45), inset 0 0 14px rgba(158, 209, 83, 0.10)',
+    inset: 0,
+    borderRadius: 'var(--radius-card)',
+    background: 'var(--highlight-recent)',
     pointerEvents: 'none',
     animation: 'returnGlowFade 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
     zIndex: 9
