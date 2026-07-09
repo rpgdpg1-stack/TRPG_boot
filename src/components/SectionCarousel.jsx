@@ -3,27 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
-import { getActiveWorkout, onActiveWorkoutChange } from '../lib/active-workout'
-import { getActiveDaySync } from '../lib/storage'
+import { onActiveWorkoutChange } from '../lib/active-workout'
+import { getActiveDaySync, toggleFavoriteProgram } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
-import ActionButton from './ActionButton'
+import ProgramCard from './ProgramCard'
 
 /**
- * Карусель разделов на главной — вместо избранного. Одна карточка-раздел
- * (Силовая → Плавание → Кардио → Растяжка), листается свайпом влево/вправо
- * (циклично), точки-пейджер под заголовком. Внутри карточки:
- *  - эмблема раздела + заголовок;
- *  - «последняя тренировка N дней назад» по ЗАКРЕПЛЁННОЙ программе раздела;
- *  - крупная кнопка быстрого действия: Продолжить / Начать / Закрепить программу;
- *  - ряд: «Все программы» (→ экран раздела) и «＋ Создать» (→ конструктор).
+ * Карусель разделов на главной (вместо избранного). Один раздел на экран, свайп
+ * влево/вправо (циклично) — тем же заездом, что старый свайпер разделов
+ * (иконка выезжает, заголовок кросс-фейдится), точки-пейджер под иконкой.
+ * Внутри:
+ *  - заголовок раздела (сверху) + КРУПНАЯ иконка + точки;
+ *  - «последняя тренировка N назад» по ЗАКРЕПЛЁННОЙ программе раздела;
+ *  - сама карточка закреплённой программы (`ProgramCard`, как внутри раздела) —
+ *    тап начинает/продолжает; ⋯ → Закрепить/Открепить; если ничего не закреплено —
+ *    заглушка «Закрепить программу» (→ экран раздела);
+ *  - текст-ссылка «Все программы ⌄» → экран раздела.
  *
- * «Закреплённая программа» раздела = запись `favorite_programs[category]`
- * (одна на раздел). Меняется через «⋯ → Закрепить» на карточке программы.
+ * Закреплённая программа = `favorite_programs[category]` (CloudStorage, одна на раздел).
  */
 
+const ANIM_MS = 360
 const LAST_CAT_KEY = 'category-swiper-last'
 const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
 
@@ -35,11 +38,14 @@ export default function SectionCarousel() {
   const navigate = useNavigate()
 
   const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
-  const [slideDir, setSlideDir] = useState(null) // 'left' | 'right' | null
-  const [active, setActive] = useState(getActiveWorkout)
+  const [anim, setAnim] = useState(null) // { from, dir } во время перехода
+  const [pinnedTick, setPinnedTick] = useState(0) // ре-чтение закрепа/последней
+  const animTimer = useRef(null)
   const swipe = useRef({ x: null, swiped: false })
 
-  useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
+  // Старт/финиш тренировки → перечитать «последнюю» и состояние карточки.
+  useEffect(() => onActiveWorkoutChange(() => setPinnedTick(t => t + 1)), [])
+  useEffect(() => () => { if (animTimer.current) clearTimeout(animTimer.current) }, [])
 
   // Догоняем выбранный раздел из облака (кросс-девайс).
   useEffect(() => {
@@ -52,16 +58,17 @@ export default function SectionCarousel() {
 
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
   const cat = cats[idx]
-  const soon = cat.id === 'cardio' || cat.id === 'stretch'
 
   const go = (next, dir) => {
     if (next === idx) return
     haptic.light()
-    setSlideDir(dir === 'next' ? 'right' : 'left')
+    if (animTimer.current) clearTimeout(animTimer.current)
+    setAnim({ from: idx, dir })
     setIdx(next)
     const id = CATEGORY_ORDER[next]
-    localSet(LAST_CAT_KEY, id)   // мгновенно
-    cloudSet(LAST_CAT_KEY, id)   // кросс-девайс
+    localSet(LAST_CAT_KEY, id)
+    cloudSet(LAST_CAT_KEY, id)
+    animTimer.current = setTimeout(() => setAnim(null), ANIM_MS)
   }
 
   const onTouchStart = (e) => { swipe.current.x = e.touches[0].clientX; swipe.current.swiped = false }
@@ -74,147 +81,156 @@ export default function SectionCarousel() {
     swipe.current.swiped = true
     if (dx < 0) go((idx + 1) % cats.length, 'next')
     else go((idx - 1 + cats.length) % cats.length, 'prev')
-    setTimeout(() => { swipe.current.swiped = false }, 120)
+    setTimeout(() => { swipe.current.swiped = false }, 140)
   }
 
-  // Закреплённая программа раздела + её состояние.
+  // Закреплённая программа раздела.
+  void pinnedTick
   const pinnedSlug = readPinnedMap()[cat.id] || null
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
-  const isActiveHere = !!active && pinnedSlug && active.programId === pinnedSlug
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
+  const lastText = pinnedProg
+    ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
+    : ' '
 
-  const openWorkout = (slug, day) => {
-    if (getProgramBySlug(slug)?.kind === 'swim') navigate(`/swim/${slug}`, { state: { fromHome: true } })
-    else navigate(`/workout/${slug}/${day}`, { state: { fromHome: true } })
+  const openSection = () => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }
+
+  // Открепить/закрепить из ⋯ — перечитать карту закрепов.
+  const onToggleFav = async () => {
+    if (!pinnedSlug) return
+    await toggleFavoriteProgram(cat.id, pinnedSlug)
+    setPinnedTick(t => t + 1)
   }
 
-  const onPrimary = () => {
+  // Тап по карточке (гард от свайпа) — ProgramCard сам навигирует по своему onOpen.
+  const guardedOpen = () => {
     if (swipe.current.swiped) return
     haptic.light()
-    if (soon) return
-    if (isActiveHere) { openWorkout(pinnedSlug, active.day); return }
-    if (pinnedProg) {
-      const day = getActiveDaySync(pinnedSlug) || (pinnedProg.data?.days ? Object.keys(pinnedProg.data.days)[0] : 'A')
-      openWorkout(pinnedSlug, day)
-      return
-    }
-    navigate(`/category/${cat.id}`) // ничего не закреплено → выбрать программу
+    if (!pinnedProg) return
+    if (pinnedProg.kind === 'swim') { navigate(`/swim/${pinnedSlug}`, { state: { fromHome: true } }); return }
+    const day = getActiveDaySync(pinnedSlug) || (pinnedProg.data?.days ? Object.keys(pinnedProg.data.days)[0] : 'A')
+    navigate(`/workout/${pinnedSlug}/${day}`, { state: { fromHome: true } })
   }
-
-  const primaryLabel = soon ? 'Скоро'
-    : isActiveHere ? 'Продолжить'
-    : pinnedProg ? 'Начать тренировку'
-    : 'Закрепить программу'
-
-  const daysLine = !pinnedProg ? (soon ? 'Раздел скоро появится' : 'Ничего не закреплено')
-    : lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}`
-    : 'Ещё не начинали'
 
   return (
     <div style={styles.wrap} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div
-        key={idx}
-        className={slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined}
-        style={styles.card}
-      >
-        {/* Шапка раздела: эмблема + название */}
-        <div style={styles.head}>
-          <UiIcon name={cat.iconName} size={30} color={cat.color} />
-          <span style={styles.title}>{cat.title}</span>
-        </div>
+      {/* Идентичность раздела: заголовок + крупная иконка (заезд как у разделов) */}
+      <div style={styles.identity}>
+        {anim && <IdLayer cat={cats[anim.from]} role="out" dir={anim.dir} />}
+        <IdLayer cat={cats[idx]} role={anim ? 'in' : 'static'} dir={anim?.dir} />
+      </div>
 
-        {/* Точки-пейджер */}
-        <div style={styles.dots}>
-          {cats.map((c, i) => (
-            <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { background: cat.color, opacity: 1 } : null) }} />
-          ))}
-        </div>
+      {/* Точки-пейджер */}
+      <div style={styles.dots}>
+        {cats.map((c, i) => (
+          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { background: cat.color, opacity: 1 } : null) }} />
+        ))}
+      </div>
 
-        <div style={styles.daysLine}>{daysLine}</div>
+      {/* Последняя тренировка в разделе (по закреплённой программе) */}
+      <div style={styles.lastLine}>{lastText}</div>
 
-        {/* Большая кнопка быстрого действия */}
-        <ActionButton
-          onClick={onPrimary}
-          disabled={soon}
-          variant={soon ? 'dim' : (pinnedProg || isActiveHere) ? 'accent' : 'neutral'}
-          style={{ width: '100%', marginTop: '4px' }}
-        >
-          {pinnedProg && !soon && !isActiveHere ? `Начать · ${progTitle(pinnedProg)}` : primaryLabel}
-        </ActionButton>
+      {/* Закреплённая программа — сама карточка, как внутри раздела */}
+      {pinnedProg ? (
+        <ProgramCard
+          key={pinnedSlug}
+          prog={pinnedProg}
+          dots
+          isFav
+          onToggleFav={onToggleFav}
+          onOpen={guardedOpen}
+          onDeleted={() => setPinnedTick(t => t + 1)}
+        />
+      ) : (
+        <button style={styles.pinEmpty} className="press-tile" onClick={openSection}>
+          <span style={styles.pinEmptyText}>Закрепить программу</span>
+          <span style={styles.pinEmptyHint}>Выбери в разделе — она появится здесь</span>
+        </button>
+      )}
 
-        {/* Ряд: Все программы + Создать */}
-        <div style={styles.row}>
-          <button
-            style={styles.smallBtn}
-            className="press-tile"
-            onClick={() => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }}
-          >
-            Все программы
-          </button>
-          <button
-            style={styles.smallBtn}
-            className="press-tile"
-            onClick={() => { if (swipe.current.swiped) return; haptic.light(); navigate('/constructor') }}
-          >
-            <span style={styles.plus}>＋</span> Создать
-          </button>
-        </div>
+      {/* Все программы — текст-ссылка со стрелкой вниз (на экран раздела) */}
+      <button style={styles.allLink} className="tg-row" onClick={openSection}>
+        Все программы <span style={styles.chev}>⌄</span>
+      </button>
+    </div>
+  )
+}
+
+/** Слой идентичности (заголовок + иконка), анимируется как старый свайпер разделов. */
+function IdLayer({ cat, role, dir }) {
+  const textAnim = role === 'out' ? 'catFadeOut' : role === 'in' ? 'catFadeIn' : null
+  const iconAnim = role === 'static' ? null
+    : role === 'out'
+      ? (dir === 'next' ? 'catIconOutNext' : 'catIconOutPrev')
+      : (dir === 'next' ? 'catIconInNext' : 'catIconInPrev')
+  const textStyle = textAnim ? { animation: `${textAnim} ${ANIM_MS}ms ease forwards` } : null
+
+  return (
+    <div style={styles.idLayer}>
+      <span style={{ ...styles.title, ...textStyle }}>{cat.title}</span>
+      <div style={{ ...styles.iconRow, ...(iconAnim ? { animation: `${iconAnim} ${ANIM_MS}ms var(--ease-ios) forwards` } : null) }}>
+        <UiIcon name={cat.iconName} size={52} color={cat.color} />
       </div>
     </div>
   )
 }
 
-// Имя закреплённой программы: кастомную — как ввёл юзер, встроенную — Первая заглавная.
-function progTitle(prog) {
-  if (!prog?.title) return ''
-  return prog.source === 'custom' ? prog.title : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase()
-}
-
 const styles = {
   wrap: { touchAction: 'pan-y' },
-  card: {
+  // Идентичность: фикс. высота под абсолютные слои перехода, overflow — клип иконки.
+  identity: {
     position: 'relative',
-    width: '100%',
-    borderRadius: 'var(--radius-card)',
-    background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
-    padding: '18px 16px 16px',
+    height: '120px',
+    overflow: 'hidden'
+  },
+  idLayer: {
+    position: 'absolute',
+    inset: 0,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '12px'
+    justifyContent: 'center',
+    gap: '14px'
   },
-  head: { display: 'flex', alignItems: 'center', gap: '10px' },
   title: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '18px',
-    color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1
+    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 700,
+    color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1, textAlign: 'center'
   },
-  dots: { display: 'flex', gap: '6px', alignItems: 'center' },
+  iconRow: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+  dots: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center', marginTop: '4px' },
   dot: {
     width: '6px', height: '6px', borderRadius: '50%',
     background: 'var(--color-text-secondary)', opacity: 0.35,
     transition: 'opacity 0.2s ease, background 0.2s ease'
   },
-  daysLine: {
+  lastLine: {
+    minHeight: '16px',
+    marginTop: '10px', marginBottom: '12px',
     fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
     color: 'var(--color-text-secondary)', textAlign: 'center'
   },
-  row: { display: 'flex', gap: '10px', width: '100%' },
-  smallBtn: {
-    flex: 1,
-    minHeight: '44px',
-    borderRadius: 'var(--radius-medium)',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid var(--border-hairline)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
+  pinEmpty: {
+    width: '100%',
+    minHeight: '96px',
+    borderRadius: 'var(--radius-card)',
+    background: 'var(--surface)',
+    border: '1px dashed rgba(255, 255, 255, 0.18)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
     cursor: 'pointer'
   },
-  plus: { fontSize: '16px', fontWeight: 700, color: 'var(--color-primary)', lineHeight: 1 }
+  pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
+  pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
+  allLink: {
+    width: '100%',
+    marginTop: '12px',
+    padding: '10px',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 'var(--radius-medium)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer'
+  },
+  chev: { fontSize: '15px', lineHeight: 1, marginTop: '-2px' }
 }

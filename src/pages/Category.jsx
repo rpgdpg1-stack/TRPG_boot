@@ -186,8 +186,8 @@ export default function Category() {
       </div>
 
       {(id !== 'gym' || !hasCustom) && (
-        <button onClick={handleCreateTap} style={styles.createButton}>
-          {meta.createLabel}
+        <button onClick={handleCreateTap} style={styles.createButton} className="press-tile">
+          <span style={styles.createPlus}>＋</span> Создать
         </button>
       )}
 
@@ -245,13 +245,16 @@ const styles = {
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center' },
   programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
   createButton: {
-    width: '100%', padding: '20px',
-    border: '1.5px dashed rgba(255, 255, 255, 0.15)',
+    width: '100%', minHeight: '56px', padding: '16px',
+    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, letterSpacing: '1.5px',
-    background: 'transparent'
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
+    background: 'rgba(255, 255, 255, 0.05)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+    cursor: 'pointer'
   },
+  createPlus: { color: 'var(--color-primary)', fontSize: '18px', fontWeight: 700, lineHeight: 1 },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
