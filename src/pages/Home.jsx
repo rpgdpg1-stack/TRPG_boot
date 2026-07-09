@@ -147,9 +147,6 @@ export default function Home() {
             )}
           </div>
         </div>
-
-        {/* Fade-scrim: контент уходит под закреплённый блок плавно. */}
-        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       {/* Скроллящийся контент: карусель разделов (вместо избранного) + активности + история. */}
@@ -189,7 +186,13 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 20,
-    background: 'var(--color-bg)',
+    // Матовое стекло — как шапка дня тренировок: контент скроллится под баром и
+    // просвечивает размытым. Без сплошного фона и БЕЗ затемняющего скрима снизу —
+    // только тонкая нижняя нитка, чтобы край стекла читался.
+    background: 'rgba(28, 28, 30, 0.55)',
+    backdropFilter: 'blur(16px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
     // Верхний край блока — ровно 16px ниже кнопок Telegram (зашито в var).
     paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
@@ -197,16 +200,6 @@ const styles = {
     marginRight: '-16px',
     paddingLeft: '16px',
     paddingRight: '16px'
-  },
-  stickyFade: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    height: '24px',
-    pointerEvents: 'none',
-    zIndex: 19,
-    background: 'var(--scrim-sticky)'
   },
   scrollSection: {
     position: 'relative'

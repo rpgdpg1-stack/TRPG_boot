@@ -148,7 +148,7 @@ export default function SectionCarousel() {
       {/* Точки-пейджер */}
       <div style={styles.dots}>
         {cats.map((c, i) => (
-          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { background: cat.color, opacity: 1, width: '18px' } : null) }} />
+          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { opacity: 0.65 } : null) }} />
         ))}
       </div>
 
@@ -234,11 +234,12 @@ const styles = {
   },
   iconRow: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
   dots: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center', marginTop: '4px' },
-  // Активная точка — пилюля (вытягивается), неактивные — кружки.
+  // Тихий пейджер: одинаковые серые кружки, активный лишь чуть ярче.
+  // Без акцентного цвета и без вытягивания — не спорит с фокусом на текущем разделе.
   dot: {
     width: '6px', height: '6px', borderRadius: '3px', flexShrink: 0,
-    background: 'var(--color-text-secondary)', opacity: 0.35,
-    transition: 'width 0.24s var(--ease-ios), opacity 0.2s ease, background 0.2s ease'
+    background: 'var(--color-text-secondary)', opacity: 0.25,
+    transition: 'opacity 0.2s ease'
   },
   lastLine: {
     minHeight: '16px',
