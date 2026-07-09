@@ -186,14 +186,9 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 20,
-    // Матовое стекло — как шапка дня тренировок: контент скроллится под баром и
-    // просвечивает размытым. Без сплошного фона и БЕЗ затемняющего скрима снизу —
-    // только тонкая нижняя нитка, чтобы край стекла читался.
-    background: 'rgba(28, 28, 30, 0.55)',
-    backdropFilter: 'blur(16px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    // Верхний край блока — ровно 16px ниже кнопок Telegram (зашито в var).
+    // Контейнер ПРОЗРАЧНЫЙ — как sticky-шапка дня тренировок. Стекло только на
+    // самой пилюле (ниже), вокруг ничего не закреплено, контент листается под
+    // пилюлей. Верхнюю зону под кнопками Telegram гасит глобальный скрим .app::before.
     paddingTop: 'var(--tg-safe-top)',
     paddingBottom: 0,
     marginLeft: '-16px',
@@ -215,8 +210,13 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '5px 14px',
-    background: 'rgba(255, 255, 255, 0.05)',
+    padding: '6px 14px',
+    // Матовое стекло — то же, что карточка-шапка дня: пилюля закреплена, контент
+    // скроллится под ней и просвечивает размытым.
+    background: 'rgba(28, 28, 30, 0.55)',
+    backdropFilter: 'blur(16px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+    border: '1px solid rgba(255, 255, 255, 0.10)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',
