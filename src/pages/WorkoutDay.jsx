@@ -772,6 +772,9 @@ export default function WorkoutDay() {
     overloadShownRef.current = false
     hideOverload()
     startActiveWorkout(programId, day, place)
+    // Начал из середины/низа (шапка-пилюля) — плавно поднимаем к верху тренировки.
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth' })
     // Появление значений (время/счётчик/крестик) на старте:
     //  • шапка была большой → пилюля соберётся морфом, пульс сыграем в конце морфа;
     //  • шапка уже пилюля (пролистано вниз) → морфа не будет, играем появление сразу.

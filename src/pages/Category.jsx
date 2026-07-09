@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
@@ -101,6 +101,9 @@ export default function Category() {
   const [favoriteSlug, setFavoriteSlug] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
   const [, bump] = useState(0)
+  // FLIP-анимация переезда карточки при закреплении: слепок позиций до реордера.
+  const cardRefs = useRef(new Map())
+  const flipPrev = useRef(null)
 
   const meta = CATEGORIES_META[id]
 
@@ -112,6 +115,30 @@ export default function Category() {
     : []
   const programs = [...realPrograms, ...placeholderPrograms]
   const hasCustom = realPrograms.some(p => p.source === 'custom')
+  // Закреплённая программа — наверх списка (как на главной); остальные в прежнем порядке.
+  const ordered = favoriteSlug
+    ? [...programs].sort((a, b) => (a.slug === favoriteSlug ? -1 : b.slug === favoriteSlug ? 1 : 0))
+    : programs
+
+  // FLIP: после реордера (смена закрепа) плавно доезжаем карточки из старых позиций.
+  useLayoutEffect(() => {
+    const prev = flipPrev.current
+    if (!prev) return
+    flipPrev.current = null
+    cardRefs.current.forEach((el, slug) => {
+      if (!el) return
+      const oldTop = prev.get(slug)
+      if (oldTop == null) return
+      const delta = oldTop - el.getBoundingClientRect().top
+      if (!delta) return
+      el.style.transition = 'none'
+      el.style.transform = `translateY(${delta}px)`
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.34s var(--ease-ios)'
+        el.style.transform = ''
+      })
+    })
+  }, [favoriteSlug])
 
   useEffect(() => {
     backButton.setHandler(() => navigate('/'))
@@ -128,6 +155,10 @@ export default function Category() {
 
   const handleFavoriteTap = async (programSlug) => {
     haptic.medium()
+    // Слепок позиций ДО реордера — для FLIP-анимации переезда наверх.
+    const snap = new Map()
+    cardRefs.current.forEach((el, slug) => { if (el) snap.set(slug, el.getBoundingClientRect().top) })
+    flipPrev.current = snap
     const nowFav = await toggleFavoriteProgram(id, programSlug)
     setFavoriteSlug(nowFav ? programSlug : null)
   }
@@ -177,16 +208,20 @@ export default function Category() {
       </header>
 
       <div style={styles.programs}>
-        {programs.map(prog => (
-          <ProgramCard
+        {ordered.map(prog => (
+          <div
             key={prog.slug}
-            prog={prog}
-            isFav={favoriteSlug === prog.slug}
-            onToggleFav={() => handleFavoriteTap(prog.slug)}
-            onDeleted={handleDeleted}
-            dots
-            bordered={false}
-          />
+            ref={el => { if (el) cardRefs.current.set(prog.slug, el); else cardRefs.current.delete(prog.slug) }}
+          >
+            <ProgramCard
+              prog={prog}
+              isFav={favoriteSlug === prog.slug}
+              onToggleFav={() => handleFavoriteTap(prog.slug)}
+              onDeleted={handleDeleted}
+              dots
+              bordered={favoriteSlug === prog.slug}
+            />
+          </div>
         ))}
       </div>
 
