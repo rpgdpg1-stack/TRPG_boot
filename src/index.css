@@ -138,6 +138,10 @@ html {
   width: 100%;
   height: 100%;
   background: var(--color-bg);
+  /* Гасим НАТИВНЫЙ pull-to-refresh вебвью — иначе он перехватывает оттяг сверху
+     (мгновенная перезагрузка, контент не тянется). Свой pull-to-refresh на главной
+     тянет контент трансформом, ему это не мешает. */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -147,6 +151,7 @@ body {
   color: var(--color-text);
   font-family: var(--font-manrope);
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
 }
 
 #root {

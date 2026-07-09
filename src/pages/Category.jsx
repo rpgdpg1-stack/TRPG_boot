@@ -8,6 +8,7 @@ import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
+import SectionGlow from '../components/SectionGlow'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -155,6 +156,10 @@ export default function Category() {
   return (
     <div className="page page-enter" style={styles.page}>
 
+      {/* Акцентное свечение фона в цвет раздела — как на главной. */}
+      <SectionGlow color={meta.color} />
+
+      <div style={styles.content}>
       <header style={styles.header}>
         <ScreenTitle>{toSentenceCase(meta.title)}</ScreenTitle>
         {/* Иконка раздела + инфо-кнопка + счётчик — на 16px ниже заголовка. */}
@@ -190,6 +195,7 @@ export default function Category() {
           <span style={styles.createPlus}>＋</span> Создать
         </button>
       )}
+      </div>
 
       {showInfo && <CategoryInfoModal meta={meta} onClose={() => setShowInfo(false)} />}
     </div>
@@ -235,7 +241,10 @@ function CategoryInfoModal({ meta, onClose }) {
 }
 
 const styles = {
-  page: {},
+  // relative — база для абсолютного свечения (SectionGlow).
+  page: { position: 'relative' },
+  // Контент над свечением.
+  content: { position: 'relative', zIndex: 1 },
   header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' },
   // Блок под заголовком (16px): иконка раздела, счётчик, инфо-кнопка (справа).
   headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' },
