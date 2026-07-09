@@ -139,7 +139,7 @@ export default function SectionCarousel() {
       {/* Точки-пейджер */}
       <div style={styles.dots}>
         {cats.map((c, i) => (
-          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { background: cat.color, opacity: 1 } : null) }} />
+          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { background: cat.color, opacity: 1, width: '18px' } : null) }} />
         ))}
       </div>
 
@@ -224,10 +224,11 @@ const styles = {
   },
   iconRow: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
   dots: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center', marginTop: '4px' },
+  // Активная точка — пилюля (вытягивается), неактивные — кружки.
   dot: {
-    width: '6px', height: '6px', borderRadius: '50%',
+    width: '6px', height: '6px', borderRadius: '3px', flexShrink: 0,
     background: 'var(--color-text-secondary)', opacity: 0.35,
-    transition: 'opacity 0.2s ease, background 0.2s ease'
+    transition: 'width 0.24s var(--ease-ios), opacity 0.2s ease, background 0.2s ease'
   },
   lastLine: {
     minHeight: '16px',
