@@ -210,9 +210,9 @@ img, button { -webkit-user-drag: none; }
 .app::before {
   top: 0;
   /* Чуть ниже линии системных кнопок: затемнение держится сквозь заголовок и
-     гаснет ~16px ниже него (текст под заголовком при скролле мутный/тёмный,
-     сам заголовок выше по z — резкий). */
-  height: calc(var(--tg-safe-top) + 16px);
+     гаснет ~14px ниже него (текст под заголовком при скролле мутный/тёмный,
+     сам заголовок выше по z — резкий). Граница поднята на 2px. */
+  height: calc(var(--tg-safe-top) + 14px);
   background: linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
