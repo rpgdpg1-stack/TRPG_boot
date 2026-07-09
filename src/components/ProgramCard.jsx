@@ -150,10 +150,11 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
-      {/* Серая подпись справа: до старта «Начать ›», в активной «Продолжить ›». */}
+      {/* Серая подпись справа: до старта «Начать ▶», в активной «Продолжить ▶».
+          Плей — серый, высотой примерно как заглавная буква текста. */}
       {showCta && (
         <span style={styles.ctaText}>
-          {isActive ? 'Продолжить' : 'Начать'}<span style={styles.ctaChev}>›</span>
+          {isActive ? 'Продолжить' : 'Начать'}<PlayIcon size={16} />
         </span>
       )}
 
@@ -262,7 +263,7 @@ const styles = {
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '2px',
+    gap: '3px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 600,
@@ -270,7 +271,6 @@ const styles = {
     whiteSpace: 'nowrap',
     pointerEvents: 'none'
   },
-  ctaChev: { fontSize: '17px', lineHeight: 1, marginTop: '-1px' },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',
