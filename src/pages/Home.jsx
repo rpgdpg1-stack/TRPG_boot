@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
@@ -11,6 +11,7 @@ import DailyQuests from '../components/DailyQuests'
 import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
+import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
 // Свёрнутость секций главной (Активности / История) — кросс-девайс через
 // CloudStorage (+ локальный кеш для мгновенного старта). JSON-карта { key: true }.
@@ -68,6 +69,39 @@ const homeSectionStyles = {
   }
 }
 
+// Акцентное свечение фона в цвет текущего раздела: радиальный glow у верхней
+// кромки (по центру) + мягкий tinted-градиент, растворяющийся к контенту. Всё
+// приглушённо — «сияние», а не заливка. Цвет из токена раздела (cat.color).
+const glowBg = (c) => `
+  radial-gradient(115% 55% at 50% 0%,
+    color-mix(in srgb, ${c} 22%, transparent) 0%,
+    color-mix(in srgb, ${c} 8%, transparent) 32%,
+    transparent 60%),
+  linear-gradient(to bottom,
+    color-mix(in srgb, ${c} 9%, transparent) 0%,
+    color-mix(in srgb, ${c} 4%, transparent) 42%,
+    transparent 92%)`
+
+// Два слоя — при смене раздела новый цвет плавно проявляется поверх старого
+// (кросс-фейд ~360мс, как заезд иконки в карусели).
+function SectionGlow({ color }) {
+  const [g, setG] = useState({ a: color, b: color, showA: true })
+  const first = useRef(true) // пропускаем первый эффект (стартовый цвет уже показан)
+  useEffect(() => {
+    if (first.current) { first.current = false; return }
+    setG(prev => prev.showA
+      ? { ...prev, b: color, showA: false }
+      : { ...prev, a: color, showA: true })
+  }, [color])
+
+  return (
+    <div style={styles.glowWrap} aria-hidden="true">
+      <div style={{ ...styles.glowLayer, background: glowBg(g.a), opacity: g.showA ? 1 : 0 }} />
+      <div style={{ ...styles.glowLayer, background: glowBg(g.b), opacity: g.showA ? 0 : 1 }} />
+    </div>
+  )
+}
+
 /**
  * Главная — Тренировки.
  *
@@ -84,6 +118,14 @@ export default function Home() {
   // Свёрнутость секций (АКТИВНОСТИ / ИСТОРИЯ): старт из локального кеша,
   // догоняем из облака. true = свёрнуто.
   const [collapsed, setCollapsed] = useState(readCollapsedSync)
+
+  // Цвет акцентного свечения = текущий раздел карусели. Старт — из последнего
+  // выбранного (тот же ключ, что в SectionCarousel), чтобы не мигнуло на загрузке.
+  const [glowColor, setGlowColor] = useState(() => {
+    const id = localGet('category-swiper-last')
+    return (CATEGORY_META[id] || CATEGORY_META[CATEGORY_ORDER[0]]).color
+  })
+  const onSectionChange = useCallback((c) => { if (c?.color) setGlowColor(c.color) }, [])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -127,8 +169,12 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Заголовок экрана + избранное — закреплено сверху (sticky). */}
-      <div style={styles.playerSticky}>
+      {/* Акцентное свечение фона в цвет текущего раздела — уходит вверх при скролле. */}
+      <SectionGlow color={glowColor} />
+
+      {/* Блок недели — НЕ закреплён: листается вместе с контентом и уходит вверх
+          под заголовок «Тренировки» (fixed на линии кнопок Telegram). */}
+      <div style={styles.topBlock}>
         <ScreenTitle>Тренировки</ScreenTitle>
 
         {/* Статус недели в серой пилюле: огонёк-серия ×N + «тренировка»
@@ -154,7 +200,7 @@ export default function Home() {
         {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
             (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
         <div style={{ marginTop: '4px' }}>
-          <SectionCarousel />
+          <SectionCarousel onSectionChange={onSectionChange} />
         </div>
 
         {/* Активности — просто заголовок (без статуса N/3), всё внутри карточки. */}
@@ -177,27 +223,40 @@ export default function Home() {
 
 const styles = {
   page: {
+    // relative — база для абсолютного свечения (glowWrap).
+    position: 'relative',
     paddingTop: 0,
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '24px'
   },
-  playerSticky: {
-    position: 'sticky',
+  // Свечение фона: у верхней кромки страницы, за контентом (zIndex 0). Своя высота +
+  // overflow — свечение живёт только вверху и растворяется к контенту.
+  glowWrap: {
+    position: 'absolute',
     top: 0,
-    zIndex: 20,
-    // Контейнер ПРОЗРАЧНЫЙ — как sticky-шапка дня тренировок. Стекло только на
-    // самой пилюле (ниже), вокруг ничего не закреплено, контент листается под
-    // пилюлей. Верхнюю зону под кнопками Telegram гасит глобальный скрим .app::before.
-    paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: 0,
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    left: 0,
+    right: 0,
+    height: '520px',
+    pointerEvents: 'none',
+    zIndex: 0,
+    overflow: 'hidden'
+  },
+  glowLayer: {
+    position: 'absolute',
+    inset: 0,
+    transition: 'opacity 0.36s ease'
+  },
+  // Блок недели — над свечением, в потоке (не закреплён). Верхний отступ = зона
+  // под кнопками Telegram.
+  topBlock: {
+    position: 'relative',
+    zIndex: 1,
+    paddingTop: 'var(--tg-safe-top)'
   },
   scrollSection: {
-    position: 'relative'
+    position: 'relative',
+    zIndex: 1
   },
   // Статус недели — серая пилюля по центру экрана.
   weekStatusWrap: {
@@ -211,12 +270,9 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     padding: '6px 14px',
-    // Матовое стекло — то же, что карточка-шапка дня: пилюля закреплена, контент
-    // скроллится под ней и просвечивает размытым.
-    background: 'rgba(28, 28, 30, 0.55)',
-    backdropFilter: 'blur(16px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-    border: '1px solid rgba(255, 255, 255, 0.10)',
+    // Лёгкий чип поверх акцентного свечения (не закреплён — блюр не нужен).
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '12px',

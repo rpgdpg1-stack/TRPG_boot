@@ -35,7 +35,7 @@ function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
 }
 
-export default function SectionCarousel() {
+export default function SectionCarousel({ onSectionChange }) {
   const navigate = useNavigate()
 
   const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
@@ -61,6 +61,12 @@ export default function SectionCarousel() {
 
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
   const cat = cats[idx]
+
+  // Сообщаем наверх текущий раздел — для акцентного свечения фона на главной.
+  useEffect(() => {
+    const id = CATEGORY_ORDER[idx]
+    onSectionChange?.({ id, color: CATEGORY_META[id]?.color })
+  }, [idx, onSectionChange])
 
   const go = (next, dir) => {
     if (next === idx) return
