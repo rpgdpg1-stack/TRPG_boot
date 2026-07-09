@@ -7,15 +7,17 @@ import { useEffect, useRef, useState } from 'react'
 // Координаты в px внутри glowWrap: верх экрана = y 600 (сверху ещё 600px «запаса» одного
 // тона — чтобы при оттягивании/оверскролле не было жёсткой линии, а продолжался тот же
 // тон, не ярче). Радиальный пик — ровно на кромке экрана (600).
+// Интенсивность приглушена (~на 40% слабее прежнего) — свечение еле заметное, чтобы не
+// конкурировать с зелёными акцентами (человечек/карточка/обводка): «дорогой» лёгкий свет.
 const glowBg = (c) => `
   radial-gradient(130% 300px at 50% 600px,
-    color-mix(in srgb, ${c} 22%, transparent) 0%,
-    color-mix(in srgb, ${c} 8%, transparent) 45%,
+    color-mix(in srgb, ${c} 13%, transparent) 0%,
+    color-mix(in srgb, ${c} 5%, transparent) 45%,
     transparent 100%),
   linear-gradient(to bottom,
-    color-mix(in srgb, ${c} 9%, transparent) 0px,
-    color-mix(in srgb, ${c} 9%, transparent) 600px,
-    color-mix(in srgb, ${c} 5%, transparent) 780px,
+    color-mix(in srgb, ${c} 5%, transparent) 0px,
+    color-mix(in srgb, ${c} 5%, transparent) 600px,
+    color-mix(in srgb, ${c} 3%, transparent) 780px,
     transparent 1080px)`
 
 // Два слоя — при смене раздела новый цвет плавно проявляется поверх старого

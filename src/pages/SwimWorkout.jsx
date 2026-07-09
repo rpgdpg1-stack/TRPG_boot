@@ -21,8 +21,6 @@ import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
-import SectionGlow from '../components/SectionGlow'
-import { CATEGORY_META } from '../features/programs/categories'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -212,9 +210,6 @@ export default function SwimWorkout() {
 
   return (
     <div style={styles.page}>
-      {/* Акцентное свечение шапки в цвет раздела «Плавание» (как на главной/разделе). */}
-      <SectionGlow color={CATEGORY_META[program?.category || 'pool']?.color || 'var(--color-primary)'} />
-
       <ScreenTitle>Заплыв 45</ScreenTitle>
 
       {/* Закреплённая шапка-карточка: синяя волна + стеклянная обводка */}

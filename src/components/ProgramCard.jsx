@@ -34,7 +34,8 @@ export default function ProgramCard({
   onDeleted,
   dots = false,
   lastTrained = false,
-  bordered = true
+  bordered = true,
+  cta = false
 }) {
   const navigate = useNavigate()
   // Старт из localStorage (мгновенно, без мигания серый→зелёный);
@@ -116,8 +117,10 @@ export default function ProgramCard({
   // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  const showRight = available && (isActive || (lastTrained && lastDate))
-  const padRight = showRight ? 96 : dots ? 48 : 18
+  // cta — серая подпись справа «Начать»/«Продолжить ›» (закреплённая карточка на главной).
+  const showCta = cta && available
+  const showRight = available && (showCta || isActive || (lastTrained && lastDate))
+  const padRight = showCta ? 116 : showRight ? 96 : dots ? 48 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -147,8 +150,15 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
+      {/* Серая подпись справа: до старта «Начать ›», в активной «Продолжить ›». */}
+      {showCta && (
+        <span style={styles.ctaText}>
+          {isActive ? 'Продолжить' : 'Начать'}<span style={styles.ctaChev}>›</span>
+        </span>
+      )}
+
       {/* Правый блок — по центру по высоте, справа. */}
-      {showRight && (
+      {!showCta && showRight && (
         <div style={styles.rightBlock}>
           {isActive ? (
             <span style={styles.continuePlay}><PlayIcon size={28} /></span>
@@ -243,6 +253,24 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
+  // Серая CTA-подпись справа по центру высоты: «Начать ›» / «Продолжить ›».
+  ctaText: {
+    position: 'absolute',
+    top: '50%',
+    right: '16px',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '2px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none'
+  },
+  ctaChev: { fontSize: '17px', lineHeight: 1, marginTop: '-1px' },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',

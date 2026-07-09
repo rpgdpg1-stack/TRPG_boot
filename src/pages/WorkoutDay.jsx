@@ -36,8 +36,6 @@ import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
-import SectionGlow from '../components/SectionGlow'
-import { CATEGORY_META } from '../features/programs/categories'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
@@ -267,10 +265,6 @@ export default function WorkoutDay() {
   const dayGroupAccent = dayTags[0]
     ? getMuscleGroupColors(dayTags[0].key).accent
     : 'var(--color-primary)'
-
-  // Цвет свечения шапки = цвет РАЗДЕЛА программы (силовая/плавание/кардио/растяжка),
-  // как на главной и на экране раздела.
-  const sectionColor = CATEGORY_META[program?.category]?.color || 'var(--color-primary)'
 
   // Акцент ЛЮБОГО дня программы (по первой группе) — для пикера дней: в попапе
   // каждый день красится своим цветом на 100%.
@@ -1029,9 +1023,6 @@ export default function WorkoutDay() {
 
   return (
     <div style={styles.page}>
-
-      {/* Акцентное свечение шапки в цвет раздела программы (как на главной/разделе). */}
-      <SectionGlow color={sectionColor} />
 
       {/* Имя программы в навбаре (по центру системных кнопок Telegram). */}
       <ScreenTitle>{programTitle}</ScreenTitle>

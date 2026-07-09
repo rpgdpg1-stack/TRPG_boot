@@ -169,6 +169,7 @@ export default function SectionCarousel({ onSectionChange }) {
           prog={pinnedProg}
           dots
           isFav
+          cta
           onToggleFav={onToggleFav}
           onOpen={guardedOpen}
           onDeleted={() => setPinnedTick(t => t + 1)}
