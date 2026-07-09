@@ -31,15 +31,6 @@ export default function SectionGlow({ color }) {
       : { ...prev, a: color, showA: true })
   }, [color])
 
-  // Красим КОРНЕВОЙ фон (html) в тёмный акцент раздела — его видно при нативном
-  // отскоке/оттяге, так зона того же цвета, без чёрной линии. НЕ сбрасываем при
-  // размонтировании: иначе уход со старой страницы стирал бы тон, который новая
-  // страница только что выставила (при переходе оба смонтированы). Последняя
-  // страница со свечением выигрывает; цвет обновляется на каждой такой странице.
-  useEffect(() => {
-    document.documentElement.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 14%, var(--color-bg))`)
-  }, [color])
-
   return (
     <div style={styles.glowWrap} aria-hidden="true">
       <div style={{ ...styles.glowLayer, background: glowBg(g.a), opacity: g.showA ? 1 : 0 }} />
