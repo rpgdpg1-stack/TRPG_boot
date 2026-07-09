@@ -602,6 +602,13 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 0; }
 }
 
+/* «Отжатие» (обратный пресс): карточка вырастает из чуть уменьшенной в нормальную —
+   один раз, при возврате/подсветке. Не пульс. */
+@keyframes returnRelease {
+  0%   { transform: scale(0.955); }
+  100% { transform: scale(1); }
+}
+
 /* Дневной буст: вылет +XP при закрытии слота (DailyQuests.jsx) */
 @keyframes rewardFloatUp {
   0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }

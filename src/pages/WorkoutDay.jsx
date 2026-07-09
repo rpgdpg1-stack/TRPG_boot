@@ -1267,7 +1267,12 @@ export default function WorkoutDay() {
                           if (el) cardRefs.current.set(slot.order_num, el)
                           else cardRefs.current.delete(slot.order_num)
                         }}
-                        style={{ position: 'relative' }}
+                        style={{
+                          position: 'relative',
+                          // «Отжатие»: при подсветке карточка вырастает из чуть
+                          // уменьшенной в нормальную (обратный пресс, один раз).
+                          ...(isGlowed ? { animation: 'returnRelease 0.34s cubic-bezier(0.22, 1, 0.36, 1)' } : null)
+                        }}
                       >
                         <ExerciseCard
                           slot={slot}
