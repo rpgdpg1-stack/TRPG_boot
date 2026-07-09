@@ -42,7 +42,7 @@ export default function SectionCarousel() {
   const [anim, setAnim] = useState(null) // { from, dir } во время перехода
   const [pinnedTick, setPinnedTick] = useState(0) // ре-чтение закрепа/последней
   const animTimer = useRef(null)
-  const swipe = useRef({ x: null, swiped: false })
+  const swipe = useRef({ x: null, y: null, swiped: false })
   const identityRef = useRef(null)
   const [pickerRect, setPickerRect] = useState(null) // null = закрыт
 
@@ -74,13 +74,22 @@ export default function SectionCarousel() {
     animTimer.current = setTimeout(() => setAnim(null), ANIM_MS)
   }
 
-  const onTouchStart = (e) => { swipe.current.x = e.touches[0].clientX; swipe.current.swiped = false }
+  const onTouchStart = (e) => {
+    swipe.current.x = e.touches[0].clientX
+    swipe.current.y = e.touches[0].clientY
+    swipe.current.swiped = false
+  }
   const onTouchEnd = (e) => {
     const startX = swipe.current.x
+    const startY = swipe.current.y
     swipe.current.x = null
+    swipe.current.y = null
     if (startX === null) return
     const dx = e.changedTouches[0].clientX - startX
-    if (Math.abs(dx) < 45) return
+    const dy = e.changedTouches[0].clientY - startY
+    // Не свайп разделов: слишком короткий по X, или жест вертикальный (это скролл).
+    if (Math.abs(dx) < 45 || Math.abs(dy) > Math.abs(dx)) return
+    // Горизонтальный свайп засчитан → жёстко гасим тап по карточке/иконке.
     swipe.current.swiped = true
     if (dx < 0) go((idx + 1) % cats.length, 'next')
     else go((idx - 1 + cats.length) % cats.length, 'prev')
@@ -94,7 +103,7 @@ export default function SectionCarousel() {
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
   const lastText = pinnedProg
     ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
-    : ' '
+    : null
 
   const openSection = () => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }
 
@@ -143,8 +152,9 @@ export default function SectionCarousel() {
         ))}
       </div>
 
-      {/* Последняя тренировка в разделе (по закреплённой программе) */}
-      <div style={styles.lastLine}>{lastText}</div>
+      {/* Последняя тренировка в разделе (по закреплённой программе).
+          Нет закрепа — строку не рендерим, чтобы не оставлять пустой зазор. */}
+      {lastText && <div style={styles.lastLine}>{lastText}</div>}
 
       {/* Закреплённая программа — сама карточка, как внутри раздела */}
       {pinnedProg ? (
@@ -166,7 +176,7 @@ export default function SectionCarousel() {
 
       {/* Все программы — текст-ссылка со стрелкой вниз (на экран раздела) */}
       <button style={styles.allLink} className="tg-row" onClick={openSection}>
-        Все программы <span style={styles.chev}>⌄</span>
+        Все программы <span style={styles.chev}>›</span>
       </button>
 
       {pickerRect && (
@@ -259,5 +269,5 @@ const styles = {
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
-  chev: { fontSize: '15px', lineHeight: 1, marginTop: '-2px' }
+  chev: { fontSize: '17px', lineHeight: 1, marginTop: '-1px' }
 }

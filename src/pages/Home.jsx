@@ -211,16 +211,6 @@ const styles = {
   scrollSection: {
     position: 'relative'
   },
-  sectionHeader: {
-    fontFamily: 'var(--font-manrope)',
-    fontWeight: 700,
-    fontSize: '15px',
-    color: 'rgba(255, 255, 255, 0.6)',
-    letterSpacing: '0.2px',
-    marginTop: '20px',
-    marginBottom: '12px',
-    paddingLeft: '4px'
-  },
   // Статус недели — серая пилюля по центру экрана.
   weekStatusWrap: {
     display: 'flex',
@@ -246,60 +236,5 @@ const styles = {
     fontWeight: 700,
     fontSize: '12px',
     color: '#FF8C42'
-  },
-  // Строка заголовка ИЗБРАННОЕ: label слева, «Все ›» справа.
-  favHeaderRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 0,
-    marginBottom: '12px',
-    paddingLeft: '4px'
-  },
-  seeAllBtn: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    padding: '2px 4px'
-  },
-  favEmpty: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    width: '100%',
-    minHeight: '130px',
-    padding: '10px 18px',
-    background: 'var(--surface)',
-    border: '1px dashed rgba(255,255,255,0.1)',
-    borderRadius: 'var(--radius-card)',
-    cursor: 'pointer'
-  },
-  favEmptyText: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.5,
-    maxWidth: '264px'
-  },
-  favSkeleton: {
-    minHeight: '130px',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    opacity: 0.4
-  },
-  favSlider: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px'
-  },
-  favSwipeArea: {
-    touchAction: 'pan-y'
   }
 }
