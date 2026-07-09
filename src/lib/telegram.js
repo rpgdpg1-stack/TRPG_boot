@@ -6,6 +6,9 @@
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
 const APP_BG = '#0A0A0B'
+// Текущий нативный фон вебвью (= цвет зоны оттяга). Меняется setOverscrollAccent /
+// resetOverscrollAccent; paintTelegramChrome переустанавливает именно его.
+let currentWebviewBg = APP_BG
 
 // Текущие обработчики кнопок — нужны чтобы корректно их удалять при смене.
 // offClick() без аргумента в новых версиях Telegram может не работать —
@@ -99,7 +102,10 @@ export function paintTelegramChrome() {
 
   try {
     if (typeof tg.setBackgroundColor === 'function') {
-      tg.setBackgroundColor(APP_BG)
+      // НЕ голый APP_BG: фон вебвью = зона оттяга, её мог покрасить setOverscrollAccent
+      // (акцент раздела). Иначе пробуждение из фона (resyncTelegramChrome) затирало
+      // бы акцент тёмным до следующего перехода.
+      tg.setBackgroundColor(currentWebviewBg)
     }
   } catch (e) { /* ignore */ }
 
@@ -162,6 +168,42 @@ export function lockVerticalSwipes() {
   if (typeof tg.disableVerticalSwipes === 'function') {
     try { tg.disableVerticalSwipes() } catch (e) { /* ignore */ }
   }
+}
+
+/**
+ * ГРАБЛИ (зона оттяга/оверскролла): при резинке Telegram показывает НАТИВНЫЙ фон
+ * вебвью (setBackgroundColor), а не CSS-канвас страницы — красить оттяг надо ИМЕННО
+ * его. CSS-слои (свечение с отрицательным top, фон html) в оттяге ненадёжны:
+ * после ремаунта страницы WebKit их не рисует. Хелпер миксует акцент раздела (12%)
+ * с APP_BG и ставит нативный фон; resetOverscrollAccent() возвращает тёмный.
+ * cssColor — 'var(--x)' или hex; var резолвится через getComputedStyle.
+ */
+export function setOverscrollAccent(cssColor) {
+  try {
+    let c = String(cssColor || '').trim()
+    const varMatch = c.match(/^var\((--[^),\s]+)/)
+    if (varMatch) c = getComputedStyle(document.documentElement).getPropertyValue(varMatch[1]).trim()
+    const hex = c.match(/^#?([0-9a-f]{6})$/i)?.[1]
+    if (!hex) { resetOverscrollAccent(); return }
+    const mix = (i) => {
+      const acc = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
+      const bg = parseInt(APP_BG.slice(1 + i * 2, 3 + i * 2), 16)
+      return Math.round(acc * 0.12 + bg * 0.88).toString(16).padStart(2, '0')
+    }
+    const mixed = `#${mix(0)}${mix(1)}${mix(2)}`
+    currentWebviewBg = mixed
+    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(mixed)
+    // Дублируем в CSS-переменную — для десктопа/браузера, где нативного фона нет.
+    document.documentElement.style.setProperty('--overscroll-tint', mixed)
+  } catch (e) { /* ignore */ }
+}
+
+export function resetOverscrollAccent() {
+  try {
+    currentWebviewBg = APP_BG
+    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
+    document.documentElement.style.removeProperty('--overscroll-tint')
+  } catch (e) { /* ignore */ }
 }
 
 export function getUser() {

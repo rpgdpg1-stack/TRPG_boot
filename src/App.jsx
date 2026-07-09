@@ -27,7 +27,7 @@ import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
 import ProgramConstructor from './pages/ProgramConstructor'
 
-import { initTelegram, settingsButton } from './lib/telegram'
+import { initTelegram, settingsButton, setOverscrollAccent, resetOverscrollAccent } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummaryShown } from './lib/rewards'
 import { getPendingBackups } from './lib/backups'
@@ -190,13 +190,13 @@ function ScrollToTopOnNavigate() {
 }
 
 /**
- * ЕДИНСТВЕННЫЙ ответственный за --overscroll-tint (цвет зоны нативного оттяга сверху,
- * см. градиент фона html в index.css). На КАЖДЫЙ переход детерминированно: главная —
- * цвет последнего раздела карусели; экран раздела — цвет раздела; прочие — сброс.
- * ГРАБЛИ: раньше тинт ставил/стирал SectionGlow в mount/cleanup — при переходах между
- * страницами порядок эффектов не гарантирован, тинт «терялся» (чёрный оттяг после
- * возврата на главную). Не возвращать управление тинтом в компоненты страниц!
- * (SectionGlow лишь ОБНОВЛЯЕТ цвет при свайпе разделов на главной — не стирает.)
+ * ЕДИНСТВЕННЫЙ ответственный за цвет зоны нативного оттяга (резинки). ГРАБЛИ: при
+ * резинке Telegram показывает НАТИВНЫЙ фон вебвью (tg.setBackgroundColor), а не
+ * CSS-канвас — красим его через setOverscrollAccent (миксует акцент с тёмным).
+ * На КАЖДЫЙ переход детерминированно: главная — цвет последнего раздела карусели;
+ * экран раздела — цвет раздела; прочие страницы — resetOverscrollAccent (тёмный).
+ * Не возвращать управление тинтом в компоненты страниц (mount/cleanup-гонки).
+ * (SectionGlow лишь ОБНОВЛЯЕТ цвет при свайпе разделов на главной — не сбрасывает.)
  */
 function OverscrollTintController() {
   const { pathname } = useLocation()
@@ -208,9 +208,8 @@ function OverscrollTintController() {
     } else if (pathname.startsWith('/category/')) {
       color = CATEGORY_META[pathname.split('/')[2]]?.color || null
     }
-    const el = document.documentElement
-    if (color) el.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 12%, var(--color-bg))`)
-    else el.style.removeProperty('--overscroll-tint')
+    if (color) setOverscrollAccent(color)
+    else resetOverscrollAccent()
   }, [pathname])
   return null
 }
