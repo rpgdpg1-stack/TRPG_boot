@@ -267,7 +267,9 @@ const styles = {
   pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
   allLink: {
     width: '100%',
-    marginTop: '12px',
+    // Отступ от карточки — как зазор у строки «последняя тренировка» (~12px),
+    // а не 22: визуально ссылка была слишком далеко внизу.
+    marginTop: '2px',
     padding: '10px',
     background: 'transparent',
     border: 'none',

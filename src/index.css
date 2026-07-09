@@ -360,6 +360,10 @@ body.keyboard-open .app::after { display: none; }
 }
 .pop-scale { animation: popScale 0.62s ease-in-out; }
 
+/* Кружок pull-to-refresh во время обновления — бесконечное вращение. */
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
+.ptr-spin { animation: ptrSpin 0.7s linear infinite; }
+
 /* Морф кнопки «Начать» → «Завершить»: короткий squish на старте (цвет меняется
    через собственные CSS-переходы ActionButton). */
 @keyframes btnMorph {
