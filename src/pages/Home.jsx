@@ -1,26 +1,18 @@
-import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
-import { getActiveDay, loadFavoritesEntries, getFavoritesEntriesSync, toggleFavoriteProgram } from '../lib/storage'
-import { getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { localGet, localSet } from '../utils/storage'
 import { getCurrentUser } from '../lib/auth'
 import { getCurrentWeekKey } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
-import ProgramCard from '../components/ProgramCard'
-import FavHint from '../components/FavHint'
-import CategorySwiper from '../components/CategorySwiper'
+import SectionCarousel from '../components/SectionCarousel'
 import DailyQuests from '../components/DailyQuests'
 import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 
-// Ключ последней пролистанной избранной программы (синкается между устройствами)
-const FAV_LAST_SLUG_KEY = 'fav-last-slug'
-
-// Свёрнутость секций главной (РАЗДЕЛЫ / ДНЕВНОЙ БУСТ) — кросс-девайс через
+// Свёрнутость секций главной (Активности / История) — кросс-девайс через
 // CloudStorage (+ локальный кеш для мгновенного старта). JSON-карта { key: true }.
 const COLLAPSE_KEY = 'home-sections-collapsed'
 function readCollapsedSync() {
@@ -76,25 +68,11 @@ const homeSectionStyles = {
   }
 }
 
-// Синхронная сборка избранного из localStorage для мгновенного первого рендера.
-function buildFavSync(slug, activeDay) {
-  const prog = getProgramBySlug(slug)
-  if (!prog) return null
-  return { prog, activeDay }
-}
-
-// Найти индекс избранного по сохранённому slug. -1 → 0.
-function indexBySlug(entries, slug) {
-  if (!slug) return 0
-  const i = entries.findIndex(e => e.prog.slug === slug)
-  return i >= 0 ? i : 0
-}
-
 /**
  * Главная — Тренировки.
  *
- * Структура: ИЗБРАННОЕ (закреплено сверху) → РАЗДЕЛЫ → ДНЕВНОЙ БУСТ.
- * РАЗДЕЛЫ и ДНЕВНОЙ БУСТ сворачиваются тапом по заголовку (шеврон справа),
+ * Структура: заголовок + неделя (закреп сверху) → КАРУСЕЛЬ РАЗДЕЛОВ → Активности → История.
+ * Активности и История сворачиваются тапом по заголовку (шеврон справа),
  * состояние кросс-девайс (CloudStorage, ключ home-sections-collapsed).
  * Дневной буст (DailyQuests) продублирован здесь и в Профиле.
  *
@@ -103,22 +81,7 @@ function indexBySlug(entries, slug) {
  * (localStorage + Telegram CloudStorage).
  */
 export default function Home() {
-  const navigate = useNavigate()
-
-  const initialFavs = getFavoritesEntriesSync(buildFavSync) || []
-  const savedSlug = localGet(FAV_LAST_SLUG_KEY)
-
-  const [favorites, setFavorites] = useState(initialFavs)
-  const [favIdx, setFavIdx] = useState(() => indexBySlug(initialFavs, savedSlug))
-  const [favLoaded, setFavLoaded] = useState(() => getFavoritesEntriesSync(buildFavSync) !== null)
-
-  // Состояние свайпа: стартовая X и флаг "только что свайпнули".
-  const swipeRef = useRef({ x: null, swiped: false })
-
-  // Направление лёгкой анимации заезда карточки избранного при смене слайда.
-  const [slideDir, setSlideDir] = useState(null)
-
-  // Свёрнутость секций (РАЗДЕЛЫ / ДНЕВНОЙ БУСТ): старт из локального кеша,
+  // Свёрнутость секций (АКТИВНОСТИ / ИСТОРИЯ): старт из локального кеша,
   // догоняем из облака. true = свёрнуто.
   const [collapsed, setCollapsed] = useState(readCollapsedSync)
 
@@ -156,109 +119,10 @@ export default function Home() {
     return () => { off1(); off2() }
   }, [])
 
-  // Разделы — по умолчанию раскрыты; Дневной буст — по умолчанию свёрнут (компактно).
-  const sectionsCollapsed = !!collapsed.sections
+  // Дневной буст — по умолчанию свёрнут (компактно); История — раскрыта.
   const boostCollapsed = collapsed.boost !== false
   const historyCollapsed = !!collapsed.history // по умолчанию раскрыта
   const weeklyCount = readWeeklyCount()
-
-  // Фоновое обновление избранного (вдруг менялось с другого устройства).
-  useEffect(() => {
-    let cancelled = false
-    loadFavoritesEntries(async (slug) => {
-      const prog = getProgramBySlug(slug)
-      if (!prog) return null
-      const activeDay = await getActiveDay(slug)
-      return { prog, activeDay }
-    }).then(async entries => {
-      if (cancelled) return
-      setFavorites(entries)
-      let slug = null
-      try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
-      if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
-      const idx = indexBySlug(entries, slug)
-      if (!cancelled) {
-        setFavIdx(Math.min(idx, Math.max(0, entries.length - 1)))
-        setFavLoaded(true)
-      }
-    })
-    return () => { cancelled = true }
-  }, [])
-
-  // Перейти к слайду i и запомнить его slug (локально + в облако).
-  const goFav = (i, dir) => {
-    if (dir) setSlideDir(dir)
-    setFavIdx(i)
-    const slug = favorites[i]?.prog?.slug
-    if (slug) {
-      localSet(FAV_LAST_SLUG_KEY, slug)
-      cloudSet(FAV_LAST_SLUG_KEY, slug)
-    }
-  }
-
-  const handleFavTouchStart = (e) => {
-    swipeRef.current.x = e.touches[0].clientX
-    swipeRef.current.swiped = false
-  }
-
-  const handleFavTouchEnd = (e) => {
-    const startX = swipeRef.current.x
-    swipeRef.current.x = null
-    if (startX === null || favorites.length < 2) return
-
-    const dx = e.changedTouches[0].clientX - startX
-    if (Math.abs(dx) < 50) return // это тап, не свайп
-
-    swipeRef.current.swiped = true
-    haptic.light()
-    if (dx < 0) {
-      goFav((favIdx + 1) % favorites.length, 'right')
-    } else {
-      goFav((favIdx - 1 + favorites.length) % favorites.length, 'left')
-    }
-    setTimeout(() => { swipeRef.current.swiped = false }, 120)
-  }
-
-  const handleFavOpen = () => {
-    if (swipeRef.current.swiped) return
-    haptic.light()
-    const fav = favorites[favIdx]
-    if (!fav) return
-    if (fav.prog.kind === 'swim') {
-      setTimeout(() => navigate(`/swim/${fav.prog.slug}`, { state: { fromHome: true } }), 80)
-      return
-    }
-    const firstDay = fav.prog.data?.days ? Object.keys(fav.prog.data.days)[0] : 'A'
-    const day = fav.activeDay || firstDay
-    setTimeout(() => navigate(`/workout/${fav.prog.slug}/${day}`, { state: { fromHome: true } }), 80)
-  }
-
-  // Перезагрузка избранного (после тоггла/удаления из меню карточки).
-  const reloadFavs = async () => {
-    const entries = await loadFavoritesEntries(async (slug) => {
-      const prog = getProgramBySlug(slug)
-      if (!prog) return null
-      const activeDay = await getActiveDay(slug)
-      return { prog, activeDay }
-    })
-    let slug = null
-    try { slug = await cloudGet(FAV_LAST_SLUG_KEY) } catch { /* ignore */ }
-    if (!slug) slug = localGet(FAV_LAST_SLUG_KEY)
-    const idx = indexBySlug(entries, slug)
-    setFavIdx(entries.length ? Math.min(Math.max(idx, 0), entries.length - 1) : 0)
-    setFavorites(entries)
-    setFavLoaded(true)
-  }
-
-  const handleHomeFavToggle = async () => {
-    const fav = favorites[favIdx]
-    if (!fav) return
-    await toggleFavoriteProgram(fav.prog.category, fav.prog.slug)
-    await reloadFavs()
-  }
-
-  // Индекс карусели, зажатый в границы.
-  const favSafeIdx = favorites.length ? Math.min(Math.max(favIdx, 0), favorites.length - 1) : 0
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -284,64 +148,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Избранное — заголовок-label (НЕ сворачивается) + «Все ›» справа. */}
-        <div style={styles.favHeaderRow}>
-          <span style={{ ...styles.sectionHeader, marginTop: 0, marginBottom: 0, paddingLeft: 0 }}>Избранное</span>
-          <button onClick={() => { haptic.light(); navigate('/favorites') }} style={styles.seeAllBtn}>
-            Все ›
-          </button>
-        </div>
-
-        {!favLoaded ? (
-          <div style={styles.favSkeleton} />
-        ) : favorites.length === 0 ? (
-          <button
-            onClick={() => { haptic.light(); navigate('/favorites') }}
-            className="press-tile"
-            style={styles.favEmpty}
-          >
-            <span style={styles.favEmptyText}>
-              Добавь в избранное программу внутри раздела — она появится здесь
-            </span>
-            <FavHint />
-          </button>
-        ) : (
-          <div style={styles.favSlider}>
-            <div
-              onTouchStart={handleFavTouchStart}
-              onTouchEnd={handleFavTouchEnd}
-              style={styles.favSwipeArea}
-            >
-              <div
-                key={favSafeIdx}
-                className={slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined}
-              >
-                <ProgramCard
-                  prog={favorites[favSafeIdx].prog}
-                  dots
-                  lastTrained
-                  isFav
-                  onToggleFav={handleHomeFavToggle}
-                  onOpen={handleFavOpen}
-                  onDeleted={reloadFavs}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Fade-scrim: контент уходит под закреплённый блок плавно. */}
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
-      {/* Скроллящийся контент: разделы + дневной буст (обе секции сворачиваются
-          тапом по заголовку, плавно; избранное выше — не сворачивается). */}
+      {/* Скроллящийся контент: карусель разделов (вместо избранного) + активности + история. */}
       <div style={styles.scrollSection}>
-        <SectionToggle
-          title="Разделы"
-          onToggle={() => setCollapse('sections', !sectionsCollapsed)}
-        />
-        <Collapsible open={!sectionsCollapsed}><CategorySwiper /></Collapsible>
+        {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
+            (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
+        <div style={{ marginTop: '4px' }}>
+          <SectionCarousel />
+        </div>
 
         {/* Активности — просто заголовок (без статуса N/3), всё внутри карточки. */}
         <SectionToggle
