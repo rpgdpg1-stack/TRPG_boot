@@ -141,6 +141,8 @@ export default function WorkoutDay() {
   const [alreadyToday, setAlreadyToday] = useState(false)
 
   const [actionSlot, setActionSlot] = useState(null)
+  // Момент закрытия модалки заметки — гасим «призрачный» тап по упражнению под ней.
+  const actionClosedAtRef = useRef(0)
   // Меню «⋯» у упражнения: заметка / техника / замена (привязано к кнопке).
   const [dotsSlot, setDotsSlot] = useState(null)
   const [dotsAnchor, setDotsAnchor] = useState(null)
@@ -163,7 +165,10 @@ export default function WorkoutDay() {
   // Инициализация без мигания: активный день сразу пилюля.
   const [collapse, setCollapse] = useState(() => {
     const a = getActiveWorkout()
-    return (a && a.programId === programId && a.day === day) ? 1 : 0
+    if (a && a.programId === programId && a.day === day) return 1
+    // Возврат с Инфо/Замены на прокрученную позицию — шапка СРАЗУ пилюля, чтобы
+    // список не уезжал вверх морфом после восстановления скролла.
+    return (location.state?.scrollY || 0) > 30 ? 1 : 0
   })
   const collapseRef = useRef(0)
   collapseRef.current = collapse
@@ -228,8 +233,10 @@ export default function WorkoutDay() {
   // Две высоты шапки НЕактивного дня: наверху высокая, при скролле вниз — компактная
   // (но НЕ пилюля). Булев со ЗНАЧИТЕЛЬНЫМ гистерезисом (вход >30px, выход <10px),
   // чтобы не мигало на границе. Апдейтит скролл-лисенер.
-  const [headerMin, setHeaderMin] = useState(false)
-  const headerMinRef = useRef(false)
+  // Стартовое «компактно» — по восстанавливаемому скроллу (возврат с Инфо/Замены),
+  // чтобы шапка сразу была пилюлей и морф не дёргал список.
+  const [headerMin, setHeaderMin] = useState(() => (location.state?.scrollY || 0) > 30)
+  const headerMinRef = useRef((location.state?.scrollY || 0) > 30)
   const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const sectionsRef = useRef([])              // текущие секции
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
@@ -459,10 +466,12 @@ export default function WorkoutDay() {
     }
   }, [loading, slots])
 
-  // При смене дня/места прячем пилюлю и раскрываем шапку в полный размер (новый
-  // день открывается сверху; для активного дня трекер тут же подстроит под
-  // восстановленную позицию).
+  // При СМЕНЕ дня/места прячем пилюлю и раскрываем шапку (новый день открывается
+  // сверху). Первый маунт НЕ трогаем — там init уже верный (возврат с Инфо/Замены
+  // на прокрученную позицию должен остаться пилюлей, без раскрытия и уезда списка).
+  const dayResetMountRef = useRef(false)
   useLayoutEffect(() => {
+    if (!dayResetMountRef.current) { dayResetMountRef.current = true; return }
     setHeaderMin(false)
     headerMinRef.current = false
     pillCycleRef.current = 0
@@ -591,6 +600,8 @@ export default function WorkoutDay() {
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
     if (actionSlot) return
+    // Только что закрыли модалку заметки — не считаем «призрачный» тап по упражнению.
+    if (Date.now() - actionClosedAtRef.current < 400) return
     // Галочки доступны только когда тренировка начата (этот день активен).
     // Иначе тап ничего не делает (долгое нажатие — заметки — работает отдельно).
     if (!isThisActive) { haptic.light(); return }
@@ -1269,9 +1280,8 @@ export default function WorkoutDay() {
                         }}
                         style={{
                           position: 'relative',
-                          // «Отжатие»: при подсветке карточка вырастает из чуть
-                          // уменьшенной в нормальную (обратный пресс, один раз).
-                          ...(isGlowed ? { animation: 'returnRelease 0.34s cubic-bezier(0.22, 1, 0.36, 1)' } : null)
+                          // Пресс-эффект при подсветке — как везде (вжим и обратно, один раз).
+                          ...(isGlowed ? { animation: 'returnPress 0.36s var(--press-ease)' } : null)
                         }}
                       >
                         <ExerciseCard
@@ -1345,9 +1355,10 @@ export default function WorkoutDay() {
           onWeightSaved={handleWeightSaved}
           onClose={() => {
             const orderNum = actionSlot.order_num
+            actionClosedAtRef.current = Date.now() // гасим призрачный тап по карточке под крестиком
             setActionSlot(null)
-            // Тот же эффект что при возврате с Инфо/Смены: светло-серая заливка
-            // карточки, которую долго тапнули (без пресс-эффекта).
+            // Тот же эффект что при возврате с Инфо/Смены: пресс-эффект + светло-серая
+            // заливка карточки, которую долго тапнули.
             setGlowedOrderNum(orderNum)
             setTimeout(() => setGlowedOrderNum(null), 1600)
           }}

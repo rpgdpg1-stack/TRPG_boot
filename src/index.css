@@ -602,10 +602,11 @@ body.keyboard-open .app::after { display: none; }
   100% { opacity: 0; }
 }
 
-/* «Отжатие» (обратный пресс): карточка вырастает из чуть уменьшенной в нормальную —
-   один раз, при возврате/подсветке. Не пульс. */
-@keyframes returnRelease {
-  0%   { transform: scale(0.955); }
+/* Пресс-эффект при возврате/подсветке карточки — как везде (press-tile): быстрый
+   «вжим» до --press-scale и обратно, один раз. */
+@keyframes returnPress {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(var(--press-scale)); }
   100% { transform: scale(1); }
 }
 
