@@ -12,6 +12,7 @@ import BackupAllButton from '../components/BackupAllButton'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import BackupSentToast from '../components/rewards/BackupSentToast'
 import UiIcon from '../components/UiIcon'
+import PinIcon from '../components/PinIcon'
 import { BACKUP_BONUS } from '../lib/backups'
 
 /**
@@ -226,7 +227,7 @@ function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
   return createPortal(
     <div style={pinStyles.overlay} onClick={onClose}>
       <div style={pinStyles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={pinStyles.icon}>📌</div>
+        <div style={pinStyles.icon}><PinIcon filled={isPinned} size={40} /></div>
         <div style={pinStyles.title}>{name}</div>
         <div style={pinStyles.subtitle}>
           {isPinned
@@ -237,7 +238,7 @@ function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
         {errorText && <div style={pinStyles.error}>{errorText}</div>}
 
         <button onClick={onToggle} style={isPinned ? pinStyles.unpinButton : pinStyles.pinButton}>
-          {isPinned ? 'ОТКРЕПИТЬ' : '📌 ЗАКРЕПИТЬ'}
+          {isPinned ? 'ОТКРЕПИТЬ' : 'ЗАКРЕПИТЬ'}
         </button>
         <button onClick={onClose} style={pinStyles.close}>ОТМЕНА</button>
       </div>

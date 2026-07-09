@@ -12,7 +12,8 @@ import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
 import AnchorMenu from './AnchorMenu'
 import UiIcon from './UiIcon'
-import PixelHeart from './PixelHeart'
+import PinIcon from './PinIcon'
+import PencilIcon from './PencilIcon'
 
 /**
  * Единая карточка программы — Главная / Избранное / Раздел.
@@ -176,6 +177,14 @@ export default function ProgramCard({
         <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
       )}
 
+      {/* Серый карандаш слева от «⋯» — статус-индикатор «созданная мной программа»
+          (не нажимается; редактирование — через меню «⋯»). */}
+      {dots && available && prog.editable && (
+        <span style={styles.editBadge} aria-hidden="true">
+          <PencilIcon size={13} color="var(--color-text-secondary)" />
+        </span>
+      )}
+
       {anchorRect && (
         <AnchorMenu
           anchorRect={anchorRect}
@@ -183,14 +192,14 @@ export default function ProgramCard({
           items={[
             {
               key: 'fav',
-              icon: <PixelHeart filled={isFav} size={20} />,
+              icon: <PinIcon filled={isFav} size={20} />,
               label: isFav ? 'Открепить' : 'Закрепить',
               haptic: 'medium',
               onClick: () => onToggleFav?.()
             },
             ...(prog.editable ? [
               { divider: true },
-              { key: 'edit', icon: <UiIcon name="change" size={20} color="#3FA2F7" />, label: 'Редактировать', onClick: handleEdit },
+              { key: 'edit', icon: <PencilIcon size={20} color="var(--cat-cardio)" />, label: 'Редактировать', onClick: handleEdit },
               { key: 'share', icon: <UiIcon name="invite-friend" size={20} color="#9ED153" />, label: 'Поделиться', onClick: handleShare },
               { key: 'delete', icon: <TrashIcon />, label: 'Удалить', labelColor: '#E84545', onClick: handleDelete }
             ] : [])
@@ -294,6 +303,16 @@ const styles = {
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },
+  // Индикатор «созданная программа» — карандаш слева от «⋯», по центру его высоты.
+  editBadge: {
+    position: 'absolute',
+    top: '15px',
+    right: '48px',
+    display: 'inline-flex',
+    opacity: 0.75,
+    pointerEvents: 'none',
+    zIndex: 2
+  },
   dotsBtn: {
     position: 'absolute',
     top: '8px',

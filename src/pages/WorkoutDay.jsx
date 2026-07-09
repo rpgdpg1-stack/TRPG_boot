@@ -104,6 +104,11 @@ const TIMER_COLORS = {
 // Общая оценка дня = число упражнений × это значение (напр. 8 → ~56 мин, 10 → ~1 ч 10 мин).
 const EST_MIN_PER_EXERCISE = 7
 
+// Источник входа в тренировку (true = с главной, false = из раздела). Модульная Map
+// переживает очистку location.state (после возврата с Инфо/Замены) и перемонтирование —
+// «Назад» всегда ведёт туда, откуда зашли. Ключ — programId.
+const workoutEntryFromHome = new Map()
+
 /** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
 function CrossIcon({ size = 16 }) {
   return (
@@ -301,16 +306,20 @@ export default function WorkoutDay() {
   useEffect(() => () => { if (startBlockTimer.current) clearTimeout(startBlockTimer.current) }, [])
 
   useEffect(() => {
-    // Если пришли из избранного на главной (state.fromHome) — кнопка "Назад"
-    // ведёт на главную. Иначе как обычно — в категорию программы.
-    const fromHome = location.state?.fromHome === true
+    // Запоминаем источник входа ТОЛЬКО при свежем входе (с главной/раздела или свайпе
+    // дня). Возврат с Инфо/Замены (returnedFromOrderNum) не трогает — источник хранится
+    // в Map и переживает очистку state. Кнопка "Назад" ведёт туда, откуда зашли.
+    const returningFromSub = location.state?.returnedFromOrderNum != null
+    if (!returningFromSub) {
+      workoutEntryFromHome.set(programId, location.state?.fromHome === true)
+    }
     const categoryId = program?.category || 'gym'
     backButton.setHandler(() => {
-      if (fromHome) navigate('/')
+      if (workoutEntryFromHome.get(programId)) navigate('/')
       else navigate(`/category/${categoryId}`)
     })
     lockVerticalSwipes()
-  }, [navigate, program, location.state])
+  }, [navigate, program, location.state, programId])
 
   // Галочки показываем/грузим только для активного дня. Неактивный день (другой
   // или сессия не начата) — всегда пустой (0 отжатых), отмечать нельзя.
@@ -588,8 +597,13 @@ export default function WorkoutDay() {
       setTimeout(() => setSwappedOrderNum(null), 2600)
     }
 
-    navigate(location.pathname, { replace: true, state: null })
-  }, [loading, slots.length, location.state, location.pathname, navigate])
+    // Чистим returnedFromOrderNum (чтобы подсветка не повторялась при свайпе дней),
+    // но СОХРАНЯЕМ источник входа — иначе «Назад» после Инфо/Замены уводил не туда.
+    navigate(location.pathname, {
+      replace: true,
+      state: workoutEntryFromHome.get(programId) ? { fromHome: true } : null
+    })
+  }, [loading, slots.length, location.state, location.pathname, navigate, programId])
 
   const handleCardTap = (slot) => {
     if (showFinishedModal) return
