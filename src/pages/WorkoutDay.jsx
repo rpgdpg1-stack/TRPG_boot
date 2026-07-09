@@ -201,6 +201,9 @@ export default function WorkoutDay() {
   // Тап по пилюле (сжатая шапка): «растущее» нажатие + цикл по неотжатым.
   const [pillArmed, setPillArmed] = useState(false)
   const pillCycleRef = useRef(0)
+  // Пульс «появления значений» после «Начать» отложен до конца морфа большая→пилюля.
+  // Если шапка уже пилюля (пролистано) — играем сразу в handleStart, ref не ставим.
+  const startPulseRef = useRef(false)
   const headerCardRef = useRef(null)
   const [swappedOrderNum, setSwappedOrderNum] = useState(null)
 
@@ -763,16 +766,25 @@ export default function WorkoutDay() {
     overloadShownRef.current = false
     hideOverload()
     startActiveWorkout(programId, day, place)
-    // Пульс-акцент «тренировка началась»: время + счётчик + крестик (появляется).
+    // Появление значений (время/счётчик/крестик) на старте:
+    //  • шапка была большой → пилюля соберётся морфом, пульс сыграем в конце морфа;
+    //  • шапка уже пилюля (пролистано вниз) → морфа не будет, играем появление сразу.
     // Буква на старте НЕ пульсирует — только когда потом свайпнешь на активный день.
-    // Пульс значений НЕ здесь: он играет в конце морфа шапки в пилюлю (см. эффект ниже).
+    if (collapseRef.current >= 0.999) {
+      firePulse(setTimePulse, 'time')
+      firePulse(setStartedPulse, 'count')
+      firePulse(setCrossPulse, 'cross')
+    } else {
+      startPulseRef.current = true
+    }
     setBtnMorph(true)
     setTimeout(() => setBtnMorph(false), 460)
   }
 
-  // Целевое сжатие: активный день — пилюля (1); неактивный — ДВЕ высоты: компактная
-  // (0.6 — буква мелкая, НО не пилюля) при скролле вниз / высокая (0) наверху.
-  const collapseTarget = isThisActive ? 1 : (headerMin ? 0.6 : 0)
+  // Целевое сжатие: пилюля (1) — на активном дне ИЛИ при скролле вниз (headerMin);
+  // высокая шапка (0) — только наверху. Промежуточного «второго состояния» больше нет:
+  // как начал листать — сразу собирается в пилюлю (как при «Начать»).
+  const collapseTarget = (isThisActive || headerMin) ? 1 : 0
 
   // Морф шапки к целевому сжатию: навигация/первый заход — мгновенно; смена цели
   // (снап между двумя высотами ИЛИ старт/завершение) — плавный твин ИЗ ТЕКУЩЕГО
@@ -802,8 +814,9 @@ export default function WorkoutDay() {
       if (p < 1) { collapseRafRef.current = requestAnimationFrame(step) }
       else {
         collapseRafRef.current = 0
-        if (target >= 0.999) {
-          // Пилюля собралась — проиграть увеличение значений.
+        if (target >= 0.999 && startPulseRef.current) {
+          // Пилюля собралась ПОСЛЕ «Начать» (не от скролла) — проиграть появление значений.
+          startPulseRef.current = false
           firePulse(setTimePulse, 'time')
           firePulse(setStartedPulse, 'count')
           firePulse(setCrossPulse, 'cross')
@@ -947,12 +960,13 @@ export default function WorkoutDay() {
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
 
   // Всё сжатие идёт от анимированного `collapse` (к целевому `collapseTarget`):
-  //  • НЕактивный: 0 (высокая) ↔ 0.6 (компактная, буква 24, НЕ пилюля).
-  //  • Активный: →1 (пилюля). letterShrink 0→1 при collapse 0→0.6; rowCollapse
-  //    (строка-пилюля) — только на активном дне, 0.5→1.
+  //  • 0 — высокая шапка; 1 — пилюля (строка). letterShrink 0→1 при collapse 0→0.6
+  //    (большая буква мельчает), rowCollapse 0→1 при collapse 0.5→1 (буква/счётчик
+  //    въезжают в строку, большой блок и место сворачиваются). Одинаково для
+  //    активного и неактивного дня — разница только в содержимом строки.
   const letterShrink = Math.min(1, Math.max(0, collapse / 0.6))
   const dayLetterSize = 45 - letterShrink * 21
-  const rowCollapse = isThisActive ? Math.min(1, Math.max(0, (collapse - 0.5) / 0.5)) : 0
+  const rowCollapse = Math.min(1, Math.max(0, (collapse - 0.5) / 0.5))
 
   // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
   // плавный скролл к следующему НЕотжатому (по кругу сверху вниз) + зелёная
