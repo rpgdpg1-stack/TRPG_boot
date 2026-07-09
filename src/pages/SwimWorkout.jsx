@@ -21,6 +21,8 @@ import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
+import SectionGlow from '../components/SectionGlow'
+import { CATEGORY_META } from '../features/programs/categories'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -210,6 +212,9 @@ export default function SwimWorkout() {
 
   return (
     <div style={styles.page}>
+      {/* Акцентное свечение шапки в цвет раздела «Плавание» (как на главной/разделе). */}
+      <SectionGlow color={CATEGORY_META[program?.category || 'pool']?.color || 'var(--color-primary)'} />
+
       <ScreenTitle>Заплыв 45</ScreenTitle>
 
       {/* Закреплённая шапка-карточка: синяя волна + стеклянная обводка */}
@@ -502,7 +507,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 }
 
 const styles = {
-  page: { padding: '0 16px 100px', minHeight: '100dvh' },
+  page: { position: 'relative', padding: '0 16px 100px', minHeight: '100dvh' },
   stickyHeader: {
     position: 'sticky',
     top: 0,
@@ -592,7 +597,7 @@ const styles = {
   },
   metersSubCompact: { top: 'calc(50% + 15px)' },
 
-  body: { paddingTop: '16px' },
+  body: { position: 'relative', zIndex: 1, paddingTop: '16px' },
 
   // Блок = одна карточка 33px: тёмная шапка + светлые упражнения + степпер.
   blockCard: {

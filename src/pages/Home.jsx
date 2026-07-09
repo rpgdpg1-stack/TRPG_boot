@@ -74,9 +74,9 @@ const homeSectionStyles = {
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
 // PTR_REVEAL — «мёртвая зона»: сперва тянется невидимый верх, кольцо появляется только
 // после неё (как в Instagram/Telegram), дальше заполняется до порога.
-const PTR_REVEAL = 24
-const PTR_THRESH = 78
-const PTR_MAX = 130
+const PTR_REVEAL = 14
+const PTR_THRESH = 90
+const PTR_MAX = 150
 
 // Pull-to-refresh: НЕ двигаем контент и НЕ блокируем жест — верх тянет нативный
 // отскок (резинка), а мы лишь считаем ход пальца и рисуем кольцо поверх в этой зоне.
@@ -134,18 +134,19 @@ function usePullToRefresh(onRefresh) {
   return { pull, refreshing }
 }
 
-// Кружок-индикатор: трек + дуга, заполняется по progress; в refreshing — крутится.
+// Кружок-индикатор: ТОЛЬКО зелёная дуга (без серого трека/подложки/обводки). При малом
+// progress — короткая дуга-«точка», растёт в кольцо; в refreshing — крутится лоадером.
 function PullRing({ progress, refreshing, color }) {
-  const R = 10
+  const R = 11
   const C = 2 * Math.PI * R
   const p = Math.min(1, Math.max(0, progress))
+  const arc = refreshing ? 0.28 : Math.max(0.05, p) // минимум — «точка»
   return (
     <div className={refreshing ? 'ptr-spin' : undefined} style={styles.pullRing}>
       <svg width="26" height="26" viewBox="0 0 26 26">
-        <circle cx="13" cy="13" r={R} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="2.4" />
         <circle
-          cx="13" cy="13" r={R} fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round"
-          strokeDasharray={C} strokeDashoffset={refreshing ? C * 0.72 : C * (1 - p)}
+          cx="13" cy="13" r={R} fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round"
+          strokeDasharray={C} strokeDashoffset={C * (1 - arc)}
           transform="rotate(-90 13 13)"
         />
       </svg>
@@ -163,7 +164,8 @@ function PullIndicator({ pull, refreshing, color }) {
     <div aria-hidden="true" style={{
       ...styles.pullIndicator,
       opacity: shown ? 1 : 0,
-      transform: `translateY(${eff - 30}px)`,
+      // Появляется на ~8px ВЫШЕ пилюли недели и тянется вниз по ходу оттяга.
+      transform: `translateY(${eff - 36}px)`,
       transition: 'opacity 0.2s ease'
     }}>
       <PullRing progress={progress} refreshing={refreshing} color={color} />
@@ -318,14 +320,10 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 60
   },
+  // Только зелёная дуга — без фона/подложки/обводки.
   pullRing: {
-    width: '30px',
-    height: '30px',
-    borderRadius: '50%',
-    background: 'rgba(28, 28, 30, 0.6)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    width: '26px',
+    height: '26px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
