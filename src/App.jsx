@@ -137,6 +137,10 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="app">
+        {/* Красит верхнюю зону нативного оттяга (резинки) в акцент раздела.
+            ГРАБЛИ: обязан жить здесь, в постоянном .app — слои внутри страниц
+            в зоне оттяга после ремаунта не рисуются (см. index.css). */}
+        <div className="overscroll-accent" aria-hidden="true" />
         <ScrollToTopOnNavigate />
         <OverscrollTintController />
         <OfflineBanner />
