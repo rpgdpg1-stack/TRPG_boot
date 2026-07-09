@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory } from '../lib/storage'
+import { localGet } from '../utils/storage'
 import { getProgramsByCategory, programCountLabel } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
@@ -98,7 +99,11 @@ const toSentenceCase = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowe
 export default function Category() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [favoriteSlug, setFavoriteSlug] = useState(null)
+  // Старт из ЛОКАЛЬНОГО зеркала закрепов (мгновенно) — закреплённая уже наверху при
+  // заходе, без промаргивания снизу→вверх. Облако догонит асинхронно (эффект ниже).
+  const [favoriteSlug, setFavoriteSlug] = useState(() => {
+    try { return (JSON.parse(localGet('favorite_programs') || '{}') || {})[id] || null } catch { return null }
+  })
   const [showInfo, setShowInfo] = useState(false)
   const [, bump] = useState(0)
   // FLIP-анимация переезда карточки при закреплении: слепок позиций до реордера.
