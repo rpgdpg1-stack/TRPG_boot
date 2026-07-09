@@ -10,6 +10,7 @@ import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
 import ProgramCard from './ProgramCard'
+import SectionPicker from './SectionPicker'
 
 /**
  * Карусель разделов на главной (вместо избранного). Один раздел на экран, свайп
@@ -42,6 +43,8 @@ export default function SectionCarousel() {
   const [pinnedTick, setPinnedTick] = useState(0) // ре-чтение закрепа/последней
   const animTimer = useRef(null)
   const swipe = useRef({ x: null, swiped: false })
+  const identityRef = useRef(null)
+  const [pickerRect, setPickerRect] = useState(null) // null = закрыт
 
   // Старт/финиш тренировки → перечитать «последнюю» и состояние карточки.
   useEffect(() => onActiveWorkoutChange(() => setPinnedTick(t => t + 1)), [])
@@ -95,6 +98,18 @@ export default function SectionCarousel() {
 
   const openSection = () => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }
 
+  // Тап по иконке-идентичности → пикер разделов (как DayPicker в дне).
+  const openPicker = () => {
+    if (swipe.current.swiped) return
+    haptic.light()
+    setPickerRect(identityRef.current?.getBoundingClientRect() || null)
+  }
+  const onPickSection = (id) => {
+    const next = idxOfCat(id)
+    if (next !== idx) go(next, next > idx ? 'next' : 'prev')
+    setPickerRect(null)
+  }
+
   // Открепить/закрепить из ⋯ — перечитать карту закрепов.
   const onToggleFav = async () => {
     if (!pinnedSlug) return
@@ -114,8 +129,9 @@ export default function SectionCarousel() {
 
   return (
     <div style={styles.wrap} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {/* Идентичность раздела: заголовок + крупная иконка (заезд как у разделов) */}
-      <div style={styles.identity}>
+      {/* Идентичность раздела: заголовок + крупная иконка (заезд как у разделов).
+          Тап — пикер разделов (иконки). */}
+      <div ref={identityRef} style={styles.identity} onClick={openPicker}>
         {anim && <IdLayer cat={cats[anim.from]} role="out" dir={anim.dir} />}
         <IdLayer cat={cats[idx]} role={anim ? 'in' : 'static'} dir={anim?.dir} />
       </div>
@@ -152,6 +168,16 @@ export default function SectionCarousel() {
       <button style={styles.allLink} className="tg-row" onClick={openSection}>
         Все программы <span style={styles.chev}>⌄</span>
       </button>
+
+      {pickerRect && (
+        <SectionPicker
+          sections={cats}
+          currentId={cat.id}
+          anchorRect={pickerRect}
+          onPick={onPickSection}
+          onClose={() => setPickerRect(null)}
+        />
+      )}
     </div>
   )
 }

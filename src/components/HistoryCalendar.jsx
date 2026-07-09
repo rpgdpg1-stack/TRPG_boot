@@ -132,7 +132,7 @@ export default function HistoryCalendar({ heading }) {
     const dx = t.clientX - touch.x
     const dy = t.clientY - touch.y
     touch = null
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return
     if (dx > 0) goPrev(); else goNext()
   }
 
@@ -155,7 +155,8 @@ export default function HistoryCalendar({ heading }) {
         </div>
       )}
 
-      <div style={styles.card}>
+      {/* Свайп по ВСЕЙ карточке (заголовок/сводка/сетка) — листает месяцы. */}
+      <div style={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div style={styles.monthNav}>
           <button
             style={{ ...styles.chev, opacity: offset > minOffset ? 1 : 0.25 }}
@@ -183,7 +184,7 @@ export default function HistoryCalendar({ heading }) {
           )}
         </div>
 
-        <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div>
           <div style={styles.weekRow}>
             {WEEKDAYS_RU.map((w, i) => (
               <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'rgba(255,255,255,0.35)' }}>{w}</div>
