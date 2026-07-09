@@ -168,7 +168,7 @@ export default function Category() {
             <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
           </button>
           <span style={styles.headerIcon}>
-            <UiIcon name={meta.iconName} size={40} color={meta.color} />
+            <UiIcon name={meta.iconName} size={52} color={meta.color} />
           </span>
           <div style={styles.subtitle}>
             {realPrograms.length > 0 ? programCountLabel(id) : meta.subtitle}

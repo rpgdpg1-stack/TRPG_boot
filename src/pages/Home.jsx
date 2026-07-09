@@ -78,13 +78,12 @@ const PTR_REVEAL = 24
 const PTR_THRESH = 78
 const PTR_MAX = 130
 
-// Pull-to-refresh: тянем страницу вниз с самого верха — индикатор-кружок
-// заполняется; на пороге микровибро (armed), отпустил за порогом → success-вибро
-// и обновление. Слушатели на window (passive:false для preventDefault на оттяге).
+// Pull-to-refresh: НЕ двигаем контент и НЕ блокируем жест — верх тянет нативный
+// отскок (резинка), а мы лишь считаем ход пальца и рисуем кольцо поверх в этой зоне.
+// На пороге микровибро (armed), отпустил за порогом → success-вибро и обновление.
 function usePullToRefresh(onRefresh) {
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
-  const [snap, setSnap] = useState(false) // true → пружинистый возврат с transition
   const startY = useRef(null)
   const armed = useRef(false)
 
@@ -92,17 +91,14 @@ function usePullToRefresh(onRefresh) {
     const scrollTop = () => window.scrollY || document.scrollingElement?.scrollTop || 0
     const onStart = (e) => {
       if (refreshing) return
-      if (scrollTop() > 0) { startY.current = null; return }
-      startY.current = e.touches[0].clientY
+      startY.current = scrollTop() <= 0 ? e.touches[0].clientY : null
       armed.current = false
-      setSnap(false)
     }
     const onMove = (e) => {
       if (startY.current == null || refreshing) return
+      if (scrollTop() > 0) { startY.current = null; setPull(0); return }
       const dy = e.touches[0].clientY - startY.current
       if (dy <= 0) { setPull(0); return }
-      if (scrollTop() > 0) { startY.current = null; setPull(0); return }
-      e.preventDefault() // держим свой индикатор вместо нативного оверскролла
       const damped = Math.min(PTR_MAX, dy * 0.5)
       setPull(damped)
       const nowArmed = damped >= PTR_THRESH
@@ -112,19 +108,19 @@ function usePullToRefresh(onRefresh) {
     const onEnd = () => {
       if (startY.current == null) return
       startY.current = null
-      setSnap(true)
       if (armed.current && !refreshing) {
         setRefreshing(true)
         setPull(PTR_THRESH)
         haptic.success()
-        setTimeout(() => onRefresh(), 420) // дать увидеть заполнение + вибро
+        setTimeout(() => onRefresh(), 500) // дать увидеть заполнение + вибро
       } else {
         setPull(0)
       }
       armed.current = false
     }
+    // Все слушатели passive: жест не перехватываем, нативный отскок работает штатно.
     window.addEventListener('touchstart', onStart, { passive: true })
-    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchmove', onMove, { passive: true })
     window.addEventListener('touchend', onEnd, { passive: true })
     window.addEventListener('touchcancel', onEnd, { passive: true })
     return () => {
@@ -135,7 +131,7 @@ function usePullToRefresh(onRefresh) {
     }
   }, [refreshing, onRefresh])
 
-  return { pull, refreshing, snap }
+  return { pull, refreshing }
 }
 
 // Кружок-индикатор: трек + дуга, заполняется по progress; в refreshing — крутится.
@@ -203,7 +199,7 @@ export default function Home() {
 
   // Pull-to-refresh: оттягивание с самого верха → обновление страницы.
   const handleRefresh = useCallback(() => { window.location.reload() }, [])
-  const { pull, refreshing, snap } = usePullToRefresh(handleRefresh)
+  const { pull, refreshing } = usePullToRefresh(handleRefresh)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -245,17 +241,9 @@ export default function Home() {
   const weeklyCount = readWeeklyCount()
 
   return (
-    <div
-      className="page page-fade"
-      style={{
-        ...styles.page,
-        // Оттягивание вниз — весь контент едет за пальцем; свечение (с запасом сверху)
-        // заполняет открывшуюся область тем же цветом.
-        transform: pull ? `translateY(${pull}px)` : undefined,
-        transition: snap ? 'transform 0.32s var(--ease-ios)' : 'none'
-      }}
-    >
-      {/* Индикатор pull-to-refresh (портал в body, поверх контента). */}
+    <div className="page page-fade" style={styles.page}>
+
+      {/* Индикатор pull-to-refresh (портал в body, поверх нативного отскока). */}
       <PullIndicator pull={pull} refreshing={refreshing} color={glowColor} />
 
       {/* Акцентное свечение фона в цвет текущего раздела — уходит вверх при скролле. */}
