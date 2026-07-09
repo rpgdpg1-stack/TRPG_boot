@@ -31,13 +31,13 @@ export default function SectionGlow({ color }) {
       : { ...prev, a: color, showA: true })
   }, [color])
 
-  // Красим КОРНЕВОЙ фон (html) в тёмный акцент раздела — именно его видно при
-  // нативном отскоке/оттяге. Так открывшаяся сверху зона того же цвета, без чёрной
-  // линии. Работает на любой странице со свечением (главная/раздел/день/заплыв).
+  // Красим КОРНЕВОЙ фон (html) в тёмный акцент раздела — его видно при нативном
+  // отскоке/оттяге, так зона того же цвета, без чёрной линии. НЕ сбрасываем при
+  // размонтировании: иначе уход со старой страницы стирал бы тон, который новая
+  // страница только что выставила (при переходе оба смонтированы). Последняя
+  // страница со свечением выигрывает; цвет обновляется на каждой такой странице.
   useEffect(() => {
-    const el = document.documentElement
-    el.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 12%, var(--color-bg))`)
-    return () => { el.style.removeProperty('--overscroll-tint') }
+    document.documentElement.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 14%, var(--color-bg))`)
   }, [color])
 
   return (

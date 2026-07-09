@@ -1768,8 +1768,10 @@ const styles = {
   // скролл на коротком дне. Без min-height:100dvh страница ровно по контенту:
   // мало упражнений → не скроллится; много → у низа фикс-зазор (как везде).
   page: {
-    // relative — база для абсолютного свечения (SectionGlow).
+    // relative + z-index 1 — свой контекст наложения (как класс .page на главной/разделе):
+    // свечение (SectionGlow) правильно ложится за контент и в зону нативного оттяга.
     position: 'relative',
+    zIndex: 1,
     padding: '0 16px',
     paddingBottom: '100px',
     marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'

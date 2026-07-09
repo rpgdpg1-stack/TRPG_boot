@@ -507,7 +507,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 }
 
 const styles = {
-  page: { position: 'relative', padding: '0 16px 100px', minHeight: '100dvh' },
+  page: { position: 'relative', zIndex: 1, padding: '0 16px 100px', minHeight: '100dvh' },
   stickyHeader: {
     position: 'sticky',
     top: 0,
