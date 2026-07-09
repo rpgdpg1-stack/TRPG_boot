@@ -33,6 +33,18 @@ export default function SectionGlow({ color }) {
       : { ...prev, a: color, showA: true })
   }, [color])
 
+  // ГРАБЛИ (не удалять!): зону нативного оттяга/оверскролла СВЕРХУ красит корневой
+  // фон html (см. index.css: background-градиент на var(--overscroll-tint)). Внутреннее
+  // свечение glowWrap до края оттяга дотягивается НЕ на всех страницах (зависит от
+  // структуры/скролла), поэтому корневой тон — обязательный «страховочный» слой:
+  // без него разделы сверху при оттяге чернеют. Снизу полосы нет — там градиент уже
+  // тёмный. Ставим тон здесь, сбрасываем при уходе (страницы без свечения — обычный фон).
+  useEffect(() => {
+    const el = document.documentElement
+    el.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 12%, var(--color-bg))`)
+    return () => { el.style.removeProperty('--overscroll-tint') }
+  }, [color])
+
   return (
     <div style={styles.glowWrap} aria-hidden="true">
       <div style={{ ...styles.glowLayer, background: glowBg(g.a), opacity: g.showA ? 1 : 0 }} />
