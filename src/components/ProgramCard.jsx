@@ -177,14 +177,6 @@ export default function ProgramCard({
         <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
       )}
 
-      {/* Серый карандаш слева от «⋯» — статус-индикатор «созданная мной программа»
-          (не нажимается; редактирование — через меню «⋯»). */}
-      {dots && available && prog.editable && (
-        <span style={styles.editBadge} aria-hidden="true">
-          <PencilIcon size={13} color="var(--color-text-secondary)" />
-        </span>
-      )}
-
       {anchorRect && (
         <AnchorMenu
           anchorRect={anchorRect}
@@ -303,16 +295,6 @@ const styles = {
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },
-  // Индикатор «созданная программа» — карандаш слева от «⋯», по центру его высоты.
-  editBadge: {
-    position: 'absolute',
-    top: '15px',
-    right: '48px',
-    display: 'inline-flex',
-    opacity: 0.75,
-    pointerEvents: 'none',
-    zIndex: 2
-  },
   dotsBtn: {
     position: 'absolute',
     top: '8px',

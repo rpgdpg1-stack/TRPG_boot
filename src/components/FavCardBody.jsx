@@ -5,6 +5,7 @@ import PlaceSwitcher from './PlaceSwitcher'
 import PoolTag from './PoolTag'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
+import PencilIcon from './PencilIcon'
 
 /**
  * Тело карточки программы — общее для главной, избранного и раздела.
@@ -38,7 +39,13 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
     <>
       <span style={styles.emblemWrap}><ProgramEmblem program={prog} size={44} /></span>
       <div style={styles.content}>
-        <div style={styles.title}>{title}</div>
+        <div style={styles.title}>
+          {title}
+          {/* Серый карандаш рядом с названием — индикатор «созданная мной программа». */}
+          {prog.source === 'custom' && (
+            <span style={styles.titlePencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>
+          )}
+        </div>
 
         {/* Теги для НЕ-мест: заплыв — тег «Бассейн» (как тег места), иначе теги/«Скоро». */}
         {places.length === 0 && (prog.kind === 'swim' || (prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
@@ -127,6 +134,8 @@ const styles = {
     letterSpacing: '0.3px',
     lineHeight: 1.1
   },
+  // Карандаш-индикатор сразу после названия (по центру строки текста).
+  titlePencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: '5px', marginTop: '-2px', opacity: 0.7 },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
   activeRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' },
