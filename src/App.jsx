@@ -38,6 +38,8 @@ import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
+import { CATEGORY_META } from './features/programs/categories'
+import { localGet } from './utils/storage'
 import { checkAndResetSeasonIfNeeded } from './lib/season-reset'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
 import { startVersionWatch } from './lib/version-check'
@@ -136,6 +138,7 @@ export default function App() {
     <ErrorBoundary>
       <div className="app">
         <ScrollToTopOnNavigate />
+        <OverscrollTintController />
         <OfflineBanner />
 
         <SettingsButtonController />
@@ -182,6 +185,32 @@ function ScrollToTopOnNavigate() {
     if (pathname.startsWith('/workout/')) return
     window.scrollTo(0, 0)
     document.scrollingElement?.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
+/**
+ * ЕДИНСТВЕННЫЙ ответственный за --overscroll-tint (цвет зоны нативного оттяга сверху,
+ * см. градиент фона html в index.css). На КАЖДЫЙ переход детерминированно: главная —
+ * цвет последнего раздела карусели; экран раздела — цвет раздела; прочие — сброс.
+ * ГРАБЛИ: раньше тинт ставил/стирал SectionGlow в mount/cleanup — при переходах между
+ * страницами порядок эффектов не гарантирован, тинт «терялся» (чёрный оттяг после
+ * возврата на главную). Не возвращать управление тинтом в компоненты страниц!
+ * (SectionGlow лишь ОБНОВЛЯЕТ цвет при свайпе разделов на главной — не стирает.)
+ */
+function OverscrollTintController() {
+  const { pathname } = useLocation()
+  useLayoutEffect(() => {
+    let color = null
+    if (pathname === '/') {
+      const id = localGet('category-swiper-last')
+      color = (CATEGORY_META[id] || CATEGORY_META.gym)?.color
+    } else if (pathname.startsWith('/category/')) {
+      color = CATEGORY_META[pathname.split('/')[2]]?.color || null
+    }
+    const el = document.documentElement
+    if (color) el.style.setProperty('--overscroll-tint', `color-mix(in srgb, ${color} 12%, var(--color-bg))`)
+    else el.style.removeProperty('--overscroll-tint')
   }, [pathname])
   return null
 }
