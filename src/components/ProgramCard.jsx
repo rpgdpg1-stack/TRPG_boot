@@ -241,7 +241,8 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
-    minHeight: '130px',
+    // Ниже прежних 130 — убрали строку тега места/бассейна, карточка компактнее.
+    minHeight: '112px',
     textAlign: 'left'
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.

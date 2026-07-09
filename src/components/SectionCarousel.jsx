@@ -256,8 +256,8 @@ const styles = {
   },
   pinEmpty: {
     width: '100%',
-    // Та же высота, что у ProgramCard (minHeight 130px) — чтобы карусель не «прыгала».
-    minHeight: '130px',
+    // Та же высота, что у ProgramCard (minHeight 112px) — чтобы карусель не «прыгала».
+    minHeight: '112px',
     borderRadius: 'var(--radius-card)',
     background: 'var(--surface)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',

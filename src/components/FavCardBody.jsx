@@ -1,8 +1,6 @@
 import { getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
-import PlaceSwitcher from './PlaceSwitcher'
-import PoolTag from './PoolTag'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
 import PencilIcon from './PencilIcon'
@@ -47,15 +45,14 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           )}
         </div>
 
-        {/* Теги для НЕ-мест: заплыв — тег «Бассейн» (как тег места), иначе теги/«Скоро». */}
-        {places.length === 0 && (prog.kind === 'swim' || (prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
+        {/* Тег «Бассейн» на карточке убран — выбор бассейна живёт внутри заплыва.
+            Здесь только пользовательские теги (если есть) и «Скоро». */}
+        {places.length === 0 && ((prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
           <div style={styles.tags}>
-            {prog.kind === 'swim'
-              ? <PoolTag />
-              : (prog.tags || []).map(tag => {
-                  const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-                  return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
-                })}
+            {(prog.tags || []).map(tag => {
+              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+              return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
+            })}
             {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
           </div>
         )}
@@ -71,10 +68,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           // показываем ТОЛЬКО активный день, крупнее и жирнее; иначе — ряд A/B/C с
           // подсветкой рекомендованного. Цвет подсвеченного дня — по его первой группе.
           <>
-            {places.length > 0 && (
+            {/* Тег места (Зал/Дом/Улица) на карточке убран — выбор места живёт внутри
+                тренировки (перед «Начать»). На карточке остаётся только «Скоро». */}
+            {places.length > 0 && prog.comingSoon && (
               <div style={styles.tags}>
-                <PlaceSwitcher program={prog} tag />
-                {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+                <span style={styles.soonTag}>Скоро</span>
               </div>
             )}
             {activeMin ? (
