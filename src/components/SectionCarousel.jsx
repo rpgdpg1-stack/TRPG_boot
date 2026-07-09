@@ -103,7 +103,7 @@ export default function SectionCarousel() {
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
   const lastText = pinnedProg
     ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
-    : null
+    : ' '
 
   const openSection = () => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }
 
@@ -153,8 +153,8 @@ export default function SectionCarousel() {
       </div>
 
       {/* Последняя тренировка в разделе (по закреплённой программе).
-          Нет закрепа — строку не рендерим, чтобы не оставлять пустой зазор. */}
-      {lastText && <div style={styles.lastLine}>{lastText}</div>}
+          Пустая строка (' ') держит зазор, чтобы пейджер не липнул к карточке. */}
+      <div style={styles.lastLine}>{lastText}</div>
 
       {/* Закреплённая программа — сама карточка, как внутри раздела */}
       {pinnedProg ? (
@@ -248,7 +248,8 @@ const styles = {
   },
   pinEmpty: {
     width: '100%',
-    minHeight: '96px',
+    // Та же высота, что у ProgramCard (minHeight 130px) — чтобы карусель не «прыгала».
+    minHeight: '130px',
     borderRadius: 'var(--radius-card)',
     background: 'var(--surface)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',
