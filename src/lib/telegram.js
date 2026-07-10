@@ -166,27 +166,21 @@ export function lockVerticalSwipes() {
 }
 
 /**
- * ГРАБЛИ (зона оттяга/оверскролла): зону резинки красит CSS-КАНВАС — фон html
- * (viewport-привязанный градиент: ВВЕРХУ --overscroll-tint, ВНИЗУ --color-bg, см.
- * index.css). Нативный фон вебвью НЕ трогаем (всегда тёмный APP_BG из initTelegram) —
- * его покраска акцентом ломала верх/низ. Хелпер лишь ставит solid-hex тинт (акцент
- * раздела 12% с APP_BG) в переменную. cssColor — 'var(--x)' или hex.
+ * ГРАБЛИ (зона оттяга/оверскролла): зону резинки красит фон канваса html
+ * (var(--overscroll-tint, --color-bg), см. index.css). Тинт задаём как CSS-выражение
+ * color-mix — CSS сам разворачивает цвет и ВЛОЖЕННЫЕ var() (var(--cat-pool) →
+ * var(--blue-500) → hex). НЕ резолвить цвет в JS через getComputedStyle: он вложенные
+ * var не разворачивает → парсинг падал и цвет уходил в ЧЁРНЫЙ (первый заход мог
+ * сработать, свайп/переход — чёрный). Ровно как в рабочей версии e49eafa.
+ * cssColor — любой CSS-цвет: 'var(--x)' или hex.
  */
 export function setOverscrollAccent(cssColor) {
-  try {
-    let c = String(cssColor || '').trim()
-    const varMatch = c.match(/^var\((--[^),\s]+)/)
-    if (varMatch) c = getComputedStyle(document.documentElement).getPropertyValue(varMatch[1]).trim()
-    const hex = c.match(/^#?([0-9a-f]{6})$/i)?.[1]
-    if (!hex) { resetOverscrollAccent(); return }
-    const mix = (i) => {
-      const acc = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
-      const bg = parseInt(APP_BG.slice(1 + i * 2, 3 + i * 2), 16)
-      // 14% — как в рабочей версии e49eafa (проверено, что верх оттяга красится норм).
-      return Math.round(acc * 0.14 + bg * 0.86).toString(16).padStart(2, '0')
-    }
-    document.documentElement.style.setProperty('--overscroll-tint', `#${mix(0)}${mix(1)}${mix(2)}`)
-  } catch (e) { /* ignore */ }
+  const c = String(cssColor || '').trim()
+  if (!c) { resetOverscrollAccent(); return }
+  document.documentElement.style.setProperty(
+    '--overscroll-tint',
+    `color-mix(in srgb, ${c} 14%, var(--color-bg))`
+  )
 }
 
 export function resetOverscrollAccent() {
