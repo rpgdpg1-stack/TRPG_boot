@@ -182,7 +182,8 @@ export function setOverscrollAccent(cssColor) {
     const mix = (i) => {
       const acc = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
       const bg = parseInt(APP_BG.slice(1 + i * 2, 3 + i * 2), 16)
-      return Math.round(acc * 0.12 + bg * 0.88).toString(16).padStart(2, '0')
+      // 14% — как в рабочей версии e49eafa (проверено, что верх оттяга красится норм).
+      return Math.round(acc * 0.14 + bg * 0.86).toString(16).padStart(2, '0')
     }
     document.documentElement.style.setProperty('--overscroll-tint', `#${mix(0)}${mix(1)}${mix(2)}`)
   } catch (e) { /* ignore */ }
