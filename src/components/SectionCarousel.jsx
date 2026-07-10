@@ -208,11 +208,11 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
-  // «Последняя тренировка …» — над карточкой, у левого края.
+  // «Последняя тренировка …» — над карточкой, по центру.
   lastLine: {
-    marginBottom: '8px', paddingLeft: '2px',
+    marginBottom: '8px',
     fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', textAlign: 'left'
+    color: 'var(--color-text-secondary)', textAlign: 'center'
   },
   pinEmpty: {
     width: '100%',
