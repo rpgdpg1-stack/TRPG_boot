@@ -136,7 +136,7 @@ const styles = {
   activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
   activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
-  daysList: { display: 'flex', alignItems: 'baseline', gap: '14px' },
+  daysList: { display: 'flex', alignItems: 'baseline', gap: '12px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
   // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
   dayLetterActive: { fontSize: '22px', fontWeight: 800 },
