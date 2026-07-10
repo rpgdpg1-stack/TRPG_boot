@@ -6,9 +6,6 @@
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
 const APP_BG = '#0A0A0B'
-// Текущий нативный фон вебвью (= цвет зоны оттяга). Меняется setOverscrollAccent /
-// resetOverscrollAccent; paintTelegramChrome переустанавливает именно его.
-let currentWebviewBg = APP_BG
 
 // Текущие обработчики кнопок — нужны чтобы корректно их удалять при смене.
 // offClick() без аргумента в новых версиях Telegram может не работать —
@@ -102,10 +99,8 @@ export function paintTelegramChrome() {
 
   try {
     if (typeof tg.setBackgroundColor === 'function') {
-      // НЕ голый APP_BG: фон вебвью = зона оттяга, её мог покрасить setOverscrollAccent
-      // (акцент раздела). Иначе пробуждение из фона (resyncTelegramChrome) затирало
-      // бы акцент тёмным до следующего перехода.
-      tg.setBackgroundColor(currentWebviewBg)
+      // Нативный фон = НИЖНЯЯ зона оттяга, всегда тёмный (см. setOverscrollAccent).
+      tg.setBackgroundColor(APP_BG)
     }
   } catch (e) { /* ignore */ }
 
@@ -171,11 +166,14 @@ export function lockVerticalSwipes() {
 }
 
 /**
- * ГРАБЛИ (зона оттяга/оверскролла): при резинке Telegram показывает НАТИВНЫЙ фон
- * вебвью (setBackgroundColor), а не CSS-канвас страницы — красить оттяг надо ИМЕННО
- * его. CSS-слои (свечение с отрицательным top, фон html) в оттяге ненадёжны:
- * после ремаунта страницы WebKit их не рисует. Хелпер миксует акцент раздела (12%)
- * с APP_BG и ставит нативный фон; resetOverscrollAccent() возвращает тёмный.
+ * ГРАБЛИ (зона оттяга/оверскролла) — слои проверены на устройстве, не менять местами!
+ *  • ВЕРХНЮЮ зону оттяга красит CSS-КАНВАС: сплошной background-color на html
+ *    (= var(--overscroll-tint, --color-bg), см. index.css). Слои документа
+ *    (полосы с отрицательным top) в оттяге ненадёжны — WebKit их не рисует.
+ *  • НИЖНЮЮ зону красит НАТИВНЫЙ фон вебвью (tg.setBackgroundColor) — держим его
+ *    ВСЕГДА ТЁМНЫМ (APP_BG) и переустанавливаем при каждой смене тинта: покрасишь
+ *    его акцентом — низ оттяга станет цветным (проверено).
+ * Хелпер миксует акцент раздела (12%) с APP_BG в solid hex для канваса.
  * cssColor — 'var(--x)' или hex; var резолвится через getComputedStyle.
  */
 export function setOverscrollAccent(cssColor) {
@@ -191,18 +189,17 @@ export function setOverscrollAccent(cssColor) {
       return Math.round(acc * 0.12 + bg * 0.88).toString(16).padStart(2, '0')
     }
     const mixed = `#${mix(0)}${mix(1)}${mix(2)}`
-    currentWebviewBg = mixed
-    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(mixed)
-    // Дублируем в CSS-переменную — для десктопа/браузера, где нативного фона нет.
+    // Верх оттяга — канвас (html background-color через переменную).
     document.documentElement.style.setProperty('--overscroll-tint', mixed)
+    // Низ оттяга — нативный фон: переустанавливаем ТЁМНЫЙ (не акцент!).
+    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
   } catch (e) { /* ignore */ }
 }
 
 export function resetOverscrollAccent() {
   try {
-    currentWebviewBg = APP_BG
-    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
     document.documentElement.style.removeProperty('--overscroll-tint')
+    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
   } catch (e) { /* ignore */ }
 }
 
