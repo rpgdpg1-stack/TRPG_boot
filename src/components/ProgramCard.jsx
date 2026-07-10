@@ -155,7 +155,7 @@ export default function ProgramCard({
         <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
 
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} lastTrained={lastTrained && !isActive} />
+      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
       {/* Залитая зелёная пилюля-якорь: «Начать [буква дня] ▶» (буква — рекомендуемый
           день, в цвете его группы) / «Продолжить ▶». Тёмный текст = макс. контраст. */}

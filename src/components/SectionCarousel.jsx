@@ -7,6 +7,7 @@ import { onActiveWorkoutChange } from '../lib/active-workout'
 import { getActiveDaySync, toggleFavoriteProgram } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
+import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
 import ChevronIcon from './ChevronIcon'
 import ProgramCard from './ProgramCard'
@@ -70,6 +71,10 @@ export default function SectionCarousel({ onSectionChange }) {
   void pinnedTick
   const pinnedSlug = readPinnedMap()[cat.id] || null
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
+  const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
+  const lastText = pinnedProg
+    ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
+    : null
 
   const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
 
@@ -130,6 +135,9 @@ export default function SectionCarousel({ onSectionChange }) {
         )}
       </div>
 
+      {/* Последняя тренировка — НАД карточкой, прижата к левому краю. */}
+      {lastText && <div style={styles.lastLine}>{lastText}</div>}
+
       {/* Закреплённая программа — сама карточка (как внутри раздела) */}
       {pinnedProg ? (
         <ProgramCard
@@ -138,7 +146,6 @@ export default function SectionCarousel({ onSectionChange }) {
           dots
           isFav
           cta
-          lastTrained
           onToggleFav={onToggleFav}
           onOpen={guardedOpen}
           onDeleted={() => setPinnedTick(t => t + 1)}
@@ -201,6 +208,12 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
+  // «Последняя тренировка …» — над карточкой, у левого края.
+  lastLine: {
+    marginBottom: '8px', paddingLeft: '2px',
+    fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', textAlign: 'left'
+  },
   pinEmpty: {
     width: '100%',
     minHeight: '112px',
