@@ -35,6 +35,10 @@ import UiIcon from './UiIcon'
  */
 const SWIPE_PANEL_W = 172 // ширина панели действий (3 действия), открывается свайпом влево
 
+// Реестр закрывашек: одновременно открыт свайп ТОЛЬКО у одной карточки. Начал свайп
+// на любой другой — остальные закрываются (той же анимацией 0.28с, что и пальцем).
+const swipeCloseFns = new Set()
+
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onNote, onInfo, onSwap }) {
   const {
     exercise_id,
@@ -88,6 +92,17 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const swipe = useRef({ x: 0, y: 0, start: 0, decided: false, swiping: false, suppressClick: false })
   const setOff = (v) => { offsetRef.current = v; setOffset(v) }
   const closePanel = () => { openRef.current = false; setDragging(false); setOff(0) }
+  // Регистрируем свою закрывашку; при старте свайпа закрываем ВСЕ ОСТАЛЬНЫЕ.
+  const closePanelRef = useRef(closePanel)
+  closePanelRef.current = closePanel
+  const myCloseFnRef = useRef(null)
+  useEffect(() => {
+    const fn = () => closePanelRef.current?.()
+    myCloseFnRef.current = fn
+    swipeCloseFns.add(fn)
+    return () => swipeCloseFns.delete(fn)
+  }, [])
+  const closeOthers = () => { swipeCloseFns.forEach(fn => { if (fn !== myCloseFnRef.current) fn() }) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
   const swipeActions = [
     { key: 'note', icon: 'notes', color: '#FFA94D', label: 'Заметка', fn: onNote },
@@ -147,8 +162,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     const dy = e.clientY - s.y
     if (!s.decided) {
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
-        // Горизонталь → свайп: гасим long-press, дальше ведём панель за пальцем.
-        s.decided = true; s.swiping = true; setDragging(true); clearLongPress()
+        // Горизонталь → свайп: гасим long-press, закрываем чужие открытые панели,
+        // дальше ведём свою панель за пальцем.
+        s.decided = true; s.swiping = true; setDragging(true); clearLongPress(); closeOthers()
       } else if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) {
         // Вертикаль/увод — не свайп (это скролл списка / отмена long-press).
         s.decided = true; s.swiping = false; clearLongPress()

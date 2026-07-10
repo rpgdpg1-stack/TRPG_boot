@@ -212,7 +212,7 @@ const styles = {
   // «Последняя тренировка …» — над карточкой, по левому краю. Тише названия
   // (легче/тусклее), ближе к карточке. minHeight держит высоту в пустом разделе.
   lastLine: {
-    minHeight: '15px', marginBottom: '2px', paddingLeft: '2px',
+    minHeight: '15px', marginBottom: '5px', paddingLeft: '2px',
     fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500,
     color: 'rgba(255, 255, 255, 0.4)', textAlign: 'left'
   },
