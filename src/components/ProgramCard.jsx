@@ -134,8 +134,9 @@ export default function ProgramCard({
     // overflow hidden — клип заливки-прогресса по скруглению.
     overflow: 'hidden',
     // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
-    // (Category) выключаем через bordered={false}.
-    border: bordered ? `1px solid color-mix(in srgb, ${accent} 45%, transparent)` : 'none'
+    // (Category) выключаем через bordered={false}. Насыщенность приглушена (45%→32%),
+    // чтобы рамка не перетягивала внимание с названия программы.
+    border: bordered ? `1px solid color-mix(in srgb, ${accent} 32%, transparent)` : 'none'
   }
 
   return (
@@ -149,7 +150,7 @@ export default function ProgramCard({
         <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
 
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
+      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} lastTrained={lastTrained && !isActive} />
 
       {/* Серая подпись справа: до старта «Начать ▶», в активной «Продолжить ▶».
           Плей — серый, высотой примерно как заглавная буква текста. */}

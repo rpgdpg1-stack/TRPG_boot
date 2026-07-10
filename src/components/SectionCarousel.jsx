@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
@@ -7,27 +7,19 @@ import { onActiveWorkoutChange } from '../lib/active-workout'
 import { getActiveDaySync, toggleFavoriteProgram } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
-import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
 import ProgramCard from './ProgramCard'
-import SectionPicker from './SectionPicker'
 
 /**
- * Карусель разделов на главной (вместо избранного). Один раздел на экран, свайп
- * влево/вправо (циклично) — тем же заездом, что старый свайпер разделов
- * (иконка выезжает, заголовок кросс-фейдится), точки-пейджер под иконкой.
- * Внутри:
- *  - заголовок раздела (сверху) + КРУПНАЯ иконка + точки;
- *  - «последняя тренировка N назад» по ЗАКРЕПЛЁННОЙ программе раздела;
- *  - сама карточка закреплённой программы (`ProgramCard`, как внутри раздела) —
- *    тап начинает/продолжает; ⋯ → Закрепить/Открепить; если ничего не закреплено —
- *    заглушка «Закрепить программу» (→ экран раздела);
- *  - текст-ссылка «Все программы ⌄» → экран раздела.
+ * Разделы на главной. Вверху — КОМПАКТНЫЙ СЕЛЕКТОР (иконка раздела + название +
+ * шеврон); тап → выпадающий список всех разделов (иконка + название). Ниже —
+ * закреплённая программа выбранного раздела (`ProgramCard`, тап начинает/продолжает;
+ * ⋯ → Закрепить/Открепить; нет закрепа — заглушка) + ссылка «Все программы ›».
+ * Пейджер и свайп убраны — переключение только через селектор.
  *
  * Закреплённая программа = `favorite_programs[category]` (CloudStorage, одна на раздел).
  */
 
-const ANIM_MS = 360
 const LAST_CAT_KEY = 'category-swiper-last'
 const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
 
@@ -39,16 +31,11 @@ export default function SectionCarousel({ onSectionChange }) {
   const navigate = useNavigate()
 
   const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
-  const [anim, setAnim] = useState(null) // { from, dir } во время перехода
-  const [pinnedTick, setPinnedTick] = useState(0) // ре-чтение закрепа/последней
-  const animTimer = useRef(null)
-  const swipe = useRef({ x: null, y: null, swiped: false })
-  const identityRef = useRef(null)
-  const [pickerRect, setPickerRect] = useState(null) // null = закрыт
+  const [open, setOpen] = useState(false)          // выпадающий список разделов
+  const [pinnedTick, setPinnedTick] = useState(0)  // ре-чтение закрепа/последней
 
   // Старт/финиш тренировки → перечитать «последнюю» и состояние карточки.
   useEffect(() => onActiveWorkoutChange(() => setPinnedTick(t => t + 1)), [])
-  useEffect(() => () => { if (animTimer.current) clearTimeout(animTimer.current) }, [])
 
   // Догоняем выбранный раздел из облака (кросс-девайс).
   useEffect(() => {
@@ -68,73 +55,31 @@ export default function SectionCarousel({ onSectionChange }) {
     onSectionChange?.({ id, color: CATEGORY_META[id]?.color })
   }, [idx, onSectionChange])
 
-  const go = (next, dir) => {
+  const selectCat = (id) => {
+    setOpen(false)
+    const next = idxOfCat(id)
     if (next === idx) return
     haptic.light()
-    if (animTimer.current) clearTimeout(animTimer.current)
-    setAnim({ from: idx, dir })
     setIdx(next)
-    const id = CATEGORY_ORDER[next]
     localSet(LAST_CAT_KEY, id)
     cloudSet(LAST_CAT_KEY, id)
-    animTimer.current = setTimeout(() => setAnim(null), ANIM_MS)
-  }
-
-  const onTouchStart = (e) => {
-    swipe.current.x = e.touches[0].clientX
-    swipe.current.y = e.touches[0].clientY
-    swipe.current.swiped = false
-  }
-  const onTouchEnd = (e) => {
-    const startX = swipe.current.x
-    const startY = swipe.current.y
-    swipe.current.x = null
-    swipe.current.y = null
-    if (startX === null) return
-    const dx = e.changedTouches[0].clientX - startX
-    const dy = e.changedTouches[0].clientY - startY
-    // Не свайп разделов: слишком короткий по X, или жест вертикальный (это скролл).
-    if (Math.abs(dx) < 45 || Math.abs(dy) > Math.abs(dx)) return
-    // Горизонтальный свайп засчитан → жёстко гасим тап по карточке/иконке.
-    swipe.current.swiped = true
-    if (dx < 0) go((idx + 1) % cats.length, 'next')
-    else go((idx - 1 + cats.length) % cats.length, 'prev')
-    setTimeout(() => { swipe.current.swiped = false }, 140)
   }
 
   // Закреплённая программа раздела.
   void pinnedTick
   const pinnedSlug = readPinnedMap()[cat.id] || null
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
-  const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
-  const lastText = pinnedProg
-    ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
-    : ' '
 
-  const openSection = () => { if (swipe.current.swiped) return; haptic.light(); navigate(`/category/${cat.id}`) }
+  const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
 
-  // Тап по иконке-идентичности → пикер разделов (как DayPicker в дне).
-  const openPicker = () => {
-    if (swipe.current.swiped) return
-    haptic.light()
-    setPickerRect(identityRef.current?.getBoundingClientRect() || null)
-  }
-  const onPickSection = (id) => {
-    const next = idxOfCat(id)
-    if (next !== idx) go(next, next > idx ? 'next' : 'prev')
-    setPickerRect(null)
-  }
-
-  // Открепить/закрепить из ⋯ — перечитать карту закрепов.
   const onToggleFav = async () => {
     if (!pinnedSlug) return
     await toggleFavoriteProgram(cat.id, pinnedSlug)
     setPinnedTick(t => t + 1)
   }
 
-  // Тап по карточке (гард от свайпа) — ProgramCard сам навигирует по своему onOpen.
+  // Тап по карточке — ProgramCard навигирует по своему onOpen.
   const guardedOpen = () => {
-    if (swipe.current.swiped) return
     haptic.light()
     if (!pinnedProg) return
     if (pinnedProg.kind === 'swim') { navigate(`/swim/${pinnedSlug}`, { state: { fromHome: true } }); return }
@@ -143,26 +88,46 @@ export default function SectionCarousel({ onSectionChange }) {
   }
 
   return (
-    <div style={styles.wrap} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {/* Идентичность раздела: заголовок + крупная иконка (заезд как у разделов).
-          Тап — пикер разделов (иконки). */}
-      <div ref={identityRef} style={styles.identity} onClick={openPicker}>
-        {anim && <IdLayer cat={cats[anim.from]} role="out" dir={anim.dir} />}
-        <IdLayer cat={cats[idx]} role={anim ? 'in' : 'static'} dir={anim?.dir} />
+    <div style={styles.wrap}>
+      {/* Компактный селектор раздела + выпадающий список */}
+      <div style={styles.selectorWrap}>
+        <button
+          style={styles.selector}
+          className="press-tile"
+          onClick={() => { haptic.light(); setOpen(o => !o) }}
+          aria-label="Выбрать раздел"
+        >
+          <UiIcon name={cat.iconName} size={24} color={cat.color} />
+          <span style={styles.selectorText}>{cat.title}</span>
+          <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
+        </button>
+
+        {open && (
+          <>
+            <div style={styles.dropClose} onClick={() => setOpen(false)} aria-hidden="true" />
+            <div style={styles.dropdown}>
+              {cats.map(c => {
+                const on = c.id === cat.id
+                return (
+                  <button
+                    key={c.id}
+                    className="press-tile"
+                    style={styles.dropItem}
+                    onClick={() => selectCat(c.id)}
+                  >
+                    <UiIcon name={c.iconName} size={22} color={on ? c.color : 'var(--color-text-secondary)'} />
+                    <span style={{ ...styles.dropItemText, color: on ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+                      {c.title}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Точки-пейджер */}
-      <div style={styles.dots}>
-        {cats.map((c, i) => (
-          <span key={c.id} style={{ ...styles.dot, ...(i === idx ? { opacity: 0.65 } : null) }} />
-        ))}
-      </div>
-
-      {/* Последняя тренировка в разделе (по закреплённой программе).
-          Пустая строка (' ') держит зазор, чтобы пейджер не липнул к карточке. */}
-      <div style={styles.lastLine}>{lastText}</div>
-
-      {/* Закреплённая программа — сама карточка, как внутри раздела */}
+      {/* Закреплённая программа — сама карточка (как внутри раздела) */}
       {pinnedProg ? (
         <ProgramCard
           key={pinnedSlug}
@@ -170,6 +135,7 @@ export default function SectionCarousel({ onSectionChange }) {
           dots
           isFav
           cta
+          lastTrained
           onToggleFav={onToggleFav}
           onOpen={guardedOpen}
           onDeleted={() => setPinnedTick(t => t + 1)}
@@ -181,82 +147,61 @@ export default function SectionCarousel({ onSectionChange }) {
         </button>
       )}
 
-      {/* Все программы — текст-ссылка со стрелкой вниз (на экран раздела) */}
+      {/* Все программы — текст-ссылка со стрелкой (на экран раздела) */}
       <button style={styles.allLink} className="tg-row" onClick={openSection}>
         Все программы <span style={styles.chev}>›</span>
       </button>
-
-      {pickerRect && (
-        <SectionPicker
-          sections={cats}
-          currentId={cat.id}
-          anchorRect={pickerRect}
-          onPick={onPickSection}
-          onClose={() => setPickerRect(null)}
-        />
-      )}
-    </div>
-  )
-}
-
-/** Слой идентичности (заголовок + иконка), анимируется как старый свайпер разделов. */
-function IdLayer({ cat, role, dir }) {
-  const textAnim = role === 'out' ? 'catFadeOut' : role === 'in' ? 'catFadeIn' : null
-  const iconAnim = role === 'static' ? null
-    : role === 'out'
-      ? (dir === 'next' ? 'catIconOutNext' : 'catIconOutPrev')
-      : (dir === 'next' ? 'catIconInNext' : 'catIconInPrev')
-  const textStyle = textAnim ? { animation: `${textAnim} ${ANIM_MS}ms ease forwards` } : null
-
-  return (
-    <div style={styles.idLayer}>
-      <span style={{ ...styles.title, ...textStyle }}>{cat.title}</span>
-      <div style={{ ...styles.iconRow, ...(iconAnim ? { animation: `${iconAnim} ${ANIM_MS}ms var(--ease-ios) forwards` } : null) }}>
-        <UiIcon name={cat.iconName} size={52} color={cat.color} />
-      </div>
     </div>
   )
 }
 
 const styles = {
-  wrap: { touchAction: 'pan-y' },
-  // Идентичность: фикс. высота под абсолютные слои перехода, overflow — клип иконки.
-  identity: {
-    position: 'relative',
-    height: '120px',
-    overflow: 'hidden'
+  wrap: {},
+  // Селектор по центру: иконка + название + шеврон, лёгкая подложка-пилюля.
+  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '14px' },
+  selector: {
+    display: 'inline-flex', alignItems: 'center', gap: '9px',
+    padding: '8px 12px 8px 14px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    borderRadius: 'var(--radius-pill)',
+    cursor: 'pointer'
   },
-  idLayer: {
+  selectorText: {
+    fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700,
+    color: 'var(--color-text)', letterSpacing: '0.2px'
+  },
+  selectorChev: {
+    fontSize: '15px', lineHeight: 1, marginTop: '-2px',
+    color: 'var(--color-text-secondary)',
+    transition: 'transform 0.2s var(--ease-ios)'
+  },
+  // Прозрачный слой для закрытия по тапу мимо списка.
+  dropClose: { position: 'fixed', inset: 0, zIndex: 40 },
+  // Выпадающий список — по центру под селектором.
+  dropdown: {
     position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '14px'
+    top: 'calc(100% + 6px)',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 41,
+    minWidth: '190px',
+    padding: '6px',
+    background: 'var(--surface-raised)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: 'var(--radius-medium)',
+    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+    display: 'flex', flexDirection: 'column', gap: '2px'
   },
-  title: {
-    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 700,
-    color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1, textAlign: 'center'
+  dropItem: {
+    display: 'flex', alignItems: 'center', gap: '11px',
+    width: '100%', padding: '10px 12px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)',
+    cursor: 'pointer', textAlign: 'left'
   },
-  iconRow: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-  dots: { display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center', marginTop: '4px' },
-  // Тихий пейджер: одинаковые серые кружки, активный лишь чуть ярче.
-  // Без акцентного цвета и без вытягивания — не спорит с фокусом на текущем разделе.
-  dot: {
-    width: '6px', height: '6px', borderRadius: '3px', flexShrink: 0,
-    background: 'var(--color-text-secondary)', opacity: 0.25,
-    transition: 'opacity 0.2s ease'
-  },
-  lastLine: {
-    minHeight: '16px',
-    marginTop: '10px', marginBottom: '12px',
-    fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', textAlign: 'center'
-  },
+  dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
   pinEmpty: {
     width: '100%',
-    // Та же высота, что у ProgramCard (minHeight 112px) — чтобы карусель не «прыгала».
     minHeight: '112px',
     borderRadius: 'var(--radius-card)',
     background: 'var(--surface)',
@@ -268,8 +213,6 @@ const styles = {
   pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
   allLink: {
     width: '100%',
-    // Отступ от карточки — как зазор у строки «последняя тренировка» (~12px),
-    // а не 22: визуально ссылка была слишком далеко внизу.
     marginTop: '2px',
     padding: '10px',
     background: 'transparent',

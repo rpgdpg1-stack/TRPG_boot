@@ -31,10 +31,12 @@ function readWeeklyCount() {
 
 // Заголовок сворачиваемой секции — БЕЗ стрелки: тап по самому тексту сворачивает/
 // разворачивает. Кнопка обнимает текст (не на всю ширину) — жмётся именно область слова.
-function SectionToggle({ title, onToggle }) {
+function SectionToggle({ title, open, onToggle }) {
   return (
     <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
       <span style={homeSectionStyles.toggleTitle}>{title}</span>
+      {/* Шеврон рядом с заголовком: вниз — свёрнуто, вверх — раскрыто. */}
+      <span style={{ ...homeSectionStyles.toggleChev, transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
     </button>
   )
 }
@@ -59,7 +61,7 @@ function Collapsible({ open, children }) {
 const homeSectionStyles = {
   // Кнопка обнимает текст (width:auto, слева) — тап именно по слову-заголовку.
   toggleBtn: {
-    display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start',
+    display: 'inline-flex', alignItems: 'center', gap: '5px', alignSelf: 'flex-start',
     padding: '0 4px', marginTop: '20px', marginBottom: '12px',
     background: 'transparent', border: 'none', cursor: 'pointer'
   },
@@ -68,6 +70,12 @@ const homeSectionStyles = {
   toggleTitle: {
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '15px',
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
+  },
+  // Шеврон рядом с заголовком (близко, через маленький gap).
+  toggleChev: {
+    fontSize: '14px', lineHeight: 1, marginTop: '-2px',
+    color: 'rgba(255, 255, 255, 0.45)',
+    transition: 'transform 0.2s var(--ease-ios)'
   }
 }
 
@@ -285,6 +293,7 @@ export default function Home() {
         {/* Активности — просто заголовок (без статуса N/3), всё внутри карточки. */}
         <SectionToggle
           title="Активности"
+          open={!boostCollapsed}
           onToggle={() => setCollapse('boost', !boostCollapsed)}
         />
         <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
@@ -292,6 +301,7 @@ export default function Home() {
         {/* История — сворачиваемый календарь (как Разделы/Активности) */}
         <SectionToggle
           title="История"
+          open={!historyCollapsed}
           onToggle={() => setCollapse('history', !historyCollapsed)}
         />
         <Collapsible open={!historyCollapsed}><HistoryCalendar /></Collapsible>

@@ -1,6 +1,8 @@
-import { getProgramTagColor, getProgramPlaces } from '../features/programs/registry'
+import { getProgramPlaces } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
+import { localGet } from '../utils/storage'
+import { formatRelative } from '../utils/history'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
 import PencilIcon from './PencilIcon'
@@ -16,8 +18,11 @@ import PencilIcon from './PencilIcon'
  * `accent` — цвет раздела (фолбэк для буквы дня). `activeMin` — truthy, если идёт
  * тренировка по этой программе (тогда показываем ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0 }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, lastTrained = false }) {
   const { prog, activeDay } = entry
+  // Строка «последняя тренировка …» ВНИЗУ карточки (главная): интегрирована в тело,
+  // а не отдельной надписью над карточкой.
+  const lastDate = lastTrained ? localGet(`program:${prog.slug}:last_day_date`) : null
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
   // Свою программу показываем как ввёл юзер; встроенные нормализуем по регистру.
@@ -45,15 +50,11 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
           )}
         </div>
 
-        {/* Тег «Бассейн» на карточке убран — выбор бассейна живёт внутри заплыва.
-            Здесь только пользовательские теги (если есть) и «Скоро». */}
-        {places.length === 0 && ((prog.tags && prog.tags.length > 0) || prog.comingSoon) && (
+        {/* Теги места/бассейна на карточке убраны — выбор живёт внутри программы.
+            Заплыв (kind==='swim') тег «Бассейн» тоже не показывает. Остаётся «Скоро». */}
+        {places.length === 0 && prog.kind !== 'swim' && prog.comingSoon && (
           <div style={styles.tags}>
-            {(prog.tags || []).map(tag => {
-              const ft = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
-              return <span key={tag} style={{ ...styles.tag, background: getProgramTagColor(tag, prog.source) }}>{ft}</span>
-            })}
-            {prog.comingSoon && <span style={styles.soonTag}>Скоро</span>}
+            <span style={styles.soonTag}>Скоро</span>
           </div>
         )}
 
@@ -115,6 +116,13 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         {prog.source === 'shared' && prog.authorName && (
           <div style={styles.authorLine}>от {prog.authorName}</div>
         )}
+
+        {/* Последняя тренировка — нижней строкой внутри карточки (главная). */}
+        {lastTrained && available && (
+          <div style={styles.lastLine}>
+            {lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали'}
+          </div>
+        )}
       </div>
     </>
   )
@@ -168,6 +176,14 @@ const styles = {
   authorLine: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)'
+  },
+  // Строка «последняя тренировка …» — нижней строкой карточки, чуть отделена сверху.
+  lastLine: {
+    marginTop: '2px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
     fontWeight: 600,
     color: 'var(--color-text-secondary)'
   }
