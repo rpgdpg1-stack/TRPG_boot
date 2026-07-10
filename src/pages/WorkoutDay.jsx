@@ -30,7 +30,6 @@ import {
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
-import AnchorMenu from '../components/AnchorMenu'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
@@ -147,9 +146,6 @@ export default function WorkoutDay() {
   // Момент закрытия модалки заметки — гасим «призрачный» тап по упражнению под ней.
   const actionClosedAtRef = useRef(0)
   // Меню «⋯» у упражнения: заметка / техника / замена (привязано к кнопке).
-  const [dotsSlot, setDotsSlot] = useState(null)
-  const [dotsAnchor, setDotsAnchor] = useState(null)
-  const [dotsHasNote, setDotsHasNote] = useState(false)
 
   const [slideDir, setSlideDir] = useState('right')
 
@@ -630,21 +626,6 @@ export default function WorkoutDay() {
   const handleCardLongPress = (slot) => {
     if (showFinishedModal) return
     setActionSlot(slot)
-  }
-
-  // Тап по «⋯» — компактное меню у кнопки. Подтягиваем наличие заметки, чтобы
-  // показать «Добавить» / «Открыть заметку».
-  const closeDots = () => { setDotsSlot(null); setDotsAnchor(null) }
-  const handleDots = (slot, rect) => {
-    if (showFinishedModal) return
-    // Из кэша — мгновенно правильная надпись (без мигания «Добавить»→«Открыть»).
-    const cached = getExerciseNoteCached(slot.exercise_id)
-    setDotsHasNote(!!(cached && cached.trim()))
-    setDotsSlot(slot)
-    setDotsAnchor(rect)
-    getExerciseNote(slot.exercise_id)
-      .then(note => setDotsHasNote(!!(note && note.trim())))
-      .catch(() => {})
   }
 
   // Вес отредактировали в модалке действий — обновляем слоты, чтобы карточка
@@ -1294,7 +1275,9 @@ export default function WorkoutDay() {
                           isActive={activeOrderNums.has(slot.order_num)}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
-                          onDots={handleDots}
+                          onNote={(s) => setActionSlot(s)}
+                          onInfo={goToInfo}
+                          onSwap={goToSwap}
                         />
 
                         {/* «Недавно тронутое» — светло-серая заливка карточки:
@@ -1367,34 +1350,6 @@ export default function WorkoutDay() {
             setGlowedOrderNum(orderNum)
             setTimeout(() => setGlowedOrderNum(null), 1600)
           }}
-        />
-      )}
-
-      {/* Компактное меню «⋯» у упражнения: заметка / техника / замена. */}
-      {dotsSlot && dotsAnchor && (
-        <AnchorMenu
-          anchorRect={dotsAnchor}
-          onClose={closeDots}
-          items={[
-            {
-              key: 'note',
-              icon: <UiIcon name="notes" size={20} color="#FFA94D" />,
-              label: dotsHasNote ? 'Открыть заметку' : 'Добавить заметку',
-              onClick: () => { const s = dotsSlot; setTimeout(() => setActionSlot(s), 190) }
-            },
-            {
-              key: 'info',
-              icon: <UiIcon name="info" size={20} color="#3FA2F7" />,
-              label: 'Техника упражнения',
-              onClick: () => goToInfo(dotsSlot)
-            },
-            {
-              key: 'swap',
-              icon: <UiIcon name="change" size={20} color="#FF8C42" />,
-              label: 'Заменить упражнение',
-              onClick: () => goToSwap(dotsSlot)
-            }
-          ]}
         />
       )}
 

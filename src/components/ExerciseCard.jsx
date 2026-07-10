@@ -33,7 +33,9 @@ import UiIcon from './UiIcon'
  *  - глобальная защита от ложных активаций при открытой клавиатуре
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
-export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onDots }) {
+const SWIPE_PANEL_W = 172 // ширина панели действий (3 действия), открывается свайпом влево
+
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onNote, onInfo, onSwap }) {
   const {
     exercise_id,
     exercise_name,
@@ -77,6 +79,22 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
+  // Свайп влево → панель действий (заметка / техника / замена). offset: 0 закрыто,
+  // -SWIPE_PANEL_W открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
+  const [offset, setOffset] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const offsetRef = useRef(0)
+  const openRef = useRef(false)
+  const swipe = useRef({ x: 0, y: 0, start: 0, decided: false, swiping: false, suppressClick: false })
+  const setOff = (v) => { offsetRef.current = v; setOffset(v) }
+  const closePanel = () => { openRef.current = false; setDragging(false); setOff(0) }
+  const runAction = (fn) => { closePanel(); fn?.(slot) }
+  const swipeActions = [
+    { key: 'note', icon: 'notes', color: '#FFA94D', label: 'Заметка', fn: onNote },
+    { key: 'info', icon: 'info', color: '#3FA2F7', label: 'Техника', fn: onInfo },
+    { key: 'swap', icon: 'change', color: '#FF8C42', label: 'Замена', fn: onSwap }
+  ]
+
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group)
 
@@ -100,42 +118,69 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }, [])
 
+  const clearLongPress = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
   const handleCardPointerDown = (e) => {
     if (editingRef.current) return
     if (shouldIgnoreCardTap()) return
 
     longPressFired.current = false
     pointerStartPos.current = { x: e.clientX, y: e.clientY }
+    swipe.current = { x: e.clientX, y: e.clientY, start: offsetRef.current, decided: false, swiping: false, suppressClick: false }
 
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
-
-    longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true
-      haptic.medium()
-      if (onLongPress) onLongPress(slot)
-    }, LONG_PRESS_MS)
+    clearLongPress()
+    // Long-press (заметка) — только на закрытой карточке.
+    if (!openRef.current) {
+      longPressTimer.current = setTimeout(() => {
+        longPressFired.current = true
+        haptic.medium()
+        if (onLongPress) onLongPress(slot)
+      }, LONG_PRESS_MS)
+    }
   }
 
   const handleCardPointerMove = (e) => {
-    if (!longPressTimer.current) return
-    const dx = Math.abs(e.clientX - pointerStartPos.current.x)
-    const dy = Math.abs(e.clientY - pointerStartPos.current.y)
-    if (dx > MOVE_THRESHOLD_PX || dy > MOVE_THRESHOLD_PX) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+    const s = swipe.current
+    const dx = e.clientX - s.x
+    const dy = e.clientY - s.y
+    if (!s.decided) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
+        // Горизонталь → свайп: гасим long-press, дальше ведём панель за пальцем.
+        s.decided = true; s.swiping = true; setDragging(true); clearLongPress()
+      } else if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) {
+        // Вертикаль/увод — не свайп (это скролл списка / отмена long-press).
+        s.decided = true; s.swiping = false; clearLongPress()
+      }
+    }
+    if (s.swiping) {
+      setOff(Math.max(-SWIPE_PANEL_W, Math.min(0, s.start + dx)))
     }
   }
 
   const handleCardPointerUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+    clearLongPress()
+    const s = swipe.current
+    if (s.swiping) {
+      setDragging(false)
+      const opened = offsetRef.current < -SWIPE_PANEL_W / 2
+      openRef.current = opened
+      setOff(opened ? -SWIPE_PANEL_W : 0)
+      if (opened) haptic.light()
+      s.suppressClick = true
+      setTimeout(() => { s.suppressClick = false }, 60)
     }
   }
 
   const handleCardClick = () => {
     if (shouldIgnoreCardTap()) return
     if (editingRef.current) return
+
+    const s = swipe.current
+    if (s.suppressClick) { s.suppressClick = false; return }
+    // Открытая панель → тап по карточке её закрывает (не отмечает выполнение).
+    if (openRef.current) { closePanel(); return }
 
     if (longPressFired.current) {
       longPressFired.current = false
@@ -228,33 +273,41 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }
 
-  // Кнопка «⋯» — открывает компактное меню (заметка / техника / замена) у самой
-  // кнопки. Long-press по карточке открывает модалку заметки. stopPropagation,
-  // чтобы тап по «⋯» не отметил упражнение и не запустил long-press карточки.
-  const menuBtnRef = useRef(null)
-  const handleMenuPointerDown = (e) => {
-    e.stopPropagation()
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }
-
-  const handleMenuClick = (e) => {
-    e.stopPropagation()
-    if (shouldIgnoreCardTap()) return
-    haptic.light()
-    if (onDots) onDots(slot, menuBtnRef.current?.getBoundingClientRect() || null)
-  }
-
   return (
+   <div style={styles.swipeOuter}>
+    {/* Панель действий (справа, под карточкой) — открывается свайпом влево. */}
+    <div style={styles.actionPanel} aria-hidden={offset === 0}>
+      {swipeActions.map(a => (
+        <button
+          key={a.key}
+          type="button"
+          className="press-tile"
+          style={styles.actionBtn}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); haptic.light(); runAction(a.fn) }}
+        >
+          <UiIcon name={a.icon} size={22} color={a.color} />
+          <span style={styles.actionLabel}>{a.label}</span>
+        </button>
+      ))}
+    </div>
+
+    {/* Слайдер: двигается по свайпу, внутри — карточка (свой press-scale). */}
     <div
+      style={{
+        ...styles.slider,
+        transform: `translateX(${offset}px)`,
+        transition: dragging ? 'none' : 'transform 0.28s var(--ease-ios)',
+        touchAction: 'pan-y'
+      }}
       onClick={handleCardClick}
       onPointerDown={handleCardPointerDown}
       onPointerMove={handleCardPointerMove}
       onPointerUp={handleCardPointerUp}
       onPointerCancel={handleCardPointerUp}
       onPointerLeave={handleCardPointerUp}
+    >
+    <div
       className="press-exercise-card"
       style={{
         ...styles.card,
@@ -349,18 +402,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         <div style={styles.weightUnit}>кг</div>
       </div>
 
-      {/* «⋯» — компактное меню (заметка / техника / замена) у кнопки. */}
-      <button
-        ref={menuBtnRef}
-        type="button"
-        onClick={handleMenuClick}
-        onPointerDown={handleMenuPointerDown}
-        style={styles.menuButton}
-        aria-label="Меню упражнения"
-      >
-        ⋯
-      </button>
-
       <div
         style={{
           ...styles.activeOverlay,
@@ -376,6 +417,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         </div>
       )}
     </div>
+    </div>
+   </div>
   )
 }
 
@@ -389,6 +432,32 @@ function toTitleCase(str) {
 }
 
 const styles = {
+  // Обёртка свайпа: клип по скруглению, панель действий под слайдером.
+  swipeOuter: {
+    position: 'relative',
+    borderRadius: '33px',
+    overflow: 'hidden'
+  },
+  // Панель действий справа (под карточкой). Открывается свайпом влево.
+  actionPanel: {
+    position: 'absolute',
+    top: 0, right: 0, bottom: 0,
+    width: `${SWIPE_PANEL_W}px`,
+    display: 'flex',
+    alignItems: 'stretch',
+    zIndex: 0
+  },
+  actionBtn: {
+    flex: 1,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px',
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  actionLabel: {
+    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600,
+    color: 'var(--color-text-secondary)'
+  },
+  slider: { position: 'relative', zIndex: 1 },
   card: {
     position: 'relative',
     display: 'flex',
@@ -545,29 +614,6 @@ const styles = {
     borderRadius: '33px',
     transition: 'opacity 0.35s ease',
     zIndex: 6
-  },
-  // Кнопка «⋯» в верхнем правом углу — вход в меню. Над затемнением (zIndex 7),
-  // чтобы оставалась видимой и тапабельной даже на выполненной карточке.
-  menuButton: {
-    position: 'absolute',
-    top: '4px',
-    right: '18px',
-    width: '34px',
-    height: '30px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    color: '#9A9A9A',
-    fontSize: '22px',
-    fontWeight: 700,
-    lineHeight: 1,
-    letterSpacing: '1px',
-    padding: 0,
-    zIndex: 7,
-    WebkitTapHighlightColor: 'transparent'
   },
   // Галочка «выполнено» — по центру, поверх затемнения, с лёгкой тенью для
   // читаемости на любом фоне карточки.
