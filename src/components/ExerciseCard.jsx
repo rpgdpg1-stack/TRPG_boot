@@ -104,7 +104,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const openRef = useRef(false)
   const swipe = useRef({ x: 0, y: 0, start: 0, decided: false, swiping: false, suppressClick: false })
   const setOff = (v) => { offsetRef.current = v; setOffset(v) }
-  const closePanel = () => { openRef.current = false; setDragging(false); setOff(0); openAtScrollY = null }
+  const closePanel = () => { openRef.current = false; setDragging(false); setOff(0); openAtScrollY = null; setActiveAction(null) }
   // Регистрируем свою закрывашку; при старте свайпа закрываем ВСЕ ОСТАЛЬНЫЕ.
   const closePanelRef = useRef(closePanel)
   closePanelRef.current = closePanel
@@ -116,6 +116,40 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     return () => swipeCloseFns.delete(fn)
   }, [])
   const closeOthers = () => { swipeCloseFns.forEach(fn => { if (fn !== myCloseFnRef.current) fn() }) }
+
+  // Drag-select по панели действий: нажал — серое выделение на действии под пальцем;
+  // ведёшь влево-вправо — выделение «плавает» между Заметка/Техника/Замена (без вибро);
+  // отпустил на действии — вибро + выполнить; увёл вниз/мимо — закрыть без действия.
+  const panelRef = useRef(null)
+  const [activeAction, setActiveAction] = useState(null)
+  const actionDrag = useRef(false)
+  const actionIndexAt = (clientX, clientY) => {
+    const r = panelRef.current?.getBoundingClientRect()
+    if (!r) return null
+    if (clientY < r.top - 28 || clientY > r.bottom + 28) return null // увёл вниз/вверх — мимо
+    const i = Math.floor(((clientX - r.left) / r.width) * swipeActions.length)
+    return Math.max(0, Math.min(swipeActions.length - 1, i))
+  }
+  const onPanelPointerDown = (e) => {
+    e.stopPropagation()
+    actionDrag.current = true
+    setActiveAction(actionIndexAt(e.clientX, e.clientY))
+    try { panelRef.current?.setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
+  }
+  const onPanelPointerMove = (e) => {
+    if (!actionDrag.current) return
+    setActiveAction(actionIndexAt(e.clientX, e.clientY))
+  }
+  const onPanelPointerUp = (e) => {
+    if (!actionDrag.current) return
+    actionDrag.current = false
+    const i = actionIndexAt(e.clientX, e.clientY)
+    setActiveAction(null)
+    if (i == null) { closePanel(); return }
+    haptic.light()
+    runAction(swipeActions[i].fn)
+  }
+  const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
   const swipeActions = [
     { key: 'note', icon: 'notes', color: '#FFA94D', label: 'Заметка', fn: onNote },
@@ -306,20 +340,29 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 
   return (
    <div style={styles.swipeOuter}>
-    {/* Панель действий (справа, под карточкой) — открывается свайпом влево. */}
-    <div style={styles.actionPanel} aria-hidden={offset === 0}>
+    {/* Панель действий (справа, под карточкой) — открывается свайпом влево.
+        Drag-select: серое выделение под пальцем «плавает» между действиями. */}
+    <div
+      ref={panelRef}
+      style={styles.actionPanel}
+      aria-hidden={offset === 0}
+      onPointerDown={onPanelPointerDown}
+      onPointerMove={onPanelPointerMove}
+      onPointerUp={onPanelPointerUp}
+      onPointerCancel={onPanelPointerCancel}
+    >
+      {activeAction != null && (
+        <div style={{
+          ...styles.actionHighlight,
+          left: `calc(${activeAction * 33.333}% + 4px)`,
+          width: 'calc(33.333% - 8px)'
+        }} />
+      )}
       {swipeActions.map(a => (
-        <button
-          key={a.key}
-          type="button"
-          className="press-tile"
-          style={styles.actionBtn}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); haptic.light(); runAction(a.fn) }}
-        >
+        <div key={a.key} style={styles.actionBtn}>
           <UiIcon name={a.icon} size={22} color={a.color} />
           <span style={styles.actionLabel}>{a.label}</span>
-        </button>
+        </div>
       ))}
     </div>
 
@@ -481,8 +524,19 @@ const styles = {
   actionBtn: {
     flex: 1,
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px',
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
+    // Панель ловит все pointer-события (drag-select); сами кнопки — только визуал.
+    pointerEvents: 'none',
+    position: 'relative', zIndex: 1
+  },
+  // Плавающее серое выделение под пальцем (скруглённый прямоугольник, «плавает»).
+  actionHighlight: {
+    position: 'absolute',
+    top: '8px', bottom: '8px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '16px',
+    pointerEvents: 'none',
+    zIndex: 0,
+    transition: 'left 0.16s var(--ease-ios)'
   },
   actionLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600,
