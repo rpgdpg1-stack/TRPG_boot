@@ -166,15 +166,11 @@ export function lockVerticalSwipes() {
 }
 
 /**
- * ГРАБЛИ (зона оттяга/оверскролла) — слои проверены на устройстве, не менять местами!
- *  • ВЕРХНЮЮ зону оттяга красит CSS-КАНВАС: сплошной background-color на html
- *    (= var(--overscroll-tint, --color-bg), см. index.css). Слои документа
- *    (полосы с отрицательным top) в оттяге ненадёжны — WebKit их не рисует.
- *  • НИЖНЮЮ зону красит НАТИВНЫЙ фон вебвью (tg.setBackgroundColor) — держим его
- *    ВСЕГДА ТЁМНЫМ (APP_BG) и переустанавливаем при каждой смене тинта: покрасишь
- *    его акцентом — низ оттяга станет цветным (проверено).
- * Хелпер миксует акцент раздела (12%) с APP_BG в solid hex для канваса.
- * cssColor — 'var(--x)' или hex; var резолвится через getComputedStyle.
+ * ГРАБЛИ (зона оттяга/оверскролла): зону резинки красит CSS-КАНВАС — фон html
+ * (viewport-привязанный градиент: ВВЕРХУ --overscroll-tint, ВНИЗУ --color-bg, см.
+ * index.css). Нативный фон вебвью НЕ трогаем (всегда тёмный APP_BG из initTelegram) —
+ * его покраска акцентом ломала верх/низ. Хелпер лишь ставит solid-hex тинт (акцент
+ * раздела 12% с APP_BG) в переменную. cssColor — 'var(--x)' или hex.
  */
 export function setOverscrollAccent(cssColor) {
   try {
@@ -188,19 +184,12 @@ export function setOverscrollAccent(cssColor) {
       const bg = parseInt(APP_BG.slice(1 + i * 2, 3 + i * 2), 16)
       return Math.round(acc * 0.12 + bg * 0.88).toString(16).padStart(2, '0')
     }
-    const mixed = `#${mix(0)}${mix(1)}${mix(2)}`
-    // Верх оттяга — канвас (html background-color через переменную).
-    document.documentElement.style.setProperty('--overscroll-tint', mixed)
-    // Низ оттяга — нативный фон: переустанавливаем ТЁМНЫЙ (не акцент!).
-    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
+    document.documentElement.style.setProperty('--overscroll-tint', `#${mix(0)}${mix(1)}${mix(2)}`)
   } catch (e) { /* ignore */ }
 }
 
 export function resetOverscrollAccent() {
-  try {
-    document.documentElement.style.removeProperty('--overscroll-tint')
-    if (typeof tg?.setBackgroundColor === 'function') tg.setBackgroundColor(APP_BG)
-  } catch (e) { /* ignore */ }
+  document.documentElement.style.removeProperty('--overscroll-tint')
 }
 
 export function getUser() {
