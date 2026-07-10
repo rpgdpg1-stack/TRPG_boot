@@ -7,7 +7,6 @@ import { loadWorkoutProgress } from '../utils/workout-progress'
 import { getProgramDaySlots } from '../features/programs/registry'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
-import { getMuscleGroupColors } from '../features/programs/colors'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
@@ -122,11 +121,7 @@ export default function ProgramCard({
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
-  const padRight = showCta ? 132 : showRight ? 96 : dots ? 48 : 18
-  // Рекомендуемый день (буква на кнопке «Начать») + его цвет группы (как в ряду A/B/C).
-  const ctaDay = isActive ? active?.day : (activeDay || (prog.data?.days ? Object.keys(prog.data.days)[0] : null))
-  const ctaDayGroup = ctaDay && prog.data?.days?.[ctaDay]?.[0]?.muscle_group
-  const ctaDayColor = ctaDayGroup ? getMuscleGroupColors(ctaDayGroup).accent : accent
+  const padRight = showCta ? 128 : showRight ? 96 : dots ? 48 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -157,13 +152,13 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
-      {/* Залитая зелёная пилюля-якорь: «Начать [буква дня] ▶» (буква — рекомендуемый
-          день, в цвете его группы) / «Продолжить ▶». Тёмный текст = макс. контраст. */}
+      {/* Тёмная пилюля-подсказка (iOS): «Начать ▶» / «Продолжить ▶». Фон на уровень
+          светлее карточки, белый текст+плей, без эффектов. Не самый яркий элемент —
+          жать будут всю карточку, пилюля лишь подсказывает действие. */}
       {showCta && (
         <span style={styles.ctaPill}>
           {isActive ? 'Продолжить' : 'Начать'}
-          {!isActive && ctaDay && <span style={{ ...styles.ctaDay, color: ctaDayColor }}>{ctaDay}</span>}
-          <PlayIcon size={15} />
+          <PlayIcon size={16} />
         </span>
       )}
 
@@ -264,7 +259,8 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
-  // Залитая CTA-пилюля-якорь справа по центру высоты (тёмный текст на акценте).
+  // Тёмная пилюля-подсказка (iOS): фон на уровень светлее карточки (surface-raised),
+  // белый текст+плей, без градиента/тени/свечения/обводки.
   ctaPill: {
     position: 'absolute',
     top: '50%',
@@ -273,20 +269,17 @@ const styles = {
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
-    padding: '7px 12px',
-    background: 'var(--color-primary)',
+    gap: '6px',
+    padding: '8px 13px',
+    background: 'var(--surface-raised)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 800,
-    color: 'var(--color-bg)',
+    fontSize: '15px',
+    fontWeight: 600,
+    color: 'var(--color-text)',
     whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    boxShadow: '0 2px 12px color-mix(in srgb, var(--color-primary) 30%, transparent)'
+    pointerEvents: 'none'
   },
-  // Буква дня на кнопке — display-шрифт, в цвете группы дня.
-  ctaDay: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', lineHeight: 1 },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',
