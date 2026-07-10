@@ -27,7 +27,7 @@ import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
 import ProgramConstructor from './pages/ProgramConstructor'
 
-import { initTelegram, settingsButton, setOverscrollAccent, resetOverscrollAccent } from './lib/telegram'
+import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, setCurrentUser } from './lib/auth'
 import { getPendingRewards, markRewardShown, getSeasonSummary, markSeasonSummaryShown } from './lib/rewards'
 import { getPendingBackups } from './lib/backups'
@@ -38,8 +38,6 @@ import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { getCurrentSeason, getDaysUntilSeasonEnd } from './utils/season'
 import { supabase } from './lib/supabase'
 import { EVENTS, on } from './lib/events'
-import { CATEGORY_META } from './features/programs/categories'
-import { localGet } from './utils/storage'
 import { checkAndResetSeasonIfNeeded } from './lib/season-reset'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
 import { startVersionWatch } from './lib/version-check'
@@ -138,7 +136,6 @@ export default function App() {
     <ErrorBoundary>
       <div className="app">
         <ScrollToTopOnNavigate />
-        <OverscrollTintController />
         <OfflineBanner />
 
         <SettingsButtonController />
@@ -185,31 +182,6 @@ function ScrollToTopOnNavigate() {
     if (pathname.startsWith('/workout/')) return
     window.scrollTo(0, 0)
     document.scrollingElement?.scrollTo(0, 0)
-  }, [pathname])
-  return null
-}
-
-/**
- * ЕДИНСТВЕННЫЙ ответственный за цвет зоны нативного оттяга (резинки). ГРАБЛИ: при
- * резинке Telegram показывает НАТИВНЫЙ фон вебвью (tg.setBackgroundColor), а не
- * CSS-канвас — красим его через setOverscrollAccent (миксует акцент с тёмным).
- * На КАЖДЫЙ переход детерминированно: главная — цвет последнего раздела карусели;
- * экран раздела — цвет раздела; прочие страницы — resetOverscrollAccent (тёмный).
- * Не возвращать управление тинтом в компоненты страниц (mount/cleanup-гонки).
- * (SectionGlow лишь ОБНОВЛЯЕТ цвет при свайпе разделов на главной — не сбрасывает.)
- */
-function OverscrollTintController() {
-  const { pathname } = useLocation()
-  useLayoutEffect(() => {
-    let color = null
-    if (pathname === '/') {
-      const id = localGet('category-swiper-last')
-      color = (CATEGORY_META[id] || CATEGORY_META.gym)?.color
-    } else if (pathname.startsWith('/category/')) {
-      color = CATEGORY_META[pathname.split('/')[2]]?.color || null
-    }
-    if (color) setOverscrollAccent(color)
-    else resetOverscrollAccent()
   }, [pathname])
   return null
 }

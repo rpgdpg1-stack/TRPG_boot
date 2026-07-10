@@ -99,7 +99,7 @@ export function paintTelegramChrome() {
 
   try {
     if (typeof tg.setBackgroundColor === 'function') {
-      // Нативный фон = НИЖНЯЯ зона оттяга, всегда тёмный (см. setOverscrollAccent).
+      // Нативный фон вебвью — всегда тёмный APP_BG (зону резинки акцентом не красим).
       tg.setBackgroundColor(APP_BG)
     }
   } catch (e) { /* ignore */ }
@@ -165,27 +165,6 @@ export function lockVerticalSwipes() {
   }
 }
 
-/**
- * ГРАБЛИ (зона оттяга/оверскролла): зону резинки красит фон канваса html
- * (var(--overscroll-tint, --color-bg), см. index.css). Тинт задаём как CSS-выражение
- * color-mix — CSS сам разворачивает цвет и ВЛОЖЕННЫЕ var() (var(--cat-pool) →
- * var(--blue-500) → hex). НЕ резолвить цвет в JS через getComputedStyle: он вложенные
- * var не разворачивает → парсинг падал и цвет уходил в ЧЁРНЫЙ (первый заход мог
- * сработать, свайп/переход — чёрный). Ровно как в рабочей версии e49eafa.
- * cssColor — любой CSS-цвет: 'var(--x)' или hex.
- */
-export function setOverscrollAccent(cssColor) {
-  const c = String(cssColor || '').trim()
-  if (!c) { resetOverscrollAccent(); return }
-  document.documentElement.style.setProperty(
-    '--overscroll-tint',
-    `color-mix(in srgb, ${c} 14%, var(--color-bg))`
-  )
-}
-
-export function resetOverscrollAccent() {
-  document.documentElement.style.removeProperty('--overscroll-tint')
-}
 
 export function getUser() {
   return tg?.initDataUnsafe?.user || null

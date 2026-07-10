@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { setOverscrollAccent } from '../lib/telegram'
 
 // Акцентное свечение фона в цвет раздела: радиальный glow у верхней кромки (по центру)
 // + мягкий tinted-градиент, растворяющийся к контенту. Всё приглушённо — «сияние», а
@@ -33,12 +32,6 @@ export default function SectionGlow({ color }) {
       ? { ...prev, b: color, showA: false }
       : { ...prev, a: color, showA: true })
   }, [color])
-
-  // ГРАБЛИ: цвет зоны оттяга — это НАТИВНЫЙ фон вебвью (setOverscrollAccent в
-  // telegram.js); ставит/сбрасывает его ЕДИНСТВЕННЫЙ владелец — OverscrollTintController
-  // в App.jsx на каждый переход. Здесь лишь ОБНОВЛЯЕМ цвет при свайпе разделов на
-  // главной. БЕЗ cleanup-сброса (mount/cleanup-гонки при переходах «теряли» цвет).
-  useEffect(() => { setOverscrollAccent(color) }, [color])
 
   return (
     <div style={styles.glowWrap} aria-hidden="true">
