@@ -138,17 +138,12 @@
 html {
   width: 100%;
   height: 100%;
-  /* ГРАБЛИ: зону резинки красит фон канваса html. Градиент, привязанный к ВЬЮПОРТУ
-     (background-attachment: fixed): ВВЕРХУ акцент раздела (--overscroll-tint, ставит
-     setOverscrollAccent), к 40% высоты — обычный --color-bg. Так верхний оттяг зелёный,
-     нижний тёмный. attachment:fixed обязателен — иначе градиент привязан к длинному
-     документу и в оттяге виден не тот край. Нативный фон Telegram НЕ трогаем. */
-  background-color: var(--color-bg);
-  background-image: linear-gradient(to bottom,
-    var(--overscroll-tint, var(--color-bg)) 0%,
-    var(--color-bg) 40%);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+  /* ГРАБЛИ: зону нативной резинки красит СПЛОШНОЙ фон канваса html (одним цветом —
+     и верх, и низ). Тинт раздела ставит setOverscrollAccent (telegram.js) в
+     --overscroll-tint. НЕ градиент и НЕ background-attachment:fixed: на iOS fixed-фон
+     не перерисовывается при смене (свайп/переход) и уходит в ЧЁРНЫЙ. Только solid —
+     он стабильно обновляется. Разный цвет верх/низ на iOS-резинке стабильно не держится. */
+  background: var(--overscroll-tint, var(--color-bg));
   /* contain (НЕ none): гасит нативную перезагрузку по оттягу, но ОСТАВЛЯЕТ приятный
      отскок/резинку при скролле. Свой pull-to-refresh на главной рисует кольцо поверх
      нативного отскока, контент не двигает — жесту не мешает. */
