@@ -7,6 +7,7 @@ import { loadWorkoutProgress } from '../utils/workout-progress'
 import { getProgramDaySlots } from '../features/programs/registry'
 import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
@@ -118,10 +119,14 @@ export default function ProgramCard({
   // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
   const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
-  // cta — серая подпись справа «Начать»/«Продолжить ›» (закреплённая карточка на главной).
+  // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
-  const padRight = showCta ? 116 : showRight ? 96 : dots ? 48 : 18
+  const padRight = showCta ? 132 : showRight ? 96 : dots ? 48 : 18
+  // Рекомендуемый день (буква на кнопке «Начать») + его цвет группы (как в ряду A/B/C).
+  const ctaDay = isActive ? active?.day : (activeDay || (prog.data?.days ? Object.keys(prog.data.days)[0] : null))
+  const ctaDayGroup = ctaDay && prog.data?.days?.[ctaDay]?.[0]?.muscle_group
+  const ctaDayColor = ctaDayGroup ? getMuscleGroupColors(ctaDayGroup).accent : accent
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -152,11 +157,13 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} lastTrained={lastTrained && !isActive} />
 
-      {/* Серая подпись справа: до старта «Начать ▶», в активной «Продолжить ▶».
-          Плей — серый, высотой примерно как заглавная буква текста. */}
+      {/* Залитая зелёная пилюля-якорь: «Начать [буква дня] ▶» (буква — рекомендуемый
+          день, в цвете его группы) / «Продолжить ▶». Тёмный текст = макс. контраст. */}
       {showCta && (
-        <span style={styles.ctaText}>
-          {isActive ? 'Продолжить' : 'Начать'}<PlayIcon size={16} />
+        <span style={styles.ctaPill}>
+          {isActive ? 'Продолжить' : 'Начать'}
+          {!isActive && ctaDay && <span style={{ ...styles.ctaDay, color: ctaDayColor }}>{ctaDay}</span>}
+          <PlayIcon size={15} />
         </span>
       )}
 
@@ -257,23 +264,29 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
-  // Серая CTA-подпись справа по центру высоты: «Начать ›» / «Продолжить ›».
-  ctaText: {
+  // Залитая CTA-пилюля-якорь справа по центру высоты (тёмный текст на акценте).
+  ctaPill: {
     position: 'absolute',
     top: '50%',
-    right: '16px',
+    right: '14px',
     transform: 'translateY(-50%)',
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '3px',
+    gap: '5px',
+    padding: '7px 12px',
+    background: 'var(--color-primary)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
+    fontWeight: 800,
+    color: 'var(--color-bg)',
     whiteSpace: 'nowrap',
-    pointerEvents: 'none'
+    pointerEvents: 'none',
+    boxShadow: '0 2px 12px color-mix(in srgb, var(--color-primary) 30%, transparent)'
   },
+  // Буква дня на кнопке — display-шрифт, в цвете группы дня.
+  ctaDay: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', lineHeight: 1 },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',
