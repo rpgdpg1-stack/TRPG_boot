@@ -8,6 +8,7 @@ import { getActiveDaySync, toggleFavoriteProgram } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import UiIcon from './UiIcon'
+import ChevronIcon from './ChevronIcon'
 import ProgramCard from './ProgramCard'
 
 /**
@@ -99,7 +100,9 @@ export default function SectionCarousel({ onSectionChange }) {
         >
           <UiIcon name={cat.iconName} size={24} color={cat.color} />
           <span style={styles.selectorText}>{cat.title}</span>
-          <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
+          <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
+            <ChevronIcon size={16} color="var(--color-text-secondary)" />
+          </span>
         </button>
 
         {open && (
@@ -149,7 +152,8 @@ export default function SectionCarousel({ onSectionChange }) {
 
       {/* Все программы — текст-ссылка со стрелкой (на экран раздела) */}
       <button style={styles.allLink} className="tg-row" onClick={openSection}>
-        Все программы <span style={styles.chev}>›</span>
+        Все программы
+        <span style={styles.chevRight}><ChevronIcon size={15} color="var(--color-text-secondary)" /></span>
       </button>
     </div>
   )
@@ -157,14 +161,12 @@ export default function SectionCarousel({ onSectionChange }) {
 
 const styles = {
   wrap: {},
-  // Селектор по центру: иконка + название + шеврон, лёгкая подложка-пилюля.
+  // Селектор по центру: иконка + название + шеврон, БЕЗ подложки (чистый дроп-даун).
   selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '14px' },
   selector: {
-    display: 'inline-flex', alignItems: 'center', gap: '9px',
-    padding: '8px 12px 8px 14px',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
-    borderRadius: 'var(--radius-pill)',
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '6px 4px',
+    background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
   selectorText: {
@@ -172,8 +174,7 @@ const styles = {
     color: 'var(--color-text)', letterSpacing: '0.2px'
   },
   selectorChev: {
-    fontSize: '15px', lineHeight: 1, marginTop: '-2px',
-    color: 'var(--color-text-secondary)',
+    display: 'inline-flex', marginTop: '1px', marginLeft: '-1px',
     transition: 'transform 0.2s var(--ease-ios)'
   },
   // Прозрачный слой для закрытия по тапу мимо списка.
@@ -223,5 +224,6 @@ const styles = {
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
-  chev: { fontSize: '17px', lineHeight: 1, marginTop: '-1px' }
+  // Шеврон-стрелка «вправо» у «Все программы» (тот же ChevronIcon, повёрнут).
+  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: '2px' }
 }

@@ -19,6 +19,7 @@ import MuscleIcon from '../components/MuscleIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
+import ChevronIcon from '../components/ChevronIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 
@@ -367,6 +368,11 @@ function PoolLenSwitcher({ pool, pools, onPick }) {
             >
               <UiIcon name="swimming" size={15} />
               {len} м
+              {i === 0 && multi && (
+                <span style={{ display: 'inline-flex', marginLeft: '1px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s var(--ease-ios)' }}>
+                  <ChevronIcon size={13} color="currentColor" />
+                </span>
+              )}
             </button>
           )
         })}

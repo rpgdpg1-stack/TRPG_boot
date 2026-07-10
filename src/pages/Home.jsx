@@ -13,6 +13,7 @@ import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 import SectionGlow from '../components/SectionGlow'
+import ChevronIcon from '../components/ChevronIcon'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
 // Свёрнутость секций главной (Активности / История) — кросс-девайс через
@@ -36,7 +37,9 @@ function SectionToggle({ title, open, onToggle }) {
     <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
       <span style={homeSectionStyles.toggleTitle}>{title}</span>
       {/* Шеврон рядом с заголовком: вниз — свёрнуто, вверх — раскрыто. */}
-      <span style={{ ...homeSectionStyles.toggleChev, transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
+      <span style={{ ...homeSectionStyles.toggleChev, transform: open ? 'rotate(180deg)' : 'none' }}>
+        <ChevronIcon size={15} color="rgba(255, 255, 255, 0.5)" />
+      </span>
     </button>
   )
 }
@@ -73,8 +76,7 @@ const homeSectionStyles = {
   },
   // Шеврон рядом с заголовком (близко, через маленький gap).
   toggleChev: {
-    fontSize: '14px', lineHeight: 1, marginTop: '-2px',
-    color: 'rgba(255, 255, 255, 0.45)',
+    display: 'inline-flex', marginTop: '2px',
     transition: 'transform 0.2s var(--ease-ios)'
   }
 }
