@@ -209,12 +209,12 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
-  // «Последняя тренировка …» — над карточкой, по центру. minHeight резервирует
+  // «Последняя тренировка …» — над карточкой, по левому краю. minHeight резервирует
   // строку и в разделе без закрепа (заглушка) — блок не прыгает.
   lastLine: {
-    minHeight: '16px', marginBottom: '8px',
+    minHeight: '16px', marginBottom: '8px', paddingLeft: '2px',
     fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', textAlign: 'center'
+    color: 'var(--color-text-secondary)', textAlign: 'left'
   },
   pinEmpty: {
     width: '100%',
