@@ -528,12 +528,15 @@ const styles = {
     pointerEvents: 'none',
     position: 'relative', zIndex: 1
   },
-  // Плавающее серое выделение под пальцем (скруглённый прямоугольник, «плавает»).
+  // Плавающее серое выделение под пальцем — по высоте КОНТЕНТА (иконка+подпись) с
+  // небольшим отступом, по центру. Скруглённый прямоугольник, «плавает» по left.
   actionHighlight: {
     position: 'absolute',
-    top: '8px', bottom: '8px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    height: '54px',
     background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '16px',
+    borderRadius: '14px',
     pointerEvents: 'none',
     zIndex: 0,
     transition: 'left 0.16s var(--ease-ios)'
