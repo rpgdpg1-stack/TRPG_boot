@@ -135,8 +135,9 @@ export default function SectionCarousel({ onSectionChange }) {
         )}
       </div>
 
-      {/* Последняя тренировка — НАД карточкой, прижата к левому краю. */}
-      {lastText && <div style={styles.lastLine}>{lastText}</div>}
+      {/* Последняя тренировка — НАД карточкой, по центру. В разделе без закрепа
+          (заглушка) держим ту же высоту строки (nbsp), чтобы блок не прыгал. */}
+      <div style={styles.lastLine}>{lastText || ' '}</div>
 
       {/* Закреплённая программа — сама карточка (как внутри раздела) */}
       {pinnedProg ? (
@@ -208,9 +209,10 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
-  // «Последняя тренировка …» — над карточкой, по центру.
+  // «Последняя тренировка …» — над карточкой, по центру. minHeight резервирует
+  // строку и в разделе без закрепа (заглушка) — блок не прыгает.
   lastLine: {
-    marginBottom: '8px',
+    minHeight: '16px', marginBottom: '8px',
     fontFamily: 'var(--font-manrope)', fontSize: '12.5px', fontWeight: 600,
     color: 'var(--color-text-secondary)', textAlign: 'center'
   },
