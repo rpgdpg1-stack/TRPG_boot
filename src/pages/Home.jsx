@@ -7,12 +7,13 @@ import { getCurrentUser } from '../lib/auth'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getCurrentWeekKey } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
-import { summarizeWorkouts, formatDuration, formatMeters } from '../utils/history'
+import { summarizeWorkouts } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import SectionCarousel from '../components/SectionCarousel'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 import ChevronIcon from '../components/ChevronIcon'
+import HistoryStats from '../components/HistoryStats'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
 // Тренировок на этой неделе (weekly_streak = дни с тренировкой, 1 на день).
@@ -38,42 +39,20 @@ function HistoryCard() {
   }, [])
 
   const week = summarizeWorkouts(workouts, 'week')
-  const series = readWeeklyCount()
 
   const open = () => { haptic.light(); navigate('/history') }
 
   return (
     <button onClick={open} style={styles.historyCard} className="press-tile">
       <div style={styles.historyTop}>
-        <span style={styles.historyTitle}><span style={styles.historyEmoji}>📅</span>История</span>
+        <span style={styles.historyTitle}>История</span>
         <span style={styles.historyChev}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
       </div>
       <div style={styles.historySub}>На этой неделе</div>
 
-      {week.count === 0 ? (
-        <div style={styles.historyEmptyLine}>Пока нет тренировок</div>
-      ) : (
-        <div style={styles.historyStats}>
-          {series > 0 && (
-            <span style={styles.historyStat}>
-              <StreakFlame streak={series} />
-              <span style={styles.historySeries}>×{series}</span>
-            </span>
-          )}
-          {week.strengthCount > 0 && (
-            <span style={styles.historyStat}>
-              <span style={styles.historyStatEmoji}>🏋️</span>
-              {week.strengthCount}<span style={styles.historyDot}>·</span>{formatDuration(week.strengthMin)}
-            </span>
-          )}
-          {week.swimCount > 0 && (
-            <span style={styles.historyStat}>
-              <span style={styles.historyStatEmoji}>🏊</span>
-              {week.swimCount}<span style={styles.historyDot}>·</span>{formatMeters(week.distance)}
-            </span>
-          )}
-        </div>
-      )}
+      {week.count === 0
+        ? <div style={styles.historyEmptyLine}>Пока нет тренировок</div>
+        : <div style={{ marginTop: '12px' }}><HistoryStats summary={week} /></div>}
     </button>
   )
 }
@@ -356,7 +335,6 @@ const styles = {
     fontWeight: 700,
     color: 'var(--color-text)'
   },
-  historyEmoji: { fontSize: '15px', lineHeight: 1 },
   historyChev: { display: 'inline-flex', transform: 'rotate(-90deg)', opacity: 0.7 },
   historySub: {
     fontFamily: 'var(--font-manrope)',
@@ -364,30 +342,6 @@ const styles = {
     color: 'var(--color-text-secondary)',
     marginTop: '3px'
   },
-  historyStats: {
-    display: 'flex',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '14px',
-    marginTop: '10px'
-  },
-  historyStat: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700,
-    color: 'var(--color-text)'
-  },
-  historyStatEmoji: { fontSize: '14px', lineHeight: 1 },
-  historySeries: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '13px',
-    color: '#FF8C42'
-  },
-  historyDot: { color: 'var(--color-text-secondary)', margin: '0 1px' },
   historyEmptyLine: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',

@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getCurrentUser } from '../lib/auth'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { getCurrentWeekKey } from '../utils/dates'
 import { EVENTS, on } from '../lib/events'
-import { summarizeWorkouts, formatDuration, formatMeters } from '../utils/history'
+import { summarizeWorkouts, mskParts } from '../utils/history'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
+import HistoryStats from '../components/HistoryStats'
 
 const PERIODS = [
   { id: 'week', label: 'Неделя' },
@@ -15,23 +14,23 @@ const PERIODS = [
   { id: 'year', label: 'Год' }
 ]
 
-// Недельная серия (weekly_streak текущей недели, как на главной). Осмысленна
-// только для «Недели» — серия это недельное понятие.
-function weekSeries() {
-  const u = getCurrentUser()
-  if (!u || u.weekly_streak_week !== getCurrentWeekKey()) return 0
-  return u.weekly_streak || 0
-}
-
 /**
  * История тренировок — единственное место с детальной аналитикой:
  * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь →
  * заглушки «Скоро» (рекорды, любимые упражнения).
+ *
+ * «Месяц»/«Год» считаются за месяц/год, который сейчас ОТКРЫТ в календаре ниже:
+ * листнул календарь на июнь → статистика за месяц пересчиталась на июнь.
  */
 export default function History() {
   const navigate = useNavigate()
   const [period, setPeriod] = useState('week')
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(500) || [])
+  // Месяц/год, открытый в календаре (для пересчёта статистики месяца/года).
+  const [view, setView] = useState(() => {
+    const p = mskParts(new Date().toISOString())
+    return { year: p.y, month: p.m }
+  })
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -46,18 +45,14 @@ export default function History() {
     return () => { cancelled = true; off() }
   }, [])
 
-  const sum = summarizeWorkouts(workouts, period)
-  const series = weekSeries()
+  const onCalView = useCallback((v) => setView(v), [])
+
+  // Неделя — всегда текущая (в календаре недели нет). Месяц/год — за открытый в
+  // календаре месяц/год (refDate = 15-е число этого месяца).
+  const refDate = period === 'week' ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
+  const sum = summarizeWorkouts(workouts, period, refDate)
 
   const pickPeriod = (id) => { if (id !== period) { haptic.selection(); setPeriod(id) } }
-
-  // Плитки статистики: серия — только на «Неделе», остальное — за выбранный период.
-  const tiles = [
-    ...(period === 'week' ? [{ key: 'series', value: `×${series}`, label: 'Серия', accent: '#FF8C42' }] : []),
-    { key: 'count', value: String(sum.count), label: 'Тренировок' },
-    { key: 'time', value: formatDuration(sum.minutes), label: 'Время' },
-    { key: 'dist', value: formatMeters(sum.distance), label: 'Плавание', accent: 'var(--cat-pool)' }
-  ]
 
   return (
     <div className="page page-fade">
@@ -87,19 +82,12 @@ export default function History() {
           })}
         </div>
 
-        <div style={styles.tiles}>
-          {tiles.map(t => (
-            <div key={t.key} style={styles.tile}>
-              <span style={{ ...styles.tileValue, color: t.accent || 'var(--color-text)' }}>{t.value}</span>
-              <span style={styles.tileLabel}>{t.label}</span>
-            </div>
-          ))}
-        </div>
+        <HistoryStats summary={sum} />
       </div>
 
-      {/* Месячный календарь (без изменений) */}
+      {/* Месячный календарь — сообщает наверх открытый месяц/год для статистики */}
       <div style={{ marginBottom: '20px' }}>
-        <HistoryCalendar />
+        <HistoryCalendar onViewChange={onCalView} />
       </div>
 
       {/* Скоро — тихие некликабельные заглушки */}
@@ -151,20 +139,6 @@ const styles = {
   segItemActive: {
     background: 'var(--color-surface-active)',
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
-  },
-  tiles: {
-    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-around', gap: '8px'
-  },
-  tile: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', minWidth: 0
-  },
-  tileValue: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px',
-    letterSpacing: '0.3px', whiteSpace: 'nowrap'
-  },
-  tileLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center'
   },
 
   soonGroup: {

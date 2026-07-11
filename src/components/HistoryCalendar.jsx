@@ -58,7 +58,7 @@ function metaForKey(key) {
  * Тап по дню — попап с деталями (программа, день, длительность/метры, время).
  * heading — если задан, сверху секция-заголовок + «Все ›» на /history.
  */
-export default function HistoryCalendar({ heading }) {
+export default function HistoryCalendar({ heading, onViewChange }) {
   const cached = getRecentWorkoutsSync(HISTORY_LIMIT)
   const [workouts, setWorkouts] = useState(cached || [])
   const [offset, setOffset] = useState(0)
@@ -107,6 +107,9 @@ export default function HistoryCalendar({ heading }) {
   const minOffset = earliestYM === null ? 0 : Math.max(-MAX_MONTHS_BACK, earliestYM - todayYM)
 
   const dayKeyOf = (d) => `${viewY}-${String(viewM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+  // Сообщаем наверх открытый месяц/год (для пересчёта статистики на /history).
+  useEffect(() => { onViewChange?.({ year: viewY, month: viewM }) }, [viewY, viewM, onViewChange])
 
   const summary = useMemo(() => {
     const counts = {}

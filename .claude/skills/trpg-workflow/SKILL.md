@@ -203,7 +203,7 @@ src/
 │                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
 ├── components/     ActionButton AnchorMenu BackupAllButton BackupButton CategoryList CategorySwiper ClockIcon DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody FavHint FavoritesList
-│                   FinishConfirmModal FramePreview FriendRow HistoryCalendar LeaderboardRow LeagueBadgeIcon ModalButton
+│                   FinishConfirmModal FramePreview FriendRow HistoryCalendar HistoryStats LeaderboardRow LeagueBadgeIcon ModalButton
 │                   MuscleIcon OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
 │                   ProfileHeader ProgramActionMenu ProgramCard ProgramEmblem PoolTag RankFrame RankIcon RanksPopup SaveFriendProgramModal SectionCarousel SectionPicker
 │                   ScreenTitle StreakFlame TabBar TitleTag UiIcon WaterChrome WeightRaiseFlash XPBar WorkoutFinishedModal
