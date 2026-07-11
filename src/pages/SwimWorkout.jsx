@@ -165,7 +165,10 @@ export default function SwimWorkout() {
     setModal({ kind: 'pending' })
 
     try {
-      const result = await finishWorkout(programId, 'main', [], XP_REWARDS.WORKOUT_COMPLETE, totalMeters)
+      // Синтетический старт = сейчас − оценка минут заплыва: у заплыва нет сессии,
+      // но так в историю запишется длительность (та же, что в шапке «≈N мин»).
+      const startedAt = new Date(Date.now() - swimMinutesForMeters(totalMeters) * 60000).toISOString()
+      const result = await finishWorkout(programId, 'main', [], XP_REWARDS.WORKOUT_COMPLETE, totalMeters, startedAt)
 
       if (!result) {
         setFinishStatus('error')

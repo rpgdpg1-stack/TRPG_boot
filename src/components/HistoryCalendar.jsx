@@ -8,7 +8,8 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import {
   MONTHS_RU, WEEKDAYS_RU, CATEGORY_ORDER,
   mskParts, mskDayKey, formatTimeMsk,
-  workoutCategoryMeta, describeWorkout, getDayMuscleTags
+  workoutCategoryMeta, describeWorkout, getDayMuscleTags,
+  workoutMinutes, formatDuration
 } from '../utils/history'
 
 const HISTORY_LIMIT = 500 // с запасом на катящийся год истории
@@ -259,14 +260,11 @@ function DayDetail({ data, onClose }) {
             const b = badgeFor(w)
             const meta = workoutCategoryMeta(w)
             const letter = meta.key === 'strength' ? w.day : null
-            // Длительность (мин) для силовой — из started_at/finished_at.
-            let minutes = null
-            if (meta.key === 'strength' && w.started_at && w.finished_at) {
-              const diff = Math.round((new Date(w.finished_at) - new Date(w.started_at)) / 60000)
-              if (diff >= 1) minutes = diff
-            }
+            // Длительность (мин) — из started_at/finished_at, и для силовой, и для
+            // заплыва (у заплыва started_at синтетический, см. finishWorkout).
+            const minutes = workoutMinutes(w)
             const metaParts = []
-            if (minutes != null) metaParts.push(<span key="min">{minutes} мин</span>)
+            if (minutes > 0) metaParts.push(<span key="min">{formatDuration(minutes)}</span>)
             if (w.distance_m) metaParts.push(<span key="dist" style={{ color: 'var(--cat-pool)', fontWeight: 700 }}>{w.distance_m} м</span>)
             metaParts.push(<span key="time">{formatTimeMsk(w.finished_at)}</span>)
             return (

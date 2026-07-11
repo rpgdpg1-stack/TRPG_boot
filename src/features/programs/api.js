@@ -286,7 +286,7 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  *
  * ОНЛАЙН: как раньше — атомарная RPC, BADGE_EARNED при выдаче значка.
  */
-export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null) {
+export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null, startedAtOverride = null) {
   console.log('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
 
   const user = getCurrentUser()
@@ -303,10 +303,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
   const dbId = program.dbId
 
   // Реальное начало сессии (для длительности тренировки). Берём из активной
-  // сессии, если она про эту же программу; у заплыва сессии нет → null (started_at
-  // на сервере упадёт в finished_at, длительность 0 — заплыв меряется метрами).
+  // сессии, если она про эту же программу; иначе — startedAtOverride (заплыв
+  // передаёт синтетический старт = finished − оценка минут, чтобы длительность
+  // записалась без сессии). Нет ни того, ни другого → null (длительность 0).
   const active = getActiveWorkout()
-  const startedAt = active && active.programId === programSlug ? active.startedAt : null
+  const startedAt = active && active.programId === programSlug ? active.startedAt : startedAtOverride
 
   // Положить завершение в оффлайн-очередь и вернуть флаг offline. Зовём и когда
   // сети заведомо нет, и когда онлайн-запрос завис/упал (мёртвый Wi-Fi): иначе

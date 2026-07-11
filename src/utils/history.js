@@ -148,6 +148,85 @@ export function workoutCategoryMeta(workout) {
 // Порядок разделов в сводке месяца.
 export const CATEGORY_ORDER = ['strength', 'pool', 'cardio', 'stretch']
 
+/* ============================================ */
+/* Метрики за период (для карточки главной и экрана Истории) */
+/* ============================================ */
+
+// Длительность тренировки в минутах из started_at/finished_at. Работает и для
+// силовой (started_at = старт сессии), и для заплыва (синтетический started_at,
+// см. finishWorkout). Нет пары / меньше минуты → 0.
+export function workoutMinutes(w) {
+  if (!w?.started_at || !w?.finished_at) return 0
+  const diff = Math.round((new Date(w.finished_at) - new Date(w.started_at)) / 60000)
+  return diff >= 1 ? diff : 0
+}
+
+// "45 мин" / "1 ч 20 мин" / "2 ч".
+export function formatDuration(min) {
+  if (!min || min < 1) return '0 мин'
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  if (h === 0) return `${m} мин`
+  if (m === 0) return `${h} ч`
+  return `${h} ч ${m} мин`
+}
+
+// "750 м" / "1.2 км" — дистанция плавания.
+export function formatMeters(m) {
+  if (!m) return '0 м'
+  if (m < 1000) return `${m} м`
+  const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
+  return `${km} км`
+}
+
+// Полночь МСК даты (y,m,d) как реальный UTC-таймстамп (мс). Москва = UTC+3, значит
+// её полночь наступает в 21:00 UTC предыдущих суток. Date.UTC нормализует overflow
+// по дню/месяцу (можно передавать d-dow < 1 или m+1 == 12).
+function mskMidnightMs(y, m, d) {
+  return Date.UTC(y, m, d) - 3 * 3600 * 1000
+}
+
+// Границы периода по Москве [startMs, endMs) для сравнения с finished_at.
+// period: 'week' (Пн–Вс) | 'month' | 'year'.
+export function periodRange(period, now = new Date()) {
+  const p = mskParts(now.toISOString())
+  if (period === 'year') return [mskMidnightMs(p.y, 0, 1), mskMidnightMs(p.y + 1, 0, 1)]
+  if (period === 'month') return [mskMidnightMs(p.y, p.m, 1), mskMidnightMs(p.y, p.m + 1, 1)]
+  // Неделя с понедельника (как принято в РФ), по МСК.
+  const dow = (new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay() + 6) % 7
+  const start = mskMidnightMs(p.y, p.m, p.d - dow)
+  return [start, start + 7 * 86400000]
+}
+
+// Сводка завершённых тренировок за период: общее число/время + разбивка
+// силовая/плавание (для карточки истории на главной и блока статистики).
+export function summarizeWorkouts(workouts, period, now = new Date()) {
+  const [start, end] = periodRange(period, now)
+  const res = {
+    count: 0, minutes: 0, distance: 0,
+    strengthCount: 0, strengthMin: 0,
+    swimCount: 0, swimMin: 0
+  }
+  for (const w of workouts || []) {
+    if (!w.finished_at) continue
+    const t = new Date(w.finished_at).getTime()
+    if (t < start || t >= end) continue
+    const isSwim = workoutCategoryMeta(w).key === 'pool'
+    const mins = workoutMinutes(w)
+    res.count++
+    res.minutes += mins
+    if (isSwim) {
+      res.swimCount++
+      res.swimMin += mins
+      res.distance += w.distance_m || 0
+    } else {
+      res.strengthCount++
+      res.strengthMin += mins
+    }
+  }
+  return res
+}
+
 /**
  * Уникальные группы мышц дня программы — для тегов в истории и в дне.
  * Возвращает [{ key, label, color }] в порядке появления, без дублей.
