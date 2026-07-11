@@ -15,6 +15,9 @@ import {
 const HISTORY_LIMIT = 500 // с запасом на катящийся год истории
 const MAX_MONTHS_BACK = 11 // катящееся окно: текущий месяц + до 11 назад (год)
 
+// Короткие месяцы для год-режима (сетка 12 плиток).
+const MONTHS_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+
 // Акцентный цвет силового дня = цвет первой группы мышц (как на карточках/в шапке).
 function strengthAccent(workout) {
   const key = getDayMuscleTags(workout.program_id, workout.day)[0]?.key
@@ -58,11 +61,19 @@ function metaForKey(key) {
  * Тап по дню — попап с деталями (программа, день, длительность/метры, время).
  * heading — если задан, сверху секция-заголовок + «Все ›» на /history.
  */
-export default function HistoryCalendar({ heading, onViewChange }) {
+export default function HistoryCalendar({ heading, mode = 'month', onViewChange, onMonthPick, initialView }) {
   const cached = getRecentWorkoutsSync(HISTORY_LIMIT)
   const [workouts, setWorkouts] = useState(cached || [])
-  const [offset, setOffset] = useState(0)
+  // Стартовый месяц — из initialView (общий вид с /history и главной), иначе текущий.
+  const [offset, setOffset] = useState(() => {
+    if (initialView && Number.isFinite(initialView.year) && Number.isFinite(initialView.month)) {
+      const p = mskParts(new Date().toISOString())
+      return (initialView.year * 12 + initialView.month) - (p.y * 12 + p.m)
+    }
+    return 0
+  })
   const [dayModal, setDayModal] = useState(null)
+  const isYear = mode === 'year'
 
   useEffect(() => {
     let cancelled = false
@@ -105,11 +116,23 @@ export default function HistoryCalendar({ heading, onViewChange }) {
   // Докуда можно листать назад: до первого месяца с тренировкой, но не глубже года.
   const todayYM = today.y * 12 + today.m
   const minOffset = earliestYM === null ? 0 : Math.max(-MAX_MONTHS_BACK, earliestYM - todayYM)
+  const earliestYear = earliestYM === null ? today.y : Math.floor(earliestYM / 12)
 
   const dayKeyOf = (d) => `${viewY}-${String(viewM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 
   // Сообщаем наверх открытый месяц/год (для пересчёта статистики на /history).
   useEffect(() => { onViewChange?.({ year: viewY, month: viewM }) }, [viewY, viewM, onViewChange])
+
+  // Год-режим: сколько тренировок в каждом месяце текущего года (для плиток).
+  const yearCounts = useMemo(() => {
+    const c = {}
+    for (const w of workouts) {
+      if (!w.finished_at) continue
+      const p = mskParts(w.finished_at)
+      if (p.y === viewY) c[p.m] = (c[p.m] || 0) + 1
+    }
+    return c
+  }, [workouts, viewY])
 
   const summary = useMemo(() => {
     const counts = {}
@@ -125,8 +148,19 @@ export default function HistoryCalendar({ heading, onViewChange }) {
 
   const totalMonth = summary.reduce((s, c) => s + c.count, 0)
 
-  const goPrev = () => { if (offset > minOffset) { setOffset(offset - 1); haptic.selection() } }
-  const goNext = () => { if (offset < 0) { setOffset(offset + 1); haptic.selection() } }
+  // Границы листания: месяц-режим — по месяцам, год-режим — по годам.
+  const canPrev = isYear ? viewY > earliestYear : offset > minOffset
+  const canNext = isYear ? viewY < today.y : offset < 0
+  const goPrev = () => { if (!canPrev) return; setOffset(offset - (isYear ? 12 : 1)); haptic.selection() }
+  const goNext = () => { if (!canNext) return; setOffset(offset + (isYear ? 12 : 1)); haptic.selection() }
+
+  // Тап по месяцу в год-режиме (только где есть тренировки) → открыть этот месяц.
+  const pickMonth = (m) => {
+    if (!yearCounts[m]) return
+    haptic.light()
+    setOffset((viewY * 12 + m) - (today.y * 12 + today.m))
+    onMonthPick?.(viewY, m)
+  }
 
   let touch = null
   const onTouchStart = (e) => { const t = e.touches[0]; touch = { x: t.clientX, y: t.clientY } }
@@ -163,18 +197,49 @@ export default function HistoryCalendar({ heading, onViewChange }) {
       <div style={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div style={styles.monthNav}>
           <button
-            style={{ ...styles.chev, opacity: offset > minOffset ? 1 : 0.25 }}
-            className="press-tile" onClick={goPrev} disabled={offset <= minOffset}
-            aria-label="Предыдущий месяц"
+            style={{ ...styles.chev, opacity: canPrev ? 1 : 0.25 }}
+            className="press-tile" onClick={goPrev} disabled={!canPrev}
+            aria-label={isYear ? 'Предыдущий год' : 'Предыдущий месяц'}
           >‹</button>
-          <div style={styles.monthTitle}>{MONTHS_RU[viewM]} {viewY}</div>
+          <div style={styles.monthTitle}>{isYear ? viewY : `${MONTHS_RU[viewM]} ${viewY}`}</div>
           <button
-            style={{ ...styles.chev, opacity: offset < 0 ? 1 : 0.25 }}
-            className="press-tile" onClick={goNext} disabled={offset >= 0}
-            aria-label="Следующий месяц"
+            style={{ ...styles.chev, opacity: canNext ? 1 : 0.25 }}
+            className="press-tile" onClick={goNext} disabled={!canNext}
+            aria-label={isYear ? 'Следующий год' : 'Следующий месяц'}
           >›</button>
         </div>
 
+        {isYear ? (
+          <div key={`y${viewY}`} className="page-fade" style={styles.yearGrid}>
+            {MONTHS_SHORT_RU.map((label, m) => {
+              const cnt = yearCounts[m] || 0
+              const has = cnt > 0
+              const isCur = viewY === today.y && m === today.m
+              return (
+                <button
+                  key={m}
+                  className={has ? 'press-tile' : undefined}
+                  onClick={() => pickMonth(m)}
+                  disabled={!has}
+                  style={{
+                    ...styles.monthTile,
+                    background: has ? 'var(--surface-raised)' : 'transparent',
+                    boxShadow: isCur ? 'inset 0 0 0 2px var(--color-primary)' : 'none',
+                    cursor: has ? 'pointer' : 'default'
+                  }}
+                >
+                  <span style={{
+                    ...styles.monthTileLabel,
+                    color: has ? 'var(--color-text)' : 'rgba(255,255,255,0.4)',
+                    fontWeight: isCur ? 800 : (has ? 700 : 500)
+                  }}>{label}</span>
+                  {has && <span style={styles.monthTileCount}>{cnt}</span>}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+        <>
         <div style={styles.summary}>
           {totalMonth === 0 ? (
             <span style={styles.summaryEmpty}>Нет тренировок в этом месяце</span>
@@ -240,6 +305,8 @@ export default function HistoryCalendar({ heading, onViewChange }) {
             })}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {dayModal && <DayDetail data={dayModal} onClose={() => setDayModal(null)} />}
@@ -347,7 +414,20 @@ const styles = {
     alignItems: 'center', justifyContent: 'flex-start', gap: '3px', overflow: 'hidden'
   },
   cellNum: { fontFamily: 'var(--font-display)', fontSize: '15px', lineHeight: 1 },
-  marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }
+  marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' },
+
+  // Год-режим: 12 месяцев сеткой 4×3, минималистично.
+  yearGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' },
+  monthTile: {
+    position: 'relative', aspectRatio: '1 / 0.82', borderRadius: 'var(--radius-medium)',
+    border: 'none', padding: '4px', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: '3px', overflow: 'hidden'
+  },
+  monthTileLabel: { fontFamily: 'var(--font-display)', fontSize: '13px', lineHeight: 1, letterSpacing: '0.3px' },
+  monthTileCount: {
+    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700,
+    color: 'var(--color-primary)', lineHeight: 1
+  }
 }
 
 const dstyles = {

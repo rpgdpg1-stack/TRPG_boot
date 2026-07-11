@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
-import { summarizeWorkouts, mskParts } from '../utils/history'
+import { summarizeWorkouts } from '../utils/history'
+import { getHistoryView, setHistoryView } from '../lib/history-view'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats from '../components/HistoryStats'
@@ -24,13 +25,11 @@ const PERIODS = [
  */
 export default function History() {
   const navigate = useNavigate()
-  const [period, setPeriod] = useState('week')
+  // Стартовый вид — общий с главной (localStorage), чтобы цифры совпадали.
+  const initialView = useRef(getHistoryView())
+  const [period, setPeriod] = useState(initialView.current.period)
+  const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(500) || [])
-  // Месяц/год, открытый в календаре (для пересчёта статистики месяца/года).
-  const [view, setView] = useState(() => {
-    const p = mskParts(new Date().toISOString())
-    return { year: p.y, month: p.m }
-  })
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -45,7 +44,12 @@ export default function History() {
     return () => { cancelled = true; off() }
   }, [])
 
+  // Календарь сообщает открытый месяц/год; тап по месяцу в год-режиме → на месяц.
   const onCalView = useCallback((v) => setView(v), [])
+  const onMonthPick = useCallback((year, month) => { setPeriod('month'); setView({ year, month }) }, [])
+
+  // Персистим выбор (период + открытый месяц/год) — тот же вид на главной.
+  useEffect(() => { setHistoryView({ period, year: view.year, month: view.month }) }, [period, view])
 
   // Неделя — всегда текущая (в календаре недели нет). Месяц/год — за открытый в
   // календаре месяц/год (refDate = 15-е число этого месяца).
@@ -85,9 +89,15 @@ export default function History() {
         <HistoryStats summary={sum} />
       </div>
 
-      {/* Месячный календарь — сообщает наверх открытый месяц/год для статистики */}
+      {/* Календарь: месяц-режим (день-сетка) или год-режим (12 месяцев).
+          Сообщает открытый месяц/год наверх; тап по месяцу в год-режиме → на месяц. */}
       <div style={{ marginBottom: '20px' }}>
-        <HistoryCalendar onViewChange={onCalView} />
+        <HistoryCalendar
+          mode={period === 'year' ? 'year' : 'month'}
+          initialView={initialView.current}
+          onViewChange={onCalView}
+          onMonthPick={onMonthPick}
+        />
       </div>
 
       {/* Скоро — тихие некликабельные заглушки */}

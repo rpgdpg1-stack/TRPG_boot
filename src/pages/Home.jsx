@@ -7,7 +7,8 @@ import { getCurrentUser } from '../lib/auth'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getCurrentWeekKey } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
-import { summarizeWorkouts } from '../utils/history'
+import { summarizeWorkouts, MONTHS_RU } from '../utils/history'
+import { getHistoryView } from '../lib/history-view'
 import { EVENTS, on } from '../lib/events'
 import SectionCarousel from '../components/SectionCarousel'
 import StreakFlame from '../components/StreakFlame'
@@ -29,6 +30,8 @@ function readWeeklyCount() {
 function HistoryCard() {
   const navigate = useNavigate()
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(200) || [])
+  // Период + открытый месяц/год — тот же, что выбран в Истории (localStorage).
+  const [view] = useState(getHistoryView)
 
   useEffect(() => {
     let cancelled = false
@@ -38,7 +41,11 @@ function HistoryCard() {
     return () => { cancelled = true; off() }
   }, [])
 
-  const week = summarizeWorkouts(workouts, 'week')
+  const refDate = view.period === 'week' ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
+  const sum = summarizeWorkouts(workouts, view.period, refDate)
+  const subtitle = view.period === 'week' ? 'На этой неделе'
+    : view.period === 'month' ? `${MONTHS_RU[view.month]} ${view.year}`
+    : `${view.year} год`
 
   const open = () => { haptic.light(); navigate('/history') }
 
@@ -48,11 +55,11 @@ function HistoryCard() {
         <span style={styles.historyTitle}>История</span>
         <span style={styles.historyChev}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
       </div>
-      <div style={styles.historySub}>На этой неделе</div>
+      <div style={styles.historySub}>{subtitle}</div>
 
-      {week.count === 0
+      {sum.count === 0
         ? <div style={styles.historyEmptyLine}>Пока нет тренировок</div>
-        : <div style={{ marginTop: '12px' }}><HistoryStats summary={week} /></div>}
+        : <div style={{ marginTop: '12px' }}><HistoryStats summary={sum} /></div>}
     </button>
   )
 }
