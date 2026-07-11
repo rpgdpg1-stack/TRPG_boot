@@ -76,7 +76,7 @@ export default function DailyBoost() {
 
   return (
     <div className="page page-fade" style={styles.page}>
-      <ScreenTitle>Активности</ScreenTitle>
+      <ScreenTitle>Настройка активностей</ScreenTitle>
 
       <p style={styles.intro}>
         Утро, день и вечер — по одной активности за раз. Минимум шума, максимум действия.

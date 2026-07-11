@@ -127,6 +127,11 @@ camelCase — утилиты (`getTodayKey`).
   заметка про «1 тренировка в день») / оффлайн / ошибка. Не показывать `+150` до подтверждения сервера.
   Эталон-поток одинаков в `WorkoutDay` и `SwimWorkout`. Лимит держит сервер (`api_finish_workout`,
   Москва-сутки), фронт его НЕ дублирует.
+- Длительность в истории — из `started_at`/`finished_at` (клиентский расчёт `workoutMinutes` в
+  `utils/history.js`), отдельной колонки нет. У силовой `started_at` = старт сессии. У заплыва сессии нет:
+  `SwimWorkout` передаёт в `finishWorkout(...)` 6-м аргументом **синтетический `startedAtOverride`** =
+  `now − swimMinutesForMeters(meters)`, чтобы длительность записалась (та же, что «≈N мин» в шапке).
+  Старые заплывы без старта → время просто не показывается.
 - Свап (замена упражнения) привязан к `order_num`. После правки/перестановки программы в
   конструкторе order_num смещаются → старый свап попадал бы в чужой слот (упражнение другой
   группы, напр. гиперэкстензия-спина, в шею). `getWorkoutDay` применяет свап ТОЛЬКО если
@@ -210,8 +215,9 @@ src/
 ├── lib/            activities active-workout auth backups cache cloud-storage events frames friends-list friends leaderboard
 │                   leagues levels network-status notes offline-queue persistent-cache profile-cache version-check
 │                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
-├── pages/          Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile
+├── pages/          Activities Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile
 │                   ProgramConstructor Recovery Rewards Sections Settings SwapExercise SwimWorkout WorkoutDay
+│                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
 └── utils/          dates history plural season storage workout-progress
 
 supabase/

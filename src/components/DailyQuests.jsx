@@ -195,10 +195,10 @@ export default function DailyQuests() {
               onClick: toggleRecommended
             },
             {
-              key: 'add',
+              key: 'edit',
               icon: <StarIcon size={16} />,
-              label: 'Добавить свою активность',
-              onClick: () => { setMenuAnchor(null); navigate('/daily-boost') }
+              label: 'Редактировать активности',
+              onClick: () => { setMenuAnchor(null); navigate('/daily-boost/edit') }
             }
           ]}
         />
