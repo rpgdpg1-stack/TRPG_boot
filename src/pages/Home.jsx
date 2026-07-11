@@ -12,7 +12,6 @@ import DailyQuests from '../components/DailyQuests'
 import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
-import SectionGlow from '../components/SectionGlow'
 import ChevronIcon from '../components/ChevronIcon'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
@@ -257,9 +256,6 @@ export default function Home() {
 
       {/* Индикатор pull-to-refresh (портал в body, поверх нативного отскока). */}
       <PullIndicator pull={pull} refreshing={refreshing} color={glowColor} />
-
-      {/* Акцентное свечение фона в цвет текущего раздела — уходит вверх при скролле. */}
-      <SectionGlow color={glowColor} />
 
       {/* Блок недели — НЕ закреплён: листается вместе с контентом и уходит вверх
           под заголовок «Тренировки» (fixed на линии кнопок Telegram). */}

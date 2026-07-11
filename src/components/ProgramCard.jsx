@@ -81,7 +81,9 @@ export default function ProgramCard({
     // Идёт активная тренировка по этой программе — сразу в активный день.
     if (isActive) {
       haptic.light()
-      setTimeout(() => navigate(`/workout/${prog.slug}/${active.day}`, { state: lastTrained ? { fromHome: true } : null }), 80)
+      // fromHome — только если вход с главной (она передаёт onOpen). Иначе «Назад»
+      // ушла бы в раздел (силовую), даже когда зашли с главной по активной карточке.
+      setTimeout(() => navigate(`/workout/${prog.slug}/${active.day}`, { state: onOpen ? { fromHome: true } : null }), 80)
       return
     }
     // Главная передаёт свой onOpen (свайп-гард + state fromHome). Остальные —

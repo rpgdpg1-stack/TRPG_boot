@@ -691,7 +691,7 @@ const styles = {
     lineHeight: '15px',
     letterSpacing: '0.05em',
     textAlign: 'center',
-    color: '#888888'
+    color: '#5f5f5f'
   },
   activeOverlay: {
     position: 'absolute',

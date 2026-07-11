@@ -9,7 +9,6 @@ import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
-import SectionGlow from '../components/SectionGlow'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -191,9 +190,6 @@ export default function Category() {
 
   return (
     <div className="page page-enter" style={styles.page}>
-
-      {/* Акцентное свечение фона в цвет раздела — как на главной. */}
-      <SectionGlow color={meta.color} />
 
       <div style={styles.content}>
       <header style={styles.header}>
