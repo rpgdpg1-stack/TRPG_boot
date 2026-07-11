@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
 import { getCurrentUser } from '../lib/auth'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getCurrentWeekKey } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
-import { summarizeWorkouts, MONTHS_RU } from '../utils/history'
-import { getHistoryView } from '../lib/history-view'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { getHistoryView, setHistoryView } from '../lib/history-view'
 import { EVENTS, on } from '../lib/events'
 import SectionCarousel from '../components/SectionCarousel'
 import StreakFlame from '../components/StreakFlame'
@@ -25,42 +24,81 @@ function readWeeklyCount() {
 }
 
 // Компактная карточка-кнопка «История»: сводка за текущую неделю (серия +
-// силовая/плавание). Тап открывает полноценный экран /history с календарём и
-// статистикой. Детальная аналитика живёт только там — главная остаётся тихой.
-function HistoryCard() {
-  const navigate = useNavigate()
-  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(200) || [])
-  // Период + открытый месяц/год — тот же, что выбран в Истории (localStorage).
-  const [view] = useState(getHistoryView)
+// силовая/плавание) за выбранный период. Вторичный блок — спокойнее по весу, чем
+// блок раздела. Период (дропдаун) синхронен с /history (localStorage history-view).
+const HISTORY_PERIODS = [
+  { id: 'week', label: 'Неделя' },
+  { id: 'month', label: 'Месяц' },
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё время' }
+]
+const periodLabel = (id) => HISTORY_PERIODS.find(p => p.id === id)?.label || 'Неделя'
+
+function HistoryBlock() {
+  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
+  const [view, setView] = useState(getHistoryView)   // { period, year, month }
+  const [open, setOpen] = useState(false)            // дропдаун периода
 
   useEffect(() => {
     let cancelled = false
-    const load = () => getRecentWorkouts(200).then(d => { if (!cancelled) setWorkouts(d || []) })
+    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) setWorkouts(d || []) })
     load()
     const off = on(EVENTS.USER_CHANGED, load)
     return () => { cancelled = true; off() }
   }, [])
 
-  const refDate = view.period === 'week' ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
+  // Неделя/Всё время — от «сейчас»; Месяц/Год — за открытый в /history месяц/год.
+  const refDate = (view.period === 'week' || view.period === 'all')
+    ? new Date()
+    : new Date(Date.UTC(view.year, view.month, 15, 12))
   const sum = summarizeWorkouts(workouts, view.period, refDate)
-  const subtitle = view.period === 'week' ? 'На этой неделе'
-    : view.period === 'month' ? `${MONTHS_RU[view.month]} ${view.year}`
-    : `${view.year} год`
 
-  const open = () => { haptic.light(); navigate('/history') }
+  const pickPeriod = (period) => {
+    setOpen(false)
+    if (period === view.period) return
+    haptic.light()
+    const next = { ...view, period }
+    setView(next)
+    setHistoryView(next)
+  }
 
   return (
-    <button onClick={open} style={styles.historyCard} className="press-tile">
-      <div style={styles.historyTop}>
-        <span style={styles.historyTitle}>История</span>
-        <span style={styles.historyChev}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
-      </div>
-      <div style={styles.historySub}>{subtitle}</div>
+    <div style={styles.histBlock}>
+      <div style={styles.histHead}>
+        <span style={styles.histTitle}>История</span>
 
-      {sum.count === 0
-        ? <div style={styles.historyEmptyLine}>Пока нет тренировок</div>
-        : <div style={{ marginTop: '12px' }}><HistoryStats summary={sum} /></div>}
-    </button>
+        <div style={styles.periodWrap}>
+          <button
+            style={styles.periodBtn}
+            className="press-tile"
+            onClick={() => { haptic.light(); setOpen(o => !o) }}
+            aria-label="Выбрать период"
+          >
+            {periodLabel(view.period)}
+            <span style={{ ...styles.periodChev, transform: open ? 'rotate(180deg)' : 'none' }}>
+              <ChevronIcon size={14} color="var(--color-text-secondary)" />
+            </span>
+          </button>
+
+          {open && (
+            <>
+              <div style={styles.dropClose} onClick={() => setOpen(false)} aria-hidden="true" />
+              <div style={styles.periodDropdown}>
+                {HISTORY_PERIODS.map(p => (
+                  <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
+                    <span style={{ ...styles.periodItemText, color: p.id === view.period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '14px' }}>
+        <HistoryStats summary={sum} />
+      </div>
+    </div>
   )
 }
 
@@ -242,7 +280,7 @@ export default function Home() {
         </div>
 
         <div style={{ marginTop: '20px' }}>
-          <HistoryCard />
+          <HistoryBlock />
         </div>
       </div>
     </div>
@@ -316,44 +354,56 @@ const styles = {
     color: '#FF8C42'
   },
 
-  // === Карточка-кнопка «История» ===
-  historyCard: {
-    display: 'flex',
-    flexDirection: 'column',
+  // === Блок «История» (вторичный, спокойнее блока раздела) ===
+  histBlock: {
     width: '100%',
-    padding: '14px 18px',
+    padding: '14px 16px',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)',
-    textAlign: 'left',
-    cursor: 'pointer'
+    borderRadius: 'var(--radius-card)'
   },
-  historyTop: {
+  histHead: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
-  historyTitle: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
+  // Заголовок вторичного блока — спокойнее селектора раздела (60% белого).
+  histTitle: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',
     fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)',
+    letterSpacing: '0.2px'
+  },
+  // Селектор периода справа: «Неделя ▼».
+  periodWrap: { position: 'relative' },
+  periodBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '3px',
+    padding: '4px 2px',
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700,
     color: 'var(--color-text)'
   },
-  historyChev: { display: 'inline-flex', transform: 'rotate(-90deg)', opacity: 0.7 },
-  historySub: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    marginTop: '3px'
+  periodChev: { display: 'inline-flex', marginTop: '1px', transition: 'transform 0.2s var(--ease-ios)' },
+  dropClose: { position: 'fixed', inset: 0, zIndex: 40 },
+  periodDropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 6px)',
+    right: 0,
+    zIndex: 41,
+    minWidth: '140px',
+    padding: '6px',
+    background: 'var(--surface-raised)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: 'var(--radius-medium)',
+    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+    display: 'flex', flexDirection: 'column', gap: '2px'
   },
-  historyEmptyLine: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    marginTop: '10px'
-  }
+  periodItem: {
+    display: 'flex', alignItems: 'center',
+    width: '100%', padding: '9px 12px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)',
+    cursor: 'pointer', textAlign: 'left'
+  },
+  periodItemText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600 }
 }

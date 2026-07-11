@@ -36,7 +36,8 @@ export default function ProgramCard({
   dots = false,
   lastTrained = false,
   bordered = true,
-  cta = false
+  cta = false,
+  background = 'var(--color-card)'
 }) {
   const navigate = useNavigate()
   // Старт из localStorage (мгновенно, без мигания серый→зелёный);
@@ -130,6 +131,7 @@ export default function ProgramCard({
 
   const cardStyle = {
     ...styles.card,
+    background,
     paddingRight: `${padRight}px`,
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',

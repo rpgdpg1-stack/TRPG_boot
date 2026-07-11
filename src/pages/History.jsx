@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
-import { summarizeWorkouts } from '../utils/history'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHistoryView, setHistoryView } from '../lib/history-view'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
@@ -12,7 +12,8 @@ import HistoryStats from '../components/HistoryStats'
 const PERIODS = [
   { id: 'week', label: 'Неделя' },
   { id: 'month', label: 'Месяц' },
-  { id: 'year', label: 'Год' }
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё' }
 ]
 
 /**
@@ -29,7 +30,7 @@ export default function History() {
   const initialView = useRef(getHistoryView())
   const [period, setPeriod] = useState(initialView.current.period)
   const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
-  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(500) || [])
+  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -38,7 +39,7 @@ export default function History() {
 
   useEffect(() => {
     let cancelled = false
-    const load = () => getRecentWorkouts(500).then(d => { if (!cancelled) setWorkouts(d || []) })
+    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) setWorkouts(d || []) })
     load()
     const off = on(EVENTS.USER_CHANGED, load)
     return () => { cancelled = true; off() }
@@ -53,7 +54,7 @@ export default function History() {
 
   // Неделя — всегда текущая (в календаре недели нет). Месяц/год — за открытый в
   // календаре месяц/год (refDate = 15-е число этого месяца).
-  const refDate = period === 'week' ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
+  const refDate = (period === 'week' || period === 'all') ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
   const sum = summarizeWorkouts(workouts, period, refDate)
 
   const pickPeriod = (id) => { if (id !== period) { haptic.selection(); setPeriod(id) } }

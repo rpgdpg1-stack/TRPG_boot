@@ -186,9 +186,15 @@ function mskMidnightMs(y, m, d) {
   return Date.UTC(y, m, d) - 3 * 3600 * 1000
 }
 
+// Сколько последних тренировок тянуть с сервера для истории/статистики. Вся история
+// хранится в БД (запись на тренировку, ничего не удаляется) — берём с большим запасом,
+// чтобы фильтр «Всё время» считался по всем данным (2600 тренировок ≈ 10 лет по 5/нед).
+export const HISTORY_FETCH_LIMIT = 5000
+
 // Границы периода по Москве [startMs, endMs) для сравнения с finished_at.
-// period: 'week' (Пн–Вс) | 'month' | 'year'.
+// period: 'week' (Пн–Вс) | 'month' | 'year' | 'all' (вся история).
 export function periodRange(period, now = new Date()) {
+  if (period === 'all') return [0, Number.MAX_SAFE_INTEGER]
   const p = mskParts(now.toISOString())
   if (period === 'year') return [mskMidnightMs(p.y, 0, 1), mskMidnightMs(p.y + 1, 0, 1)]
   if (period === 'month') return [mskMidnightMs(p.y, p.m, 1), mskMidnightMs(p.y, p.m + 1, 1)]

@@ -6,14 +6,14 @@ import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import {
-  MONTHS_RU, WEEKDAYS_RU, CATEGORY_ORDER,
+  MONTHS_RU, WEEKDAYS_RU, CATEGORY_ORDER, HISTORY_FETCH_LIMIT,
   mskParts, mskDayKey, formatTimeMsk,
   workoutCategoryMeta, describeWorkout, getDayMuscleTags,
   workoutMinutes, formatDuration
 } from '../utils/history'
 
-const HISTORY_LIMIT = 500 // с запасом на катящийся год истории
-const MAX_MONTHS_BACK = 11 // катящееся окно: текущий месяц + до 11 назад (год)
+// Вся история (ничего не обрезаем по времени) — листаем календарь до самой первой
+// тренировки. Тянем с большим запасом (см. HISTORY_FETCH_LIMIT).
 
 // Короткие месяцы для год-режима (сетка 12 плиток).
 const MONTHS_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
@@ -62,7 +62,7 @@ function metaForKey(key) {
  * heading — если задан, сверху секция-заголовок + «Все ›» на /history.
  */
 export default function HistoryCalendar({ heading, mode = 'month', onViewChange, onMonthPick, initialView }) {
-  const cached = getRecentWorkoutsSync(HISTORY_LIMIT)
+  const cached = getRecentWorkoutsSync(HISTORY_FETCH_LIMIT)
   const [workouts, setWorkouts] = useState(cached || [])
   // Стартовый месяц — из initialView (общий вид с /history и главной), иначе текущий.
   const [offset, setOffset] = useState(() => {
@@ -78,7 +78,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
   useEffect(() => {
     let cancelled = false
     const load = () => {
-      getRecentWorkouts(HISTORY_LIMIT).then(data => { if (!cancelled) setWorkouts(data || []) })
+      getRecentWorkouts(HISTORY_FETCH_LIMIT).then(data => { if (!cancelled) setWorkouts(data || []) })
     }
     load()
     const off = on(EVENTS.USER_CHANGED, load)
@@ -113,9 +113,9 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
   const daysInMonth = new Date(Date.UTC(viewY, viewM + 1, 0)).getUTCDate()
   const firstDow = (new Date(Date.UTC(viewY, viewM, 1)).getUTCDay() + 6) % 7
 
-  // Докуда можно листать назад: до первого месяца с тренировкой, но не глубже года.
+  // Докуда можно листать назад: до первого месяца с тренировкой (вся история).
   const todayYM = today.y * 12 + today.m
-  const minOffset = earliestYM === null ? 0 : Math.max(-MAX_MONTHS_BACK, earliestYM - todayYM)
+  const minOffset = earliestYM === null ? 0 : earliestYM - todayYM
   const earliestYear = earliestYM === null ? today.y : Math.floor(earliestYM / 12)
 
   const dayKeyOf = (d) => `${viewY}-${String(viewM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`

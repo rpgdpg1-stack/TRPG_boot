@@ -127,6 +127,10 @@ camelCase — утилиты (`getTodayKey`).
   заметка про «1 тренировка в день») / оффлайн / ошибка. Не показывать `+150` до подтверждения сервера.
   Эталон-поток одинаков в `WorkoutDay` и `SwimWorkout`. Лимит держит сервер (`api_finish_workout`,
   Москва-сутки), фронт его НЕ дублирует.
+- История хранится ПОЛНОСТЬЮ: таблица `workouts` — запись на каждую завершённую тренировку (id, user_id,
+  program_id, day, started_at, finished_at, muscles_earned, distance_m), ничего не удаляется (season-reset-
+  крон её НЕ трогает). Фильтры Неделя/Месяц/Год/Всё — клиентский `summarizeWorkouts`/`periodRange` по
+  выборке (`HISTORY_FETCH_LIMIT=5000`, `utils/history.js`). Год-окна/ретенции НЕТ (убрали `MAX_MONTHS_BACK`).
 - Длительность в истории — из `started_at`/`finished_at` (клиентский расчёт `workoutMinutes` в
   `utils/history.js`), отдельной колонки нет. У силовой `started_at` = старт сессии. У заплыва сессии нет:
   `SwimWorkout` передаёт в `finishWorkout(...)` 6-м аргументом **синтетический `startedAtOverride`** =

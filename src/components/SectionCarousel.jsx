@@ -147,6 +147,7 @@ export default function SectionCarousel({ onSectionChange }) {
           dots
           isFav
           cta
+          background="var(--surface-raised)"
           onToggleFav={onToggleFav}
           onOpen={guardedOpen}
           onDeleted={() => setPinnedTick(t => t + 1)}
@@ -168,12 +169,19 @@ export default function SectionCarousel({ onSectionChange }) {
 }
 
 const styles = {
-  wrap: {},
-  // Селектор по центру: иконка + название + шеврон, БЕЗ подложки (чистый дроп-даун).
-  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '8px' },
+  // Единый блок раздела (главный акцент экрана): селектор-заголовок + последняя
+  // тренировка + карточка программы + «Все программы» — обёрнуты и залиты.
+  wrap: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
+    borderRadius: 'var(--radius-card)',
+    padding: '14px 14px 8px'
+  },
+  // Селектор-заголовок слева («Силовая ▼»): иконка + название + шеврон.
+  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'flex-start', marginBottom: '2px' },
   selector: {
     display: 'inline-flex', alignItems: 'center', gap: '8px',
-    padding: '6px 4px',
+    padding: '4px 4px',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
@@ -192,8 +200,7 @@ const styles = {
   dropdown: {
     position: 'absolute',
     top: 'calc(100% + 6px)',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    left: 0,
     zIndex: 41,
     minWidth: '190px',
     padding: '6px',
@@ -219,9 +226,9 @@ const styles = {
   },
   pinEmpty: {
     width: '100%',
-    minHeight: '112px',
+    minHeight: '106px',
     borderRadius: 'var(--radius-card)',
-    background: 'var(--surface)',
+    background: 'var(--surface-raised)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
     cursor: 'pointer'
@@ -230,12 +237,12 @@ const styles = {
   pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
   allLink: {
     width: '100%',
-    marginTop: '2px',
-    padding: '4px 10px 10px',
+    marginTop: '6px',
+    padding: '6px 4px 6px',
     background: 'transparent',
     border: 'none',
     borderRadius: 'var(--radius-medium)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
