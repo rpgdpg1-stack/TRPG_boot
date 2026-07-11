@@ -103,10 +103,10 @@ export default function SectionCarousel({ onSectionChange }) {
           onClick={() => { haptic.light(); setOpen(o => !o) }}
           aria-label="Выбрать раздел"
         >
-          <UiIcon name={cat.iconName} size={24} color={cat.color} />
+          <UiIcon name={cat.iconName} size={28} color={cat.color} />
           <span style={styles.selectorText}>{cat.title}</span>
           <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-            <ChevronIcon size={16} color="var(--color-text-secondary)" />
+            <ChevronIcon size={18} color="var(--color-text-secondary)" />
           </span>
         </button>
 
@@ -170,15 +170,16 @@ export default function SectionCarousel({ onSectionChange }) {
 const styles = {
   wrap: {},
   // Селектор по центру: иконка + название + шеврон, БЕЗ подложки (чистый дроп-даун).
-  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '14px' },
+  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: '8px' },
   selector: {
     display: 'inline-flex', alignItems: 'center', gap: '8px',
     padding: '6px 4px',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
+  // Крупнее навбар-заголовка «Тренировки» (18px) — «геройский» селектор раздела.
   selectorText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: '22px', fontWeight: 800,
     color: 'var(--color-text)', letterSpacing: '0.2px'
   },
   selectorChev: {

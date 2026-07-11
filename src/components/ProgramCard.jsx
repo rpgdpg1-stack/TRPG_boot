@@ -136,9 +136,9 @@ export default function ProgramCard({
     // overflow hidden — клип заливки-прогресса по скруглению.
     overflow: 'hidden',
     // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
-    // (Category) выключаем через bordered={false}. Насыщенность приглушена (45%→32%),
+    // (Category) выключаем через bordered={false}. Насыщенность приглушена (45%→24%),
     // чтобы рамка не перетягивала внимание с названия программы.
-    border: bordered ? `1px solid color-mix(in srgb, ${accent} 32%, transparent)` : 'none'
+    border: bordered ? `1px solid color-mix(in srgb, ${accent} 24%, transparent)` : 'none'
   }
 
   return (
@@ -242,12 +242,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
-    padding: '16px 18px',
+    padding: '14px 18px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
     // Ниже прежних 130 — убрали строку тега места/бассейна, карточка компактнее.
-    minHeight: '112px',
+    minHeight: '106px',
     textAlign: 'left'
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.

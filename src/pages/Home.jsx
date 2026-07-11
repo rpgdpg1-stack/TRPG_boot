@@ -1,26 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
-import { cloudGet, cloudSet } from '../lib/cloud-storage'
-import { localGet, localSet } from '../utils/storage'
+import { localGet } from '../utils/storage'
 import { getCurrentUser } from '../lib/auth'
+import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getCurrentWeekKey } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
+import { summarizeWorkouts, formatDuration, formatMeters } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import SectionCarousel from '../components/SectionCarousel'
-import DailyQuests from '../components/DailyQuests'
-import HistoryCalendar from '../components/HistoryCalendar'
 import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 import ChevronIcon from '../components/ChevronIcon'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
-
-// Свёрнутость секций главной (Активности / История) — кросс-девайс через
-// CloudStorage (+ локальный кеш для мгновенного старта). JSON-карта { key: true }.
-const COLLAPSE_KEY = 'home-sections-collapsed'
-function readCollapsedSync() {
-  try { return JSON.parse(localGet(COLLAPSE_KEY) || '{}') || {} } catch { return {} }
-}
 
 // Тренировок на этой неделе (weekly_streak = дни с тренировкой, 1 на день).
 function readWeeklyCount() {
@@ -29,55 +22,60 @@ function readWeeklyCount() {
   return u.weekly_streak || 0
 }
 
-// Заголовок сворачиваемой секции — БЕЗ стрелки: тап по самому тексту сворачивает/
-// разворачивает. Кнопка обнимает текст (не на всю ширину) — жмётся именно область слова.
-function SectionToggle({ title, open, onToggle }) {
+// Компактная карточка-кнопка «История»: сводка за текущую неделю (серия +
+// силовая/плавание). Тап открывает полноценный экран /history с календарём и
+// статистикой. Детальная аналитика живёт только там — главная остаётся тихой.
+function HistoryCard() {
+  const navigate = useNavigate()
+  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(200) || [])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () => getRecentWorkouts(200).then(d => { if (!cancelled) setWorkouts(d || []) })
+    load()
+    const off = on(EVENTS.USER_CHANGED, load)
+    return () => { cancelled = true; off() }
+  }, [])
+
+  const week = summarizeWorkouts(workouts, 'week')
+  const series = readWeeklyCount()
+
+  const open = () => { haptic.light(); navigate('/history') }
+
   return (
-    <button onClick={onToggle} style={homeSectionStyles.toggleBtn}>
-      <span style={homeSectionStyles.toggleTitle}>{title}</span>
-      {/* Шеврон рядом с заголовком: вниз — свёрнуто, вверх — раскрыто. */}
-      <span style={{ ...homeSectionStyles.toggleChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-        <ChevronIcon size={15} color="rgba(255, 255, 255, 0.5)" />
-      </span>
+    <button onClick={open} style={styles.historyCard} className="press-tile">
+      <div style={styles.historyTop}>
+        <span style={styles.historyTitle}><span style={styles.historyEmoji}>📅</span>История</span>
+        <span style={styles.historyChev}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
+      </div>
+      <div style={styles.historySub}>На этой неделе</div>
+
+      {week.count === 0 ? (
+        <div style={styles.historyEmptyLine}>Пока нет тренировок</div>
+      ) : (
+        <div style={styles.historyStats}>
+          {series > 0 && (
+            <span style={styles.historyStat}>
+              <StreakFlame streak={series} />
+              <span style={styles.historySeries}>×{series}</span>
+            </span>
+          )}
+          {week.strengthCount > 0 && (
+            <span style={styles.historyStat}>
+              <span style={styles.historyStatEmoji}>🏋️</span>
+              {week.strengthCount}<span style={styles.historyDot}>·</span>{formatDuration(week.strengthMin)}
+            </span>
+          )}
+          {week.swimCount > 0 && (
+            <span style={styles.historyStat}>
+              <span style={styles.historyStatEmoji}>🏊</span>
+              {week.swimCount}<span style={styles.historyDot}>·</span>{formatMeters(week.distance)}
+            </span>
+          )}
+        </div>
+      )}
     </button>
   )
-}
-
-// Плавное сворачивание/разворачивание по высоте (grid-rows 0fr↔1fr, ~220мс).
-// Контент внутри — overflow:hidden + min-height:0, иначе не сожмётся.
-function Collapsible({ open, children }) {
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateRows: open ? '1fr' : '0fr',
-      opacity: open ? 1 : 0,
-      transition: 'grid-template-rows 0.22s var(--ease-ios), opacity 0.22s ease'
-    }}>
-      <div style={{ overflow: 'hidden', minHeight: 0 }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-const homeSectionStyles = {
-  // Кнопка обнимает текст (width:auto, слева) — тап именно по слову-заголовку.
-  toggleBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '5px', alignSelf: 'flex-start',
-    padding: '0 4px', marginTop: '20px', marginBottom: '12px',
-    background: 'transparent', border: 'none', cursor: 'pointer'
-  },
-  // Заголовок секции: обычный регистр (Первая заглавная), manrope 700, 60% белого,
-  // без капса и трекинга — виден, но не спорит с названиями программ/карточками.
-  toggleTitle: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '15px',
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
-  },
-  // Шеврон рядом с заголовком (близко, через маленький gap).
-  toggleChev: {
-    display: 'inline-flex', marginTop: '2px',
-    transition: 'transform 0.2s var(--ease-ios)'
-  }
 }
 
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
@@ -186,20 +184,11 @@ function PullIndicator({ pull, refreshing, color }) {
 /**
  * Главная — Тренировки.
  *
- * Структура: заголовок + неделя (закреп сверху) → КАРУСЕЛЬ РАЗДЕЛОВ → Активности → История.
- * Активности и История сворачиваются тапом по заголовку (шеврон справа),
- * состояние кросс-девайс (CloudStorage, ключ home-sections-collapsed).
- * Дневной буст (DailyQuests) продублирован здесь и в Профиле.
- *
- * Избранное: карусель программ, листается СВАЙПОМ влево/вправо (с вибро),
- * снизу точки-индикаторы. Последняя пролистанная карточка запоминается
- * (localStorage + Telegram CloudStorage).
+ * Максимально тихий экран под сценарий «открыл → начал тренировку»:
+ * заголовок + статус недели (закреп сверху) → карусель разделов с закреплённой
+ * программой → компактная карточка-кнопка «История» (вся аналитика — на /history).
  */
 export default function Home() {
-  // Свёрнутость секций (АКТИВНОСТИ / ИСТОРИЯ): старт из локального кеша,
-  // догоняем из облака. true = свёрнуто.
-  const [collapsed, setCollapsed] = useState(readCollapsedSync)
-
   // Цвет акцентного свечения = текущий раздел карусели. Старт — из последнего
   // выбранного (тот же ключ, что в SectionCarousel), чтобы не мигнуло на загрузке.
   const [glowColor, setGlowColor] = useState(() => {
@@ -218,26 +207,7 @@ export default function Home() {
     lockVerticalSwipes()
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    cloudGet(COLLAPSE_KEY).then(v => {
-      if (cancelled || !v) return
-      try { setCollapsed(JSON.parse(v) || {}) } catch { /* ignore */ }
-    }).catch(() => {})
-    return () => { cancelled = true }
-  }, [])
-
-  const setCollapse = (key, value) => {
-    haptic.light()
-    setCollapsed(prev => {
-      const next = { ...prev, [key]: value }
-      localSet(COLLAPSE_KEY, JSON.stringify(next))
-      cloudSet(COLLAPSE_KEY, JSON.stringify(next))
-      return next
-    })
-  }
-
-  // Живое обновление недельного статуса и сводки буста (профиль/квесты меняются).
+  // Живое обновление недельного статуса (профиль/тренировки меняются).
   const [, bumpTick] = useState(0)
   useEffect(() => {
     const bump = () => bumpTick(t => t + 1)
@@ -246,9 +216,6 @@ export default function Home() {
     return () => { off1(); off2() }
   }, [])
 
-  // Дневной буст — по умолчанию свёрнут (компактно); История — раскрыта.
-  const boostCollapsed = collapsed.boost !== false
-  const historyCollapsed = !!collapsed.history // по умолчанию раскрыта
   const weeklyCount = readWeeklyCount()
 
   return (
@@ -280,7 +247,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Скроллящийся контент: карусель разделов (вместо избранного) + активности + история. */}
+      {/* Скроллящийся контент: карусель разделов + карточка Истории. */}
       <div style={styles.scrollSection}>
         {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
             (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
@@ -288,21 +255,9 @@ export default function Home() {
           <SectionCarousel onSectionChange={onSectionChange} />
         </div>
 
-        {/* Активности — просто заголовок (без статуса N/3), всё внутри карточки. */}
-        <SectionToggle
-          title="Активности"
-          open={!boostCollapsed}
-          onToggle={() => setCollapse('boost', !boostCollapsed)}
-        />
-        <Collapsible open={!boostCollapsed}><DailyQuests /></Collapsible>
-
-        {/* История — сворачиваемый календарь (как Разделы/Активности) */}
-        <SectionToggle
-          title="История"
-          open={!historyCollapsed}
-          onToggle={() => setCollapse('history', !historyCollapsed)}
-        />
-        <Collapsible open={!historyCollapsed}><HistoryCalendar /></Collapsible>
+        <div style={{ marginTop: '20px' }}>
+          <HistoryCard />
+        </div>
       </div>
     </div>
   )
@@ -310,7 +265,7 @@ export default function Home() {
 
 const styles = {
   page: {
-    // relative — база для абсолютного свечения (glowWrap).
+    // relative — база для абсолютного индикатора/слоёв.
     position: 'relative',
     paddingTop: 0,
     paddingLeft: '16px',
@@ -336,8 +291,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  // Блок недели — над свечением, в потоке (не закреплён). Верхний отступ = зона
-  // под кнопками Telegram.
+  // Блок недели — в потоке (не закреплён). Верхний отступ = зона под кнопками Telegram.
   topBlock: {
     position: 'relative',
     zIndex: 1,
@@ -359,7 +313,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     padding: '6px 14px',
-    // Лёгкий чип поверх акцентного свечения (не закреплён — блюр не нужен).
+    // Лёгкий чип (не закреплён — блюр не нужен).
     background: 'rgba(255, 255, 255, 0.06)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-pill)',
@@ -374,5 +328,71 @@ const styles = {
     fontWeight: 700,
     fontSize: '12px',
     color: '#FF8C42'
+  },
+
+  // === Карточка-кнопка «История» ===
+  historyCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    padding: '14px 18px',
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
+    borderRadius: 'var(--radius-card)',
+    textAlign: 'left',
+    cursor: 'pointer'
+  },
+  historyTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  historyTitle: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '15px',
+    fontWeight: 700,
+    color: 'var(--color-text)'
+  },
+  historyEmoji: { fontSize: '15px', lineHeight: 1 },
+  historyChev: { display: 'inline-flex', transform: 'rotate(-90deg)', opacity: 0.7 },
+  historySub: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    color: 'var(--color-text-secondary)',
+    marginTop: '3px'
+  },
+  historyStats: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '14px',
+    marginTop: '10px'
+  },
+  historyStat: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 700,
+    color: 'var(--color-text)'
+  },
+  historyStatEmoji: { fontSize: '14px', lineHeight: 1 },
+  historySeries: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    fontSize: '13px',
+    color: '#FF8C42'
+  },
+  historyDot: { color: 'var(--color-text-secondary)', margin: '0 1px' },
+  historyEmptyLine: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-text-secondary)',
+    marginTop: '10px'
   }
 }
