@@ -204,33 +204,29 @@ export function periodRange(period, now = new Date()) {
   return [start, start + 7 * 86400000]
 }
 
-// Сводка завершённых тренировок за период: общее число/время + разбивка
-// силовая/плавание (для карточки истории на главной и блока статистики).
+// Сводка завершённых тренировок за период: общий счёт/время + разбивка по типам
+// (`byType[key] = { count, minutes, distance }`, key из workoutCategoryMeta:
+// strength/pool/cardio/stretch). Общий для карточки истории на главной и блока
+// статистики. Разбивка растёт сама при появлении новых типов — UI ничего не ломает.
 export function summarizeWorkouts(workouts, period, now = new Date()) {
   const [start, end] = periodRange(period, now)
-  const res = {
-    count: 0, minutes: 0, distance: 0,
-    strengthCount: 0, strengthMin: 0,
-    swimCount: 0, swimMin: 0
-  }
+  let count = 0
+  let minutes = 0
+  const byType = {}
   for (const w of workouts || []) {
     if (!w.finished_at) continue
     const t = new Date(w.finished_at).getTime()
     if (t < start || t >= end) continue
-    const isSwim = workoutCategoryMeta(w).key === 'pool'
+    const key = workoutCategoryMeta(w).key
     const mins = workoutMinutes(w)
-    res.count++
-    res.minutes += mins
-    if (isSwim) {
-      res.swimCount++
-      res.swimMin += mins
-      res.distance += w.distance_m || 0
-    } else {
-      res.strengthCount++
-      res.strengthMin += mins
-    }
+    count++
+    minutes += mins
+    const b = (byType[key] ||= { count: 0, minutes: 0, distance: 0 })
+    b.count++
+    b.minutes += mins
+    b.distance += w.distance_m || 0
   }
-  return res
+  return { count, minutes, byType }
 }
 
 /**

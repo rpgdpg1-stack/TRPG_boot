@@ -45,9 +45,10 @@ export default function History() {
     return () => { cancelled = true; off() }
   }, [])
 
-  // Календарь сообщает открытый месяц/год; тап по месяцу в год-режиме → на месяц.
+  // Календарь сообщает открытый месяц/год; тап по месяцу/году → в этот режим.
   const onCalView = useCallback((v) => setView(v), [])
   const onMonthPick = useCallback((year, month) => { setPeriod('month'); setView({ year, month }) }, [])
+  const onYearPick = useCallback((year) => { setPeriod('year'); setView(v => ({ ...v, year })) }, [])
 
   // Персистим выбор (период + открытый месяц/год) — тот же вид на главной.
   useEffect(() => { setHistoryView({ period, year: view.year, month: view.month }) }, [period, view])
@@ -94,10 +95,11 @@ export default function History() {
           Сообщает открытый месяц/год наверх; тап по месяцу в год-режиме → на месяц. */}
       <div style={{ marginBottom: '20px' }}>
         <HistoryCalendar
-          mode={period === 'year' ? 'year' : 'month'}
+          mode={period}
           initialView={initialView.current}
           onViewChange={onCalView}
           onMonthPick={onMonthPick}
+          onYearPick={onYearPick}
         />
       </div>
 

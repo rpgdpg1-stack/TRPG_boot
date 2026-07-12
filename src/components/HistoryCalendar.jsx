@@ -61,7 +61,7 @@ function metaForKey(key) {
  * Тап по дню — попап с деталями (программа, день, длительность/метры, время).
  * heading — если задан, сверху секция-заголовок + «Все ›» на /history.
  */
-export default function HistoryCalendar({ heading, mode = 'month', onViewChange, onMonthPick, initialView }) {
+export default function HistoryCalendar({ heading, mode = 'month', onViewChange, onMonthPick, onYearPick, initialView }) {
   const cached = getRecentWorkoutsSync(HISTORY_FETCH_LIMIT)
   const [workouts, setWorkouts] = useState(cached || [])
   // Стартовый месяц — из initialView (общий вид с /history и главной), иначе текущий.
@@ -74,6 +74,9 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
   })
   const [dayModal, setDayModal] = useState(null)
   const isYear = mode === 'year'
+  const isWeek = mode === 'week'
+  const isAll = mode === 'all'
+  const isMonth = !isYear && !isWeek && !isAll
 
   useEffect(() => {
     let cancelled = false
@@ -148,11 +151,37 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
 
   const totalMonth = summary.reduce((s, c) => s + c.count, 0)
 
-  // Границы листания: месяц-режим — по месяцам, год-режим — по годам.
-  const canPrev = isYear ? viewY > earliestYear : offset > minOffset
-  const canNext = isYear ? viewY < today.y : offset < 0
+  // Листание: только месяц (по месяцам) и год (по годам). Неделя/Всё — без листания.
+  const canPrev = isMonth ? offset > minOffset : isYear ? viewY > earliestYear : false
+  const canNext = isMonth ? offset < 0 : isYear ? viewY < today.y : false
   const goPrev = () => { if (!canPrev) return; setOffset(offset - (isYear ? 12 : 1)); haptic.selection() }
   const goNext = () => { if (!canNext) return; setOffset(offset + (isYear ? 12 : 1)); haptic.selection() }
+
+  // Дни текущей недели (Пн–Вс, Москва) — для режима «Неделя» (одна строка).
+  const weekDays = useMemo(() => {
+    const dow = (new Date(Date.UTC(today.y, today.m, today.d)).getUTCDay() + 6) % 7
+    const mondayMs = Date.UTC(today.y, today.m, today.d - dow)
+    return Array.from({ length: 7 }, (_, i) => {
+      const dt = new Date(mondayMs + i * 86400000)
+      const y = dt.getUTCFullYear(); const m = dt.getUTCMonth(); const d = dt.getUTCDate()
+      return {
+        key: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+        d,
+        isToday: y === today.y && m === today.m && d === today.d
+      }
+    })
+  }, [today.y, today.m, today.d])
+
+  // Годы с тренировками — для режима «Всё время» (плитки годов).
+  const yearsList = useMemo(() => {
+    const c = {}
+    for (const w of workouts) {
+      if (!w.finished_at) continue
+      const y = mskParts(w.finished_at).y
+      c[y] = (c[y] || 0) + 1
+    }
+    return Object.keys(c).map(Number).sort((a, b) => a - b).map(y => ({ year: y, count: c[y] }))
+  }, [workouts])
 
   // Тап по месяцу в год-режиме (только где есть тренировки) → открыть этот месяц.
   const pickMonth = (m) => {
@@ -160,6 +189,13 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
     haptic.light()
     setOffset((viewY * 12 + m) - (today.y * 12 + today.m))
     onMonthPick?.(viewY, m)
+  }
+
+  // Тап по году в режиме «Всё время» → открыть этот год.
+  const pickYear = (y) => {
+    haptic.light()
+    setOffset((y - today.y) * 12)
+    onYearPick?.(y)
   }
 
   let touch = null
@@ -185,6 +221,47 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
   for (let i = 0; i < firstDow; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
+  // Одна ячейка-день (общая для месяца и недели): число + бейджи тренировок.
+  const renderDay = (key, dayNum, isToday) => {
+    const list = byDay[key] || []
+    const has = list.length > 0
+    return (
+      <button
+        key={key}
+        className={has ? 'press-tile' : undefined}
+        onClick={() => openDay(key)}
+        style={{
+          ...styles.cell,
+          background: has ? 'var(--surface-raised)' : 'transparent',
+          boxShadow: isToday ? 'inset 0 0 0 2px var(--color-primary)' : 'none',
+          cursor: has ? 'pointer' : 'default'
+        }}
+      >
+        <span style={{
+          ...styles.cellNum,
+          color: has ? 'var(--color-text)' : 'rgba(255,255,255,0.4)',
+          fontWeight: isToday ? 800 : (has ? 700 : 500)
+        }}>{dayNum}</span>
+        {has && (
+          <span style={styles.marks}>
+            {list.length <= 2
+              ? list.map((w, wi) => {
+                  const b = badgeFor(w)
+                  return <Badge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
+                })
+              : list.map((w, wi) => {
+                  const b = badgeFor(w)
+                  return <span key={wi} style={{ width: '8px', height: '8px', borderRadius: '2px', background: b.color }} />
+                })}
+          </span>
+        )}
+      </button>
+    )
+  }
+
+  const showChev = isMonth || isYear
+  const titleText = isAll ? 'Всё время' : isYear ? String(viewY) : isWeek ? 'Эта неделя' : `${MONTHS_RU[viewM]} ${viewY}`
+
   return (
     <div style={styles.wrap}>
       {heading && (
@@ -196,20 +273,51 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
       {/* Свайп по ВСЕЙ карточке (заголовок/сводка/сетка) — листает месяцы. */}
       <div style={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div style={styles.monthNav}>
-          <button
-            style={{ ...styles.chev, opacity: canPrev ? 1 : 0.25 }}
-            className="press-tile" onClick={goPrev} disabled={!canPrev}
-            aria-label={isYear ? 'Предыдущий год' : 'Предыдущий месяц'}
-          >‹</button>
-          <div style={styles.monthTitle}>{isYear ? viewY : `${MONTHS_RU[viewM]} ${viewY}`}</div>
-          <button
-            style={{ ...styles.chev, opacity: canNext ? 1 : 0.25 }}
-            className="press-tile" onClick={goNext} disabled={!canNext}
-            aria-label={isYear ? 'Следующий год' : 'Следующий месяц'}
-          >›</button>
+          {showChev ? (
+            <button
+              style={{ ...styles.chev, opacity: canPrev ? 1 : 0.25 }}
+              className="press-tile" onClick={goPrev} disabled={!canPrev}
+              aria-label={isYear ? 'Предыдущий год' : 'Предыдущий месяц'}
+            >‹</button>
+          ) : <span style={styles.chevSpacer} />}
+          <div style={styles.monthTitle}>{titleText}</div>
+          {showChev ? (
+            <button
+              style={{ ...styles.chev, opacity: canNext ? 1 : 0.25 }}
+              className="press-tile" onClick={goNext} disabled={!canNext}
+              aria-label={isYear ? 'Следующий год' : 'Следующий месяц'}
+            >›</button>
+          ) : <span style={styles.chevSpacer} />}
         </div>
 
-        {isYear ? (
+        {isAll ? (
+          // Всё время — плитки годов; тап по году → режим «Год».
+          yearsList.length === 0 ? (
+            <div style={styles.summary}><span style={styles.summaryEmpty}>Нет тренировок</span></div>
+          ) : (
+            <div key="all" className="page-fade" style={styles.yearGrid}>
+              {yearsList.map(({ year, count }) => {
+                const isCur = year === today.y
+                return (
+                  <button
+                    key={year}
+                    className="press-tile"
+                    onClick={() => pickYear(year)}
+                    style={{
+                      ...styles.monthTile,
+                      background: 'var(--surface-raised)',
+                      boxShadow: isCur ? 'inset 0 0 0 2px var(--color-primary)' : 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span style={{ ...styles.monthTileLabel, color: 'var(--color-text)', fontWeight: isCur ? 800 : 700 }}>{year}</span>
+                    <span style={styles.monthTileCount}>{count}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )
+        ) : isYear ? (
           <div key={`y${viewY}`} className="page-fade" style={styles.yearGrid}>
             {MONTHS_SHORT_RU.map((label, m) => {
               const cnt = yearCounts[m] || 0
@@ -238,6 +346,19 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
               )
             })}
           </div>
+        ) : isWeek ? (
+          // Неделя — одна строка Пн–Вс текущей недели (без месячной сетки/листания).
+          <div key="week" className="page-fade">
+            <div style={styles.weekRow}>
+              {WEEKDAYS_RU.map((w, i) => (
+                <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'rgba(255,255,255,0.35)' }}>{w}</div>
+              ))}
+            </div>
+            <div style={styles.weekDivider} aria-hidden="true" />
+            <div style={styles.grid}>
+              {weekDays.map(wd => renderDay(wd.key, wd.d, wd.isToday))}
+            </div>
+          </div>
         ) : (
         <>
         <div style={styles.summary}>
@@ -262,47 +383,11 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
           <div style={styles.weekDivider} aria-hidden="true" />
 
           <div key={offset} className="page-fade" style={styles.grid}>
-            {cells.map((d, i) => {
-              if (d === null) return <div key={`b${i}`} style={styles.cellEmpty} />
-              const key = dayKeyOf(d)
-              const list = byDay[key] || []
-              const has = list.length > 0
-              const isToday = offset === 0 && d === today.d
-              return (
-                <button
-                  key={key}
-                  className={has ? 'press-tile' : undefined}
-                  onClick={() => openDay(key)}
-                  style={{
-                    ...styles.cell,
-                    background: has ? 'var(--surface-raised)' : 'transparent',
-                    boxShadow: isToday ? 'inset 0 0 0 2px var(--color-primary)' : 'none',
-                    cursor: has ? 'pointer' : 'default'
-                  }}
-                >
-                  <span style={{
-                    ...styles.cellNum,
-                    color: has ? 'var(--color-text)' : 'rgba(255,255,255,0.4)',
-                    fontWeight: isToday ? 800 : (has ? 700 : 500)
-                  }}>{d}</span>
-                  {has && (
-                    <span style={styles.marks}>
-                      {list.length <= 2
-                        ? list.map((w, wi) => {
-                            const b = badgeFor(w)
-                            return <Badge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
-                          })
-                        : list.map((w, wi) => {
-                            const b = badgeFor(w)
-                            // 3+ тренировок в день — крошечные квадратики без иконок,
-                            // подробности в попапе по тапу.
-                            return <span key={wi} style={{ width: '8px', height: '8px', borderRadius: '2px', background: b.color }} />
-                          })}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+            {cells.map((d, i) => (
+              d === null
+                ? <div key={`b${i}`} style={styles.cellEmpty} />
+                : renderDay(dayKeyOf(d), d, offset === 0 && d === today.d)
+            ))}
           </div>
         </div>
         </>
@@ -391,6 +476,8 @@ const styles = {
     background: 'transparent', border: 'none', color: 'var(--color-text)',
     fontSize: '24px', lineHeight: 1, fontFamily: 'var(--font-manrope)', padding: 0
   },
+  // Заглушка на месте шеврона (неделя/всё — без листания), чтобы заголовок был по центру.
+  chevSpacer: { width: '40px', height: '40px', flexShrink: 0 },
   monthTitle: {
     flex: 1, textAlign: 'center',
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px',

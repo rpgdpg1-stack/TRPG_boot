@@ -1,27 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
-import { getCurrentUser } from '../lib/auth'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { getCurrentWeekKey } from '../utils/dates'
-import { pluralizeWorkouts } from '../utils/plural'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHistoryView, setHistoryView } from '../lib/history-view'
 import { EVENTS, on } from '../lib/events'
 import SectionCarousel from '../components/SectionCarousel'
-import StreakFlame from '../components/StreakFlame'
 import ScreenTitle from '../components/ScreenTitle'
 import ChevronIcon from '../components/ChevronIcon'
 import HistoryStats from '../components/HistoryStats'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
-
-// Тренировок на этой неделе (weekly_streak = дни с тренировкой, 1 на день).
-function readWeeklyCount() {
-  const u = getCurrentUser()
-  if (!u || u.weekly_streak_week !== getCurrentWeekKey()) return 0
-  return u.weekly_streak || 0
-}
 
 // Компактная карточка-кнопка «История»: сводка за текущую неделю (серия +
 // силовая/плавание) за выбранный период. Вторичный блок — спокойнее по весу, чем
@@ -35,6 +25,7 @@ const HISTORY_PERIODS = [
 const periodLabel = (id) => HISTORY_PERIODS.find(p => p.id === id)?.label || 'Неделя'
 
 function HistoryBlock() {
+  const navigate = useNavigate()
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [view, setView] = useState(getHistoryView)   // { period, year, month }
   const [open, setOpen] = useState(false)            // дропдаун периода
@@ -62,12 +53,15 @@ function HistoryBlock() {
     setHistoryView(next)
   }
 
+  // Весь блок ведёт в /history (календарь). Дропдаун периода — свой тап (не навигирует).
+  const openHistory = () => { haptic.light(); navigate('/history') }
+
   return (
-    <div style={styles.histBlock}>
+    <div style={styles.histBlock} className="press-tile" onClick={openHistory}>
       <div style={styles.histHead}>
         <span style={styles.histTitle}>История</span>
 
-        <div style={styles.periodWrap}>
+        <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()}>
           <button
             style={styles.periodBtn}
             className="press-tile"
@@ -231,44 +225,15 @@ export default function Home() {
     lockVerticalSwipes()
   }, [])
 
-  // Живое обновление недельного статуса (профиль/тренировки меняются).
-  const [, bumpTick] = useState(0)
-  useEffect(() => {
-    const bump = () => bumpTick(t => t + 1)
-    const off1 = on(EVENTS.USER_CHANGED, bump)
-    const off2 = on(EVENTS.USER_READY, bump)
-    return () => { off1(); off2() }
-  }, [])
-
-  const weeklyCount = readWeeklyCount()
-
   return (
     <div className="page page-fade" style={styles.page}>
 
       {/* Индикатор pull-to-refresh (портал в body, поверх нативного отскока). */}
       <PullIndicator pull={pull} refreshing={refreshing} color={glowColor} />
 
-      {/* Блок недели — НЕ закреплён: листается вместе с контентом и уходит вверх
-          под заголовок «Тренировки» (fixed на линии кнопок Telegram). */}
+      {/* Заголовок экрана (fixed на линии кнопок Telegram). */}
       <div style={styles.topBlock}>
         <ScreenTitle>Тренировки</ScreenTitle>
-
-        {/* Статус недели в серой пилюле: огонёк-серия ×N + «тренировка»
-            (или зовущая фраза при 0). Огонёк — тот же, что в профиле (по уровню). */}
-        <div style={styles.weekStatusWrap}>
-          <div style={styles.weekStatus}>
-            {weeklyCount > 0 ? (
-              <>
-                <span>На этой неделе</span>
-                <StreakFlame streak={weeklyCount} />
-                <span style={styles.weekMult}>×{weeklyCount}</span>
-                <span>{pluralizeWorkouts(weeklyCount)}</span>
-              </>
-            ) : (
-              'Начни тренировку — стань лучшей версией себя'
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Скроллящийся контент: карусель разделов + карточка Истории. */}
@@ -325,42 +290,14 @@ const styles = {
     position: 'relative',
     zIndex: 1
   },
-  // Статус недели — серая пилюля по центру экрана.
-  weekStatusWrap: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginTop: '2px',
-    marginBottom: '10px'
-  },
-  weekStatus: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 14px',
-    // Лёгкий чип (не закреплён — блюр не нужен).
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.2px'
-  },
-  weekMult: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '12px',
-    color: '#FF8C42'
-  },
-
   // === Блок «История» (вторичный, спокойнее блока раздела) ===
   histBlock: {
     width: '100%',
     padding: '14px 16px',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)'
+    borderRadius: 'var(--radius-card)',
+    cursor: 'pointer'
   },
   histHead: {
     display: 'flex',
