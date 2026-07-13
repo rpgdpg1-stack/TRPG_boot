@@ -6,7 +6,7 @@ import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import {
-  MONTHS_RU, WEEKDAYS_RU, CATEGORY_ORDER, HISTORY_FETCH_LIMIT,
+  MONTHS_RU, WEEKDAYS_RU, HISTORY_FETCH_LIMIT,
   mskParts, mskDayKey, formatTimeMsk,
   workoutCategoryMeta, describeWorkout, getDayMuscleTags,
   workoutMinutes, formatDuration
@@ -42,16 +42,6 @@ function Badge({ iconName, color, size = 20, icon = 12 }) {
       <UiIcon name={iconName} size={icon} color="#0D0C0C" />
     </span>
   )
-}
-
-// Метаданные раздела по ключу (для сводки — без конкретной тренировки).
-function metaForKey(key) {
-  switch (key) {
-    case 'pool': return { key, iconName: 'swimming', color: 'var(--cat-pool)' }
-    case 'cardio': return { key, iconName: 'cardio', color: 'var(--cat-cardio)' }
-    case 'stretch': return { key, iconName: 'stretching', color: 'var(--cat-stretch)' }
-    default: return { key: 'strength', iconName: 'power', color: 'var(--color-primary)' }
-  }
 }
 
 /**
@@ -136,20 +126,6 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
     }
     return c
   }, [workouts, viewY])
-
-  const summary = useMemo(() => {
-    const counts = {}
-    for (let d = 1; d <= daysInMonth; d++) {
-      for (const w of byDay[dayKeyOf(d)] || []) {
-        const k = workoutCategoryMeta(w).key
-        counts[k] = (counts[k] || 0) + 1
-      }
-    }
-    return CATEGORY_ORDER.filter(k => counts[k]).map(k => ({ ...metaForKey(k), count: counts[k] }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [byDay, viewY, viewM, daysInMonth])
-
-  const totalMonth = summary.reduce((s, c) => s + c.count, 0)
 
   // Листание: только месяц (по месяцам) и год (по годам). Неделя/Всё — без листания.
   const canPrev = isMonth ? offset > minOffset : isYear ? viewY > earliestYear : false
@@ -361,19 +337,8 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
           </div>
         ) : (
         <>
-        <div style={styles.summary}>
-          {totalMonth === 0 ? (
-            <span style={styles.summaryEmpty}>Нет тренировок в этом месяце</span>
-          ) : (
-            summary.map(s => (
-              <span key={s.key} style={styles.summaryChip}>
-                <Badge iconName={s.iconName} color={s.color} size={22} icon={13} />
-                <span style={{ ...styles.summaryCount, color: s.color }}>{s.count}</span>
-              </span>
-            ))
-          )}
-        </div>
-
+        {/* Сводка по разделам переехала в блок статистики выше (HistoryStats) —
+            в календаре её не дублируем. */}
         <div>
           <div style={styles.weekRow}>
             {WEEKDAYS_RU.map((w, i) => (
@@ -487,8 +452,6 @@ const styles = {
     display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px',
     minHeight: '24px', marginBottom: '16px'
   },
-  summaryChip: { display: 'inline-flex', alignItems: 'center', gap: '6px' },
-  summaryCount: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px' },
   summaryEmpty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
   weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '6px' },
   weekLabel: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px' },

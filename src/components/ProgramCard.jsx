@@ -138,9 +138,9 @@ export default function ProgramCard({
     // overflow hidden — клип заливки-прогресса по скруглению.
     overflow: 'hidden',
     // Цветная обводка-нитка в цвет раздела — на главной и в избранном; в разделах
-    // (Category) выключаем через bordered={false}. Насыщенность приглушена (45%→24%),
+    // (Category) выключаем через bordered={false}. Насыщенность приглушена (45%→24%→20%),
     // чтобы рамка не перетягивала внимание с названия программы.
-    border: bordered ? `1px solid color-mix(in srgb, ${accent} 24%, transparent)` : 'none'
+    border: bordered ? `1px solid color-mix(in srgb, ${accent} 20%, transparent)` : 'none'
   }
 
   return (

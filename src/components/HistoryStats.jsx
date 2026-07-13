@@ -1,18 +1,30 @@
 import UiIcon from './UiIcon'
 import ClockIcon from './ClockIcon'
 import { formatDuration, formatMeters, CATEGORY_ORDER } from '../utils/history'
-import { pluralizeWorkouts } from '../utils/plural'
 
 /**
  * Сводка тренировок за период.
  *   Сверху — общие показатели (Тренировок · Время) по ВСЕМ типам.
  *   Тонкий разделитель.
- *   Ниже — список видов активности, которые БЫЛИ в периоде (иконка + название
- *   слева, значение справа): силовая/растяжка — счёт тренировок, плавание/бег —
- *   дистанция. Отсутствующие виды не выводим — список сам растёт под новые типы.
+ *   Ниже — список видов активности, которые БЫЛИ в периоде: прямоугольный бейдж
+ *   (чёрная иконка на цветном фоне, единый вид с календарём) + название + число
+ *   тренировок в цвет вида; у плавания/бега рядом — дистанция в скобках, тоже в
+ *   цвет. Отсутствующие виды не выводим — список сам растёт под новые типы.
  *   Нет тренировок → мотивирующая заглушка.
  * `summary` — результат `summarizeWorkouts` (`{ count, minutes, byType }`).
  */
+
+// Прямоугольный бейдж с чёрной иконкой (единый вид с ячейками/сводкой календаря).
+function Badge({ iconName, color, size = 22, icon = 13 }) {
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: '6px', background: color,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+    }}>
+      <UiIcon name={iconName} size={icon} color="#0D0C0C" />
+    </span>
+  )
+}
 
 // Вид активности: иконка/цвет/название + какая метрика (счёт или дистанция).
 const TYPE_META = {
@@ -52,16 +64,15 @@ export default function HistoryStats({ summary }) {
         {types.map(k => {
           const m = TYPE_META[k]
           const b = summary.byType[k]
-          const value = m.metric === 'distance'
-            ? formatMeters(b.distance)
-            : `${b.count} ${pluralizeWorkouts(b.count)}`
+          const showDist = m.metric === 'distance' && b.distance > 0
           return (
             <div key={k} style={styles.row}>
-              <span style={styles.rowLeft}>
-                <UiIcon name={m.icon} size={17} color={m.color} />
-                <span style={styles.rowLabel}>{m.label}</span>
-              </span>
-              <span style={styles.rowValue}>{value}</span>
+              <Badge iconName={m.icon} color={m.color} />
+              <span style={styles.rowLabel}>{m.label}</span>
+              <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
+              {showDist && (
+                <span style={{ ...styles.rowDist, color: m.color }}>({formatMeters(b.distance)})</span>
+              )}
             </div>
           )
         })}
@@ -98,13 +109,16 @@ const styles = {
   divider: { height: '1px', background: 'var(--border-hairline)', margin: '14px 0' },
 
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  rowLeft: { display: 'inline-flex', alignItems: 'center', gap: '10px' },
+  row: { display: 'flex', alignItems: 'center', gap: '9px' },
   rowLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)'
   },
-  rowValue: {
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)'
+  // Число тренировок и дистанция — в цвет вида, рядом с названием (не у края).
+  rowCount: {
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px'
+  },
+  rowDist: {
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '-2px'
   },
 
   empty: {
