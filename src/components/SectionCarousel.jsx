@@ -95,8 +95,10 @@ export default function SectionCarousel({ onSectionChange }) {
 
   return (
     <div style={styles.wrap}>
-      {/* Компактный селектор раздела + выпадающий список */}
-      <div style={styles.selectorWrap}>
+      {/* Шапка раздела: слева селектор («Силовая ▼»), справа «Все ›» — вход в весь
+          раздел (не только закреп). Обе части на одной линии. */}
+      <div style={styles.headRow}>
+        <div style={styles.selectorWrap}>
         <button
           style={styles.selector}
           className="press-tile"
@@ -133,13 +135,25 @@ export default function SectionCarousel({ onSectionChange }) {
             </div>
           </>
         )}
+        </div>
+
+        <button
+          style={styles.allLink}
+          className="press-tile"
+          onClick={openSection}
+          aria-label={`Все программы раздела «${cat.title}»`}
+        >
+          Все
+          <span style={styles.chevRight}><ChevronIcon size={15} color="var(--color-text-secondary)" /></span>
+        </button>
       </div>
 
       {/* Последняя тренировка — НАД карточкой, по центру. В разделе без закрепа
           (заглушка) держим ту же высоту строки (nbsp), чтобы блок не прыгал. */}
       <div style={styles.lastLine}>{lastText || ' '}</div>
 
-      {/* Закреплённая программа — сама карточка (как внутри раздела) */}
+      {/* Закреплённая программа — карточка без цветной рамки, светлее фона блока
+          (как «закреплённый» в друзьях). */}
       {pinnedProg ? (
         <ProgramCard
           key={pinnedSlug}
@@ -147,7 +161,8 @@ export default function SectionCarousel({ onSectionChange }) {
           dots
           isFav
           cta
-          background="var(--surface-raised)"
+          bordered={false}
+          background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
           onToggleFav={onToggleFav}
           onOpen={guardedOpen}
           onDeleted={() => setPinnedTick(t => t + 1)}
@@ -158,12 +173,6 @@ export default function SectionCarousel({ onSectionChange }) {
           <span style={styles.pinEmptyHint}>Выбери в разделе — она появится здесь</span>
         </button>
       )}
-
-      {/* Все программы — текст-ссылка со стрелкой (на экран раздела) */}
-      <button style={styles.allLink} className="tg-row" onClick={openSection}>
-        Все программы
-        <span style={styles.chevRight}><ChevronIcon size={15} color="var(--color-text-secondary)" /></span>
-      </button>
     </div>
   )
 }
@@ -175,10 +184,15 @@ const styles = {
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '14px 14px 8px'
+    padding: '14px'
+  },
+  // Шапка: селектор слева, «Все ›» справа — в одну линию, по вертикали по центру.
+  headRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '8px', marginBottom: '16px'
   },
   // Селектор-заголовок слева («Силовая ▼»): иконка + название + шеврон.
-  selectorWrap: { position: 'relative', display: 'flex', justifyContent: 'flex-start', marginBottom: '2px' },
+  selectorWrap: { position: 'relative', minWidth: 0 },
   selector: {
     display: 'inline-flex', alignItems: 'center', gap: '8px',
     padding: '4px 4px',
@@ -235,18 +249,15 @@ const styles = {
   },
   pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
   pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
+  // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
-    width: '100%',
-    marginTop: '6px',
-    padding: '6px 4px 6px',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 'var(--radius-medium)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-start', gap: '6px',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer'
+    flexShrink: 0,
+    display: 'inline-flex', alignItems: 'center', gap: '1px',
+    padding: '6px 2px 6px 8px',
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
-  // Шеврон-стрелка «вправо» у «Все программы» (тот же ChevronIcon, повёрнут).
+  // Шеврон-стрелка «вправо» у «Все» (тот же ChevronIcon, повёрнут).
   chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: '2px' }
 }
