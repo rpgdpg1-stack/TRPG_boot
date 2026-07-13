@@ -71,7 +71,7 @@ export default function HistoryStats({ summary }) {
               <span style={styles.rowLabel}>{m.label}</span>
               <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
               {showDist && (
-                <span style={{ ...styles.rowDist, color: m.color }}>({formatMeters(b.distance)})</span>
+                <span style={styles.rowDist}>({formatMeters(b.distance)})</span>
               )}
             </div>
           )
@@ -113,12 +113,13 @@ const styles = {
   rowLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)'
   },
-  // Число тренировок и дистанция — в цвет вида, рядом с названием (не у края).
+  // Число тренировок — в цвет вида; дистанция в скобках — серая (не спорит с числом).
   rowCount: {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px'
   },
   rowDist: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '-2px'
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', marginLeft: '-2px'
   },
 
   empty: {
