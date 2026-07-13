@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { getUserPublicProfile } from '../lib/backups'
+import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'

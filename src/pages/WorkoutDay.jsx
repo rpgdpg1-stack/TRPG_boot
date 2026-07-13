@@ -11,7 +11,6 @@ import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getDayMuscleTags } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync } from '../lib/storage'
-import { XP_REWARDS } from '../lib/levels'
 import {
   getActiveWorkout,
   startActiveWorkout,
@@ -915,8 +914,7 @@ export default function WorkoutDay() {
         .map(s => s.exercise_id)
         .filter(Boolean)
 
-      const reward = XP_REWARDS.WORKOUT_COMPLETE
-      const result = await finishWorkout(programId, day, exerciseIds, reward)
+      const result = await finishWorkout(programId, day, exerciseIds, 0)
 
       if (!result) {
         setFinishStatus('error')
@@ -1383,7 +1381,6 @@ export default function WorkoutDay() {
 
       {showFinishedModal && (
         <WorkoutFinishedModal
-          reward={XP_REWARDS.WORKOUT_COMPLETE}
           durationLabel={formatWorkoutMin(finishedSec)}
           status={finishStatus}
           errorMsg={finishErrorMsg}

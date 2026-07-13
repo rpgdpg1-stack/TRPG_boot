@@ -3,7 +3,6 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
 import { getProgramBySlug } from '../features/programs/registry'
-import { XP_REWARDS } from '../lib/levels'
 import { setLastCompletedDay } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
@@ -167,7 +166,7 @@ export default function SwimWorkout() {
       // Синтетический старт = сейчас − оценка минут заплыва: у заплыва нет сессии,
       // но так в историю запишется длительность (та же, что в шапке «≈N мин»).
       const startedAt = new Date(Date.now() - swimMinutesForMeters(totalMeters) * 60000).toISOString()
-      const result = await finishWorkout(programId, 'main', [], XP_REWARDS.WORKOUT_COMPLETE, totalMeters, startedAt)
+      const result = await finishWorkout(programId, 'main', [], 0, totalMeters, startedAt)
 
       if (!result) {
         setFinishStatus('error')

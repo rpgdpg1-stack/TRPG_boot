@@ -102,3 +102,26 @@ export function invalidateFriendsListCache() {
   if (!user) return
   cacheInvalidate(`friends-list:${user.id}`)
 }
+
+/**
+ * Публичный профиль игрока (для модалки профиля друга): последняя тренировка,
+ * серия, статистика — с учётом приватности (сервер сам скрывает выключенное).
+ */
+export async function getUserPublicProfile(userId) {
+  if (!userId) return null
+  try {
+    const viewer = getCurrentUser()
+    const { data, error } = await supabase.rpc('api_get_user_public_profile', {
+      p_user_id: userId,
+      p_viewer_id: viewer?.id ?? null
+    })
+    if (error) {
+      console.error('[friends-list] getUserPublicProfile error:', error)
+      return null
+    }
+    return data || null
+  } catch (e) {
+    console.error('[friends-list] getUserPublicProfile exception:', e)
+    return null
+  }
+}

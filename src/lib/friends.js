@@ -18,7 +18,6 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
-import { invalidateLeaderboardCache } from './leaderboard'
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
@@ -55,7 +54,6 @@ export async function acceptReferral(referralCode) {
     }
 
     if (data?.success) {
-      invalidateLeaderboardCache()
       return { success: true, friend_id: data.friend_id }
     }
 

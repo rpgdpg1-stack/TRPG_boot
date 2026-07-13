@@ -156,7 +156,7 @@ const styles = {
   lastRow: { display: 'flex', alignItems: 'center', gap: '7px', minHeight: '18px' },
   lastWhen: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', textTransform: 'capitalize'
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   lastBadge: { display: 'inline-flex', alignItems: 'center' },
   // Огонёк серии — справа, вертикально по центру строки.
