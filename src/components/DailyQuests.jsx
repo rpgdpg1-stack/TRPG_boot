@@ -11,7 +11,6 @@ import {
 } from '../lib/activities'
 import AnchorMenu from './AnchorMenu'
 import UiIcon from './UiIcon'
-import MuscleIcon from './MuscleIcon'
 
 /**
  * Виджет «Активности» на главной — ОДНА карточка текущего окна (утро/день/вечер),
@@ -45,7 +44,6 @@ export default function DailyQuests() {
   const [winIdx, setWinIdx] = useState(() => getCurrentWindowIndex())
   const [slideDir, setSlideDir] = useState(null)
   const [animating, setAnimating] = useState(null)
-  const [fly, setFly] = useState(0) // тик полёта +20 (когда ВСЁ окно выполнено)
   const [menuAnchor, setMenuAnchor] = useState(null)
 
   const swipe = useRef({ x: null })
@@ -98,15 +96,13 @@ export default function DailyQuests() {
     goWindow(dx < 0 ? 1 : -1)
   }
 
-  // Тап по рекомендуемой — выполнить (награда через completeQuest, +20 улетает
-  // ВВЕРХ из строки как фидбек начисления). Тик fly сбрасываем после анимации.
+  // Тап по рекомендуемой — просто отметить выполнение (баллов нет, отметка по дню).
   const tapRecommended = async (rec, win) => {
     if (!rec || completed[rec.id] || animating || !isWindowOpen(win)) return
     haptic.success()
     setAnimating(rec.id)
     const result = await completeQuest(rec.id, SLOT_XP)
     setCompleted(result.completed)
-    if (result.wasNew) { setFly(Date.now()); setTimeout(() => setFly(0), 1100) }
     setTimeout(() => setAnimating(null), 600)
   }
 
@@ -164,7 +160,6 @@ export default function DailyQuests() {
                   benefit={rec.benefit}
                   done={!!completed[rec.id]}
                   scale={animating === rec.id}
-                  fly={fly}
                   onTap={() => tapRecommended(rec, win)}
                 />
               )}
@@ -209,7 +204,7 @@ export default function DailyQuests() {
 
 /** Строка активности: слева слот галочки (пуст → зелёная галочка), эмодзи/звезда,
     текст (название + польза), справа — награда (только у рекомендуемой). */
-function Row({ emoji, star, title, benefit, done, scale, fly, onTap }) {
+function Row({ emoji, star, title, benefit, done, scale, onTap }) {
   const startRef = useRef(null)
   const onDown = (e) => { startRef.current = { x: e.clientX, y: e.clientY } }
   const onUp = (e) => {
@@ -243,12 +238,6 @@ function Row({ emoji, star, title, benefit, done, scale, fly, onTap }) {
         </span>
         {benefit && <span style={{ ...styles.benefit, opacity: done ? 0.5 : 1 }}>{benefit}</span>}
       </div>
-      {/* +20 улетает из строки по тапу (только у рекомендуемой; статичного бейджа нет). */}
-      {fly ? (
-        <span key={fly} style={styles.rowFly}>
-          +{SLOT_XP} <MuscleIcon size={18} earned={true} />
-        </span>
-      ) : null}
     </button>
   )
 }
