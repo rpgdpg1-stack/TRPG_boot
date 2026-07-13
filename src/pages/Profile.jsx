@@ -128,7 +128,7 @@ export default function Profile() {
       title: 'ПРОФИЛЬ',
       items: [
         { id: 'sections',    icon: '🗂️',            title: 'Разделы',     subtitle: 'Силовая · Плавание · Кардио', path: '/sections' },
-        { id: 'favorites',   icon: '❤️',            title: 'Избранное',   subtitle: 'Закреплённые программы',       path: '/favorites' },
+        { id: 'favorite-exercises', icon: '❤️',      title: 'Любимые упражнения', subtitle: 'Топ-3 · рабочие веса',  path: '/favorite-exercises' },
         { id: 'daily-boost', icon: '⚡',            title: 'Активности', subtitle: 'Ежедневные активности',        path: '/daily-boost' },
         { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },

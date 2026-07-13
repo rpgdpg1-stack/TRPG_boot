@@ -16,7 +16,7 @@ import SwapExercise from './pages/SwapExercise'
 import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
-import Favorites from './pages/Favorites'
+import FavoriteExercises from './pages/FavoriteExercises'
 import Sections from './pages/Sections'
 import DailyBoost from './pages/DailyBoost'
 import Activities from './pages/Activities'
@@ -158,7 +158,7 @@ export default function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/history" element={<History />} />
-          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/favorite-exercises" element={<FavoriteExercises />} />
           <Route path="/sections" element={<Sections />} />
           <Route path="/daily-boost" element={<Activities />} />
           <Route path="/daily-boost/edit" element={<DailyBoost />} />
