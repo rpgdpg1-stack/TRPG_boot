@@ -62,7 +62,7 @@ export default function History() {
 
   return (
     <div className="page page-fade">
-      <ScreenTitle>История</ScreenTitle>
+      <ScreenTitle>Статистика</ScreenTitle>
 
       {/* Блок статистики со свитчером периода */}
       <div style={styles.statsCard}>

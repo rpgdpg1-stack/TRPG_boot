@@ -130,7 +130,7 @@ export default function Profile() {
         { id: 'sections',    icon: '🗂️',            title: 'Разделы',     subtitle: 'Силовая · Плавание · Кардио', path: '/sections' },
         { id: 'favorites',   icon: '❤️',            title: 'Избранное',   subtitle: 'Закреплённые программы',       path: '/favorites' },
         { id: 'daily-boost', icon: '⚡',            title: 'Активности', subtitle: 'Ежедневные активности',        path: '/daily-boost' },
-        { id: 'history',     icon: '📋',             title: 'История',  subtitle: 'Все завершённые тренировки', path: '/history' },
+        { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' },
         { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
         { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Титулы · Рамки · Медали', path: '/rewards' }
       ]

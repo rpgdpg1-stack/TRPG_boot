@@ -59,7 +59,7 @@ function HistoryBlock() {
   return (
     <div style={styles.histBlock} className="press-tile" onClick={openHistory}>
       <div style={styles.histHead}>
-        <span style={styles.histTitle}>История</span>
+        <span style={styles.histTitle}>Статистика</span>
 
         <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()}>
           <button
