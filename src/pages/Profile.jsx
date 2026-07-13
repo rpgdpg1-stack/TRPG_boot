@@ -1,75 +1,56 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
-import { getTotalXP, getWeeklyStreak, getTotalWorkouts, getRecentMuscleHistory, getRecentWorkouts } from '../lib/storage'
-import { getFriendsLeaderboard, getMyLeaguePlace } from '../lib/leaderboard'
+import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
+import { getFriendsLeaderboard } from '../lib/leaderboard'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
+import HistoryStats from '../components/HistoryStats'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
 // Кнопка «Пригласить друга» в профиле видна, пока друзей меньше этого числа.
-// Дальше профиль не засоряем — пригласить всё равно можно из Рейтинга (вкладка «Друзья»).
 const FRIENDS_INVITE_LIMIT = 3
 
+// Периоды блока статистики (как на «Статистике»).
+const PERIODS = [
+  { id: 'week', label: 'Неделя' },
+  { id: 'month', label: 'Месяц' },
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё' }
+]
+
 /**
- * Экран "Профиль".
+ * Экран «Профиль» (соц-концепция без статусов — см. память проекта).
  *
- * Верх — компонент ProfileHeader (тот же что и в модалке рейтинга): крупный
- * аватар с рамкой ранга, имя/логин, ранг/место, капсулы с попапами.
- *
- * Ниже — приглашение друга → История (превью 3 + «Показать все») →
- * сгруппированные разделы (как РАЗДЕЛЫ на главной).
+ * Верх — ProfileHeader: аватар, имя, последняя тренировка, серия за неделю.
+ * Ниже — блок статистики (тот же HistoryStats, что на главной) с переключателем
+ * периода → приглашение друга → меню разделов.
  */
 export default function Profile() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState(() => getCurrentUser() || getUser())
-  // Стартуем из кешированного юзера (как PlayerCard на главной), чтобы ранг,
-  // мускулы и стрик показались сразу — без мигания "Новичок 0" перед загрузкой.
-  const [stats, setStats] = useState(() => {
+  // Стартуем из кешированного юзера, чтобы серия показалась сразу без мигания.
+  const [streak, setStreak] = useState(() => {
     const u = getCurrentUser()
-    let cachedTotal = 0
-    try {
-      const raw = localStorage.getItem('profile-total-workouts')
-      if (raw != null) cachedTotal = parseInt(raw, 10) || 0
-    } catch { /* ignore */ }
-    return {
-      xp: u?.total_muscles || 0,
-      streak: resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week),
-      totalWorkouts: cachedTotal
-    }
+    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
-  // Стартовый rankIndex считаем из кешированного xp (а не хардкод 0),
-  // иначе кубок места мигает зелёным «Новичок» перед загрузкой реальной лиги.
-  const [leaguePlace, setLeaguePlace] = useState(() => {
-    const u = getCurrentUser()
-    const muscles = u?.total_muscles || 0
-    const rankIndex = Math.min(Math.max(Math.floor(muscles / 900), 0), 10)
-    return { place: 1, totalInLeague: 1, rankIndex }
-  })
+  // Полная история — для блока статистики и последней тренировки. Старт из кеша.
+  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
+  const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
+  const [period, setPeriod] = useState('week')
   // Число друзей — для показа кнопки «Пригласить друга» только пока друзей мало.
-  // Кешируем в localStorage, чтобы при заходе не мигало (как totalWorkouts).
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
       if (raw != null) return parseInt(raw, 10) || 0
     } catch { /* ignore */ }
     return null
-  })
-  const [recentHistory, setRecentHistory] = useState([])
-  // Стартуем из localStorage-кеша — число тренировок и последняя тренировка
-  // не лежат в getCurrentUser(), поэтому кешируем их отдельно, чтобы при
-  // повторных заходах не мигало пустое значение → загруженное.
-  const [recentWorkouts, setRecentWorkouts] = useState(() => {
-    try {
-      const raw = localStorage.getItem('profile-recent-workouts')
-      const parsed = raw ? JSON.parse(raw) : null
-      return Array.isArray(parsed) ? parsed : []
-    } catch { return [] }
   })
 
   useEffect(() => {
@@ -82,46 +63,33 @@ export default function Profile() {
     const tgUser = getUser()
     if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
 
-    const loadStats = () => {
+    const load = () => {
       Promise.all([
-        getTotalXP(),
         getWeeklyStreak(),
-        getTotalWorkouts(),
-        getMyLeaguePlace(),
-        getRecentMuscleHistory(3),
-        getRecentWorkouts(3),
+        getRecentWorkouts(HISTORY_FETCH_LIMIT),
         getFriendsLeaderboard()
-      ]).then(([xp, streak, totalWorkouts, lp, history, workouts, friendsRows]) => {
-        setStats({ xp, streak, totalWorkouts })
-        setLeaguePlace(lp)
-        setRecentHistory(history)
-        setRecentWorkouts(workouts)
+      ]).then(([wkStreak, wk, friendsRows]) => {
+        setStreak(wkStreak)
+        setWorkouts(wk || [])
+        setLoaded(true)
 
         // Список друзей включает самого юзера → друзей на одного меньше.
-        // length === 0 значит ошибку/офлайн (свой профиль всегда в списке) —
-        // тогда счётчик не трогаем, чтобы кнопка не мигнула по сбою сети.
-        const fCount = (friendsRows && friendsRows.length > 0)
-          ? friendsRows.length - 1
-          : null
+        const fCount = (friendsRows && friendsRows.length > 0) ? friendsRows.length - 1 : null
         if (fCount !== null) setFriendsCount(fCount)
-
-        // Кешируем для мгновенного показа при следующих заходах (без мигания)
         try {
-          localStorage.setItem('profile-total-workouts', String(totalWorkouts))
-          localStorage.setItem('profile-recent-workouts', JSON.stringify(workouts || []))
           if (fCount !== null) localStorage.setItem('profile-friends-count', String(fCount))
         } catch { /* ignore */ }
       })
     }
-    loadStats()
+    load()
 
-    const offReady = on(EVENTS.USER_READY, loadStats)
-    const offChanged = on(EVENTS.USER_CHANGED, loadStats)
-    return () => {
-      offReady()
-      offChanged()
-    }
+    const offReady = on(EVENTS.USER_READY, load)
+    const offChanged = on(EVENTS.USER_CHANGED, load)
+    return () => { offReady(); offChanged() }
   }, [])
+
+  const lastWorkout = workouts.length > 0 ? workouts[0] : null
+  const summary = summarizeWorkouts(workouts, period, new Date())
 
   const sectionGroups = [
     {
@@ -160,8 +128,9 @@ export default function Profile() {
     await shareReferralLink()
   }
 
+  const pickPeriod = (id) => { if (id !== period) { haptic.selection(); setPeriod(id) } }
+
   // Кнопку «Пригласить друга» показываем, пока друзей мало (< FRIENDS_INVITE_LIMIT).
-  // null = ещё не загрузили → показываем (для нового юзера это и есть «0 друзей»).
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
   return (
@@ -173,22 +142,40 @@ export default function Profile() {
       <div style={styles.headerWrap}>
         <ProfileHeader
           user={user}
-          xp={stats.xp}
-          streak={stats.streak}
-          totalWorkouts={stats.totalWorkouts}
-          friendsPlace={leaguePlace.place}
-          rankIndex={leaguePlace.rankIndex}
-          placeInLeague={true}
-          totalInLeague={leaguePlace.totalInLeague}
-          lastWorkout={recentWorkouts.length > 0 ? recentWorkouts[0] : null}
-          recentHistory={recentHistory}
-          recentWorkouts={recentWorkouts}
-          interactive={true}
+          streak={streak}
+          lastWorkout={lastWorkout}
+          statsLoading={!loaded}
         />
       </div>
 
-      {/* Пригласить друга — только пока друзей мало (< FRIENDS_INVITE_LIMIT).
-          Когда друзей набралось — прячем: приглашать можно из Рейтинга (вкладка «Друзья»). */}
+      {/* Блок статистики со свитчером периода (тот же, что на «Статистике») */}
+      <div style={styles.statsCard}>
+        <div style={styles.segGroup}>
+          {PERIODS.map((p, i) => {
+            const active = p.id === period
+            return (
+              <button
+                key={p.id}
+                className="press-tile"
+                onClick={() => pickPeriod(p.id)}
+                style={{
+                  ...styles.segItem,
+                  ...(active ? styles.segItemActive : {}),
+                  marginLeft: i === 0 ? 0 : '-5px',
+                  zIndex: active ? 2 : 1,
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+                }}
+              >
+                {p.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <HistoryStats summary={summary} />
+      </div>
+
+      {/* Пригласить друга — только пока друзей мало (< FRIENDS_INVITE_LIMIT). */}
       {showInvite && (
         <button
           onClick={handleInviteTap}
@@ -198,7 +185,7 @@ export default function Profile() {
           <UiIcon name="invite-friend" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
           <div style={styles.inviteContent}>
             <div style={styles.inviteTitle}>Пригласить друга</div>
-            <div style={styles.inviteSubtitle}>Качайтесь и соревнуйтесь вместе</div>
+            <div style={styles.inviteSubtitle}>Качайтесь и мотивируйте друг друга</div>
           </div>
           <span style={styles.inviteArrow}>›</span>
         </button>
@@ -249,15 +236,40 @@ export default function Profile() {
 }
 
 const styles = {
-  // Верхний отступ как у playerSticky на главной (16px ниже кнопок Telegram).
   page: {
     paddingTop: 'var(--tg-safe-top)'
   },
-  // На странице профиля карточка — во всю ширину контента (как остальные блоки:
-  // «Пригласить друга», меню). В модалке (PlayerProfileModal) ширину задаёт сама
-  // модалка (maxWidth 340) — там карточка остаётся уже и по центру.
   headerWrap: {
-    margin: '0 0 20px'
+    margin: '0 0 16px'
+  },
+  // Блок статистики — как на «Статистике».
+  statsCard: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border-hairline)',
+    borderRadius: 'var(--radius-card)',
+    padding: '16px',
+    marginBottom: '20px'
+  },
+  segGroup: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    marginBottom: '16px'
+  },
+  segItem: {
+    position: 'relative', flex: 1,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    minHeight: '30px', padding: '0 10px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.2px',
+    cursor: 'pointer', whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease'
+  },
+  segItemActive: {
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
   inviteButton: {
     width: '100%',
@@ -298,7 +310,6 @@ const styles = {
     opacity: 0.7
   },
 
-  // === Группы разделов (как РАЗДЕЛЫ на главной) ===
   groupTitle: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
