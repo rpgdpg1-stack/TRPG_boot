@@ -7,11 +7,13 @@ import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy, savePrivacy } from '../lib/privacy'
+import { getFavoriteExercises } from '../lib/favorite-exercises'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import HistoryStats from '../components/HistoryStats'
+import FavoritesBlock from '../components/FavoritesBlock'
 import ScreenTitle from '../components/ScreenTitle'
 import ChevronIcon from '../components/ChevronIcon'
 import UiIcon from '../components/UiIcon'
@@ -45,6 +47,7 @@ export default function Profile() {
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
+  const [favorites, setFavorites] = useState([])
   const [period, setPeriod] = useState(() => localGet(STATS_PERIOD_KEY) || 'week')
   const [periodOpen, setPeriodOpen] = useState(false)
   const [friendsCount, setFriendsCount] = useState(() => {
@@ -67,6 +70,7 @@ export default function Profile() {
 
     const load = () => {
       setPrivacy(getPrivacy())
+      getFavoriteExercises().then(setFavorites)
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -194,6 +198,9 @@ export default function Profile() {
         </div>
       )}
 
+      {/* Любимые упражнения — если включено в приватности */}
+      {privacy.showFavorites && favorites.length > 0 && <FavoritesBlock items={favorites} />}
+
       {/* Пригласить друга */}
       {showInvite && (
         <button onClick={handleInviteTap} style={styles.inviteButton} className="press-tile">
@@ -211,8 +218,8 @@ export default function Profile() {
       <div style={styles.groupCard}>
         <ToggleRow label="Последняя тренировка" hint="Видна в профиле и друзьям" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
         <ToggleRow label="Статистика" hint="Блок с периодами" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
-        <ToggleRow label="Любимые упражнения" hint="Скоро" value={false} disabled divider />
-        <ToggleRow label="Показывать веса" hint="Скоро" value={privacy.showWeights} disabled divider />
+        <ToggleRow label="Любимые упражнения" hint="Показывать твой топ-3" value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
+        <ToggleRow label="Показывать веса" hint="Рабочие веса в любимых" value={privacy.showWeights} onToggle={() => toggle('showWeights')} divider />
       </div>
 
       {/* Меню профиля */}

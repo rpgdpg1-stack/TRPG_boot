@@ -4,6 +4,7 @@ import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
+import FavoritesBlock from './FavoritesBlock'
 
 /**
  * Модалка профиля друга (открывается тапом по строке на странице «Друзья»).
@@ -49,6 +50,7 @@ export default function PlayerProfileModal({ row, onClose }) {
           showLastWorkout={pub?.show_last_workout ?? true}
           statsLoading={pub === null}
         />
+        {pub?.favorites?.length > 0 && <FavoritesBlock items={pub.favorites} />}
       </div>
 
       <style>{`
