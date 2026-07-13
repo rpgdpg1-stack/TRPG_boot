@@ -1,28 +1,26 @@
 /**
  * Строка списка ДРУЗЕЙ (страница «Друзья»).
  *
- * Отличается от LeaderboardRow (рейтинг): без нумерации/медалей, аватар
- * меньше, между именем и бицепсом — относительное время последней тренировки
- * ("2 дня назад") серым. Закреплённые помечены 📌.
+ * Соц-концепция без статусов (см. память проекта): никаких рангов/лиг/мускулов.
+ * Строка отвечает только на вопрос «кто сейчас активен?».
  *
  * Состав слева направо:
- *   [АВАТАР 36]  Имя @ник            123 💪
- *                Ранг · был N дней    (📌 если закреплён)
+ *   [АВАТАР 52]  Имя                     🔥
+ *                была последняя тренировка
  *
- * Тап → onTap(friend) (открыть карточку игрока).
- * Долгое нажатие (550мс) → onLongPress(friend) (модалка закрепа).
+ * Справа — огонёк 1-го уровня как индикатор недели: есть 🔥 → тренировался хотя
+ * бы раз на этой неделе (МСК, Пн–Вс), нет 🔥 → на этой неделе не занимался.
+ * Без цифры. Тип последней тренировки (иконка+название) добавим, когда бэкенд
+ * начнёт его отдавать в api_get_friends_list.
  *
- * Долгое нажатие не должно конфликтовать со скроллом: если палец сдвинулся
- * больше порога ИЛИ отпустили раньше — это не лонг-пресс, а тап/скролл.
+ * Тап → onTap(friend). Долгое нажатие (550мс) → onLongPress(friend).
+ * Лонг-пресс не конфликтует со скроллом: сдвиг больше порога / раннее отпускание
+ * трактуется как тап/скролл.
  */
 
 import { useRef, useState } from 'react'
-import { getLevelFromXP, getRankByLevel } from '../lib/levels'
-import { rankIndexFromMuscles } from '../lib/frames'
-import { formatRelative } from '../utils/history'
-import RankIcon from './RankIcon'
-import MuscleIcon from './MuscleIcon'
-import RankFrame from './RankFrame'
+import { formatRelative, periodRange } from '../utils/history'
+import StreakFlame from './StreakFlame'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
@@ -31,18 +29,19 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
   const {
     first_name,
     photo_url,
-    total_muscles,
     last_workout_at,
     pinned_at
   } = friend
-
-  const level = getLevelFromXP(total_muscles)
-  const rank = getRankByLevel(level)
 
   const displayName = first_name || 'Игрок'
   const isPinned = !!pinned_at
 
   const lastWorkoutText = last_workout_at ? formatRelative(last_workout_at) : null
+
+  // Тренировался ли на этой неделе (МСК, Пн–Вс) — по времени последней тренировки.
+  const [weekStart, weekEnd] = periodRange('week')
+  const lastMs = last_workout_at ? new Date(last_workout_at).getTime() : 0
+  const trainedThisWeek = lastMs >= weekStart && lastMs < weekEnd
 
   const [pressed, setPressed] = useState(false)
   const longTimer = useRef(null)
@@ -107,8 +106,8 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
           : (isPinned ? 'rgba(255, 255, 255, 0.06)' : 'transparent')
       }}
     >
-      {/* Аватар — рамка ранга (8/9/10 анимированные, 0–7 — полоска цвета). */}
-      <RankFrame rankIndex={rankIndexFromMuscles(total_muscles)} size={52} radius={16} borderWidth={2}>
+      {/* Аватар — просто фото в скруглённом квадрате (без рамки ранга). */}
+      <div style={styles.avatar}>
         {photo_url ? (
           <img src={photo_url} alt="" style={styles.avatarImg} draggable={false} />
         ) : (
@@ -116,31 +115,26 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
-      </RankFrame>
+      </div>
 
-      {/* Имя + (ранг · последняя тренировка) */}
+      {/* Имя + последняя тренировка */}
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
           <span style={styles.name}>{displayName}</span>
         </div>
         <div style={styles.metaRow}>
-          <span style={{ ...styles.rank, color: rank.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <RankIcon level={level} size={11} />
-            {rank.name} {rank.subLevel}
+          <span style={styles.lastWorkout}>
+            {lastWorkoutText ? `Тренировка · ${lastWorkoutText}` : 'Ещё не тренировался'}
           </span>
-          {lastWorkoutText && (
-            <>
-              <span style={styles.dot}>·</span>
-              <span style={styles.lastWorkout}>{lastWorkoutText}</span>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Бицепсы справа — число в цвет ранга */}
-      <div style={{ ...styles.muscles, color: rank.color }}>
-        {total_muscles} <MuscleIcon size={18} earned={true} />
-      </div>
+      {/* Индикатор недели: 🔥 если тренировался на этой неделе, иначе пусто. */}
+      {trainedThisWeek && (
+        <div style={styles.weekFlame} aria-label="Тренировался на этой неделе">
+          <StreakFlame streak={1} />
+        </div>
+      )}
     </div>
   )
 }
@@ -154,6 +148,15 @@ const styles = {
     transition: 'background 0.2s ease',
     cursor: 'pointer',
     touchAction: 'pan-y'
+  },
+  avatar: {
+    width: '52px',
+    height: '52px',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    flexShrink: 0,
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-hairline)'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
@@ -196,22 +199,9 @@ const styles = {
     gap: '5px',
     overflow: 'hidden'
   },
-  rank: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '10px',
-    letterSpacing: '1px',
-    lineHeight: 1,
-    flexShrink: 0
-  },
-  dot: {
-    color: 'var(--color-text-secondary)',
-    fontSize: '10px',
-    flexShrink: 0
-  },
   lastWorkout: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: '12px',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     overflow: 'hidden',
@@ -219,15 +209,10 @@ const styles = {
     whiteSpace: 'nowrap',
     minWidth: 0
   },
-  muscles: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
-    letterSpacing: '0.5px',
+  weekFlame: {
     flexShrink: 0,
-    whiteSpace: 'nowrap',
     display: 'flex',
     alignItems: 'center',
-    gap: '5px'
+    justifyContent: 'center'
   }
 }
