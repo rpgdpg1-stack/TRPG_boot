@@ -20,9 +20,7 @@ import FavoriteExercises from './pages/FavoriteExercises'
 import Sections from './pages/Sections'
 import DailyBoost from './pages/DailyBoost'
 import Activities from './pages/Activities'
-import Leaderboard from './pages/Leaderboard'
 import Friends from './pages/Friends'
-import Rewards from './pages/Rewards'
 import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
@@ -155,8 +153,6 @@ export default function App() {
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/friends" element={<Friends />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/rewards" element={<Rewards />} />
           <Route path="/history" element={<History />} />
           <Route path="/favorite-exercises" element={<FavoriteExercises />} />
           <Route path="/sections" element={<Sections />} />

@@ -69,11 +69,6 @@ export default function Friends() {
     await shareReferralLink()
   }
 
-  const handleCupTap = () => {
-    haptic.light()
-    navigate('/leaderboard?tab=friends', { state: { from: '/friends' } })
-  }
-
   const handleRowTap = (friend) => {
     haptic.light()
     setSelected(friend)
@@ -121,14 +116,11 @@ export default function Friends() {
 
       <header style={styles.header}>
         <ScreenTitle>Друзья</ScreenTitle>
-        {/* Под заголовком (16px): слева счётчик, справа кубок — в одну линию. */}
+        {/* Под заголовком: счётчик друзей по центру. */}
         <div style={styles.subRow}>
           <span style={styles.subInfo}>
             {loading ? '' : friends.length === 0 ? '' : `Друзей: ${friends.length}`}
           </span>
-          <button onClick={handleCupTap} style={styles.cupButton} aria-label="Открыть рейтинг">
-            <UiIcon name="leaderboard" size={24} color="#FFD700" />
-          </button>
         </div>
       </header>
 

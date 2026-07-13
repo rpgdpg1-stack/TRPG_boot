@@ -130,9 +130,7 @@ export default function Profile() {
         { id: 'sections',    icon: '🗂️',            title: 'Разделы',     subtitle: 'Силовая · Плавание · Кардио', path: '/sections' },
         { id: 'favorite-exercises', icon: '❤️',      title: 'Любимые упражнения', subtitle: 'Топ-3 · рабочие веса',  path: '/favorite-exercises' },
         { id: 'daily-boost', icon: '⚡',            title: 'Активности', subtitle: 'Ежедневные активности',        path: '/daily-boost' },
-        { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' },
-        { id: 'leaderboard', icon: 'ui:leaderboard', iconColor: '#FFD700', title: 'Рейтинг', subtitle: 'Друзья · Лига · Сезон',       path: '/leaderboard' },
-        { id: 'rewards',     icon: 'ui:rewards',     iconColor: '#F178B6', title: 'Награды', subtitle: 'Титулы · Рамки · Медали', path: '/rewards' }
+        { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' }
       ]
     },
     {
@@ -162,11 +160,6 @@ export default function Profile() {
     await shareReferralLink()
   }
 
-  const handlePlaceTap = () => {
-    haptic.light()
-    navigate('/leaderboard?tab=league', { state: { from: '/profile' } })
-  }
-
   // Кнопку «Пригласить друга» показываем, пока друзей мало (< FRIENDS_INVITE_LIMIT).
   // null = ещё не загрузили → показываем (для нового юзера это и есть «0 друзей»).
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
@@ -191,7 +184,6 @@ export default function Profile() {
           recentHistory={recentHistory}
           recentWorkouts={recentWorkouts}
           interactive={true}
-          onPlaceTap={handlePlaceTap}
         />
       </div>
 
