@@ -24,6 +24,7 @@ export default function ProfileHeader({
   streak = null,
   lastWorkout = null,
   statsLoading = false,
+  showLastWorkout = true,
   bottomAction = null
 }) {
   const [showStreakInfo, setShowStreakInfo] = useState(false)
@@ -62,22 +63,24 @@ export default function ProfileHeader({
 
         <div style={styles.infoColumn}>
           <span style={styles.name}>{displayName}</span>
-          <div style={styles.lastRow}>
-            {statsLoading ? (
-              <span style={styles.skeletonLine} />
-            ) : lastWhen ? (
-              <>
-                <span style={styles.lastWhen}>{lastWhen}</span>
-                {lastMeta && (
-                  <span style={styles.lastBadge}>
-                    <UiIcon name={lastMeta.iconName} size={13} color={lastMeta.color} />
-                  </span>
-                )}
-              </>
-            ) : (
-              <span style={styles.lastWhen}>Ещё не тренировался</span>
-            )}
-          </div>
+          {showLastWorkout && (
+            <div style={styles.lastRow}>
+              {statsLoading ? (
+                <span style={styles.skeletonLine} />
+              ) : lastWhen ? (
+                <>
+                  <span style={styles.lastWhen}>{lastWhen}</span>
+                  {lastMeta && (
+                    <span style={styles.lastBadge}>
+                      <UiIcon name={lastMeta.iconName} size={13} color={lastMeta.color} />
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span style={styles.lastWhen}>Ещё не тренировался</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Огонёк серии — справа, по центру строки. */}
@@ -88,9 +91,7 @@ export default function ProfileHeader({
             ) : (
               <>
                 <StreakFlame streak={s} />
-                <span style={{ ...styles.fireCount, color: s >= 1 ? '#FF8C42' : 'transparent' }}>
-                  {s >= 1 ? `x${s}` : 'x0'}
-                </span>
+                <span style={styles.fireCount}>{s >= 1 ? `x${s}` : ''}</span>
               </>
             )}
           </button>
@@ -167,7 +168,7 @@ const styles = {
   },
   fireCount: {
     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px', letterSpacing: '0.5px',
-    lineHeight: 1, minWidth: '22px', textAlign: 'left',
+    lineHeight: 1, minWidth: '20px', textAlign: 'left', color: '#FF8C42',
     textShadow: '0 0 6px rgba(255, 140, 66, 0.5)'
   },
   popup: {
