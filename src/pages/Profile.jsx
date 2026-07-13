@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { getFriendsLeaderboard } from '../lib/leaderboard'
+import { getFriendsList } from '../lib/friends-list'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
@@ -67,14 +67,14 @@ export default function Profile() {
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
-        getFriendsLeaderboard()
+        getFriendsList()
       ]).then(([wkStreak, wk, friendsRows]) => {
         setStreak(wkStreak)
         setWorkouts(wk || [])
         setLoaded(true)
 
-        // Список друзей включает самого юзера → друзей на одного меньше.
-        const fCount = (friendsRows && friendsRows.length > 0) ? friendsRows.length - 1 : null
+        // getFriendsList возвращает друзей БЕЗ меня → длина = число друзей.
+        const fCount = Array.isArray(friendsRows) ? friendsRows.length : null
         if (fCount !== null) setFriendsCount(fCount)
         try {
           if (fCount !== null) localStorage.setItem('profile-friends-count', String(fCount))

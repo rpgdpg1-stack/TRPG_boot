@@ -2,18 +2,15 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFriendsList, togglePinFriend, PIN_LIMIT, invalidateFriendsListCache } from '../lib/friends-list'
+import { getFriendsList, togglePinFriend, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
-import BackupAllButton from '../components/BackupAllButton'
 import PlayerProfileModal from '../components/PlayerProfileModal'
-import BackupSentToast from '../components/rewards/BackupSentToast'
 import UiIcon from '../components/UiIcon'
 import PinIcon from '../components/PinIcon'
-import { BACKUP_BONUS } from '../lib/backups'
 
 /**
  * Страница «Друзья» (вкладка таб-бара вместо кубка).
@@ -32,7 +29,6 @@ export default function Friends() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)      // друг для карточки игрока
   const [pinTarget, setPinTarget] = useState(null)    // друг для модалки закрепа
-  const [sentToast, setSentToast] = useState(null)
   const [pinError, setPinError] = useState(null)      // текст ошибки лимита
 
   useEffect(() => {
@@ -57,12 +53,6 @@ export default function Friends() {
   const pinnedFriends = friends.filter(f => f.pinned_at)
   const otherFriends = friends.filter(f => !f.pinned_at)
   const pinnedCount = pinnedFriends.length
-  const eligiblePinnedCount = pinnedFriends.filter(f => !f.backed_today).length
-
-  const handleBackupAllDone = () => {
-    invalidateFriendsListCache()
-    load()
-  }
 
   const handleInviteTap = async () => {
     haptic.medium()
@@ -104,11 +94,6 @@ export default function Friends() {
       haptic.error()
       setPinTarget(null)
     }
-  }
-
-  const handleBackupDone = (targetName) => {
-    setSelected(null)
-    setSentToast({ targetName })
   }
 
   return (
@@ -156,9 +141,6 @@ export default function Friends() {
             </div>
           )}
 
-          {/* Подстраховать всех закреплённых — под закреплёнными */}
-          {eligiblePinnedCount > 0 && <BackupAllButton onDone={handleBackupAllDone} />}
-
           {/* Остальные друзья */}
           {otherFriends.length > 0 && (
             <div style={{ ...styles.list, marginTop: pinnedFriends.length > 0 ? '12px' : 0 }}>
@@ -195,15 +177,6 @@ export default function Friends() {
         <PlayerProfileModal
           row={selected}
           onClose={() => setSelected(null)}
-          onBackupDone={handleBackupDone}
-        />
-      )}
-
-      {sentToast && (
-        <BackupSentToast
-          targetName={sentToast.targetName}
-          bonus={BACKUP_BONUS}
-          onConfirm={() => setSentToast(null)}
         />
       )}
     </div>

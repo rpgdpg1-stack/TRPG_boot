@@ -15,7 +15,6 @@ import {
   pluralPools,
   swimMinutesForMeters
 } from '../data/programs/swim'
-import MuscleIcon from '../components/MuscleIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
@@ -470,13 +469,14 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
             Проверь подключение к интернету и попробуй ещё раз.
           </div>
         ) : kind === 'reward' ? (
-          <div style={{ ...modalStyles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-            +{XP_REWARDS.WORKOUT_COMPLETE} <MuscleIcon size={28} earned={true} flexTrigger={1} />
+          <div style={modalStyles.message}>
+            Отличная работа! 💪<br />
+            Засчитана 1 тренировка за сегодня.
           </div>
         ) : kind === 'limit' ? (
           <div style={modalStyles.message}>
             Лимит: 1 тренировка в день.<br />
-            Бицепсы за сегодня уже начислены за другую тренировку.
+            За сегодня тренировка уже засчитана.
           </div>
         ) : (
           <div style={modalStyles.message}>

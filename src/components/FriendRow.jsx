@@ -124,7 +124,7 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
         </div>
         <div style={styles.metaRow}>
           <span style={styles.lastWorkout}>
-            {lastWorkoutText ? `Тренировка · ${lastWorkoutText}` : 'Ещё не тренировался'}
+            {lastWorkoutText || 'Ещё не тренировался'}
           </span>
         </div>
       </div>

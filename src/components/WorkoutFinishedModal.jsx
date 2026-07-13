@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import MuscleIcon from './MuscleIcon'
 
 /**
  * Модалка завершения тренировки.
@@ -20,7 +19,7 @@ import MuscleIcon from './MuscleIcon'
  *                       поздравляем, но +150 не показываем
  * @param onConfirm    - вызывается при тапе на ОК/Повторить
  */
-export default function WorkoutFinishedModal({ reward = 150, durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
+export default function WorkoutFinishedModal({ durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
   const sceneRef = useRef(null)
 
   // Спавним пиксельные искорки из огонька (как у горящих огоньков стрика)
@@ -133,8 +132,8 @@ export default function WorkoutFinishedModal({ reward = 150, durationLabel = '',
           </>
         ) : (
           <>
-            <div style={{ ...styles.rewardBadge, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>+{reward} <MuscleIcon size={32} earned={true} flexTrigger={1} /></div>
-            <div style={styles.limitNote}>Награда начисляется за 1 тренировку в день.</div>
+            <div style={styles.praise}>Отличная работа! 💪</div>
+            <div style={styles.limitNote}>Засчитана 1 тренировка за сегодня.</div>
           </>
         )}
 
