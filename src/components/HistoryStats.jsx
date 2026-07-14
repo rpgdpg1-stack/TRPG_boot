@@ -46,12 +46,12 @@ export default function HistoryStats({ summary }) {
       {/* Общие показатели периода */}
       <div style={styles.totals}>
         <Total
-          icon={<UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" />}
+          icon={<UiIcon name="muscles-line" size={19} color="var(--color-text-secondary)" />}
           value={String(summary.count)}
           label="Тренировок"
         />
         <Total
-          icon={<span style={styles.clock}><ClockIcon size={14} /></span>}
+          icon={<span style={styles.clock}><ClockIcon size={17} /></span>}
           value={formatDuration(summary.minutes)}
           label="Время"
         />
