@@ -106,7 +106,7 @@ export default function TabBar() {
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
-                color={tab.isActive ? 'var(--color-icon-muscle)' : 'var(--color-text-inactive)'}
+                color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
                 flexTrigger={tab.isActive ? muscleFlexTick : 0}
               />
             ) : tab.id === 'profile' ? (

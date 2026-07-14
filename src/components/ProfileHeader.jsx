@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
-import { formatRelative, workoutCategoryMeta } from '../utils/history'
+import { formatRelative } from '../utils/history'
 import StreakFlame from './StreakFlame'
-import UiIcon from './UiIcon'
 
 /**
  * Карточка-шапка профиля (соц-концепция без статусов — см. память проекта).
@@ -36,7 +35,6 @@ export default function ProfileHeader({
   const s = streak || 0
 
   const lastWhen = lastWorkout ? formatRelative(lastWorkout.finished_at) : null
-  const lastMeta = lastWorkout ? workoutCategoryMeta(lastWorkout) : null
 
   // Поп-ап серии: автозакрытие 6с + тап вне.
   useEffect(() => {
@@ -73,17 +71,8 @@ export default function ProfileHeader({
             <div style={styles.lastRow}>
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
-              ) : lastWhen ? (
-                <>
-                  <span style={styles.lastWhen}>{lastWhen}</span>
-                  {lastMeta && (
-                    <span style={styles.lastBadge}>
-                      <UiIcon name={lastMeta.iconName} size={13} color={lastMeta.color} />
-                    </span>
-                  )}
-                </>
               ) : (
-                <span style={styles.lastWhen}>Ещё не тренировался</span>
+                <span style={styles.lastWhen}>{lastWhen || 'Ещё не тренировался'}</span>
               )}
             </div>
           )}

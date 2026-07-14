@@ -73,7 +73,7 @@ export default function SectionCarousel({ onSectionChange }) {
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
   const lastText = pinnedProg
-    ? (lastDate ? `Последняя тренировка · ${formatRelative(lastDate)}` : 'Ещё не начинали')
+    ? (lastDate ? formatRelative(lastDate) : 'Ещё не начинали')
     : null
 
   const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
@@ -105,7 +105,7 @@ export default function SectionCarousel({ onSectionChange }) {
           onClick={() => { haptic.light(); setOpen(o => !o) }}
           aria-label="Выбрать раздел"
         >
-          <UiIcon name={cat.iconName} size={28} color={cat.color} />
+          <UiIcon name={cat.iconName} size={24} color={cat.color} />
           <span style={styles.selectorText}>{cat.title}</span>
           <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
             <ChevronIcon size={18} color="var(--color-text-secondary)" />

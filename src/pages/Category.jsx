@@ -221,7 +221,10 @@ export default function Category() {
               onDeleted={handleDeleted}
               dots
               cta
-              bordered={favoriteSlug === prog.slug}
+              bordered={false}
+              background={favoriteSlug === prog.slug
+                ? 'color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))'
+                : 'var(--color-card)'}
             />
           </div>
         ))}

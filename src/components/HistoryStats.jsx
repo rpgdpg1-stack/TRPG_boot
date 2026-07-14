@@ -21,7 +21,7 @@ function Badge({ iconName, color, size = 22, icon = 13 }) {
       width: size, height: size, borderRadius: '6px', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
-      <UiIcon name={iconName} size={icon} color="#0D0C0C" />
+      <UiIcon name={iconName} size={icon} color="#FFFFFF" />
     </span>
   )
 }
@@ -104,7 +104,9 @@ const styles = {
   },
   totalLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap',
+    // Чуть менее контрастно — чтобы главной оставалась цифра, а не подпись.
+    opacity: 0.82
   },
   divider: { height: '1px', background: 'var(--border-hairline)', margin: '14px 0' },
 

@@ -34,7 +34,7 @@ export default function MuscleIcon({ size = 16, color, earned = true, flex = fal
         ...style
       }}
     >
-      <UiIcon name="muscles" size={size} color={finalColor} />
+      <UiIcon name="muscles-line" size={size} color={finalColor} />
       <style>{`
         @keyframes muscleFlexOnce {
           0%   { transform: rotate(0deg) scale(1); }

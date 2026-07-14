@@ -160,7 +160,7 @@ export default function ProgramCard({
           светлее карточки, белый текст+плей, без эффектов. Не самый яркий элемент —
           жать будут всю карточку, пилюля лишь подсказывает действие. */}
       {showCta && (
-        <span style={styles.ctaPill}>
+        <span style={{ ...styles.ctaPill, background: `color-mix(in srgb, #FFFFFF 7%, ${background})` }}>
           {isActive ? 'Продолжить' : 'Начать'}
           <PlayIcon size={16} />
         </span>
