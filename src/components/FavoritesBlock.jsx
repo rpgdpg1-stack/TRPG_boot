@@ -14,7 +14,6 @@ export default function FavoritesBlock({ items, bare = false }) {
           const val = formatFavoriteValue(f.weight_kg)
           return (
             <div key={i} style={styles.row}>
-              <span style={styles.dot} />
               <span style={styles.name}>{cap(f.name)}</span>
               {val && <span style={styles.val}>{val}</span>}
             </div>
@@ -39,14 +38,14 @@ const styles = {
     color: 'var(--color-text-secondary)', letterSpacing: '2px', marginBottom: '10px'
   },
   list: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  row: { display: 'flex', alignItems: 'center', gap: '10px' },
-  dot: { flexShrink: 0, width: '6px', height: '6px', borderRadius: '2px', background: 'var(--color-primary)' },
+  row: { display: 'flex', alignItems: 'baseline', gap: '10px' },
   name: {
     flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
+  // Вес — серым с лёгким опасити (как в дне тренировки).
   val: {
     flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px',
-    color: 'var(--color-text-secondary)'
+    color: 'var(--color-text-secondary)', opacity: 0.75
   }
 }

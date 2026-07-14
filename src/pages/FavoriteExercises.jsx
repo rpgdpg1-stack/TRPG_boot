@@ -7,7 +7,7 @@ import {
 } from '../lib/favorite-exercises'
 import ScreenTitle from '../components/ScreenTitle'
 import PixelHeart from '../components/PixelHeart'
-import ExercisePicker from '../components/ExercisePicker'
+import FavoritePicker from '../components/FavoritePicker'
 
 /**
  * «Любимые упражнения» — до 3 слотов с рабочим весом. Витрина личного прогресса
@@ -42,11 +42,10 @@ export default function FavoriteExercises() {
   const slots = Array.from({ length: FAVORITE_SLOTS }, (_, i) => i + 1)
   const usedIds = new Set(Object.values(byslot).map(f => f.exercise_id))
 
-  const handlePick = async (ex) => {
-    if (pickSlot == null || !ex?.id) return
-    haptic.success()
+  const handlePick = async (exerciseId) => {
+    if (pickSlot == null || !exerciseId) return
     setPickSlot(null)
-    await setFavoriteExercise(pickSlot, ex.id)
+    await setFavoriteExercise(pickSlot, exerciseId)
     load()
   }
 
@@ -105,13 +104,10 @@ export default function FavoriteExercises() {
       {!loaded && <div style={styles.loading}>Загрузка…</div>}
 
       {pickSlot != null && (
-        <ExercisePicker
-          excludeIds={usedIds}
-          atLimit={false}
-          count={0}
-          max={1}
-          onToggle={handlePick}
-          onDone={() => setPickSlot(null)}
+        <FavoritePicker
+          usedIds={usedIds}
+          onPick={handlePick}
+          onClose={() => setPickSlot(null)}
         />
       )}
     </div>
