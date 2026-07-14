@@ -171,6 +171,15 @@ export function formatDuration(min) {
   return `${h} ч ${m} мин`
 }
 
+// Время в часах БЕЗ минут (для сводок статистики): 60→«1 ч», 90→«1,5 ч», 30→«0,5 ч».
+// Один знак после запятой, хвостовой ноль убираем.
+export function formatHours(min) {
+  if (!min || min < 1) return '0 ч'
+  const h = Math.round((min / 60) * 10) / 10
+  const str = h % 1 === 0 ? String(h) : h.toFixed(1).replace('.', ',')
+  return `${str} ч`
+}
+
 // "750 м" / "1.2 км" — дистанция плавания.
 export function formatMeters(m) {
   if (!m) return '0 м'

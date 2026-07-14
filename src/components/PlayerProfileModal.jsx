@@ -5,6 +5,7 @@ import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
 import FavoritesBlock from './FavoritesBlock'
+import HistoryStats from './HistoryStats'
 
 /**
  * Модалка профиля друга (открывается тапом по строке на странице «Друзья»).
@@ -37,6 +38,18 @@ export default function PlayerProfileModal({ row, onClose }) {
     photo_url: row.photo_url
   }
 
+  // Секции внутри карточки друга — как в своём профиле: статистика (тоталы за всё
+  // время) + любимые. Показываем то, что друг разрешил в приватности.
+  const friendSections = []
+  if (pub?.show_stats && (pub.total_workouts || 0) > 0) {
+    friendSections.push(
+      <HistoryStats key="stats" summary={{ count: pub.total_workouts, minutes: pub.total_minutes || 0 }} totalsOnly />
+    )
+  }
+  if (pub?.favorites?.length > 0) {
+    friendSections.push(<FavoritesBlock key="fav" items={pub.favorites} bare />)
+  }
+
   return createPortal(
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
@@ -49,8 +62,8 @@ export default function PlayerProfileModal({ row, onClose }) {
           lastWorkout={pub?.last_workout || null}
           showLastWorkout={pub?.show_last_workout ?? true}
           statsLoading={pub === null}
+          sections={friendSections}
         />
-        {pub?.favorites?.length > 0 && <FavoritesBlock items={pub.favorites} />}
       </div>
 
       <style>{`

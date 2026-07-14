@@ -1,5 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { useOutsideClose } from '../lib/use-outside-close'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
@@ -10,25 +9,14 @@ import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import HistoryStats from '../components/HistoryStats'
 import FavoritesBlock from '../components/FavoritesBlock'
 import ScreenTitle from '../components/ScreenTitle'
-import ChevronIcon from '../components/ChevronIcon'
 import UiIcon from '../components/UiIcon'
 
 const FRIENDS_INVITE_LIMIT = 3
-
-const PERIODS = [
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-  { id: 'year', label: 'Год' },
-  { id: 'all', label: 'Всё время' }
-]
-const periodLabel = (id) => PERIODS.find(p => p.id === id)?.label || 'Неделя'
-const STATS_PERIOD_KEY = 'profile-stats-period'
 
 /**
  * Экран «Профиль» (соц-концепция без статусов — см. память проекта).
@@ -50,10 +38,6 @@ export default function Profile() {
   const [privacy, setPrivacy] = useState(() => getPrivacy())
   const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
   const [favLoaded, setFavLoaded] = useState(() => getFavoritesSync() !== null)
-  const [period, setPeriod] = useState(() => localGet(STATS_PERIOD_KEY) || 'week')
-  const [periodOpen, setPeriodOpen] = useState(false)
-  const periodRef = useRef(null)
-  useOutsideClose(periodRef, periodOpen, useCallback(() => setPeriodOpen(false), []))
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -98,15 +82,8 @@ export default function Profile() {
   }, [])
 
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
-  const summary = summarizeWorkouts(workouts, period, new Date())
-
-  const pickPeriod = (id) => {
-    setPeriodOpen(false)
-    if (id === period) return
-    haptic.light()
-    setPeriod(id)
-    localSet(STATS_PERIOD_KEY, id)
-  }
+  // В профиле статистика — за ВСЁ время, только тоталы (без периодов и разбивки).
+  const summary = summarizeWorkouts(workouts, 'all', new Date())
 
   const menuGroups = [
     {
@@ -152,29 +129,7 @@ export default function Profile() {
   if (privacy.showStats) {
     sections.push(
       <div key="stats">
-        <div style={styles.statsHead}>
-          <span style={styles.statsTitle}>Статистика</span>
-          <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()} ref={periodRef}>
-            <button style={styles.periodBtn} className="press-tile" onClick={() => { haptic.light(); setPeriodOpen(o => !o) }} aria-label="Период">
-              {periodLabel(period)}
-              <span style={{ ...styles.periodChev, transform: periodOpen ? 'rotate(180deg)' : 'none' }}>
-                <ChevronIcon size={14} color="var(--color-text-secondary)" />
-              </span>
-            </button>
-            {periodOpen && (
-              <div style={styles.periodDropdown}>
-                {PERIODS.map(p => (
-                  <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
-                    <span style={{ ...styles.periodItemText, color: p.id === period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div style={{ marginTop: '12px' }}>
-          <HistoryStats summary={summary} loading={!loaded} />
-        </div>
+        <HistoryStats summary={summary} loading={!loaded} totalsOnly />
       </div>
     )
   }
@@ -258,35 +213,6 @@ const styles = {
   headerWrap: { margin: '0 0 16px' },
   favSkTitle: { width: '150px', height: '13px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', marginBottom: '14px' },
   favSkRow: { height: '15px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', marginBottom: '11px' },
-
-  statsCard: {
-    background: 'var(--surface)', border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)', padding: '14px 16px', marginBottom: '20px'
-  },
-  statsHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  statsTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
-  },
-  periodWrap: { position: 'relative' },
-  periodBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '4px 2px',
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)'
-  },
-  periodChev: { display: 'inline-flex', marginTop: '1px', transition: 'transform 0.2s var(--ease-ios)' },
-  dropClose: { position: 'fixed', inset: 0, zIndex: 40, cursor: 'pointer' },
-  periodDropdown: {
-    position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 41, minWidth: '140px', padding: '6px',
-    background: 'var(--surface-raised)', border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 'var(--radius-medium)', boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
-    display: 'flex', flexDirection: 'column', gap: '2px'
-  },
-  periodItem: {
-    display: 'flex', alignItems: 'center', width: '100%', padding: '9px 12px',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)', cursor: 'pointer', textAlign: 'left'
-  },
-  periodItemText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600 },
 
   inviteButton: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',

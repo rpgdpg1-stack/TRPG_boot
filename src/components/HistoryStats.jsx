@@ -1,6 +1,6 @@
 import UiIcon from './UiIcon'
 import ClockIcon from './ClockIcon'
-import { formatDuration, formatMeters, CATEGORY_ORDER } from '../utils/history'
+import { formatHours, formatMeters, CATEGORY_ORDER } from '../utils/history'
 
 /**
  * Сводка тренировок за период.
@@ -34,7 +34,7 @@ const TYPE_META = {
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
 }
 
-export default function HistoryStats({ summary, loading = false }) {
+export default function HistoryStats({ summary, loading = false, totalsOnly = false }) {
   // Первый заход без кеша — скелетон вместо мигания пустой заглушки.
   if (loading) {
     return (
@@ -43,10 +43,12 @@ export default function HistoryStats({ summary, loading = false }) {
           <span style={styles.skTotal} />
           <span style={styles.skTotal} />
         </div>
-        <div style={styles.divider} aria-hidden="true" />
-        <div style={styles.list}>
-          {[0, 1].map(i => <span key={i} style={styles.skRow} />)}
-        </div>
+        {!totalsOnly && <div style={styles.divider} aria-hidden="true" />}
+        {!totalsOnly && (
+          <div style={styles.list}>
+            {[0, 1].map(i => <span key={i} style={styles.skRow} />)}
+          </div>
+        )}
       </div>
     )
   }
@@ -68,14 +70,15 @@ export default function HistoryStats({ summary, loading = false }) {
         />
         <Total
           icon={<span style={styles.clock}><ClockIcon size={20} /></span>}
-          value={formatDuration(summary.minutes)}
+          value={formatHours(summary.minutes)}
           label="Время"
         />
       </div>
 
-      <div style={styles.divider} aria-hidden="true" />
+      {/* Разбивка по видам — только в полном режиме (в профиле её убираем). */}
+      {!totalsOnly && <div style={styles.divider} aria-hidden="true" />}
 
-      {/* Виды активности, что были в периоде */}
+      {!totalsOnly && (
       <div style={styles.list}>
         {types.map(k => {
           const m = TYPE_META[k]
@@ -93,6 +96,7 @@ export default function HistoryStats({ summary, loading = false }) {
           )
         })}
       </div>
+      )}
     </div>
   )
 }
