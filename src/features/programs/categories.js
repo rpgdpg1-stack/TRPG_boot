@@ -5,7 +5,7 @@
  */
 
 export const CATEGORY_META = {
-  gym:     { title: 'Силовая',  iconName: 'power',      color: 'var(--color-primary)' },
+  gym:     { title: 'Силовая',  iconName: 'power',      color: 'var(--cat-gym)' },
   pool:    { title: 'Плавание', iconName: 'swimming',   color: 'var(--cat-pool)' },
   cardio:  { title: 'Кардио',   iconName: 'cardio',     color: 'var(--cat-cardio)' },
   stretch: { title: 'Растяжка', iconName: 'stretching', color: 'var(--cat-stretch)' }

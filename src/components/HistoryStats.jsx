@@ -28,7 +28,7 @@ function Badge({ iconName, color, size = 22, icon = 13 }) {
 
 // Вид активности: иконка/цвет/название + какая метрика (счёт или дистанция).
 const TYPE_META = {
-  strength: { icon: 'power', color: 'var(--color-primary)', label: 'Силовая', metric: 'count' },
+  strength: { icon: 'power', color: 'var(--cat-gym)', label: 'Силовая', metric: 'count' },
   pool: { icon: 'swimming', color: 'var(--cat-pool)', label: 'Плавание', metric: 'distance' },
   cardio: { icon: 'cardio', color: 'var(--cat-cardio)', label: 'Бег', metric: 'distance' },
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
@@ -68,8 +68,8 @@ export default function HistoryStats({ summary }) {
           return (
             <div key={k} style={styles.row}>
               <Badge iconName={m.icon} color={m.color} />
+              <span style={styles.rowCount}>{b.count}</span>
               <span style={styles.rowLabel}>{m.label}</span>
-              <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
               {showDist && (
                 <span style={styles.rowDist}>({formatMeters(b.distance)})</span>
               )}
@@ -102,26 +102,26 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
     letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
+  // Подпись метрики (secondary info) — серым, чтобы главной была цифра.
   totalLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap',
-    // Чуть менее контрастно — чтобы главной оставалась цифра, а не подпись.
-    opacity: 0.82
+    color: 'var(--text-info)', whiteSpace: 'nowrap'
   },
   divider: { height: '1px', background: 'var(--border-hairline)', margin: '14px 0' },
 
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
   row: { display: 'flex', alignItems: 'center', gap: '9px' },
-  rowLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)'
-  },
-  // Число тренировок — в цвет вида; дистанция в скобках — серая (не спорит с числом).
+  // Лестница важности: число (primary, белое) → название (85%) → пояснение (68%).
   rowCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px',
+    color: 'var(--color-text)'
+  },
+  rowLabel: {
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--text-label)'
   },
   rowDist: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', marginLeft: '-2px'
+    color: 'var(--text-info)', marginLeft: '-2px'
   },
 
   empty: {

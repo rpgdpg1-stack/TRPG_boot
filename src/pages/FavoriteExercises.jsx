@@ -88,7 +88,7 @@ export default function FavoriteExercises() {
       </header>
 
       <p style={styles.intro}>
-        Твой топ-3. Открой закреплённую тренировку, зажми упражнение и поставь{' '}
+        Твой топ-3. Открой любую силовую тренировку, зажми упражнение и поставь{' '}
         <span style={styles.introHeart}><HeartIcon filled size={15} /></span>{' '}
         в открывшейся карточке.
       </p>

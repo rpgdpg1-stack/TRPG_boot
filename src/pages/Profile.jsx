@@ -263,7 +263,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)'
   },
   periodChev: { display: 'inline-flex', marginTop: '1px', transition: 'transform 0.2s var(--ease-ios)' },
-  dropClose: { position: 'fixed', inset: 0, zIndex: 40 },
+  dropClose: { position: 'fixed', inset: 0, zIndex: 40, cursor: 'pointer' },
   periodDropdown: {
     position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 41, minWidth: '140px', padding: '6px',
     background: 'var(--surface-raised)', border: '1px solid rgba(255, 255, 255, 0.08)',

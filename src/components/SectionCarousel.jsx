@@ -209,7 +209,7 @@ const styles = {
     transition: 'transform 0.2s var(--ease-ios)'
   },
   // Прозрачный слой для закрытия по тапу мимо списка.
-  dropClose: { position: 'fixed', inset: 0, zIndex: 40 },
+  dropClose: { position: 'fixed', inset: 0, zIndex: 40, cursor: 'pointer' },
   // Выпадающий список — по центру под селектором.
   dropdown: {
     position: 'absolute',

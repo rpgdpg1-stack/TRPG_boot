@@ -277,6 +277,7 @@ const styles = {
     padding: '8px 13px',
     // На 3–5% светлее surface-raised — чтобы пилюля не сливалась с карточкой.
     background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
+    border: '1px solid rgba(255, 255, 255, 0.10)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',

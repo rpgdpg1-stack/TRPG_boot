@@ -142,7 +142,7 @@ export function workoutCategoryMeta(workout) {
   if (cat === 'stretch') {
     return { key: 'stretch', iconName: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка' }
   }
-  return { key: 'strength', iconName: 'power', color: 'var(--color-primary)', label: 'Силовая' }
+  return { key: 'strength', iconName: 'power', color: 'var(--cat-gym)', label: 'Силовая' }
 }
 
 // Порядок разделов в сводке месяца.

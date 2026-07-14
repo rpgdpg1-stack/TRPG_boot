@@ -14,7 +14,7 @@ function categoryColor(category, kind) {
   if (kind === 'swim' || category === 'pool') return 'var(--cat-pool)'
   if (category === 'cardio') return 'var(--cat-cardio)'
   if (category === 'stretch') return 'var(--cat-stretch)'
-  return 'var(--color-primary)' // gym / силовая — зелёный
+  return 'var(--cat-gym)' // gym / силовая — графитовый серый
 }
 
 // Первый буквенно-цифровой символ (по кодпоинтам, чтобы корректно пропускать эмодзи).
