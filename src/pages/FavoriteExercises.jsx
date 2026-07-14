@@ -8,6 +8,7 @@ import {
 import ScreenTitle from '../components/ScreenTitle'
 import PixelHeart from '../components/PixelHeart'
 import FavoritePicker from '../components/FavoritePicker'
+import FavoriteEditModal from '../components/FavoriteEditModal'
 
 /**
  * «Любимые упражнения» — до 3 слотов с рабочим весом. Витрина личного прогресса
@@ -21,6 +22,7 @@ export default function FavoriteExercises() {
   const [byslot, setBySlot] = useState({})   // { [slot]: fav }
   const [loaded, setLoaded] = useState(false)
   const [pickSlot, setPickSlot] = useState(null) // открытый слот для пикера
+  const [editFav, setEditFav] = useState(null)   // любимое для модалки веса/заметки
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -76,7 +78,7 @@ export default function FavoriteExercises() {
             <button
               key={slot}
               className="press-tile"
-              onClick={() => { haptic.light(); setPickSlot(slot) }}
+              onClick={() => { haptic.light(); fav ? setEditFav(fav) : setPickSlot(slot) }}
               style={{ ...styles.slot, ...(fav ? styles.slotFilled : styles.slotEmpty) }}
             >
               <span style={styles.slotIndex}>{slot}</span>
@@ -108,6 +110,14 @@ export default function FavoriteExercises() {
           usedIds={usedIds}
           onPick={handlePick}
           onClose={() => setPickSlot(null)}
+        />
+      )}
+
+      {editFav && (
+        <FavoriteEditModal
+          fav={editFav}
+          onClose={() => setEditFav(null)}
+          onSaved={load}
         />
       )}
     </div>
