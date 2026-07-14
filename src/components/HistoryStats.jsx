@@ -34,7 +34,23 @@ const TYPE_META = {
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
 }
 
-export default function HistoryStats({ summary }) {
+export default function HistoryStats({ summary, loading = false }) {
+  // Первый заход без кеша — скелетон вместо мигания пустой заглушки.
+  if (loading) {
+    return (
+      <div>
+        <div style={styles.totals}>
+          <span style={styles.skTotal} />
+          <span style={styles.skTotal} />
+        </div>
+        <div style={styles.divider} aria-hidden="true" />
+        <div style={styles.list}>
+          {[0, 1].map(i => <span key={i} style={styles.skRow} />)}
+        </div>
+      </div>
+    )
+  }
+
   if (!summary || summary.count === 0) {
     return <div style={styles.empty}>Завершите первую тренировку, чтобы увидеть статистику.</div>
   }
@@ -127,5 +143,8 @@ const styles = {
   empty: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center', padding: '4px 0', lineHeight: 1.4
-  }
+  },
+  // Скелетоны (первый заход без кеша).
+  skTotal: { width: '64px', height: '34px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)' },
+  skRow: { height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)' }
 }

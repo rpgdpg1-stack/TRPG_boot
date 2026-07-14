@@ -159,20 +159,35 @@ export async function getRecentWorkouts(limit = 3) {
     .not('finished_at', 'is', null)
     .order('finished_at', { ascending: false })
     .limit(limit)
-  if (error) { console.error('[storage] getRecentWorkouts error:', error); return [] }
+  if (error) {
+    console.error('[storage] getRecentWorkouts error:', error)
+    // Ошибка/оффлайн — отдаём персист-кеш (localStorage), чтобы не мигало пусто.
+    return getRecentWorkoutsSync(limit) || []
+  }
   const result = data || []
   cacheSet(cacheKey, result, TTL.MEDIUM)
+  try { localSet(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
   return result
 }
 
 /**
- * Синхронно: последние тренировки из кеша в памяти (или null если в этой сессии
- * ещё не грузили). Для мгновенного старта Истории без «Загрузка…».
+ * Синхронно: последние тренировки из кеша (память → localStorage). Персист нужен,
+ * чтобы после перезапуска мини-аппа (память пуста) статистика/история открывались
+ * сразу своими данными, без мигания пустой заглушки «сделай тренировку».
  */
 export function getRecentWorkoutsSync(limit = 3) {
   const userId = getUserId()
   if (!userId) return null
-  return cacheGet(`recent-workouts:${userId}:${limit}`)
+  const cacheKey = `recent-workouts:${userId}:${limit}`
+  const mem = cacheGet(cacheKey)
+  if (mem) return mem
+  const raw = localGet(cacheKey)
+  if (!raw) return null
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) { cacheSet(cacheKey, arr, TTL.MEDIUM); return arr }
+  } catch { /* ignore */ }
+  return null
 }
 
 /* ============================================ */

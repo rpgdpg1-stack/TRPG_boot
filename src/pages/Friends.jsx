@@ -110,7 +110,17 @@ export default function Friends() {
       </header>
 
       {loading ? (
-        <div style={styles.empty}>Загрузка...</div>
+        <div style={styles.list}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} style={i === 0 ? styles.skRow : { ...styles.skRow, ...styles.rowDivider }}>
+              <div style={styles.skAvatar} />
+              <div style={styles.skText}>
+                <div style={{ ...styles.skLine, width: '45%' }} />
+                <div style={{ ...styles.skLine, width: '65%', height: '10px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : friends.length === 0 ? (
         <div style={styles.inviteBlock}>
           <div style={styles.inviteEmoji}>
@@ -290,6 +300,11 @@ const styles = {
   rowDivider: {
     borderTop: '1px solid var(--border-hairline)'
   },
+  // Скелетон строки друга (только самый первый заход без кеша).
+  skRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 14px' },
+  skAvatar: { width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
+  skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '7px' },
+  skLine: { height: '12px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' },
   empty: {
     textAlign: 'center',
     padding: '40px 20px',

@@ -25,6 +25,9 @@ import ProgramConstructor from './pages/ProgramConstructor'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
 import { getRecentWorkouts } from './lib/storage'
+import { HISTORY_FETCH_LIMIT } from './utils/history'
+import { getFriendsList } from './lib/friends-list'
+import { getFavoriteExercises } from './lib/favorite-exercises'
 import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
@@ -59,8 +62,11 @@ export default function App() {
       // Свои программы (своя + от друга) из БД → в реестр, ДО сборки избранного,
       await loadMyPrograms()
       if (cancelled) return
-      // Прогреваем кеш истории (страница «Статистика» стартует из него мгновенно).
-      getRecentWorkouts(100).catch(() => {})
+      // Прогреваем кеши, чтобы страницы открывались сразу своими данными:
+      // история (Статистика/Главная/Профиль), список друзей, любимые упражнения.
+      getRecentWorkouts(HISTORY_FETCH_LIMIT).catch(() => {})
+      getFriendsList().catch(() => {})
+      getFavoriteExercises().catch(() => {})
     })
 
     // Глобальный детектор клавиатуры: вешаем body.keyboard-open пока она открыта.

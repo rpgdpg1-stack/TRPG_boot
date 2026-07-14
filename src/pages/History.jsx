@@ -31,6 +31,7 @@ export default function History() {
   const [period, setPeriod] = useState(initialView.current.period)
   const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
+  const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -39,7 +40,7 @@ export default function History() {
 
   useEffect(() => {
     let cancelled = false
-    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) setWorkouts(d || []) })
+    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) { setWorkouts(d || []); setWkLoaded(true) } })
     load()
     const off = on(EVENTS.USER_CHANGED, load)
     return () => { cancelled = true; off() }
@@ -88,7 +89,7 @@ export default function History() {
           })}
         </div>
 
-        <HistoryStats summary={sum} />
+        <HistoryStats summary={sum} loading={!wkLoaded} />
       </div>
 
       {/* Календарь: месяц-режим (день-сетка) или год-режим (12 месяцев).

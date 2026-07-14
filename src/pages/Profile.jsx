@@ -173,7 +173,7 @@ export default function Profile() {
           </div>
         </div>
         <div style={{ marginTop: '12px' }}>
-          <HistoryStats summary={summary} />
+          <HistoryStats summary={summary} loading={!loaded} />
         </div>
       </div>
     )

@@ -16,6 +16,7 @@
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
+import { localGet, localSet } from '../utils/storage'
 
 export const PIN_LIMIT = 6
 
@@ -28,11 +29,23 @@ export const PIN_LIMIT = 6
  * Уже отсортирован сервером: закреплённые (новее выше) → по свежести
  * тренировки → по мускулам.
  */
-/** СИНХРОННО последний список друзей из кеша (для мгновенного рендера) или null. */
+/**
+ * СИНХРОННО последний список друзей для мгновенного рендера (память → localStorage).
+ * Персист нужен, чтобы после перезапуска мини-аппа страница друзей открывалась сразу
+ * с данными, без «Загрузка…». null = ещё ни разу не грузили (показать скелетон).
+ */
 export function getFriendsListSync() {
   const user = getCurrentUser()
   if (!user) return null
-  return cacheGet(`friends-list:${user.id}`) || null
+  const mem = cacheGet(`friends-list:${user.id}`)
+  if (mem) return mem
+  const raw = localGet(`friends-list:${user.id}`)
+  if (!raw) return null
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) { cacheSet(`friends-list:${user.id}`, arr, TTL.SHORT); return arr }
+  } catch { /* ignore */ }
+  return null
 }
 
 export async function getFriendsList() {
@@ -50,15 +63,16 @@ export async function getFriendsList() {
 
     if (error) {
       console.error('[friends-list] error:', error)
-      return []
+      return getFriendsListSync() || []
     }
 
     const result = data || []
     cacheSet(cacheKey, result, TTL.SHORT)
+    try { localSet(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
     return result
   } catch (e) {
     console.error('[friends-list] exception:', e)
-    return []
+    return getFriendsListSync() || []
   }
 }
 

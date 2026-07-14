@@ -28,6 +28,7 @@ const periodLabel = (id) => HISTORY_PERIODS.find(p => p.id === id)?.label || 'Н
 function HistoryBlock() {
   const navigate = useNavigate()
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
+  const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [view, setView] = useState(getHistoryView)   // { period, year, month }
   const [open, setOpen] = useState(false)            // дропдаун периода
   const periodRef = useRef(null)
@@ -35,7 +36,7 @@ function HistoryBlock() {
 
   useEffect(() => {
     let cancelled = false
-    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) setWorkouts(d || []) })
+    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) { setWorkouts(d || []); setWkLoaded(true) } })
     load()
     const off = on(EVENTS.USER_CHANGED, load)
     return () => { cancelled = true; off() }
@@ -90,7 +91,7 @@ function HistoryBlock() {
       </div>
 
       <div style={{ marginTop: '14px' }}>
-        <HistoryStats summary={sum} />
+        <HistoryStats summary={sum} loading={!wkLoaded} />
       </div>
     </div>
   )
