@@ -21,7 +21,7 @@ function Badge({ iconName, color, size = 22, icon = 13 }) {
       width: size, height: size, borderRadius: '6px', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
-      <UiIcon name={iconName} size={icon} color="#FFFFFF" />
+      <UiIcon name={iconName} size={icon} color="#0D0C0C" />
     </span>
   )
 }
@@ -46,7 +46,7 @@ export default function HistoryStats({ summary }) {
       {/* Общие показатели периода */}
       <div style={styles.totals}>
         <Total
-          icon={<UiIcon name="muscles" size={15} color="var(--color-text-secondary)" />}
+          icon={<UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" />}
           value={String(summary.count)}
           label="Тренировок"
         />
