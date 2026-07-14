@@ -13,6 +13,7 @@ import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import FavoriteExercises from './pages/FavoriteExercises'
+import Privacy from './pages/Privacy'
 import Sections from './pages/Sections'
 import DailyBoost from './pages/DailyBoost'
 import Activities from './pages/Activities'
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="/friends" element={<Friends />} />
           <Route path="/history" element={<History />} />
           <Route path="/favorite-exercises" element={<FavoriteExercises />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/sections" element={<Sections />} />
           <Route path="/daily-boost" element={<Activities />} />
           <Route path="/daily-boost/edit" element={<DailyBoost />} />

@@ -25,6 +25,8 @@ export default function ProfileHeader({
   lastWorkout = null,
   statsLoading = false,
   showLastWorkout = true,
+  interactiveStreak = false,   // поп-ап серии по тапу — только в СВОЁМ профиле
+  sections = [],               // доп. секции внутри карточки (статистика, любимые) с разделителем
   bottomAction = null
 }) {
   const [showStreakInfo, setShowStreakInfo] = useState(false)
@@ -38,7 +40,7 @@ export default function ProfileHeader({
 
   // Поп-ап серии: автозакрытие 6с + тап вне.
   useEffect(() => {
-    if (!showStreakInfo) return
+    if (!interactiveStreak || !showStreakInfo) return
     const t = setTimeout(() => setShowStreakInfo(false), 6000)
     const onOutside = (e) => {
       if (fireRef.current?.contains(e.target)) return
@@ -46,12 +48,16 @@ export default function ProfileHeader({
     }
     document.addEventListener('pointerdown', onOutside)
     return () => { clearTimeout(t); document.removeEventListener('pointerdown', onOutside) }
-  }, [showStreakInfo])
+  }, [showStreakInfo, interactiveStreak])
 
-  const toggleStreak = () => { haptic.light(); setShowStreakInfo(v => !v) }
+  const toggleStreak = () => {
+    if (!interactiveStreak) return   // в профиле друга огонёк не тапается
+    haptic.light()
+    setShowStreakInfo(v => !v)
+  }
 
   return (
-    <div style={styles.card}>
+    <div style={{ ...styles.card, paddingBottom: sections.length ? 0 : '16px' }}>
       <div style={styles.topPanel}>
         <div style={styles.avatar}>
           {user?.photo_url ? (
@@ -83,9 +89,13 @@ export default function ProfileHeader({
           )}
         </div>
 
-        {/* Огонёк серии — справа, по центру строки. */}
+        {/* Огонёк серии — справа, по центру строки. Тапабелен только в своём профиле. */}
         <div style={styles.fireWrap} ref={fireRef}>
-          <button style={styles.fireBtn} onClick={toggleStreak} aria-label="Серия за неделю">
+          <button
+            style={{ ...styles.fireBtn, cursor: interactiveStreak ? 'pointer' : 'default' }}
+            onClick={toggleStreak}
+            aria-label="Серия за неделю"
+          >
             {statsLoading ? (
               <span style={styles.skeletonStat} />
             ) : (
@@ -96,7 +106,7 @@ export default function ProfileHeader({
             )}
           </button>
 
-          {showStreakInfo && (
+          {interactiveStreak && showStreakInfo && (
             <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
               <div style={styles.popupTitle}>СЕРИЯ ЗА НЕДЕЛЮ</div>
               <div style={styles.popupBody}>
@@ -108,6 +118,11 @@ export default function ProfileHeader({
           )}
         </div>
       </div>
+
+      {/* Доп. секции внутри карточки (статистика, любимые) — каждая с разделителем. */}
+      {sections.map((node, i) => (
+        <div key={i} style={styles.section}>{node}</div>
+      ))}
 
       {bottomAction && <div style={styles.bottomAction}>{bottomAction}</div>}
 
@@ -129,12 +144,17 @@ const AVATAR_SIZE = 104
 
 const styles = {
   card: {
-    display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '16px',
+    display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0',
     padding: '16px', background: 'var(--surface)',
     border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', width: '100%'
   },
+  // Доп. секция внутри карточки: full-bleed разделитель сверху, контент с отступами.
+  section: {
+    marginLeft: '-16px', marginRight: '-16px', padding: '14px 16px',
+    borderTop: '1px solid var(--border-hairline)'
+  },
   bottomAction: {
-    marginTop: '-6px', marginLeft: '-16px', marginRight: '-16px', marginBottom: '-16px',
+    marginLeft: '-16px', marginRight: '-16px', marginBottom: '-16px',
     borderTop: '1px solid var(--border-hairline)'
   },
   topPanel: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' },
