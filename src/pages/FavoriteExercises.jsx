@@ -9,7 +9,7 @@ import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labe
 import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import ScreenTitle from '../components/ScreenTitle'
-import PixelHeart from '../components/PixelHeart'
+import HeartIcon from '../components/HeartIcon'
 import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 
@@ -84,7 +84,7 @@ export default function FavoriteExercises() {
     <div className="page page-fade" style={styles.page}>
       <header style={styles.header}>
         <ScreenTitle>Любимые упражнения</ScreenTitle>
-        <span style={styles.headerIcon}><PixelHeart filled size={26} /></span>
+        <span style={styles.headerIcon}><HeartIcon filled size={18} /></span>
       </header>
 
       <p style={styles.intro}>

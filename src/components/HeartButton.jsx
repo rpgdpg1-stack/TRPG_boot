@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
-import PixelHeart from './PixelHeart'
+import HeartIcon from './HeartIcon'
 
 /**
  * Сердечко «в любимые» с «растущим» нажатием: зажал → увеличилось; увёл палец →
  * вернулось (без действия); отпустил на сердечке → onActivate() (там вибро + toggle).
  * Тот же паттерн, что у крестика-закрытия в мини-модалке.
  */
-export default function HeartButton({ filled, color, size = 26, onActivate, ariaLabel, style }) {
+export default function HeartButton({ filled, color, size = 18, onActivate, ariaLabel, style }) {
   const ref = useRef(null)
   const armed = useRef(false)
   const [grow, setGrow] = useState(false)
@@ -39,7 +39,7 @@ export default function HeartButton({ filled, color, size = 26, onActivate, aria
       aria-label={ariaLabel}
     >
       <span style={{ display: 'inline-flex', transform: grow ? 'scale(1.28)' : 'scale(1)', transition: 'transform 0.14s var(--ease-ios)' }}>
-        <PixelHeart filled={filled} size={size} color={color} />
+        <HeartIcon filled={filled} size={size} color={color} />
       </span>
     </button>
   )
