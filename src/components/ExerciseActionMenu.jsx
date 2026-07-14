@@ -9,7 +9,7 @@ import { haptic } from '../lib/telegram'
 import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, getFavoriteExercises } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
-import PixelHeart from './PixelHeart'
+import HeartButton from './HeartButton'
 import UiIcon from './UiIcon'
 
 /**
@@ -47,6 +47,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   // Любимое: состояние сердечка + предупреждение о лимите.
   const [isFav, setIsFav] = useState(() => isFavoriteCached(slot?.exercise_id))
   const [favLimit, setFavLimit] = useState(false)
+
 
   useEffect(() => {
     const sync = () => setIsFav(isFavoriteCached(slot?.exercise_id))
@@ -316,9 +317,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             вместо статичной миниатюры — зацикленное видео. Вес тут же
             отображается и редактируется. Сердечко в углу — в любимые. */}
         <div style={styles.card}>
-          <button onClick={toggleFav} style={styles.heartBtn} aria-label={isFav ? 'Убрать из любимых' : 'В любимые'}>
-            <PixelHeart filled={isFav} size={26} color={isFav ? 'var(--color-primary)' : '#888888'} />
-          </button>
+          <HeartButton
+            filled={isFav}
+            color={isFav ? 'var(--color-primary)' : '#888888'}
+            onActivate={toggleFav}
+            ariaLabel={isFav ? 'Убрать из любимых' : 'В любимые'}
+            style={styles.heartBtn}
+          />
           <div style={styles.preview}>
             <ExerciseVideo
               videoUrl={slot.video_url}

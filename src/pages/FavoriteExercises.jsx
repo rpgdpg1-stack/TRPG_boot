@@ -10,6 +10,7 @@ import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import ScreenTitle from '../components/ScreenTitle'
 import PixelHeart from '../components/PixelHeart'
+import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
@@ -61,8 +62,7 @@ export default function FavoriteExercises() {
     navigate(`/workout/${slug}/${day}`, { state: { from: '/favorite-exercises' } })
   }
 
-  const removeFav = async (exerciseId, e) => {
-    e.stopPropagation()
+  const removeFav = async (exerciseId) => {
     haptic.medium()
     await removeFavorite(exerciseId)
     load()
@@ -108,9 +108,13 @@ export default function FavoriteExercises() {
           const val = formatFavoriteValue(f.weight_kg)
           return (
             <div key={slot} className="press-tile" style={styles.card} onClick={() => { if (!guard()) return; haptic.light(); setOpenFav(f) }}>
-              <button style={styles.heartBtn} onClick={(e) => removeFav(f.exercise_id, e)} aria-label="Убрать из любимых">
-                <PixelHeart filled size={26} color="var(--color-primary)" />
-              </button>
+              <HeartButton
+                filled
+                color="var(--color-primary)"
+                onActivate={() => removeFav(f.exercise_id)}
+                ariaLabel="Убрать из любимых"
+                style={styles.heartBtn}
+              />
               <div style={styles.preview}>
                 {f.preview_url
                   ? <img src={f.preview_url} alt="" style={styles.previewImg} draggable={false} />
