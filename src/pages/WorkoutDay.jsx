@@ -106,6 +106,8 @@ const EST_MIN_PER_EXERCISE = 7
 // переживает очистку location.state (после возврата с Инфо/Замены) и перемонтирование —
 // «Назад» всегда ведёт туда, откуда зашли. Ключ — programId.
 const workoutEntryFromHome = new Map()
+// Вход из «Любимых упражнений» (по «+») — «Назад» возвращает шагом истории туда.
+const workoutEntryFromFav = new Map()
 
 /** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
 function CrossIcon({ size = 16 }) {
@@ -307,10 +309,12 @@ export default function WorkoutDay() {
     const returningFromSub = location.state?.returnedFromOrderNum != null
     if (!returningFromSub) {
       workoutEntryFromHome.set(programId, location.state?.fromHome === true)
+      workoutEntryFromFav.set(programId, location.state?.from === '/favorite-exercises')
     }
     const categoryId = program?.category || 'gym'
     backButton.setHandler(() => {
       if (workoutEntryFromHome.get(programId)) navigate('/')
+      else if (workoutEntryFromFav.get(programId)) navigate(-1)  // шаг истории → на «Любимые»
       else navigate(`/category/${categoryId}`)
     })
     lockVerticalSwipes()
@@ -704,11 +708,12 @@ export default function WorkoutDay() {
       day: targetDay,
       y: targetIsActive ? (loadActiveScroll(programId, targetDay, placeRef.current) ?? 'top') : 'top'
     }
-    // Пробрасываем fromHome дальше, чтобы после переключения дней кнопка
-    // "Назад" всё ещё вела на главную (если зашли из избранного).
+    // Пробрасываем источник входа дальше, чтобы после переключения дней кнопка
+    // "Назад" всё ещё вела туда же (главная / любимые).
     navigate(`/workout/${programId}/${targetDay}`, {
       replace: true,
-      state: location.state?.fromHome ? { fromHome: true } : null
+      state: location.state?.fromHome ? { fromHome: true }
+        : location.state?.from ? { from: location.state.from } : null
     })
   }
 

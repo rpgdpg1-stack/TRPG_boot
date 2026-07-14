@@ -148,9 +148,10 @@ const styles = {
     padding: '16px', background: 'var(--surface)',
     border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', width: '100%'
   },
-  // Доп. секция внутри карточки: full-bleed разделитель сверху, контент с отступами.
+  // Доп. секция внутри карточки: сверху отступ (= отступу аватарки от верха карточки,
+  // для симметрии) → full-bleed разделитель → контент.
   section: {
-    marginLeft: '-16px', marginRight: '-16px', padding: '14px 16px',
+    marginTop: '16px', marginLeft: '-16px', marginRight: '-16px', padding: '14px 16px',
     borderTop: '1px solid var(--border-hairline)'
   },
   bottomAction: {

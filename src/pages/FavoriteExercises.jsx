@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFavoriteExercises, removeFavorite, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
@@ -17,16 +17,6 @@ const readPinnedGym = () => {
   try { return (JSON.parse(localGet('favorite_programs') || '{}') || {}).gym || null } catch { return null }
 }
 
-/** Залитое зелёное сердечко (для карточки любимого — тап убирает из любимых). */
-function Heart({ size = 26 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
-      fill="var(--color-primary)" stroke="var(--color-primary)" strokeWidth="2" strokeLinejoin="round">
-      <path d="M12 21s-7-4.5-9.3-8.8C1.2 9 2.7 5.5 6.2 5.5c2 0 3.1 1.2 3.8 2.3.7-1.1 1.8-2.3 3.8-2.3 3.5 0 5 3.5 3.5 6.7C19 16.5 12 21 12 21z" />
-    </svg>
-  )
-}
-
 /**
  * «Любимые упражнения» — до 3. Добавляются сердечком в мини-модалке дня
  * тренировки; здесь показываются теми же карточками. Тап по карточке → та же
@@ -38,6 +28,9 @@ export default function FavoriteExercises() {
   const [favs, setFavs] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [openFav, setOpenFav] = useState(null) // fav для мини-модалки
+  const closedAtRef = useRef(0)               // защита от «призрачного» тапа после закрытия модалки
+
+  const guard = () => Date.now() - closedAtRef.current > 400
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -59,6 +52,7 @@ export default function FavoriteExercises() {
   const slots = Array.from({ length: FAVORITE_LIMIT }, (_, i) => i + 1)
 
   const goAdd = () => {
+    if (!guard()) return   // не реагируем на призрачный тап сразу после закрытия модалки
     haptic.light()
     const slug = readPinnedGym()
     if (!slug || !getProgramBySlug(slug)) { navigate('/category/gym', { state: { from: '/favorite-exercises' } }); return }
@@ -113,9 +107,9 @@ export default function FavoriteExercises() {
           const tag = title(SUB_GROUP_LABELS[f.sub_group] || MUSCLE_GROUP_LABELS[f.muscle_group] || '')
           const val = formatFavoriteValue(f.weight_kg)
           return (
-            <div key={slot} className="press-tile" style={styles.card} onClick={() => { haptic.light(); setOpenFav(f) }}>
+            <div key={slot} className="press-tile" style={styles.card} onClick={() => { if (!guard()) return; haptic.light(); setOpenFav(f) }}>
               <button style={styles.heartBtn} onClick={(e) => removeFav(f.exercise_id, e)} aria-label="Убрать из любимых">
-                <Heart size={24} />
+                <PixelHeart filled size={26} color="var(--color-primary)" />
               </button>
               <div style={styles.preview}>
                 {f.preview_url
@@ -141,7 +135,7 @@ export default function FavoriteExercises() {
       {openFav && (
         <ExerciseActionMenu
           slot={toSlot(openFav)}
-          onClose={() => { setOpenFav(null); load() }}
+          onClose={() => { closedAtRef.current = Date.now(); setOpenFav(null); load() }}
           onWeightSaved={() => load()}
         />
       )}
@@ -162,9 +156,9 @@ const styles = {
   // Карточка — как мини-модалка упражнения (превью + название + вес), одинаковой высоты.
   card: {
     position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center',
-    padding: '14px', gap: '14px', width: '100%', minHeight: '124px',
+    padding: '16px', gap: '16px', width: '100%', minHeight: '150px',
     background: 'var(--surface-raised)', border: '1px solid var(--border-hairline)',
-    borderRadius: '28px', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
+    borderRadius: '33px', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
   },
   cardEmpty: {
     justifyContent: 'center', gap: '10px', background: 'var(--surface)',
@@ -173,13 +167,13 @@ const styles = {
   plus: { color: 'var(--color-primary)', fontSize: '22px', lineHeight: 1 },
   emptyText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   heartBtn: {
-    position: 'absolute', top: '10px', right: '12px', zIndex: 6, width: '34px', height: '34px',
+    position: 'absolute', top: '10px', right: '10px', zIndex: 6, width: '40px', height: '40px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'rgba(0, 0, 0, 0.25)', border: 'none', borderRadius: '50%', cursor: 'pointer',
+    background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
   preview: {
-    flexShrink: 0, width: '96px', height: '96px', borderRadius: '26px', overflow: 'hidden',
+    flexShrink: 0, width: '118px', height: '118px', borderRadius: '33px', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },

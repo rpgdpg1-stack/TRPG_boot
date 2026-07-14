@@ -9,19 +9,8 @@ import { haptic } from '../lib/telegram'
 import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, getFavoriteExercises } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
+import PixelHeart from './PixelHeart'
 import UiIcon from './UiIcon'
-
-/** Сердечко «в любимые»: пустое (серое) → залитое (зелёное). */
-function HeartIcon({ filled, size = 26 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
-      fill={filled ? 'var(--color-primary)' : 'none'}
-      stroke={filled ? 'var(--color-primary)' : 'rgba(255,255,255,0.55)'}
-      strokeWidth="2" strokeLinejoin="round">
-      <path d="M12 21s-7-4.5-9.3-8.8C1.2 9 2.7 5.5 6.2 5.5c2 0 3.1 1.2 3.8 2.3.7-1.1 1.8-2.3 3.8-2.3 3.5 0 5 3.5 3.5 6.7C19 16.5 12 21 12 21z" />
-    </svg>
-  )
-}
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -328,7 +317,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             отображается и редактируется. Сердечко в углу — в любимые. */}
         <div style={styles.card}>
           <button onClick={toggleFav} style={styles.heartBtn} aria-label={isFav ? 'Убрать из любимых' : 'В любимые'}>
-            <HeartIcon filled={isFav} />
+            <PixelHeart filled={isFav} size={26} color={isFav ? 'var(--color-primary)' : '#888888'} />
           </button>
           <div style={styles.preview}>
             <ExerciseVideo
@@ -572,16 +561,16 @@ const styles = {
   heartBtn: {
     position: 'absolute',
     top: '10px',
-    right: '12px',
+    right: '10px',
     zIndex: 6,
-    width: '34px',
-    height: '34px',
+    width: '40px',
+    height: '40px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'rgba(0, 0, 0, 0.35)',
+    background: 'transparent',
     border: 'none',
-    borderRadius: '50%',
+    padding: 0,
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
