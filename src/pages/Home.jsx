@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { useOutsideClose } from '../lib/use-outside-close'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
@@ -29,6 +30,8 @@ function HistoryBlock() {
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [view, setView] = useState(getHistoryView)   // { period, year, month }
   const [open, setOpen] = useState(false)            // дропдаун периода
+  const periodRef = useRef(null)
+  useOutsideClose(periodRef, open, useCallback(() => setOpen(false), []))
 
   useEffect(() => {
     let cancelled = false
@@ -61,7 +64,7 @@ function HistoryBlock() {
       <div style={styles.histHead}>
         <span style={styles.histTitle}>Статистика</span>
 
-        <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()}>
+        <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()} ref={periodRef}>
           <button
             style={styles.periodBtn}
             className="press-tile"
@@ -75,16 +78,13 @@ function HistoryBlock() {
           </button>
 
           {open && (
-            <>
-              <div style={styles.dropClose} onClick={() => setOpen(false)} aria-hidden="true" />
-              <div style={styles.periodDropdown}>
-                {HISTORY_PERIODS.map(p => (
-                  <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
-                    <span style={{ ...styles.periodItemText, color: p.id === view.period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
-                  </button>
-                ))}
-              </div>
-            </>
+            <div style={styles.periodDropdown}>
+              {HISTORY_PERIODS.map(p => (
+                <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
+                  <span style={{ ...styles.periodItemText, color: p.id === view.period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>

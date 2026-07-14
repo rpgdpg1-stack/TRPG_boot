@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { useOutsideClose } from '../lib/use-outside-close'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
 import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
@@ -50,6 +51,8 @@ export default function Profile() {
   const [favorites, setFavorites] = useState([])
   const [period, setPeriod] = useState(() => localGet(STATS_PERIOD_KEY) || 'week')
   const [periodOpen, setPeriodOpen] = useState(false)
+  const periodRef = useRef(null)
+  useOutsideClose(periodRef, periodOpen, useCallback(() => setPeriodOpen(false), []))
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -151,7 +154,7 @@ export default function Profile() {
       <div key="stats">
         <div style={styles.statsHead}>
           <span style={styles.statsTitle}>Статистика</span>
-          <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()} ref={periodRef}>
             <button style={styles.periodBtn} className="press-tile" onClick={() => { haptic.light(); setPeriodOpen(o => !o) }} aria-label="Период">
               {periodLabel(period)}
               <span style={{ ...styles.periodChev, transform: periodOpen ? 'rotate(180deg)' : 'none' }}>
@@ -159,16 +162,13 @@ export default function Profile() {
               </span>
             </button>
             {periodOpen && (
-              <>
-                <div style={styles.dropClose} onClick={() => setPeriodOpen(false)} aria-hidden="true" />
-                <div style={styles.periodDropdown}>
-                  {PERIODS.map(p => (
-                    <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
-                      <span style={{ ...styles.periodItemText, color: p.id === period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
+              <div style={styles.periodDropdown}>
+                {PERIODS.map(p => (
+                  <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
+                    <span style={{ ...styles.periodItemText, color: p.id === period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>

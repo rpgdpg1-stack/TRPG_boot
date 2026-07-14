@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
+import { useOutsideClose } from '../lib/use-outside-close'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
 import { onActiveWorkoutChange } from '../lib/active-workout'
@@ -35,6 +36,8 @@ export default function SectionCarousel({ onSectionChange }) {
   const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
   const [open, setOpen] = useState(false)          // выпадающий список разделов
   const [pinnedTick, setPinnedTick] = useState(0)  // ре-чтение закрепа/последней
+  const selectorRef = useRef(null)
+  useOutsideClose(selectorRef, open, useCallback(() => setOpen(false), []))
 
   // Старт/финиш тренировки → перечитать «последнюю» и состояние карточки.
   useEffect(() => onActiveWorkoutChange(() => setPinnedTick(t => t + 1)), [])
@@ -98,7 +101,7 @@ export default function SectionCarousel({ onSectionChange }) {
       {/* Шапка раздела: слева селектор («Силовая ▼»), справа «Все ›» — вход в весь
           раздел (не только закреп). Обе части на одной линии. */}
       <div style={styles.headRow}>
-        <div style={styles.selectorWrap}>
+        <div style={styles.selectorWrap} ref={selectorRef}>
         <button
           style={styles.selector}
           className="press-tile"
@@ -113,8 +116,6 @@ export default function SectionCarousel({ onSectionChange }) {
         </button>
 
         {open && (
-          <>
-            <div style={styles.dropClose} onClick={() => setOpen(false)} aria-hidden="true" />
             <div style={styles.dropdown}>
               {cats.map(c => {
                 const on = c.id === cat.id
@@ -133,7 +134,6 @@ export default function SectionCarousel({ onSectionChange }) {
                 )
               })}
             </div>
-          </>
         )}
         </div>
 
