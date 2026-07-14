@@ -268,16 +268,17 @@ const styles = {
   ctaPill: {
     position: 'absolute',
     top: '50%',
-    right: '14px',
+    // Отступ до правого края = горизонтальному паддингу карточки (18px), чтобы
+    // справа было столько же воздуха, сколько слева от эмблемы до края.
+    right: '18px',
     transform: 'translateY(-50%)',
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
     padding: '8px 13px',
-    // На 3–5% светлее surface-raised — чтобы пилюля не сливалась с карточкой.
+    // Отделяется заливкой (на ~7% светлее карточки), без рамки.
     background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
-    border: '1px solid rgba(255, 255, 255, 0.10)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '15px',

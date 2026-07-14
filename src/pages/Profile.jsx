@@ -112,7 +112,6 @@ export default function Profile() {
     {
       title: 'ПРОФИЛЬ',
       items: [
-        { id: 'sections',    icon: '🗂️',            title: 'Разделы',     subtitle: 'Силовая · Плавание · Кардио', path: '/sections' },
         { id: 'favorite-exercises', icon: '❤️',      title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
         { id: 'daily-boost', icon: '⚡',            title: 'Активности', subtitle: 'Ежедневные активности',        path: '/daily-boost' },
         { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' },
@@ -223,10 +222,10 @@ export default function Profile() {
         </button>
       )}
 
-      {/* Меню профиля */}
-      {menuGroups.map((group) => (
+      {/* Меню профиля. Перед первым блоком — больше воздуха (конец «профиля» → меню). */}
+      {menuGroups.map((group, gi) => (
         <section key={group.title}>
-          <div style={{ ...styles.groupTitle, marginTop: '20px' }}>{group.title}</div>
+          <div style={{ ...styles.groupTitle, marginTop: gi === 0 ? '40px' : '20px' }}>{group.title}</div>
           <div style={styles.groupCard}>
             {group.items.map((item, idx) => (
               <button
