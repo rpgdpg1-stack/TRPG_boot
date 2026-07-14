@@ -84,10 +84,14 @@ export async function removeFavorite(exerciseId) {
   }
 }
 
-/** "100 кг" / null — компактный вес для показа рядом с названием. */
-export function formatFavoriteValue(weightKg) {
+/**
+ * Значение рядом с названием: "100 кг" для весовых, просто "10" для упражнений
+ * «на разы» (countsReps — без единиц). null если не задано.
+ */
+export function formatFavoriteValue(weightKg, countsReps = false) {
   if (weightKg == null) return null
   const n = Number(weightKg)
   if (!Number.isFinite(n) || n <= 0) return null
-  return `${n % 1 === 0 ? n : n.toFixed(1)} кг`
+  const num = n % 1 === 0 ? n : n.toFixed(1)
+  return countsReps ? `${num}` : `${num} кг`
 }

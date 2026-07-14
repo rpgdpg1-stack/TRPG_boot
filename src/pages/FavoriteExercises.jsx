@@ -77,18 +77,19 @@ export default function FavoriteExercises() {
     meta_info: f.meta_info,
     preview_url: f.preview_url,
     video_url: f.video_url,
-    user_weight_kg: f.weight_kg
+    user_weight_kg: f.weight_kg,
+    counts_reps: f.counts_reps
   })
 
   return (
     <div className="page page-fade" style={styles.page}>
       <header style={styles.header}>
         <ScreenTitle>Любимые упражнения</ScreenTitle>
-        <span style={styles.headerIcon}><HeartIcon filled size={18} /></span>
       </header>
 
       <p style={styles.intro}>
-        Твой топ-3. Открой закреплённую тренировку, зажми упражнение и поставь ❤️
+        Твой топ-3. Открой закреплённую тренировку, зажми упражнение и поставь{' '}
+        <span style={styles.introHeart}><HeartIcon filled size={15} /></span>{' '}
         в открывшейся карточке.
       </p>
 
@@ -105,7 +106,7 @@ export default function FavoriteExercises() {
           }
           const colors = getMuscleGroupColors(f.muscle_group)
           const tag = title(SUB_GROUP_LABELS[f.sub_group] || MUSCLE_GROUP_LABELS[f.muscle_group] || '')
-          const val = formatFavoriteValue(f.weight_kg)
+          const val = formatFavoriteValue(f.weight_kg, f.counts_reps)
           return (
             <div key={slot} className="press-tile" style={styles.card} onClick={() => { if (!guard()) return; haptic.light(); setOpenFav(f) }}>
               <HeartButton
@@ -126,7 +127,7 @@ export default function FavoriteExercises() {
               </div>
               <div style={styles.weightBlock}>
                 <div style={{ ...styles.weightValue, color: colors.accent }}>{f.weight_kg != null ? f.weight_kg : 0}</div>
-                <div style={styles.weightUnit}>KG</div>
+                {!f.counts_reps && <div style={styles.weightUnit}>KG</div>}
                 {!val && <div style={styles.weightHint}>задать</div>}
               </div>
             </div>
@@ -150,7 +151,7 @@ export default function FavoriteExercises() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '14px' },
-  headerIcon: { display: 'inline-flex' },
+  introHeart: { display: 'inline-flex', verticalAlign: '-2px' },
   intro: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
