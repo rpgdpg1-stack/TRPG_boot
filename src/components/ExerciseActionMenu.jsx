@@ -6,8 +6,22 @@ import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import { haptic } from '../lib/telegram'
+import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, getFavoriteExercises } from '../lib/favorite-exercises'
+import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
 import UiIcon from './UiIcon'
+
+/** Сердечко «в любимые»: пустое (серое) → залитое (зелёное). */
+function HeartIcon({ filled, size = 26 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"
+      fill={filled ? 'var(--color-primary)' : 'none'}
+      stroke={filled ? 'var(--color-primary)' : 'rgba(255,255,255,0.55)'}
+      strokeWidth="2" strokeLinejoin="round">
+      <path d="M12 21s-7-4.5-9.3-8.8C1.2 9 2.7 5.5 6.2 5.5c2 0 3.1 1.2 3.8 2.3.7-1.1 1.8-2.3 3.8-2.3 3.5 0 5 3.5 3.5 6.7C19 16.5 12 21 12 21z" />
+    </svg>
+  )
+}
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -40,6 +54,35 @@ function CrossIcon({ size = 16 }) {
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
+
+  // Любимое: состояние сердечка + предупреждение о лимите.
+  const [isFav, setIsFav] = useState(() => isFavoriteCached(slot?.exercise_id))
+  const [favLimit, setFavLimit] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setIsFav(isFavoriteCached(slot?.exercise_id))
+    if (getFavoriteIdsCached() === null) getFavoriteExercises().then(sync)
+    else sync()
+    return on(EVENTS.FAVORITES_CHANGED, sync)
+  }, [slot?.exercise_id])
+
+  const toggleFav = async () => {
+    if (!slot?.exercise_id) return
+    if (isFav) {
+      haptic.light()
+      setIsFav(false)
+      await removeFavorite(slot.exercise_id)
+    } else {
+      haptic.medium()
+      const res = await addFavorite(slot.exercise_id)
+      if (res.success) { setIsFav(true) }
+      else if (res.error === 'limit') {
+        haptic.error()
+        setFavLimit(true)
+        setTimeout(() => setFavLimit(false), 4500)
+      }
+    }
+  }
 
   // Заметка: текст из БД, режим редактирования, черновик и статус сохранения.
   const [note, setNote] = useState(() => getExerciseNoteCached(slot?.exercise_id) ?? '')
@@ -273,10 +316,20 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         onClick={(e) => e.stopPropagation()}
       >
 
+        {/* Предупреждение о лимите любимых. */}
+        {favLimit && (
+          <div style={styles.favLimit}>
+            Лимит 3 любимых достигнут. Открой «Любимые упражнения» и освободи место.
+          </div>
+        )}
+
         {/* Карточка-шапка: как карточка упражнения в днях тренировки, но
             вместо статичной миниатюры — зацикленное видео. Вес тут же
-            отображается и редактируется. Большое видео — по кнопке «Техника». */}
+            отображается и редактируется. Сердечко в углу — в любимые. */}
         <div style={styles.card}>
+          <button onClick={toggleFav} style={styles.heartBtn} aria-label={isFav ? 'Убрать из любимых' : 'В любимые'}>
+            <HeartIcon filled={isFav} />
+          </button>
           <div style={styles.preview}>
             <ExerciseVideo
               videoUrl={slot.video_url}
@@ -500,6 +553,37 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.08)',
     borderRadius: '50%',
     color: 'var(--color-text-secondary)'
+  },
+  // Баннер лимита любимых.
+  favLimit: {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-medium)',
+    background: 'rgba(232, 69, 69, 0.12)',
+    border: '1px solid rgba(232, 69, 69, 0.3)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#FF8C42',
+    textAlign: 'center',
+    lineHeight: 1.4
+  },
+  // Сердечко «в любимые» — в правом верхнем углу карточки, над весом.
+  heartBtn: {
+    position: 'absolute',
+    top: '10px',
+    right: '12px',
+    zIndex: 6,
+    width: '34px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(0, 0, 0, 0.35)',
+    border: 'none',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
   // Карточка-шапка — вид карточки упражнения из дней тренировки.
   card: {

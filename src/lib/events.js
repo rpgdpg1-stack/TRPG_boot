@@ -30,7 +30,13 @@ export const EVENTS = {
    * RewardsQueueController подхватывает и добавляет в очередь модалок,
    * чтобы модалка появилась мгновенно, а не при следующем заходе.
    */
-  BADGE_EARNED: 'badge-earned'
+  BADGE_EARNED: 'badge-earned',
+
+  /**
+   * Список любимых упражнений изменился (добавили/убрали).
+   * Слушают: страница «Любимые упражнения» и сердечко в мини-модалке дня.
+   */
+  FAVORITES_CHANGED: 'favorites-changed'
 }
 
 /**
