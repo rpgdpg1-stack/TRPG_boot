@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFriendsList, togglePinFriend, PIN_LIMIT } from '../lib/friends-list'
+import { getFriendsList, getFriendsListSync, togglePinFriend, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
@@ -25,8 +25,8 @@ import PinIcon from '../components/PinIcon'
 export default function Friends() {
   const navigate = useNavigate()
 
-  const [friends, setFriends] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [friends, setFriends] = useState(() => getFriendsListSync() || [])
+  const [loading, setLoading] = useState(() => getFriendsListSync() === null)
   const [selected, setSelected] = useState(null)      // друг для карточки игрока
   const [pinTarget, setPinTarget] = useState(null)    // друг для модалки закрепа
   const [pinError, setPinError] = useState(null)      // текст ошибки лимита

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFavoriteExercises, removeFavorite, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
+import { getFavoriteExercises, getFavoritesSync, removeFavorite, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { getActiveDaySync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -26,8 +26,8 @@ const readPinnedGym = () => {
  */
 export default function FavoriteExercises() {
   const navigate = useNavigate()
-  const [favs, setFavs] = useState([])
-  const [loaded, setLoaded] = useState(false)
+  const [favs, setFavs] = useState(() => getFavoritesSync() || [])
+  const [loaded, setLoaded] = useState(() => getFavoritesSync() !== null)
   const [openFav, setOpenFav] = useState(null) // fav для мини-модалки
   const closedAtRef = useRef(0)               // защита от «призрачного» тапа после закрытия модалки
 

@@ -8,7 +8,7 @@ import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
-import { getFavoriteExercises } from '../lib/favorite-exercises'
+import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
@@ -48,7 +48,8 @@ export default function Profile() {
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
-  const [favorites, setFavorites] = useState([])
+  const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
+  const [favLoaded, setFavLoaded] = useState(() => getFavoritesSync() !== null)
   const [period, setPeriod] = useState(() => localGet(STATS_PERIOD_KEY) || 'week')
   const [periodOpen, setPeriodOpen] = useState(false)
   const periodRef = useRef(null)
@@ -73,7 +74,7 @@ export default function Profile() {
 
     const load = () => {
       setPrivacy(getPrivacy())
-      getFavoriteExercises().then(setFavorites)
+      getFavoriteExercises().then(list => { setFavorites(list); setFavLoaded(true) })
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -178,8 +179,18 @@ export default function Profile() {
       </div>
     )
   }
-  if (privacy.showFavorites && favorites.length > 0) {
-    sections.push(<FavoritesBlock key="fav" items={favorites} bare />)
+  if (privacy.showFavorites) {
+    if (favorites.length > 0) {
+      sections.push(<FavoritesBlock key="fav" items={favorites} bare />)
+    } else if (!favLoaded) {
+      // Холодный старт без кеша — скелетон, чтобы блок не «выпрыгивал» позже.
+      sections.push(
+        <div key="fav-sk">
+          <div style={styles.favSkTitle}>Любимые упражнения</div>
+          {[0, 1, 2].map(i => <div key={i} style={styles.favSkRow} />)}
+        </div>
+      )
+    }
   }
 
   return (
@@ -246,6 +257,8 @@ export default function Profile() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   headerWrap: { margin: '0 0 16px' },
+  favSkTitle: { width: '150px', height: '13px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', marginBottom: '14px' },
+  favSkRow: { height: '15px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', marginBottom: '11px' },
 
   statsCard: {
     background: 'var(--surface)', border: '1px solid var(--border-hairline)',

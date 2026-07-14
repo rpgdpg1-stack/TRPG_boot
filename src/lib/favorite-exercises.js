@@ -9,13 +9,34 @@
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
+import { localGet, localSet } from '../utils/storage'
 
 export const FAVORITE_LIMIT = 3
+const LIST_KEY = 'fav-exercises-list'
 
-let idsCache = null // Set<exercise_id> | null (ещё не грузили)
+let idsCache = null   // Set<exercise_id> | null (ещё не грузили)
+let listCache = null  // последний список любимых (в памяти)
 
-function setIdsFromList(list) {
-  idsCache = new Set((list || []).map(f => f.exercise_id))
+function setFromList(list) {
+  const arr = list || []
+  listCache = arr
+  idsCache = new Set(arr.map(f => f.exercise_id))
+  try { localSet(LIST_KEY, JSON.stringify(arr)) } catch { /* ignore */ }
+}
+
+/**
+ * СИНХРОННО последний список любимых — для мгновенного рендера без мигания
+ * (память → localStorage). null = ещё ни разу не грузили (показать скелетон).
+ */
+export function getFavoritesSync() {
+  if (listCache !== null) return listCache
+  const raw = localGet(LIST_KEY)
+  if (!raw) return null
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) { listCache = arr; idsCache = new Set(arr.map(f => f.exercise_id)); return arr }
+  } catch { /* ignore */ }
+  return null
 }
 
 /** Синхронно: множество id любимых (или null, если ещё не грузили). */
@@ -37,9 +58,9 @@ export async function getFavoriteExercises() {
   if (!user) return []
   try {
     const { data, error } = await supabase.rpc('api_get_favorite_exercises')
-    if (error) { console.error('[fav-ex] get error:', error); return [] }
+    if (error) { console.error('[fav-ex] get error:', error); return listCache || [] }
     const list = data || []
-    setIdsFromList(list)
+    setFromList(list)
     return list
   } catch (e) {
     console.error('[fav-ex] get exception:', e)

@@ -28,6 +28,13 @@ export const PIN_LIMIT = 6
  * Уже отсортирован сервером: закреплённые (новее выше) → по свежести
  * тренировки → по мускулам.
  */
+/** СИНХРОННО последний список друзей из кеша (для мгновенного рендера) или null. */
+export function getFriendsListSync() {
+  const user = getCurrentUser()
+  if (!user) return null
+  return cacheGet(`friends-list:${user.id}`) || null
+}
+
 export async function getFriendsList() {
   const user = getCurrentUser()
   if (!user) return []
