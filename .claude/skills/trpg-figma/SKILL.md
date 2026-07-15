@@ -35,17 +35,30 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   параллельным батчем в нужной последовательности). Реордера нет.
 - Прозрачный контейнер-ряд: заливка = цвет фона секции (не a=0, т.к. альфа игнор).
 
-## Структура файла (страницы) — создаёт Дмитрий
+## Структура файла (страницы) — создаёт Дмитрий (СДЕЛАНО)
 
-Мост страницы не создаёт. Профессиональная раскладка (emoji + порядок):
+Мост страницы не создаёт. Профессиональная раскладка (emoji + порядок, страницы уже созданы):
 1. **📕 Cover** — обложка кейса.
-2. **🎨 Foundations** — цвет/Accent, типографика, радиусы, отступы, блюр, тени, иконки.
-3. **🧩 Components** — кнопки, карточки, таб-бар, теги/чипы, инпуты, икон-кнопки, свитчи/чеки, модалки.
-4. **📱 Screens** — все экраны собранные.
-5. **🪟 Modals & Overlays** — модалки/поповеры.
+2. **🎨 Foundations** — цвет/Accent, типографика, радиусы, отступы, блюр, тени, motion, grid, иконки.
+3. **🧩 Components** — универсальные + продуктовые компоненты (см. дерево ниже).
+4. **📱 Screens** — все экраны собранные (из инстансов компонентов).
+5. **🪟 Modals** — модалки/поповеры/оверлеи.
 6. **🔀 Flows** — пользовательские потоки для кейса.
 7. **📝 Case Study** — контекст/задача/процесс/решения/результат (портфолио-текст).
 8. **🗂 Archive** — черновики/WIP.
+
+**Внутреннее дерево (секции-фреймы внутри страниц)** — двухуровневая ДС, как в зрелых продуктовых
+командах (Foundation + универсальные / Product):
+```
+🎨 Foundations:  Colors(Accent+статусы) · Typography · Spacing · Radius · Shadows · Blur · Motion · Grid · Icons
+🧩 Components:
+   • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists · Feedback(Toast/Empty) · Modals
+   • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar · WeeklyProgress(Streak) · RankBadge · XPBar · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
+   • Patterns:  Training · Statistics · Profile (композиции компонентов)
+📱 Screens:  Templates → готовые экраны
+```
+Инвентарь компонентов, что ✓ есть / ⚠ пробел, и правила токенов — в скиле **design-system-review**
+(страж целостности ДС). Рисуя в Figma, сверяться с ним: сначала существующее, новое — с обоснованием.
 
 ## Конвенции сборки (как у лида)
 
