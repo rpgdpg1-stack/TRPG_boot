@@ -124,8 +124,11 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
 - **🎨 Foundations** (page `1:3`): секция `Colors · Primitives` = `12:57` (title `12:58`, wrap-ряд
   `swatches` `12:59` с 17 чипами `12:60…13:76`, у каждого имя+hex). Юзер создаёт Variables-коллекцию
   `Primitives` вручную по шпаргалке. Есть ещё его секция «Словарь» `11:56`.
-- TODO дальше: Semantic-свотчи (accent/status/поверхности/cat/tag — БЕЗ rarity) → Typography specimen
-  + Text Styles → Spacing/Radius → потом Components (Icon Button, Tag, Card, TabBar) → Screens.
+- **Semantic-доска** = `21:27` (title `21:28`, wrap-ряд `21:29` c 20 чипами `21:30…21:49`: accent×3,
+  status×4, surface×3, text×2, cat×5, tag×3 — БЕЗ rarity). У каждого имя + «→ примитив». Юзер создаёт
+  коллекцию `Semantic` (Color-переменные-алиасы на `Primitives`).
+- TODO дальше: Typography specimen + Text Styles → Spacing/Radius (Number-переменные) → потом
+  Components (Icon Button, Tag, Card, TabBar) → Screens.
 
 ## Синк код ↔ Figma
 
