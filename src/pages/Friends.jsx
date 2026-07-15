@@ -212,9 +212,14 @@ function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
 
         {errorText && <div style={pinStyles.error}>{errorText}</div>}
 
-        <button onClick={onToggle} style={isPinned ? pinStyles.unpinButton : pinStyles.pinButton}>
+        <ActionButton
+          variant={isPinned ? 'ghost' : 'gray'}
+          size="sm"
+          onClick={onToggle}
+          style={{ width: '100%' }}
+        >
           {isPinned ? 'ОТКРЕПИТЬ' : 'ЗАКРЕПИТЬ'}
-        </button>
+        </ActionButton>
         <button onClick={onClose} style={pinStyles.close}>ОТМЕНА</button>
       </div>
 
@@ -395,30 +400,6 @@ const pinStyles = {
     textAlign: 'center',
     fontWeight: 600,
     marginBottom: '4px'
-  },
-  pinButton: {
-    width: '100%',
-    padding: '14px',
-    background: 'var(--neutral-600)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 800,
-    letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1.5px solid rgba(255, 255, 255, 0.14)'
-  },
-  unpinButton: {
-    width: '100%',
-    padding: '14px',
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700,
-    letterSpacing: '1px',
-    borderRadius: 'var(--radius-medium)',
-    border: '1px solid rgba(255, 255, 255, 0.08)'
   },
   close: {
     width: '100%',

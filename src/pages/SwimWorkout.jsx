@@ -316,9 +316,8 @@ export default function SwimWorkout() {
         <div className="dock-scrim" />
         <ActionButton
           onClick={handleFinishTap}
-          variant="accent"
+          variant="neutral"
           hug
-          style={{ background: 'var(--cat-pool)', borderColor: '#1C5C97' }}
         >
           ЗАВЕРШИТЬ
         </ActionButton>

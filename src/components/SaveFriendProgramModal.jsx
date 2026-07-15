@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { saveFriendProgram } from '../features/programs/customProgram'
 import { haptic } from '../lib/telegram'
+import ActionButton from './ActionButton'
 
 /**
  * Модалка сохранения программы, полученной по ссылке от друга.
@@ -43,10 +44,10 @@ export default function SaveFriendProgramModal({ snapshot, replacing, onSaved, o
         )}
         {error && <div style={styles.error}>{error}</div>}
 
-        <button onClick={handleSave} disabled={saving} style={styles.saveBtn}>
+        <ActionButton variant="gray" size="sm" onClick={handleSave} disabled={saving} style={{ width: '100%', marginBottom: '10px' }}>
           {saving ? 'СОХРАНЯЮ…' : (replacing ? 'ЗАМЕНИТЬ ПРОГРАММУ ДРУГА' : 'СОХРАНИТЬ ПРОГРАММУ')}
-        </button>
-        <button onClick={onClose} disabled={saving} style={styles.cancelBtn}>Отмена</button>
+        </ActionButton>
+        <ActionButton variant="ghost" size="sm" onClick={onClose} disabled={saving} style={{ width: '100%', border: 'none' }}>Отмена</ActionButton>
       </div>
     </div>
   )
@@ -75,15 +76,4 @@ const styles = {
   meta: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: '20px' },
   warn: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E0A23C', background: 'rgba(224,162,60,0.1)', borderRadius: '12px', padding: '10px 12px', marginBottom: '16px' },
   error: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E84545', marginBottom: '12px' },
-  saveBtn: {
-    width: '100%', padding: '16px', marginBottom: '10px',
-    background: 'var(--neutral-600)', color: 'var(--color-text)',
-    border: '1.5px solid rgba(255, 255, 255, 0.14)', borderRadius: '16px',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 800, letterSpacing: '1px'
-  },
-  cancelBtn: {
-    width: '100%', padding: '14px',
-    background: 'transparent', color: 'var(--color-text-secondary)', border: 'none',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600
-  }
 }

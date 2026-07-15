@@ -12,11 +12,18 @@
  *    Силовая. Кнопка «Начать» в дне тренировки.
  *  - 'gray': сплошная светло-серая заливка (--neutral-600) + БЕЛЫЙ текст — нейтральное
  *    действие без фирменного зелёного (Добавить друга, Закрепить, Сохранить, Сменить).
+ *  - 'ghost': прозрачный фон + тонкая рамка + приглушённый текст — вторичное действие
+ *    рядом с основным (Назад / Отмена в модалках).
+ *
+ * Размер (size):
+ *  - 'md' (по умолчанию): высота --btn-height (55), пилюля. Прибитые док-кнопки.
+ *  - 'sm': высота --btn-height-sm (46), радиус --radius-medium. Кнопки в модалках.
  *
  * disabled всегда перебивает variant и даёт вид 'dim'.
  */
 export default function ActionButton({
   variant = 'neutral',
+  size = 'md',
   disabled = false,
   hug = false,
   onClick,
@@ -27,6 +34,7 @@ export default function ActionButton({
   ...rest
 }) {
   const look = disabled ? styles.dim : (styles[variant] || styles.neutral)
+  const sizing = styles[size] || styles.md
   // Прогресс-заливка за текстом (например, «Завершить»: фон светло-серым
   // растёт по мере отметки упражнений). Только для активной кнопки.
   const showFill = progress != null && !disabled
@@ -37,7 +45,7 @@ export default function ActionButton({
       onClick={onClick}
       disabled={disabled}
       className={`press-tile ${className}`.trim()}
-      style={{ ...styles.base, ...(hug ? styles.hug : styles.full), ...look, ...(showFill ? styles.clip : null), ...style }}
+      style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(showFill ? styles.clip : null), ...style }}
       {...rest}
     >
       {showFill ? (
@@ -52,14 +60,8 @@ export default function ActionButton({
 
 const styles = {
   base: {
-    height: '55px',
     flexShrink: 0,
-    padding: '0 24px',
-    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 800,
-    letterSpacing: '1.5px',
     textAlign: 'center',
     pointerEvents: 'auto',
     cursor: 'pointer',
@@ -67,6 +69,23 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
+  },
+  // Размеры (высота/скругление/типографика из токенов).
+  md: {
+    height: 'var(--btn-height)',
+    padding: '0 24px',
+    borderRadius: 'var(--radius-pill)',
+    fontSize: '14px',
+    fontWeight: 800,
+    letterSpacing: '1.5px'
+  },
+  sm: {
+    height: 'var(--btn-height-sm)',
+    padding: '0 18px',
+    borderRadius: 'var(--radius-medium)',
+    fontSize: '15px',
+    fontWeight: 700,
+    letterSpacing: '0.3px'
   },
   // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
   full: { width: '100%' },
@@ -111,6 +130,12 @@ const styles = {
     background: 'var(--neutral-600)',
     border: '1.5px solid rgba(255, 255, 255, 0.14)',
     color: 'var(--color-text)'
+  },
+  // Прозрачная — тонкая рамка + приглушённый текст. Вторичное действие (Назад/Отмена).
+  ghost: {
+    background: 'transparent',
+    border: '1.5px solid rgba(255, 255, 255, 0.14)',
+    color: 'var(--color-text-secondary)'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
   clip: { position: 'relative', overflow: 'hidden' },

@@ -104,6 +104,11 @@
   --radius-medium: 20px;   /* среднее: кнопки-действия, инпуты, тосты, плашки */
   --radius-small: 10px;    /* мелкое: чипы-бейджи, скелетоны */
 
+  /* Кнопки-действия (ActionButton). Меняешь токен — меняется во всём аппе.
+     md — основная прибитая кнопка (пилюля); sm — компактная (модалки), радиус medium. */
+  --btn-height: 55px;       /* высота основной кнопки (ActionButton size=md) */
+  --btn-height-sm: 46px;    /* высота компактной кнопки (ActionButton size=sm, модалки) */
+
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
   --font-manrope: 'Manrope', system-ui, sans-serif;

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import ActionButton from './ActionButton'
 
 /**
  * Модалка завершения тренировки.
@@ -138,18 +139,19 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
         )}
 
         {/* Кнопка действия */}
-        <button
+        <ActionButton
+          variant="accent"
+          size="sm"
           onClick={handleClick}
           disabled={isSaving}
           style={{
-            ...styles.confirmButton,
-            ...(isError ? styles.confirmButtonError : {}),
-            opacity: isSaving ? 0.6 : 1,
-            cursor: isSaving ? 'default' : 'pointer'
+            marginTop: '8px',
+            width: '100%',
+            ...(isError ? { background: '#FF8C42', borderColor: '#C46A28', color: '#0D0C0C' } : {})
           }}
         >
           {buttonText}
-        </button>
+        </ActionButton>
 
       </div>
 
@@ -271,23 +273,5 @@ const styles = {
     textAlign: 'center',
     lineHeight: 1.45,
     opacity: 0.85
-  },
-  confirmButton: {
-    marginTop: '8px',
-    width: '100%',
-    padding: '14px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 700,
-    letterSpacing: '1.5px',
-    borderRadius: '14px',
-    border: 'none',
-    transition: 'opacity 0.2s ease, transform 0.12s ease'
-  },
-  confirmButtonError: {
-    background: '#FF8C42',
-    color: '#0D0C0C'
   }
 }

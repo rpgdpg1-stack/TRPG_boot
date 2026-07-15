@@ -10,6 +10,8 @@
  * @param onConfirm - тап «Завершить»
  * @param onCancel  - тап «Назад» / по фону
  */
+import ActionButton from './ActionButton'
+
 export default function FinishConfirmModal({ done, total, onConfirm, onCancel }) {
   const allDone = total > 0 && done >= total
 
@@ -22,12 +24,12 @@ export default function FinishConfirmModal({ done, total, onConfirm, onCancel })
         <div style={styles.subtitle}>Завершить тренировку?</div>
 
         <div style={styles.row}>
-          <button type="button" style={styles.cancel} onClick={onCancel}>
+          <ActionButton variant="ghost" size="sm" onClick={onCancel} style={{ flex: 1 }}>
             Назад
-          </button>
-          <button type="button" style={styles.confirm} onClick={onConfirm}>
+          </ActionButton>
+          <ActionButton variant="accent" size="sm" onClick={onConfirm} style={{ flex: 1 }}>
             Завершить
-          </button>
+          </ActionButton>
         </div>
       </div>
 
@@ -89,31 +91,5 @@ const styles = {
     gap: '10px',
     width: '100%',
     marginTop: '14px'
-  },
-  cancel: {
-    flex: 1,
-    padding: '12px',
-    background: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.14)',
-    borderRadius: '12px',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  confirm: {
-    flex: 1,
-    padding: '12px',
-    background: 'var(--color-primary)',
-    border: 'none',
-    borderRadius: '12px',
-    color: '#0D0C0C',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
   }
 }
