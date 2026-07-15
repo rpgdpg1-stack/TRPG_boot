@@ -1,0 +1,146 @@
+
+/* ============================================ */
+/* СБРОС */
+/* ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  /* Фон канваса (= зона нативной резинки) — ТЁМНЫЙ везде, верх и низ. Покраску зоны
+     резинки акцентом раздела убрали: на iOS раздельно «верх цветной / низ тёмный»
+     надёжно не держится (уходило в чёрный при переходах). Свечение раздела остаётся
+     в обычном виде (SectionGlow вверху главной/раздела), а не в резинке. */
+  background: var(--color-bg);
+  /* contain (НЕ none): гасит нативную перезагрузку по оттягу, но ОСТАВЛЯЕТ приятный
+     отскок/резинку при скролле. Свой pull-to-refresh на главной рисует кольцо поверх
+     нативного отскока, контент не двигает — жесту не мешает. */
+  overscroll-behavior-y: contain;
+}
+
+body {
+  width: 100%;
+  min-height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-manrope);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+img, button { -webkit-user-drag: none; }
+
+/* ============================================ */
+/* Утилитарные классы */
+/* ============================================ */
+
+.app {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  padding-bottom: calc(var(--tabbar-height) + var(--tabbar-bottom) + 60px);
+}
+
+
+/* Единый fade-scrim у краёв экрана — сверху (под навбаром-заголовком) и снизу
+   (над таб-баром): затемнение + лёгкий блюр, чтобы контент при скролле уходил
+   под край плавно, без линии, а заголовок в навбаре оставался читаемым (он выше
+   по z, поэтому НЕ блюрится — блюрится только контент за скримом).
+   Одинаковая высота сверху и снизу (= var(--tg-safe-top)). Fixed, не прыгает при
+   скролле. pointer-events:none — тапы проходят сквозь. z ниже таб-бара (100) и
+   навбара (95), но выше контента. Маска гасит скрим к внутреннему краю без линии. */
+.app::before,
+.app::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: var(--tg-safe-top);
+  pointer-events: none;
+  z-index: 90;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.app::before {
+  top: 0;
+  /* Чуть ниже линии системных кнопок: затемнение держится сквозь заголовок и
+     гаснет ~14px ниже него (текст под заголовком при скролле мутный/тёмный,
+     сам заголовок выше по z — резкий). Граница поднята на 2px. */
+  height: calc(var(--tg-safe-top) + 14px);
+  background: linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
+}
+.app::after {
+  bottom: 0;
+  /* Нижний скрим в 2 раза ниже верхнего (по просьбе) — верхний не трогаем. */
+  height: calc(var(--tg-safe-top) / 2);
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+}
+
+/* На конструкторе нижний таб-бар скрыт — этот fade-scrim не нужен, и именно
+   он ложился поверх кнопок и прилипал к клавиатуре на iOS. Гасим его, пока
+   открыт конструктор (класс вешается из ProgramConstructor). */
+body.hide-app-scrim .app::after { display: none; }
+
+/* При открытой клавиатуре fixed-скрим на iOS «прилипает» к клавиатуре сверху —
+   затемнение над клавишами. Гасим его, пока клавиатура открыта (класс
+   keyboard-open вешается из App по visualViewport). */
+body.keyboard-open .app::after { display: none; }
+
+/* Скрим-слой для нижних доков (день/конструктор/пикер/смена), где глобальный
+   .app::after скрыт (там свои прибитые кнопки). Тот же рецепт, что у краевого
+   скрима (градиент + блюр + маска, плавно, без линии), но как ОТДЕЛЬНЫЙ
+   absolute-слой внутри дока с z-index:-1 — чтобы блюрить контент за доком, но НЕ
+   обрезать маской сами кнопки (они выше по слою). Рендерится как
+   <div className="dock-scrim" /> первым ребёнком дока. */
+.dock-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+}
+
+.page {
+  /* Единое правило отступов: верх контента — ровно на 16px ниже кнопок Telegram
+     (это уже зашито в var(--tg-safe-top), см. bindSafeArea). Первый элемент
+     страницы НЕ должен иметь своего верхнего margin/padding — тогда зазор везде
+     одинаковый 16px, как боковой отступ. */
+  padding: var(--tg-safe-top) 16px 24px;
+  position: relative;
+  z-index: 1;
+}
+

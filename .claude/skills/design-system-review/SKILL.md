@@ -71,8 +71,8 @@ description: "Страж целостности дизайн-системы TRPG
 4. ✅ **`--color-error/-warning/-success/-info`** (имена на red/yellow/green/blue-500, 0 новых цветов).
    ⬜ заменить инлайн `#E84545`/`#FFD700` (Settings tone, модалки).
 5. ✅ **`--shadow-dock` / `--shadow-modal`**. ⬜ заменить хардкод-тени (таб-бар/док, модалки).
-6. ⬜ **(Опц.) разбить `index.css`** на `styles/{tokens,base,utilities,keyframes}.css` — отдельным
-   контролируемым шагом с проверкой сборки (структурный рефактор, не аддитивный).
+6. ✅ **`index.css` разбит** на `src/styles/{tokens,base,keyframes,utilities}.css`; `index.css` = 4
+   `@import` (порядок: tokens→base→keyframes→utilities). Токены живут в `styles/tokens.css` (`:root`).
 
 Не переделывать разом: токен есть → применяем в местах, которые и так трогаем.
 

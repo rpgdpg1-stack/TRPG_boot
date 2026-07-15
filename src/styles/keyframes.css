@@ -1,0 +1,183 @@
+@keyframes progSparkFly {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.3); }
+}
+@keyframes progCountIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(2px); }
+  to   { opacity: 0.65; transform: translateX(-50%) translateY(0); }
+}
+@keyframes progTwinkle {
+  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.7); }
+  50%      { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes progFlash {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.3); }
+  30%  { opacity: 0.8; }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.6); }
+}
+@keyframes dayDotPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.45); }
+}
+@keyframes dayPickerPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.5); }
+}
+@keyframes overloadPopIn {
+  0%   { opacity: 0; transform: translateY(-50%) scale(0.9); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+@keyframes popScale {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
+@keyframes btnMorph {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+@keyframes poolShine {
+  0%   { transform: translateX(-140%); }
+  100% { transform: translateX(240%); }
+}
+@keyframes pennantSway {
+  0%, 100% { transform: rotate(-15deg); }
+  50%      { transform: rotate(15deg); }
+}
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes dayLetterInRight {
+  from { transform: translateX(40px); }
+  to   { transform: translateX(0); }
+}
+@keyframes dayLetterInLeft {
+  from { transform: translateX(-40px); }
+  to   { transform: translateX(0); }
+}
+@keyframes hslideInRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes hslideInLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes particleBurst {
+  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+  10%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
+}
+@keyframes questFlash {
+  0%   { opacity: 0; transform: scale(0.4); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes errorShake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-7px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+@keyframes checkPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes weightRaiseArrow {
+  0%   { opacity: 0; transform: translateY(calc(-50% + 4px)); }
+  10%  { opacity: 1; transform: translateY(-50%); }
+  82%  { opacity: 1; transform: translateY(-50%); }
+  100% { opacity: 0; transform: translateY(-50%); }
+}
+@keyframes weightLowerArrow {
+  0%   { opacity: 0; }
+  18%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes catFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes catFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes catIconOutNext { from { transform: translateX(0); }     to { transform: translateX(-100%); } }
+@keyframes catIconInNext  { from { transform: translateX(100%); }  to { transform: translateX(0); } }
+@keyframes catIconOutPrev { from { transform: translateX(0); }     to { transform: translateX(100%); } }
+@keyframes catIconInPrev  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes groupPillIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes timerPulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+@keyframes skeletonShimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@keyframes returnGlowFade {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes returnPress {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(var(--press-scale)); }
+  100% { transform: scale(1); }
+}
+@keyframes rewardFloatUp {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
+  85%  { opacity: 1; transform: translateX(-50%) translateY(-42px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-54px) scale(0.9); }
+}
+@keyframes rowRewardFly {
+  0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+  15%  { opacity: 1; transform: translateY(-8px) scale(1); }
+  85%  { opacity: 1; transform: translateY(-40px) scale(1); }
+  100% { opacity: 0; transform: translateY(-52px) scale(0.9); }
+}
+@keyframes menuOverlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes menuPanelScaleIn {
+  0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes tabIconPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+@keyframes titlePixelFloat {
+  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+  12%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(2px, -12px) scale(0.3); }
+}
+@keyframes titanSwell {
+  0%, 100% { box-shadow: 0 0 6px rgba(226, 75, 74, 0.30), 0 0 0 0 rgba(226, 75, 74, 0); }
+  50%      { box-shadow: 0 0 16px rgba(226, 75, 74, 0.6), 0 0 0 3px rgba(226, 75, 74, 0.22); }
+}
+@keyframes legendSweep { to { --frame-ang: 360deg; } }
+@keyframes immAura {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 215, 0, 0.30), 0 0 0 0 rgba(255, 215, 0, 0); }
+  50%      { box-shadow: 0 0 16px rgba(255, 215, 0, 0.6), 0 0 0 3px rgba(255, 215, 0, 0.22); }
+}
+@keyframes ashUp {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  14%  { opacity: 1; }
+  88%  { opacity: 0.8; }
+  100% { transform: translateY(-1000%) translateX(3px); opacity: 0; }
+}

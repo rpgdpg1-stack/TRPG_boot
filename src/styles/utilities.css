@@ -1,0 +1,327 @@
+/* ============================================ */
+/* Финал прогресс-бара дня (искра / счётчик / салют) */
+/* ============================================ */
+
+/* Разлёт частицы из головы заливки: дистанцию задают --tx/--ty в инлайне. */
+/* Появление счётчика 3-2-1 (ремаунт по key при смене цифры). */
+/* Очень слабый твинкл головы в финишной зоне. */
+/* Центральная вспышка-«пых» финального салюта. */
+/* Уважение к prefers-reduced-motion: гасим бесконечный твинкл (вспышки на
+   нажатие/финиш короткие и осмысленные — оставляем). */
+@media (prefers-reduced-motion: reduce) {
+  .prog-twinkle { animation: none !important; opacity: 0.4 !important; }
+}
+
+/* ============================================ */
+/* PRESS-эффект (универсальный) */
+/* ============================================ */
+
+.press-tile {
+  transition:
+    transform var(--press-duration) var(--press-ease),
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.press-tile:active {
+  transform: scale(var(--press-scale));
+  transition: transform 60ms var(--press-ease);
+}
+
+
+/* Строка в сгруппированной карточке (как в Telegram): без scale,
+   при нажатии — серая подсветка фона. */
+.tg-row {
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tg-row:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Кнопка в модалках/диалогах (нативный серый стиль, как iOS-алерт
+   «Понятно/ОК/Отмена»). Без scale — при нажатии серый фон становится ярче
+   (как строки меню). Фон тут (а не инлайн), чтобы :active мог его перебить.
+   Компонент — components/ModalButton.jsx. */
+.modal-btn {
+  background: rgba(255, 255, 255, 0.13);
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-btn:active {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Пульс кружка дня в пейджере (день с запущенной тренировкой, когда смотришь
+   другой день): мягко увеличивается и обратно, без свечения/кольца. */
+.day-dot-pulse { animation: dayDotPulse 1.8s ease-in-out infinite; }
+
+/* Пульс буквы запущенного дня в пикере: растёт с обычного размера в ~1.5× и
+   обратно (не фикс. крупный размер) — «вернись сюда, тренировка идёт». */
+.day-picker-pulse { animation: dayPickerPulse 1.4s ease-in-out infinite; }
+
+/* Появление плавающего поп-апа перегрузки (1ч30) поверх карточки дня. */
+
+/* Пульс-«поп»: плавно увеличивается и возвращается (буква активного дня при
+   заходе/старте, время/счётчик при старте). Один проход, помягче/помедленнее. */
+.pop-scale { animation: popScale 0.62s ease-in-out; }
+
+/* Кружок pull-to-refresh во время обновления — бесконечное вращение. */
+.ptr-spin { animation: ptrSpin 0.7s linear infinite; }
+
+/* Морф кнопки «Начать» → «Завершить»: короткий squish на старте (цвет меняется
+   через собственные CSS-переходы ActionButton). */
+.btn-morph { animation: btnMorph 0.46s var(--ease-ios); }
+
+/* «Водяная» карточка (WaterChrome): блик-волна слева-направо + покачивание флажков.
+   Используется и в шапке заплыва, и в карточке заплыва в избранном. */
+
+/* Press-эффект для кнопок «закрыть/удалить»: при нажатии — лёгкая красная
+   заливка + красный значок. Вешается рядом с press-tile (scale остаётся),
+   !important перебивает инлайновый фон кнопок (напр. removeBtn в конструкторе). */
+.press-danger:active {
+  background: rgba(232, 69, 69, 0.18) !important;
+  color: #E84545 !important;
+}
+
+/* Press-эффект «увеличение»: для инпутов/полей — на фокус/нажатие слегка
+   подрастают, чтобы было видно что тапнул. Переиспользуемо. */
+.press-grow {
+  transition: transform 0.18s var(--press-ease);
+}
+.press-grow:focus,
+.press-grow:active {
+  transform: scale(1.02);
+}
+
+/* ============================================ */
+/* PRESS-эффект для карточек упражнений */
+/* ============================================ */
+
+/*
+  У карточки упражнения уже есть свой transition на background (3 свойства
+  одновременно — для смены состояния isActive). Поэтому добавляем transform
+  через отдельный класс, не ломая существующее.
+
+  При тапе:
+   - scale 0.98 (чуть слабее чем у press-tile — карточки крупные, перебор смотрится плохо)
+   - 70мс на нажатие (быстро ощущается), 150мс на возврат (мягко отпускается)
+
+  При скролле палец двигается до отпускания → браузер сам отменяет :active,
+  никаких "залипаний" не будет. Это родное поведение CSS, не надо ничего делать.
+*/
+.press-exercise-card {
+  transition:
+    transform 150ms var(--press-ease),
+    background 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+.press-exercise-card:active {
+  transform: scale(0.98);
+  transition: transform 70ms var(--press-ease);
+}
+
+/* ============================================ */
+/* АНИМАЦИИ ПЕРЕХОДОВ */
+/* ============================================ */
+
+.page-enter {
+  animation: pageSlideIn var(--duration-page) var(--ease-ios) both;
+}
+
+
+.page-fade {
+  animation: pageFadeIn var(--duration-page) var(--ease-ios) both;
+}
+
+
+/* === АНИМАЦИЯ ПЕРЕХОДА МЕЖДУ ДНЯМИ === */
+
+.day-letter-slide-in-right {
+  animation: dayLetterInRight 0.32s var(--ease-ios) both;
+}
+.day-letter-slide-in-left {
+  animation: dayLetterInLeft 0.32s var(--ease-ios) both;
+}
+
+/* ТОЛЬКО transform (без opacity): fill-mode both у класса держит финальный кадр,
+   и если тут анимировать opacity до 1 — он перебьёт инлайновый opacity 0.4 у
+   неактивных дней (буквы A/B светились бы на 100%). Прозрачностью рулит инлайн. */
+
+/* Лёгкий горизонтальный заезд (карусель избранного и т.п.) */
+.hslide-in-right { animation: hslideInRight 0.3s var(--ease-ios) both; }
+.hslide-in-left  { animation: hslideInLeft  0.3s var(--ease-ios) both; }
+
+
+/* ============================================ */
+/* АНИМАЦИИ ЧАСТИЦ */
+/* ============================================ */
+
+
+/* Вспышка при выполнении буста дня (spawnQuestBurst в ParticlesBg).
+   Раньше анимация звалась по имени questFlash, но keyframe не было —
+   вспышка висела статичным зелёным пятном ~1с вместо мигания. */
+
+/* «Шейк ошибки»: влево → толчок вправо, как стандартная вибрация ошибки.
+   Переиспользуемо для тостов/попапов/полей при недопустимом действии. */
+.shake-error {
+  animation: errorShake 0.4s var(--press-ease) both;
+}
+
+/* ============================================ */
+/* КОМПОНЕНТНЫЕ АНИМАЦИИ (вынесены из компонентов) */
+/* ============================================ */
+
+/* Карточка упражнения: галочка «выполнено» — пружинистое появление (ExerciseCard.jsx) */
+
+/* Стрелка «повысил вес» (WeightRaiseFlash): мягко проявляется с подъёмом, держится,
+   гаснет на хвосте (82→100%) — синхронно с транзишеном зелёного цвета цифры. */
+
+/* Стрелка «понизил вес» (WeightRaiseFlash): без подъёма/яркости — только мягкое
+   появление и затухание (opacity), серый цвет задаётся инлайн. */
+
+/* Свайпер разделов на главной (CategorySwiper): текст кросс-фейдится, иконка выезжает.
+   Next = свайп вперёд (старое уходит влево), Prev = назад (старое уходит вправо). */
+
+/* Смена текста в закреплённой пилюле группы (WorkoutDay) — мягкий заезд снизу. */
+
+/* Пульс таймера тренировки при смене цвета (старт/1ч/1ч30): увеличение и возврат. */
+
+/* Скелетон загрузки: мягкий shimmer по плейсхолдерам (WorkoutDay SkeletonCard). */
+.skel {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.04) 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}
+
+/* Возврат с экранов Инфо/Замена: зелёная обводка карточки (WorkoutDay.jsx) */
+
+/* Пресс-эффект при возврате/подсветке карточки — как везде (press-tile): быстрый
+   «вжим» до --press-scale и обратно, один раз. */
+
+/* Дневной буст: вылет +XP при закрытии слота (DailyQuests.jsx) */
+
+/* +20 улетает вверх из строки активности (DailyQuests.rowFly) — без сдвига по X. */
+
+/* Меню действий упражнения: появление оверлея + панели (ExerciseActionMenu.jsx) */
+
+/* Таб-бар: поп иконки активной вкладки (TabBar.jsx) */
+
+/* Титул Бессмертного #1/#2/#3 — вылетающие пиксели (TitleTag.jsx) */
+.title-pixels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.title-pixels i {
+  position: absolute;
+  top: 30%;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 1px;
+  opacity: 0;
+  animation: titlePixelFloat 5.6s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-pixels i { animation: none; opacity: 0; }
+}
+
+/* ============================================ */
+/* РАМКИ АВАТАРА (ранги 8/9/10) — чистый CSS    */
+/* ============================================ */
+/*
+  Накладываются как класс на сам аватар (тот div, у которого border +
+  border-radius места: 29px на главной, 33px в профиле и т.д.).
+  Цвет/толщину обводки рамки задают сами — borderColor из inline-стиля
+  при этом ПЕРЕЗАПИШЕТСЯ, поэтому для анимированных рамок inline borderColor
+  передавать НЕ нужно (см. frames.js → передаём borderColor только для
+  обычных рангов 0–7).
+*/
+
+/* ТИТАН (8) — пульс свечения СНАРУЖИ (толщина рамки постоянна → фото не дёргается).
+   Растёт box-shadow: мягкое сияние + кольцо наружу. */
+.frame-titan {
+  border-style: solid;
+  border-width: 3px;
+  border-color: #E24B4A;
+  animation: titanSwell 4.2s ease-in-out infinite;
+}
+
+/* ЛЕГЕНДА (9) — бегущий блик по контуру (conic + @property) */
+@property --frame-ang {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.frame-legend {
+  border: 3px solid transparent !important;
+  background:
+    linear-gradient(var(--color-card), var(--color-card)) padding-box,
+    conic-gradient(from var(--frame-ang),
+      #E84545 0deg, #E84545 70deg,
+      #FFE08A 95deg, #FFFFFF 110deg, #FFE08A 125deg,
+      #E84545 150deg, #E84545 360deg) border-box;
+  animation: legendSweep 5.5s linear infinite;
+}
+.frame-legend::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow: 0 0 18px rgba(232, 69, 69, 0.4);
+  pointer-events: none;
+}
+
+/* БЕССМЕРТНЫЙ (10) — золотое свечение СНАРУЖИ (как титан) + летящий пепел.
+   Толщина рамки постоянна, пульсирует только box-shadow. */
+.frame-immortal {
+  border-style: solid;
+  border-width: 3px;
+  border-color: #FFD700;
+  animation: immAura 4.2s ease-in-out infinite;
+}
+
+/* Слой пепла для Бессмертного. Кладётся ВНУТРИ аватара (который
+   overflow:hidden + position:relative), частицы плывут вверх. */
+.imm-ash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.imm-ash i {
+  position: absolute;
+  bottom: 5%;
+  width: 3px;
+  height: 3px;
+  background: #FFD700;
+  border-radius: 1px;
+  opacity: 0;
+  /* высота полёта = почти весь аватар: используем % через translateY в keyframes.
+     Чтобы пепел летел и в мелких (60px), и в крупных (140px) аватарах одинаково
+     красиво — летим на свою высоту через CSS-переменную --ash-rise. */
+  animation: ashUp 6s linear infinite;
+}
+.imm-ash i:nth-child(1) { left: 24%; animation-delay: 0s; }
+.imm-ash i:nth-child(2) { left: 46%; width: 2px; height: 2px; background: #FFE9A8; animation-delay: -1.5s; }
+.imm-ash i:nth-child(3) { left: 62%; width: 3.5px; height: 3.5px; animation-delay: -3s; }
+.imm-ash i:nth-child(4) { left: 74%; width: 2px; height: 2px; background: #C79A2E; animation-delay: -4.5s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-titan, .frame-legend, .frame-immortal { animation: none; }
+  .imm-ash i { animation: none; opacity: 0; }
+}
+
+::-webkit-scrollbar { display: none; }
