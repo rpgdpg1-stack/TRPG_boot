@@ -90,11 +90,14 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
 ## Прогресс (node IDs — обновлять по ходу)
 
 Файл начат с нуля (был пустой «Page 1» = `0:1`).
-- **DS · Buttons / ActionButton** — секция `2:2` (на текущей странице).
-  - Заголовок `2:3`, caption `2:4`, row-label md `3:5`, ряд md `3:9`.
+- **DS · Buttons / ActionButton** — секция `2:2` (страница 🧩 Components).
+  - Заголовок `2:3`, caption `2:4`, row-label md `3:5`, ряд md `3:9`, row-label sm `5:27`, ряд sm `5:28`.
   - Кнопки md: accent `3:10`, gray `3:12`, graphite `3:13`, neutral `3:14`, ghost `3:15`, dim `3:16`.
-- TODO дальше: ряд **sm** (46/medium), состояние **disabled**, 10 свотчей **Accent**, иконка-в-кнопке;
-  затем карточки, таб-бар, теги, икон-кнопки → потом экраны.
+  - Кнопки sm: accent `5:29`, gray `5:30`, graphite `5:31`, neutral `5:32`, ghost `5:33`, dim `5:34`.
+  - Матрица variant(6)×size(2)=12 фреймов ГОТОВА. Ждёт: Дмитрий соберёт Component Set (свойства
+    `variant`+`size`; `dim` = вид disabled, можно потом вынести в свойство `state`).
+- TODO дальше: иконка-в-кнопке (опц.) → 🎨 Foundations (Accent 10 свотчей, типографика, радиусы) →
+  Components: Icon Button, Tag/Chip, Card(ProgramCard/ExerciseCard), TabBar → потом Screens.
 
 ## Синк код ↔ Figma
 
