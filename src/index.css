@@ -93,6 +93,14 @@
   --tag-home: var(--blue-400);
   --tag-outdoor: var(--green-400);
 
+  /* Статусы — семантические ИМЕНА на существующие примитивы (0 новых цветов).
+     Вместо инлайн-хекса #E84545/#FFD700 и т.п. НЕ зависят от accent. Применять
+     постепенно, трогая соответствующие места (ошибки, тосты, тон-строки). */
+  --color-error:   var(--red-500);     /* #E84545 — ошибка, удаление, лимит */
+  --color-warning: var(--yellow-500);  /* #FFD700 — предупреждение */
+  --color-success: var(--green-500);   /* успех/подтверждение */
+  --color-info:    var(--blue-500);    /* инфо */
+
   /* Полупрозрачные поверхности/обводки. Альфа «вшита» в значение, поэтому это
      семантика без алиаса на примитив (примитивы у нас сплошные). */
   --color-surface-dim: rgba(34, 34, 34, 0.30);  /* стеклянный фон: таб-бар, dim-кнопка */
@@ -117,10 +125,45 @@
   --btn-height: 55px;       /* высота основной кнопки (ActionButton size=md) */
   --btn-height-sm: 46px;    /* высота компактной кнопки (ActionButton size=sm, модалки) */
 
+  /* Шкала отступов — единая 4-кратная. Паддинги / гэпы / margin брать ОТСЮДА,
+     не случайные 13/18/27. Применять постепенно, трогая компоненты. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Z-index — семантические слои вместо магических чисел (значения = текущей реальности). */
+  --z-base: 1;
+  --z-scrim: 90;     /* краевые скримы .app::before/::after */
+  --z-header: 95;    /* фиксированный заголовок ScreenTitle */
+  --z-nav: 100;      /* таб-бар */
+  --z-banner: 9998;  /* оффлайн-баннер */
+  --z-modal: 9999;   /* модалки / поповеры */
+
+  /* Тени — реально используемые (2). */
+  --shadow-dock: 0 8px 40px rgba(0, 0, 0, 0.12);  /* таб-бар / прибитый док */
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.6);  /* модалки / поповеры */
+
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
   --font-manrope: 'Manrope', system-ui, sans-serif;
   --font-display: 'Geist', system-ui, sans-serif; /* акцентный (бывш. пиксельный Tiny5): XP, ранги, титулы, цифры */
+
+  /* Типо-роли (6): size + weight + line-height. Уходим от «случайных 17px».
+     Семейство берётся отдельно (--font-*); letter-spacing у кнопки/капс-лейблов — в
+     компоненте. ВНИМАНИЕ: не путать с ЦВЕТ-токенами --text-label/--text-info. */
+  --text-display-size: 28px;  --text-display-weight: 800;  --text-display-lh: 1.1;   /* ранги, крупные тайтлы */
+  --text-title-size:   18px;  --text-title-weight:   600;  --text-title-lh:   1.2;   /* заголовок экрана / секции */
+  --text-body-size:    15px;  --text-body-weight:    500;  --text-body-lh:    1.4;   /* основной текст */
+  --text-label-size:   13px;  --text-label-weight:   700;  --text-label-lh:   1.2;   /* подписи / теги / строки */
+  --text-caption-size: 11px;  --text-caption-weight: 500;  --text-caption-lh: 1.4;   /* мелкие пояснения */
+  --text-button-size:  14px;  --text-button-weight:  800;  --text-button-lh:  1.0;   /* ActionButton md */
 
   /* Размеры таббара */
   --tabbar-height: 63px;
