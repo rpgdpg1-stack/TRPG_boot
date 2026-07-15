@@ -77,7 +77,8 @@ const styles = {
   error: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E84545', marginBottom: '12px' },
   saveBtn: {
     width: '100%', padding: '16px', marginBottom: '10px',
-    background: 'var(--color-primary)', color: '#0D0C0C', border: 'none', borderRadius: '16px',
+    background: 'var(--neutral-600)', color: 'var(--color-text)',
+    border: '1.5px solid rgba(255, 255, 255, 0.14)', borderRadius: '16px',
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 800, letterSpacing: '1px'
   },
   cancelBtn: {

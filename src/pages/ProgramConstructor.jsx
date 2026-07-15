@@ -597,7 +597,7 @@ export default function ProgramConstructor() {
           <ActionButton
             onClick={handleSave}
             disabled={!canSave}
-            variant="accent"
+            variant="gray"
             hug
           >
             {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}

@@ -131,8 +131,8 @@ export default function Friends() {
             Пригласи друзей через Telegram, следите<br />
             за прогрессом друг друга
           </div>
-          <ActionButton onClick={handleInviteTap} variant="accent" hug style={{ gap: '8px' }}>
-            <UiIcon name="invite-friend" size={16} color="#0D0C0C" />
+          <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
+            <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
             ПРИГЛАСИТЬ ДРУГА
           </ActionButton>
         </div>
@@ -163,8 +163,8 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <ActionButton onClick={handleInviteTap} variant="accent" hug style={{ gap: '8px' }}>
-              <UiIcon name="invite-friend" size={16} color="#0D0C0C" />
+            <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
+              <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
               Добавить друга
             </ActionButton>
           </div>
@@ -399,14 +399,14 @@ const pinStyles = {
   pinButton: {
     width: '100%',
     padding: '14px',
-    background: 'var(--color-primary)',
-    color: '#0D0C0C',
+    background: 'var(--neutral-600)',
+    color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
     fontWeight: 800,
     letterSpacing: '1px',
     borderRadius: 'var(--radius-medium)',
-    border: 'none'
+    border: '1.5px solid rgba(255, 255, 255, 0.14)'
   },
   unpinButton: {
     width: '100%',

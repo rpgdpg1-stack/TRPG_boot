@@ -257,7 +257,7 @@ export default function SwapExercise() {
         <ActionButton
           onClick={handleConfirm}
           disabled={!selectedId || selectedId === currentExerciseId || saving || loading}
-          variant="accent"
+          variant="gray"
           hug
           style={{ fontSize: '15px', letterSpacing: '2px' }}
         >

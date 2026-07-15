@@ -1324,7 +1324,7 @@ export default function WorkoutDay() {
               ? { onClick: handleFinishButtonTap, disabled: !canFinish, variant: isAllDone ? 'accent' : 'neutral', label: isAllDone ? '✓ ЗАВЕРШИТЬ' : 'ЗАВЕРШИТЬ' }
               : sessionBlocked
                 ? { onClick: handleBlockedStart, variant: 'dim', label: 'НАЧАТЬ' }
-                : { onClick: handleStart, variant: 'accent', label: 'НАЧАТЬ' }
+                : { onClick: handleStart, variant: 'graphite', label: 'НАЧАТЬ' }
             return (
               <ActionButton
                 onClick={p.onClick}
