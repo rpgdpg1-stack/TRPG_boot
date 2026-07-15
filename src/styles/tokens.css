@@ -80,14 +80,6 @@
   --cat-gym: #8B929C;
   --cat-recovery: var(--neutral-0);
 
-  /* Цвета редкости (рангов) */
-  --rarity-common: var(--green-500);
-  --rarity-rare: var(--blue-500);
-  --rarity-epic: var(--purple-500);
-  --rarity-legendary: var(--orange-500);
-  --rarity-mythic: var(--red-500);
-  --rarity-godlike: var(--yellow-500);
-
   /* Цвета тегов программ */
   --tag-gym: var(--orange-500);
   --tag-home: var(--blue-400);

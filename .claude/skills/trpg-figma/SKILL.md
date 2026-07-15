@@ -69,7 +69,8 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
 🎨 Foundations:  Colors(Accent+статусы) · Typography · Spacing · Radius · Shadows · Blur · Motion · Grid · Icons
 🧩 Components:
    • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists · Feedback(Toast/Empty) · Modals
-   • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar · WeeklyProgress(Streak) · RankBadge · XPBar · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
+   • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar · WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
+     (Ранги/лиги/редкость — ОТКАЗ: RankBadge/rarity не переносим.)
    • Patterns:  Training · Statistics · Profile (композиции компонентов)
 📱 Screens:  Templates → готовые экраны
 ```
@@ -112,8 +113,11 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   - Кнопки sm: accent `5:29`, gray `5:30`, graphite `5:31`, neutral `5:32`, ghost `5:33`, dim `5:34`.
   - Матрица variant(6)×size(2)=12 фреймов ГОТОВА. Ждёт: Дмитрий соберёт Component Set (свойства
     `variant`+`size`; `dim` = вид disabled, можно потом вынести в свойство `state`).
-- TODO дальше: иконка-в-кнопке (опц.) → 🎨 Foundations (Accent 10 свотчей, типографика, радиусы) →
-  Components: Icon Button, Tag/Chip, Card(ProgramCard/ExerciseCard), TabBar → потом Screens.
+- **🎨 Foundations** (page `1:3`): секция `Colors · Primitives` = `12:57` (title `12:58`, wrap-ряд
+  `swatches` `12:59` с 17 чипами `12:60…13:76`, у каждого имя+hex). Юзер создаёт Variables-коллекцию
+  `Primitives` вручную по шпаргалке. Есть ещё его секция «Словарь» `11:56`.
+- TODO дальше: Semantic-свотчи (accent/status/поверхности/cat/tag — БЕЗ rarity) → Typography specimen
+  + Text Styles → Spacing/Radius → потом Components (Icon Button, Tag, Card, TabBar) → Screens.
 
 ## Синк код ↔ Figma
 
