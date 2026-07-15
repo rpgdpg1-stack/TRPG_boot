@@ -127,8 +127,12 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
 - **Semantic-доска** = `21:27` (title `21:28`, wrap-ряд `21:29` c 20 чипами `21:30…21:49`: accent×3,
   status×4, surface×3, text×2, cat×5, tag×3 — БЕЗ rarity). У каждого имя + «→ примитив». Юзер создаёт
   коллекцию `Semantic` (Color-переменные-алиасы на `Primitives`).
-- TODO дальше: Typography specimen + Text Styles → Spacing/Radius (Number-переменные) → потом
-  Components (Icon Button, Tag, Card, TabBar) → Screens.
+- **Typography-специмен** = `24:90` (title `24:91`, 6 блоков-ролей `24:92…24:97`, в каждом sample+spec).
+  Роли: Display(Geist 28/800/1.1) · Title(Manrope 18/600/1.2) · Body(Manrope 15/500/1.4) ·
+  Label(Geist 13/700/1.2) · Caption(Manrope 11/500/1.4) · Button(Manrope 14/800 CAPS ls1.5). Юзер
+  подключает Manrope/Geist и создаёт Text Styles по спеке (мост рисует Inter — семейство ставит юзер).
+- TODO дальше: Spacing/Radius (Number-переменные + специмен) → потом Components (Icon Button, Tag,
+  Card, TabBar) → Screens.
 
 ## Синк код ↔ Figma
 
