@@ -51,28 +51,36 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   параллельным батчем в нужной последовательности). Реордера нет.
 - Прозрачный контейнер-ряд: заливка = цвет фона секции (не a=0, т.к. альфа игнор).
 
-## Структура файла (страницы) — создаёт Дмитрий (СДЕЛАНО)
+## Структура файла (страницы) — 8 страниц (создаёт Дмитрий; СДЕЛАНО)
 
-Мост страницы не создаёт. Профессиональная раскладка (emoji + порядок, страницы уже созданы):
-1. **📕 Cover** — обложка кейса.
-2. **🎨 Foundations** — цвет/Accent, типографика, радиусы, отступы, блюр, тени, motion, grid, иконки.
-3. **🧩 Components** — универсальные + продуктовые компоненты (см. дерево ниже).
-4. **📱 Screens** — все экраны собранные (из инстансов компонентов).
-5. **🪟 Modals** — модалки/поповеры/оверлеи.
-6. **🔀 Flows** — пользовательские потоки для кейса.
-7. **📝 Case Study** — контекст/задача/процесс/решения/результат (портфолио-текст).
-8. **🗂 Archive** — черновики/WIP.
+Мост страницы не создаёт. Рабочий файл продукта (как в продуктовых командах: исследования отдельно,
+ДС отдельно, экраны отдельно). Emoji перед текстом, порядок:
+1. **📚 Cover / Index** — обложка/оглавление файла.
+2. **🎨 Foundation** — цвет/Accent+статусы, типографика, отступы, радиусы, тени, блюр, motion, grid, иконки.
+3. **🧩 Components** — все компоненты, ВКЛЮЧАЯ модалки (Dialog · Bottom Sheet · Modal · Action Sheet) —
+   модалка = компонент, отдельной страницы для них НЕТ.
+4. **🏋️ Patterns** — готовые КОМБИНАЦИИ компонентов, что повторяются в аппе (компоненты = кирпичики,
+   паттерны = дом): Workout List · Exercise List · Empty State · Header + Tabs · Profile Header ·
+   Statistics Grid · Training Summary · Search + Filters.
+5. **📱 Screens** — экраны, собранные из инстансов компонентов/паттернов.
+6. **🧪 Research** — исследования: User Flow · User Journey · IA · Wireframes · анализ конкурентов
+   (сюда ушли бывшие Flows).
+7. **🔬 Experiments** — черновые пробы/варианты в работе.
+8. **🗄️ Archive** — отложенное/старое.
 
-**Внутреннее дерево (секции-фреймы внутри страниц)** — двухуровневая ДС, как в зрелых продуктовых
-командах (Foundation + универсальные / Product):
+**Осознанно НЕТ отдельных страниц** (по решению Дмитрия): **Case Study** (нужен только при сборке
+портфолио — тогда отдельный файл/страница), **Flows** (→ в Research), **Modals** (→ в Components).
+
+**Двухуровневая ДС** (Foundation + универсальные / Product) — внутри Components секциями:
 ```
-🎨 Foundations:  Colors(Accent+статусы) · Typography · Spacing · Radius · Shadows · Blur · Motion · Grid · Icons
+🎨 Foundation:  Colors(Accent+status) · Typography · Spacing · Radius · Shadows · Blur · Motion · Grid · Icons
 🧩 Components:
-   • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists · Feedback(Toast/Empty) · Modals
-   • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar · WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
-     (Ранги/лиги/редкость — ОТКАЗ: RankBadge/rarity не переносим.)
-   • Patterns:  Training · Statistics · Profile (композиции компонентов)
-📱 Screens:  Templates → готовые экраны
+   • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists ·
+                 Feedback(Toast/Empty) · Modals(Dialog/BottomSheet/Modal/ActionSheet)
+   • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar ·
+                      WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
+   (Ранги/лиги/XP/редкость/награды/рейтинг — ОТКАЗ, не переносим.)
+🏋️ Patterns:  композиции из компонентов (см. список выше).
 ```
 Инвентарь компонентов, что ✓ есть / ⚠ пробел, и правила токенов — в скиле **design-system-review**
 (страж целостности ДС). Рисуя в Figma, сверяться с ним: сначала существующее, новое — с обоснованием.

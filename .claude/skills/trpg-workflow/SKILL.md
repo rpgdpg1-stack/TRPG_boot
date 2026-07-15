@@ -17,7 +17,7 @@ description: "Входной скил для ЛЮБОГО запроса по п
 - целостность/архитектура дизайн-системы, токены, «не сломать ДС» при правке интерфейса →
   **design-system-review** (страж: сначала существующее, новое — с обоснованием; звать ПЕРЕД правкой UI);
 - рисование/перенос/синк в Figma (мост TalkToFigma, портфолио) → **trpg-figma**;
-- БД, SQL, RPC, RLS, миграция, Edge Function, сезоны/стрики на стороне БД → **trpg-supabase**;
+- БД, SQL, RPC, RLS, миграция, Edge Function, стрики на стороне БД → **trpg-supabase**;
 - процесс, баг в логике, новая программа, чистота кода, коммиты → остаюсь в **trpg-workflow**.
 
 **Правило качества:** любая правка интерфейса сверяется с **design-system-review** и приводит код
@@ -29,8 +29,10 @@ description: "Входной скил для ЛЮБОГО запроса по п
 - **Стек:** Vite + React 18 + React Router 6 + Supabase + Telegram WebApp SDK.
   Деплой на Vercel. Медиа на Selectel S3, бакет `trpg`. Стили — CSS (НЕ Tailwind).
 - **Supabase Ref:** `jybwxbqmnommazjfucbq`. Бот: `@TrainingRPGbot`.
-- **Геймификация:** мускулы 💪 = XP, 11 лиг, сезоны (сброс раз в квартал), стрики,
-  лидерборды, подстраховка, ежедневные квесты, рамки-награды.
+- **Прогресс (ЛИЧНЫЙ, без соревновательности):** мускулы 💪 (валюта прогресса), недельные стрики,
+  ежедневные активности/квесты, история тренировок, любимые упражнения, друзья+профиль на личном
+  прогрессе (приватность). **Отказ (удалено из кода):** лиги, XP-как-система, сезоны, лидерборды/рейтинг,
+  ранги/рамки-награды, подстраховка. Не возвращать без явной просьбы. См. память «соц-архитектура».
 - **Программы:** `split` (A/B/C силовой) и `swim` («Заплыв 45», дистанция). Плюс пользовательские:
   своя (`source: 'custom'`) и от друга (`source: 'shared'`) — грузятся в реестр в рантайме.
   Упражнения — в Supabase.
@@ -123,7 +125,6 @@ camelCase — утилиты (`getTodayKey`).
 - Скролл в модалках → `data-scrollable` + `onTouchMove`.
 - Inline SVG с `currentColor` → `import.meta.glob` с `?raw` + `dangerouslySetInnerHTML`.
 - Завершение квеста → `pointerUp` с порогом `TAP_THRESHOLD_PX = 8`.
-- Место в лиге → top 100: `#N`, ниже: `Топ N%`, цвет по лиге.
 - Стрики кэпнуты на 7 структурой БД (one-per-day), `LEAST()` не нужен.
 - Стрик: начальный `useState` гнать через `resolveWeeklyStreak(streak, week)` (utils/dates),
   а не показывать сырое `weekly_streak` — иначе вспышка прошлого значения при смене недели.
@@ -135,8 +136,8 @@ camelCase — утилиты (`getTodayKey`).
   Эталон-поток одинаков в `WorkoutDay` и `SwimWorkout`. Лимит держит сервер (`api_finish_workout`,
   Москва-сутки), фронт его НЕ дублирует.
 - История хранится ПОЛНОСТЬЮ: таблица `workouts` — запись на каждую завершённую тренировку (id, user_id,
-  program_id, day, started_at, finished_at, muscles_earned, distance_m), ничего не удаляется (season-reset-
-  крон её НЕ трогает). Фильтры Неделя/Месяц/Год/Всё — клиентский `summarizeWorkouts`/`periodRange` по
+  program_id, day, started_at, finished_at, muscles_earned, distance_m), ничего не удаляется.
+  Фильтры Неделя/Месяц/Год/Всё — клиентский `summarizeWorkouts`/`periodRange` по
   выборке (`HISTORY_FETCH_LIMIT=5000`, `utils/history.js`). Год-окна/ретенции НЕТ (убрали `MAX_MONTHS_BACK`).
 - Длительность в истории — из `started_at`/`finished_at` (клиентский расчёт `workoutMinutes` в
   `utils/history.js`), отдельной колонки нет. У силовой `started_at` = старт сессии. У заплыва сессии нет:
@@ -211,27 +212,28 @@ src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
-├── assets/ranks/   11 SVG: rookie athlete sportsman coach machine titan elite champion legend immortal x3-champion
-├── assets/ui/      SVG-иконки: cardio change cloud_done cloud_sync friends info invite-friend
-│                   leaderboard muscles network_off notes power profile rewards settings stretching swimming
-├── components/     ActionButton AnchorMenu BackupAllButton BackupButton CategoryList CategorySwiper ClockIcon DailyQuests
-│                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody FavHint FavoritesList
-│                   FinishConfirmModal FramePreview FriendRow HistoryCalendar HistoryStats LeaderboardRow LeagueBadgeIcon ModalButton
-│                   MuscleIcon OfflineBanner ParticlesBg PixelCheckbox PixelHeart PlaceSwitcher PlayerProfileModal
-│                   ProfileHeader ProgramActionMenu ProgramCard ProgramEmblem PoolTag RankFrame RankIcon RanksPopup SaveFriendProgramModal SectionCarousel SectionPicker
-│                   ScreenTitle StreakFlame TabBar TitleTag UiIcon WaterChrome WeightRaiseFlash XPBar WorkoutFinishedModal
-│   ├── layout/     ErrorBoundary · Loader
-│   └── rewards/    BackupReceivedModal · BackupSentToast · LeagueBadgeModal · NewSeasonModal · SeasonEndModal
+├── assets/ui/      SVG-иконки: cardio change check cloud_done cloud_sync friends info invite-friend
+│                   leaderboard muscles muscles-line network_off notes place-gym place-home place-street
+│                   power profile rewards settings stretching swimming
+├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon DailyQuests
+│                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
+│                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
+│                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
+│                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem SaveFriendProgramModal
+│                   ScreenTitle SectionCarousel SectionPicker StreakFlame TabBar UiIcon WaterChrome
+│                   WeightRaiseFlash WorkoutFinishedModal
+│   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js
-├── features/programs/   api.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            accent activities active-workout auth backups cache cloud-storage events frames friends-list friends history-view
-│                   leaderboard leagues levels network-status notes offline-queue persistent-cache profile-cache version-check
-│                   program-place rewards season-reset storage supabase sync-engine telegram weight-editing-state
-├── pages/          Activities Category DailyBoost ExerciseInfo Favorites Friends History Home Leaderboard Profile
-│                   ProgramConstructor Recovery Rewards Sections Settings SwapExercise SwimWorkout WorkoutDay
+├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
+├── lib/            accent active-workout activities auth cache cloud-storage events favorite-exercises friends
+│                   friends-list history-view network-status notes offline-queue persistent-cache privacy
+│                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
+│                   version-check weight-editing-state
+├── pages/          Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
+│                   Profile ProgramConstructor Recovery Settings SwapExercise SwimWorkout WorkoutDay
 │                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
-└── utils/          dates history plural season storage workout-progress
+└── utils/          dates history plural storage workout-progress
 
 supabase/
 ├── config.toml

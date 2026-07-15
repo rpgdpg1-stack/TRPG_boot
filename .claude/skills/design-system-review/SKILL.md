@@ -89,8 +89,9 @@ disabled · selected · loading · error · success`. Hover/focus на Telegram-
 - Modal — ✓ паттерны + `ModalButton` (серый pill дисмисс). Bottom Sheet — ⚠/по мере надобности.
 - Tabs / Tab Bar — ✓ `TabBar` (низ). Header / NavBar — ✓ `ScreenTitle`.
 - Card — ✓ (`ProgramCard`/`FavCardBody`). Divider — ✓ hairline. List Item — ✓ `.tg-row`.
-- Chip / Tag — ✓ (правила тега упражнения/места). Skeleton — ✓. Loader — ✓. Avatar — ✓ `RankFrame`.
-- Progress — ✓ линейный `XPBar` + заливки шапки/карточки; ⚠ circular/ring.
+- Chip / Tag — ✓ (правила тега упражнения/места). Skeleton — ✓. Loader — ✓. Avatar — инлайн в
+  `ProfileHeader`/`FriendRow` (фото/буква, БЕЗ рамок рангов — ранги в отказе).
+- Progress — ✓ линейный: заливки шапки дня/карточки (`headerFill`/`cardFill`); ⚠ circular/ring.
 - ⚠ Пробелы (единого компонента нет — при появлении делать сразу компонентом): Input, Search,
   Switch, Radio, Segmented Control (сейчас `segGroup` хардкодится по экранам — кандидат на вынос
   `SegmentedControl`), Badge, Toast/Snackbar (сейчас ad-hoc shake-тосты), Empty State.
@@ -98,9 +99,9 @@ disabled · selected · loading · error · success`. Hover/focus на Telegram-
 
 **TRPG Product Components (уровень 2 — уникальные для продукта):**
 ✓ `ExerciseCard`, `ProgramCard`, `HistoryStats` (Metric/Statistic Card), `HistoryCalendar` +
-History Row, `StreakFlame` (Weekly Progress), `RankFrame`/`RankIcon` (Rank Badge), `XPBar`,
-`MuscleIcon`, `PlaceSwitcher` (Section/место-свитчер), `DailyQuests`, `ProgramEmblem`, `WaterChrome`,
-`FinishConfirmModal`/`WorkoutFinishedModal`. Держать их отдельным разделом — так устроены зрелые
+History Row, `StreakFlame` (Weekly Progress), `MuscleIcon`, `PlaceSwitcher` (Section/место-свитчер),
+`DailyQuests`, `ProgramEmblem`, `WaterChrome`, `FinishConfirmModal`/`WorkoutFinishedModal`.
+(Ранги/лиги/XP/награды/рейтинг — в отказе, удалены.) Держать их отдельным разделом — так устроены зрелые
 продуктовые ДС (Foundation+универсальные / Product).
 
 ## Naming · Accessibility
