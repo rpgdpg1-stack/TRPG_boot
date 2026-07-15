@@ -145,7 +145,7 @@
   /* Шрифты */
   --font-geist: 'Geist', system-ui, sans-serif;
   --font-manrope: 'Manrope', system-ui, sans-serif;
-  --font-display: 'Geist', system-ui, sans-serif; /* акцентный (бывш. пиксельный Tiny5): XP, ранги, титулы, цифры */
+  --font-display: 'Geist', system-ui, sans-serif; /* акцентный (бывш. пиксельный Tiny5): крупные цифры, тайтлы, серии */
 
   /* Типо-роли (6): size + weight + line-height. Уходим от «случайных 17px».
      Семейство берётся отдельно (--font-*); letter-spacing у кнопки/капс-лейблов — в

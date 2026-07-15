@@ -216,26 +216,6 @@
 
 /* Таб-бар: поп иконки активной вкладки (TabBar.jsx) */
 
-/* Титул Бессмертного #1/#2/#3 — вылетающие пиксели (TitleTag.jsx) */
-.title-pixels {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-.title-pixels i {
-  position: absolute;
-  top: 30%;
-  width: 2.5px;
-  height: 2.5px;
-  border-radius: 1px;
-  opacity: 0;
-  animation: titlePixelFloat 5.6s ease-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .title-pixels i { animation: none; opacity: 0; }
-}
-
 /* ============================================ */
 /* РАМКИ АВАТАРА (ранги 8/9/10) — чистый CSS    */
 /* ============================================ */

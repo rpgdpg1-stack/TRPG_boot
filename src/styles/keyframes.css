@@ -161,11 +161,6 @@
   40%  { transform: scale(1.28); }
   100% { transform: scale(1); }
 }
-@keyframes titlePixelFloat {
-  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
-  12%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(2px, -12px) scale(0.3); }
-}
 @keyframes titanSwell {
   0%, 100% { box-shadow: 0 0 6px rgba(226, 75, 74, 0.30), 0 0 0 0 rgba(226, 75, 74, 0); }
   50%      { box-shadow: 0 0 16px rgba(226, 75, 74, 0.6), 0 0 0 3px rgba(226, 75, 74, 0.22); }
