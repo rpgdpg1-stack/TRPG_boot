@@ -8,12 +8,11 @@ import MuscleIcon from './MuscleIcon'
  * Таб-бар — 3 вкладки: Друзья / Тренировки / Профиль.
  *
  * Цвета:
- *  - Активный таб: фон сплошной серый (--color-card-hover), лейбл белый.
- *  - Друзья: иконка БЕЛАЯ при активе
- *  - Тренировки: иконка бицепса бежевая (#FADFBE) при активе
- *  - Профиль: иконка БЕЛАЯ при активе
+ *  - Активный таб: фон серое стекло (--color-surface-active) + блюр; ИКОНКА и ЛЕЙБЛ
+ *    красятся в АКЦЕНТ (--color-primary) — «ты здесь» через цвет взаимодействия,
+ *    без яркой заливки (принцип Active Tab ≠ Primary Button). Меняется с темой accent.
  *  - Неактив везде: иконка/лейбл --color-text-inactive (белый 50%)
- *  - Активный таб: gap иконка→лейбл 4px (неактив 3px)
+ *  - Активный таб: gap иконка→лейбл 1px (неактив 0.5px)
  *
  * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
  * и инфо упражнения (/exercise/...).
@@ -106,7 +105,7 @@ export default function TabBar() {
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
-                color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
+                color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 flexTrigger={tab.isActive ? muscleFlexTick : 0}
               />
             ) : tab.id === 'profile' ? (
@@ -121,7 +120,7 @@ export default function TabBar() {
                 <UiIcon
                   name="profile"
                   size={32}
-                  color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
+                  color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 />
               </span>
             ) : tab.id === 'friends' ? (
@@ -136,14 +135,14 @@ export default function TabBar() {
                 <UiIcon
                   name="friends"
                   size={32}
-                  color={tab.isActive ? '#FFFFFF' : 'var(--color-text-inactive)'}
+                  color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 />
               </span>
             ) : null}
           </span>
           <span style={{
             ...styles.label,
-            color: tab.isActive ? 'var(--color-text)' : 'var(--color-text-inactive)'
+            color: tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'
           }}>
             {tab.label}
           </span>

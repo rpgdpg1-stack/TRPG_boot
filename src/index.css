@@ -51,8 +51,16 @@
      избранным, пикер упражнений): контент «ныряет» под шапку. Высоту (16–24px)
      задаёт сам элемент. Без блюра/маски — простой градиент, легко подстраивать. */
   --scrim-sticky: linear-gradient(to bottom, rgba(10, 10, 10, 0.95) 0%, rgba(10, 10, 10, 0.6) 50%, transparent 100%);
-  --color-primary: var(--green-500);
-  --color-primary-dark: var(--green-700);
+  /* Accent — «цвет взаимодействия» (Primary Button, активные состояния, выбор, XP).
+     Пользователь меняет его в Настройках; JS перезаписывает эти 3 переменные на :root
+     (lib/accent.js). Семантические цвета (мышцы, виды спорта, редкость, теги,
+     success/error/warning/info, графики) от accent НЕ зависят — остаются на примитивах. */
+  --accent: var(--green-500);       /* 500 — заливка Primary, иконка/текст активных состояний */
+  --accent-dark: var(--green-700);  /* тёмный — рамки/pressed акцентных кнопок */
+  --accent-on: #0D0C0C;             /* текст/иконка НА заливке accent (контраст; зелёный светлый → тёмный) */
+
+  --color-primary: var(--accent);
+  --color-primary-dark: var(--accent-dark);
   --color-text: var(--neutral-0);
   --color-text-secondary: var(--neutral-500);
   /* Трёхуровневая типо-иерархия (лестница важности), переиспользовать во всём аппе:

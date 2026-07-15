@@ -4,6 +4,11 @@ import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import App from './App.jsx'
 import './index.css'
+import { initAccent } from './lib/accent'
+
+// Применяем выбранный акцент из localStorage ДО рендера — чтобы не было вспышки
+// дефолтного цвета (кросс-девайс синк из облака догоняет позже, в App).
+initAccent()
 
 // Инициализируем Sentry до рендера. DSN берётся из env (VITE_SENTRY_DSN).
 // Если DSN не задан (локальная разработка без .env) — Sentry не активируется,

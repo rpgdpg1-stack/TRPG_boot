@@ -35,6 +35,7 @@ import { EVENTS, on } from './lib/events'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
 import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
+import { syncAccentFromCloud } from './lib/accent'
 import OfflineBanner from './components/OfflineBanner'
 
 export default function App() {
@@ -56,6 +57,8 @@ export default function App() {
     let cancelled = false
     authPromiseRef.current?.then(async user => {
       if (cancelled || !user) return
+      // Догоняем выбранный акцент с другого устройства (Telegram CloudStorage).
+      syncAccentFromCloud()
       // После авторизации — пробуем разгрести очередь (вдруг с прошлого
       // раза остались несинканутые операции и сеть уже есть).
       syncQueue()

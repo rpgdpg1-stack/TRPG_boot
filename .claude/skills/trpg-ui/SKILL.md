@@ -81,8 +81,8 @@ description: "Дизайн-система и UI/UX-конвенции проек
   их используют компоненты. Менять смысловой цвет = переставить ссылку семантики на другой примитив,
   а не править hex в компоненте.
 
-Семантика: базовые `--color-bg` `--color-card` `--color-card-hover` `--color-primary` (→ `--green-500`)
-`--color-primary-dark` `--color-text` `--color-text-secondary`.
+Семантика: базовые `--color-bg` `--color-card` `--color-card-hover` `--color-primary` (→ `--accent`)
+`--color-primary-dark` (→ `--accent-dark`) `--color-text` `--color-text-secondary`.
 Категории: `--cat-strength` `--cat-cardio` `--cat-pool` `--cat-stretch` `--cat-recovery`.
 Редкость рангов: `--rarity-common/rare/epic/legendary/mythic/godlike`.
 Теги программ: `--tag-gym/home/outdoor`.
@@ -90,6 +90,29 @@ description: "Дизайн-система и UI/UX-конвенции проек
 `--color-surface-dim` (rgba(34,34,34,0.30) — стеклянный фон таб-бара и dim-кнопки),
 `--color-border` (rgba(255,255,255,0.07) — тонкая обводка-волосок, алиас `--border-hairline`),
 `--color-text-inactive` (rgba(255,255,255,0.5) — неактивные иконки/лейблы таб-бара).
+
+### Accent — «цвет взаимодействия» (пользовательская тема)
+
+Accent = цвет ТОЛЬКО интерактивных элементов и состояний выбора (принцип Apple/Telegram/Linear).
+Пользователь выбирает 1 из 10 в Настройках → тап меняет тему во всём аппе. Три `:root`-переменные
+(`index.css`), которые JS (`lib/accent.js`) перезаписывает на лету:
+- `--accent` (500) — заливка Primary Button, иконка+текст активных состояний, XP, выбор.
+- `--accent-dark` — рамки/pressed акцентных кнопок.
+- `--accent-on` — текст/иконка НА заливке accent (контраст, per-цвет: светлые заливки — тёмный текст,
+  насыщенные — белый). `ActionButton` variant=accent берёт `color: var(--accent-on)`.
+
+`--color-primary` → `var(--accent)`, `--color-primary-dark` → `var(--accent-dark)`. Всё, что уже
+ссылается на `--color-primary` (~30 файлов), меняется с темой автоматически — НЕ хардкодить зелёный.
+- **Данные:** `lib/accent.js` — `ACCENTS` (10: {id,name,value,dark,on}), `getAccentSync()`,
+  `setAccent(id)` (local+CloudStorage, кросс-девайс), `initAccent()` (в `main.jsx` ДО рендера — без
+  вспышки), `syncAccentFromCloud()` (App useEffect — догнать с другого устройства). Дефолт — `green`
+  (текущий #9ED153, ничего не меняется пока не выберут).
+- **Accent НЕ применять к смысловым цветам** (они часть навигации/данных, от темы НЕ зависят):
+  мышечные группы (`colors.js`), виды спорта/категории (`--cat-*`), редкость рангов (`--rarity-*`),
+  теги (`--tag-*`), success/error(красный)/warning(жёлтый)/info(голубой), графики, эмблемы, лиги.
+  `--rarity-common`/`--tag-outdoor` намеренно оставлены на `--green-*` примитивах (НЕ на accent).
+- **Правило:** новый интерактивный элемент (кнопка/таб/чек/сегмент/выбор/XP/ссылка) → `--color-primary`
+  (=accent). Смысловой цвет → свой семантический токен. При смене accent семантика неизменна.
 
 ### Поверхности — 3 уровня (тёмная тема, свет = высота)
 Ровно ТРИ ступени near-black + бордер — больше глаз не различает (Material/HIG). Правило вложенности:
@@ -119,11 +142,12 @@ description: "Дизайн-система и UI/UX-конвенции проек
   блюр). Liquid Glass (рефракция/дисперсия) в вебе не воспроизвести нативно — не тащим.
 - **Обводка** бара — сплошная `1px var(--color-border)` (градиент-строук пробовали и откатили —
   визуально читался как заливка всего бара, не то).
-- **Активный таб — стекло:** фон `--color-surface-active` (rgba(79,79,79,0.40) = #4F4F4F 40%;
-  светлее трека, как активный сегмент в iOS/Telegram — НЕ темнее) + `backdrop-filter: blur(8)`
-  на самом табе. Иконка активного «Тренировки» — бежевая `--color-icon-muscle` (#FADFBE).
-  Неактивные иконки: fill `--color-text-inactive` (белый 50%) + opacity слоя 0.45 (≈22%, бледнее
-  лейблов — так задумано). Зеркало код↔Figma — во фрейме-памятке в Figma (держать в синке).
+- **Активный таб — стекло + accent:** фон `--color-surface-active` (rgba(79,79,79,0.40) = #4F4F4F 40%;
+  светлее трека, как активный сегмент в iOS/Telegram — НЕ темнее) + `backdrop-filter: blur(8)` на самом
+  табе. **Иконка И лейбл активного таба — в АКЦЕНТЕ (`--color-primary`)**, а НЕ белые/бежевые: цвет
+  взаимодействия показывает «ты здесь», без яркой заливки (Active Tab ≠ Primary Button; меняется с темой
+  accent). Фон/стекло/неактив — не трогать. Неактивные иконки: fill `--color-text-inactive` (белый 50%)
+  + opacity слоя 0.45. (Было: активная иконка/лейбл белые #FFF; бежевый `--color-icon-muscle` не в ходу.)
 Размытие (backdrop blur): `--blur-sm` (8px — таб-бар, dim-кнопка), `--blur-md` (12px —
 серая neutral-кнопка/панель). В Figma — коллекция Blur (Number): `blur/sm`, `blur/md`.
 Цвета мышечных групп — из `src/features/programs/colors.js` (`getMuscleGroupColors` → `{tag, accent}`,

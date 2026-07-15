@@ -115,7 +115,7 @@ const styles = {
   accent: {
     background: 'var(--color-primary)',
     border: '1.5px solid var(--color-primary-dark)',
-    color: '#0D0C0C'
+    color: 'var(--accent-on)'
   },
   // Графит — сплошная заливка цвета раздела Силовая (--cat-gym) + тёмный текст.
   // Кнопка «Начать» в дне тренировки. БЕЗ блюра (обычная залитая кнопка).
