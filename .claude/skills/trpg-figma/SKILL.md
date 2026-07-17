@@ -131,8 +131,12 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   Роли: Display(Geist 28/800/1.1) · Title(Manrope 18/600/1.2) · Body(Manrope 15/500/1.4) ·
   Label(Geist 13/700/1.2) · Caption(Manrope 11/500/1.4) · Button(Manrope 14/800 CAPS ls1.5). Юзер
   подключает Manrope/Geist и создаёт Text Styles по спеке (мост рисует Inter — семейство ставит юзер).
-- TODO дальше: Spacing/Radius (Number-переменные + специмен) → потом Components (Icon Button, Tag,
-  Card, TabBar) → Screens.
+- **Spacing-доска** = `28:119` (10 рядов-баров `28:121`/`29:123…29:131`, ширина бара = значение токена,
+  подпись `space/N · Npx`). **Radius-доска** = `29:152` (4 плашки 160×80 `29:155…29:158`: pill 90 /
+  card 33 / medium 20 / small 10). Юзер создаёт Number-коллекции `Spacing` и `Radius`.
+- **Мобильная сетка:** экран-фрейм 390×844; Layout Grid = Columns, 4 колонки, margin 16, gutter 16,
+  stretch (боковые поля 16 = `.page padding` в коде). Safe-top ≈108, таб-бар 63 + 16 снизу.
+- TODO дальше: Components (Icon Button, Tag, Card, TabBar) → Patterns → Screens.
 
 ## Синк код ↔ Figma
 
