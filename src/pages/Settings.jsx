@@ -117,8 +117,8 @@ export default function Settings() {
 
       <ScreenTitle>Настройки</ScreenTitle>
 
-      {/* Цвет акцента — «цвет взаимодействия». Тап меняет тему во всём приложении. */}
-      <div style={{ ...styles.groupTitle, marginTop: '4px' }}>ЦВЕТ АКЦЕНТА</div>
+      {/* Цветовая схема — «цвет взаимодействия». Тап меняет тему во всём приложении. */}
+      <div style={{ ...styles.groupTitle, marginTop: '4px' }}>ЦВЕТОВАЯ СХЕМА</div>
       <div style={styles.accentCard}>
         {ACCENTS.map((a) => {
           const selected = a.id === accentId

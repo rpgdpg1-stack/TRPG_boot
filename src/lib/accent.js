@@ -13,17 +13,19 @@ import { cloudGet, cloudSet } from './cloud-storage'
  * Каждый акцент: value=500 (заливка), dark (рамка/pressed), on (текст на заливке —
  * подобран по контрасту: светлые заливки → тёмный текст, насыщенные → белый).
  */
+// 10 схем, раскладка в Настройках 5 + 5. Верхний ряд — холодные, нижний — тёплые
+// + нейтральные (серый/белый). Похожий на violet индиго убран.
 export const ACCENTS = [
   { id: 'green',    name: 'Зелёный',  value: '#9ED153', dark: '#648337', on: '#0D0C0C' },
   { id: 'blue',     name: 'Синий',    value: '#0A84FF', dark: '#0060DF', on: '#FFFFFF' },
-  { id: 'indigo',   name: 'Индиго',   value: '#5E5CE6', dark: '#3F3DC4', on: '#FFFFFF' },
+  { id: 'cyan',     name: 'Циан',     value: '#06B6D4', dark: '#0A8CA4', on: '#FFFFFF' },
   { id: 'violet',   name: 'Фиолет',   value: '#8B5CF6', dark: '#6D3FD4', on: '#FFFFFF' },
   { id: 'pink',     name: 'Розовый',  value: '#EC4899', dark: '#C42A76', on: '#FFFFFF' },
   { id: 'coral',    name: 'Коралл',   value: '#F43F5E', dark: '#C81E3C', on: '#FFFFFF' },
   { id: 'orange',   name: 'Оранж',    value: '#F97316', dark: '#C4550A', on: '#FFFFFF' },
   { id: 'amber',    name: 'Янтарь',   value: '#EAB308', dark: '#B4890A', on: '#0D0C0C' },
-  { id: 'cyan',     name: 'Циан',     value: '#06B6D4', dark: '#0A8CA4', on: '#FFFFFF' },
-  { id: 'graphite', name: 'Графит',   value: '#6B7280', dark: '#4B5058', on: '#FFFFFF' },
+  { id: 'graphite', name: 'Серый',    value: '#9CA3AF', dark: '#6B7280', on: '#0D0C0C' },
+  { id: 'white',    name: 'Белый',    value: '#FFFFFF', dark: '#D1D1D6', on: '#0D0C0C' },
 ]
 
 const KEY = 'accent'
