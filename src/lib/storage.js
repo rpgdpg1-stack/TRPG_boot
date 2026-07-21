@@ -174,6 +174,13 @@ export async function getRecentWorkouts(limit = 3) {
  * Синхронно: последние тренировки из кеша (память → localStorage). Персист нужен,
  * чтобы после перезапуска мини-аппа (память пуста) статистика/история открывались
  * сразу своими данными, без мигания пустой заглушки «сделай тренировку».
+ *
+ * ВАЖНО: значение из localStorage НЕ кладём в кеш памяти. Иначе после завершения
+ * тренировки (когда finishWorkout сбросил только память, а localStorage ещё старый)
+ * этот старый список попал бы в память как «свежий», и следующий getRecentWorkouts
+ * счёл бы его актуальным и не пошёл бы в сеть — новая тренировка не появилась бы
+ * в «последней тренировке» профиля и в календаре/статистике. localStorage тут —
+ * только для мгновенной отрисовки, сеть всё равно догоняет.
  */
 export function getRecentWorkoutsSync(limit = 3) {
   const userId = getUserId()
@@ -185,7 +192,7 @@ export function getRecentWorkoutsSync(limit = 3) {
   if (!raw) return null
   try {
     const arr = JSON.parse(raw)
-    if (Array.isArray(arr)) { cacheSet(cacheKey, arr, TTL.MEDIUM); return arr }
+    if (Array.isArray(arr)) return arr
   } catch { /* ignore */ }
   return null
 }
