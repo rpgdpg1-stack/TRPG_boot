@@ -20,8 +20,9 @@ const readPinnedGym = () => {
 
 /**
  * «Любимые упражнения» — до 3. Добавляются сердечком в мини-модалке дня
- * тренировки; здесь показываются теми же карточками. Тап по карточке → та же
- * мини-модалка (вес/заметка/сердечко). Тап по сердечку — убрать. «+» ведёт в
+ * тренировки; здесь показываются теми же карточками. Тап ИЛИ долгий тап по
+ * карточке → та же мини-модалка (вес/заметка/сердечко/график). Тап по сердечку —
+ * убрать. «+» ведёт в
  * закреплённую силовую, где ставишь ❤️ долгим тапом.
  */
 export default function FavoriteExercises() {
@@ -32,6 +33,39 @@ export default function FavoriteExercises() {
   const closedAtRef = useRef(0)               // защита от «призрачного» тапа после закрытия модалки
 
   const guard = () => Date.now() - closedAtRef.current > 400
+
+  // Долгое нажатие по карточке — открывает ту же модалку заметки, что и тап.
+  const lpTimer = useRef(null)
+  const lpFired = useRef(false)
+  const lpStart = useRef({ x: 0, y: 0 })
+  const LP_MS = 500
+  const LP_MOVE = 10
+  const clearLp = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null } }
+  useEffect(() => () => clearLp(), [])
+
+  const openFavModal = (f) => { if (!guard()) return; haptic.light(); setOpenFav(f) }
+
+  const cardPointerDown = (e, f) => {
+    // Нажатие по сердечку (или другой кнопке внутри) — не считаем долгим тапом карточки.
+    if (e.target.closest('button')) return
+    lpFired.current = false
+    lpStart.current = { x: e.clientX, y: e.clientY }
+    clearLp()
+    lpTimer.current = setTimeout(() => {
+      lpFired.current = true
+      haptic.medium()
+      if (guard()) setOpenFav(f)
+    }, LP_MS)
+  }
+  const cardPointerMove = (e) => {
+    if (!lpTimer.current) return
+    if (Math.abs(e.clientX - lpStart.current.x) > LP_MOVE || Math.abs(e.clientY - lpStart.current.y) > LP_MOVE) clearLp()
+  }
+  const cardPointerUp = () => clearLp()
+  const cardClick = (f) => {
+    if (lpFired.current) { lpFired.current = false; return } // долгий тап уже открыл
+    openFavModal(f)
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -108,7 +142,17 @@ export default function FavoriteExercises() {
           const tag = title(SUB_GROUP_LABELS[f.sub_group] || MUSCLE_GROUP_LABELS[f.muscle_group] || '')
           const val = formatFavoriteValue(f.weight_kg, f.counts_reps)
           return (
-            <div key={slot} className="press-tile" style={styles.card} onClick={() => { if (!guard()) return; haptic.light(); setOpenFav(f) }}>
+            <div
+              key={slot}
+              className="press-tile"
+              style={styles.card}
+              onClick={() => cardClick(f)}
+              onPointerDown={(e) => cardPointerDown(e, f)}
+              onPointerMove={cardPointerMove}
+              onPointerUp={cardPointerUp}
+              onPointerCancel={cardPointerUp}
+              onPointerLeave={cardPointerUp}
+            >
               <HeartButton
                 filled
                 color="var(--color-primary)"
