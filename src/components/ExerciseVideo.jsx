@@ -1,12 +1,16 @@
+import { useRef } from 'react'
+
 /**
- * Зацикленный видео-превью упражнения.
+ * Видео-превью упражнения.
  *
  * Используется в:
  *  - ExerciseActionMenu (мини-модалка по long-press) — width = 100% модалки
  *  - ExerciseInfo (полноэкранная страница инфо) — width = 100% контентной зоны
  *
  * Поведение:
- *  - Если есть video_url → играем mp4 с автоплеем, без звука, зацикленно
+ *  - Если есть video_url → автоплей без звука, проигрывается MAX_PLAYS раза и
+ *    ЗАМИРАЕТ на первом кадре (не крутится бесконечно, чтобы не отвлекать).
+ *    Заново проигрывается при следующем открытии (компонент перемонтируется).
  *  - Если только preview_url → показываем картинку
  *  - Если ничего → эмодзи-заглушка на белом фоне
  *
@@ -19,10 +23,25 @@
  *  - preload="metadata" — не качаем весь файл сразу, ждём пока компонент в DOM
  *  - poster={preview_url} — пока видео грузится, показываем картинку (нет белого моргания)
  */
+const MAX_PLAYS = 2 // сколько раз проиграть перед остановкой на первом кадре
+
 export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),
   // 14px для compact (если когда-то понадобится в маленькой карточке).
   const borderRadius = size === 'compact' ? '14px' : '33px'
+  const playsRef = useRef(0)
+
+  // Счётчик проигрываний. loop убран: после каждого конца сами решаем — ещё раз
+  // или стоп на первом кадре (currentTime=0 + pause).
+  const handleEnded = (e) => {
+    const v = e.currentTarget
+    playsRef.current += 1
+    if (playsRef.current < MAX_PLAYS) {
+      try { v.currentTime = 0; v.play() } catch { /* ignore */ }
+    } else {
+      try { v.pause(); v.currentTime = 0 } catch { /* ignore */ }
+    }
+  }
 
   return (
     <div style={{ ...styles.wrap, borderRadius }}>
@@ -31,10 +50,11 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
           src={videoUrl}
           poster={previewUrl || undefined}
           autoPlay
-          loop
           muted
           playsInline
           preload="metadata"
+          onLoadStart={() => { playsRef.current = 0 }}
+          onEnded={handleEnded}
           style={styles.video}
         />
       ) : previewUrl ? (
