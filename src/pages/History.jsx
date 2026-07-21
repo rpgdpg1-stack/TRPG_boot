@@ -8,6 +8,7 @@ import { getHistoryView, setHistoryView } from '../lib/history-view'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats from '../components/HistoryStats'
+import WorkoutBarChart from '../components/WorkoutBarChart'
 
 const PERIODS = [
   { id: 'week', label: 'Неделя' },
@@ -102,6 +103,11 @@ export default function History() {
           onMonthPick={onMonthPick}
           onYearPick={onYearPick}
         />
+      </div>
+
+      {/* Столбчатый график тренировок — за тот же период, что тумблер/календарь. */}
+      <div style={{ marginBottom: '20px' }}>
+        <WorkoutBarChart workouts={workouts} period={period} view={view} />
       </div>
 
       {/* Скоро — тихие некликабельные заглушки */}

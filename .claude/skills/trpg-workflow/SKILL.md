@@ -221,7 +221,7 @@ src/
 │                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem SaveFriendProgramModal
 │                   ScreenTitle SectionCarousel SectionPicker StreakFlame TabBar UiIcon WaterChrome
-│                   WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
+│                   WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js
