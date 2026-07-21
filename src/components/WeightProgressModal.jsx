@@ -205,28 +205,28 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
           </div>
         </div>
 
-        {/* Переключатель периода */}
-        <div style={styles.segGroup}>
-          {PERIODS.map((p, i) => {
-            const on = p.id === period
-            return (
-              <button
-                key={p.id}
-                className="press-tile"
-                onClick={() => { if (p.id !== period) { haptic.selection(); setPeriod(p.id) } }}
-                style={{
-                  ...styles.segItem,
-                  ...(on ? styles.segItemActive : {}),
-                  marginLeft: i === 0 ? 0 : '-5px',
-                  zIndex: on ? 2 : 1,
-                  color: on ? 'var(--color-primary)' : 'var(--color-text-inactive)'
-                }}
-              >{p.label}</button>
-            )
-          })}
+        {/* График */}
+        <div
+          ref={chartRef}
+          style={styles.chartWrap}
+          onPointerDown={(e) => { e.preventDefault(); handleScrub(e.clientX) }}
+          onPointerMove={(e) => { if (scrubIdx != null || e.buttons) handleScrub(e.clientX) }}
+          onPointerUp={endScrub}
+          onPointerLeave={endScrub}
+          onPointerCancel={endScrub}
+        >
+          {points === null ? (
+            <div style={styles.skeleton} />
+          ) : points.length === 0 ? (
+            <Empty text={'Пока нет данных.\nПоставь рабочий вес — и точка появится здесь.'} />
+          ) : win.empty ? (
+            <Empty text={'Нет записей за этот период.\nПролистай стрелками к другому.'} />
+          ) : (
+            <Chart win={win} currentW={currentW} line={line} scrub={scrub} />
+          )}
         </div>
 
-        {/* Строка периода + листание (для Месяц/Год) */}
+        {/* Строка периода + листание (для Месяц/Год) — под графиком */}
         <div style={styles.navRow}>
           {period !== 'all' ? (
             <button
@@ -247,25 +247,25 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
           ) : <span style={styles.navSpacer} />}
         </div>
 
-        {/* График */}
-        <div
-          ref={chartRef}
-          style={styles.chartWrap}
-          onPointerDown={(e) => { e.preventDefault(); handleScrub(e.clientX) }}
-          onPointerMove={(e) => { if (scrubIdx != null || e.buttons) handleScrub(e.clientX) }}
-          onPointerUp={endScrub}
-          onPointerLeave={endScrub}
-          onPointerCancel={endScrub}
-        >
-          {points === null ? (
-            <div style={styles.skeleton} />
-          ) : points.length === 0 ? (
-            <Empty text={'Пока нет данных.\nПоставь рабочий вес — и точка появится здесь.'} />
-          ) : win.empty ? (
-            <Empty text={'Нет записей за этот период.\nПролистай стрелками к другому.'} />
-          ) : (
-            <Chart win={win} currentW={currentW} line={line} scrub={scrub} />
-          )}
+        {/* Переключатель периода — в самом низу панели (где была кнопка «Закрыть») */}
+        <div style={styles.segGroup}>
+          {PERIODS.map((p, i) => {
+            const on = p.id === period
+            return (
+              <button
+                key={p.id}
+                className="press-tile"
+                onClick={() => { if (p.id !== period) { haptic.selection(); setPeriod(p.id) } }}
+                style={{
+                  ...styles.segItem,
+                  ...(on ? styles.segItemActive : {}),
+                  marginLeft: i === 0 ? 0 : '-5px',
+                  zIndex: on ? 2 : 1,
+                  color: on ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+                }}
+              >{p.label}</button>
+            )
+          })}
         </div>
 
       </div>
