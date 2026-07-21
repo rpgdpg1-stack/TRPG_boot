@@ -10,7 +10,7 @@
 import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
-import { cacheInvalidate } from '../../lib/cache'
+import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
 import { isOnline } from '../../lib/network-status'
 import {
   enqueue,
@@ -157,6 +157,7 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
 
     cacheInvalidate(`user-weights:${user.id}`)
     cacheInvalidate(`workout-day:${user.id}:`)
+    cacheInvalidate(`weight-history:${user.id}:${exerciseId}`)
     console.log('[exercises] вес сохранён ОФФЛАЙН в очередь:', exerciseId, weightKg)
     return true
   }
@@ -190,7 +191,41 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
   if (success) {
     cacheInvalidate(`user-weights:${user.id}`)
     cacheInvalidate(`workout-day:${user.id}:`)
+    // Триггер БД записал точку истории за сегодня — сбрасываем кеш графика,
+    // чтобы при следующем открытии модалки линия учла свежий вес.
+    cacheInvalidate(`weight-history:${user.id}:${exerciseId}`)
   }
 
   return success
+}
+
+/**
+ * История рабочего веса упражнения для графика прогресса.
+ * Возвращает [{ day: 'YYYY-MM-DD', weight: number }] по возрастанию дня.
+ * Данные пишет триггер БД (одна точка в день, по Москве). Ошибка/оффлайн → [].
+ */
+export async function getWeightHistory(exerciseId) {
+  const user = getCurrentUser()
+  if (!user || !exerciseId) return []
+
+  const cacheKey = `weight-history:${user.id}:${exerciseId}`
+  const cached = cacheGet(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase.rpc('api_get_weight_history', {
+      p_user_id: user.id,
+      p_exercise_id: exerciseId
+    })
+    if (error) {
+      console.warn('[exercises] getWeightHistory error:', error.message)
+      return []
+    }
+    const result = (data || []).map(r => ({ day: r.day, weight: Number(r.weight_kg) }))
+    cacheSet(cacheKey, result, TTL.MEDIUM)
+    return result
+  } catch (e) {
+    console.warn('[exercises] getWeightHistory exception:', e?.message)
+    return []
+  }
 }

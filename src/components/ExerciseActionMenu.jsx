@@ -11,6 +11,7 @@ import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
 import HeartButton from './HeartButton'
 import UiIcon from './UiIcon'
+import WeightProgressModal from './WeightProgressModal'
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -41,12 +42,24 @@ function CrossIcon({ size = 16 }) {
   )
 }
 
+/** Иконка «прогресс/рост» (Material trending_up) — вход в график веса. */
+function TrendingUpIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
+    </svg>
+  )
+}
+
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
 
   // Любимое: состояние сердечка + предупреждение о лимите.
   const [isFav, setIsFav] = useState(() => isFavoriteCached(slot?.exercise_id))
   const [favLimit, setFavLimit] = useState(false)
+
+  // График прогресса веса (открывается иконкой внизу карточки).
+  const [showProgress, setShowProgress] = useState(false)
 
 
   useEffect(() => {
@@ -324,6 +337,14 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             ariaLabel={isFav ? 'Убрать из любимых' : 'В любимые'}
             style={styles.heartBtn}
           />
+          {/* Иконка графика прогресса — внизу справа, симметрично сердечку. */}
+          <button
+            onClick={(e) => { e.stopPropagation(); haptic.light(); setShowProgress(true) }}
+            style={styles.progressBtn}
+            aria-label="График прогресса веса"
+          >
+            <TrendingUpIcon size={19} />
+          </button>
           <div style={styles.preview}>
             <ExerciseVideo
               videoUrl={slot.video_url}
@@ -461,6 +482,16 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           <CrossIcon size={20} />
         </span>
       </button>
+
+      {showProgress && (
+        <WeightProgressModal
+          exerciseId={slot.exercise_id}
+          exerciseName={slot.exercise_name}
+          accent={colors.accent}
+          currentWeight={localWeight}
+          onClose={() => setShowProgress(false)}
+        />
+      )}
     </div>
   )
 }
@@ -577,6 +608,24 @@ const styles = {
     border: 'none',
     padding: 0,
     cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Иконка графика прогресса — правый нижний угол, симметрично сердечку.
+  progressBtn: {
+    position: 'absolute',
+    bottom: '10px',
+    right: '12px',
+    zIndex: 6,
+    width: '34px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    color: 'var(--color-text-secondary)',
     WebkitTapHighlightColor: 'transparent'
   },
   // Карточка-шапка — вид карточки упражнения из дней тренировки.

@@ -221,7 +221,7 @@ src/
 │                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem SaveFriendProgramModal
 │                   ScreenTitle SectionCarousel SectionPicker StreakFlame TabBar UiIcon WaterChrome
-│                   WeightRaiseFlash WorkoutFinishedModal
+│                   WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js
@@ -237,6 +237,7 @@ src/
 
 supabase/
 ├── config.toml
+├── migrations/     weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 └── functions/telegram-auth/  index.ts · deno.json · .npmrc
 ```
 

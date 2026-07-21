@@ -113,6 +113,23 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - История в UI — месячный календарь `components/HistoryCalendar.jsx` (на `/history` и внизу
   главной), показывает 2 месяца, данные из `getRecentWorkouts` (тянет started_at + distance_m).
 
+## История веса (`user_exercise_weight_history`) — график прогресса
+
+- Таблица `user_exercise_weight_history` (user_id bigint, exercise_id text, day date,
+  weight_kg numeric, updated_at). PK `(user_id, exercise_id, day)` → **одна точка в день**
+  (по Москве). RLS: select только своих (`current_user_id()`).
+- Пишет **триггер** `record_weight_point()` (SECURITY DEFINER, в обход RLS) на
+  `AFTER INSERT OR UPDATE OF weight_kg ON user_exercise_weights` — upsert точки за сегодня
+  (Москва). То есть история наполняется сама при любом сохранении веса (онлайн-RPC,
+  фолбэк-upsert, синк оффлайн-очереди) — отдельного вызова с клиента НЕТ.
+- Чтение: `api_get_weight_history(p_user_id bigint, p_exercise_id text)` → `(day, weight_kg)`
+  по возрастанию дня. Клиент: `getWeightHistory(exerciseId)` в `features/exercises/api.js`
+  (кеш `weight-history:{userId}:{exId}`, сбрасывается в `saveExerciseWeight`).
+- UI: иконка прогресса (Material trending_up) внизу карточки в `ExerciseActionMenu`
+  (симметрично сердечку) → модалка `WeightProgressModal` с SVG-линией (X — время, Y — кг).
+- **Задним числом данных нет**: миграция сидит текущие веса одной точкой «сегодня»,
+  дальше линия растёт по мере изменений веса. Миграция — `supabase/migrations/weight_history.sql`.
+
 ## Медиа (Selectel S3, бакет `trpg`)
 
 - Cache-Control `public, max-age=31536000, immutable`.
