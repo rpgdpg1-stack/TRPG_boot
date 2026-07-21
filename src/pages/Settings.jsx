@@ -210,10 +210,11 @@ const styles = {
     overflow: 'hidden'
   },
   accentCard: {
-    display: 'flex',
-    flexWrap: 'wrap',
+    // Жёсткая сетка 5 колонок → ровно 5 сверху и 5 снизу (а не «по ширине»).
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
     gap: '14px',
-    justifyContent: 'space-between',
+    justifyItems: 'center',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     padding: '18px 20px'
