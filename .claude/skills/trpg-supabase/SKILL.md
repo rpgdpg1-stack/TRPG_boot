@@ -126,7 +126,11 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
   по возрастанию дня. Клиент: `getWeightHistory(exerciseId)` в `features/exercises/api.js`
   (кеш `weight-history:{userId}:{exId}`, сбрасывается в `saveExerciseWeight`).
 - UI: иконка прогресса (Material trending_up) внизу карточки в `ExerciseActionMenu`
-  (симметрично сердечку) → модалка `WeightProgressModal` с SVG-линией (X — время, Y — кг).
+  (симметрично сердечку) → модалка `WeightProgressModal`. График «как в Тинькофф»:
+  чистая SVG-линия без точек/сетки, пунктир текущего веса через весь график,
+  скраб пальцем (вес+дата вверху, хаптика), переключатель Месяц·Год·Всё время со
+  стрелками листания. Всё на клиенте (фильтр/скраб), БД не трогает. Правка веса на
+  карточке синкается в модалку через `onWeightSaved` (ExerciseCard→WorkoutDay slots).
 - **Задним числом данных нет**: миграция сидит текущие веса одной точкой «сегодня»,
   дальше линия растёт по мере изменений веса. Миграция — `supabase/migrations/weight_history.sql`.
 

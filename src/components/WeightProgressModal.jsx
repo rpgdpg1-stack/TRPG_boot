@@ -1,121 +1,242 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getWeightHistory } from '../features/exercises/api'
+import { haptic } from '../lib/telegram'
 
 /**
- * Модалка «Прогресс веса» — линейный график рабочего веса упражнения во времени
- * (как в трейдинге: время по X, кг по Y). Открывается иконкой прогресса из
- * модалки упражнения (ExerciseActionMenu). Одна точка в день (данные из БД,
- * пишет триггер record_weight_point). История копится с момента внедрения —
- * задним числом данных нет.
+ * Модалка «Прогресс веса» — минималистичный график рабочего веса во времени
+ * (паттерн «как в Тинькофф Инвестициях»):
+ *  - чистая линия без точек-маркеров и без сетки;
+ *  - горизонтальный ПУНКТИР на уровне текущего веса через весь график («сейчас»),
+ *    масштаб Y всегда включает его — видно, на сколько выше/ниже прошлых периодов;
+ *  - СКРАБ пальцем: зажал и ведёшь → вертикальный курсор + точка на линии, вверху
+ *    показывается вес и дата этой точки; отпустил — вернулось к актуальному;
+ *  - переключатель периода Месяц · Год · Всё время; в Месяц/Год стрелки ‹ › листают.
  *
- * Состояния:
- *  - загрузка: скелетон
- *  - 0 точек: подсказка «поставь вес»
- *  - 1 точка: одиночная точка + подсказка «линия появится со второй»
- *  - 2+ точки: линия + заливка + сетка + подписи осей
+ * Данные — из БД (одна точка в день, триггер record_weight_point). Между записями
+ * линия идёт ровно (вес держался); у краёв окна вес «доносится» с последнего
+ * известного, чтобы линия занимала всю ширину периода.
  */
 
-const SHORT_MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
-// 'YYYY-MM-DD' → { d, m, y } (без часовых поясов — строка уже день по Москве).
+const PERIODS = [
+  { id: 'month', label: 'Месяц' },
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё время' }
+]
+
 function parseDay(str) {
   const [y, m, d] = String(str).split('-').map(n => parseInt(n, 10))
   return { y, m: m - 1, d }
 }
+const dayToMs = (str) => { const { y, m, d } = parseDay(str); return Date.UTC(y, m, d) }
 
-// '2026-07-05' → '5 июл' (+ год, если график пересекает годы).
-function formatAxisDate(str, withYear) {
-  const { d, m, y } = parseDay(str)
-  const base = `${d} ${SHORT_MONTHS[m] || ''}`
-  return withYear ? `${base} ’${String(y).slice(-2)}` : base
+// '2026-07-25' → '25 июля 2026' (для подписи при скрабе).
+function formatFullDate(str) {
+  const { y, m, d } = parseDay(str)
+  return `${d} ${MONTHS_GEN[m] || ''} ${y}`
 }
 
-// Разница в целых днях между двумя 'YYYY-MM-DD'.
-function daysBetween(a, b) {
-  const pa = parseDay(a), pb = parseDay(b)
-  const ua = Date.UTC(pa.y, pa.m, pa.d)
-  const ub = Date.UTC(pb.y, pb.m, pb.d)
-  return Math.round((ub - ua) / 86400000)
-}
-
-function pluralDays(n) {
-  const last = n % 10, lastTwo = n % 100
-  if (lastTwo >= 11 && lastTwo <= 14) return 'дней'
-  if (last === 1) return 'день'
-  if (last >= 2 && last <= 4) return 'дня'
-  return 'дней'
-}
-
-// Форматируем кг для подписей оси: без хвостовых нулей (60 / 62.5).
+// Кг без хвостовых нулей: 60 / 62,5.
 function fmtKg(n) {
   const r = Math.round(n * 10) / 10
   return (r % 1 === 0 ? String(r) : r.toFixed(1)).replace('.', ',')
 }
 
 export default function WeightProgressModal({ exerciseId, exerciseName, accent, currentWeight, onClose }) {
-  const [points, setPoints] = useState(null) // null = грузим
-
-  useEffect(() => {
-    let cancelled = false
-    getWeightHistory(exerciseId).then(list => {
-      if (!cancelled) setPoints(list || [])
-    })
-    return () => { cancelled = true }
-  }, [exerciseId])
+  const [points, setPoints] = useState(null) // null = грузим; [] = нет данных
+  const [period, setPeriod] = useState('all')
+  const [offset, setOffset] = useState(0)     // 0 — текущий месяц/год; -1 — предыдущий; …
+  const [scrubIdx, setScrubIdx] = useState(null)
+  const chartRef = useRef(null)
 
   const line = accent || 'var(--color-primary)'
 
-  const stats = useMemo(() => {
+  useEffect(() => {
+    let cancelled = false
+    getWeightHistory(exerciseId).then(list => { if (!cancelled) setPoints(list || []) })
+    return () => { cancelled = true }
+  }, [exerciseId])
+
+  // Сброс листания/скраба при смене типа периода.
+  useEffect(() => { setOffset(0); setScrubIdx(null) }, [period])
+  useEffect(() => { setScrubIdx(null) }, [offset])
+
+  // «Сегодня» по Москве (день-ключи тоже по Москве).
+  const today = useMemo(() => {
+    const s = new Date(Date.now() + 3 * 3600 * 1000)
+    return { y: s.getUTCFullYear(), m: s.getUTCMonth(), d: s.getUTCDate() }
+  }, [])
+  const todayMs = Date.UTC(today.y, today.m, today.d)
+
+  // Актуальный вес: свежий из карточки; если 0/нет — последняя точка истории.
+  const currentW = (currentWeight && currentWeight > 0)
+    ? currentWeight
+    : (points && points.length ? points[points.length - 1].weight : 0)
+
+  // Окно периода + серия для отрисовки.
+  const win = useMemo(() => {
     if (!points || points.length === 0) return null
-    const first = points[0]
-    const last = points[points.length - 1]
-    const delta = last.weight - first.weight
-    const span = daysBetween(first.day, last.day)
-    return { first, last, delta, span }
-  }, [points])
+    const firstMs = dayToMs(points[0].day)
+
+    let startMs, endMs, label, canLeft = false, canRight = false
+    if (period === 'all') {
+      startMs = firstMs; endMs = todayMs; label = 'Всё время'
+    } else if (period === 'year') {
+      const baseY = today.y + offset
+      startMs = Date.UTC(baseY, 0, 1)
+      endMs = baseY === today.y ? todayMs : Date.UTC(baseY, 11, 31)
+      label = String(baseY)
+      const firstY = parseDay(points[0].day).y
+      canLeft = baseY > firstY
+      canRight = offset < 0
+    } else { // month
+      const curIdx = today.y * 12 + today.m
+      const idx = curIdx + offset
+      const by = Math.floor(idx / 12), bm = ((idx % 12) + 12) % 12
+      startMs = Date.UTC(by, bm, 1)
+      endMs = (by === today.y && bm === today.m) ? todayMs : Date.UTC(by, bm + 1, 0)
+      label = `${MONTHS_NOM[bm]} ${by}`
+      const f = parseDay(points[0].day)
+      const firstIdx = f.y * 12 + f.m
+      canLeft = idx > firstIdx
+      canRight = offset < 0
+    }
+
+    // Точки внутри окна + последний вес ДО окна (для «доноса» линии от края).
+    const dataPts = []
+    let priorWeight = null
+    for (const p of points) {
+      const ms = dayToMs(p.day)
+      if (ms < startMs) priorWeight = p.weight
+      else if (ms <= endMs) dataPts.push({ day: p.day, weight: p.weight, ms })
+    }
+
+    if (dataPts.length === 0 && priorWeight == null) {
+      return { startMs, endMs, label, canLeft, canRight, empty: true }
+    }
+
+    const lastKnown = dataPts.length ? dataPts[dataPts.length - 1].weight : priorWeight
+    const linePts = []
+    if (priorWeight != null) linePts.push({ ms: startMs, weight: priorWeight })
+    for (const dp of dataPts) linePts.push({ ms: dp.ms, weight: dp.weight })
+    // Доводим линию до правого края окна текущим уровнем (вес держится до «сейчас»).
+    if (linePts[linePts.length - 1].ms < endMs) linePts.push({ ms: endMs, weight: lastKnown })
+
+    const spanMs = (endMs - startMs) || 86400000
+    const nx = (ms) => Math.max(0, Math.min(1, (ms - startMs) / spanMs))
+    for (const lp of linePts) lp.nx = nx(lp.ms)
+    for (const dp of dataPts) dp.nx = nx(dp.ms)
+
+    // Масштаб Y включает и линию, и текущий уровень (чтобы пунктир всегда был виден).
+    const ws = linePts.map(p => p.weight).concat(currentW > 0 ? [currentW] : [])
+    let yMin = Math.min(...ws), yMax = Math.max(...ws)
+    if (yMin === yMax) { yMin -= 1; yMax += 1 } else { const p = (yMax - yMin) * 0.15; yMin -= p; yMax += p }
+
+    return { startMs, endMs, label, canLeft, canRight, linePts, dataPts, yMin, yMax }
+  }, [points, period, offset, today, todayMs, currentW])
+
+  const dataPts = win && !win.empty ? win.dataPts : []
+
+  // Скраб: палец по графику → ближайшая РЕАЛЬНАЯ точка (синтетические края не в счёт).
+  const W = 340, padL = 12, padR = 12, plotW = W - padL - padR
+  const handleScrub = (clientX) => {
+    if (!dataPts.length || !chartRef.current) return
+    const r = chartRef.current.getBoundingClientRect()
+    const cx = ((clientX - r.left) / r.width) * W
+    const frac = Math.max(0, Math.min(1, (cx - padL) / plotW))
+    let best = 0, bestD = Infinity
+    for (let i = 0; i < dataPts.length; i++) {
+      const d = Math.abs(dataPts[i].nx - frac)
+      if (d < bestD) { bestD = d; best = i }
+    }
+    setScrubIdx(prev => { if (prev !== best) haptic.selection(); return best })
+  }
+  const endScrub = () => setScrubIdx(null)
+
+  const scrub = scrubIdx != null ? dataPts[scrubIdx] : null
+  const topWeight = scrub ? scrub.weight : currentW
+  const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
 
   return (
     <div style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
-          <div style={styles.titleRow}>
-            <span style={styles.eyebrow}>ПРОГРЕСС ВЕСА</span>
-          </div>
+          <span style={styles.eyebrow}>ПРОГРЕСС ВЕСА</span>
           <div style={styles.name}>{exerciseName}</div>
-
-          {/* Текущий вес + дельта за период */}
           <div style={styles.bigRow}>
             <span style={{ ...styles.bigValue, color: line }}>
-              {fmtKg(currentWeight || (stats?.last?.weight ?? 0))}
-              <span style={styles.bigUnit}>кг</span>
+              {fmtKg(topWeight)}<span style={styles.bigUnit}>кг</span>
             </span>
-            {stats && stats.span > 0 && (
-              <span style={{
-                ...styles.delta,
-                color: stats.delta > 0 ? 'var(--color-primary)' : stats.delta < 0 ? 'var(--color-text-secondary)' : 'var(--color-text-secondary)'
-              }}>
-                {stats.delta > 0 ? '+' : stats.delta < 0 ? '−' : ''}{fmtKg(Math.abs(stats.delta))} кг
-                <span style={styles.deltaSub}> · {stats.span} {pluralDays(stats.span)}</span>
-              </span>
-            )}
+            <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+              {topSub}
+            </span>
           </div>
         </div>
 
-        <div style={styles.chartWrap}>
+        {/* Переключатель периода */}
+        <div style={styles.segGroup}>
+          {PERIODS.map((p, i) => {
+            const on = p.id === period
+            return (
+              <button
+                key={p.id}
+                className="press-tile"
+                onClick={() => { if (p.id !== period) { haptic.selection(); setPeriod(p.id) } }}
+                style={{
+                  ...styles.segItem,
+                  ...(on ? styles.segItemActive : {}),
+                  marginLeft: i === 0 ? 0 : '-5px',
+                  zIndex: on ? 2 : 1,
+                  color: on ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+                }}
+              >{p.label}</button>
+            )
+          })}
+        </div>
+
+        {/* Строка периода + листание (для Месяц/Год) */}
+        <div style={styles.navRow}>
+          {period !== 'all' ? (
+            <button
+              onClick={() => { if (win?.canLeft) { haptic.selection(); setOffset(o => o - 1) } }}
+              disabled={!win?.canLeft}
+              style={{ ...styles.navArrow, opacity: win?.canLeft ? 1 : 0.25 }}
+              aria-label="Раньше"
+            >‹</button>
+          ) : <span style={styles.navSpacer} />}
+          <span style={styles.navLabel}>{win?.label || ''}</span>
+          {period !== 'all' ? (
+            <button
+              onClick={() => { if (win?.canRight) { haptic.selection(); setOffset(o => o + 1) } }}
+              disabled={!win?.canRight}
+              style={{ ...styles.navArrow, opacity: win?.canRight ? 1 : 0.25 }}
+              aria-label="Позже"
+            >›</button>
+          ) : <span style={styles.navSpacer} />}
+        </div>
+
+        {/* График */}
+        <div
+          ref={chartRef}
+          style={styles.chartWrap}
+          onPointerDown={(e) => { e.preventDefault(); handleScrub(e.clientX) }}
+          onPointerMove={(e) => { if (scrubIdx != null || e.buttons) handleScrub(e.clientX) }}
+          onPointerUp={endScrub}
+          onPointerLeave={endScrub}
+          onPointerCancel={endScrub}
+        >
           {points === null ? (
             <div style={styles.skeleton} />
           ) : points.length === 0 ? (
             <Empty text={'Пока нет данных.\nПоставь рабочий вес — и точка появится здесь.'} />
+          ) : win.empty ? (
+            <Empty text={'Нет записей за этот период.\nПролистай стрелками к другому.'} />
           ) : (
-            <Chart points={points} line={line} />
+            <Chart win={win} currentW={currentW} line={line} scrub={scrub} />
           )}
         </div>
-
-        {points && points.length === 1 && (
-          <div style={styles.hint}>
-            Копим историю — линия появится, когда изменишь вес в другой день.
-          </div>
-        )}
 
         <button onClick={onClose} style={styles.closeBtn}>ЗАКРЫТЬ</button>
       </div>
@@ -132,92 +253,41 @@ function Empty({ text }) {
   )
 }
 
-/**
- * SVG-график. X — равномерно по индексу точек (чтобы редкие ранние точки не
- * слипались), подписи X — реальные даты (первая/последняя). Y — кг с небольшим
- * запасом сверху/снизу. Одна точка → просто маркер по центру.
- */
-function Chart({ points, line }) {
-  const W = 340, H = 200
-  const padL = 38, padR = 14, padT = 16, padB = 26
-  const plotW = W - padL - padR
-  const plotH = H - padT - padB
+function Chart({ win, currentW, line, scrub }) {
+  const W = 340, H = 190
+  const padL = 12, padR = 12, padT = 18, padB = 16
+  const plotW = W - padL - padR, plotH = H - padT - padB
+  const { linePts, yMin, yMax } = win
 
-  const weights = points.map(p => p.weight)
-  let min = Math.min(...weights)
-  let max = Math.max(...weights)
-  if (min === max) { min -= 1; max += 1 } // плоская линия → раздвигаем, чтобы не липла к краю
-  else {
-    const pad = (max - min) * 0.15
-    min -= pad; max += pad
-  }
+  const xOf = (nx) => padL + nx * plotW
+  const yOf = (w) => padT + (1 - (w - yMin) / (yMax - yMin)) * plotH
 
-  const n = points.length
-  const xAt = (i) => n === 1 ? padL + plotW / 2 : padL + (i * plotW) / (n - 1)
-  const yAt = (w) => padT + (1 - (w - min) / (max - min)) * plotH
-
-  const coords = points.map((p, i) => ({ x: xAt(i), y: yAt(p.weight), ...p }))
-
-  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ')
-  const areaPath = n > 1
-    ? `${linePath} L${coords[n - 1].x.toFixed(1)},${(padT + plotH).toFixed(1)} L${coords[0].x.toFixed(1)},${(padT + plotH).toFixed(1)} Z`
-    : ''
-
-  // 3 линии сетки Y: max, середина, min.
-  const yTicks = [max, (max + min) / 2, min]
-  // Год в подписях, если история пересекает разные годы.
-  const withYear = parseDay(points[0].day).y !== parseDay(points[n - 1].day).y
-  const gid = 'wpg-grad'
+  const path = linePts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xOf(p.nx).toFixed(1)},${yOf(p.weight).toFixed(1)}`).join(' ')
+  const last = linePts[linePts.length - 1]
+  const curY = yOf(currentW)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={line} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={line} stopOpacity="0" />
-        </linearGradient>
-      </defs>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', touchAction: 'none' }} preserveAspectRatio="xMidYMid meet">
+      {/* Пунктир текущего уровня («сейчас») через весь график */}
+      {currentW > 0 && (
+        <>
+          <line x1={padL} y1={curY} x2={W - padR} y2={curY} stroke={line} strokeWidth="1" strokeDasharray="3 4" opacity="0.5" />
+          <text x={W - padR} y={curY - 5} textAnchor="end" style={styles.svgNowLabel} fill={line}>сейчас</text>
+        </>
+      )}
 
-      {/* Сетка + подписи кг */}
-      {yTicks.map((t, i) => {
-        const y = yAt(t)
-        return (
-          <g key={i}>
-            <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-            <text x={padL - 6} y={y + 3} textAnchor="end" style={styles.svgTickY}>{fmtKg(t)}</text>
-          </g>
-        )
-      })}
+      {/* Линия веса */}
+      <path d={path} fill="none" stroke={line} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
 
-      {/* Заливка под линией */}
-      {areaPath && <path d={areaPath} fill={`url(#${gid})`} />}
+      {/* Маркер «сейчас» на правом крае */}
+      <circle cx={xOf(last.nx)} cy={yOf(last.weight)} r="4" fill={line} />
 
-      {/* Линия */}
-      {n > 1 && <path d={linePath} fill="none" stroke={line} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
-
-      {/* Точки: промежуточные мелкие, последняя — крупнее */}
-      {coords.map((c, i) => {
-        const isLast = i === n - 1
-        return (
-          <circle
-            key={i}
-            cx={c.x} cy={c.y}
-            r={isLast ? 4.5 : 3}
-            fill={isLast ? line : 'var(--color-bg)'}
-            stroke={line}
-            strokeWidth={isLast ? 0 : 2}
-          />
-        )
-      })}
-
-      {/* Подписи X: первая и последняя дата */}
-      <text x={coords[0].x} y={H - 8} textAnchor={n === 1 ? 'middle' : 'start'} style={styles.svgTickX}>
-        {formatAxisDate(points[0].day, withYear)}
-      </text>
-      {n > 1 && (
-        <text x={coords[n - 1].x} y={H - 8} textAnchor="end" style={styles.svgTickX}>
-          {formatAxisDate(points[n - 1].day, withYear)}
-        </text>
+      {/* Скраб-курсор */}
+      {scrub && (
+        <>
+          <line x1={xOf(scrub.nx)} y1={padT - 6} x2={xOf(scrub.nx)} y2={padT + plotH + 4} stroke="var(--color-text-secondary)" strokeWidth="1" opacity="0.6" />
+          <circle cx={xOf(scrub.nx)} cy={yOf(scrub.weight)} r="5.5" fill="var(--color-bg)" stroke={line} strokeWidth="2.5" />
+        </>
       )}
     </svg>
   )
@@ -225,130 +295,80 @@ function Chart({ points, line }) {
 
 const styles = {
   overlay: {
-    position: 'fixed',
-    inset: 0,
+    position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 10000,
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
   panel: {
-    position: 'relative',
-    width: '100%',
-    maxWidth: '380px',
+    position: 'relative', width: '100%', maxWidth: '380px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '28px',
     padding: '22px 18px 18px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
+    display: 'flex', flexDirection: 'column', gap: '14px',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   header: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  titleRow: { display: 'flex', alignItems: 'center' },
-  eyebrow: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '11px',
-    letterSpacing: '2px',
-    color: 'var(--color-text-secondary)'
+  eyebrow: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px', letterSpacing: '2px', color: 'var(--color-text-secondary)' },
+  name: { fontFamily: 'var(--font-geist, var(--font-manrope))', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
+  bigRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginTop: '2px', minHeight: '34px' },
+  bigValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', lineHeight: 1, letterSpacing: '0.5px' },
+  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', opacity: 0.7 },
+  bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600 },
+
+  segGroup: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
   },
-  name: {
-    fontFamily: 'var(--font-geist, var(--font-manrope))',
-    fontSize: '16px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    lineHeight: 1.25
+  segItem: {
+    position: 'relative', flex: 1,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    minHeight: '30px', padding: '0 10px',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px',
+    cursor: 'pointer', whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease'
   },
-  bigRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginTop: '2px' },
-  bigValue: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: '30px',
-    lineHeight: 1,
-    letterSpacing: '0.5px'
+  segItemActive: {
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
-  bigUnit: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700,
-    marginLeft: '4px',
-    opacity: 0.7
+
+  navRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '22px' },
+  navArrow: {
+    width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    fontSize: '22px', lineHeight: 1, color: 'var(--color-text)', WebkitTapHighlightColor: 'transparent'
   },
-  delta: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 700
-  },
-  deltaSub: { color: 'var(--color-text-secondary)', fontWeight: 500 },
+  navSpacer: { width: '30px', height: '30px' },
+  navLabel: { flex: 1, textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text-secondary)' },
 
   chartWrap: {
     width: '100%',
     background: 'rgba(0, 0, 0, 0.22)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '10px 8px 4px',
-    minHeight: '160px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
+    padding: '8px', minHeight: '150px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    touchAction: 'none'
   },
-  skeleton: {
-    width: '100%',
-    height: '180px',
-    borderRadius: 'var(--radius-small)',
-    background: 'rgba(255, 255, 255, 0.04)'
-  },
-  empty: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.6,
-    padding: '30px 12px'
-  },
+  skeleton: { width: '100%', height: '160px', borderRadius: 'var(--radius-small)', background: 'rgba(255, 255, 255, 0.04)' },
+  empty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: '30px 12px' },
   emptyIcon: { fontSize: '30px', display: 'block', marginBottom: '10px', opacity: 0.8 },
 
-  svgTickY: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '9px',
-    fontWeight: 600,
-    fill: 'var(--color-text-secondary)'
-  },
-  svgTickX: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '9px',
-    fontWeight: 600,
-    fill: 'var(--color-text-secondary)'
-  },
+  svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 700, opacity: 0.8 },
 
-  hint: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.5,
-    padding: '0 6px'
-  },
   closeBtn: {
-    marginTop: '2px',
-    width: '100%',
-    padding: '13px',
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-pill)',
-    border: 'none',
-    cursor: 'pointer'
+    marginTop: '2px', width: '100%', padding: '13px',
+    background: 'rgba(255, 255, 255, 0.06)', color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 800, letterSpacing: '2px',
+    borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer'
   }
 }
