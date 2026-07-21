@@ -1281,6 +1281,7 @@ export default function WorkoutDay() {
                           onNote={(s) => setActionSlot(s)}
                           onInfo={goToInfo}
                           onSwap={goToSwap}
+                          onWeightSaved={handleWeightSaved}
                         />
 
                         {/* «Недавно тронутое» — светло-серая заливка карточки:

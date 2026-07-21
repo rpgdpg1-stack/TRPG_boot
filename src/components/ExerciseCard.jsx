@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
   }, { passive: true })
 }
 
-export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onNote, onInfo, onSwap }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onNote, onInfo, onSwap, onWeightSaved }) {
   const {
     exercise_id,
     exercise_name,
@@ -290,6 +290,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         setLocalWeight(0)
         try {
           await saveExerciseWeight(exercise_id, 0)
+          // Сообщаем родителю (WorkoutDay) — чтобы slots обновились и модалка
+          // от долгого нажатия сразу показала свежий вес.
+          onWeightSaved?.(exercise_id, 0)
           haptic.success()
         } catch (e) {
           console.error('[ExerciseCard] saveExerciseWeight error:', e)
@@ -314,6 +317,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     try {
       const ok = await saveExerciseWeight(exercise_id, rounded)
       if (ok) {
+        // Родителю — новый вес в slots (для синка с модалкой долгого нажатия).
+        onWeightSaved?.(exercise_id, rounded)
         haptic.success()
       } else {
         console.warn('[ExerciseCard] saveExerciseWeight returned false')
