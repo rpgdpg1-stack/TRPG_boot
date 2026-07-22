@@ -56,10 +56,10 @@ export default function PlayerProfileModal({ row, onClose }) {
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
         <CloseCross
           onClose={onClose}
-          hitSize={40}
+          hitSize={44}
           bubbleSize={32}
-          iconSize={15}
-          style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 5 }}
+          iconSize={16}
+          style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 5 }}
         />
         <ProfileHeader
           user={userObj}

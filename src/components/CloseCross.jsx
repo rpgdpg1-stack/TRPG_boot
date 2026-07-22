@@ -14,13 +14,13 @@ import { useRef, useState } from 'react'
  */
 function CrossIcon({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ display: 'block' }}>
       <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
     </svg>
   )
 }
 
-export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, style }) {
+export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, style }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const [press, setPress] = useState(false)
@@ -67,6 +67,7 @@ export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, ico
       }}
     >
       <span
+        className={pulse && !press ? 'pop-scale' : undefined}
         style={{
           width: `${bubbleSize}px`,
           height: `${bubbleSize}px`,

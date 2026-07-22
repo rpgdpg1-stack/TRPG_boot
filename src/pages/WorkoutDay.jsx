@@ -29,6 +29,7 @@ import {
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
+import CloseCross from '../components/CloseCross'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
@@ -109,15 +110,6 @@ const workoutEntryFromHome = new Map()
 // Вход из «Любимых упражнений» (по «+») — «Назад» возвращает шагом истории туда.
 const workoutEntryFromFav = new Map()
 
-/** Серый крестик-закрытие/отмена (тонкие линии, currentColor). */
-function CrossIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -181,10 +173,9 @@ export default function WorkoutDay() {
     if (pulseTimers.current[key]) clearTimeout(pulseTimers.current[key])
     pulseTimers.current[key] = setTimeout(() => setter(false), ms)
   }
-  // Крестик отмены: «растущее» нажатие с отменой при уводе пальца (как в модалке).
+  // Крестик отмены — общий компонент CloseCross. Ref на обёртке нужен, чтобы
+  // pill-жест шапки не срабатывал при нажатии на крестик (см. pillDown).
   const cancelBtnRef = useRef(null)
-  const cancelArmedRef = useRef(false)
-  const [cancelGrow, setCancelGrow] = useState(false)
   const prevTierRef = useRef(null)
   const [showOverload, setShowOverload] = useState(false)
   const overloadShownRef = useRef(false)                 // поп-ап перегрузки — один раз за сессию
@@ -839,22 +830,6 @@ export default function WorkoutDay() {
   // закрываем сессию БЕЗ сохранения (в историю не идёт, баллы не начисляются).
   // Для «передумал / случайно начал / тестирую».
   const handleCancelTap = () => { haptic.light(); setShowCancelConfirm(true) }
-  // «Растущее» нажатие крестика (grow + отмена при уводе пальца), как в модалке.
-  const cancelDown = () => { cancelArmedRef.current = true; setCancelGrow(true) }
-  const cancelMove = (e) => {
-    if (!cancelArmedRef.current) return
-    const r = cancelBtnRef.current?.getBoundingClientRect()
-    if (!r) return
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-    if (!inside) { cancelArmedRef.current = false; setCancelGrow(false) }
-  }
-  const cancelUp = () => {
-    const armed = cancelArmedRef.current
-    cancelArmedRef.current = false
-    setCancelGrow(false)
-    if (armed) handleCancelTap()
-  }
-  const cancelCancel = () => { cancelArmedRef.current = false; setCancelGrow(false) }
   const handleCancelConfirm = () => {
     haptic.medium()
     clearWorkoutProgress(programId, day, place)
@@ -1107,29 +1082,19 @@ export default function WorkoutDay() {
               </div>
             )}
             {/* Крестик «отменить тренировку» — только для активной сессии. Absolute
-                справа (не раздувает строку), хит-зона 44px, видимый кружок как тег
-                места. Появляется с «попом» (crossPulse), нажатие — «растущее» с отменой. */}
+                справа (не раздувает строку). Общий компонент CloseCross; обёртка с
+                ref нужна для исключения из pill-жеста шапки. «Поп» на появление —
+                через проп pulse. */}
             {isThisActive && (
-              <button
-                ref={cancelBtnRef}
-                onPointerDown={cancelDown}
-                onPointerMove={cancelMove}
-                onPointerUp={cancelUp}
-                onPointerCancel={cancelCancel}
-                style={styles.cancelBtn}
-                aria-label="Отменить тренировку"
-              >
-                <span
-                  className={(!cancelGrow && crossPulse) ? 'pop-scale' : undefined}
-                  style={{
-                    ...styles.cancelBtnInner,
-                    ...(cancelGrow ? { transform: 'scale(1.14)', background: 'rgba(255, 255, 255, 0.18)', color: 'var(--color-text)' } : null),
-                    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
-                  }}
-                >
-                  <CrossIcon size={16} />
-                </span>
-              </button>
+              <div ref={cancelBtnRef} style={styles.cancelSlot}>
+                <CloseCross
+                  onClose={handleCancelTap}
+                  pulse={crossPulse}
+                  hitSize={44}
+                  bubbleSize={32}
+                  iconSize={16}
+                />
+              </div>
             )}
           </div>
 
@@ -1904,35 +1869,15 @@ const styles = {
     color: 'var(--color-text-secondary)',
     fontVariantNumeric: 'tabular-nums'
   },
-  // Крестик «отменить»: absolute справа (не раздувает ряд), хит-зона 44px, видимый
-  // кружок 32px как тег места. right:-7 → кружок ровно у правого края (симметрия с тегом).
-  cancelBtn: {
+  // Обёртка крестика «отменить»: absolute справа (не раздувает ряд). right:-7 →
+  // кружок ровно у правого края (симметрия с тегом места). Сам крестик — CloseCross.
+  cancelSlot: {
     position: 'absolute',
     right: '-7px',
     top: '50%',
     transform: 'translateY(-50%)',
     zIndex: 3,
-    width: '44px',
-    height: '44px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    touchAction: 'none',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  cancelBtnInner: {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: '50%',
-    color: 'var(--color-text-secondary)'
+    display: 'flex'
   },
   // Оценка длительности до старта (часы + «≈ N мин»), серым по центру строки.
   estimate: {
