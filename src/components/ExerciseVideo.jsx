@@ -23,7 +23,7 @@ import { useRef } from 'react'
  *  - preload="metadata" — не качаем весь файл сразу, ждём пока компонент в DOM
  *  - poster={preview_url} — пока видео грузится, показываем картинку (нет белого моргания)
  */
-const MAX_PLAYS = 2 // сколько раз проиграть перед остановкой на первом кадре
+const MAX_PLAYS = 1 // сколько раз проиграть перед остановкой на первом кадре
 
 export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),

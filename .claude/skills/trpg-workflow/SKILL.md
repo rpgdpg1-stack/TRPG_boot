@@ -215,7 +215,7 @@ src/
 ├── assets/ui/      SVG-иконки: cardio change check cloud_done cloud_sync friends info invite-friend
 │                   leaderboard muscles muscles-line network_off notes place-gym place-home place-street
 │                   power profile rewards settings stretching swimming
-├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon DailyQuests
+├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher

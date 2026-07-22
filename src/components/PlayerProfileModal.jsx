@@ -6,6 +6,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
 import FavoritesBlock from './FavoritesBlock'
 import HistoryStats from './HistoryStats'
+import CloseCross from './CloseCross'
 
 /**
  * Модалка профиля друга (открывается тапом по строке на странице «Друзья»).
@@ -53,9 +54,13 @@ export default function PlayerProfileModal({ row, onClose }) {
   return createPortal(
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">
-          <CrossIcon />
-        </button>
+        <CloseCross
+          onClose={onClose}
+          hitSize={40}
+          bubbleSize={32}
+          iconSize={15}
+          style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 5 }}
+        />
         <ProfileHeader
           user={userObj}
           streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
@@ -75,15 +80,6 @@ export default function PlayerProfileModal({ row, onClose }) {
       `}</style>
     </div>,
     document.body
-  )
-}
-
-/** Серый крестик-закрытие (тонкие линии, currentColor). */
-function CrossIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <path d="M3.5 3.5 L11.5 11.5 M11.5 3.5 L3.5 11.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
   )
 }
 
@@ -111,21 +107,4 @@ const styles = {
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  closeBtn: {
-    position: 'absolute',
-    top: '14px',
-    right: '14px',
-    width: '30px',
-    height: '30px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: 'none',
-    borderRadius: '50%',
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    zIndex: 5,
-    WebkitTapHighlightColor: 'transparent'
-  }
 }

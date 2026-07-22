@@ -12,6 +12,7 @@ import ExerciseVideo from './ExerciseVideo'
 import HeartButton from './HeartButton'
 import UiIcon from './UiIcon'
 import WeightProgressModal from './WeightProgressModal'
+import CloseCross from './CloseCross'
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -32,15 +33,6 @@ import WeightProgressModal from './WeightProgressModal'
  */
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = '#FFA94D'
-
-/** Крестик-закрытие (тонкие линии, currentColor) — единый вид во всех модалках. */
-function CrossIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 /** Иконка «прогресс/рост» (Material trending_up) — вход в график веса. */
 function TrendingUpIcon({ size = 20 }) {
@@ -226,28 +218,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     setNoteError(false)
     setDraft('')
   }
-
-  // Крестик-закрытие: «растущее» нажатие с ОТМЕНОЙ при уводе пальца. На тач
-  // указатель неявно захватывается кнопкой (CSS :active/leave не срабатывают),
-  // поэтому «внутри/снаружи» определяем сами — хит-тестом по координатам пальца.
-  const closeBtnRef = useRef(null)
-  const closeArmedRef = useRef(false)
-  const [closeGrow, setCloseGrow] = useState(false)
-  const closePointerDown = () => { closeArmedRef.current = true; setCloseGrow(true) }
-  const closePointerMove = (e) => {
-    if (!closeArmedRef.current) return
-    const r = closeBtnRef.current?.getBoundingClientRect()
-    if (!r) return
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-    if (!inside) { closeArmedRef.current = false; setCloseGrow(false) }  // увёл палец — вернуть и НЕ закрывать
-  }
-  const closePointerUp = () => {
-    const armed = closeArmedRef.current
-    closeArmedRef.current = false
-    setCloseGrow(false)
-    if (armed) onClose()  // отпустил на крестике — закрыть
-  }
-  const closePointerCancel = () => { closeArmedRef.current = false; setCloseGrow(false) }
 
   // Тап мимо модалки. Если в фокусе инпут (вес/заметка) — blur (гасит клавиатуру,
   // вес сохраняется через onBlur), затем закрываем. Позиция вернётся в эффекте
@@ -460,28 +430,9 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
       </div>
 
-      {/* Крестик-закрытие ПОД модалкой, по центру — крупнее (кружок 46px, хит-зона
-          56px): низ экрана удобнее для большого пальца. «Растущее» нажатие: палец на
-          нём → увеличивается; отпустил на нём → закрывает; увёл палец в сторону →
-          возвращается и НЕ закрывает (onClick только глушит всплытие к оверлею). */}
-      <button
-        ref={closeBtnRef}
-        onPointerDown={closePointerDown}
-        onPointerMove={closePointerMove}
-        onPointerUp={closePointerUp}
-        onPointerCancel={closePointerCancel}
-        onClick={(e) => e.stopPropagation()}
-        style={{ ...styles.closeBtn, touchAction: 'none' }}
-        aria-label="Закрыть"
-      >
-        <span style={{
-          ...styles.closeBtnInner,
-          transform: closeGrow ? 'scale(1.14)' : 'scale(1)',
-          transition: 'transform 0.16s var(--ease-ios)'
-        }}>
-          <CrossIcon size={20} />
-        </span>
-      </button>
+      {/* Крестик-закрытие ПОД модалкой, по центру — единый компонент (низ экрана
+          удобнее для большого пальца). Grow + светло-серый фон при удержании. */}
+      <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
 
       {showProgress && (
         <WeightProgressModal
@@ -500,11 +451,6 @@ function toTitleCase(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
-
-/**
- * Аккуратный крестик для кнопки «Закрыть». Тонкие линии, скруглённые концы —
- * нейтральный UX-стиль, цвет наследуется от текста кнопки (currentColor).
- */
 
 const styles = {
   overlay: {
@@ -552,32 +498,6 @@ const styles = {
     gap: '16px',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
-  },
-  // Крестик-закрытие ПОД модалкой по центру: крупный «пузырёк» — видимый кружок
-  // 46px, хит-зона 56px, зазор от модалки сверху. Низ удобен для большого пальца.
-  closeBtn: {
-    flexShrink: 0,
-    marginTop: '14px',
-    width: '56px',
-    height: '56px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  closeBtnInner: {
-    width: '46px',
-    height: '46px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '50%',
-    color: 'var(--color-text-secondary)'
   },
   // Баннер лимита любимых.
   favLimit: {

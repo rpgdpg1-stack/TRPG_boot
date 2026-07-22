@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getWeightHistory } from '../features/exercises/api'
 import { haptic } from '../lib/telegram'
+import CloseCross from './CloseCross'
 
 /**
  * Модалка «Прогресс веса» — минималистичный график рабочего веса во времени
@@ -25,15 +26,6 @@ const PERIODS = [
   { id: 'year', label: 'Год' },
   { id: 'all', label: 'Всё время' }
 ]
-
-/** Крестик-закрытие — единый вид со всеми модалками (как в меню упражнения). */
-function CrossIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 function parseDay(str) {
   const [y, m, d] = String(str).split('-').map(n => parseInt(n, 10))
@@ -168,27 +160,6 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   const topWeight = scrub ? scrub.weight : currentW
   const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
 
-  // Крестик-закрытие под модалкой: «растущее» нажатие с отменой при уводе пальца
-  // (точь-в-точь как в ExerciseActionMenu).
-  const closeBtnRef = useRef(null)
-  const closeArmedRef = useRef(false)
-  const [closeGrow, setCloseGrow] = useState(false)
-  const closeDown = () => { closeArmedRef.current = true; setCloseGrow(true) }
-  const closeMove = (e) => {
-    if (!closeArmedRef.current) return
-    const r = closeBtnRef.current?.getBoundingClientRect()
-    if (!r) return
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-    if (!inside) { closeArmedRef.current = false; setCloseGrow(false) }
-  }
-  const closeUp = () => {
-    const armed = closeArmedRef.current
-    closeArmedRef.current = false
-    setCloseGrow(false)
-    if (armed) onClose()
-  }
-  const closeCancel = () => { closeArmedRef.current = false; setCloseGrow(false) }
-
   return (
     <div style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
@@ -270,25 +241,8 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
 
       </div>
 
-      {/* Крестик-закрытие ПОД модалкой по центру — как в меню упражнения. */}
-      <button
-        ref={closeBtnRef}
-        onPointerDown={closeDown}
-        onPointerMove={closeMove}
-        onPointerUp={closeUp}
-        onPointerCancel={closeCancel}
-        onClick={(e) => e.stopPropagation()}
-        style={{ ...styles.closeBtn, touchAction: 'none' }}
-        aria-label="Закрыть"
-      >
-        <span style={{
-          ...styles.closeBtnInner,
-          transform: closeGrow ? 'scale(1.14)' : 'scale(1)',
-          transition: 'transform 0.16s var(--ease-ios)'
-        }}>
-          <CrossIcon size={20} />
-        </span>
-      </button>
+      {/* Крестик-закрытие ПОД модалкой по центру — единый компонент. */}
+      <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
     </div>
   )
 }
@@ -413,19 +367,5 @@ const styles = {
   empty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: '30px 12px' },
   emptyIcon: { fontSize: '30px', display: 'block', marginBottom: '10px', opacity: 0.8 },
 
-  svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 700, opacity: 0.8 },
-
-  // Крестик-закрытие под модалкой по центру — «пузырёк» как в ExerciseActionMenu.
-  closeBtn: {
-    flexShrink: 0, marginTop: '14px', width: '56px', height: '56px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  closeBtnInner: {
-    width: '46px', height: '46px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'rgba(255, 255, 255, 0.08)', borderRadius: '50%',
-    color: 'var(--color-text-secondary)'
-  }
+  svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 700, opacity: 0.8 }
 }

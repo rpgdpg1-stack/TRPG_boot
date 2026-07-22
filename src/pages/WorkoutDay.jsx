@@ -1123,8 +1123,8 @@ export default function WorkoutDay() {
                   className={(!cancelGrow && crossPulse) ? 'pop-scale' : undefined}
                   style={{
                     ...styles.cancelBtnInner,
-                    ...(cancelGrow ? { transform: 'scale(1.14)' } : null),
-                    transition: 'transform 0.16s var(--ease-ios)'
+                    ...(cancelGrow ? { transform: 'scale(1.14)', background: 'rgba(255, 255, 255, 0.18)', color: 'var(--color-text)' } : null),
+                    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
                   }}
                 >
                   <CrossIcon size={16} />
