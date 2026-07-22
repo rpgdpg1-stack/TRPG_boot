@@ -1,4 +1,5 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { haptic } from '../lib/telegram'
 
 /**
  * Видео-превью упражнения.
@@ -30,6 +31,8 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
   // 14px для compact (если когда-то понадобится в маленькой карточке).
   const borderRadius = size === 'compact' ? '14px' : '33px'
   const playsRef = useRef(0)
+  const videoRef = useRef(null)
+  const [pressed, setPressed] = useState(false)
 
   // Счётчик проигрываний. loop убран: после каждого конца сами решаем — ещё раз
   // или стоп на первом кадре (currentTime=0 + pause).
@@ -43,10 +46,40 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
     }
   }
 
+  // Тап по миниатюре с видео — проиграть ещё один цикл заново + лёгкая хаптика.
+  const replay = () => {
+    const v = videoRef.current
+    if (!v) return
+    haptic.light()
+    playsRef.current = 0
+    try { v.currentTime = 0; v.play() } catch { /* ignore */ }
+  }
+
+  // Интерактивна только миниатюра с видео (есть что переигрывать). Микро-пресс —
+  // лёгкий вжим на тап (тактильный отклик на действие).
+  const interactive = !!videoUrl
+  const wrapHandlers = interactive ? {
+    onClick: (e) => { e.stopPropagation(); replay() },
+    onPointerDown: (e) => { e.stopPropagation(); setPressed(true) },
+    onPointerUp: () => setPressed(false),
+    onPointerLeave: () => setPressed(false),
+    onPointerCancel: () => setPressed(false)
+  } : {}
+
   return (
-    <div style={{ ...styles.wrap, borderRadius }}>
+    <div
+      {...wrapHandlers}
+      style={{
+        ...styles.wrap,
+        borderRadius,
+        cursor: interactive ? 'pointer' : 'default',
+        transform: pressed ? 'scale(0.96)' : 'scale(1)',
+        transition: 'transform 0.12s var(--ease-ios)'
+      }}
+    >
       {videoUrl ? (
         <video
+          ref={videoRef}
           src={videoUrl}
           poster={previewUrl || undefined}
           autoPlay
