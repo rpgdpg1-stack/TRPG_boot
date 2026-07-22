@@ -12,7 +12,6 @@ import ScreenTitle from '../components/ScreenTitle'
 import HeartIcon from '../components/HeartIcon'
 import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
-import ExerciseVideo from '../components/ExerciseVideo'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
 const readPinnedGym = () => {
@@ -161,10 +160,10 @@ export default function FavoriteExercises() {
                 ariaLabel="Убрать из любимых"
                 style={styles.heartBtn}
               />
-              {/* Миниатюра-видео: тап по ней переигрывает 1 цикл (ExerciseVideo сам
-                  глушит всплытие), остальная карточка открывает модалку. */}
               <div style={styles.preview}>
-                <ExerciseVideo videoUrl={f.video_url} previewUrl={f.preview_url} />
+                {f.preview_url
+                  ? <img src={f.preview_url} alt="" style={styles.previewImg} draggable={false} />
+                  : <span style={styles.previewEmoji}>💪</span>}
               </div>
               <div style={styles.cardContent}>
                 <div style={styles.exName}>{title(f.name)}</div>
@@ -226,6 +225,8 @@ const styles = {
     flexShrink: 0, width: '118px', height: '118px', borderRadius: '33px', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
+  previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  previewEmoji: { fontSize: '40px' },
   cardContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' },
   exName: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, lineHeight: '19px', color: '#F0F0F0' },
   tag: {
