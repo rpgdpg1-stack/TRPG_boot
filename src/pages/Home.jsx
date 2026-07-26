@@ -1,38 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { useOutsideClose } from '../lib/use-outside-close'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { getHistoryView, setHistoryView } from '../lib/history-view'
-import { EVENTS, on } from '../lib/events'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT, MONTHS_RU } from '../utils/history'
+import { getHistoryView } from '../lib/history-view'
+import { EVENTS, on, emit } from '../lib/events'
+import { getCurrentUser } from '../lib/auth'
+import { cacheInvalidate } from '../lib/cache'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
-import ChevronIcon from '../components/ChevronIcon'
 import HistoryStats from '../components/HistoryStats'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
-// Компактная карточка-кнопка «История»: сводка за текущую неделю (серия +
-// силовая/плавание) за выбранный период. Вторичный блок — спокойнее по весу, чем
-// блок раздела. Период (дропдаун) синхронен с /history (localStorage history-view).
-const HISTORY_PERIODS = [
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-  { id: 'year', label: 'Год' },
-  { id: 'all', label: 'Всё время' }
-]
-const periodLabel = (id) => HISTORY_PERIODS.find(p => p.id === id)?.label || 'Неделя'
+// Компактная карточка-кнопка «Статистика»: сводка (силовая/плавание) за период,
+// который выбран внутри /history (общий localStorage history-view). Период здесь
+// НЕ меняется — только отображается; менять — на /history. Весь блок ведёт туда.
+function periodDisplayLabel(view) {
+  if (view.period === 'week') return 'Неделя'
+  if (view.period === 'all') return 'Всё время'
+  if (view.period === 'year') return String(view.year)
+  return `${MONTHS_RU[view.month] || ''} ${view.year}` // month → «Июль 2026»
+}
 
 function HistoryBlock() {
   const navigate = useNavigate()
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
-  const [view, setView] = useState(getHistoryView)   // { period, year, month }
-  const [open, setOpen] = useState(false)            // дропдаун периода
-  const periodRef = useRef(null)
-  useOutsideClose(periodRef, open, useCallback(() => setOpen(false), []))
+  // Период читаем из общего history-view один раз на маунт: возврат с /history
+  // перемонтирует главную, поэтому свежий выбор подхватится сам.
+  const view = getHistoryView()   // { period, year, month }
 
   useEffect(() => {
     let cancelled = false
@@ -48,46 +46,14 @@ function HistoryBlock() {
     : new Date(Date.UTC(view.year, view.month, 15, 12))
   const sum = summarizeWorkouts(workouts, view.period, refDate)
 
-  const pickPeriod = (period) => {
-    setOpen(false)
-    if (period === view.period) return
-    haptic.light()
-    const next = { ...view, period }
-    setView(next)
-    setHistoryView(next)
-  }
-
-  // Весь блок ведёт в /history (календарь). Дропдаун периода — свой тап (не навигирует).
   const openHistory = () => { haptic.light(); navigate('/history') }
 
   return (
     <div style={styles.histBlock} className="press-tile" onClick={openHistory}>
       <div style={styles.histHead}>
         <span style={styles.histTitle}>Статистика</span>
-
-        <div style={styles.periodWrap} onClick={(e) => e.stopPropagation()} ref={periodRef}>
-          <button
-            style={styles.periodBtn}
-            className="press-tile"
-            onClick={() => { haptic.light(); setOpen(o => !o) }}
-            aria-label="Выбрать период"
-          >
-            {periodLabel(view.period)}
-            <span style={{ ...styles.periodChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-              <ChevronIcon size={14} color="var(--color-text-secondary)" />
-            </span>
-          </button>
-
-          {open && (
-            <div style={styles.periodDropdown}>
-              {HISTORY_PERIODS.map(p => (
-                <button key={p.id} className="tg-row" style={styles.periodItem} onClick={() => pickPeriod(p.id)}>
-                  <span style={{ ...styles.periodItemText, color: p.id === view.period ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>{p.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Период — только отображение выбранного в /history (не переключатель). */}
+        <span style={styles.periodLabel}>{periodDisplayLabel(view)}</span>
       </div>
 
       <div style={{ marginTop: '14px' }}>
@@ -138,7 +104,11 @@ function usePullToRefresh(onRefresh) {
         setRefreshing(true)
         setPull(PTR_THRESH)
         haptic.success()
-        setTimeout(() => onRefresh(), 500) // дать увидеть заполнение + вибро
+        // Дать увидеть заполнение + вибро, затем обновить данные (без reload) и
+        // сбросить индикатор, когда обновление завершилось.
+        setTimeout(() => {
+          Promise.resolve(onRefresh()).finally(() => { setRefreshing(false); setPull(0) })
+        }, 500)
       } else {
         setPull(0)
       }
@@ -190,7 +160,7 @@ function PullIndicator({ pull, refreshing, color }) {
     <div aria-hidden="true" style={{
       ...styles.pullIndicator,
       opacity: shown ? 1 : 0,
-      // Появляется на ~8px ВЫШЕ пилюли недели и тянется вниз по ходу оттяга.
+      // Появляется у верхней кромки и тянется вниз по ходу оттяга.
       transform: `translateY(${eff - 36}px)`,
       transition: 'opacity 0.2s ease'
     }}>
@@ -204,8 +174,8 @@ function PullIndicator({ pull, refreshing, color }) {
  * Главная — Тренировки.
  *
  * Максимально тихий экран под сценарий «открыл → начал тренировку»:
- * заголовок + статус недели (закреп сверху) → карусель разделов с закреплённой
- * программой → компактная карточка-кнопка «История» (вся аналитика — на /history).
+ * заголовок → карусель разделов с закреплённой программой (Начать/Продолжить) →
+ * компактная карточка-кнопка «Статистика» (вся аналитика — на /history).
  */
 export default function Home() {
   // Цвет акцентного свечения = текущий раздел карусели. Старт — из последнего
@@ -216,8 +186,14 @@ export default function Home() {
   })
   const onSectionChange = useCallback((c) => { if (c?.color) setGlowColor(c.color) }, [])
 
-  // Pull-to-refresh: оттягивание с самого верха → обновление страницы.
-  const handleRefresh = useCallback(() => { window.location.reload() }, [])
+  // Pull-to-refresh: оттягивание с самого верха → обновление ДАННЫХ (не reload,
+  // чтобы не ре-инициализировать Telegram SDK и не мигать белым). Сбрасываем кеш
+  // последних тренировок и шлём USER_CHANGED — HistoryBlock/карточки перечитаются.
+  const handleRefresh = useCallback(async () => {
+    cacheInvalidate('recent-workouts:')
+    await getRecentWorkouts(HISTORY_FETCH_LIMIT).catch(() => {})
+    emit(EVENTS.USER_CHANGED, getCurrentUser())
+  }, [])
   const { pull, refreshing } = usePullToRefresh(handleRefresh)
 
   useEffect(() => {
@@ -281,7 +257,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  // Блок недели — в потоке (не закреплён). Верхний отступ = зона под кнопками Telegram.
+  // Заголовок экрана — в потоке. Верхний отступ = зона под кнопками Telegram.
   topBlock: {
     position: 'relative',
     zIndex: 1,
@@ -313,35 +289,9 @@ const styles = {
     color: 'rgba(255, 255, 255, 0.6)',
     letterSpacing: '0.2px'
   },
-  // Селектор периода справа: «Неделя ▼».
-  periodWrap: { position: 'relative' },
-  periodBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '3px',
-    padding: '4px 2px',
-    background: 'transparent', border: 'none', cursor: 'pointer',
+  // Период справа — статичный лейбл (что выбрано в /history), не переключатель.
+  periodLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700,
-    color: 'var(--color-text)'
-  },
-  periodChev: { display: 'inline-flex', marginTop: '1px', transition: 'transform 0.2s var(--ease-ios)' },
-  dropClose: { position: 'fixed', inset: 0, zIndex: 40, cursor: 'pointer' },
-  periodDropdown: {
-    position: 'absolute',
-    top: 'calc(100% + 6px)',
-    right: 0,
-    zIndex: 41,
-    minWidth: '140px',
-    padding: '6px',
-    background: 'var(--surface-raised)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 'var(--radius-medium)',
-    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
-    display: 'flex', flexDirection: 'column', gap: '2px'
-  },
-  periodItem: {
-    display: 'flex', alignItems: 'center',
-    width: '100%', padding: '9px 12px',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)',
-    cursor: 'pointer', textAlign: 'left'
-  },
-  periodItemText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600 }
+    color: 'var(--color-text-secondary)'
+  }
 }

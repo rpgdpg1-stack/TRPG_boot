@@ -168,9 +168,16 @@ export default function SectionCarousel({ onSectionChange }) {
           onDeleted={() => setPinnedTick(t => t + 1)}
         />
       ) : (
-        <button style={styles.pinEmpty} className="press-tile" onClick={openSection}>
-          <span style={styles.pinEmptyText}>Закрепить программу</span>
-          <span style={styles.pinEmptyHint}>Выбери в разделе — она появится здесь</span>
+        // Cold-start: заглушка = рабочий CTA в цвет раздела. Тап → список программ
+        // раздела, где выбираешь; выбранная закрепится здесь для старта в один тап.
+        <button
+          style={{ ...styles.pinEmpty, border: `1px dashed color-mix(in srgb, ${cat.color} 45%, transparent)` }}
+          className="press-tile"
+          onClick={openSection}
+        >
+          <span style={{ ...styles.pinEmptyPlus, color: cat.color }}>＋</span>
+          <span style={styles.pinEmptyText}>Выбрать программу</span>
+          <span style={styles.pinEmptyHint}>Появится здесь для быстрого старта</span>
         </button>
       )}
     </div>
@@ -208,8 +215,6 @@ const styles = {
     display: 'inline-flex', marginTop: '1px', marginLeft: '-1px',
     transition: 'transform 0.2s var(--ease-ios)'
   },
-  // Прозрачный слой для закрытия по тапу мимо списка.
-  dropClose: { position: 'fixed', inset: 0, zIndex: 40, cursor: 'pointer' },
   // Выпадающий список — по центру под селектором.
   dropdown: {
     position: 'absolute',
@@ -244,9 +249,10 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     background: 'var(--surface-raised)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
     cursor: 'pointer'
   },
+  pinEmptyPlus: { fontSize: '22px', lineHeight: 1, marginBottom: '2px' },
   pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
   pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
