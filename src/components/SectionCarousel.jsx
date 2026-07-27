@@ -98,8 +98,8 @@ export default function SectionCarousel({ onSectionChange }) {
 
   return (
     <div style={styles.wrap}>
-      {/* Шапка раздела: слева селектор («Силовая ▼»), справа «Все ›» — вход в весь
-          раздел (не только закреп). Обе части на одной линии. */}
+      {/* Шапка раздела: только селектор («Силовая ▾»). «Все ›» — ниже, на строке
+          «последняя … назад», у правого края. */}
       <div style={styles.headRow}>
         <div style={styles.selectorWrap} ref={selectorRef}>
         <button
@@ -136,7 +136,12 @@ export default function SectionCarousel({ onSectionChange }) {
             </div>
         )}
         </div>
+      </div>
 
+      {/* Над карточкой: слева «последняя … назад» (nbsp держит высоту в пустом
+          разделе), справа «Все ›» — вход во весь раздел. */}
+      <div style={styles.lastRow}>
+        <span style={styles.lastLine}>{lastText || ' '}</span>
         <button
           style={styles.allLink}
           className="press-tile"
@@ -147,10 +152,6 @@ export default function SectionCarousel({ onSectionChange }) {
           <span style={styles.chevRight}><ChevronIcon size={15} color="var(--color-text-secondary)" /></span>
         </button>
       </div>
-
-      {/* Последняя тренировка — НАД карточкой, по центру. В разделе без закрепа
-          (заглушка) держим ту же высоту строки (nbsp), чтобы блок не прыгал. */}
-      <div style={styles.lastLine}>{lastText || ' '}</div>
 
       {/* Закреплённая программа — карточка без цветной рамки, светлее фона блока
           (как «закреплённый» в друзьях). */}
@@ -195,8 +196,8 @@ const styles = {
   },
   // Шапка: селектор слева, «Все ›» справа — в одну линию, по вертикали по центру.
   headRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: '8px', marginBottom: '16px'
+    display: 'flex', alignItems: 'center',
+    marginBottom: '6px'
   },
   // Селектор-заголовок слева («Силовая ▼»): иконка + название + шеврон.
   selectorWrap: { position: 'relative', minWidth: 0 },
@@ -238,10 +239,16 @@ const styles = {
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
   // «Последняя тренировка …» — над карточкой, по левому краю. Тише названия
   // (легче/тусклее), ближе к карточке. minHeight держит высоту в пустом разделе.
+  // Строка над карточкой: слева «последняя … назад», справа «Все ›».
+  lastRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '8px', minHeight: '28px', marginBottom: '5px', paddingLeft: '2px'
+  },
   lastLine: {
-    minHeight: '15px', marginBottom: '5px', paddingLeft: '2px',
+    flex: 1, minWidth: 0,
     fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.4)', textAlign: 'left'
+    color: 'rgba(255, 255, 255, 0.4)', textAlign: 'left',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
   },
   pinEmpty: {
     width: '100%',

@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
-import { ACCENTS, getAccentSync, setAccent } from '../lib/accent'
 import ScreenTitle from '../components/ScreenTitle'
 
 /**
@@ -20,19 +19,11 @@ import ScreenTitle from '../components/ScreenTitle'
  */
 export default function Settings() {
   const navigate = useNavigate()
-  const [accentId, setAccentId] = useState(() => getAccentSync().id)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
-
-  const pickAccent = (id) => {
-    if (id === accentId) return
-    haptic.selection()
-    setAccentId(id)
-    setAccent(id) // применяет на :root + сохраняет (local + CloudStorage кросс-девайс)
-  }
 
   const groups = [
     {
@@ -117,35 +108,6 @@ export default function Settings() {
 
       <ScreenTitle>Настройки</ScreenTitle>
 
-      {/* Цветовая схема — «цвет взаимодействия». Тап меняет тему во всём приложении. */}
-      <div style={{ ...styles.groupTitle, marginTop: '4px' }}>ЦВЕТОВАЯ СХЕМА</div>
-      <div style={styles.accentCard}>
-        {ACCENTS.map((a) => {
-          const selected = a.id === accentId
-          return (
-            <button
-              key={a.id}
-              onClick={() => pickAccent(a.id)}
-              aria-label={a.name}
-              className="press-tile"
-              style={styles.swatchBtn}
-            >
-              <span
-                style={{
-                  ...styles.swatch,
-                  background: a.value,
-                  boxShadow: selected
-                    ? `0 0 0 2px var(--color-card), 0 0 0 4px ${a.value}`
-                    : 'none'
-                }}
-              >
-                {selected && <span style={{ ...styles.swatchCheck, color: a.on }}>✓</span>}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
       {groups.map((group, gIdx) => (
         <section key={group.title}>
           <div style={{ ...styles.groupTitle, marginTop: gIdx === 0 ? '4px' : '24px' }}>
@@ -208,42 +170,6 @@ const styles = {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
-  },
-  accentCard: {
-    // Жёсткая сетка 5 колонок → ровно 5 сверху и 5 снизу (а не «по ширине»).
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '14px',
-    justifyItems: 'center',
-    background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)',
-    padding: '18px 20px'
-  },
-  // Хит-зона ≥44px вокруг кружка-свотча.
-  swatchBtn: {
-    width: '44px',
-    height: '44px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer'
-  },
-  swatch: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'box-shadow 0.2s ease'
-  },
-  swatchCheck: {
-    fontSize: '16px',
-    fontWeight: 800,
-    lineHeight: 1
   },
   row: {
     display: 'flex',
