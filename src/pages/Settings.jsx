@@ -29,9 +29,8 @@ export default function Settings() {
     {
       title: 'ОСНОВНОЕ',
       items: [
-        { id: 'library',       icon: '📚', title: 'Справочник упражнений', subtitle: 'База с техникой и видео' },
-        { id: 'notifications', icon: '🔔', title: 'Уведомления',           subtitle: 'Напоминания о тренировках' },
-        { id: 'about',         icon: 'ℹ️', title: 'О приложении',          subtitle: 'Версия · Политика' }
+        { id: 'notifications', icon: '🔔', title: 'Уведомления',   subtitle: 'Напоминания о тренировках' },
+        { id: 'about',         icon: 'ℹ️', title: 'О приложении',  subtitle: 'Версия · Политика' }
       ]
     },
     {

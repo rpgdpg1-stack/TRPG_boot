@@ -85,34 +85,38 @@ export default function Profile() {
   // В профиле статистика — за ВСЁ время, только тоталы (без периодов и разбивки).
   const summary = summarizeWorkouts(workouts, 'all', new Date())
 
+  // Меню сгруппировано по интенту: сверху — что смотрят часто (прогресс), затем
+  // данные о теле, снизу — системное. Пункты без экрана помечены `soon` (не
+  // кликабельны, бейдж «Скоро» вместо стрелки) — чтобы не было «мёртвых» строк.
   const menuGroups = [
     {
-      title: 'ПРОФИЛЬ',
+      title: 'МОЙ ПРОГРЕСС',
       items: [
-        { id: 'favorite-exercises', icon: '❤️',      title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
-        { id: 'daily-boost', icon: '⚡',            title: 'Активности', subtitle: 'Ежедневные активности',        path: '/daily-boost' },
-        { id: 'history',     icon: '📋',             title: 'Статистика',  subtitle: 'Все завершённые тренировки', path: '/history' },
-        { id: 'privacy',     icon: '🔒',             title: 'Приватность', subtitle: 'Что видят друзья',           path: '/privacy' }
+        { id: 'history',            icon: '📋', title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
+        { id: 'favorite-exercises', icon: '❤️', title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
+        { id: 'daily-boost',        icon: '⚡', title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
       ]
     },
     {
       title: 'ТЕЛО',
       items: [
-        { id: 'personal',     icon: '👤', title: 'Личные данные', subtitle: 'Пол · Рост · Возраст' },
-        { id: 'measurements', icon: '📏', title: 'Замеры тела',   subtitle: 'Вес · Объёмы · Фото' },
-        { id: 'goal',         icon: '🎯', title: 'Цель',          subtitle: 'Что хочешь достичь' }
+        { id: 'recovery',     icon: '🛌', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
+        { id: 'personal',     icon: '👤', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
+        { id: 'measurements', icon: '📏', title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
+        { id: 'goal',         icon: '🎯', title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }
       ]
     },
     {
-      title: 'ЕЩЁ',
+      title: 'СИСТЕМА',
       items: [
-        { id: 'recovery', icon: '🛌',          title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье',      path: '/recovery' },
-        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки',      subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+        { id: 'privacy',  icon: '🔒',          title: 'Приватность', subtitle: 'Что видят друзья',            path: '/privacy' },
+        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
     }
   ]
 
   const handleSectionTap = (item) => {
+    if (item.soon) return
     haptic.light()
     if (item.path) navigate(item.path, { state: { from: '/profile' } })
   }
@@ -186,8 +190,13 @@ export default function Profile() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className="tg-row"
-                style={{ ...styles.row, borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)' }}
+                className={item.soon ? undefined : 'tg-row'}
+                disabled={item.soon}
+                style={{
+                  ...styles.row,
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)',
+                  ...(item.soon ? styles.rowSoon : {})
+                }}
               >
                 {item.icon.startsWith('ui:') ? (
                   <UiIcon name={item.icon.slice(3)} size={22} color={item.iconColor || 'var(--color-text)'} style={{ width: '32px', height: '22px' }} />
@@ -198,7 +207,7 @@ export default function Profile() {
                   <div style={styles.rowTitle}>{item.title}</div>
                   <div style={styles.rowSubtitle}>{item.subtitle}</div>
                 </div>
-                <span style={styles.rowArrow}>›</span>
+                {item.soon ? <span style={styles.soonTag}>Скоро</span> : <span style={styles.rowArrow}>›</span>}
               </button>
             ))}
           </div>
@@ -237,22 +246,15 @@ const styles = {
     display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px',
     width: '100%', minHeight: '64px', textAlign: 'left', background: 'transparent', border: 'none'
   },
-  toggleRow: {
-    display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px', minHeight: '64px'
-  },
+  // Пункт «Скоро»: приглушён, некликабелен (без стрелки, с бейджем).
+  rowSoon: { opacity: 0.5, cursor: 'default' },
   rowIcon: { fontSize: '22px', width: '32px', textAlign: 'center', flexShrink: 0 },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '2px' },
   rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
   rowArrow: { fontSize: '18px', color: 'var(--color-text-secondary)', flexShrink: 0 },
-
-  // Переключатель (iOS-style).
-  switch: {
-    position: 'relative', flexShrink: 0, width: '42px', height: '24px', borderRadius: '12px',
-    border: 'none', padding: 0, transition: 'background 0.2s ease', WebkitTapHighlightColor: 'transparent'
-  },
-  knob: {
-    position: 'absolute', top: '2px', left: '2px', width: '20px', height: '20px', borderRadius: '50%',
-    background: '#FFFFFF', transition: 'transform 0.2s var(--ease-ios)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+  soonTag: {
+    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   }
 }

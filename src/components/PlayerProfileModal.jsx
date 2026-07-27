@@ -54,7 +54,7 @@ export default function PlayerProfileModal({ row, onClose }) {
   // чтобы экран не читался как поломка. Приватность НЕ раскрываем (что скрыто).
   if (pub && friendSections.length === 0) {
     friendSections.push(
-      <div key="note" style={styles.friendNote}>Пока делится только активностью</div>
+      <div key="note" style={styles.friendNote}>Инфо скрыто</div>
     )
   }
 
