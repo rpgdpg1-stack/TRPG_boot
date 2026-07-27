@@ -92,15 +92,15 @@ export default function Profile() {
     {
       title: 'МОЙ ПРОГРЕСС',
       items: [
-        { id: 'history',            icon: 'ui:stats',    title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
-        { id: 'favorite-exercises', icon: 'ui:heart',    title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
-        { id: 'daily-boost',        icon: 'ui:activity', title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
+        { id: 'history',            icon: 'ui:stats',    iconColor: '#3FA2F7',              title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
+        { id: 'favorite-exercises', icon: 'ui:heart',    iconColor: 'var(--color-primary)', title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
+        { id: 'daily-boost',        icon: 'ui:activity', iconColor: '#EAB308',              title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
       ]
     },
     {
       title: 'ТЕЛО',
       items: [
-        { id: 'recovery',     icon: 'ui:recovery', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
+        { id: 'recovery',     icon: 'ui:recovery', iconColor: '#06B6D4', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
         { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
         { id: 'measurements', icon: 'ui:measure',  title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
         { id: 'goal',         icon: 'ui:goal',     title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }
@@ -109,8 +109,7 @@ export default function Profile() {
     {
       title: 'СИСТЕМА',
       items: [
-        { id: 'privacy',  icon: 'ui:privacy',  title: 'Приватность', subtitle: 'Что видят друзья',            path: '/privacy' },
-        { id: 'settings', icon: 'ui:settings', title: 'Настройки',   subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
     }
   ]
@@ -141,13 +140,8 @@ export default function Profile() {
     if (favorites.length > 0) {
       sections.push(<FavoritesBlock key="fav" items={favorites} bare />)
     } else if (!favLoaded) {
-      // Холодный старт без кеша — скелетон, чтобы блок не «выпрыгивал» позже.
-      sections.push(
-        <div key="fav-sk">
-          <div style={styles.favSkTitle}>Любимые упражнения</div>
-          {[0, 1, 2].map(i => <div key={i} style={styles.favSkRow} />)}
-        </div>
-      )
+      // Холодный старт без кеша — компактный скелетон (высота свёрнутой строки).
+      sections.push(<div key="fav-sk" style={styles.favSk} />)
     }
   }
 
@@ -167,6 +161,23 @@ export default function Profile() {
           sections={sections}
           statsLoading={!loaded}
         />
+      </div>
+
+      {/* Приватность — сразу под карточкой профиля: это настройка именно того, что
+          видят друзья в этой карточке. Своим отдельным блоком, до общего меню. */}
+      <div style={{ ...styles.groupCard, marginBottom: '20px' }}>
+        <button
+          onClick={() => handleSectionTap({ id: 'privacy', path: '/privacy' })}
+          className="tg-row"
+          style={{ ...styles.row, borderTop: 'none' }}
+        >
+          <UiIcon name="privacy" size={22} color="#9E86FF" style={{ width: '32px', height: '22px' }} />
+          <div style={styles.rowContent}>
+            <div style={styles.rowTitle}>Приватность</div>
+            <div style={styles.rowSubtitle}>Что видят друзья</div>
+          </div>
+          <span style={styles.rowArrow}>›</span>
+        </button>
       </div>
 
       {/* Пригласить друга */}
@@ -220,8 +231,7 @@ export default function Profile() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   headerWrap: { margin: '0 0 16px' },
-  favSkTitle: { width: '150px', height: '13px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', marginBottom: '14px' },
-  favSkRow: { height: '15px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', marginBottom: '11px' },
+  favSk: { height: '52px', borderRadius: 'var(--radius-medium)', background: 'rgba(255,255,255,0.05)' },
 
   inviteButton: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',
