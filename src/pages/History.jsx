@@ -110,11 +110,10 @@ export default function History() {
         <WorkoutBarChart workouts={workouts} period={period} view={view} />
       </div>
 
-      {/* Скоро — тихие некликабельные заглушки */}
+      {/* Скоро — тихая некликабельная заглушка. «Любимые упражнения» тут убраны:
+          это реальная фича, живёт в профиле (не дублируем заглушкой). */}
       <div style={styles.soonGroup}>
         <SoonRow emoji="🏆" title="Личные рекорды" />
-        <div style={styles.soonDivider} />
-        <SoonRow emoji="⭐" title="Любимые упражнения" />
       </div>
     </div>
   )

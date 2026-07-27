@@ -212,9 +212,10 @@ src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
-├── assets/ui/      SVG-иконки: cardio change check cloud_done cloud_sync friends info invite-friend
-│                   leaderboard muscles muscles-line network_off notes place-gym place-home place-street
-│                   power profile rewards settings stretching swimming
+├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity cardio change check
+│                   cloud_done cloud_sync friends goal heart info invite-friend leaderboard measure
+│                   muscles muscles-line network_off notes personal place-gym place-home place-street
+│                   power privacy profile recovery rewards settings stats stretching swimming
 ├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats

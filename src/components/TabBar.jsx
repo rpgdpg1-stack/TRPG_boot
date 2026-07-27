@@ -14,8 +14,10 @@ import MuscleIcon from './MuscleIcon'
  *  - Неактив везде: иконка/лейбл --color-text-inactive (белый 50%)
  *  - Активный таб: gap иконка→лейбл 1px (неактив 0.5px)
  *
- * Не показывается на экранах тренировки (/workout/...), замены (/swap/...)
- * и инфо упражнения (/exercise/...).
+ * Виден ТОЛЬКО на трёх корневых вкладках (/, /friends, /profile). На любом другом
+ * экране плавно уезжает вниз (translateY + fade) и выезжает обратно при возврате —
+ * микро-анимация перехода. Всегда смонтирован (App/BottomTabBar), чтобы анимация
+ * работала, а не был мгновенный показ/скрытие.
  */
 export default function TabBar() {
   const location = useLocation()
@@ -25,12 +27,11 @@ export default function TabBar() {
   const [profilePopTick, setProfilePopTick] = useState(0)
   const [friendsPopTick, setFriendsPopTick] = useState(0)
 
-  const isHiddenOnPath =
-    location.pathname.startsWith('/workout') ||
-    location.pathname.startsWith('/swap') ||
-    location.pathname.startsWith('/exercise')
-
-  if (isHiddenOnPath) return null
+  // Бар виден только на корневых вкладках; на прочих — уезжает вниз.
+  const visible =
+    location.pathname === '/' ||
+    location.pathname === '/friends' ||
+    location.pathname === '/profile'
 
   const isWorkoutSection = location.pathname === '/' ||
                            location.pathname.startsWith('/category')
@@ -74,7 +75,20 @@ export default function TabBar() {
   }
 
   return (
-    <nav style={styles.tabbar}>
+    <nav
+      style={{
+        ...styles.tabbar,
+        // Виден — на месте; скрыт — уехал ниже кромки экрана + прозрачный, без кликов.
+        transform: visible
+          ? 'translateX(-50%) translateY(0)'
+          : 'translateX(-50%) translateY(calc(var(--tabbar-height) + var(--tabbar-bottom) + env(safe-area-inset-bottom) + 40px))',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        // Микро-анимация перехода (2026): мягкий ease-out-ish spring на уезд/выезд.
+        transition: 'transform 0.34s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.26s ease'
+      }}
+      aria-hidden={!visible}
+    >
       {tabs.map((tab, i) => (
         <button
           key={tab.id}

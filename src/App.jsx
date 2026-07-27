@@ -186,10 +186,9 @@ function SettingsButtonController() {
 }
 
 function BottomTabBar() {
-  const location = useLocation()
-  // Экраны со своей прибитой кнопкой-доком внизу — таб-бар не показываем.
-  if (location.pathname.startsWith('/constructor')) return null
-  if (location.pathname.startsWith('/swim/')) return null
+  // Таб-бар всегда смонтирован — видимость (и плавный уезд вниз/выезд вверх) он
+  // определяет сам по маршруту (виден только на /, /friends, /profile). Держим в
+  // DOM, иначе на страницах без бара он бы размонтировался и анимации не было бы.
   return <TabBar />
 }
 

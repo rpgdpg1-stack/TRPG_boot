@@ -92,25 +92,25 @@ export default function Profile() {
     {
       title: 'МОЙ ПРОГРЕСС',
       items: [
-        { id: 'history',            icon: '📋', title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
-        { id: 'favorite-exercises', icon: '❤️', title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
-        { id: 'daily-boost',        icon: '⚡', title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
+        { id: 'history',            icon: 'ui:stats',    title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
+        { id: 'favorite-exercises', icon: 'ui:heart',    title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
+        { id: 'daily-boost',        icon: 'ui:activity', title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
       ]
     },
     {
       title: 'ТЕЛО',
       items: [
-        { id: 'recovery',     icon: '🛌', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
-        { id: 'personal',     icon: '👤', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
-        { id: 'measurements', icon: '📏', title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
-        { id: 'goal',         icon: '🎯', title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }
+        { id: 'recovery',     icon: 'ui:recovery', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
+        { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
+        { id: 'measurements', icon: 'ui:measure',  title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
+        { id: 'goal',         icon: 'ui:goal',     title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }
       ]
     },
     {
       title: 'СИСТЕМА',
       items: [
-        { id: 'privacy',  icon: '🔒',          title: 'Приватность', subtitle: 'Что видят друзья',            path: '/privacy' },
-        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+        { id: 'privacy',  icon: 'ui:privacy',  title: 'Приватность', subtitle: 'Что видят друзья',            path: '/privacy' },
+        { id: 'settings', icon: 'ui:settings', title: 'Настройки',   subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
     }
   ]
