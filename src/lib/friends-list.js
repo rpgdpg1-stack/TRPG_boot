@@ -1,16 +1,16 @@
 /**
  * Список друзей для отдельной страницы «Друзья».
  *
- * В отличие от lib/leaderboard.js (рейтинг — соревнование по мускулам),
- * здесь друзья показываются СПИСКОМ: без нумерации, с закрепами и
- * сортировкой по активности (последняя тренировка).
+ * Соц-концепция без соревновательности: друзья показываются СПИСКОМ (без
+ * нумерации/рангов), с закрепами и сортировкой по активности (последняя
+ * тренировка).
  *
  * Все функции — обёртки над Supabase RPC:
- *  - api_get_friends_list   → список друзей (без меня) с местом в лиге,
- *                             последней тренировкой, закрепом
+ *  - api_get_friends_list   → список друзей (без меня): last_workout_at, закреп
  *  - api_toggle_pin_friend  → закрепить/открепить (лимит 6)
+ *  - api_remove_friend      → убрать из друзей (удаляет дружбу + закрепы пары)
  *
- * Кеш короткий (1 мин), сбрасывается при закрепе/добавлении друга.
+ * Кеш короткий (1 мин), сбрасывается при закрепе/удалении/добавлении друга.
  */
 
 import { supabase } from './supabase'
@@ -23,11 +23,10 @@ export const PIN_LIMIT = 6
 /**
  * Список друзей текущего юзера (БЕЗ самого юзера).
  * Возвращает массив: { user_id, first_name, username, photo_url,
- *   total_muscles, rank_index, league_place, total_in_league,
- *   last_workout_at, pinned_at }
+ *   last_workout_at, pinned_at }. Сервер также отдаёт устаревшие league-поля
+ * (rank_index/league_place/… — литералы-заглушки), фронт их НЕ использует.
  *
- * Уже отсортирован сервером: закреплённые (новее выше) → по свежести
- * тренировки → по мускулам.
+ * Уже отсортирован сервером: закреплённые (новее выше) → по свежести тренировки.
  */
 /**
  * СИНХРОННО последний список друзей для мгновенного рендера (память → localStorage).
@@ -113,9 +112,42 @@ export async function togglePinFriend(friendId) {
 }
 
 /**
+ * Убрать из друзей (удаляет симметричную дружбу + закрепы пары).
+ * Возвращает { success } или { success:false, error } где error:
+ *   'not_friend' — уже не друзья · 'bad_args' — кривые аргументы · 'rpc_error'/'exception'.
+ * При успехе сбрасываем кеш списка.
+ */
+export async function removeFriend(friendId) {
+  const user = getCurrentUser()
+  if (!user) return { success: false, error: 'no_user' }
+
+  try {
+    const { data, error } = await supabase.rpc('api_remove_friend', {
+      p_user_id: user.id,
+      p_friend_id: friendId
+    })
+
+    if (error) {
+      console.error('[friends-list] removeFriend RPC error:', error)
+      return { success: false, error: 'rpc_error' }
+    }
+
+    if (data?.success) {
+      invalidateFriendsListCache()
+      return { success: true }
+    }
+
+    return { success: false, error: data?.error || 'unknown' }
+  } catch (e) {
+    console.error('[friends-list] removeFriend exception:', e)
+    return { success: false, error: 'exception' }
+  }
+}
+
+/**
  * Сбросить кеш списка друзей. Вызывается после:
  *  - закрепа/открепа (порядок изменился)
- *  - добавления друга (новый в списке)
+ *  - удаления/добавления друга (состав списка изменился)
  *  - завершения тренировки (свежесть активности изменилась)
  */
 export function invalidateFriendsListCache() {

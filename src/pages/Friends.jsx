@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFriendsList, getFriendsListSync, togglePinFriend, PIN_LIMIT } from '../lib/friends-list'
+import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
+import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
+import { periodRange } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
 import ActionButton from '../components/ActionButton'
@@ -13,14 +14,12 @@ import UiIcon from '../components/UiIcon'
 import PinIcon from '../components/PinIcon'
 
 /**
- * Страница «Друзья» (вкладка таб-бара вместо кубка).
+ * Страница «Друзья» (вкладка таб-бара).
  *
- * Список друзей (без меня), отсортированный сервером: закреплённые сверху →
- * по свежести последней тренировки. Долгое нажатие на друга → модалка
- * закрепа (📌, лимит 6). Тап → карточка игрока (PlayerProfileModal) с
- * возможностью подстраховки.
- *
- * Кубок справа в шапке → переход на страницу рейтинга (вкладка «Друзья»).
+ * Соц-концепция без соревновательности: список друзей (без меня), отсортированный
+ * сервером — закреплённые сверху → по свежести последней тренировки.
+ * Тап по другу → карточка игрока (PlayerProfileModal, с учётом приватности).
+ * Долгое нажатие → модалка: закрепить/открепить (лимит 6) или убрать из друзей.
  */
 export default function Friends() {
   const navigate = useNavigate()
@@ -54,20 +53,41 @@ export default function Friends() {
   const otherFriends = friends.filter(f => !f.pinned_at)
   const pinnedCount = pinnedFriends.length
 
+  // Границы текущей недели — считаем ОДИН раз на экран и прокидываем в строки
+  // (в FriendRow больше не пересчитывается на каждую строку).
+  const weekRange = useMemo(() => periodRange('week'), [])
+
   const handleInviteTap = async () => {
     haptic.medium()
     await shareReferralLink()
   }
 
-  const handleRowTap = (friend) => {
+  const handleRowTap = useCallback((friend) => {
     haptic.light()
     setSelected(friend)
-  }
+  }, [])
 
-  const handleLongPress = (friend) => {
+  const handleLongPress = useCallback((friend) => {
     haptic.medium()
     setPinError(null)
     setPinTarget(friend)
+  }, [])
+
+  const handleRemoveFriend = async () => {
+    if (!pinTarget) return
+    const name = pinTarget.first_name || 'этого друга'
+    const ok = await tgConfirm(`Убрать ${name} из друзей?`)
+    if (!ok) return
+    haptic.medium()
+    const res = await removeFriend(pinTarget.user_id)
+    if (res.success) {
+      haptic.success()
+      setPinTarget(null)
+      load()
+    } else {
+      haptic.error()
+      setPinError('Не удалось убрать. Попробуй позже.')
+    }
   }
 
   const handleTogglePin = async () => {
@@ -128,27 +148,36 @@ export default function Friends() {
           </div>
           <div style={styles.inviteTitle}>Друзей пока нет</div>
           <div style={styles.inviteSubtitle}>
-            Пригласи друзей через Telegram, следите<br />
-            за прогрессом друг друга
+            Пригласи друзей через Telegram<br />
+            и следи за прогрессом друг друга
           </div>
           <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
             <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
-            ПРИГЛАСИТЬ ДРУГА
+            Пригласить друга
           </ActionButton>
         </div>
       ) : (
         <>
-          <div style={styles.hint}>Удерживай друга, чтобы закрепить 📌</div>
-
-          {/* Закреплённые сверху */}
-          {pinnedFriends.length > 0 && (
-            <div style={styles.list}>
-              {pinnedFriends.map((friend, idx) => (
-                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
-                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
-                </div>
-              ))}
+          {/* Подсказка про закреп — только пока нет ни одного закреплённого. */}
+          {pinnedFriends.length === 0 && (
+            <div style={styles.hint}>
+              Удерживай друга, чтобы закрепить
+              <span style={styles.hintPin}><PinIcon filled size={12} /></span>
             </div>
+          )}
+
+          {/* Закреплённые сверху (с микро-лейблом, когда есть и обычные). */}
+          {pinnedFriends.length > 0 && (
+            <>
+              {otherFriends.length > 0 && <div style={styles.groupLabel}>Закреплённые</div>}
+              <div style={styles.list}>
+                {pinnedFriends.map((friend, idx) => (
+                  <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                    <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Остальные друзья */}
@@ -156,7 +185,7 @@ export default function Friends() {
             <div style={{ ...styles.list, marginTop: pinnedFriends.length > 0 ? '12px' : 0 }}>
               {otherFriends.map((friend, idx) => (
                 <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
-                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
                 </div>
               ))}
             </div>
@@ -165,7 +194,7 @@ export default function Friends() {
           <div style={styles.bottomInvite}>
             <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
               <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
-              Добавить друга
+              Пригласить друга
             </ActionButton>
           </div>
         </>
@@ -178,6 +207,7 @@ export default function Friends() {
           isPinned={!!pinTarget.pinned_at}
           errorText={pinError}
           onToggle={handleTogglePin}
+          onRemove={handleRemoveFriend}
           onClose={() => { setPinTarget(null); setPinError(null) }}
         />
       )}
@@ -194,10 +224,10 @@ export default function Friends() {
 }
 
 /**
- * Модалка закрепа: показывает имя друга и кнопку Закрепить/Открепить.
+ * Модалка долгого нажатия: имя друга + закрепить/открепить + убрать из друзей.
  * Если упёрся в лимит при закрепе — errorText подсвечивается.
  */
-function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
+function PinModal({ friend, isPinned, errorText, onToggle, onRemove, onClose }) {
   const name = friend.first_name || 'Игрок'
   return createPortal(
     <div style={pinStyles.overlay} onClick={onClose}>
@@ -220,6 +250,8 @@ function PinModal({ friend, isPinned, errorText, onToggle, onClose }) {
         >
           {isPinned ? 'ОТКРЕПИТЬ' : 'ЗАКРЕПИТЬ'}
         </ActionButton>
+        {/* Убрать из друзей — рядом с закрепом, приглушённо-красным (с подтверждением). */}
+        <button onClick={onRemove} style={pinStyles.remove}>Убрать из друзей</button>
         <button onClick={onClose} style={pinStyles.close}>ОТМЕНА</button>
       </div>
 
@@ -240,37 +272,7 @@ const styles = {
   header: {
     marginBottom: '16px'
   },
-  titleRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    position: 'relative'
-  },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: '32px',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    margin: 0
-  },
-  cupButton: {
-    position: 'absolute',
-    right: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '36px',
-    height: '36px',
-    background: 'transparent',
-    border: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer'
-  },
-  // Первая строка контента: счётчик друзей по центру, кубок абсолютно справа.
+  // Строка под заголовком: счётчик друзей по центру.
   subRow: {
     position: 'relative',
     display: 'flex',
@@ -287,6 +289,7 @@ const styles = {
     minHeight: '14px'
   },
   hint: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
     fontFamily: 'var(--font-manrope)',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
@@ -294,6 +297,13 @@ const styles = {
     marginBottom: '10px',
     fontWeight: 500,
     opacity: 0.7
+  },
+  hintPin: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
+  // Микро-лейбл группы «Закреплённые» (когда есть и обычные друзья).
+  groupLabel: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    letterSpacing: '1.5px', color: 'var(--color-text-secondary)',
+    padding: '0 4px 6px', textTransform: 'uppercase'
   },
   list: {
     display: 'flex',
@@ -310,13 +320,6 @@ const styles = {
   skAvatar: { width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
   skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '7px' },
   skLine: { height: '12px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' },
-  empty: {
-    textAlign: 'center',
-    padding: '40px 20px',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    color: 'var(--color-text-secondary)'
-  },
   inviteBlock: {
     marginTop: '20px',
     padding: '32px 20px',
@@ -325,7 +328,7 @@ const styles = {
     border: '1px dashed rgba(158, 209, 83, 0.25)',
     borderRadius: 'var(--radius-card)'
   },
-  inviteEmoji: { fontSize: '40px', marginBottom: '8px' },
+  inviteEmoji: { marginBottom: '8px' },
   inviteTitle: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
@@ -401,6 +404,18 @@ const pinStyles = {
     fontWeight: 600,
     marginBottom: '4px'
   },
+  remove: {
+    width: '100%',
+    marginTop: '4px',
+    padding: '10px',
+    background: 'transparent',
+    color: '#E84545',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    fontWeight: 600,
+    border: 'none',
+    cursor: 'pointer'
+  },
   close: {
     width: '100%',
     padding: '12px',
@@ -410,6 +425,7 @@ const pinStyles = {
     fontSize: '12px',
     fontWeight: 600,
     letterSpacing: '1px',
-    border: 'none'
+    border: 'none',
+    cursor: 'pointer'
   }
 }

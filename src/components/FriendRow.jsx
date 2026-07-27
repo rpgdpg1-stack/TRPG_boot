@@ -18,14 +18,14 @@
  * трактуется как тап/скролл.
  */
 
-import { useRef, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { formatRelative, periodRange } from '../utils/history'
 import StreakFlame from './StreakFlame'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
 
-export default function FriendRow({ friend, onTap, onLongPress }) {
+function FriendRow({ friend, onTap, onLongPress, weekRange }) {
   const {
     first_name,
     photo_url,
@@ -38,8 +38,9 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
 
   const lastWorkoutText = last_workout_at ? formatRelative(last_workout_at) : null
 
-  // Тренировался ли на этой неделе (МСК, Пн–Вс) — по времени последней тренировки.
-  const [weekStart, weekEnd] = periodRange('week')
+  // Тренировался ли на этой неделе (МСК, Пн–Вс). Границы недели считаются ОДИН раз
+  // в Friends и приходят пропсом (fallback — на случай прямого использования).
+  const [weekStart, weekEnd] = weekRange || periodRange('week')
   const lastMs = last_workout_at ? new Date(last_workout_at).getTime() : 0
   const trainedThisWeek = lastMs >= weekStart && lastMs < weekEnd
 
@@ -138,6 +139,8 @@ export default function FriendRow({ friend, onTap, onLongPress }) {
     </div>
   )
 }
+
+export default memo(FriendRow)
 
 const styles = {
   row: {

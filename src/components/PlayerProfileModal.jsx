@@ -50,6 +50,13 @@ export default function PlayerProfileModal({ row, onClose }) {
   if (pub?.favorites?.length > 0) {
     friendSections.push(<FavoritesBlock key="fav" items={pub.favorites} bare />)
   }
+  // Друг ничего не открыл (или тренировок ещё нет) — нейтральная опорная строка,
+  // чтобы экран не читался как поломка. Приватность НЕ раскрываем (что скрыто).
+  if (pub && friendSections.length === 0) {
+    friendSections.push(
+      <div key="note" style={styles.friendNote}>Пока делится только активностью</div>
+    )
+  }
 
   return createPortal(
     <div style={styles.overlay} onClick={onClose}>
@@ -107,4 +114,11 @@ const styles = {
     gap: '12px',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
+  friendNote: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: '13px',
+    color: 'var(--color-text-secondary)',
+    textAlign: 'center',
+    padding: '8px 12px 4px'
+  }
 }

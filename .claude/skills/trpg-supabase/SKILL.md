@@ -76,8 +76,13 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 ## Друзья
 
-- Таблица `friend_pins` (лимит 5, RLS).
-- RPC: `api_get_friends_list`, `api_toggle_pin_friend`, `api_get_my_league_place`.
+- Дружба — таблица `friendships(user_a_id, user_b_id)`, **симметричная** (одна строка на
+  пару, направление любое). Закрепы — `friend_pins(owner_id, friend_id)`, лимит **6**.
+- RPC: `api_get_friends_list(p_user_id)` (список без меня: last_workout_at + закреп; league-поля
+  в TABLE — устаревшие литералы-заглушки, фронт не читает), `api_toggle_pin_friend`,
+  `api_remove_friend(p_user_id, p_friend_id)` (удаляет дружбу в обе стороны + закрепы пары;
+  `not_friend`/`bad_args`). Клиент — `removeFriend` в `lib/friends-list.js`, UI — «Убрать из
+  друзей» в модалке долгого нажатия (Friends.jsx, рядом с «Закрепить», с подтверждением).
 
 ## Программы и места (Зал/Дом/Улица)
 
