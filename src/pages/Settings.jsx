@@ -5,6 +5,7 @@ import { clearAllData, resetProgramDayCycle } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
 import ScreenTitle from '../components/ScreenTitle'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран настроек.
@@ -29,29 +30,33 @@ export default function Settings() {
     {
       title: 'ОСНОВНОЕ',
       items: [
-        { id: 'notifications', icon: '🔔', title: 'Уведомления',   subtitle: 'Напоминания о тренировках' },
-        { id: 'about',         icon: 'ℹ️', title: 'О приложении',  subtitle: 'Версия · Политика' }
+        { id: 'privacy',       icon: 'ui:privacy',       iconColor: '#9E86FF', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
+        { id: 'notifications', icon: 'ui:notifications', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true },
+        { id: 'about',         icon: 'ui:info',          title: 'О приложении', subtitle: 'Версия · Политика',          soon: true }
       ]
     },
     {
       title: 'ПОДДЕРЖКА',
       items: [
-        { id: 'support',  icon: '💬', title: 'Поддержка',           subtitle: 'Написать в отдел заботы' },
-        { id: 'feedback', icon: '💡', title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение' },
-        { id: 'gift',     icon: '🎁', title: 'Подарить сертификат', subtitle: 'Скоро' }
+        { id: 'support',  icon: 'ui:support', title: 'Поддержка',           subtitle: 'Написать в отдел заботы',    soon: true },
+        { id: 'feedback', icon: 'ui:idea',    title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', soon: true },
+        { id: 'gift',     icon: 'ui:gift',    title: 'Подарить сертификат', subtitle: 'Подарок другу',              soon: true }
       ]
     },
     {
       title: 'СБРОС',
       items: [
-        { id: 'debug-reset-days', icon: '🔄', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
-        { id: 'debug-reset',      icon: '🧹', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
+        { id: 'debug-reset-days', icon: 'ui:reset_days',     iconColor: '#FFD700', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
+        { id: 'debug-reset',      icon: 'ui:reset_progress', iconColor: '#E84545', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
       ]
     }
   ]
 
   const handleSectionTap = async (item) => {
+    if (item.soon) return
     haptic.light()
+
+    if (item.path) { navigate(item.path); return }
 
     if (item.id === 'debug-reset-days') {
       const confirmed = await tgConfirm(
@@ -118,22 +123,31 @@ export default function Settings() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className="tg-row"
+                className={item.soon ? undefined : 'tg-row'}
+                disabled={item.soon}
                 style={{
                   ...styles.row,
-                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)'
+                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  ...(item.soon ? styles.rowSoon : {})
                 }}
               >
-                <span style={styles.rowIcon}>{item.icon}</span>
+                <UiIcon
+                  name={item.icon.slice(3)}
+                  size={22}
+                  color={item.soon ? 'var(--color-text-secondary)' : (item.iconColor || 'var(--color-text)')}
+                  style={{ width: '28px', height: '22px' }}
+                />
 
                 <div style={styles.rowContent}>
-                  <div style={{ ...styles.rowTitle, color: titleColor(item.tone) }}>
+                  <div style={{ ...styles.rowTitle, color: item.soon ? 'var(--color-text)' : titleColor(item.tone) }}>
                     {item.title}
                   </div>
                   <div style={styles.rowSubtitle}>{item.subtitle}</div>
                 </div>
 
-                <span style={styles.rowArrow}>›</span>
+                {item.soon
+                  ? <span style={styles.soonTag}>Скоро</span>
+                  : <span style={styles.rowArrow}>›</span>}
               </button>
             ))}
           </div>
@@ -181,11 +195,10 @@ const styles = {
     background: 'transparent',
     border: 'none'
   },
-  rowIcon: {
-    fontSize: '20px',
-    width: '28px',
-    textAlign: 'center',
-    flexShrink: 0
+  rowSoon: { opacity: 0.5, cursor: 'default' },
+  soonTag: {
+    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
   rowContent: {
     flex: 1,

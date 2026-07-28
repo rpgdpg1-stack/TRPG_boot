@@ -154,23 +154,6 @@ export default function Profile() {
         />
       </div>
 
-      {/* Приватность — сразу под карточкой профиля: это настройка именно того, что
-          видят друзья в этой карточке. Своим отдельным блоком, до общего меню. */}
-      <div style={{ ...styles.groupCard, marginBottom: '20px' }}>
-        <button
-          onClick={() => handleSectionTap({ id: 'privacy', path: '/privacy' })}
-          className="tg-row"
-          style={{ ...styles.row, borderTop: 'none' }}
-        >
-          <UiIcon name="privacy" size={22} color="#9E86FF" style={{ width: '32px', height: '22px' }} />
-          <div style={styles.rowContent}>
-            <div style={styles.rowTitle}>Приватность</div>
-            <div style={styles.rowSubtitle}>Что видят друзья</div>
-          </div>
-          <span style={styles.rowArrow}>›</span>
-        </button>
-      </div>
-
       {/* Пригласить друга */}
       {showInvite && (
         <button onClick={handleInviteTap} style={styles.inviteButton} className="press-tile">

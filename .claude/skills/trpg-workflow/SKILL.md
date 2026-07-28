@@ -213,9 +213,10 @@ src/
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
 ├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity cardio change check
-│                   cloud_done cloud_sync friends goal heart info invite-friend leaderboard measure
-│                   muscles muscles-line network_off notes personal place-gym place-home place-street
-│                   power privacy profile recovery rewards settings stats stretching swimming
+│                   cloud_done cloud_sync friends gift goal heart idea info invite-friend leaderboard
+│                   measure muscles muscles-line network_off notes notifications personal place-gym
+│                   place-home place-street power privacy profile recovery reset_days reset_progress
+│                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   HomeCards
