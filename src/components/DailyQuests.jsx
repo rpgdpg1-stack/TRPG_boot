@@ -86,6 +86,14 @@ export default function DailyQuests() {
     haptic.light()
   }
 
+  // Прыжок к конкретному окну (тап по полоске-индикатору).
+  const jumpTo = (i) => {
+    if (i === winIdx) return
+    setSlideDir(i > winIdx ? 'right' : 'left')
+    setWinIdx(i)
+    haptic.light()
+  }
+
   const onTouchStart = (e) => { swipe.current.x = e.touches[0].clientX }
   const onTouchEnd = (e) => {
     const startX = swipe.current.x
@@ -128,6 +136,16 @@ export default function DailyQuests() {
 
   const slideClass = slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined
 
+  // Выполнено ли окно (рекомендуемая ИЛИ любая своя отмечена). Утро→1я полоска,
+  // день→2я, вечер→3я — закрашиваются акцентом именно те окна, что закрыл.
+  const doneWindows = WINDOWS.map((w, i) => {
+    const r = recByWindow[i]
+    const recDone = config.showRecommended && r && !!completed[r.id]
+    const cs = config.showCustom ? (config.custom[w.id] || []) : []
+    const customAny = cs.some(it => customDone[it.id])
+    return !!(recDone || customAny)
+  })
+
   return (
     <div style={styles.container}>
       {/* ⋯ меню справа сверху. */}
@@ -137,6 +155,23 @@ export default function DailyQuests() {
         style={styles.menuBtn}
         aria-label="Меню активностей"
       >⋯</button>
+
+      {/* Полоски прогресса окон (утро/день/вечер): серые → акцент при выполнении.
+          Тап — прыжок к окну. */}
+      <div style={styles.strips}>
+        {WINDOWS.map((w, i) => (
+          <button
+            key={w.id}
+            onClick={() => jumpTo(i)}
+            aria-label={w.label}
+            style={{
+              ...styles.strip,
+              background: doneWindows[i] ? 'var(--color-primary)' : 'rgba(255,255,255,0.12)',
+              opacity: i === winIdx ? 1 : 0.75
+            }}
+          />
+        ))}
+      </div>
 
       <div style={styles.swipeArea} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div key={winIdx} className={slideClass}>
@@ -272,6 +307,13 @@ const styles = {
     cursor: 'pointer',
     opacity: 0.7,
     zIndex: 2,
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Полоски-индикатор окон: тонкие, во всю ширину, справа зазор под ⋯.
+  strips: { display: 'flex', gap: '5px', marginBottom: '12px', paddingRight: '30px' },
+  strip: {
+    flex: 1, height: '6px', borderRadius: '3px', border: 'none', padding: 0,
+    cursor: 'pointer', transition: 'background 0.2s ease, opacity 0.2s ease',
     WebkitTapHighlightColor: 'transparent'
   },
   swipeArea: { touchAction: 'pan-y' },

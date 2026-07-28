@@ -7,23 +7,18 @@ import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
-import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
-import HistoryStats from '../components/HistoryStats'
-import FavoritesBlock from '../components/FavoritesBlock'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
 const FRIENDS_INVITE_LIMIT = 3
 
 /**
- * Экран «Профиль» (соц-концепция без статусов — см. память проекта).
- *
- * Верх — ProfileHeader (аватар, имя, последняя тренировка, серия за неделю).
- * Статистика — скрыта по умолчанию, включается в «Приватности»; вид — как на
- * главной (дропдаун-селектор периода). Затем настройки приватности и меню.
+ * Экран «Профиль» — только личное: аватар/имя/серия/последняя тренировка +
+ * приватность и настройки. Тренировочные разделы (статистика, любимые,
+ * активности) переехали на главную «Тренировки» — тут их нет.
  */
 export default function Profile() {
   const navigate = useNavigate()
@@ -36,8 +31,6 @@ export default function Profile() {
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
-  const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
-  const [favLoaded, setFavLoaded] = useState(() => getFavoritesSync() !== null)
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -58,7 +51,6 @@ export default function Profile() {
 
     const load = () => {
       setPrivacy(getPrivacy())
-      getFavoriteExercises().then(list => { setFavorites(list); setFavLoaded(true) })
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -83,20 +75,9 @@ export default function Profile() {
 
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
   // В профиле статистика — за ВСЁ время, только тоталы (без периодов и разбивки).
-  const summary = summarizeWorkouts(workouts, 'all', new Date())
-
-  // Меню сгруппировано по интенту: сверху — что смотрят часто (прогресс), затем
-  // данные о теле, снизу — системное. Пункты без экрана помечены `soon` (не
-  // кликабельны, бейдж «Скоро» вместо стрелки) — чтобы не было «мёртвых» строк.
+  // Меню — только личное/системное. Тренировочные разделы (Статистика/Любимые/
+  // Активности) переехали на главную. Пункты без экрана помечены `soon`.
   const menuGroups = [
-    {
-      title: 'МОЙ ПРОГРЕСС',
-      items: [
-        { id: 'history',            icon: 'ui:stats',    iconColor: '#3FA2F7',              title: 'Статистика',         subtitle: 'Календарь тренировок', path: '/history' },
-        { id: 'favorite-exercises', icon: 'ui:heart',    iconColor: 'var(--color-primary)', title: 'Любимые упражнения', subtitle: 'Твой топ-3',           path: '/favorite-exercises' },
-        { id: 'daily-boost',        icon: 'ui:activity', iconColor: '#EAB308',              title: 'Активности',         subtitle: 'Дневной буст',         path: '/daily-boost' }
-      ]
-    },
     {
       title: 'ТЕЛО',
       items: [
@@ -127,30 +108,13 @@ export default function Profile() {
 
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
-  // Секции внутри карточки профиля (прилипают к шапке через разделитель).
-  const sections = []
-  if (privacy.showStats) {
-    sections.push(
-      <div key="stats">
-        <HistoryStats summary={summary} loading={!loaded} totalsOnly />
-      </div>
-    )
-  }
-  if (privacy.showFavorites) {
-    if (favorites.length > 0) {
-      sections.push(<FavoritesBlock key="fav" items={favorites} bare showWeights={privacy.showWeights} />)
-    } else if (!favLoaded) {
-      // Холодный старт без кеша — компактный скелетон (высота свёрнутой строки).
-      sections.push(<div key="fav-sk" style={styles.favSk} />)
-    }
-  }
-
   return (
     <div className="page page-fade" style={styles.page}>
 
       <ScreenTitle>Профиль</ScreenTitle>
 
-      {/* Профиль: шапка + прилипшие секции (статистика, любимые) — один блок. */}
+      {/* Карточка профиля: аватар, имя, серия, последняя тренировка. Без секций
+          статистики/любимых — они теперь на главной. */}
       <div style={styles.headerWrap}>
         <ProfileHeader
           user={user}
@@ -158,7 +122,6 @@ export default function Profile() {
           lastWorkout={lastWorkout}
           showLastWorkout={privacy.showLastWorkout}
           interactiveStreak={true}
-          sections={sections}
           statsLoading={!loaded}
         />
       </div>
@@ -231,7 +194,6 @@ export default function Profile() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   headerWrap: { margin: '0 0 16px' },
-  favSk: { height: '52px', borderRadius: 'var(--radius-medium)', background: 'rgba(255,255,255,0.05)' },
 
   inviteButton: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',

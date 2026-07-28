@@ -218,6 +218,7 @@ src/
 │                   power privacy profile recovery rewards settings stats stretching swimming
 ├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
+│                   HomeCards
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem SaveFriendProgramModal

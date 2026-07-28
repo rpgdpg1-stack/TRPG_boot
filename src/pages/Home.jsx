@@ -1,67 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
-import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT, MONTHS_RU } from '../utils/history'
-import { getHistoryView } from '../lib/history-view'
-import { EVENTS, on, emit } from '../lib/events'
+import { getRecentWorkouts } from '../lib/storage'
+import { HISTORY_FETCH_LIMIT } from '../utils/history'
+import { EVENTS, emit } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { cacheInvalidate } from '../lib/cache'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
-import HistoryStats from '../components/HistoryStats'
+import HomeCards from '../components/HomeCards'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
-
-// Компактная карточка-кнопка «Статистика»: сводка (силовая/плавание) за период,
-// который выбран внутри /history (общий localStorage history-view). Период здесь
-// НЕ меняется — только отображается; менять — на /history. Весь блок ведёт туда.
-function periodDisplayLabel(view) {
-  if (view.period === 'week') return 'Неделя'
-  if (view.period === 'all') return 'Всё время'
-  if (view.period === 'year') return String(view.year)
-  return `${MONTHS_RU[view.month] || ''} ${view.year}` // month → «Июль 2026»
-}
-
-function HistoryBlock() {
-  const navigate = useNavigate()
-  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
-  const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
-  // Период читаем из общего history-view один раз на маунт: возврат с /history
-  // перемонтирует главную, поэтому свежий выбор подхватится сам.
-  const view = getHistoryView()   // { period, year, month }
-
-  useEffect(() => {
-    let cancelled = false
-    const load = () => getRecentWorkouts(HISTORY_FETCH_LIMIT).then(d => { if (!cancelled) { setWorkouts(d || []); setWkLoaded(true) } })
-    load()
-    const off = on(EVENTS.USER_CHANGED, load)
-    return () => { cancelled = true; off() }
-  }, [])
-
-  // Неделя/Всё время — от «сейчас»; Месяц/Год — за открытый в /history месяц/год.
-  const refDate = (view.period === 'week' || view.period === 'all')
-    ? new Date()
-    : new Date(Date.UTC(view.year, view.month, 15, 12))
-  const sum = summarizeWorkouts(workouts, view.period, refDate)
-
-  const openHistory = () => { haptic.light(); navigate('/history') }
-
-  return (
-    <div style={styles.histBlock} className="press-tile" onClick={openHistory}>
-      <div style={styles.histHead}>
-        {/* Слово «Статистика» убрано — остаётся только метка периода (что выбрано
-            в /history). Блок и так ведёт в статистику по тапу. */}
-        <span style={styles.periodLabel}>{periodDisplayLabel(view)}</span>
-      </div>
-
-      <div style={{ marginTop: '14px' }}>
-        <HistoryStats summary={sum} loading={!wkLoaded} />
-      </div>
-    </div>
-  )
-}
 
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
 // PTR_REVEAL — «мёртвая зона»: сперва тянется невидимый верх, кольцо появляется только
@@ -221,8 +170,8 @@ export default function Home() {
           <SectionCarousel onSectionChange={onSectionChange} />
         </div>
 
-        <div style={{ marginTop: '20px' }}>
-          <HistoryBlock />
+        <div style={{ marginTop: '12px' }}>
+          <HomeCards />
         </div>
       </div>
     </div>
@@ -266,24 +215,5 @@ const styles = {
   scrollSection: {
     position: 'relative',
     zIndex: 1
-  },
-  // === Блок «История» (вторичный, спокойнее блока раздела) ===
-  histBlock: {
-    width: '100%',
-    padding: '14px 16px',
-    background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)',
-    cursor: 'pointer'
-  },
-  histHead: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  // Период — статичный лейбл (что выбрано в /history), не переключатель.
-  periodLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700,
-    color: 'var(--color-text-secondary)'
   }
 }
