@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { formatFavoriteValue } from '../lib/favorite-exercises'
 import { pluralizeExercises } from '../utils/plural'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import HeartIcon from './HeartIcon'
 import CloseCross from './CloseCross'
 
@@ -51,7 +51,12 @@ function FavoritesModal({ items, onClose }) {
 
         <div style={m.list}>
           {items.map((f, i) => {
-            const val = formatFavoriteValue(f.weight_kg, f.counts_reps)
+            const n = Number(f.weight_kg)
+            const has = Number.isFinite(n) && n > 0
+            const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
+            // Число веса/повторов — в акцент мышечной группы (ноги→зелёный,
+            // грудь→оранжевый…), единица (кг/раз) — серым, не подсвечиваем.
+            const accent = getMuscleGroupColors(f.muscle_group).accent
             return (
               <div key={i}>
                 {i > 0 && <div style={m.divider} />}
@@ -62,7 +67,12 @@ function FavoritesModal({ items, onClose }) {
                       : <span style={m.thumbEmoji}>💪</span>}
                   </div>
                   <span style={m.name}>{cap(f.name)}</span>
-                  {val && <span style={m.val}>{val}</span>}
+                  {has && (
+                    <span style={m.val}>
+                      <span style={{ color: accent, fontWeight: 800 }}>{num}</span>
+                      <span style={m.valUnit}> {f.counts_reps ? 'раз' : 'кг'}</span>
+                    </span>
+                  )}
                 </div>
               </div>
             )
@@ -131,6 +141,7 @@ const m = {
   },
   val: {
     flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px',
-    color: 'var(--color-text-secondary)', opacity: 0.85
-  }
+    whiteSpace: 'nowrap'
+  },
+  valUnit: { color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '12px' }
 }

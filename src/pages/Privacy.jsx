@@ -32,20 +32,29 @@ export default function Privacy() {
       <p style={styles.intro}>Выбери, что видно в твоём профиле — тебе и друзьям.</p>
 
       <div style={styles.groupCard}>
-        <ToggleRow label="Последняя тренировка" hint="Дата и вид последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
-        <ToggleRow label="Статистика" hint="Блок с периодами (неделя/месяц/год)" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
+        <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
+        <ToggleRow label="Статистика" hint="Всего тренировок и часов за всё время" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
         <ToggleRow label="Любимые упражнения" hint="Твой топ-3" value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
-        <ToggleRow label="Показывать веса" hint="Рабочие веса в любимых упражнениях" value={privacy.showWeights} onToggle={() => toggle('showWeights')} divider />
+        {/* Веса — вложены в «Любимые»: видны только когда любимые включены. Выключил
+            любимые — веса и сам пункт «Показывать веса» прячутся. */}
+        {privacy.showFavorites && (
+          <ToggleRow label="Показывать веса" hint="Рабочие веса в списке любимых" value={privacy.showWeights} onToggle={() => toggle('showWeights')} divider nested />
+        )}
       </div>
     </div>
   )
 }
 
-function ToggleRow({ label, hint, value, onToggle, divider = false }) {
+function ToggleRow({ label, hint, value, onToggle, divider = false, nested = false }) {
   return (
-    <div style={{ ...styles.toggleRow, borderTop: divider ? '1px solid var(--border-hairline)' : 'none' }}>
+    <div style={{
+      ...styles.toggleRow,
+      borderTop: divider ? '1px solid var(--border-hairline)' : 'none',
+      // Вложенный под-тумблер (веса под «Любимыми») — левый отступ + приглушённый фон.
+      ...(nested ? { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' } : {})
+    }}>
       <div style={styles.rowContent}>
-        <div style={styles.rowTitle}>{label}</div>
+        <div style={{ ...styles.rowTitle, ...(nested ? { fontSize: '14px' } : {}) }}>{label}</div>
         <div style={styles.rowSubtitle}>{hint}</div>
       </div>
       <button

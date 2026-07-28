@@ -55,7 +55,7 @@ export default function ProfileHeader({
   }
 
   return (
-    <div style={{ ...styles.card, paddingBottom: sections.length ? 0 : '16px' }}>
+    <div style={styles.card}>
       <div style={styles.topPanel}>
         <div style={styles.avatar}>
           {user?.photo_url ? (
@@ -137,10 +137,12 @@ const styles = {
     padding: '16px', background: 'var(--surface)',
     border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', width: '100%'
   },
-  // Доп. секция внутри карточки: сверху отступ (= отступу аватарки от верха карточки,
-  // для симметрии) → full-bleed разделитель → контент.
+  // Доп. секция внутри карточки: разделитель НЕ до краёв (inset по паддингу карточки,
+  // как принято для разграничителей), симметричные отступы сверху/снизу (16/16 —
+  // paddingTop секции и paddingBottom карточки). Без negative-margin → линия не
+  // упирается в края карточки.
   section: {
-    marginTop: '16px', marginLeft: '-16px', marginRight: '-16px', padding: '14px 16px',
+    marginTop: '16px', paddingTop: '16px',
     borderTop: '1px solid var(--border-hairline)'
   },
   bottomAction: {

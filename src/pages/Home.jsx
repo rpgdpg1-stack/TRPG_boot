@@ -51,8 +51,8 @@ function HistoryBlock() {
   return (
     <div style={styles.histBlock} className="press-tile" onClick={openHistory}>
       <div style={styles.histHead}>
-        <span style={styles.histTitle}>Статистика</span>
-        {/* Период — только отображение выбранного в /history (не переключатель). */}
+        {/* Слово «Статистика» убрано — остаётся только метка периода (что выбрано
+            в /history). Блок и так ведёт в статистику по тапу. */}
         <span style={styles.periodLabel}>{periodDisplayLabel(view)}</span>
       </div>
 
@@ -281,15 +281,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between'
   },
-  // Заголовок вторичного блока — спокойнее селектора раздела (60% белого).
-  histTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)',
-    letterSpacing: '0.2px'
-  },
-  // Период справа — статичный лейбл (что выбрано в /history), не переключатель.
+  // Период — статичный лейбл (что выбрано в /history), не переключатель.
   periodLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700,
     color: 'var(--color-text-secondary)'
