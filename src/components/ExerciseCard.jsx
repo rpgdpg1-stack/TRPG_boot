@@ -478,7 +478,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             </div>
           )}
         </div>
-        <div style={styles.weightUnit}>кг</div>
+        <div style={styles.weightUnit}>{slot.counts_reps ? 'раз' : 'кг'}</div>
       </div>
 
       <div

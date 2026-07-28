@@ -84,8 +84,7 @@ export default function Loader({ onFinish, readyPromise }) {
       </div>
 
       <div style={styles.logoBlock}>
-        <span style={styles.logo}>RPG</span>
-        <span style={styles.logoSubtitle}>TRAINING APP</span>
+        <span style={styles.logo}>TRPG</span>
       </div>
 
       <style>{`
@@ -160,23 +159,18 @@ const styles = {
   },
   logoBlock: {
     display: 'flex',
-    alignItems: 'baseline',
-    gap: '8px',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Ближе к мускулу (~30px выше прежней позиции): гасим часть верхнего gap.
+    marginTop: '-30px',
     animation: 'logoFadeIn 0.6s ease-out 0.3s both'
   },
   logo: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: '20px',
+    fontWeight: 800,
+    fontSize: '24px',
     color: 'var(--color-primary)',
-    letterSpacing: '3px',
+    letterSpacing: '4px',
     lineHeight: 1
-  },
-  logoSubtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
   }
 }

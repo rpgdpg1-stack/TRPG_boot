@@ -138,7 +138,7 @@ export default function Profile() {
   }
   if (privacy.showFavorites) {
     if (favorites.length > 0) {
-      sections.push(<FavoritesBlock key="fav" items={favorites} bare />)
+      sections.push(<FavoritesBlock key="fav" items={favorites} bare showWeights={privacy.showWeights} />)
     } else if (!favLoaded) {
       // Холодный старт без кеша — компактный скелетон (высота свёрнутой строки).
       sections.push(<div key="fav-sk" style={styles.favSk} />)

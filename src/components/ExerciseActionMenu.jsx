@@ -371,7 +371,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 </div>
               )}
             </div>
-            {!slot.counts_reps && <div style={styles.weightUnit}>KG</div>}
+            <div style={styles.weightUnit}>{slot.counts_reps ? 'раз' : 'KG'}</div>
           </div>
         </div>
 

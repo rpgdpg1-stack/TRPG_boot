@@ -16,8 +16,19 @@ import CloseCross from './CloseCross'
  */
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function FavoritesBlock({ items, bare = false }) {
+export default function FavoritesBlock({ items, bare = false, showWeights = true }) {
   const [open, setOpen] = useState(false)
+
+  // Закрытие с гашением «призрачного» click: модалка (portal) снимается на
+  // pointerup крестика, а следующий синтетический click иначе попадает на
+  // страницу под ней (и, например, уводил на Статистику). Гасим один клик.
+  const closeModal = () => {
+    setOpen(false)
+    const swallow = (e) => { e.stopPropagation(); e.preventDefault() }
+    document.addEventListener('click', swallow, { capture: true, once: true })
+    setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400)
+  }
+
   if (!items || items.length === 0) return null
   const count = items.length
 
@@ -35,12 +46,12 @@ export default function FavoritesBlock({ items, bare = false }) {
   return (
     <>
       {bare ? summary : <div style={styles.card}>{summary}</div>}
-      {open && createPortal(<FavoritesModal items={items} onClose={() => setOpen(false)} />, document.body)}
+      {open && createPortal(<FavoritesModal items={items} showWeights={showWeights} onClose={closeModal} />, document.body)}
     </>
   )
 }
 
-function FavoritesModal({ items, onClose }) {
+function FavoritesModal({ items, onClose, showWeights = true }) {
   return (
     <div style={m.overlay} onClick={onClose}>
       <div style={m.panel} onClick={(e) => e.stopPropagation()}>
@@ -52,7 +63,7 @@ function FavoritesModal({ items, onClose }) {
         <div style={m.list}>
           {items.map((f, i) => {
             const n = Number(f.weight_kg)
-            const has = Number.isFinite(n) && n > 0
+            const has = showWeights && Number.isFinite(n) && n > 0
             const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
             // Число веса/повторов — в акцент мышечной группы (ноги→зелёный,
             // грудь→оранжевый…), единица (кг/раз) — серым, не подсвечиваем.

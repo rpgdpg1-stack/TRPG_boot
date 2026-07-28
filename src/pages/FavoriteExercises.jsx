@@ -171,7 +171,7 @@ export default function FavoriteExercises() {
               </div>
               <div style={styles.weightBlock}>
                 <div style={{ ...styles.weightValue, color: colors.accent }}>{f.weight_kg != null ? f.weight_kg : 0}</div>
-                {!f.counts_reps && <div style={styles.weightUnit}>KG</div>}
+                <div style={styles.weightUnit}>{f.counts_reps ? 'раз' : 'KG'}</div>
                 {!val && <div style={styles.weightHint}>задать</div>}
               </div>
             </div>

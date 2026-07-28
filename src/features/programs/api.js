@@ -67,7 +67,7 @@ async function refreshAllExercises() {
     try {
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority')
+        .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority, counts_reps')
         .order('priority', { ascending: true })
       if (!error && data?.length) {
         exercises = data
@@ -227,7 +227,8 @@ export async function getWorkoutDay(programSlug, day, place = null) {
       preview_url: ex?.preview_url || null,
       video_url: ex?.video_url || null,
       is_swapped: isSwapped,
-      user_weight_kg: weightsByEx[exerciseId] ?? null
+      user_weight_kg: weightsByEx[exerciseId] ?? null,
+      counts_reps: ex?.counts_reps ?? false
     }
   })
 
