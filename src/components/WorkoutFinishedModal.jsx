@@ -68,7 +68,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
         <div style={styles.content}>
           {/* Жест «+1 мускул» (зачёт/лимит) или иконка ошибки/оффлайна. */}
           {celebratory
-            ? <BicepGesture size={78} />
+            ? <span style={styles.gestureWrap}><BicepGesture size={78} /></span>
             : <div style={styles.flame}>{isError ? '⚠️' : '📵'}</div>}
 
           <div style={styles.body}>
@@ -77,9 +77,14 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
             </div>
 
             {/* Одна строка показателей: серия (огонёк + цифра) и время. Оба —
-                тем же кеглем/шрифтом, что счётчик серии на главной и в профиле. */}
+                тем же кеглем/шрифтом, что счётчик серии на главной и в профиле.
+                Пульс — синхронно с улетающим «+1» (тот же timerPulse, что у
+                цифр шапки дня на старте тренировки). */}
             {!isError && (
-              <div style={styles.statsRow}>
+              <div style={{
+                ...styles.statsRow,
+                ...(celebratory ? { animation: 'timerPulse 700ms var(--ease-ios) 620ms both' } : null)
+              }}>
                 <span style={styles.stat}>
                   <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
                   <span style={{ ...styles.statNum, color: streak >= 1 ? '#FF8C42' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
@@ -98,10 +103,9 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
             ) : offline ? (
               <div style={styles.errorMessage}>Тренировка сохранена на телефоне.<br />Данные обновятся, как только появится интернет.</div>
             ) : alreadyToday ? (
-              <>
-                <div style={styles.praise}>Так держать!</div>
-                <div style={styles.limitNote}>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</div>
-              </>
+              // Лимит занимает МЕСТО похвалы (не добавляется под ней) — иначе
+              // панель прыгала, когда сервер отвечал «уже засчитано».
+              <div style={styles.limitNote}>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</div>
             ) : (
               <div style={styles.praise}>Отличная работа!</div>
             )}
@@ -167,9 +171,13 @@ const styles = {
   panelError: { border: '1px solid rgba(255, 140, 66, 0.3)' },
   panelClosing: { opacity: 0, transform: 'scale(0.94) translateY(6px)', animation: 'none' },
   content: {
-    padding: '16px 20px 18px',
+    // Сверху воздуха больше: «+1» улетает вверх и не должен упираться в кромку.
+    // Снизу жест подтянут к заголовку (отрицательный margin у сцены).
+    padding: '22px 20px 18px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
   },
+  // Жест опущен ниже и придвинут к заголовку.
+  gestureWrap: { marginTop: '4px', marginBottom: '-14px' },
   flame: { fontSize: '58px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(255, 140, 66, 0.7))' },
   body: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%',
@@ -180,12 +188,22 @@ const styles = {
   durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
   durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)' },
   errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: '4px' },
-  praise: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--color-text)', letterSpacing: '0.5px', textAlign: 'center' },
+  // Похвала и заметка о лимите занимают ОДНУ и ту же строку фиксированной высоты —
+  // панель не меняет размер, когда приходит ответ сервера.
+  praise: {
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--color-text)',
+    letterSpacing: '0.5px', textAlign: 'center',
+    minHeight: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+  },
   // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
   statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px' },
   stat: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
   statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
-  limitNote: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45, opacity: 0.85 }
+  limitNote: {
+    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)',
+    textAlign: 'center', lineHeight: 1.45, opacity: 0.85,
+    minHeight: '34px', display: 'flex', flexDirection: 'column', justifyContent: 'center'
+  }
 }

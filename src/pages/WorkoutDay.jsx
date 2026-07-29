@@ -1418,7 +1418,8 @@ export default function WorkoutDay() {
               runFinish()
               return
             }
-            setShowFinishedModal(false)
+            // Модалку НЕ снимаем перед навигацией — иначе на кадр мелькает
+            // список упражнений. Она уйдёт вместе с размонтированием страницы.
             navigate('/')
           }}
         />

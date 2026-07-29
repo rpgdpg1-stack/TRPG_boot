@@ -64,8 +64,8 @@ const stripStyles = {
   strip: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
     // Отступ до блока раздела — как от блока раздела до «Мой прогресс» (26px).
-    minHeight: '38px', padding: '0 14px', marginBottom: '26px',
-    background: 'var(--surface-raised)', borderRadius: 'var(--radius-medium)'
+    // Фона-пилюли нет: это строка-информер, а не карточка.
+    minHeight: '34px', padding: '0 14px', marginBottom: '26px'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.

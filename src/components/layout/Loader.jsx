@@ -169,8 +169,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // Ближе к мускулу (~30px выше прежней позиции): гасим часть верхнего gap.
-    marginTop: '-30px',
+    // Вплотную к мускулу: гасим весь верхний gap и поднимаем ещё выше.
+    marginTop: '-46px',
     animation: 'logoFadeIn 0.6s ease-out 0.3s both'
   },
   logo: {

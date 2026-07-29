@@ -4,8 +4,7 @@ import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
 import ProfileHeader from './ProfileHeader'
-import FavoritesModal from './FavoritesModal'
-import HistoryStats from './HistoryStats'
+import ProfileMetrics from './ProfileMetrics'
 import CloseCross from './CloseCross'
 
 /**
@@ -22,7 +21,6 @@ import CloseCross from './CloseCross'
 export default function PlayerProfileModal({ row, onClose }) {
   // Стартуем из кеша (если друг уже открывался) — данные показываются сразу.
   const [pub, setPub] = useState(() => getCachedProfile(row.user_id))
-  const [favOpen, setFavOpen] = useState(false)   // список любимых друга
 
   useEffect(() => {
     let cancelled = false
@@ -47,11 +45,10 @@ export default function PlayerProfileModal({ row, onClose }) {
   const friendStats = pub?.show_stats && (pub.total_workouts || 0) > 0
   if (friendStats || friendFavs) {
     friendSections.push(
-      <HistoryStats
-        key="stats"
+      <ProfileMetrics
+        key="metrics"
         summary={friendStats ? { count: pub.total_workouts, minutes: pub.total_minutes || 0 } : null}
-        totalsOnly
-        favorites={friendFavs ? { count: friendFavs.length, onClick: () => setFavOpen(true) } : null}
+        favorites={friendFavs || []}
       />
     )
   }
@@ -82,11 +79,6 @@ export default function PlayerProfileModal({ row, onClose }) {
           sections={friendSections}
         />
       </div>
-
-      {/* Список любимых друга — по тапу на показатель «❤ N упр.» (поверх карточки). */}
-      {favOpen && friendFavs && (
-        <FavoritesModal items={friendFavs} onClose={() => setFavOpen(false)} />
-      )}
 
       <style>{`
         @keyframes profileModalOverlay { from { opacity: 0 } to { opacity: 1 } }

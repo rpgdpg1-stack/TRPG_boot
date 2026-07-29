@@ -8,11 +8,10 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT, MONTHS_RU } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
-import HistoryStats from '../components/HistoryStats'
-import FavoritesModal from '../components/FavoritesModal'
+import ProfileMetrics from '../components/ProfileMetrics'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
@@ -36,7 +35,6 @@ export default function Profile() {
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
   const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
-  const [favOpen, setFavOpen] = useState(false)   // модалка со списком любимых
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -81,8 +79,10 @@ export default function Profile() {
   }, [])
 
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
-  // В профиле статистика — за ВСЁ время, только тоталы (без периодов и разбивки).
-  const summary = summarizeWorkouts(workouts, 'all', new Date())
+  // В профиле статистика — за ТЕКУЩИЙ МЕСЯЦ (за год/всё время в карточке профиля
+  // не читается; вся история — на /history).
+  const summary = summarizeWorkouts(workouts, 'month', new Date())
+  const monthLabel = MONTHS_RU[new Date().getMonth()]
 
   // Меню — только личное/системное. Тренировочные разделы (Статистика/Любимые/
   // Активности) переехали на главную. Пункты без экрана помечены `soon`.
@@ -118,21 +118,18 @@ export default function Profile() {
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
   // Секция внутри карточки профиля (то же, что видят друзья по приватности):
-  // один ряд показателей — тренировок · время · любимые (тап → список любимых).
+  // ряд метрик «N трен» / «N упр», тап → попап с детализацией.
   const showFav = privacy.showFavorites && favorites.length > 0
-  const sections = []
-  if (privacy.showStats || showFav) {
-    sections.push(
-      <div key="stats">
-        <HistoryStats
-          summary={privacy.showStats ? summary : null}
-          loading={!loaded}
-          totalsOnly
-          favorites={showFav ? { count: favorites.length, onClick: () => { haptic.light(); setFavOpen(true) } } : null}
-        />
-      </div>
-    )
-  }
+  const sections = [
+    <ProfileMetrics
+      key="metrics"
+      summary={privacy.showStats ? summary : null}
+      favorites={showFav ? favorites : []}
+      showWeights={privacy.showWeights}
+      periodLabel={monthLabel}
+      loading={!loaded}
+    />
+  ]
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -198,14 +195,6 @@ export default function Profile() {
         </section>
       ))}
 
-      {/* Список любимых — по тапу на показатель «❤ N упр.» в карточке профиля. */}
-      {favOpen && (
-        <FavoritesModal
-          items={favorites}
-          showWeights={privacy.showWeights}
-          onClose={() => setFavOpen(false)}
-        />
-      )}
     </div>
   )
 }

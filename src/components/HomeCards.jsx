@@ -12,10 +12,11 @@ import HeartIcon from './HeartIcon'
 /**
  * Три равные карточки-входа в блоке «Мой прогресс» (главная): Статистика,
  * Любимые, Активности. Равнозначные разделы → одинаковый размер и одинаковая
- * раскладка в три строки:
- *   иконка → ЗНАЧЕНИЕ (крупная зелёная цифра + серая единица; у Активностей
- *   вместо цифр — три полоски окон) → тихая подпись-контекст внизу
- *   («Июль» / «Твой топ» / текущее окно «Утро–День–Вечер»).
+ * раскладка в ДВЕ строки:
+ *   иконка → строка значения: слева ЗНАЧЕНИЕ (крупная зелёная цифра + серая
+ *   единица; у Активностей вместо цифр — три полоски окон), справа в углу той
+ *   же строки — тихая подпись-контекст («Июль» / текущее окно суток).
+ * Отдельной нижней строки нет — карточки ниже и прямоугольнее.
  */
 export default function HomeCards() {
   const navigate = useNavigate()
@@ -54,6 +55,7 @@ export default function HomeCards() {
     const customAny = customs.some(it => customDone[it.id])
     return !!(recDone || customAny)
   })
+  const doneCount = doneWindows.filter(Boolean).length
   // Текущее окно суток (МСК) — подпись Активностей: «Утро» / «День» / «Вечер».
   const windowLabel = WINDOWS[getCurrentWindowIndex()]?.label || ''
 
@@ -72,11 +74,10 @@ export default function HomeCards() {
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
         title="Любимые"
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
-        caption="Твой топ"
         onClick={() => go('/favorite-exercises')}
       />
       <Card
-        icon={<UiIcon name="activity" size={22} color="#EAB308" />}
+        icon={<BoltFill filled={doneCount / WINDOWS.length} />}
         title="Активности"
         value={<Strips states={doneWindows} />}
         caption={windowLabel}
@@ -92,10 +93,29 @@ function Card({ icon, title, value, caption, onClick }) {
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
         <span style={styles.title}>{title}</span>
-        <span style={styles.valueRow}>{value}</span>
+        {/* Значение слева, подпись-контекст — в правом углу той же строки. */}
+        <span style={styles.valueRow}>
+          <span style={styles.valueMain}>{value}</span>
+          {caption && <span style={styles.caption}>{caption}</span>}
+        </span>
       </div>
-      <span style={styles.caption}>{caption}</span>
     </button>
+  )
+}
+
+/**
+ * Молния активностей, залитая на долю выполненных окон: серый контур целиком +
+ * цветной слой, обрезанный снизу вверх (0 → 1/3 → 2/3 → полностью).
+ */
+function BoltFill({ filled }) {
+  const pct = Math.round(Math.max(0, Math.min(1, filled)) * 100)
+  return (
+    <span style={styles.boltWrap}>
+      <UiIcon name="activity" size={22} color="rgba(255, 255, 255, 0.22)" />
+      <span style={{ ...styles.boltFill, clipPath: `inset(${100 - pct}% 0 0 0)` }}>
+        <UiIcon name="activity" size={22} color="#EAB308" />
+      </span>
+    </span>
   )
 }
 
@@ -124,21 +144,25 @@ function Strips({ states }) {
 const styles = {
   row: { display: 'flex', gap: '10px', alignItems: 'stretch' },
   card: {
-    flex: 1, minWidth: 0, minHeight: '112px',
+    flex: 1, minWidth: 0, minHeight: '96px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
     padding: '12px', textAlign: 'left',
     background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
   icon: { display: 'inline-flex', height: '22px' },
+  // Молния с частичной заливкой: два слоя иконки друг на друге.
+  boltWrap: { position: 'relative', display: 'inline-flex', width: '22px', height: '22px' },
+  boltFill: { position: 'absolute', inset: 0, display: 'inline-flex', transition: 'clip-path 0.35s var(--ease-ios)' },
   textCol: { display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  // Строка значения: крупная цифра + единица (или полоски у Активностей).
-  valueRow: { display: 'flex', alignItems: 'center', gap: '5px', minHeight: '20px' },
+  // Строка значения: слева значение, справа подпись-контекст.
+  valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', minHeight: '20px', width: '100%' },
+  valueMain: { display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 },
   valueNum: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  // Нижняя подпись-контекст — тихая, с заглавной («Июль» / «Твой топ» / «Утро»).
-  caption: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap' },
+  // Подпись-контекст — тихая, в правом углу строки значения («Июль» / «Утро»).
+  caption: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   // Полоски окон: чуть толще и уже прежних, с бо́льшим шагом.
   stripsRow: { display: 'flex', gap: '6px', alignItems: 'center' },
   strip: { width: '15px', height: '7px', borderRadius: '4px' }
