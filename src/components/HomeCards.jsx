@@ -63,14 +63,14 @@ export default function HomeCards() {
       <Card
         icon={<UiIcon name="stats" size={22} color="#3FA2F7" />}
         title="Статистика"
-        value={<Value num={monthCount} unit="трен." />}
+        value={<Value num={monthCount} unit="трен" />}
         caption={monthLabel}
         onClick={() => go('/history')}
       />
       <Card
         icon={<UiIcon name="heart" size={22} color="var(--color-primary)" />}
         title="Любимые"
-        value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр." />}
+        value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         caption="Твой топ"
         onClick={() => go('/favorite-exercises')}
       />

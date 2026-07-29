@@ -40,8 +40,8 @@ function WeekStrip() {
     return () => { off(); off2() }
   }, [])
 
-  // Формат один на все состояния: «На этой неделе 🔥 ×3 тренировки».
-  // Ноль — та же строка с серым огоньком и «0 тренировок» (без крестика).
+  // Формат один на все состояния: «На этой неделе 🔥 3 тренировки».
+  // Ноль — та же строка с серым огоньком и «0 тренировок».
   const hasStreak = streak >= 1
   return (
     <div style={stripStyles.strip}>
@@ -52,7 +52,7 @@ function WeekStrip() {
           <StreakFlame streak={streak} />
         </span>
         <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
-          {hasStreak ? `×${streak}` : '0'}
+          {streak}
         </span>
       </span>
       <span style={stripStyles.label}>{pluralTraining(streak)}</span>
@@ -63,14 +63,16 @@ function WeekStrip() {
 const stripStyles = {
   strip: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-    minHeight: '38px', padding: '0 14px', marginBottom: '12px',
+    // Отступ до блока раздела — как от блока раздела до «Мой прогресс» (26px).
+    minHeight: '38px', padding: '0 14px', marginBottom: '26px',
     background: 'var(--surface-raised)', borderRadius: 'var(--radius-medium)'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
-  // Огонёк + ×N — вплотную (2px), как единый значок серии. Тот же вид в профиле.
-  flameGroup: { display: 'inline-flex', alignItems: 'center', gap: '2px' },
-  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: '#FF8C42', letterSpacing: '0.5px' },
-  // ×0 — серым (как негорящий огонёк), ≥1 — оранжевым.
+  // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
+  // Крестика «×» нет — только цифра.
+  flameGroup: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
+  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: '#FF8C42', letterSpacing: '0.5px' },
+  // 0 — серым (как негорящий огонёк), ≥1 — оранжевым.
   countZero: { color: 'rgba(255, 255, 255, 0.4)' },
   greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
 }

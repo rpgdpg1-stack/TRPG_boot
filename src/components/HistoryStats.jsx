@@ -77,14 +77,14 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
             <Total
               icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
               value={String(summary.count)}
-              unit="трен."
+              unit="трен"
               label="Тренировок"
               compact={totalsOnly}
             />
             <Total
               icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
               value={formatHours(summary.minutes)}
-              unit="ч."
+              unit="ч"
               label="Время"
               compact={totalsOnly}
             />
@@ -95,7 +95,7 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
           <Total
             icon={<span style={styles.heart}><HeartIcon filled size={ICON} /></span>}
             value={String(favorites.count)}
-            unit="упр."
+            unit="упр"
             label="Любимые"
             compact
             onClick={favorites.onClick}
@@ -178,7 +178,7 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
     letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'var(--color-primary)'
   },
-  // Единица («трен.» / «ч» / «упр.») — серая и тоньше цифры.
+  // Единица («трен» / «ч» / «упр») — серая и тоньше цифры. Без точек-сокращений.
   totalUnit: {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'

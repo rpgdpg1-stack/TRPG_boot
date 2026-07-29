@@ -56,13 +56,17 @@ const styles = {
     justifyContent: 'center',
     zIndex: 9999,
     padding: '24px',
+    // Гасим прокрутку страницы под модалкой (как в AnchorMenu) — без position:fixed
+    // на body, иначе прыгает закреплённая шапка дня.
+    touchAction: 'none',
+    overscrollBehavior: 'contain',
     animation: 'finishConfirmOverlayIn 0.2s ease-out forwards'
   },
   modal: {
     width: '100%',
     maxWidth: '300px',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    // Обводки нет — панель тихая (у кнопки «Назад» своя, ghost-вариант).
     borderRadius: 'var(--radius-card)',
     padding: '22px 20px 18px',
     display: 'flex',

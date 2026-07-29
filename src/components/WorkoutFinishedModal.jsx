@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import ActionButton from './ActionButton'
 import ClockIcon from './ClockIcon'
-import BicepGesture, { GESTURE_MS } from './BicepGesture'
+import StreakFlame from './StreakFlame'
+import BicepGesture from './BicepGesture'
+import { getCurrentUser } from '../lib/auth'
+import { EVENTS, on } from '../lib/events'
+import { resolveWeeklyStreak } from '../utils/dates'
 
 /**
  * Модалка завершения тренировки — с фирменным жестом «+1 мускул».
  *
  * Сценарий (зачёт/лимит):
- *   1) На затемнённом фоне СНАЧАЛА только жест: бицепс качается один раз и застывает,
- *      «+1» улетает вверх и гаснет (как на лоадере), искры продолжают лететь.
- *   2) Как только «+1» улетел (`GESTURE_MS`) — вокруг жеста проявляется сама панель
- *      с текстом и кнопкой. Бицепс при этом НЕ прыгает: композиция зафиксирована
- *      с самого начала, а фон панели — отдельный слой позади неё.
- *   3) «ОК» — панель и фон уходят обратной микроанимацией, затем `onConfirm`.
+ *   1) Модалка появляется СРАЗУ (микроанимация scale+fade) — со всем текстом.
+ *   2) Жест играет ВНУТРИ неё: бицепс качается один раз и застывает, «+1» улетает
+ *      вверх и гаснет (как на лоадере), искры продолжают лететь.
+ *   3) «ОК» — модалка уходит обратной микроанимацией, затем `onConfirm`.
  *
  * Никакие мускулы/очки НЕ копятся — «+1» = «+1 тренировка» (идёт в недельный стрик
  * и счётчики статистики), лимит силовой — 1 в сутки.
@@ -27,14 +29,23 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
   const isError = status === 'error'
   const celebratory = !isError && !offline
 
-  // Панель появляется только после того, как жест отыграл и «+1» улетел.
-  const [revealed, setRevealed] = useState(!celebratory)
   const [closing, setClosing] = useState(false)
+
+  // Серия за неделю — тем же огоньком, что в шапке главной и в профиле. Тренировка
+  // сохраняется параллельно, поэтому досчитываем после USER_CHANGED.
+  const [streak, setStreak] = useState(() => {
+    const u = getCurrentUser()
+    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
+  })
   useEffect(() => {
-    if (!celebratory) { setRevealed(true); return }
-    const t = setTimeout(() => setRevealed(true), GESTURE_MS)
-    return () => clearTimeout(t)
-  }, [celebratory])
+    const upd = () => {
+      const u = getCurrentUser()
+      setStreak(resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week))
+    }
+    const off = on(EVENTS.USER_CHANGED, upd)
+    const off2 = on(EVENTS.USER_READY, upd)
+    return () => { off(); off2() }
+  }, [])
 
   const titleText = isError ? 'Не удалось сохранить' : offline ? 'Сохранено локально' : 'Тренировка завершена'
   const buttonText = isSaving ? 'СОХРАНЕНИЕ...' : isError ? 'ПОВТОРИТЬ' : 'ОК'
@@ -47,27 +58,20 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
     setTimeout(() => onConfirm?.(), CLOSE_MS)
   }
 
-  const shown = revealed && !closing
-
   return (
     <div style={{ ...styles.overlay, opacity: closing ? 0 : 1 }}>
-      <div style={styles.stage}>
-        {/* Фон панели — отдельным слоем позади композиции: проявляется/уходит
-            масштабом, не сдвигая при этом бицепс. */}
-        <div style={{
-          ...styles.panelBg,
-          ...(isError ? styles.panelBgError : null),
-          opacity: shown ? 1 : 0,
-          transform: shown ? 'scale(1)' : 'scale(0.94)'
-        }} aria-hidden="true" />
-
+      <div style={{
+        ...styles.panel,
+        ...(isError ? styles.panelError : null),
+        ...(closing ? styles.panelClosing : null)
+      }}>
         <div style={styles.content}>
           {/* Жест «+1 мускул» (зачёт/лимит) или иконка ошибки/оффлайна. */}
           {celebratory
             ? <BicepGesture size={78} />
             : <div style={styles.flame}>{isError ? '⚠️' : '📵'}</div>}
 
-          <div style={{ ...styles.body, opacity: shown ? 1 : 0, pointerEvents: shown ? 'auto' : 'none' }}>
+          <div style={styles.body}>
             <div style={{ ...styles.title, color: (isError || offline) ? '#FF8C42' : 'var(--color-primary)' }}>
               {titleText}
             </div>
@@ -85,14 +89,11 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               <div style={styles.errorMessage}>Тренировка сохранена на телефоне.<br />Данные обновятся, как только появится интернет.</div>
             ) : alreadyToday ? (
               <>
-                <div style={styles.praise}>Так держать! 🔥</div>
-                <div style={styles.limitNote}>За сегодня тренировка уже засчитана.<br />Лимит — 1 силовая в день.</div>
+                <Praise text="Так держать!" streak={streak} />
+                <div style={styles.limitNote}>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</div>
               </>
             ) : (
-              <>
-                <div style={styles.praise}>Отличная работа! 🔥</div>
-                <div style={styles.limitNote}>+1 тренировка за сегодня.</div>
-              </>
+              <Praise text="Отличная работа!" streak={streak} />
             )}
 
             <ActionButton
@@ -110,7 +111,21 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
 
       <style>{`
         @keyframes wfFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes wfPanelIn { 0% { opacity: 0; transform: scale(0.92) translateY(8px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
+    </div>
+  )
+}
+
+/** Похвала + огонёк серии за неделю (тот же компонент, что в шапке и профиле). */
+function Praise({ text, streak }) {
+  return (
+    <div style={styles.praiseRow}>
+      <span style={styles.praise}>{text}</span>
+      <span style={styles.praiseFlame}>
+        <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
+        <span style={{ ...styles.streakCount, ...(streak >= 1 ? null : styles.streakCountZero) }}>{streak}</span>
+      </span>
     </div>
   )
 }
@@ -133,23 +148,26 @@ const styles = {
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 9999, padding: '20px',
+    // Экран под модалкой заморожен: прокрутку гасим здесь (не трогая body —
+    // position:fixed на нём дёргает закреплённую шапку дня).
+    touchAction: 'none',
+    overscrollBehavior: 'contain',
     animation: 'wfFadeIn 0.25s ease-out forwards',
     transition: `opacity ${CLOSE_MS}ms ease`
   },
-  // Композиция зафиксирована с первого кадра (жест стоит на своём финальном месте),
-  // меняется только видимость фона и текста.
-  stage: { position: 'relative', width: '100%', maxWidth: '320px' },
-  panelBg: {
-    position: 'absolute', inset: 0,
+  // Панель появляется сразу, целиком (жест играет уже внутри неё).
+  // Обводки и зелёного свечения нет — акцент несут цифры и текст.
+  panel: {
+    width: '100%', maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     borderRadius: 'var(--radius-card)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
-    // Обводки и зелёного свечения нет — панель тихая, акцент несут цифры и текст.
+    animation: `wfPanelIn 0.3s var(--ease-ios) forwards`,
     transition: `opacity ${CLOSE_MS}ms ease, transform ${CLOSE_MS}ms var(--ease-ios)`
   },
-  panelBgError: { border: '1px solid rgba(255, 140, 66, 0.3)' },
+  panelError: { border: '1px solid rgba(255, 140, 66, 0.3)' },
+  panelClosing: { opacity: 0, transform: 'scale(0.94)', animation: 'none' },
   content: {
-    position: 'relative', zIndex: 1,
     padding: '16px 20px 18px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
   },
@@ -165,6 +183,12 @@ const styles = {
   durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
   durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)' },
   errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: '4px' },
+  praiseRow: { display: 'flex', alignItems: 'center', gap: '8px' },
   praise: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--color-text)', letterSpacing: '0.5px', textAlign: 'center' },
+  // Огонёк серии + цифра — 1:1 с главной и профилем (без крестика, вплотную).
+  praiseFlame: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
+  flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
+  streakCount: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: '#FF8C42', letterSpacing: '0.5px' },
+  streakCountZero: { color: 'rgba(255, 255, 255, 0.4)' },
   limitNote: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45, opacity: 0.85 }
 }

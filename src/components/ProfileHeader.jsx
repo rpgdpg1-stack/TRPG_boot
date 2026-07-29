@@ -90,7 +90,7 @@ export default function ProfileHeader({
             ) : (
               <>
                 <StreakFlame streak={s} />
-                <span style={styles.fireCount}>{s >= 1 ? `×${s}` : ''}</span>
+                <span style={styles.fireCount}>{s >= 1 ? `${s}` : ''}</span>
               </>
             )}
           </button>
@@ -174,15 +174,15 @@ const styles = {
   // Огонёк серии — справа, вертикально по центру строки.
   fireWrap: { position: 'relative', flexShrink: 0 },
   fireBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '2px',
+    display: 'inline-flex', alignItems: 'center', gap: '3px',
     background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px',
     WebkitTapHighlightColor: 'transparent'
   },
-  // 1:1 со строкой недели на главной: символ «×», Manrope-display 800/15, вплотную
-  // к огоньку. Ширину НЕ резервируем — с ростом серии огонёк растёт, цифра едет
-  // правее, и это нормально: пара всегда читается как одно целое.
+  // 1:1 со строкой недели на главной: БЕЗ крестика, только цифра, display 800/17,
+  // вплотную к огоньку. Ширину НЕ резервируем — с ростом серии огонёк растёт,
+  // цифра едет правее, и это нормально: пара всегда читается как одно целое.
   fireCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px',
     lineHeight: 1, textAlign: 'left', color: '#FF8C42'
   },
   popup: {

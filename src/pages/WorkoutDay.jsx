@@ -802,7 +802,10 @@ export default function WorkoutDay() {
   // Целевое сжатие: пилюля (1) — на активном дне ИЛИ при скролле вниз (headerMin);
   // высокая шапка (0) — только наверху. Промежуточного «второго состояния» больше нет:
   // как начал листать — сразу собирается в пилюлю (как при «Начать»).
-  const collapseTarget = (isThisActive || headerMin) ? 1 : 0
+  // Пока открыта модалка завершения — экран под ней ЗАМОРОЖЕН: держим шапку
+  // в текущем виде (иначе после сохранения isThisActive гаснет, шапка
+  // разворачивается, страница меняет высоту и уезжает под затемнением).
+  const collapseTarget = (isThisActive || headerMin || showFinishedModal) ? 1 : 0
 
   // Морф шапки к целевому сжатию: навигация/первый заход — мгновенно; смена цели
   // (снап между двумя высотами ИЛИ старт/завершение) — плавный твин ИЗ ТЕКУЩЕГО
@@ -869,6 +872,23 @@ export default function WorkoutDay() {
     if (startBlockTimer.current) clearTimeout(startBlockTimer.current)
     startBlockTimer.current = setTimeout(() => setStartBlockHint(false), 2600)
   }
+
+  // Пока открыта любая из модалок завершения — страница под ними стоит на месте:
+  // жест гасит touchAction на оверлее, а этот сторож возвращает позицию, если её
+  // сдвинуло изменение вёрстки (шапка, галочки, исчезнувшая кнопка).
+  useEffect(() => {
+    if (!showConfirm && !showFinishedModal) return
+    const y = window.scrollY || document.scrollingElement?.scrollTop || 0
+    const keep = () => {
+      const now = window.scrollY || document.scrollingElement?.scrollTop || 0
+      if (Math.abs(now - y) > 1) {
+        window.scrollTo(0, y)
+        document.scrollingElement?.scrollTo(0, y)
+      }
+    }
+    window.addEventListener('scroll', keep, { passive: true })
+    return () => window.removeEventListener('scroll', keep)
+  }, [showConfirm, showFinishedModal])
 
   // Тап «Завершить» → сначала минимал-подтверждение (защита от случайного
   // раннего завершения). На «Завершить» в нём — праздничная модалка + сохранение.
