@@ -152,7 +152,7 @@ export default function Friends() {
             и следи за прогрессом друг друга
           </div>
           <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
-            <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
+            <UiIcon name="invite-friend" size={16} color="var(--accent-on)" />
             Пригласить друга
           </ActionButton>
         </div>
@@ -192,7 +192,7 @@ export default function Friends() {
 
           <div style={styles.bottomInvite}>
             <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
-              <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
+              <UiIcon name="invite-friend" size={16} color="var(--accent-on)" />
               Пригласить друга
             </ActionButton>
           </div>

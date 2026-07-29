@@ -123,7 +123,7 @@ const styles = {
   primary: {
     background: 'var(--color-primary)',
     border: 'none',
-    color: '#FFFFFF'
+    color: 'var(--accent-on)'
   },
   // Графит — сплошная заливка цвета раздела Силовая (--cat-gym) + тёмный текст.
   // Кнопка «Начать» в дне тренировки. БЕЗ блюра (обычная залитая кнопка).

@@ -125,7 +125,7 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
         </div>
         <div style={styles.metaRow}>
           <span style={styles.lastWorkout}>
-            {lastWorkoutText ? `Последняя тренировка ${lastWorkoutText}` : 'Ещё не тренировался'}
+            {lastWorkoutText || 'Ещё не тренировался'}
           </span>
         </div>
       </div>

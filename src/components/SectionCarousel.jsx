@@ -76,7 +76,7 @@ export default function SectionCarousel({ onSectionChange }) {
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
   const lastText = pinnedProg
-    ? (lastDate ? `Последняя тренировка ${formatRelative(lastDate)}` : 'Ещё не начинали')
+    ? (lastDate ? formatRelative(lastDate) : 'Ещё не начинали')
     : null
 
   const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
@@ -190,7 +190,6 @@ const styles = {
   // тренировка + карточка программы + «Все программы» — обёрнуты и залиты.
   wrap: {
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: '14px'
   },

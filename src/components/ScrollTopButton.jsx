@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 
 /**
- * Плавающая кнопка «наверх» (нижний правый угол). Появляется, когда список
- * прокручен вниз чуть больше порога, и уводит на самый верх плавным скроллом;
- * у верхней кромки прячется. Микро-анимация появления/скрытия (fade + подъём).
+ * Плавающая кнопка «наверх» (нижний правый угол, над кнопкой дока). Появляется при
+ * прокрутке вниз > порога, уводит на верх плавным скроллом, у кромки прячется.
  *
- * Паттерн для длинных прокручиваемых экранов (день тренировки, заплыв). В профиле
- * НЕ используем — там список короткий. См. trpg-ui «Скролл-наверх».
+ * Нажатие — как у крестика закрытия (CloseCross): кружок увеличивается и светлеет,
+ * увёл палец — вернулся без действия. Отличие: здесь ЕСТЬ контур (обводка) — он
+ * помогает читаемости кнопки над контентом.
+ *
+ * Для длинных прокручиваемых экранов (день тренировки, заплыв). В профиле НЕ нужен.
  */
-function ArrowUp({ size = 20 }) {
+function ArrowUp({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 19V6M6 12l6-6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -19,6 +21,9 @@ function ArrowUp({ size = 20 }) {
 
 export default function ScrollTopButton({ threshold = 180 }) {
   const [show, setShow] = useState(false)
+  const [press, setPress] = useState(false)
+  const ref = useRef(null)
+  const armed = useRef(false)
 
   useEffect(() => {
     let raf = 0
@@ -41,42 +46,79 @@ export default function ScrollTopButton({ threshold = 180 }) {
     document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // «Растущее» нажатие с отменой при уводе пальца (как крестик закрытия).
+  const down = () => { armed.current = true; setPress(true) }
+  const move = (e) => {
+    if (!armed.current) return
+    const r = ref.current?.getBoundingClientRect()
+    if (!r) return
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+    if (!inside) { armed.current = false; setPress(false) }
+  }
+  const up = () => { const a = armed.current; armed.current = false; setPress(false); if (a) toTop() }
+  const cancel = () => { armed.current = false; setPress(false) }
+
   return (
     <button
-      onClick={toTop}
+      ref={ref}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={cancel}
+      onClick={(e) => e.stopPropagation()}
       aria-label="Наверх"
       style={{
-        ...styles.btn,
+        ...styles.hit,
         opacity: show ? 1 : 0,
-        transform: show ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.9)',
+        transform: show ? 'translateY(0)' : 'translateY(8px)',
         pointerEvents: show ? 'auto' : 'none'
       }}
     >
-      <ArrowUp />
+      <span
+        style={{
+          ...styles.bubble,
+          background: press ? 'rgba(255, 255, 255, 0.18)' : 'var(--color-surface-dim)',
+          color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
+          transform: press ? 'scale(1.12)' : 'scale(1)'
+        }}
+      >
+        <ArrowUp />
+      </span>
     </button>
   )
 }
 
 const styles = {
-  btn: {
+  hit: {
     position: 'fixed',
     right: '16px',
-    bottom: 'calc(env(safe-area-inset-bottom) + 96px)',
+    // ~6px выше верхней кромки кнопки дока (--btn-height 55 над --tabbar-bottom).
+    bottom: 'calc(var(--tabbar-bottom) + 62px)',
     zIndex: 45,
-    width: '44px',
-    height: '44px',
+    width: '56px',
+    height: '56px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    touchAction: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'opacity 0.22s ease, transform 0.22s var(--ease-ios)'
+  },
+  bubble: {
+    width: '46px',
+    height: '46px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '50%',
-    background: 'var(--color-surface-dim)',
     border: '1px solid var(--color-border)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    color: 'var(--color-text)',
     boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent',
-    transition: 'opacity 0.22s ease, transform 0.22s var(--ease-ios)'
+    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
   }
 }

@@ -123,7 +123,7 @@ const styles = {
     flex: 1, minWidth: 0, minHeight: '112px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
     padding: '12px', textAlign: 'left',
-    background: 'var(--surface)', border: '1px solid var(--border-hairline)',
+    background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
   icon: { display: 'inline-flex', height: '22px' },

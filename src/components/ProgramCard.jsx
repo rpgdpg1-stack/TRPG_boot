@@ -162,15 +162,15 @@ export default function ProgramCard({
 
       {/* Верхний ряд карточки: эмблема + контент + CTA/правый блок (позиционируются
           относительно этого ряда, чтобы footer не сдвигал их по вертикали). */}
-      <div style={{ ...styles.cardRow, paddingRight: `${padRight}px`, flex: showFooter ? 1 : undefined }}>
+      <div style={{ ...styles.cardRow, paddingRight: `${padRight}px`, flex: 1 }}>
         <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
         {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
             белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных). */}
         {showCta && (
-          <span style={{ ...styles.ctaPill, right: 0, background: 'var(--color-primary)', border: 'none', color: '#FFFFFF' }}>
+          <span style={{ ...styles.ctaPill, right: 0, background: 'var(--color-primary)', border: 'none', color: 'var(--accent-on)' }}>
             {isActive ? 'Продолжить' : 'Начать'}
-            <span style={{ display: 'inline-flex', color: '#FFFFFF' }}><PlayIcon size={16} /></span>
+            <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayIcon size={16} /></span>
           </span>
         )}
 

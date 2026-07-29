@@ -72,7 +72,7 @@ export default function ProfileHeader({
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
               ) : (
-                <span style={styles.lastWhen}>{lastWhen ? `Последняя тренировка ${lastWhen}` : 'Ещё не тренировался'}</span>
+                <span style={styles.lastWhen}>{lastWhen || 'Ещё не тренировался'}</span>
               )}
             </div>
           )}
@@ -135,7 +135,7 @@ const styles = {
   card: {
     display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0',
     padding: '16px', background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', width: '100%'
+    borderRadius: 'var(--radius-card)', width: '100%'
   },
   // Доп. секция внутри карточки: разделитель НЕ до краёв (inset по паддингу карточки,
   // как принято для разграничителей), симметричные отступы сверху/снизу (16/16 —
