@@ -221,7 +221,7 @@ src/
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
-│                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem RewardBurst
+│                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
 │                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame
 │                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader

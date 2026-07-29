@@ -21,6 +21,7 @@ import ChevronIcon from '../components/ChevronIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
+import BicepGesture from '../components/BicepGesture'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -461,9 +462,9 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
   return (
     <div style={modalStyles.overlay}>
       <div style={{ ...modalStyles.modal, ...(isError ? modalStyles.modalError : {}) }}>
-        <div style={modalStyles.icon}>
-          {isError ? '⚠️' : kind === 'offline' ? '📵' : '🏊'}
-        </div>
+        {(!isError && kind !== 'offline')
+          ? <BicepGesture size={80} />
+          : <div style={modalStyles.icon}>{isError ? '⚠️' : '📵'}</div>}
 
         <div style={{
           ...modalStyles.title,

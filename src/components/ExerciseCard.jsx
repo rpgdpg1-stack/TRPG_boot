@@ -180,6 +180,31 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     }
   }, [])
 
+  // Микро-салют при отметке «выполнено»: 2–3 гладкие зелёные искры от центра
+  // карточки, быстро и невысоко (как мини-версия «+1» на завершении).
+  const cardRef = useRef(null)
+  const prevActiveRef = useRef(isActive)
+  useEffect(() => {
+    if (isActive && !prevActiveRef.current) {
+      const el = cardRef.current
+      if (el) {
+        for (let i = 0; i < 3; i++) {
+          const dim = 3 + Math.random() * 2
+          const p = document.createElement('div')
+          p.style.cssText = `
+            position:absolute; left:50%; top:50%; width:${dim}px; height:${dim}px;
+            border-radius:50%; background:var(--color-primary);
+            box-shadow:0 0 5px rgba(158,209,83,0.7); pointer-events:none; z-index:8;
+            --burst-x:${Math.random() * 30 - 15}px; --burst-y:${-(16 + Math.random() * 14)}px;
+            animation: particleBurst ${0.45 + Math.random() * 0.2}s ease-out forwards;`
+          el.appendChild(p)
+          setTimeout(() => p.remove(), 800)
+        }
+      }
+    }
+    prevActiveRef.current = isActive
+  }, [isActive])
+
   const clearLongPress = () => {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
   }
@@ -387,6 +412,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerLeave={handleCardPointerUp}
     >
     <div
+      ref={cardRef}
       className="press-exercise-card"
       style={{
         ...styles.card,
