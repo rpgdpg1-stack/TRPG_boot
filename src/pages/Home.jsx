@@ -14,7 +14,6 @@ import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
 import StreakFlame from '../components/StreakFlame'
 import ChevronIcon from '../components/ChevronIcon'
-import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
@@ -255,14 +254,6 @@ function PullIndicator({ pull, refreshing, color }) {
  * компактная карточка-кнопка «Статистика» (вся аналитика — на /history).
  */
 export default function Home() {
-  // Цвет акцентного свечения = текущий раздел карусели. Старт — из последнего
-  // выбранного (тот же ключ, что в SectionCarousel), чтобы не мигнуло на загрузке.
-  const [glowColor, setGlowColor] = useState(() => {
-    const id = localGet('category-swiper-last')
-    return (CATEGORY_META[id] || CATEGORY_META[CATEGORY_ORDER[0]]).color
-  })
-  const onSectionChange = useCallback((c) => { if (c?.color) setGlowColor(c.color) }, [])
-
   // Pull-to-refresh: оттягивание с самого верха → обновление ДАННЫХ (не reload,
   // чтобы не ре-инициализировать Telegram SDK и не мигать белым). Сбрасываем кеш
   // последних тренировок и шлём USER_CHANGED — HistoryBlock/карточки перечитаются.
@@ -282,8 +273,9 @@ export default function Home() {
   return (
     <div className="page page-fade" style={styles.page}>
 
-      {/* Индикатор pull-to-refresh (портал в body, поверх нативного отскока). */}
-      <PullIndicator pull={pull} refreshing={refreshing} color={glowColor} />
+      {/* Индикатор pull-to-refresh (портал в body, поверх нативного отскока).
+          Цвет всегда акцентный зелёный — не зависит от раздела. */}
+      <PullIndicator pull={pull} refreshing={refreshing} color="var(--color-primary)" />
 
       {/* Заголовок экрана (fixed на линии кнопок Telegram). */}
       <div style={styles.topBlock}>
@@ -298,7 +290,7 @@ export default function Home() {
 
         {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
             (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
-        <SectionCarousel onSectionChange={onSectionChange} />
+        <SectionCarousel />
 
         {/* Второй план: статистика / любимые / активности — под сворачиваемым
             заголовком, с воздухом от карточки программы. */}

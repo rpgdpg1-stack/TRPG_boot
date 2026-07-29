@@ -17,7 +17,8 @@ import ProgramCard from './ProgramCard'
  * Разделы на главной — БЕЗ обёртки-панели (карточка программы не вложена в другую
  * карточку, а идёт во всю ширину экрана).
  *
- * Строка-шапка (одна линия, без рамки, всё серым 14px): слева селектор
+ * Строка-шапка (одна линия, без рамки, вес заголовка секции — Manrope 15/700,
+ * 60% белого): слева селектор
  * «[цветная иконка] Силовая ▾» (тап → выпадающий список разделов), справа «Все ›»
  * (вход в раздел). Ниже — карточка закреплённой программы этого раздела
  * (`ProgramCard`, долгое нажатие → меню; нет закрепа — заглушка).
@@ -42,7 +43,7 @@ function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
 }
 
-export default function SectionCarousel({ onSectionChange }) {
+export default function SectionCarousel() {
   const navigate = useNavigate()
 
   const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
@@ -65,12 +66,6 @@ export default function SectionCarousel({ onSectionChange }) {
 
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
   const cat = cats[idx]
-
-  // Сообщаем наверх текущий раздел — для акцентного свечения фона на главной.
-  useEffect(() => {
-    const id = CATEGORY_ORDER[idx]
-    onSectionChange?.({ id, color: CATEGORY_META[id]?.color })
-  }, [idx, onSectionChange])
 
   const goTo = (next, withHaptic = true) => {
     if (next === idx || next < 0 || next >= cats.length) return
@@ -169,10 +164,10 @@ export default function SectionCarousel({ onSectionChange }) {
             onClick={() => { haptic.light(); setOpen(o => !o) }}
             aria-label="Выбрать раздел"
           >
-            <UiIcon name={cat.iconName} size={18} color={cat.color} />
+            <UiIcon name={cat.iconName} size={20} color={cat.color} />
             <span style={styles.selectorText}>{cat.title}</span>
             <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-              <ChevronIcon size={15} color="var(--color-text-secondary)" />
+              <ChevronIcon size={16} color="var(--color-text-secondary)" />
             </span>
           </button>
 
@@ -205,7 +200,7 @@ export default function SectionCarousel({ onSectionChange }) {
           aria-label={`Все программы раздела «${cat.title}»`}
         >
           Все
-          <span style={styles.chevRight}><ChevronIcon size={15} color="var(--color-text-secondary)" /></span>
+          <span style={styles.chevRight}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
         </button>
       </div>
 
@@ -239,6 +234,10 @@ export default function SectionCarousel({ onSectionChange }) {
                     menu
                     isFav
                     cta
+                    // Как закреплённая карточка внутри раздела: светло-серая заливка
+                    // БЕЗ цветной обводки (нитка в цвет раздела на главной убрана).
+                    bordered={false}
+                    background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
                     footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
                     onToggleFav={() => onToggleFav(c.id, slug)}
                     onOpen={() => guardedOpen(prog, slug)}
@@ -275,16 +274,17 @@ const styles = {
     marginBottom: '8px'
   },
   selectorWrap: { position: 'relative', minWidth: 0 },
-  // Селектор — того же «веса», что и «Все ›»: серый Manrope 14/600, цветная только иконка.
+  // Селектор — тот же вес, что заголовок секции «Мой прогресс» (Manrope 15/700,
+  // 60% белого). Цветная только иконка; «Все ›» справа — того же размера.
   selector: {
-    display: 'inline-flex', alignItems: 'center', gap: '6px',
-    padding: '6px 8px 6px 2px',
+    display: 'inline-flex', alignItems: 'center', gap: '7px',
+    padding: '4px 8px 4px 2px',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
   selectorText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   selectorChev: {
     display: 'inline-flex', marginTop: '1px',
@@ -331,10 +331,10 @@ const styles = {
   allLink: {
     flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', gap: '1px',
-    padding: '6px 2px 6px 8px',
+    padding: '4px 2px 4px 8px',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   // Шеврон-стрелка «вправо» у «Все» (тот же ChevronIcon, повёрнут).
   chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: '2px' }
