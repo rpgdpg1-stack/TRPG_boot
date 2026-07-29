@@ -1,6 +1,10 @@
 import UiIcon from './UiIcon'
 import ClockIcon from './ClockIcon'
+import HeartIcon from './HeartIcon'
 import { formatHours, formatMeters, CATEGORY_ORDER } from '../utils/history'
+
+// Иконки показателей — одного размера (мускул / часы / сердце).
+const ICON = 20
 
 /**
  * Сводка тренировок за период.
@@ -34,7 +38,7 @@ const TYPE_META = {
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
 }
 
-export default function HistoryStats({ summary, loading = false, totalsOnly = false }) {
+export default function HistoryStats({ summary, loading = false, totalsOnly = false, favorites = null }) {
   // Первый заход без кеша — скелетон вместо мигания пустой заглушки.
   if (loading) {
     return (
@@ -53,26 +57,50 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
     )
   }
 
-  if (!summary || summary.count === 0) {
+  // Тренировок нет (или статистика скрыта приватностью), но любимые есть — рисуем
+  // ряд с одним показателем «❤ N упр.», а не заглушку про первую тренировку.
+  const hasTotals = !!summary && summary.count > 0
+  const favOnly = totalsOnly && !!favorites && !hasTotals
+  if (!hasTotals && !favOnly) {
     return <div style={styles.empty}>Завершите первую тренировку, чтобы увидеть статистику.</div>
   }
 
-  const types = CATEGORY_ORDER.filter(k => summary.byType[k]?.count > 0)
+  const types = hasTotals ? CATEGORY_ORDER.filter(k => summary.byType?.[k]?.count > 0) : []
 
   return (
     <div>
-      {/* Общие показатели периода */}
+      {/* Общие показатели периода. В карточке профиля (totalsOnly) — компактный ряд
+          «иконка + зелёная цифра + серая единица», подписи словами не нужны. */}
       <div style={styles.totals}>
-        <Total
-          icon={<UiIcon name="muscles-line" size={22} color="var(--color-text-secondary)" />}
-          value={String(summary.count)}
-          label="Тренировок"
-        />
-        <Total
-          icon={<span style={styles.clock}><ClockIcon size={20} /></span>}
-          value={formatHours(summary.minutes)}
-          label="Время"
-        />
+        {hasTotals && (
+          <>
+            <Total
+              icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
+              value={String(summary.count)}
+              unit="трен."
+              label="Тренировок"
+              compact={totalsOnly}
+            />
+            <Total
+              icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
+              value={formatHours(summary.minutes)}
+              unit="ч"
+              label="Время"
+              compact={totalsOnly}
+            />
+          </>
+        )}
+        {/* Любимые — третьим в ряду; тап открывает список (модалка по центру). */}
+        {totalsOnly && favorites && (
+          <Total
+            icon={<span style={styles.heart}><HeartIcon filled size={ICON} /></span>}
+            value={String(favorites.count)}
+            unit="упр."
+            label="Любимые"
+            compact
+            onClick={favorites.onClick}
+          />
+        )}
       </div>
 
       {/* Разбивка по видам — только в полном режиме (в профиле её убираем). */}
@@ -101,26 +129,59 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
   )
 }
 
-function Total({ icon, value, label }) {
-  return (
-    <div style={styles.total}>
+/**
+ * Показатель. Полный вид (экран статистики): иконка + цифра, снизу подпись словом.
+ * Компактный (карточка профиля): иконка + цифра + единица в одну строку, без подписи.
+ * `onClick` делает показатель кнопкой (любимые → список).
+ */
+function Total({ icon, value, unit, label, compact = false, onClick = null }) {
+  const inner = (
+    <>
       <span style={styles.totalTop}>
         {icon}
-        <span style={styles.totalValue}>{value}</span>
+        {/* Полный вид: единица уже внутри значения («2,9 ч»). Компактный: цифра
+            зелёным, единица отдельным серым словом справа. */}
+        <span style={styles.totalValue}>{compact ? stripUnit(value) : value}</span>
+        {compact && <span style={styles.totalUnit}>{unit}</span>}
       </span>
-      <span style={styles.totalLabel}>{label}</span>
-    </div>
+      {!compact && <span style={styles.totalLabel}>{label}</span>}
+    </>
   )
+  if (onClick) {
+    return (
+      <button style={{ ...styles.total, ...styles.totalBtn }} onClick={onClick} aria-label={label}>
+        {inner}
+      </button>
+    )
+  }
+  return <div style={styles.total}>{inner}</div>
+}
+
+// «2,9 ч» → «2,9»: в компактном ряду единицу рисуем отдельным серым словом.
+function stripUnit(value) {
+  return String(value).replace(/\s+\D+$/, '')
 }
 
 const styles = {
-  totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '40px' },
+  totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '28px', flexWrap: 'wrap' },
   total: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
+  // Показатель-кнопка (любимые): без вида кнопки, только тап.
+  totalBtn: {
+    background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
   totalTop: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
+  heart: { display: 'inline-flex', color: 'var(--color-primary)' },
+  // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
-    letterSpacing: '0.2px', whiteSpace: 'nowrap'
+    letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'var(--color-primary)'
+  },
+  // Единица («трен.» / «ч» / «упр.») — серая и тоньше цифры.
+  totalUnit: {
+    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   // Подпись метрики (secondary info) — серым, чтобы главной была цифра.
   totalLabel: {

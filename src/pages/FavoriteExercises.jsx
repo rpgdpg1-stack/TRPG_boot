@@ -202,10 +202,11 @@ const styles = {
     margin: '0 auto 20px', maxWidth: '300px'
   },
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  // Карточка — как мини-модалка упражнения (превью + название + вес), одинаковой высоты.
+  // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
+  // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).
   card: {
     position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center',
-    padding: '16px', gap: '16px', width: '100%', minHeight: '150px',
+    padding: '16px', gap: '16px', width: '100%', minHeight: '132px',
     background: 'var(--surface-raised)', border: '1px solid var(--border-hairline)',
     borderRadius: '33px', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
   },
@@ -222,7 +223,7 @@ const styles = {
     WebkitTapHighlightColor: 'transparent'
   },
   preview: {
-    flexShrink: 0, width: '118px', height: '118px', borderRadius: '33px', overflow: 'hidden',
+    flexShrink: 0, width: '100px', height: '100px', borderRadius: '33px', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },

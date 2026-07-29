@@ -12,7 +12,7 @@ import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import HistoryStats from '../components/HistoryStats'
-import FavoritesBlock from '../components/FavoritesBlock'
+import FavoritesModal from '../components/FavoritesModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 
@@ -36,7 +36,7 @@ export default function Profile() {
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
   const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
-  const [favLoaded, setFavLoaded] = useState(() => getFavoritesSync() !== null)
+  const [favOpen, setFavOpen] = useState(false)   // модалка со списком любимых
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -57,7 +57,7 @@ export default function Profile() {
 
     const load = () => {
       setPrivacy(getPrivacy())
-      getFavoriteExercises().then(list => { setFavorites(list); setFavLoaded(true) })
+      getFavoriteExercises().then(list => setFavorites(list))
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -117,22 +117,21 @@ export default function Profile() {
 
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
-  // Секции внутри карточки профиля (то же, что видят друзья по приватности):
-  // тоталы статистики + любимые строкой-раскрывашкой.
+  // Секция внутри карточки профиля (то же, что видят друзья по приватности):
+  // один ряд показателей — тренировок · время · любимые (тап → список любимых).
+  const showFav = privacy.showFavorites && favorites.length > 0
   const sections = []
-  if (privacy.showStats) {
+  if (privacy.showStats || showFav) {
     sections.push(
       <div key="stats">
-        <HistoryStats summary={summary} loading={!loaded} totalsOnly />
+        <HistoryStats
+          summary={privacy.showStats ? summary : null}
+          loading={!loaded}
+          totalsOnly
+          favorites={showFav ? { count: favorites.length, onClick: () => { haptic.light(); setFavOpen(true) } } : null}
+        />
       </div>
     )
-  }
-  if (privacy.showFavorites) {
-    if (favorites.length > 0) {
-      sections.push(<FavoritesBlock key="fav" items={favorites} bare showWeights={privacy.showWeights} />)
-    } else if (!favLoaded) {
-      sections.push(<div key="fav-sk" style={styles.favSk} />)
-    }
   }
 
   return (
@@ -198,6 +197,15 @@ export default function Profile() {
           </div>
         </section>
       ))}
+
+      {/* Список любимых — по тапу на показатель «❤ N упр.» в карточке профиля. */}
+      {favOpen && (
+        <FavoritesModal
+          items={favorites}
+          showWeights={privacy.showWeights}
+          onClose={() => setFavOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -205,7 +213,6 @@ export default function Profile() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   headerWrap: { margin: '0 0 16px' },
-  favSk: { height: '52px', borderRadius: 'var(--radius-medium)', background: 'rgba(255,255,255,0.05)' },
 
   inviteButton: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',

@@ -1,59 +1,20 @@
-import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { pluralizeExercises } from '../utils/plural'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import HeartIcon from './HeartIcon'
 import CloseCross from './CloseCross'
 
-/**
- * «Любимые упражнения» в профиле (своём и друга) — КОМПАКТНО:
- *   ❤️ Любимые упражнения
- *   3 упражнения ›
- * Тап → модалка со списком (миниатюра + название + вес/повторы). Так профиль
- * лёгкий (особенно у друга, куда заходят чаще), а детали — в один тап.
- *
- * items: [{ name, weight_kg, counts_reps, preview_url }].
- */
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function FavoritesBlock({ items, bare = false, showWeights = true }) {
-  const [open, setOpen] = useState(false)
-
-  // Закрытие с гашением «призрачного» click: модалка (portal) снимается на
-  // pointerup крестика, а следующий синтетический click иначе попадает на
-  // страницу под ней (и, например, уводил на Статистику). Гасим один клик.
-  const closeModal = () => {
-    setOpen(false)
-    const swallow = (e) => { e.stopPropagation(); e.preventDefault() }
-    document.addEventListener('click', swallow, { capture: true, once: true })
-    setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400)
-  }
-
-  if (!items || items.length === 0) return null
-  const count = items.length
-
-  const summary = (
-    <button style={styles.summary} className="press-tile" onClick={() => setOpen(true)}>
-      <span style={styles.summaryIcon}><HeartIcon filled size={16} /></span>
-      <div style={styles.summaryText}>
-        <div style={styles.summaryTitle}>Любимые упражнения</div>
-        <div style={styles.summarySub}>{count} {pluralizeExercises(count)}</div>
-      </div>
-      <span style={styles.chev}>›</span>
-    </button>
-  )
-
-  return (
-    <>
-      {bare ? summary : <div style={styles.card}>{summary}</div>}
-      {open && createPortal(<FavoritesModal items={items} showWeights={showWeights} onClose={closeModal} />, document.body)}
-    </>
-  )
-}
-
-function FavoritesModal({ items, onClose, showWeights = true }) {
-  return (
-    <div style={m.overlay} onClick={onClose}>
+/**
+ * Модалка со списком любимых (миниатюра + название + вес/повторы) — по центру
+ * экрана, тап по фону закрывает. Открывается из карточки профиля (своей и друга)
+ * тапом по показателю «❤ N упр.». Портал делает сама.
+ */
+export default function FavoritesModal({ items, onClose, showWeights = true }) {
+  // stopPropagation: модалку открывают в т.ч. изнутри профиля друга (портал внутри
+  // портала) — без этого клик по фону всплыл бы и закрыл ещё и карточку друга.
+  return createPortal(
+    <div style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={m.panel} onClick={(e) => e.stopPropagation()}>
         <div style={m.header}>
           <HeartIcon filled size={16} />
@@ -92,26 +53,9 @@ function FavoritesModal({ items, onClose, showWeights = true }) {
       </div>
 
       <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
-    </div>
+    </div>,
+    document.body
   )
-}
-
-const styles = {
-  card: {
-    background: 'var(--surface)', border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)', padding: '4px', marginBottom: '20px'
-  },
-  // Свёрнутая строка: сердечко + [название / N упражнений] + шеврон. Вид как ряд меню.
-  summary: {
-    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
-    padding: '10px 12px', minHeight: '52px', textAlign: 'left',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-medium)', cursor: 'pointer'
-  },
-  summaryIcon: { display: 'inline-flex', width: '22px', justifyContent: 'center', flexShrink: 0 },
-  summaryText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
-  summaryTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' },
-  summarySub: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  chev: { flexShrink: 0, fontSize: '18px', color: 'var(--color-text-secondary)' }
 }
 
 const m = {

@@ -219,7 +219,7 @@ src/
 │                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
-│                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
+│                   FavoritesModal FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
 │                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame TrendingUpIcon
