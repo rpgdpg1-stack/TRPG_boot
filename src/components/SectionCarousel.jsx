@@ -76,7 +76,7 @@ export default function SectionCarousel({ onSectionChange }) {
   const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
   const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
   const lastText = pinnedProg
-    ? (lastDate ? formatRelative(lastDate) : 'Ещё не начинали')
+    ? (lastDate ? `Последняя тренировка ${formatRelative(lastDate)}` : 'Ещё не начинали')
     : null
 
   const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
@@ -141,7 +141,6 @@ export default function SectionCarousel({ onSectionChange }) {
       {/* Над карточкой: слева «последняя … назад» (nbsp держит высоту в пустом
           разделе), справа «Все ›» — вход во весь раздел. */}
       <div style={styles.lastRow}>
-        <span style={styles.lastLine}>{lastText || ' '}</span>
         <button
           style={styles.allLink}
           className="press-tile"
@@ -162,6 +161,7 @@ export default function SectionCarousel({ onSectionChange }) {
           dots
           isFav
           cta
+          footer={lastText}
           bordered={false}
           background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
           onToggleFav={onToggleFav}
@@ -237,18 +237,10 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
-  // «Последняя тренировка …» — над карточкой, по левому краю. Тише названия
-  // (легче/тусклее), ближе к карточке. minHeight держит высоту в пустом разделе.
-  // Строка над карточкой: слева «последняя … назад», справа «Все ›».
+  // Строка над карточкой — только «Все ›» справа («последняя» переехала в карточку).
   lastRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: '8px', minHeight: '28px', marginBottom: '5px', paddingLeft: '2px'
-  },
-  lastLine: {
-    flex: 1, minWidth: 0,
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.4)', textAlign: 'left',
-    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+    minHeight: '28px', marginBottom: '5px'
   },
   pinEmpty: {
     width: '100%',

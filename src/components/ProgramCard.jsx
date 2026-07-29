@@ -37,6 +37,7 @@ export default function ProgramCard({
   lastTrained = false,
   bordered = true,
   cta = false,
+  footer = null,
   background = 'var(--color-card)'
 }) {
   const navigate = useNavigate()
@@ -129,10 +130,15 @@ export default function ProgramCard({
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
 
+  const showFooter = !!footer && available
+
   const cardStyle = {
     ...styles.card,
     background,
-    paddingRight: `${padRight}px`,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+    minHeight: showFooter ? '124px' : styles.card.minHeight,
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',
     // overflow hidden — клип заливки-прогресса по скруглению.
@@ -154,31 +160,37 @@ export default function ProgramCard({
         <div style={{ ...styles.cardFill, width: `${fillPct}%` }} aria-hidden="true" />
       )}
 
-      <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
+      {/* Верхний ряд карточки: эмблема + контент + CTA/правый блок (позиционируются
+          относительно этого ряда, чтобы footer не сдвигал их по вертикали). */}
+      <div style={{ ...styles.cardRow, paddingRight: `${padRight}px`, flex: showFooter ? 1 : undefined }}>
+        <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
-      {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
-          белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных,
-          не на кнопке). */}
-      {showCta && (
-        <span style={{ ...styles.ctaPill, background: 'var(--color-primary)', border: 'none', color: '#FFFFFF' }}>
-          {isActive ? 'Продолжить' : 'Начать'}
-          <span style={{ display: 'inline-flex', color: '#FFFFFF' }}><PlayIcon size={16} /></span>
-        </span>
-      )}
+        {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
+            белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных). */}
+        {showCta && (
+          <span style={{ ...styles.ctaPill, right: 0, background: 'var(--color-primary)', border: 'none', color: '#FFFFFF' }}>
+            {isActive ? 'Продолжить' : 'Начать'}
+            <span style={{ display: 'inline-flex', color: '#FFFFFF' }}><PlayIcon size={16} /></span>
+          </span>
+        )}
 
-      {/* Правый блок — по центру по высоте, справа. */}
-      {!showCta && showRight && (
-        <div style={styles.rightBlock}>
-          {isActive ? (
-            <span style={styles.continuePlay}><PlayIcon size={28} /></span>
-          ) : (
-            <>
-              <span style={styles.ltLabel}>Последняя</span>
-              <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
-            </>
-          )}
-        </div>
-      )}
+        {/* Правый блок — по центру по высоте ряда, справа. */}
+        {!showCta && showRight && (
+          <div style={{ ...styles.rightBlock, right: 0 }}>
+            {isActive ? (
+              <span style={styles.continuePlay}><PlayIcon size={28} /></span>
+            ) : (
+              <>
+                <span style={styles.ltLabel}>Последняя</span>
+                <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Нижняя строка (footer) — «Последняя тренировка N назад» внутри карточки. */}
+      {showFooter && <div style={styles.footer}>{footer}</div>}
 
       {dots && available && (
         <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
@@ -251,6 +263,13 @@ const styles = {
     // Ниже прежних 130 — убрали строку тега места/бассейна, карточка компактнее.
     minHeight: '106px',
     textAlign: 'left'
+  },
+  // Верхний ряд карточки (эмблема + контент + CTA). Позиционный контекст для CTA.
+  cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
+  // Footer-строка «Последняя тренировка …» — тихая, внутри карточки снизу.
+  footer: {
+    paddingTop: '10px', fontFamily: 'var(--font-manrope)', fontSize: '11px',
+    fontWeight: 500, color: 'var(--color-text-secondary)', opacity: 0.75
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {

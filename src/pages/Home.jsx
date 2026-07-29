@@ -4,13 +4,69 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { localGet } from '../utils/storage'
 import { getRecentWorkouts } from '../lib/storage'
 import { HISTORY_FETCH_LIMIT } from '../utils/history'
-import { EVENTS, emit } from '../lib/events'
+import { EVENTS, emit, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { cacheInvalidate } from '../lib/cache'
+import { resolveWeeklyStreak } from '../utils/dates'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
+import StreakFlame from '../components/StreakFlame'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
+
+// Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
+// строка-информер, не карточка.
+function pluralTraining(n) {
+  const d = n % 10, dd = n % 100
+  if (d === 1 && dd !== 11) return 'тренировка'
+  if (d >= 2 && d <= 4 && (dd < 10 || dd >= 20)) return 'тренировки'
+  return 'тренировок'
+}
+
+function WeekStrip() {
+  const [streak, setStreak] = useState(() => {
+    const u = getCurrentUser()
+    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
+  })
+  useEffect(() => {
+    const upd = () => {
+      const u = getCurrentUser()
+      setStreak(resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week))
+    }
+    const off = on(EVENTS.USER_CHANGED, upd)
+    const off2 = on(EVENTS.USER_READY, upd)
+    return () => { off(); off2() }
+  }, [])
+
+  return (
+    <div style={stripStyles.strip}>
+      {streak >= 1 ? (
+        <>
+          <span style={stripStyles.label}>На этой неделе</span>
+          <StreakFlame streak={streak} />
+          <span style={stripStyles.count}>×{streak}</span>
+          <span style={stripStyles.label}>{pluralTraining(streak)}</span>
+        </>
+      ) : (
+        <>
+          <span style={stripStyles.greyFlame}><StreakFlame streak={0} /></span>
+          <span style={stripStyles.label}>Начни тренировку — стань лучшей версией себя</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+const stripStyles = {
+  strip: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+    minHeight: '38px', padding: '0 14px', marginBottom: '12px',
+    background: 'var(--surface-raised)', borderRadius: 'var(--radius-medium)'
+  },
+  label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: '#FF8C42', letterSpacing: '0.5px' },
+  greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
+}
 
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
 // PTR_REVEAL — «мёртвая зона»: сперва тянется невидимый верх, кольцо появляется только
@@ -162,13 +218,15 @@ export default function Home() {
         <ScreenTitle>Тренировки</ScreenTitle>
       </div>
 
-      {/* Скроллящийся контент: карусель разделов + карточка Истории. */}
+      {/* Скроллящийся контент: инфо-плашка недели + карусель разделов + карточки. */}
       <div style={styles.scrollSection}>
+        <div style={{ marginTop: '4px' }}>
+          <WeekStrip />
+        </div>
+
         {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
             (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
-        <div style={{ marginTop: '4px' }}>
-          <SectionCarousel onSectionChange={onSectionChange} />
-        </div>
+        <SectionCarousel onSectionChange={onSectionChange} />
 
         <div style={{ marginTop: '12px' }}>
           <HomeCards />

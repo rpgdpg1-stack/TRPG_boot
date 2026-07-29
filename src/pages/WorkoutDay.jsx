@@ -954,7 +954,6 @@ export default function WorkoutDay() {
   const sections = groupByMuscleGroup(slots)
   sectionsRef.current = sections
   const canFinish = activeOrderNums.size > 0
-  const isAllDone = slots.length > 0 && activeOrderNums.size === slots.length
 
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)

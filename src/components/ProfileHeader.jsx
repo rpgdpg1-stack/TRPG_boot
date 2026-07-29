@@ -72,7 +72,7 @@ export default function ProfileHeader({
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
               ) : (
-                <span style={styles.lastWhen}>{lastWhen || 'Ещё не тренировался'}</span>
+                <span style={styles.lastWhen}>{lastWhen ? `Последняя тренировка ${lastWhen}` : 'Ещё не тренировался'}</span>
               )}
             </div>
           )}

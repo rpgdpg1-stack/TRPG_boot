@@ -151,7 +151,7 @@ export default function Friends() {
             Пригласи друзей через Telegram<br />
             и следи за прогрессом друг друга
           </div>
-          <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
+          <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
             <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
             Пригласить друга
           </ActionButton>
@@ -166,10 +166,9 @@ export default function Friends() {
             </div>
           )}
 
-          {/* Закреплённые сверху (с микро-лейблом, когда есть и обычные). */}
+          {/* Закреплённые сверху — без подписи (сами выделены фоном строки). */}
           {pinnedFriends.length > 0 && (
             <>
-              {otherFriends.length > 0 && <div style={styles.groupLabel}>Закреплённые</div>}
               <div style={styles.list}>
                 {pinnedFriends.map((friend, idx) => (
                   <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
@@ -192,7 +191,7 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <ActionButton onClick={handleInviteTap} variant="gray" hug style={{ gap: '8px' }}>
+            <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
               <UiIcon name="invite-friend" size={16} color="var(--color-text)" />
               Пригласить друга
             </ActionButton>
