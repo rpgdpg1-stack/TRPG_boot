@@ -30,6 +30,7 @@ import {
 import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import CloseCross from '../components/CloseCross'
+import ScrollTopButton from '../components/ScrollTopButton'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
@@ -1325,6 +1326,9 @@ export default function WorkoutDay() {
           )}
         </div>
       )}
+
+      {/* Кнопка «наверх» — появляется при скролле вниз (длинный список дня). */}
+      {!error && !kbOpen && <ScrollTopButton />}
 
       {actionSlot && (
         <ExerciseActionMenu

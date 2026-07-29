@@ -16,7 +16,9 @@ import UiIcon from '../UiIcon'
  */
 export default function Loader({ onFinish, readyPromise }) {
   const sceneRef = useRef(null)
-  const MIN_DURATION_MS = 1500
+  // Небольшой пол, чтобы не мигнуть — но НЕ держим ради анимации: загрузился
+  // быстро → почти сразу открываем (ждём max(этот пол, готовность auth)).
+  const MIN_DURATION_MS = 320
 
   useEffect(() => {
     let cancelled = false
@@ -42,12 +44,18 @@ export default function Loader({ onFinish, readyPromise }) {
       const scene = sceneRef.current
       if (!scene) return
 
+      // Гладкая частица-искра: маленький круг (не пиксельный квадрат), лёгкое
+      // свечение, размытие по краю — премиальный «+N»-вылет.
       const particle = document.createElement('div')
+      const dim = 4 + Math.random() * 3
       particle.style.cssText = `
         position: absolute;
-        width: 4px;
-        height: 4px;
+        width: ${dim}px;
+        height: ${dim}px;
+        border-radius: 50%;
         background: #9ED153;
+        box-shadow: 0 0 6px rgba(158, 209, 83, 0.7);
+        filter: blur(0.4px);
         z-index: 1;
         pointer-events: none;
       `

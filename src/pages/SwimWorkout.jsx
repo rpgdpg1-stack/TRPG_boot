@@ -20,6 +20,7 @@ import ClockIcon from '../components/ClockIcon'
 import ChevronIcon from '../components/ChevronIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
+import ScrollTopButton from '../components/ScrollTopButton'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -332,6 +333,9 @@ export default function SwimWorkout() {
           Завершить <SwimFinishIcon size={17} />
         </ActionButton>
       </div>
+
+      {/* Кнопка «наверх» — при скролле вниз (как в дне силовой). */}
+      <ScrollTopButton />
 
       {modal && (
         <SwimFinishedModal
