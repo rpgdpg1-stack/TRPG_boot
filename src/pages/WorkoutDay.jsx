@@ -110,6 +110,24 @@ const workoutEntryFromHome = new Map()
 // Вход из «Любимых упражнений» (по «+») — «Назад» возвращает шагом истории туда.
 const workoutEntryFromFav = new Map()
 
+/** Плей-треугольник (как на главной) — для кнопки «Начать». */
+function PlayIcon({ size = 17 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5.6 L18 12 L8 18.4 Z" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** Флажок-финиш (Material-стиль) — для кнопки «Завершить». */
+function FinishIcon({ size = 17 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.2a.7.7 0 0 1 .57 1.11L15.6 7l2.17 2.89A.7.7 0 0 1 17.2 11H7v9a1 1 0 0 1-1 1z" />
+    </svg>
+  )
+}
+
 export default function WorkoutDay() {
   const { programId, day } = useParams()
   const navigate = useNavigate()
@@ -1282,27 +1300,30 @@ export default function WorkoutDay() {
             </div>
           )}
 
-          {/* Одна кнопка на все состояния — «Начать» плавно морфится в «Завершить»
-              (цвет через CSS-переход ActionButton + squish-анимация btn-morph на
-              старте), а не подменяется. Прогресс — заливкой шапки, не в кнопке. */}
-          {(() => {
-            const p = isThisActive
-              ? { onClick: handleFinishButtonTap, disabled: !canFinish, variant: isAllDone ? 'accent' : 'neutral', label: isAllDone ? '✓ ЗАВЕРШИТЬ' : 'ЗАВЕРШИТЬ' }
-              : sessionBlocked
-                ? { onClick: handleBlockedStart, variant: 'dim', label: 'НАЧАТЬ' }
-                : { onClick: handleStart, variant: 'graphite', label: 'НАЧАТЬ' }
-            return (
-              <ActionButton
-                onClick={p.onClick}
-                disabled={p.disabled}
-                variant={p.variant}
-                hug
-                className={btnMorph ? 'btn-morph' : ''}
-              >
-                {p.label}
-              </ActionButton>
-            )
-          })()}
+          {/* «Начать» — зелёная заливка + белый текст + плей (как на главной).
+              «Завершить» — прозрачная (как была), но текст+флажок зелёным акцентом;
+              тусклее, пока ничего не отжато, ярче — как только есть отмеченные. */}
+          {isThisActive ? (
+            <ActionButton
+              onClick={handleFinishButtonTap}
+              variant="neutral"
+              hug
+              className={btnMorph ? 'btn-morph' : ''}
+              style={{ gap: '8px', color: 'var(--color-primary)', opacity: canFinish ? 1 : 0.55 }}
+            >
+              Завершить <FinishIcon size={17} />
+            </ActionButton>
+          ) : (
+            <ActionButton
+              onClick={sessionBlocked ? handleBlockedStart : handleStart}
+              variant={sessionBlocked ? 'dim' : 'primary'}
+              hug
+              className={btnMorph ? 'btn-morph' : ''}
+              style={{ gap: '8px' }}
+            >
+              Начать <PlayIcon size={17} />
+            </ActionButton>
+          )}
         </div>
       )}
 

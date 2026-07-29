@@ -43,6 +43,15 @@ const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 // Боковые вертикальные гирлянды: 3 флажка (красный / белый-центр / красный),
 // обе остриём ВЛЕВО.
 
+/** Флажок-финиш (Material-стиль) — для кнопки «Завершить» (как в дне силовой). */
+function SwimFinishIcon({ size = 17 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.2a.7.7 0 0 1 .57 1.11L15.6 7l2.17 2.89A.7.7 0 0 1 17.2 11H7v9a1 1 0 0 1-1 1z" />
+    </svg>
+  )
+}
+
 function formatDistance(m) {
   if (m >= 1000) {
     const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
@@ -318,8 +327,9 @@ export default function SwimWorkout() {
           onClick={handleFinishTap}
           variant="neutral"
           hug
+          style={{ gap: '8px', color: 'var(--color-primary)' }}
         >
-          ЗАВЕРШИТЬ
+          Завершить <SwimFinishIcon size={17} />
         </ActionButton>
       </div>
 

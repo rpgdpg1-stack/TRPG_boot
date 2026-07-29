@@ -156,17 +156,13 @@ export default function ProgramCard({
 
       <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
-      {/* Пилюля-действие «Начать ▶» / «Продолжить ▶». Лёгкая заливка + обводка в цвет
-          раздела и акцентный плей — действие читается как приоритет, но без крика
-          (жать всё равно можно по всей карточке). */}
+      {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
+          белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных,
+          не на кнопке). */}
       {showCta && (
-        <span style={{
-          ...styles.ctaPill,
-          background: `color-mix(in srgb, ${accent} 15%, ${background})`,
-          border: `1px solid color-mix(in srgb, ${accent} 38%, transparent)`
-        }}>
+        <span style={{ ...styles.ctaPill, background: 'var(--color-primary)', border: 'none', color: '#FFFFFF' }}>
           {isActive ? 'Продолжить' : 'Начать'}
-          <span style={{ display: 'inline-flex', color: accent }}><PlayIcon size={16} /></span>
+          <span style={{ display: 'inline-flex', color: '#FFFFFF' }}><PlayIcon size={16} /></span>
         </span>
       )}
 
