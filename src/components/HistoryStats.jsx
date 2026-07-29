@@ -84,7 +84,7 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
             <Total
               icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
               value={formatHours(summary.minutes)}
-              unit="ч"
+              unit="ч."
               label="Время"
               compact={totalsOnly}
             />

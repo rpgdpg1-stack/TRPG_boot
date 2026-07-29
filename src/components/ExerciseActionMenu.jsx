@@ -6,7 +6,7 @@ import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import { haptic } from '../lib/telegram'
-import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, getFavoriteExercises } from '../lib/favorite-exercises'
+import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
 import HeartButton from './HeartButton'
@@ -284,7 +284,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         {/* Предупреждение о лимите любимых. */}
         {favLimit && (
           <div style={styles.favLimit}>
-            Лимит 3 любимых достигнут. Открой «Любимые упражнения» и освободи место.
+            Лимит {FAVORITE_LIMIT} любимых достигнут. Открой «Любимые упражнения» и освободи место.
           </div>
         )}
 

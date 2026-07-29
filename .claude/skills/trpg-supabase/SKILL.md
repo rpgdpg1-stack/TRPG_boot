@@ -74,6 +74,15 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - ISO-неделя: формат `IYYY-IW` (НЕ `YYYY-WW`) — для совместимости с `to_char`.
 - Стрики кэпнуты на 7 естественно структурой БД (one-workout-per-day), `LEAST()` не нужен.
 
+## Любимые упражнения
+
+- `user_favorite_exercises(user_id, slot, exercise_id)`, PK `(user_id, slot)`, CHECK `slot 1..5`.
+- Лимит **5** живёт в ТРЁХ местах — менять все разом: CHECK на `slot`, константа `v_limit` в
+  `api_add_favorite_exercise` (там же `generate_series(1, v_limit)` для поиска свободного слота)
+  и `FAVORITE_LIMIT` во фронте (`src/lib/favorite-exercises.js`, оттуда же берут тексты про лимит).
+  Превышение → `{success:false, error:'limit'}`, фронт показывает баннер в меню упражнения.
+- `api_get_user_public_profile` отдаёт любимые БЕЗ своего лимита (сколько есть, столько и вернёт).
+
 ## Друзья
 
 - Дружба — таблица `friendships(user_a_id, user_b_id)`, **симметричная** (одна строка на

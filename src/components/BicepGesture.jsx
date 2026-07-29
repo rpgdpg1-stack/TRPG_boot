@@ -3,10 +3,16 @@ import UiIcon from './UiIcon'
 
 /**
  * Фирменный жест «+1 мускул» для модалок завершения (силовая, заплыв, любой раздел).
- * Наш бицепс (как на лоадере) качается ОДИН раз и застывает; вокруг непрерывно летят
- * гладкие зелёные искры (круги со свечением, не пиксели); рядом статичный «+1».
+ * Наш бицепс (как на лоадере) качается ОДИН раз и застывает; «+1» НЕ висит статично —
+ * он улетает вверх и гаснет, ровно как на лоадере (`plusOneFly`), один прогон.
+ * Искры (гладкие зелёные круги со свечением) продолжают лететь непрерывно.
  * Никаких очков/мускулов не копится — «+1» = «+1 тренировка» (стрик/счётчики).
+ *
+ * Длительность одного прогона жеста — `GESTURE_MS` (вызывающий по ней решает,
+ * когда показывать саму модалку: сперва жест, потом текст).
  */
+export const GESTURE_MS = 1250
+
 export default function BicepGesture({ size = 84 }) {
   const ref = useRef(null)
 
@@ -48,18 +54,26 @@ export default function BicepGesture({ size = 84 }) {
           12% { opacity: 1; }
           100% { opacity: 0; transform: translateY(-72px) translateX(var(--drift,0px)) scale(0.5); }
         }
+        @keyframes bgPlusFly {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.6); }
+          18%  { opacity: 1; transform: translateX(-50%) translateY(-8px) scale(1); }
+          78%  { opacity: 1; transform: translateX(-50%) translateY(-54px) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-70px) scale(1); }
+        }
       `}</style>
     </div>
   )
 }
 
 const styles = {
-  scene: { position: 'relative', width: '150px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  // Сцена компактнее прежней (было 150) — модалка завершения не должна быть длинной.
+  scene: { position: 'relative', width: '124px', height: '124px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   biceps: { display: 'block', animation: 'bgFlex 1.2s ease-in-out', transformOrigin: '60% 85%', position: 'relative', zIndex: 2 },
+  // «+1» улетает и гаснет (как на лоадере), не остаётся висеть над бицепсом.
   plusOne: {
-    position: 'absolute', top: '18%', left: '50%', transform: 'translateX(-50%)',
+    position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)',
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px',
-    color: 'var(--color-primary)', letterSpacing: '1px', zIndex: 3,
-    textShadow: '0 0 10px rgba(158, 209, 83, 0.5)'
+    color: 'var(--color-primary)', letterSpacing: '1px', zIndex: 3, opacity: 0,
+    animation: 'bgPlusFly 1.15s ease-out forwards'
   }
 }

@@ -46,11 +46,14 @@ function WeekStrip() {
   return (
     <div style={stripStyles.strip}>
       <span style={stripStyles.label}>На этой неделе</span>
-      <span style={hasStreak ? undefined : stripStyles.greyFlame}>
-        <StreakFlame streak={streak} />
-      </span>
-      <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
-        {hasStreak ? `×${streak}` : '0'}
+      {/* Огонёк и ×N — одной группой, вплотную (счётчик принадлежит огоньку). */}
+      <span style={stripStyles.flameGroup}>
+        <span style={hasStreak ? undefined : stripStyles.greyFlame}>
+          <StreakFlame streak={streak} />
+        </span>
+        <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
+          {hasStreak ? `×${streak}` : '0'}
+        </span>
       </span>
       <span style={stripStyles.label}>{pluralTraining(streak)}</span>
     </div>
@@ -64,6 +67,8 @@ const stripStyles = {
     background: 'var(--surface-raised)', borderRadius: 'var(--radius-medium)'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  // Огонёк + ×N — вплотную (2px), как единый значок серии. Тот же вид в профиле.
+  flameGroup: { display: 'inline-flex', alignItems: 'center', gap: '2px' },
   count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: '#FF8C42', letterSpacing: '0.5px' },
   // ×0 — серым (как негорящий огонёк), ≥1 — оранжевым.
   countZero: { color: 'rgba(255, 255, 255, 0.4)' },

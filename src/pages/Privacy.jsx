@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getPrivacy, savePrivacy } from '../lib/privacy'
+import { FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import ScreenTitle from '../components/ScreenTitle'
 
 /**
@@ -34,7 +35,7 @@ export default function Privacy() {
       <div style={styles.groupCard}>
         <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
         <ToggleRow label="Статистика" hint="Всего тренировок и часов за всё время" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
-        <ToggleRow label="Любимые упражнения" hint="Твой топ-3" value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
+        <ToggleRow label="Любимые упражнения" hint={`Твой топ-${FAVORITE_LIMIT}`} value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
         {/* Веса — вложены в «Любимые»: видны только когда любимые включены. Выключил
             любимые — веса и сам пункт «Показывать веса» прячутся. */}
         {privacy.showFavorites && (

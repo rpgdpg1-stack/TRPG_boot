@@ -240,6 +240,7 @@ src/
 supabase/
 ├── config.toml
 ├── migrations/     weight_history.sql (история рабочего веса: таблица + триггер + RPC)
+│                   favorite_exercises_limit_5.sql (лимит любимых 3→5: CHECK slot + RPC)
 └── functions/telegram-auth/  index.ts · deno.json · .npmrc
 ```
 

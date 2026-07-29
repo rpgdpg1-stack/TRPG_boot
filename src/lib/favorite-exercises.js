@@ -1,5 +1,6 @@
 /**
- * Любимые упражнения — до 3 штук. Добавляются сердечком в мини-модалке дня
+ * Любимые упражнения — до 5 штук (FAVORITE_LIMIT; тот же лимит зашит в RPC
+ * api_add_favorite_exercise и в CHECK на slot). Добавляются сердечком в мини-модалке дня
  * тренировки; на странице «Любимые упражнения» показываются те же карточки.
  * Хранятся в БД (user_favorite_exercises), рабочий вес — из user_exercise_weights.
  *
@@ -11,7 +12,7 @@ import { getCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { localGet, localSet } from '../utils/storage'
 
-export const FAVORITE_LIMIT = 3
+export const FAVORITE_LIMIT = 5
 const LIST_KEY = 'fav-exercises-list'
 
 let idsCache = null   // Set<exercise_id> | null (ещё не грузили)
@@ -70,7 +71,7 @@ export async function getFavoriteExercises() {
 
 /**
  * Добавить в любимые. Возвращает { success, error }:
- *   error === 'limit' — уже 3 любимых.
+ *   error === 'limit' — уже FAVORITE_LIMIT любимых.
  * Оптимистично обновляет кэш и шлёт FAVORITES_CHANGED.
  */
 export async function addFavorite(exerciseId) {
