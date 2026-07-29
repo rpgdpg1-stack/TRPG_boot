@@ -21,7 +21,8 @@ const CATEGORIES_META = {
   gym: {
     title: 'СИЛОВАЯ',
     subtitle: 'СКОРО',
-    color: 'var(--color-primary)',
+    // Цвет раздела — токен силовой (холодный металл), НЕ зелёный акцент.
+    color: 'var(--cat-gym)',
     iconName: 'power',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ',
     info: {
@@ -219,7 +220,7 @@ export default function Category() {
               isFav={favoriteSlug === prog.slug}
               onToggleFav={() => handleFavoriteTap(prog.slug)}
               onDeleted={handleDeleted}
-              dots
+              menu
               cta
               bordered={false}
               background={favoriteSlug === prog.slug

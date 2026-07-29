@@ -15,17 +15,21 @@ import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
 
+// Долгое нажатие по карточке программы — те же пороги, что у карточки упражнения.
+const LONG_PRESS_MS = 500
+const MOVE_TOLERANCE_PX = 8
+
 /**
  * Единая карточка программы — Главная / Избранное / Раздел.
  * Различия пропсами:
- *  - dots        — «⋯» в правом верхнем углу → компактное меню программы
- *                  (избранное / редактировать / поделиться / удалить).
+ *  - menu        — долгое нажатие по карточке → меню программы по центру под ней
+ *                  (закрепить / редактировать / поделиться / удалить).
  *  - lastTrained — серая надпись «последняя тренировка N дней назад» (Главная).
  *  - isFav/onToggleFav — состояние и переключение избранного (только из меню).
  *  - onOpen      — тап по карточке (переход на тренировку), задаёт вызывающий.
  *  - onDeleted   — после удаления своей программы (обновить список).
  *
- * Сердечка на самой карточке нет — избранное только через «⋯».
+ * Ни сердечка, ни «⋯» на карточке нет — все действия живут в меню долгого нажатия.
  */
 export default function ProgramCard({
   prog,
@@ -33,7 +37,7 @@ export default function ProgramCard({
   onToggleFav,
   onOpen,
   onDeleted,
-  dots = false,
+  menu = false,
   lastTrained = false,
   bordered = true,
   cta = false,
@@ -45,7 +49,7 @@ export default function ProgramCard({
   // getActiveDay ниже догонит из Cloud, если на другом устройстве сменилось.
   const [activeDay, setActiveDay] = useState(() => getActiveDaySync(prog.slug))
   const [anchorRect, setAnchorRect] = useState(null) // null = меню закрыто
-  const dotsRef = useRef(null)
+  const cardRef = useRef(null)
 
   const available = prog.available !== false
   const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
@@ -80,6 +84,8 @@ export default function ProgramCard({
 
   const handleTap = () => {
     if (anchorRect || !available) return
+    // Только что сработало долгое нажатие — это не тап, никуда не идём.
+    if (longFired.current) { longFired.current = false; return }
     // Идёт активная тренировка по этой программе — сразу в активный день.
     if (isActive) {
       haptic.light()
@@ -100,12 +106,39 @@ export default function ProgramCard({
     setTimeout(() => navigate(`/workout/${prog.slug}/${activeDay || firstDay}`), 80)
   }
 
-  const handleDotsTap = (e) => {
-    e.stopPropagation()
-    haptic.light()
-    setAnchorRect(dotsRef.current?.getBoundingClientRect() || null)
+  // Долгое нажатие по карточке → меню (как long-press по упражнению в дне):
+  // подержал 500мс не двигая палец — открылось; повёл (скролл) — отменилось.
+  const longTimer = useRef(null)
+  const longFired = useRef(false)
+  const pressStart = useRef({ x: 0, y: 0 })
+
+  const clearLong = () => {
+    if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null }
   }
-  const closeMenu = () => setAnchorRect(null)
+
+  const handlePointerDown = (e) => {
+    if (!menu || !available || anchorRect) return
+    longFired.current = false
+    pressStart.current = { x: e.clientX, y: e.clientY }
+    clearLong()
+    longTimer.current = setTimeout(() => {
+      longFired.current = true
+      haptic.medium()
+      setAnchorRect(cardRef.current?.getBoundingClientRect() || null)
+    }, LONG_PRESS_MS)
+  }
+
+  const handlePointerMove = (e) => {
+    if (!longTimer.current) return
+    if (Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
+        Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX) clearLong()
+  }
+
+  useEffect(() => clearLong, [])
+
+  // Закрытие сбрасывает флаг long-press: клик от отпускания пальца гасится проверкой
+  // anchorRect, поэтому сам флаг снимаем здесь — иначе следующий тап был бы съеден.
+  const closeMenu = () => { longFired.current = false; setAnchorRect(null) }
 
   // Конструктор открывается push'ем; назад он делает navigate(-1) и сам вернёт
   // на эту же страницу (главная / избранное / раздел).
@@ -125,7 +158,7 @@ export default function ProgramCard({
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
-  const padRight = showCta ? 128 : showRight ? 96 : dots ? 48 : 18
+  const padRight = showCta ? 128 : showRight ? 96 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -151,7 +184,13 @@ export default function ProgramCard({
 
   return (
     <div
+      ref={cardRef}
       onClick={handleTap}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={clearLong}
+      onPointerLeave={clearLong}
+      onPointerCancel={clearLong}
       className={available ? 'press-tile' : ''}
       style={cardStyle}
     >
@@ -189,17 +228,17 @@ export default function ProgramCard({
         )}
       </div>
 
-      {/* Нижняя строка (footer) — «Последняя тренировка N назад» внутри карточки. */}
+      {/* Footer «Последняя тренировка N назад» — в нижнем углу карточки (абсолютом),
+          чтобы не смещать основную композицию: она центрируется по всей высоте. */}
       {showFooter && <div style={styles.footer}>{footer}</div>}
-
-      {dots && available && (
-        <button ref={dotsRef} onClick={handleDotsTap} style={styles.dotsBtn} aria-label="Меню программы">⋯</button>
-      )}
 
       {anchorRect && (
         <AnchorMenu
           anchorRect={anchorRect}
           onClose={closeMenu}
+          align="center"
+          gap={3}
+          motion="drop"
           items={[
             {
               key: 'fav',
@@ -266,10 +305,14 @@ const styles = {
   },
   // Верхний ряд карточки (эмблема + контент + CTA). Позиционный контекст для CTA.
   cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
-  // Footer-строка «Последняя тренировка …» — тихая, внутри карточки снизу.
+  // Footer-строка «Последняя тренировка …» — тихая, в левом нижнем углу карточки.
+  // Абсолютом: композиция (эмблема + название + дни + CTA) центрируется по всей
+  // высоте карточки и не съезжает вверх из-за этой строки.
   footer: {
-    paddingTop: '10px', fontFamily: 'var(--font-manrope)', fontSize: '11px',
-    fontWeight: 500, color: 'var(--color-text-secondary)', opacity: 0.75
+    position: 'absolute', left: '18px', bottom: '12px', zIndex: 1,
+    fontFamily: 'var(--font-manrope)', fontSize: '11px',
+    fontWeight: 500, color: 'var(--color-text-secondary)', opacity: 0.75,
+    pointerEvents: 'none'
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {
@@ -328,27 +371,5 @@ const styles = {
     filter: 'drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 35%, transparent))'
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
-  ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' },
-  dotsBtn: {
-    position: 'absolute',
-    top: '8px',
-    right: '12px',
-    width: '34px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    color: '#9A9A9A',
-    fontSize: '22px',
-    fontWeight: 700,
-    lineHeight: 1,
-    letterSpacing: '1px',
-    cursor: 'pointer',
-    opacity: 0.7,
-    WebkitTapHighlightColor: 'transparent',
-    zIndex: 2
-  }
+  ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' }
 }

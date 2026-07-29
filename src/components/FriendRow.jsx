@@ -13,7 +13,8 @@
  * Без цифры. Тип последней тренировки (иконка+название) добавим, когда бэкенд
  * начнёт его отдавать в api_get_friends_list.
  *
- * Тап → onTap(friend). Долгое нажатие (550мс) → onLongPress(friend).
+ * Тап → onTap(friend). Долгое нажатие (550мс) → onLongPress(friend, rect строки)
+ * — по rect страница вешает меню по центру под этой строкой.
  * Лонг-пресс не конфликтует со скроллом: сдвиг больше порога / раннее отпускание
  * трактуется как тап/скролл.
  */
@@ -45,6 +46,7 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
   const trainedThisWeek = lastMs >= weekStart && lastMs < weekEnd
 
   const [pressed, setPressed] = useState(false)
+  const rowRef = useRef(null)
   const longTimer = useRef(null)
   const startPos = useRef({ x: 0, y: 0 })
   const firedLong = useRef(false)
@@ -62,7 +64,8 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
     startPos.current = { x: e.clientX, y: e.clientY }
     longTimer.current = setTimeout(() => {
       firedLong.current = true
-      onLongPress?.(friend)
+      setPressed(false)
+      onLongPress?.(friend, rowRef.current?.getBoundingClientRect() || null)
     }, LONG_PRESS_MS)
   }
 
@@ -93,6 +96,7 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
 
   return (
     <div
+      ref={rowRef}
       onPointerDown={handleDown}
       onPointerMove={handleMove}
       onPointerUp={handleUp}

@@ -3,18 +3,25 @@ import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 
 /**
- * Компактное контекст-меню, привязанное к кнопке («⋯») — как нативное iOS/Telegram.
+ * Компактное контекст-меню, привязанное к элементу — как нативное iOS/Telegram.
  *
  * - Само меню «стекло» (блюр фона под ним), весь экран НЕ затемняется.
- * - Раскрывается/сворачивается из угла, ближайшего к кнопке.
  * - Без «Закрыть» — тап мимо закрывает.
  * - Нажатие на пункт — серая пилюля-подсветка (держишь — есть, убрал — нет).
  *
- * @param anchorRect — DOMRect кнопки, от неё позиционируется меню.
+ * Два режима подачи:
+ *  - `align='right' + motion='scale'` (по умолчанию) — раскрытие из угла кнопки «⋯».
+ *  - `align='center' + motion='drop'` — меню долгого нажатия: по центру под карточкой,
+ *    выезжает сверху вниз (как меню чата в Telegram).
+ *
+ * @param anchorRect — DOMRect якоря (кнопки или карточки), от него позиционируется меню.
  * @param items — [{ key, icon, label, labelColor?, haptic?, onClick } | { divider:true }]
  * @param onClose — закрыть (вызывается после анимации сворачивания).
+ * @param align — 'right' (к правому краю якоря) | 'center' (по центру якоря).
+ * @param gap — зазор между якорем и меню, px.
+ * @param motion — 'scale' (раскрытие из угла) | 'drop' (выезд сверху вниз, 200мс).
  */
-export default function AnchorMenu({ anchorRect, items, onClose }) {
+export default function AnchorMenu({ anchorRect, items, onClose, align = 'right', gap = 10, motion = 'scale' }) {
   const menuRef = useRef(null)
   const [pos, setPos] = useState(null)
   const [placement, setPlacement] = useState('below')
@@ -24,7 +31,7 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
   const requestClose = () => {
     if (closing) return
     setClosing(true)
-    setTimeout(() => onClose?.(), 170)
+    setTimeout(() => onClose?.(), motion === 'drop' ? 200 : 170)
   }
 
   // Только Esc. Скролл фона НЕ лочим через html/body (и position:fixed, и
@@ -38,17 +45,18 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Позиция: правый край меню к правому краю кнопки, вниз с зазором; если не
-  // влезает — вверх. Угол роста — ближайший к кнопке.
+  // Позиция: меню под якорем с зазором `gap`; по горизонтали — к правому краю
+  // якоря (align='right') или по его центру (align='center'). Не влезает вниз — вверх.
   useLayoutEffect(() => {
     const el = menuRef.current
     if (!el || !anchorRect) return
-    const gap = 10
     const mw = el.offsetWidth
     const mh = el.offsetHeight
     const vw = window.innerWidth
     const vh = window.innerHeight
-    let left = anchorRect.right - mw
+    let left = align === 'center'
+      ? anchorRect.left + anchorRect.width / 2 - mw / 2
+      : anchorRect.right - mw
     left = Math.max(8, Math.min(left, vw - 8 - mw))
     let top = anchorRect.bottom + gap
     let place = 'below'
@@ -59,7 +67,7 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
     }
     setPlacement(place)
     setPos({ top, left })
-  }, [anchorRect])
+  }, [anchorRect, align, gap])
 
   const [ready, setReady] = useState(false)
   useEffect(() => {
@@ -99,6 +107,14 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
 
   const visible = pos && !closing
 
+  // Свёрнутое состояние: 'scale' — схлопывание в угол якоря; 'drop' — меню
+  // «выезжает» сверху вниз (или снизу вверх, если развернулось над карточкой).
+  const drop = motion === 'drop'
+  const hiddenTransform = drop
+    ? `translateY(${placement === 'above' ? 12 : -12}px) scale(0.98)`
+    : 'scale(0.6)'
+  const transformOrigin = `${placement === 'above' ? 'bottom' : 'top'} ${align === 'center' ? 'center' : 'right'}`
+
   const menu = (
     <div
       style={{ ...styles.overlay, pointerEvents: ready ? 'auto' : 'none' }}
@@ -111,8 +127,10 @@ export default function AnchorMenu({ anchorRect, items, onClose }) {
           top: pos?.top ?? 0,
           left: pos?.left ?? 0,
           opacity: visible ? 1 : 0,
-          transform: visible ? 'scale(1)' : 'scale(0.6)',
-          transformOrigin: placement === 'above' ? 'bottom right' : 'top right'
+          transform: visible ? 'translateY(0) scale(1)' : hiddenTransform,
+          transformOrigin,
+          // Выезд по долгому нажатию: 200мс с плавным разгоном и торможением.
+          ...(drop ? { transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' } : null)
         }}
         onClick={(e) => e.stopPropagation()}
       >

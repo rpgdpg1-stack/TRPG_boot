@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
 import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, PIN_LIMIT } from '../lib/friends-list'
@@ -12,6 +11,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import UiIcon from '../components/UiIcon'
 import PinIcon from '../components/PinIcon'
+import AnchorMenu from '../components/AnchorMenu'
 
 /**
  * Страница «Друзья» (вкладка таб-бара).
@@ -19,7 +19,8 @@ import PinIcon from '../components/PinIcon'
  * Соц-концепция без соревновательности: список друзей (без меня), отсортированный
  * сервером — закреплённые сверху → по свежести последней тренировки.
  * Тап по другу → карточка игрока (PlayerProfileModal, с учётом приватности).
- * Долгое нажатие → модалка: закрепить/открепить (лимит 6) или убрать из друзей.
+ * Долгое нажатие → меню по центру под строкой (AnchorMenu, как у карточки
+ * программы): закрепить/открепить (лимит 6) или убрать из друзей.
  */
 export default function Friends() {
   const navigate = useNavigate()
@@ -27,8 +28,17 @@ export default function Friends() {
   const [friends, setFriends] = useState(() => getFriendsListSync() || [])
   const [loading, setLoading] = useState(() => getFriendsListSync() === null)
   const [selected, setSelected] = useState(null)      // друг для карточки игрока
-  const [pinTarget, setPinTarget] = useState(null)    // друг для модалки закрепа
-  const [pinError, setPinError] = useState(null)      // текст ошибки лимита
+  const [menuFor, setMenuFor] = useState(null)        // { friend, rect } — меню long-press
+  const [pinError, setPinError] = useState(null)      // текст ошибки лимита (гаснет сам)
+  const pinErrorTimer = useRef(null)
+
+  // Ошибка лимита закрепов — короткой строкой над списком (меню к тому моменту закрыто).
+  const flashPinError = (text) => {
+    setPinError(text)
+    if (pinErrorTimer.current) clearTimeout(pinErrorTimer.current)
+    pinErrorTimer.current = setTimeout(() => setPinError(null), 2600)
+  }
+  useEffect(() => () => { if (pinErrorTimer.current) clearTimeout(pinErrorTimer.current) }, [])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -67,52 +77,46 @@ export default function Friends() {
     setSelected(friend)
   }, [])
 
-  const handleLongPress = useCallback((friend) => {
+  const handleLongPress = useCallback((friend, rect) => {
     haptic.medium()
     setPinError(null)
-    setPinTarget(friend)
+    setMenuFor({ friend, rect })
   }, [])
 
-  const handleRemoveFriend = async () => {
-    if (!pinTarget) return
-    const name = pinTarget.first_name || 'этого друга'
+  const handleRemoveFriend = async (friend) => {
+    const name = friend.first_name || 'этого друга'
     const ok = await tgConfirm(`Убрать ${name} из друзей?`)
     if (!ok) return
     haptic.medium()
-    const res = await removeFriend(pinTarget.user_id)
+    const res = await removeFriend(friend.user_id)
     if (res.success) {
       haptic.success()
-      setPinTarget(null)
       load()
     } else {
       haptic.error()
-      setPinError('Не удалось убрать. Попробуй позже.')
+      flashPinError('Не удалось убрать. Попробуй позже.')
     }
   }
 
-  const handleTogglePin = async () => {
-    if (!pinTarget) return
-    const wasPinned = !!pinTarget.pinned_at
+  const handleTogglePin = async (friend) => {
+    const wasPinned = !!friend.pinned_at
 
     // Если закрепляем (не открепляем) и уже лимит — не даём, показываем ошибку
     if (!wasPinned && pinnedCount >= PIN_LIMIT) {
       haptic.error()
-      setPinError(`Максимум ${PIN_LIMIT} закреплённых`)
+      flashPinError(`Максимум ${PIN_LIMIT} закреплённых`)
       return
     }
 
-    haptic.light()
-    const result = await togglePinFriend(pinTarget.user_id)
+    const result = await togglePinFriend(friend.user_id)
     if (result.success) {
       haptic.success()
-      setPinTarget(null)
       load()
     } else if (result.error === 'limit') {
       haptic.error()
-      setPinError(`Максимум ${PIN_LIMIT} закреплённых`)
+      flashPinError(`Максимум ${PIN_LIMIT} закреплённых`)
     } else {
       haptic.error()
-      setPinTarget(null)
     }
   }
 
@@ -158,6 +162,9 @@ export default function Friends() {
         </div>
       ) : (
         <>
+          {/* Ошибка лимита закрепов — короткой строкой, гаснет сама. */}
+          {pinError && <div style={styles.limitMsg}>{pinError}</div>}
+
           {/* Подсказка про закреп — только пока нет ни одного закреплённого. */}
           {pinnedFriends.length === 0 && (
             <div style={styles.hint}>
@@ -199,15 +206,30 @@ export default function Friends() {
         </>
       )}
 
-      {/* Модалка закрепа */}
-      {pinTarget && (
-        <PinModal
-          friend={pinTarget}
-          isPinned={!!pinTarget.pinned_at}
-          errorText={pinError}
-          onToggle={handleTogglePin}
-          onRemove={handleRemoveFriend}
-          onClose={() => { setPinTarget(null); setPinError(null) }}
+      {/* Меню долгого нажатия — по центру под строкой друга (3px), выезд сверху вниз. */}
+      {menuFor && (
+        <AnchorMenu
+          anchorRect={menuFor.rect}
+          onClose={() => setMenuFor(null)}
+          align="center"
+          gap={3}
+          motion="drop"
+          items={[
+            {
+              key: 'pin',
+              icon: <PinIcon filled={!!menuFor.friend.pinned_at} size={20} />,
+              label: menuFor.friend.pinned_at ? 'Открепить' : 'Закрепить',
+              haptic: 'medium',
+              onClick: () => handleTogglePin(menuFor.friend)
+            },
+            {
+              key: 'remove',
+              icon: <RemoveFriendIcon />,
+              label: 'Убрать из друзей',
+              labelColor: '#E84545',
+              onClick: () => handleRemoveFriend(menuFor.friend)
+            }
+          ]}
         />
       )}
 
@@ -222,47 +244,16 @@ export default function Friends() {
   )
 }
 
-/**
- * Модалка долгого нажатия: имя друга + закрепить/открепить + убрать из друзей.
- * Если упёрся в лимит при закрепе — errorText подсвечивается.
- */
-function PinModal({ friend, isPinned, errorText, onToggle, onRemove, onClose }) {
-  const name = friend.first_name || 'Игрок'
-  return createPortal(
-    <div style={pinStyles.overlay} onClick={onClose}>
-      <div style={pinStyles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={pinStyles.icon}><PinIcon filled={isPinned} size={40} /></div>
-        <div style={pinStyles.title}>{name}</div>
-        <div style={pinStyles.subtitle}>
-          {isPinned
-            ? 'Этот друг закреплён вверху списка'
-            : 'Закрепить друга вверху списка'}
-        </div>
-
-        {errorText && <div style={pinStyles.error}>{errorText}</div>}
-
-        <ActionButton
-          variant={isPinned ? 'ghost' : 'gray'}
-          size="sm"
-          onClick={onToggle}
-          style={{ width: '100%' }}
-        >
-          {isPinned ? 'ОТКРЕПИТЬ' : 'ЗАКРЕПИТЬ'}
-        </ActionButton>
-        {/* Убрать из друзей — рядом с закрепом, приглушённо-красным (с подтверждением). */}
-        <button onClick={onRemove} style={pinStyles.remove}>Убрать из друзей</button>
-        <button onClick={onClose} style={pinStyles.close}>ОТМЕНА</button>
-      </div>
-
-      <style>{`
-        @keyframes pinOverlay { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes pinPanel {
-          0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
-    </div>,
-    document.body
+// Иконка пункта «Убрать из друзей» — человечек с минусом, в красном цвете пункта.
+function RemoveFriendIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#E84545" strokeWidth="1.6" strokeLinecap="round" fill="none">
+        <circle cx="8.5" cy="6.5" r="3" />
+        <path d="M3 16c0-2.8 2.5-4.5 5.5-4.5 1.2 0 2.3.27 3.2.76" />
+        <path d="M13 14.5H18" />
+      </g>
+    </svg>
   )
 }
 
@@ -298,6 +289,11 @@ const styles = {
     opacity: 0.7
   },
   hintPin: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
+  // Строка «Максимум N закреплённых» — вместо ошибки в бывшей модалке.
+  limitMsg: {
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    color: '#E84545', textAlign: 'center', marginBottom: '10px'
+  },
   // Микро-лейбл группы «Закреплённые» (когда есть и обычные друзья).
   groupLabel: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
@@ -348,83 +344,5 @@ const styles = {
     paddingTop: '12px',
     display: 'flex',
     justifyContent: 'center'
-  }
-}
-
-const pinStyles = {
-  overlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999,
-    padding: '20px',
-    animation: 'pinOverlay 0.2s ease-out forwards'
-  },
-  modal: {
-    width: '100%',
-    maxWidth: '300px',
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)',
-    padding: '24px 22px 18px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px',
-    animation: 'pinPanel 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
-  },
-  icon: { fontSize: '32px', lineHeight: 1, marginBottom: '2px' },
-  title: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '17px',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    textAlign: 'center'
-  },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.4,
-    marginBottom: '8px'
-  },
-  error: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: '#E84545',
-    textAlign: 'center',
-    fontWeight: 600,
-    marginBottom: '4px'
-  },
-  remove: {
-    width: '100%',
-    marginTop: '4px',
-    padding: '10px',
-    background: 'transparent',
-    color: '#E84545',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
-    fontWeight: 600,
-    border: 'none',
-    cursor: 'pointer'
-  },
-  close: {
-    width: '100%',
-    padding: '12px',
-    background: 'transparent',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    letterSpacing: '1px',
-    border: 'none',
-    cursor: 'pointer'
   }
 }
