@@ -311,7 +311,8 @@ const styles = {
   footer: {
     position: 'absolute', left: '18px', bottom: '12px', zIndex: 1,
     fontFamily: 'var(--font-manrope)', fontSize: '11px',
-    fontWeight: 500, color: 'var(--color-text-secondary)', opacity: 0.75,
+    // Светлее прежнего (был secondary под opacity 0.75 — почти сливался с фоном).
+    fontWeight: 500, color: 'rgba(255, 255, 255, 0.6)',
     pointerEvents: 'none'
   },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.

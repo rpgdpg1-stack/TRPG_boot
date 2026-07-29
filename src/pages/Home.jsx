@@ -40,21 +40,19 @@ function WeekStrip() {
     return () => { off(); off2() }
   }, [])
 
+  // Формат один на все состояния: «На этой неделе 🔥 ×3 тренировки».
+  // Ноль — та же строка с серым огоньком и «0 тренировок» (без крестика).
+  const hasStreak = streak >= 1
   return (
     <div style={stripStyles.strip}>
-      {streak >= 1 ? (
-        <>
-          <span style={stripStyles.label}>На этой неделе</span>
-          <StreakFlame streak={streak} />
-          <span style={stripStyles.count}>×{streak}</span>
-          <span style={stripStyles.label}>{pluralTraining(streak)}</span>
-        </>
-      ) : (
-        <>
-          <span style={stripStyles.greyFlame}><StreakFlame streak={0} /></span>
-          <span style={stripStyles.label}>Начни тренировку — стань лучшей версией себя</span>
-        </>
-      )}
+      <span style={stripStyles.label}>На этой неделе</span>
+      <span style={hasStreak ? undefined : stripStyles.greyFlame}>
+        <StreakFlame streak={streak} />
+      </span>
+      <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
+        {hasStreak ? `×${streak}` : '0'}
+      </span>
+      <span style={stripStyles.label}>{pluralTraining(streak)}</span>
     </div>
   )
 }
@@ -67,6 +65,8 @@ const stripStyles = {
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: '#FF8C42', letterSpacing: '0.5px' },
+  // ×0 — серым (как негорящий огонёк), ≥1 — оранжевым.
+  countZero: { color: 'rgba(255, 255, 255, 0.4)' },
   greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
 }
 
@@ -145,10 +145,13 @@ const progressStyles = {
 
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
 // PTR_REVEAL — «мёртвая зона»: сперва тянется невидимый верх, кольцо появляется только
-// после неё (как в Instagram/Telegram), дальше заполняется до порога.
-const PTR_REVEAL = 14
-const PTR_THRESH = 90
-const PTR_MAX = 150
+// после неё (как в Instagram/Telegram), дальше заполняется до порога. Зона большая
+// намеренно: при листании карусели палец часто уводит чуть вниз — кольцо не должно
+// выскакивать от такого. PTR_AXIS — если жест горизонтальный, pull вообще не начинаем.
+const PTR_REVEAL = 34
+const PTR_THRESH = 100
+const PTR_MAX = 160
+const PTR_AXIS = 8
 
 // Pull-to-refresh: НЕ двигаем контент и НЕ блокируем жест — верх тянет нативный
 // отскок (резинка), а мы лишь считаем ход пальца и рисуем кольцо поверх в этой зоне.
@@ -157,6 +160,7 @@ function usePullToRefresh(onRefresh) {
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const startY = useRef(null)
+  const startX = useRef(0)
   const armed = useRef(false)
 
   useEffect(() => {
@@ -164,12 +168,20 @@ function usePullToRefresh(onRefresh) {
     const onStart = (e) => {
       if (refreshing) return
       startY.current = scrollTop() <= 0 ? e.touches[0].clientY : null
+      startX.current = e.touches[0].clientX
       armed.current = false
     }
     const onMove = (e) => {
       if (startY.current == null || refreshing) return
       if (scrollTop() > 0) { startY.current = null; setPull(0); return }
       const dy = e.touches[0].clientY - startY.current
+      const dx = e.touches[0].clientX - startX.current
+      // Листание карусели (горизонталь) — не pull: жест бросаем до конца касания.
+      if (Math.abs(dx) > PTR_AXIS && Math.abs(dx) > Math.abs(dy)) {
+        startY.current = null
+        setPull(0)
+        return
+      }
       if (dy <= 0) { setPull(0); return }
       const damped = Math.min(PTR_MAX, dy * 0.5)
       setPull(damped)
