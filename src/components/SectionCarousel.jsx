@@ -14,18 +14,29 @@ import ChevronIcon from './ChevronIcon'
 import ProgramCard from './ProgramCard'
 
 /**
- * Разделы на главной. Вверху — КОМПАКТНЫЙ СЕЛЕКТОР (иконка раздела + название +
- * шеврон); тап → выпадающий список всех разделов (иконка + название). Ниже —
- * закреплённая программа выбранного раздела (`ProgramCard`, тап начинает/продолжает;
- * долгое нажатие → меню Закрепить/Открепить; нет закрепа — заглушка) + ссылка
- * «Все программы ›».
- * Пейджер и свайп убраны — переключение только через селектор.
+ * Разделы на главной — БЕЗ обёртки-панели (карточка программы не вложена в другую
+ * карточку, а идёт во всю ширину экрана).
+ *
+ * Строка-шапка (одна линия, без рамки, всё серым 14px): слева селектор
+ * «[цветная иконка] Силовая ▾» (тап → выпадающий список разделов), справа «Все ›»
+ * (вход в раздел). Ниже — карточка закреплённой программы этого раздела
+ * (`ProgramCard`, долгое нажатие → меню; нет закрепа — заглушка).
+ *
+ * Переключение раздела: селектор ИЛИ листание влево/вправо — лента едет за пальцем
+ * (iOS-пейджинг: сопротивление на краях, доводка по броску, `--ease-ios`).
  *
  * Закреплённая программа = `favorite_programs[category]` (CloudStorage, одна на раздел).
  */
 
 const LAST_CAT_KEY = 'category-swiper-last'
 const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
+
+// Пейджинг: порог доводки (доля ширины), быстрый бросок и сопротивление на краях.
+const SWIPE_RATIO = 0.22
+const FLICK_PX = 40
+const FLICK_MS = 260
+const AXIS_LOCK_PX = 6
+const EDGE_RESIST = 0.32
 
 function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
@@ -61,62 +72,111 @@ export default function SectionCarousel({ onSectionChange }) {
     onSectionChange?.({ id, color: CATEGORY_META[id]?.color })
   }, [idx, onSectionChange])
 
-  const selectCat = (id) => {
-    setOpen(false)
-    const next = idxOfCat(id)
-    if (next === idx) return
-    haptic.light()
+  const goTo = (next, withHaptic = true) => {
+    if (next === idx || next < 0 || next >= cats.length) return
+    if (withHaptic) haptic.light()
     setIdx(next)
+    const id = CATEGORY_ORDER[next]
     localSet(LAST_CAT_KEY, id)
     cloudSet(LAST_CAT_KEY, id)
   }
 
-  // Закреплённая программа раздела.
+  const selectCat = (id) => {
+    setOpen(false)
+    goTo(idxOfCat(id))
+  }
+
+  // ——— Листание влево/вправо: лента едет за пальцем, на отпускании доводится ———
+  const viewportRef = useRef(null)
+  const [dx, setDx] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
+  // Свайп не должен превращаться в тап по карточке (переход в тренировку).
+  const swiped = useRef(false)
+
+  const onTouchStart = (e) => {
+    // Открыт дропдаун — жест ленты не начинаем (w:0 глушит и последующий move).
+    if (open) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
+    const t = e.touches[0]
+    drag.current = { x: t.clientX, y: t.clientY, axis: null, w: viewportRef.current?.offsetWidth || 1, t0: Date.now(), dx: 0 }
+  }
+
+  const onTouchMove = (e) => {
+    const d = drag.current
+    if (!d.w) return
+    const t = e.touches[0]
+    const mx = t.clientX - d.x
+    const my = t.clientY - d.y
+    // Ось решаем один раз: вертикаль отдаём нативному скроллу и больше не мешаем.
+    if (!d.axis) {
+      if (Math.abs(mx) < AXIS_LOCK_PX && Math.abs(my) < AXIS_LOCK_PX) return
+      d.axis = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
+      if (d.axis === 'h') setDragging(true)
+    }
+    if (d.axis !== 'h') return
+    // На крайних разделах лента тянется туго (резинка), как в iOS.
+    const atEdge = (idx === 0 && mx > 0) || (idx === cats.length - 1 && mx < 0)
+    d.dx = atEdge ? mx * EDGE_RESIST : mx
+    setDx(d.dx)
+  }
+
+  const onTouchEnd = () => {
+    const d = drag.current
+    if (d.axis !== 'h') { d.axis = null; return }
+    const dist = d.dx
+    const fast = Date.now() - d.t0 < FLICK_MS && Math.abs(dist) > FLICK_PX
+    const far = Math.abs(dist) > d.w * SWIPE_RATIO
+    if (Math.abs(dist) > 8) {
+      swiped.current = true
+      setTimeout(() => { swiped.current = false }, 160)
+    }
+    if (fast || far) goTo(dist < 0 ? idx + 1 : idx - 1)
+    d.axis = null
+    d.dx = 0
+    setDragging(false)
+    setDx(0)
+  }
+
+  // ——— Данные закрепов по всем разделам (лента рендерит все четыре) ———
   void pinnedTick
-  const pinnedSlug = readPinnedMap()[cat.id] || null
-  const pinnedProg = pinnedSlug ? getProgramBySlug(pinnedSlug) : null
-  const lastDate = pinnedSlug ? localGet(`program:${pinnedSlug}:last_day_date`) : null
-  const lastText = pinnedProg
-    ? (lastDate ? formatRelative(lastDate) : 'Ещё не начинали')
-    : null
+  const pinnedMap = readPinnedMap()
 
-  const openSection = () => { haptic.light(); navigate(`/category/${cat.id}`) }
+  const openSection = (id) => { haptic.light(); navigate(`/category/${id}`) }
 
-  const onToggleFav = async () => {
-    if (!pinnedSlug) return
-    await toggleFavoriteProgram(cat.id, pinnedSlug)
+  const onToggleFav = async (catId, slug) => {
+    if (!slug) return
+    await toggleFavoriteProgram(catId, slug)
     setPinnedTick(t => t + 1)
   }
 
-  // Тап по карточке — ProgramCard навигирует по своему onOpen.
-  const guardedOpen = () => {
+  // Тап по карточке — переход в тренировку; после свайпа тап игнорируем.
+  const guardedOpen = (prog, slug) => {
+    if (swiped.current) return
     haptic.light()
-    if (!pinnedProg) return
-    if (pinnedProg.kind === 'swim') { navigate(`/swim/${pinnedSlug}`, { state: { fromHome: true } }); return }
-    const day = getActiveDaySync(pinnedSlug) || (pinnedProg.data?.days ? Object.keys(pinnedProg.data.days)[0] : 'A')
-    navigate(`/workout/${pinnedSlug}/${day}`, { state: { fromHome: true } })
+    if (prog.kind === 'swim') { navigate(`/swim/${slug}`, { state: { fromHome: true } }); return }
+    const day = getActiveDaySync(slug) || (prog.data?.days ? Object.keys(prog.data.days)[0] : 'A')
+    navigate(`/workout/${slug}/${day}`, { state: { fromHome: true } })
   }
 
   return (
     <div style={styles.wrap}>
-      {/* Шапка раздела: только селектор («Силовая ▾»). «Все ›» — ниже, на строке
-          «последняя … назад», у правого края. */}
+      {/* Одна строка: селектор раздела слева, «Все ›» справа. Без рамки и заливки. */}
       <div style={styles.headRow}>
         <div style={styles.selectorWrap} ref={selectorRef}>
-        <button
-          style={styles.selector}
-          className="press-tile"
-          onClick={() => { haptic.light(); setOpen(o => !o) }}
-          aria-label="Выбрать раздел"
-        >
-          <UiIcon name={cat.iconName} size={24} color={cat.color} />
-          <span style={styles.selectorText}>{cat.title}</span>
-          <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-            <ChevronIcon size={18} color="var(--color-text-secondary)" />
-          </span>
-        </button>
+          <button
+            style={styles.selector}
+            className="press-tile"
+            onClick={() => { haptic.light(); setOpen(o => !o) }}
+            aria-label="Выбрать раздел"
+          >
+            <UiIcon name={cat.iconName} size={18} color={cat.color} />
+            <span style={styles.selectorText}>{cat.title}</span>
+            <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
+              <ChevronIcon size={15} color="var(--color-text-secondary)" />
+            </span>
+          </button>
 
-        {open && (
+          {open && (
             <div style={styles.dropdown}>
               {cats.map(c => {
                 const on = c.id === cat.id
@@ -135,17 +195,13 @@ export default function SectionCarousel({ onSectionChange }) {
                 )
               })}
             </div>
-        )}
+          )}
         </div>
-      </div>
 
-      {/* Над карточкой: слева «последняя … назад» (nbsp держит высоту в пустом
-          разделе), справа «Все ›» — вход во весь раздел. */}
-      <div style={styles.lastRow}>
         <button
           style={styles.allLink}
           className="press-tile"
-          onClick={openSection}
+          onClick={() => openSection(cat.id)}
           aria-label={`Все программы раздела «${cat.title}»`}
         >
           Все
@@ -153,70 +209,88 @@ export default function SectionCarousel({ onSectionChange }) {
         </button>
       </div>
 
-      {/* Закреплённая программа — карточка без цветной рамки, светлее фона блока
-          (как «закреплённый» в друзьях). */}
-      {pinnedProg ? (
-        <ProgramCard
-          key={pinnedSlug}
-          prog={pinnedProg}
-          menu
-          isFav
-          cta
-          footer={lastText}
-          bordered={false}
-          background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
-          onToggleFav={onToggleFav}
-          onOpen={guardedOpen}
-          onDeleted={() => setPinnedTick(t => t + 1)}
-        />
-      ) : (
-        // Cold-start: заглушка = рабочий CTA в цвет раздела. Тап → список программ
-        // раздела, где выбираешь; выбранная закрепится здесь для старта в один тап.
-        <button
-          style={{ ...styles.pinEmpty, border: `1px dashed color-mix(in srgb, ${cat.color} 45%, transparent)` }}
-          className="press-tile"
-          onClick={openSection}
+      {/* Лента разделов: одна карточка на экран, листается влево/вправо. */}
+      <div
+        ref={viewportRef}
+        style={styles.viewport}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        <div
+          style={{
+            ...styles.track,
+            width: `${cats.length * 100}%`,
+            transform: `translate3d(calc(${(-idx * 100) / cats.length}% + ${dx}px), 0, 0)`,
+            transition: dragging ? 'none' : 'transform 0.38s var(--ease-ios)'
+          }}
         >
-          <span style={{ ...styles.pinEmptyPlus, color: cat.color }}>＋</span>
-          <span style={styles.pinEmptyText}>Выбрать программу</span>
-          <span style={styles.pinEmptyHint}>Появится здесь для быстрого старта</span>
-        </button>
-      )}
+          {cats.map(c => {
+            const slug = pinnedMap[c.id] || null
+            const prog = slug ? getProgramBySlug(slug) : null
+            const lastDate = slug ? localGet(`program:${slug}:last_day_date`) : null
+            return (
+              <div key={c.id} style={styles.slide}>
+                {prog ? (
+                  <ProgramCard
+                    key={slug}
+                    prog={prog}
+                    menu
+                    isFav
+                    cta
+                    footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
+                    onToggleFav={() => onToggleFav(c.id, slug)}
+                    onOpen={() => guardedOpen(prog, slug)}
+                    onDeleted={() => setPinnedTick(t => t + 1)}
+                  />
+                ) : (
+                  // Cold-start: заглушка = рабочий CTA в цвет раздела. Тап → список
+                  // программ раздела, где выбираешь; выбранная закрепится здесь.
+                  <button
+                    style={{ ...styles.pinEmpty, border: `1px dashed color-mix(in srgb, ${c.color} 45%, transparent)` }}
+                    className="press-tile"
+                    onClick={() => { if (!swiped.current) openSection(c.id) }}
+                  >
+                    <span style={{ ...styles.pinEmptyPlus, color: c.color }}>＋</span>
+                    <span style={styles.pinEmptyText}>Выбрать программу</span>
+                    <span style={styles.pinEmptyHint}>Появится здесь для быстрого старта</span>
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
 
 const styles = {
-  // Единый блок раздела (главный акцент экрана): селектор-заголовок + последняя
-  // тренировка + карточка программы + «Все программы» — обёрнуты и залиты.
-  wrap: {
-    background: 'var(--surface)',
-    borderRadius: 'var(--radius-card)',
-    padding: '14px'
-  },
-  // Шапка: селектор слева, «Все ›» справа — в одну линию, по вертикали по центру.
+  // Обёртки-панели больше НЕТ: карточка программы идёт во всю ширину экрана.
+  wrap: { display: 'flex', flexDirection: 'column' },
+  // Шапка: селектор слева, «Все ›» справа — одна тихая линия, без рамки/заливки.
   headRow: {
-    display: 'flex', alignItems: 'center',
-    marginBottom: '6px'
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: '8px'
   },
-  // Селектор-заголовок слева («Силовая ▼»): иконка + название + шеврон.
   selectorWrap: { position: 'relative', minWidth: 0 },
+  // Селектор — того же «веса», что и «Все ›»: серый Manrope 14/600, цветная только иконка.
   selector: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px',
-    padding: '4px 4px',
+    display: 'inline-flex', alignItems: 'center', gap: '6px',
+    padding: '6px 8px 6px 2px',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
-  // Крупнее навбар-заголовка «Тренировки» (18px) — «геройский» селектор раздела.
   selectorText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '22px', fontWeight: 800,
-    color: 'var(--color-text)', letterSpacing: '0.2px'
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   selectorChev: {
-    display: 'inline-flex', marginTop: '1px', marginLeft: '-1px',
+    display: 'inline-flex', marginTop: '1px',
     transition: 'transform 0.2s var(--ease-ios)'
   },
-  // Выпадающий список — по центру под селектором.
+  // Выпадающий список — под селектором.
   dropdown: {
     position: 'absolute',
     top: 'calc(100% + 6px)',
@@ -237,16 +311,15 @@ const styles = {
     cursor: 'pointer', textAlign: 'left'
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
-  // Строка над карточкой — только «Все ›» справа («последняя» переехала в карточку).
-  lastRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-    minHeight: '28px', marginBottom: '5px'
-  },
+  // Окно ленты: горизонталь ведём сами, вертикаль отдаём нативному скроллу (pan-y).
+  viewport: { overflow: 'hidden', touchAction: 'pan-y' },
+  track: { display: 'flex', alignItems: 'stretch', willChange: 'transform' },
+  slide: { width: `${100 / CATEGORY_ORDER.length}%`, flexShrink: 0, display: 'flex' },
   pinEmpty: {
     width: '100%',
-    minHeight: '106px',
+    minHeight: '124px',
     borderRadius: 'var(--radius-card)',
-    background: 'var(--surface-raised)',
+    background: 'var(--color-card)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
     cursor: 'pointer'
