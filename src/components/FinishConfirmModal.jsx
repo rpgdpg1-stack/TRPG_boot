@@ -7,17 +7,25 @@
  *
  * @param done    - сколько упражнений отмечено
  * @param total   - всего упражнений
+ * `closing` — панель уезжает, а затемнение ОСТАЁТСЯ: следом встаёт модалка
+ * завершения, и переход между ними читается как одна сцена (без мигания фона).
+ *
  * @param onConfirm - тап «Завершить»
  * @param onCancel  - тап «Назад» / по фону
  */
 import ActionButton from './ActionButton'
 
-export default function FinishConfirmModal({ done, total, onConfirm, onCancel }) {
+export const CONFIRM_EXIT_MS = 180
+
+export default function FinishConfirmModal({ done, total, closing = false, onConfirm, onCancel }) {
   const allDone = total > 0 && done >= total
 
   return (
-    <div style={styles.overlay} onClick={onCancel}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div style={styles.overlay} onClick={closing ? undefined : onCancel}>
+      <div
+        style={{ ...styles.modal, ...(closing ? styles.modalClosing : null) }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={styles.title}>
           {allDone ? 'Все упражнения выполнены' : `Выполнено ${done} из ${total}`}
         </div>
@@ -66,7 +74,7 @@ const styles = {
     width: '100%',
     maxWidth: '300px',
     background: 'rgba(34, 34, 34, 0.98)',
-    // Обводки нет — панель тихая (у кнопки «Назад» своя, ghost-вариант).
+    border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-card)',
     padding: '22px 20px 18px',
     display: 'flex',
@@ -74,8 +82,11 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
-    animation: 'finishConfirmIn 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+    animation: 'finishConfirmIn 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards',
+    transition: `opacity ${CONFIRM_EXIT_MS}ms ease, transform ${CONFIRM_EXIT_MS}ms var(--ease-ios)`
   },
+  // Уход панели перед появлением модалки завершения (фон при этом не мигает).
+  modalClosing: { opacity: 0, transform: 'scale(0.96)', animation: 'none' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,

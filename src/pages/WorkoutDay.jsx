@@ -33,7 +33,7 @@ import CloseCross from '../components/CloseCross'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
-import FinishConfirmModal from '../components/FinishConfirmModal'
+import FinishConfirmModal, { CONFIRM_EXIT_MS } from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
@@ -146,6 +146,7 @@ export default function WorkoutDay() {
 
   // Подтверждение завершения (минимал-модалка перед «праздничной»).
   const [showConfirm, setShowConfirm] = useState(false)
+  const [confirmClosing, setConfirmClosing] = useState(false)   // панель подтверждения уезжает
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishStatus, setFinishStatus] = useState('idle')
   const [finishErrorMsg, setFinishErrorMsg] = useState('')
@@ -900,12 +901,18 @@ export default function WorkoutDay() {
   }
 
   const handleConfirmFinishYes = () => {
+    if (confirmClosing) return
     haptic.medium()
-    setShowConfirm(false)
-    // Модалка сама проигрывает жест «+1 мускул» (бицепс качается → застывает,
-    // искры, «+1»), текст проявляется после. Сохранение идёт параллельно.
-    setShowFinishedModal(true)
-    runFinish()
+    // Сначала уводим панель подтверждения (затемнение остаётся), и только потом
+    // ставим модалку завершения — иначе смена читается как рывок/мигание.
+    setConfirmClosing(true)
+    setTimeout(() => {
+      setShowConfirm(false)
+      setConfirmClosing(false)
+      // Модалка появляется целиком, жест «+1 мускул» играет уже внутри неё.
+      setShowFinishedModal(true)
+      runFinish()
+    }, CONFIRM_EXIT_MS)
   }
 
   const handleConfirmFinishCancel = () => {
@@ -1372,6 +1379,7 @@ export default function WorkoutDay() {
         <FinishConfirmModal
           done={activeOrderNums.size}
           total={slots.length}
+          closing={confirmClosing}
           onConfirm={handleConfirmFinishYes}
           onCancel={handleConfirmFinishCancel}
         />

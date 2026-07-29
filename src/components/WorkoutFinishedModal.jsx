@@ -22,7 +22,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
  * Состояния: idle | saving | error; offline — завершено без сети (в очередь).
  * При error/offline — обычная иконка (⚠️/📵), без жеста и без задержки.
  */
-const CLOSE_MS = 220
+const CLOSE_MS = 260
 
 export default function WorkoutFinishedModal({ durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
   const isSaving = status === 'saving'
@@ -76,10 +76,20 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               {titleText}
             </div>
 
-            {!isError && durationLabel && (
-              <div style={styles.duration}>
-                <span style={styles.durationClock}><ClockIcon size={16} /></span>
-                <Duration label={durationLabel} />
+            {/* Одна строка показателей: серия (огонёк + цифра) и время. Оба —
+                тем же кеглем/шрифтом, что счётчик серии на главной и в профиле. */}
+            {!isError && (
+              <div style={styles.statsRow}>
+                <span style={styles.stat}>
+                  <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
+                  <span style={{ ...styles.statNum, color: streak >= 1 ? '#FF8C42' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
+                </span>
+                {durationLabel && (
+                  <span style={styles.stat}>
+                    <span style={styles.statClock}><ClockIcon size={18} /></span>
+                    <Duration label={durationLabel} />
+                  </span>
+                )}
               </div>
             )}
 
@@ -89,11 +99,11 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               <div style={styles.errorMessage}>Тренировка сохранена на телефоне.<br />Данные обновятся, как только появится интернет.</div>
             ) : alreadyToday ? (
               <>
-                <Praise text="Так держать!" streak={streak} />
+                <div style={styles.praise}>Так держать!</div>
                 <div style={styles.limitNote}>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</div>
               </>
             ) : (
-              <Praise text="Отличная работа!" streak={streak} />
+              <div style={styles.praise}>Отличная работа!</div>
             )}
 
             <ActionButton
@@ -110,22 +120,8 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
       </div>
 
       <style>{`
-        @keyframes wfFadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes wfPanelIn { 0% { opacity: 0; transform: scale(0.92) translateY(8px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes wfPanelIn { 0% { opacity: 0; transform: scale(0.92) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
-    </div>
-  )
-}
-
-/** Похвала + огонёк серии за неделю (тот же компонент, что в шапке и профиле). */
-function Praise({ text, streak }) {
-  return (
-    <div style={styles.praiseRow}>
-      <span style={styles.praise}>{text}</span>
-      <span style={styles.praiseFlame}>
-        <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
-        <span style={{ ...styles.streakCount, ...(streak >= 1 ? null : styles.streakCountZero) }}>{streak}</span>
-      </span>
     </div>
   )
 }
@@ -152,7 +148,8 @@ const styles = {
     // position:fixed на нём дёргает закреплённую шапку дня).
     touchAction: 'none',
     overscrollBehavior: 'contain',
-    animation: 'wfFadeIn 0.25s ease-out forwards',
+    // Затемнение уже стоит от модалки подтверждения — своего fade-in НЕ делаем,
+    // иначе фон мигает на кадр при смене модалок.
     transition: `opacity ${CLOSE_MS}ms ease`
   },
   // Панель появляется сразу, целиком (жест играет уже внутри неё).
@@ -162,11 +159,13 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     borderRadius: 'var(--radius-card)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
-    animation: `wfPanelIn 0.3s var(--ease-ios) forwards`,
+    // «+1» жеста улетает вверх и обрезается краями панели, не вылезая наружу.
+    overflow: 'hidden',
+    animation: `wfPanelIn 0.32s var(--ease-ios) forwards`,
     transition: `opacity ${CLOSE_MS}ms ease, transform ${CLOSE_MS}ms var(--ease-ios)`
   },
   panelError: { border: '1px solid rgba(255, 140, 66, 0.3)' },
-  panelClosing: { opacity: 0, transform: 'scale(0.94)', animation: 'none' },
+  panelClosing: { opacity: 0, transform: 'scale(0.94) translateY(6px)', animation: 'none' },
   content: {
     padding: '16px 20px 18px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
@@ -178,17 +177,15 @@ const styles = {
   },
   // Обычный регистр (первая заглавная), акцентный зелёный.
   title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px', letterSpacing: '0.5px', textAlign: 'center' },
-  duration: { display: 'inline-flex', alignItems: 'center', gap: '5px', fontVariantNumeric: 'tabular-nums' },
-  durationClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
-  durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
+  durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
   durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)' },
   errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: '4px' },
-  praiseRow: { display: 'flex', alignItems: 'center', gap: '8px' },
   praise: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--color-text)', letterSpacing: '0.5px', textAlign: 'center' },
-  // Огонёк серии + цифра — 1:1 с главной и профилем (без крестика, вплотную).
-  praiseFlame: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
+  // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
+  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px' },
+  stat: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
+  statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px' },
+  statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
-  streakCount: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: '#FF8C42', letterSpacing: '0.5px' },
-  streakCountZero: { color: 'rgba(255, 255, 255, 0.4)' },
   limitNote: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45, opacity: 0.85 }
 }

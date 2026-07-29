@@ -7,6 +7,7 @@ import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/f
 import { WINDOWS, getRecommendedForWindow, getActivitiesConfigSync, fetchActivitiesConfig, getCustomDone, getCurrentWindowIndex } from '../lib/activities'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
+import HeartIcon from './HeartIcon'
 
 /**
  * Три равные карточки-входа в блоке «Мой прогресс» (главная): Статистика,
@@ -68,7 +69,7 @@ export default function HomeCards() {
         onClick={() => go('/history')}
       />
       <Card
-        icon={<UiIcon name="heart" size={22} color="var(--color-primary)" />}
+        icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
         title="Любимые"
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         caption="Твой топ"

@@ -93,7 +93,7 @@ export default function HistoryStats({ summary, loading = false, totalsOnly = fa
         {/* Любимые — третьим в ряду; тап открывает список (модалка по центру). */}
         {totalsOnly && favorites && (
           <Total
-            icon={<span style={styles.heart}><HeartIcon filled size={ICON} /></span>}
+            icon={<HeartIcon filled size={ICON} color="var(--color-text-secondary)" />}
             value={String(favorites.count)}
             unit="упр"
             label="Любимые"
@@ -172,7 +172,6 @@ const styles = {
   },
   totalTop: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
-  heart: { display: 'inline-flex', color: 'var(--color-primary)' },
   // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',

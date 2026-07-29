@@ -54,8 +54,8 @@ export default function BicepGesture({ size = 84 }) {
         @keyframes bgPlusFly {
           0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.6); }
           18%  { opacity: 1; transform: translateX(-50%) translateY(-8px) scale(1); }
-          78%  { opacity: 1; transform: translateX(-50%) translateY(-54px) scale(1); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-70px) scale(1); }
+          75%  { opacity: 1; transform: translateX(-50%) translateY(-44px) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-58px) scale(1); }
         }
       `}</style>
     </div>
