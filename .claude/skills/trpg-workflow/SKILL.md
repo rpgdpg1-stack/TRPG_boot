@@ -219,12 +219,11 @@ src/
 │                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AnchorMenu CategoryList CategorySwiper ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
-│                   HomeCards
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
-│                   ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
-│                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem SaveFriendProgramModal
-│                   ScreenTitle SectionCarousel SectionPicker StreakFlame TabBar UiIcon WaterChrome
-│                   WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
+│                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
+│                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem RewardBurst
+│                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame
+│                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js

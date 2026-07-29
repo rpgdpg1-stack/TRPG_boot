@@ -31,6 +31,7 @@ import ExerciseCard from '../components/ExerciseCard'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import CloseCross from '../components/CloseCross'
 import ScrollTopButton from '../components/ScrollTopButton'
+import RewardBurst from '../components/RewardBurst'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import FinishConfirmModal from '../components/FinishConfirmModal'
@@ -153,6 +154,8 @@ export default function WorkoutDay() {
   // true, если за сегодня награда уже была (лимит 1 тренировка/день) — тогда
   // модалка поздравляет, но +150 не показывает.
   const [alreadyToday, setAlreadyToday] = useState(false)
+  // Награда-вспышка (+1 мускул) проигрывается перед модалкой завершения.
+  const [showBurst, setShowBurst] = useState(false)
 
   const [actionSlot, setActionSlot] = useState(null)
   // Момент закрытия модалки заметки — гасим «призрачный» тап по упражнению под ней.
@@ -882,7 +885,9 @@ export default function WorkoutDay() {
   const handleConfirmFinishYes = () => {
     haptic.medium()
     setShowConfirm(false)
-    setShowFinishedModal(true)
+    // Сначала проигрываем награду-вспышку (+1) по центру, сохранение идёт параллельно;
+    // по завершении анимации показываем модалку с результатом.
+    setShowBurst(true)
     runFinish()
   }
 
@@ -1326,6 +1331,9 @@ export default function WorkoutDay() {
           )}
         </div>
       )}
+
+      {/* Награда-вспышка (+1) — один цикл по центру, затем модалка завершения. */}
+      {showBurst && <RewardBurst onDone={() => { setShowBurst(false); setShowFinishedModal(true) }} />}
 
       {/* Кнопка «наверх» — появляется при скролле вниз (длинный список дня). */}
       {!error && !kbOpen && <ScrollTopButton />}
