@@ -32,12 +32,14 @@ import ProgramCard from './ProgramCard'
 const LAST_CAT_KEY = 'category-swiper-last'
 const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
 
-// Пейджинг: порог доводки (доля ширины), быстрый бросок и сопротивление на краях.
+// Пейджинг: порог доводки (доля ширины), быстрый бросок, ось жеста и зазор между
+// соседними карточками ленты (такой же, как поля экрана — 16px).
 const SWIPE_RATIO = 0.22
 const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
-const EDGE_RESIST = 0.32
+const SLIDE_GAP = 16
+const SETTLE_MS = 380
 
 function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
@@ -67,31 +69,53 @@ export default function SectionCarousel() {
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
   const cat = cats[idx]
 
-  const goTo = (next, withHaptic = true) => {
-    if (next === idx || next < 0 || next >= cats.length) return
-    if (withHaptic) haptic.light()
-    setIdx(next)
-    const id = CATEGORY_ORDER[next]
-    localSet(LAST_CAT_KEY, id)
-    cloudSet(LAST_CAT_KEY, id)
-  }
-
-  const selectCat = (id) => {
-    setOpen(false)
-    goTo(idxOfCat(id))
-  }
-
-  // ——— Листание влево/вправо: лента едет за пальцем, на отпускании доводится ———
+  // ——— Бесконечное листание: рендерим тройку [пред, текущий, след] ———
+  // Лента едет за пальцем, на отпускании доезжает до соседа, после чего тройка
+  // мгновенно пересобирается вокруг нового раздела (шва не видно — лента всегда
+  // стоит на среднем слайде).
   const viewportRef = useRef(null)
   const [dx, setDx] = useState(0)
-  const [dragging, setDragging] = useState(false)
+  const [settle, setSettle] = useState(null)   // 'next' | 'prev' — идёт доводка
+  const settleTimer = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
   // Свайп не должен превращаться в тап по карточке (переход в тренировку).
   const swiped = useRef(false)
 
+  useEffect(() => () => { if (settleTimer.current) clearTimeout(settleTimer.current) }, [])
+
+  const wrapIdx = (i) => (i + cats.length) % cats.length
+
+  // Доводка до соседа + фиксация нового раздела (память как раньше).
+  const slideTo = (dir, withHaptic = true) => {
+    if (settle) return
+    if (withHaptic) haptic.light()
+    setSettle(dir)
+    const next = wrapIdx(dir === 'next' ? idx + 1 : idx - 1)
+    settleTimer.current = setTimeout(() => {
+      setIdx(next)
+      setSettle(null)
+      const id = CATEGORY_ORDER[next]
+      localSet(LAST_CAT_KEY, id)
+      cloudSet(LAST_CAT_KEY, id)
+    }, SETTLE_MS)
+  }
+
+  const selectCat = (id) => {
+    setOpen(false)
+    const next = idxOfCat(id)
+    if (next === idx || settle) return
+    // Сосед — доезжаем анимацией, дальний раздел — переключаем сразу.
+    if (next === wrapIdx(idx + 1)) { slideTo('next'); return }
+    if (next === wrapIdx(idx - 1)) { slideTo('prev'); return }
+    haptic.light()
+    setIdx(next)
+    localSet(LAST_CAT_KEY, id)
+    cloudSet(LAST_CAT_KEY, id)
+  }
+
   const onTouchStart = (e) => {
-    // Открыт дропдаун — жест ленты не начинаем (w:0 глушит и последующий move).
-    if (open) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
+    // Открыт дропдаун или идёт доводка — жест ленты не начинаем (w:0 глушит move).
+    if (open || settle) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
     const t = e.touches[0]
     drag.current = { x: t.clientX, y: t.clientY, axis: null, w: viewportRef.current?.offsetWidth || 1, t0: Date.now(), dx: 0 }
   }
@@ -106,12 +130,10 @@ export default function SectionCarousel() {
     if (!d.axis) {
       if (Math.abs(mx) < AXIS_LOCK_PX && Math.abs(my) < AXIS_LOCK_PX) return
       d.axis = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
-      if (d.axis === 'h') setDragging(true)
     }
     if (d.axis !== 'h') return
-    // На крайних разделах лента тянется туго (резинка), как в iOS.
-    const atEdge = (idx === 0 && mx > 0) || (idx === cats.length - 1 && mx < 0)
-    d.dx = atEdge ? mx * EDGE_RESIST : mx
+    // Краёв нет (кольцо), резинка не нужна — лента идёт 1:1 за пальцем.
+    d.dx = mx
     setDx(d.dx)
   }
 
@@ -125,11 +147,10 @@ export default function SectionCarousel() {
       swiped.current = true
       setTimeout(() => { swiped.current = false }, 160)
     }
-    if (fast || far) goTo(dist < 0 ? idx + 1 : idx - 1)
     d.axis = null
     d.dx = 0
-    setDragging(false)
     setDx(0)
+    if (fast || far) slideTo(dist < 0 ? 'next' : 'prev')
   }
 
   // ——— Данные закрепов по всем разделам (лента рендерит все четыре) ———
@@ -204,7 +225,8 @@ export default function SectionCarousel() {
         </button>
       </div>
 
-      {/* Лента разделов: одна карточка на экран, листается влево/вправо. */}
+      {/* Лента разделов: тройка [пред, текущий, след], зазор 16px как поля экрана.
+          Средний слайд всегда по центру — база сдвига `-100% - 16px`. */}
       <div
         ref={viewportRef}
         style={styles.viewport}
@@ -216,12 +238,19 @@ export default function SectionCarousel() {
         <div
           style={{
             ...styles.track,
-            width: `${cats.length * 100}%`,
-            transform: `translate3d(calc(${(-idx * 100) / cats.length}% + ${dx}px), 0, 0)`,
-            transition: dragging ? 'none' : 'transform 0.38s var(--ease-ios)'
+            gap: `${SLIDE_GAP}px`,
+            transform: settle === 'next'
+              ? `translate3d(calc(-200% - ${SLIDE_GAP * 2}px), 0, 0)`
+              : settle === 'prev'
+                ? 'translate3d(0px, 0, 0)'
+                : `translate3d(calc(-100% - ${SLIDE_GAP}px + ${dx}px), 0, 0)`,
+            // Анимируем ТОЛЬКО доводку: возврат тройки в базу после смены раздела
+            // должен быть мгновенным, иначе виден «отскок».
+            transition: settle ? `transform ${SETTLE_MS}ms var(--ease-ios)` : 'none'
           }}
         >
-          {cats.map(c => {
+          {[wrapIdx(idx - 1), idx, wrapIdx(idx + 1)].map(i => {
+            const c = cats[i]
             const slug = pinnedMap[c.id] || null
             const prog = slug ? getProgramBySlug(slug) : null
             const lastDate = slug ? localGet(`program:${slug}:last_day_date`) : null
@@ -313,8 +342,10 @@ const styles = {
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
   // Окно ленты: горизонталь ведём сами, вертикаль отдаём нативному скроллу (pan-y).
   viewport: { overflow: 'hidden', touchAction: 'pan-y' },
-  track: { display: 'flex', alignItems: 'stretch', willChange: 'transform' },
-  slide: { width: `${100 / CATEGORY_ORDER.length}%`, flexShrink: 0, display: 'flex' },
+  // Лента: ширина = окну, слайды по 100% ширины окна + зазор → соседи стоят
+  // ровно за краем экрана и въезжают только после протяжки на этот зазор.
+  track: { display: 'flex', alignItems: 'stretch', width: '100%', willChange: 'transform' },
+  slide: { width: '100%', flexShrink: 0, display: 'flex' },
   pinEmpty: {
     width: '100%',
     minHeight: '124px',

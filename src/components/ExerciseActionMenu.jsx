@@ -13,6 +13,7 @@ import HeartButton from './HeartButton'
 import UiIcon from './UiIcon'
 import WeightProgressModal from './WeightProgressModal'
 import CloseCross from './CloseCross'
+import TrendingUpIcon from './TrendingUpIcon'
 
 /**
  * Всплывающее меню при долгом нажатии на карточку упражнения.
@@ -33,15 +34,6 @@ import CloseCross from './CloseCross'
  */
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = '#FFA94D'
-
-/** Иконка «прогресс/рост» (Material trending_up) — вход в график веса. */
-function TrendingUpIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
-    </svg>
-  )
-}
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)

@@ -222,7 +222,7 @@ src/
 │                   FavoritesBlock FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
-│                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame
+│                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame TrendingUpIcon
 │                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js

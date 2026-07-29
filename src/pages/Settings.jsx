@@ -16,7 +16,7 @@ import UiIcon from '../components/UiIcon'
  * Разделы сгруппированы по смыслу (как РАЗДЕЛЫ на главной): заголовок + единая
  * карточка со строками, разделители, серая подсветка .tg-row.
  *
- * Группа СБРОС — обнулялки (цветной заголовок строки как маркер опасности).
+ * Группа «Сброс» — обнулялки (цветной заголовок строки как маркер опасности).
  */
 export default function Settings() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export default function Settings() {
 
   const groups = [
     {
-      title: 'ОСНОВНОЕ',
+      title: 'Основное',
       items: [
         { id: 'privacy',       icon: 'ui:privacy',       iconColor: '#9E86FF', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
         { id: 'notifications', icon: 'ui:notifications', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true },
@@ -36,7 +36,7 @@ export default function Settings() {
       ]
     },
     {
-      title: 'ПОДДЕРЖКА',
+      title: 'Поддержка',
       items: [
         { id: 'support',  icon: 'ui:support', title: 'Поддержка',           subtitle: 'Написать в отдел заботы',    soon: true },
         { id: 'feedback', icon: 'ui:idea',    title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', soon: true },
@@ -44,7 +44,7 @@ export default function Settings() {
       ]
     },
     {
-      title: 'СБРОС',
+      title: 'Сброс',
       items: [
         { id: 'debug-reset-days', icon: 'ui:reset_days',     iconColor: '#FFD700', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
         { id: 'debug-reset',      icon: 'ui:reset_progress', iconColor: '#E84545', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
@@ -168,12 +168,14 @@ const styles = {
     lineHeight: 1,
     margin: 0
   },
+  // Заголовок группы — как в профиле: Manrope, обычный регистр («Основное»),
+  // без моношрифта и разрядки.
   groupTitle: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 600,
+    fontFamily: 'var(--font-manrope)',
+    fontWeight: 700,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
-    letterSpacing: '3px',
+    letterSpacing: '0.2px',
     marginBottom: '12px',
     paddingLeft: '4px'
   },

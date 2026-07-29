@@ -14,6 +14,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
 import StreakFlame from '../components/StreakFlame'
 import ChevronIcon from '../components/ChevronIcon'
+import TrendingUpIcon from '../components/TrendingUpIcon'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
@@ -101,6 +102,8 @@ function ProgressSection() {
   return (
     <div style={progressStyles.section}>
       <button style={progressStyles.head} className="press-tile" onClick={toggle}>
+        {/* Иконка «рост» в акценте — как цветная иконка раздела в шапке карусели. */}
+        <span style={progressStyles.icon}><TrendingUpIcon size={20} color="var(--color-primary)" /></span>
         <span style={progressStyles.title}>Мой прогресс</span>
         <span style={{ ...progressStyles.chev, transform: collapsed ? 'rotate(-90deg)' : 'none' }}>
           <ChevronIcon size={16} color="var(--color-text-secondary)" />
@@ -122,7 +125,7 @@ const progressStyles = {
   // Воздух от карточки программы — заметно больше, чем внутри блока.
   section: { marginTop: '26px' },
   head: {
-    display: 'flex', alignItems: 'center', gap: '4px',
+    display: 'flex', alignItems: 'center', gap: '7px',
     padding: '4px 8px 4px 2px', marginBottom: '8px',
     background: 'transparent', border: 'none', cursor: 'pointer'
   },
@@ -131,7 +134,8 @@ const progressStyles = {
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
   },
-  chev: { display: 'inline-flex', transition: 'transform 0.24s var(--ease-ios)' },
+  icon: { display: 'inline-flex', lineHeight: 0 },
+  chev: { display: 'inline-flex', marginLeft: '-3px', transition: 'transform 0.24s var(--ease-ios)' },
   // Сворачивание: высота + прозрачность, клип по overflow.
   body: {
     overflow: 'hidden',

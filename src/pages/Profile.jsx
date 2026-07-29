@@ -88,7 +88,7 @@ export default function Profile() {
   // Активности) переехали на главную. Пункты без экрана помечены `soon`.
   const menuGroups = [
     {
-      title: 'ТЕЛО',
+      title: 'Тело',
       items: [
         { id: 'recovery',     icon: 'ui:recovery', iconColor: '#06B6D4', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
         { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
@@ -97,7 +97,7 @@ export default function Profile() {
       ]
     },
     {
-      title: 'СИСТЕМА',
+      title: 'Система',
       items: [
         { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
@@ -218,9 +218,11 @@ const styles = {
   inviteSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
   inviteArrow: { fontSize: '18px', color: 'var(--color-primary)', flexShrink: 0, opacity: 0.7 },
 
+  // Заголовок группы — единый стиль заголовков секций: Manrope, обычный регистр
+  // («Тело», не «ТЕЛО»), без моношрифта и большого трекинга.
   groupTitle: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
-    color: 'var(--color-text-secondary)', letterSpacing: '3px', marginBottom: '12px', paddingLeft: '4px'
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px',
+    color: 'var(--color-text-secondary)', letterSpacing: '0.2px', marginBottom: '12px', paddingLeft: '4px'
   },
   groupCard: {
     display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
