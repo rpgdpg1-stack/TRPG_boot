@@ -226,7 +226,7 @@ export default function ProgramCard({
           </span>
         ) : (
           <span style={styles.ctaCircle}>
-            <span style={styles.ctaCirclePlay}><PlayIcon size={20} /></span>
+            <span style={styles.ctaCirclePlay}><PlayIcon size={21} /></span>
           </span>
         ))}
 

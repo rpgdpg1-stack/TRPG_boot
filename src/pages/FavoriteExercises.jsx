@@ -177,7 +177,7 @@ export default function FavoriteExercises() {
               </div>
               <div style={styles.weightBlock}>
                 <div style={{ ...styles.weightValue, color: colors.accent }}>{f.weight_kg != null ? f.weight_kg : 0}</div>
-                <div style={styles.weightUnit}>{f.counts_reps ? 'раз' : 'KG'}</div>
+                <div style={styles.weightUnit}>{f.counts_reps ? 'раз' : 'кг'}</div>
                 {!val && <div style={styles.weightHint}>задать</div>}
               </div>
             </div>
@@ -247,9 +247,10 @@ const styles = {
     alignSelf: 'flex-start', padding: '3px 10px', borderRadius: '999px', color: '#FFFFFF',
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
   },
-  weightBlock: { flexShrink: 0, width: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: '20px', fontWeight: 800, lineHeight: '27px' },
-  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 800, letterSpacing: '0.05em', color: '#888888' },
+  // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard).
+  weightBlock: { flexShrink: 0, width: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: '20px', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
+  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f', textAlign: 'center' },
   weightHint: { marginTop: '2px', fontFamily: 'var(--font-manrope)', fontSize: '9px', color: 'var(--color-text-secondary)' },
   loading: { textAlign: 'center', padding: '16px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' }
 }

@@ -73,6 +73,7 @@ export default function HistoryStats({ summary, loading = false }) {
           icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
           value={formatHours(summary.minutes)}
           label="Время"
+          splitUnit
         />
       </div>
 
@@ -115,13 +116,21 @@ export function Distance({ meters, color }) {
   )
 }
 
-/** Показатель: иконка + цифра, снизу подпись словом. */
-function Total({ icon, value, label }) {
+/**
+ * Показатель: иконка + цифра, снизу подпись словом.
+ * `splitUnit` — у значения есть единица («3,7 ч»): цифра акцентом, единица серая
+ * и тоньше (единицы вообще никогда не красим акцентом).
+ */
+function Total({ icon, value, label, splitUnit = false }) {
+  const i = splitUnit ? String(value).lastIndexOf(' ') : -1
+  const num = i > 0 ? String(value).slice(0, i) : value
+  const unit = i > 0 ? String(value).slice(i + 1) : ''
   return (
     <div style={styles.total}>
       <span style={styles.totalTop}>
         {icon}
-        <span style={styles.totalValue}>{value}</span>
+        <span style={styles.totalValue}>{num}</span>
+        {unit && <span style={styles.totalUnit}>{unit}</span>}
       </span>
       <span style={styles.totalLabel}>{label}</span>
     </div>
@@ -137,6 +146,11 @@ const styles = {
   totalValue: {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
     letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'var(--color-primary)'
+  },
+  // Единица значения («ч») — серая и тоньше цифры.
+  totalUnit: {
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', marginLeft: '-1px'
   },
   // Подпись метрики (secondary info) — серым, чтобы главной была цифра.
   totalLabel: {

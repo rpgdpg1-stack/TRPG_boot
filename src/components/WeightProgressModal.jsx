@@ -181,26 +181,28 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
         <div style={styles.header}>
           <span style={styles.eyebrow}>Прогресс веса</span>
           <div style={styles.name}>{exerciseName}</div>
+          {/* Одна строка: слева текущее значение (цифра + единица под ней — как в
+              карточке дня), по центру «сейчас»/дата скраба, справа личный рекорд. */}
           <div style={styles.bigRow}>
-            <span style={{ ...styles.bigValue, color: line }}>
-              {fmtKg(topWeight)}<span style={styles.bigUnit}>{unit}</span>
+            <span style={styles.valueBlock}>
+              <span style={{ ...styles.bigValue, color: line }}>{fmtKg(topWeight)}</span>
+              <span style={styles.bigUnit}>{unit}</span>
             </span>
+
             <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
               {topSub}
             </span>
-          </div>
 
-          {/* Личный рекорд — той же строкой-композицией, что и текущее значение:
-              золотой кубок, золотая цифра, серая единица и слово «рекорд». */}
-          {record > 0 && (
-            <div style={styles.recordRow}>
-              <TrophyIcon size={26} />
-              <span style={styles.recordValue}>
-                {fmtKg(record)}<span style={styles.recordUnit}>{unit}</span>
+            {record > 0 && (
+              <span style={styles.recordBlock}>
+                <span style={styles.recordTop}>
+                  <TrophyIcon size={18} />
+                  <span style={styles.recordValue}>{fmtKg(record)}</span>
+                </span>
+                <span style={styles.recordLabel}>рекорд</span>
               </span>
-              <span style={styles.recordLabel}>рекорд</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* График */}
@@ -366,24 +368,27 @@ function Chart({ win, currentW, line, scrub }) {
 
 const styles = {
   // Рекорд в шапке: мельче основного значения, чтобы не перетягивать внимание.
-  // Рекорд — отдельной строкой под текущим значением, тем же ритмом: иконка,
-  // крупная цифра, серая единица, серое слово-подпись.
-  recordRow: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', lineHeight: 1 },
-  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', lineHeight: 1, color: RECORD_GOLD, letterSpacing: '0.5px' },
-  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', color: 'var(--color-text-secondary)' },
-  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  // Рекорд — в ПРАВОМ краю той же строки, тем же ритмом (значение сверху, подпись
+  // снизу). Чуть приглушён, чтобы не спорил с текущим значением.
+  recordBlock: {
+    marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+    lineHeight: 1, opacity: 0.85
+  },
+  recordTop: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px', color: RECORD_GOLD },
+  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
   overlay: {
     position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10000,
-    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
-    // contain), сам оверлей прокручивается только если контент выше экрана.
+    // Модалка зафиксирована целиком: ни фон, ни она сама не ездят пальцем
+    // (контент невысокий — прокрутка внутри не нужна).
     overscrollBehavior: 'contain',
-    touchAction: 'pan-y',
+    touchAction: 'none',
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
-    overflowY: 'auto',
+    overflow: 'hidden',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
   panel: {
@@ -399,9 +404,11 @@ const styles = {
   header: { display: 'flex', flexDirection: 'column', gap: '4px' },
   eyebrow: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px', letterSpacing: '2px', color: 'var(--color-text-secondary)' },
   name: { fontFamily: 'var(--font-geist, var(--font-manrope))', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
-  bigRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginTop: '2px', minHeight: '34px' },
-  bigValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', lineHeight: 1, letterSpacing: '0.5px' },
-  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', color: 'var(--color-text-secondary)' },
+  bigRow: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', minHeight: '42px' },
+  // Значение — тем же ритмом, что блок веса в карточке дня: цифра, под ней единица.
+  valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 },
+  bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px' },
+  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
   bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600 },
 
   segGroup: {
