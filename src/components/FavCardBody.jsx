@@ -167,7 +167,7 @@ const styles = {
     letterSpacing: '0.3px'
   },
   footerLine: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500,
     color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1
   },
   authorLine: {

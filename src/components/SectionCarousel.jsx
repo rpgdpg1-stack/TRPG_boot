@@ -298,7 +298,7 @@ export default function SectionCarousel() {
                     bordered={false}
                     press={false}
                     background="transparent"
-                    footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
+                    footer={lastDate ? `Последняя тренировка: ${formatRelative(lastDate)}` : 'Ещё не начинали'}
                     onToggleFav={() => onToggleFav(c.id, slug)}
                     onOpen={() => guardedOpen(prog, slug)}
                     onDeleted={() => setPinnedTick(t => t + 1)}

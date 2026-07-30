@@ -2181,15 +2181,17 @@ const styles = {
   // не сдвигается.
   // Заголовок группы в контенте — по центру (как в конструкторе). Обычный, в потоке;
   // уезжая вверх, прячется под карточкой дня, а его группу подхватывает пилюля.
+  // Заголовок группы — по ЛЕВОМУ краю, на уровне конца скругления карточки (33px):
+  // так все заголовки экрана стоят в одну вертикаль.
   muscleHeader: {
     fontFamily: 'var(--font-display)',
     fontWeight: 600,
     fontSize: '13px',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    padding: '4px 4px',
+    padding: '4px 4px 4px 28px',
     margin: 0,
-    textAlign: 'center'
+    textAlign: 'left'
   },
   exerciseList: {
     display: 'flex',

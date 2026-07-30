@@ -86,16 +86,32 @@ export default function HistoryStats({ summary, loading = false }) {
           return (
             <div key={k} style={styles.row}>
               <Badge iconName={m.icon} color={m.color} />
-              <span style={styles.rowCount}>{b.count}</span>
+              <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
               <span style={styles.rowLabel}>{m.label}</span>
               {showDist && (
-                <span style={styles.rowDist}>({formatMeters(b.distance)})</span>
+                <span style={styles.rowDist}>
+                  (<Distance meters={b.distance} color={m.color} />)
+                </span>
               )}
             </div>
           )
         })}
       </div>
     </div>
+  )
+}
+
+/** «2,25 км»: число — в цвет вида активности, единица — серым. */
+export function Distance({ meters, color }) {
+  const text = formatMeters(meters)
+  const i = text.lastIndexOf(' ')
+  const num = i > 0 ? text.slice(0, i) : text
+  const unit = i > 0 ? text.slice(i + 1) : ''
+  return (
+    <>
+      <span style={{ color, fontWeight: 800 }}>{num}</span>
+      {unit && <span style={{ color: 'var(--color-text-secondary)' }}> {unit}</span>}
+    </>
   )
 }
 
@@ -131,10 +147,10 @@ const styles = {
 
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
   row: { display: 'flex', alignItems: 'center', gap: '9px' },
-  // Лестница важности: число (primary, белое) → название (85%) → пояснение (68%).
+  // Число — в ЦВЕТ вида активности (силовая графитовая, плавание голубое…),
+  // название — светло-серым, дистанция — тише всех.
   rowCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px',
-    color: 'var(--color-text)'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px'
   },
   rowLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--text-label)'

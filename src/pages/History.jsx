@@ -6,11 +6,10 @@ import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHistoryView, setHistoryView } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
-import { formatMeters } from '../utils/history'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
-import HistoryStats from '../components/HistoryStats'
+import HistoryStats, { Distance } from '../components/HistoryStats'
 import WorkoutBarChart from '../components/WorkoutBarChart'
 
 const PERIODS = [
@@ -167,7 +166,7 @@ function Records({ records }) {
             <span style={styles.recNote}>Лучший заплыв</span>
           </span>
           <span style={styles.recValue}>
-            <span style={{ color: 'var(--cat-pool)', fontWeight: 800 }}>{formatMeters(swim.distance_m)}</span>
+            <Distance meters={swim.distance_m} color="var(--cat-pool)" />
           </span>
         </div>
       )}

@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
-import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
@@ -74,7 +73,7 @@ function MetricModal({ kind, summary, favorites, showWeights, periodLabel, onClo
         <div style={m.head}>
           <span style={m.headLeft}>
             {isStats
-              ? <UiIcon name="muscles-line" size={18} color="var(--color-text-secondary)" />
+              ? <TrendingUpIcon size={18} color="var(--color-primary)" />
               : <HeartIcon filled size={18} color="var(--color-primary)" />}
             <span style={m.title}>{isStats ? 'Статистика' : 'Любимые упражнения'}</span>
             {!isStats && <span style={m.count}>{favorites.length}</span>}
@@ -105,9 +104,11 @@ function FavoritesList({ items, showWeights }) {
         const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
         const accent = getMuscleGroupColors(f.muscle_group).accent
         const group = MUSCLE_GROUP_LABELS[f.muscle_group] || ''
+        // Подряд идущие упражнения одной группы — под общим заголовком.
+        const sameAsPrev = i > 0 && items[i - 1].muscle_group === f.muscle_group
         return (
           <div key={i}>
-            {group && (
+            {group && !sameAsPrev && (
               <div style={{ ...m.groupHead, color: accent, marginTop: i === 0 ? 0 : '10px' }}>{group}</div>
             )}
             <div style={m.favRow}>
@@ -177,7 +178,9 @@ const m = {
   // Заголовок группы — как в дне тренировки, но мельче и без лишнего воздуха.
   groupHead: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
-    letterSpacing: '1.6px', padding: '0 2px 2px'
+    letterSpacing: '1.6px', padding: '0 2px 2px',
+    // По левому краю миниатюры — там, где заканчивается её скругление.
+    paddingLeft: '14px'
   },
   favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 2px' },
   thumb: {

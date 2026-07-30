@@ -121,14 +121,21 @@ export default function Profile() {
   // Секция внутри карточки профиля (то же, что видят друзья по приватности):
   // ряд метрик «N трен» / «N упр», тап → попап с детализацией.
   const showFav = privacy.showFavorites && favorites.length > 0
+  // Скрыл и статистику, и любимые — показываем ту же опорную строку, что у друга:
+  // пустая карточка читалась бы как поломка.
+  const nothingToShow = !privacy.showStats && !showFav
   const sections = [
-    <ProfileMetrics
-      key="metrics"
-      summary={privacy.showStats ? summary : null}
-      favorites={showFav ? favorites : []}
-      showWeights={privacy.showWeights}
-      periodLabel={monthLabel}
-    />
+    nothingToShow
+      ? <div key="hidden" style={styles.hiddenNote}>Инфо скрыто</div>
+      : (
+        <ProfileMetrics
+          key="metrics"
+          summary={privacy.showStats ? summary : null}
+          favorites={showFav ? favorites : []}
+          showWeights={privacy.showWeights}
+          periodLabel={monthLabel}
+        />
+      )
   ]
 
   return (
@@ -202,6 +209,10 @@ export default function Profile() {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   headerWrap: { margin: '0 0 16px' },
+  hiddenNote: {
+    fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)',
+    textAlign: 'center', padding: '4px 12px'
+  },
 
   inviteButton: {
     width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',

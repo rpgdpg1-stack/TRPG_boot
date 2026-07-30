@@ -128,8 +128,11 @@ export default function FavoriteExercises() {
       </p>
 
       <div style={styles.list}>
-        {slots.map(slot => {
+        {slots.map((slot, si) => {
           const f = byslot[slot]
+          // Подряд идущие упражнения одной группы — под общим заголовком.
+          const prev = byslot[slots[si - 1]]
+          const sameAsPrev = !!prev && !!f && prev.muscle_group === f.muscle_group
           if (!f) {
             return (
               <button key={slot} className="press-tile" style={{ ...styles.card, ...styles.cardEmpty }} onClick={goAdd}>
@@ -145,7 +148,7 @@ export default function FavoriteExercises() {
           return (
             <div key={slot}>
             {/* Заголовок группы мышц над карточкой — как в дне тренировки. */}
-            {group && <div style={{ ...styles.groupHead, color: colors.accent }}>{group}</div>}
+            {group && !sameAsPrev && <div style={{ ...styles.groupHead, color: colors.accent }}>{group}</div>}
             <div
               className="press-tile"
               style={styles.card}
@@ -207,9 +210,10 @@ const styles = {
   },
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
   // Заголовок группы мышц над карточкой — тот же вид, что в дне тренировки.
+  // Заголовок группы — по левому краю, там где заканчивается скругление карточки.
   groupHead: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px',
-    letterSpacing: '2px', padding: '0 4px 6px', textAlign: 'center'
+    letterSpacing: '2px', padding: '0 4px 6px 28px'
   },
   // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
   // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).

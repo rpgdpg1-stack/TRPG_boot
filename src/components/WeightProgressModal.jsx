@@ -123,14 +123,9 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
 
     const lastKnown = dataPts.length ? dataPts[dataPts.length - 1].weight : priorWeight
     const linePts = []
-    if (priorWeight != null) {
-      linePts.push({ ms: startMs, weight: priorWeight })
-    } else if (dataPts.length) {
-      // Веса до этого периода не было: ведём линию по нулю от начала окна и
-      // поднимаем её в день первой записи — виден сам момент старта.
-      linePts.push({ ms: startMs, weight: 0 })
-      linePts.push({ ms: dataPts[0].ms, weight: 0 })
-    }
+    // Линия начинается с первой записи периода (вариант «полка по нулю от края»
+    // пробовали — график сплющивался по Y и читался хуже).
+    if (priorWeight != null) linePts.push({ ms: startMs, weight: priorWeight })
     for (const dp of dataPts) linePts.push({ ms: dp.ms, weight: dp.weight })
     // Доводим линию до правого края окна текущим уровнем (вес держится до «сейчас»).
     if (linePts[linePts.length - 1].ms < endMs) linePts.push({ ms: endMs, weight: lastKnown })
@@ -194,7 +189,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
             {/* Личный рекорд упражнения — тихо справа: кубок + лучший вес. */}
             {record > 0 && (
               <span style={styles.recordWrap}>
-                <TrophyIcon size={15} />
+                <TrophyIcon size={16} />
                 <span style={styles.recordValue}>{fmtKg(record)}<span style={styles.recordUnit}>кг</span></span>
                 <span style={styles.recordLabel}>рекорд</span>
               </span>
@@ -358,8 +353,9 @@ function Chart({ win, currentW, line, scrub }) {
 
 const styles = {
   // Рекорд в шапке: мельче основного значения, чтобы не перетягивать внимание.
-  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' },
-  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: RECORD_GOLD, letterSpacing: '0.3px' },
+  // Кубок и цифра — одной высоты и по одной линии (без «подпрыгивания» иконки).
+  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', lineHeight: 1 },
+  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', lineHeight: 1, color: RECORD_GOLD, letterSpacing: '0.3px' },
   recordUnit: { fontSize: '10px', fontWeight: 700, marginLeft: '1px', color: RECORD_GOLD },
   recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   overlay: {
