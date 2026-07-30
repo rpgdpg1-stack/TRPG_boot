@@ -211,13 +211,13 @@ const styles = {
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '14px 16px 6px'
+    padding: '16px 16px 8px'
   },
   recHead: {
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: '6px'
   },
-  recRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0' },
+  recRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0' },
   recDivider: { borderTop: '1px solid var(--border-hairline)' },
   // Бейдж вида — как в сводке и календаре: чёрная иконка на цветном квадрате.
   recBadge: {

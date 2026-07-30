@@ -344,7 +344,7 @@ const styles = {
   // 60% белого). Цветная только иконка; «Все ›» справа — того же размера.
   selector: {
     display: 'inline-flex', alignItems: 'center', gap: '7px',
-    padding: '4px 8px 4px 2px',
+    padding: '4px 8px 4px 4px',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
@@ -368,7 +368,7 @@ const styles = {
   },
   dropItem: {
     display: 'flex', alignItems: 'center', gap: '11px',
-    width: '100%', padding: '10px 12px',
+    width: '100%', padding: '12px',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)',
     cursor: 'pointer', textAlign: 'left'
   },
@@ -395,7 +395,7 @@ const styles = {
   // Пунктирная пилюля вокруг «＋ Выбрать программу» — в цвет раздела, приглушённо.
   pinEmptyPill: {
     display: 'inline-flex', alignItems: 'center', gap: '8px',
-    padding: '10px 18px', borderRadius: 'var(--radius-pill)',
+    padding: '12px 20px', borderRadius: 'var(--radius-pill)',
     opacity: 0.85
   },
   pinEmptyPlus: { fontSize: '18px', lineHeight: 1 },
@@ -404,7 +404,7 @@ const styles = {
   allLink: {
     flexShrink: 0, minHeight: '44px',
     display: 'inline-flex', alignItems: 'center', gap: '1px',
-    padding: '0 2px 0 12px',
+    padding: '0 4px 0 12px',
     background: 'transparent', border: 'none', cursor: 'pointer',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'

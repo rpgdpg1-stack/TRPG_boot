@@ -140,7 +140,7 @@ function Total({ icon, value, label, splitUnit = false }) {
 const styles = {
   totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '28px', flexWrap: 'wrap' },
   total: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  totalTop: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
+  totalTop: { display: 'inline-flex', alignItems: 'center', gap: '6px' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
@@ -157,10 +157,10 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
     color: 'var(--text-info)', whiteSpace: 'nowrap'
   },
-  divider: { height: '1px', background: 'var(--border-hairline)', margin: '14px 0' },
+  divider: { height: '1px', background: 'var(--border-hairline)', margin: '16px 0' },
 
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  row: { display: 'flex', alignItems: 'center', gap: '9px' },
+  row: { display: 'flex', alignItems: 'center', gap: '8px' },
   // Число — в ЦВЕТ вида активности (силовая графитовая, плавание голубое…),
   // название — светло-серым, дистанция — тише всех.
   rowCount: {

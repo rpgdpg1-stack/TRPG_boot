@@ -288,7 +288,7 @@ const styles = {
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    marginBottom: '10px',
+    marginBottom: '12px',
     fontWeight: 500,
     opacity: 0.7
   },
@@ -315,7 +315,7 @@ const styles = {
     borderTop: '1px solid var(--border-hairline)'
   },
   // Скелетон строки друга (только самый первый заход без кеша).
-  skRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 14px' },
+  skRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' },
   skAvatar: { width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
   skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '7px' },
   skLine: { height: '12px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' },

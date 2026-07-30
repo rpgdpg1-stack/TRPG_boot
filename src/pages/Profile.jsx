@@ -236,7 +236,7 @@ const styles = {
     borderRadius: 'var(--radius-card)', overflow: 'hidden'
   },
   row: {
-    display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px',
+    display: 'flex', alignItems: 'center', gap: '16px', padding: '16px',
     width: '100%', minHeight: '64px', textAlign: 'left', background: 'transparent', border: 'none'
   },
   // Пункт «Скоро»: приглушён, некликабелен (без стрелки, с бейджем).

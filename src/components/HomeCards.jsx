@@ -94,7 +94,7 @@ function Value({ num, unit }) {
 }
 
 const styles = {
-  row: { display: 'flex', gap: '10px', alignItems: 'stretch' },
+  row: { display: 'flex', gap: '12px', alignItems: 'stretch' },
   card: {
     minWidth: 0, minHeight: '96px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -103,17 +103,17 @@ const styles = {
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
   icon: { display: 'inline-flex', height: '22px' },
-  textCol: { display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 },
+  textCol: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   // Строка значения: слева значение, справа подпись-контекст.
   valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', minHeight: '20px', width: '100%' },
-  valueMain: { display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 },
+  valueMain: { display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 0 },
   valueNum: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
   // Подпись-контекст — тихая, в правом углу строки значения («Июль» / «Утро»).
   caption: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   // Зазор между двумя показателями статистики; серые иконки перед каждым.
-  valueGap: { width: '10px', display: 'inline-block' },
+  valueGap: { width: '12px', display: 'inline-block' },
   statIcon: { display: 'inline-flex' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' }
 }

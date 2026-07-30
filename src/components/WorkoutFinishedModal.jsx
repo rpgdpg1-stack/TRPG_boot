@@ -173,11 +173,11 @@ const styles = {
   content: {
     // Сверху воздуха больше: «+1» улетает вверх и не должен упираться в кромку.
     // Снизу жест подтянут к заголовку (отрицательный margin у сцены).
-    padding: '22px 20px 18px',
+    padding: '24px 20px 20px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
   },
   // Жест опущен ниже и придвинут к заголовку.
-  gestureWrap: { marginTop: '4px', marginBottom: '-14px' },
+  gestureWrap: { marginTop: '0', marginBottom: '-16px' },
   flame: { fontSize: '58px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(255, 140, 66, 0.7))' },
   body: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%',
@@ -196,8 +196,8 @@ const styles = {
     minHeight: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
-  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px' },
-  stat: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
+  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' },
+  stat: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
   statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },

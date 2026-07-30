@@ -143,7 +143,7 @@ const styles = {
   tile: {
     minWidth: '92px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-    padding: '2px 8px', background: 'transparent', border: 'none', cursor: 'pointer',
+    padding: '4px 8px', background: 'transparent', border: 'none', cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
   tileIcon: { display: 'inline-flex', height: '22px' },
@@ -172,12 +172,12 @@ const m = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '24px',
-    padding: '18px 16px',
-    display: 'flex', flexDirection: 'column', gap: '14px',
+    padding: '16px',
+    display: 'flex', flexDirection: 'column', gap: '16px',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingLeft: '2px' },
+  head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingLeft: '4px' },
   headLeft: { display: 'inline-flex', alignItems: 'center', gap: '8px' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
   count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--color-primary)' },
@@ -189,7 +189,7 @@ const m = {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
     letterSpacing: '1.6px', padding: '0 2px 2px'
   },
-  favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 2px' },
+  favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px' },
   thumb: {
     flexShrink: 0, width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'

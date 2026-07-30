@@ -80,7 +80,7 @@ const styles = {
     display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)', overflow: 'hidden'
   },
-  toggleRow: { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', minHeight: '64px' },
+  toggleRow: { display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', minHeight: '64px' },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '2px' },
   rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },

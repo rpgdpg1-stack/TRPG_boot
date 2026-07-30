@@ -403,8 +403,8 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '28px',
-    padding: '22px 18px 18px',
-    display: 'flex', flexDirection: 'column', gap: '14px',
+    padding: '20px 16px 16px',
+    display: 'flex', flexDirection: 'column', gap: '16px',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },

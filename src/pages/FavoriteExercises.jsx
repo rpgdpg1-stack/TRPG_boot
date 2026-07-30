@@ -201,7 +201,7 @@ export default function FavoriteExercises() {
 
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
-  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '14px' },
+  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' },
   introHeart: { display: 'inline-flex', verticalAlign: '-2px' },
   intro: {
     fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,

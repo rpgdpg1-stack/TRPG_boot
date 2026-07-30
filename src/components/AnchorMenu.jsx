@@ -193,8 +193,8 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    padding: '12px 14px',
+    gap: '16px',
+    padding: '12px 16px',
     border: 'none',
     borderRadius: '90px',
     width: '100%',

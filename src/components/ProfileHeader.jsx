@@ -175,7 +175,7 @@ const styles = {
   // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).
   fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
   fireBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '3px',
+    display: 'inline-flex', alignItems: 'center', gap: '4px',
     background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px',
     WebkitTapHighlightColor: 'transparent'
   },
@@ -190,7 +190,7 @@ const styles = {
     position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '230px',
     background: 'rgba(34, 34, 34, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 140, 66, 0.35)', borderRadius: 'var(--radius-medium)',
-    padding: '12px 14px', zIndex: 50, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+    padding: '12px 16px', zIndex: 50, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
   },
   popupTitle: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',

@@ -124,7 +124,7 @@ const styles = {
   // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
   emblemWrap: { position: 'relative', zIndex: 1, flexShrink: 0, width: '52px', display: 'flex', justifyContent: 'center' },
   // Шаг между строками карточки (название → дни → «сегодня») — единый.
-  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '9px' },
+  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' },
   title: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '18px',
@@ -142,7 +142,7 @@ const styles = {
   activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
   daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   // Шаг между буквами дней плотнее (было 12) — ряд читается как один переключатель.
-  daysList: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  daysList: { display: 'flex', alignItems: 'baseline', gap: '8px' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
   // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
   dayLetterActive: { fontSize: '22px', fontWeight: 800 },

@@ -151,7 +151,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '11px 14px',
+    padding: '12px 16px',
     transition: 'background 0.2s ease',
     cursor: 'pointer',
     touchAction: 'pan-y'
@@ -182,7 +182,7 @@ const styles = {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '3px'
+    gap: '4px'
   },
   nameRow: {
     display: 'flex',
@@ -203,7 +203,7 @@ const styles = {
   metaRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: '6px',
     overflow: 'hidden'
   },
   lastWorkout: {

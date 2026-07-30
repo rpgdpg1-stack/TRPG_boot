@@ -189,8 +189,8 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    padding: '14px 18px',
+    gap: '16px',
+    padding: '16px',
     width: '100%',
     minHeight: '60px',
     textAlign: 'left',

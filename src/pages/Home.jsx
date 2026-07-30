@@ -62,7 +62,7 @@ const stripStyles = {
     // Строка-информер (фона-пилюли нет). Отступ до блока раздела — МЕЖГРУППОВОЙ
     // (16px): больше внутреннего (шапка↔карточка 6px), меньше прежних 26px,
     // из-за которых вверху зияла пустота.
-    minHeight: '34px', padding: '0 14px', marginBottom: '16px'
+    minHeight: '32px', padding: '0 16px', marginBottom: '16px'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
@@ -241,7 +241,7 @@ export default function Home() {
 
         {/* Второй план: карточки-входы. Заголовка-обёртки нет — карточки
             подписаны сами, а заголовок только ел первый экран. */}
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: '24px' }}>
           <HomeCards />
         </div>
       </div>

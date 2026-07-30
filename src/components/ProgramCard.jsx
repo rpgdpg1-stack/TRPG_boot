@@ -161,7 +161,7 @@ export default function ProgramCard({
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
   // Не начата — круглая кнопка с плеем (слово «Начать» лишнее, треугольник и так
   // читается); идёт тренировка — пилюля с текстом «Продолжить».
-  const padRight = showCta ? (isActive ? 132 : 74) : showRight ? 96 : 18
+  const padRight = showCta ? (isActive ? 128 : 72) : showRight ? 96 : 16
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -307,8 +307,8 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    padding: '14px 18px',
+    gap: '16px',
+    padding: '16px',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
@@ -317,7 +317,7 @@ const styles = {
     textAlign: 'left'
   },
   // Верхний ряд карточки (эмблема + контент + CTA). Позиционный контекст для CTA.
-  cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
+  cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '16px', width: '100%' },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {
     position: 'absolute',
@@ -336,13 +336,13 @@ const styles = {
     top: '50%',
     // Отступ до правого края = горизонтальному паддингу карточки (18px), чтобы
     // справа было столько же воздуха, сколько слева от эмблемы до края.
-    right: '18px',
+    right: '16px',
     transform: 'translateY(-50%)',
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 13px',
+    padding: '8px 12px',
     // Отделяется заливкой (на ~7% светлее карточки), без рамки.
     background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
     borderRadius: 'var(--radius-pill)',
@@ -357,7 +357,7 @@ const styles = {
   // центра: у треугольника оптический центр смещён влево.
   ctaCircle: {
     position: 'absolute',
-    top: '50%', right: '18px',
+    top: '50%', right: '16px',
     transform: 'translateY(-50%)',
     zIndex: 2,
     width: '48px', height: '48px', borderRadius: '50%',
@@ -376,7 +376,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: '3px',
+    gap: '4px',
     textAlign: 'right',
     maxWidth: '84px',
     pointerEvents: 'none'
