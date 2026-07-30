@@ -669,15 +669,16 @@ const styles = {
     textAlign: 'center',
     pointerEvents: 'none'
   },
+  // 1:1 с блоком веса в карточке дня (ExerciseCard) — единицы везде одного кегля.
   weightUnit: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '9px',
+    fontSize: '12px',
     fontWeight: 800,
-    lineHeight: '12px',
+    lineHeight: '15px',
     letterSpacing: '0.05em',
     textAlign: 'center',
-    color: '#888888'
+    color: '#5f5f5f'
   },
 
   // Блок с кнопками действий — сверху отступ, чтобы отделить от инфо

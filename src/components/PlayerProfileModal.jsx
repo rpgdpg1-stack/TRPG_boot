@@ -103,18 +103,19 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
-    // contain), сам оверлей прокручивается только если контент выше экрана.
+    // Фон под модалкой заморожен НАГЛУХО: оверлей гасит жест, прокрутка — только
+    // внутри карточки друга (см. inner).
+    touchAction: 'none',
     overscrollBehavior: 'contain',
-    touchAction: 'pan-y',
     padding: 'var(--tg-safe-top) 16px calc(var(--tabbar-height) + 40px)',
-    overflowY: 'auto',
+    overflow: 'hidden',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
   inner: {
     position: 'relative',
     width: '100%',
     flexShrink: 0,
+    maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',

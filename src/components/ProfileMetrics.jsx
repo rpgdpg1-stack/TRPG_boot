@@ -154,16 +154,18 @@ const m = {
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10001,
-    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
-    // contain), сам оверлей прокручивается только если контент выше экрана.
+    // Фон под модалкой заморожен НАГЛУХО: оверлей не прокручивается и гасит жест,
+    // прокрутка живёт только внутри панели (см. panel).
+    touchAction: 'none',
     overscrollBehavior: 'contain',
-    touchAction: 'pan-y',
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
-    overflowY: 'auto',
+    overflow: 'hidden',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
   panel: {
     position: 'relative', width: '100%', maxWidth: '360px',
+    // Длинный список прокручивается внутри панели, а не тянет за собой страницу.
+    maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '24px',

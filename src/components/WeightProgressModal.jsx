@@ -184,13 +184,15 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
           {/* Одна строка: слева текущее значение (цифра + единица под ней — как в
               карточке дня), по центру «сейчас»/дата скраба, справа личный рекорд. */}
           <div style={styles.bigRow}>
+            {/* Значение: цифра + единица СПРАВА от неё, подпись состояния — снизу. */}
             <span style={styles.valueBlock}>
-              <span style={{ ...styles.bigValue, color: line }}>{fmtKg(topWeight)}</span>
-              <span style={styles.bigUnit}>{unit}</span>
-            </span>
-
-            <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
-              {topSub}
+              <span style={styles.valueTop}>
+                <span style={{ ...styles.bigValue, color: line }}>{fmtKg(topWeight)}</span>
+                <span style={styles.bigUnit}>{unit}</span>
+              </span>
+              <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
+                {topSub}
+              </span>
             </span>
 
             {record > 0 && (
@@ -198,6 +200,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
                 <span style={styles.recordTop}>
                   <TrophyIcon size={18} />
                   <span style={styles.recordValue}>{fmtKg(record)}</span>
+                  <span style={styles.recordUnit}>{unit}</span>
                 </span>
                 <span style={styles.recordLabel}>рекорд</span>
               </span>
@@ -371,12 +374,13 @@ const styles = {
   // Рекорд — в ПРАВОМ краю той же строки, тем же ритмом (значение сверху, подпись
   // снизу). Чуть приглушён, чтобы не спорил с текущим значением.
   recordBlock: {
-    marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-    lineHeight: 1, opacity: 0.85
+    marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end',
+    gap: '2px', lineHeight: 1, opacity: 0.85
   },
-  recordTop: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  recordTop: { display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
   recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px', color: RECORD_GOLD },
-  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',
@@ -402,14 +406,20 @@ const styles = {
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   header: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  eyebrow: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px', letterSpacing: '2px', color: 'var(--color-text-secondary)' },
+  // Надзаголовок модалки — как заголовок группы в профиле (Manrope 700/13, серый),
+  // по ЦЕНТРУ и с воздухом до названия упражнения (это разные уровни).
+  eyebrow: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.2px',
+    color: 'var(--color-text-secondary)', textAlign: 'center', display: 'block', marginBottom: '12px'
+  },
   name: { fontFamily: 'var(--font-geist, var(--font-manrope))', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
-  bigRow: { display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', minHeight: '42px' },
-  // Значение — тем же ритмом, что блок веса в карточке дня: цифра, под ней единица.
-  valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 },
+  bigRow: { display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '6px', minHeight: '42px' },
+  // Значение: цифра и единица в строку, подпись состояния («сейчас» / дата) — снизу.
+  valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', lineHeight: 1 },
+  valueTop: { display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
   bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px' },
   bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
-  bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600 },
+  bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600 },
 
   segGroup: {
     display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
