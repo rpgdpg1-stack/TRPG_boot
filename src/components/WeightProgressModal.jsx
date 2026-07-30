@@ -18,6 +18,9 @@ import CloseCross from './CloseCross'
  * известного, чтобы линия занимала всю ширину периода.
  */
 
+// Золотистый — только для личного рекорда (кубок и цифра).
+const RECORD_GOLD = '#E8B84B'
+
 const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -106,12 +109,23 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
     }
 
     // Точки внутри окна + последний вес ДО окна (для «доноса» линии от края).
-    const dataPts = []
+    let dataPts = []
     let priorWeight = null
     for (const p of points) {
       const ms = dayToMs(p.day)
       if (ms < startMs) priorWeight = p.weight
       else if (ms <= endMs) dataPts.push({ day: p.day, weight: p.weight, ms })
+    }
+
+    // Год: сжимаем до ОДНОЙ точки на месяц (последний вес месяца) — иначе за год
+    // линия превращается в частокол из ежедневных записей.
+    if (period === 'year' && dataPts.length > 1) {
+      const byMonth = new Map()
+      for (const dp of dataPts) {
+        const { y, m } = parseDay(dp.day)
+        byMonth.set(y * 12 + m, dp)   // перезапись → останется последняя точка месяца
+      }
+      dataPts = [...byMonth.values()].sort((a, b) => a.ms - b.ms)
     }
 
     if (dataPts.length === 0 && priorWeight == null) {
@@ -156,6 +170,13 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   }
   const endScrub = () => setScrubIdx(null)
 
+  // Личный рекорд = лучший вес за всю историю (плюс текущий, если он выше).
+  // Отдельного поля в БД не держим: история и есть источник правды.
+  const record = useMemo(() => {
+    const fromHistory = (points || []).reduce((max, p) => Math.max(max, p.weight || 0), 0)
+    return Math.max(fromHistory, currentW || 0)
+  }, [points, currentW])
+
   const scrub = scrubIdx != null ? dataPts[scrubIdx] : null
   const topWeight = scrub ? scrub.weight : currentW
   const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
@@ -173,6 +194,15 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
             <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
               {topSub}
             </span>
+
+            {/* Личный рекорд упражнения — тихо справа: кубок + лучший вес. */}
+            {record > 0 && (
+              <span style={styles.recordWrap}>
+                <TrophyIcon size={13} />
+                <span style={styles.recordValue}>{fmtKg(record)}<span style={styles.recordUnit}>кг</span></span>
+                <span style={styles.recordLabel}>рекорд</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -247,6 +277,15 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   )
 }
 
+/** Кубок личного рекорда (Material trophy), золотистый. */
+function TrophyIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={RECORD_GOLD} aria-hidden="true">
+      <path d="M18 3h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A5 5 0 0 1 7.4 10H7a4 4 0 0 1-4-4V3h3V2h12v1Zm0 2v3h.1A2 2 0 0 0 19.9 6V5H18ZM5 5v1a2 2 0 0 0 1.9 2H7V5H5Z" />
+    </svg>
+  )
+}
+
 function Empty({ text }) {
   return (
     <div style={styles.empty}>
@@ -254,6 +293,31 @@ function Empty({ text }) {
       {text.split('\n').map((l, i) => <div key={i}>{l}</div>)}
     </div>
   )
+}
+
+/**
+ * Плавная линия по точкам (монотонная кубическая интерполяция): углы скруглены,
+ * но кривая НЕ вылетает за фактические значения — «горбов» вверх/вниз не будет.
+ */
+function smoothPath(pts) {
+  if (!pts.length) return ''
+  if (pts.length === 1) return `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`
+  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i === 0 ? 0 : i - 1]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1]
+    // Catmull-Rom → Безье с зажимом по вертикали между соседними точками.
+    const c1x = p1.x + (p2.x - p0.x) / 6
+    const c2x = p2.x - (p3.x - p1.x) / 6
+    const lo = Math.min(p1.y, p2.y), hi = Math.max(p1.y, p2.y)
+    const clamp = (v) => Math.max(lo, Math.min(hi, v))
+    const c1y = clamp(p1.y + (p2.y - p0.y) / 6)
+    const c2y = clamp(p2.y - (p3.y - p1.y) / 6)
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`
+  }
+  return d
 }
 
 function Chart({ win, currentW, line, scrub }) {
@@ -265,7 +329,7 @@ function Chart({ win, currentW, line, scrub }) {
   const xOf = (nx) => padL + nx * plotW
   const yOf = (w) => padT + (1 - (w - yMin) / (yMax - yMin)) * plotH
 
-  const path = linePts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xOf(p.nx).toFixed(1)},${yOf(p.weight).toFixed(1)}`).join(' ')
+  const path = smoothPath(linePts.map(p => ({ x: xOf(p.nx), y: yOf(p.weight) })))
   const last = linePts[linePts.length - 1]
   const curY = yOf(currentW)
 
@@ -297,6 +361,11 @@ function Chart({ win, currentW, line, scrub }) {
 }
 
 const styles = {
+  // Рекорд в шапке: мельче основного значения, чтобы не перетягивать внимание.
+  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
+  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: RECORD_GOLD, letterSpacing: '0.3px' },
+  recordUnit: { fontSize: '10px', fontWeight: 700, marginLeft: '1px', color: RECORD_GOLD },
+  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',

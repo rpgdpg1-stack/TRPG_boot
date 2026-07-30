@@ -568,15 +568,13 @@ export default function ProgramConstructor() {
 
         {/* Кнопка добавления — в потоке, под последним упражнением (а не прибита к
             низу). При пустом дне идёт под подсказкой «Пусто…». Лимит — тот же тост. */}
-        <button
-          onClick={handleAddTap}
-          className="press-tile"
-          style={styles.addButton}
-        >
-          {atLimit
-            ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
-            : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
-        </button>
+        <div style={styles.addRow}>
+          <ActionButton onClick={handleAddTap} variant="neutral" hug>
+            {atLimit
+              ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
+              : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
+          </ActionButton>
+        </div>
       </div>
 
       {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
@@ -597,10 +595,10 @@ export default function ProgramConstructor() {
           <ActionButton
             onClick={handleSave}
             disabled={!canSave}
-            variant="gray"
+            variant="primary"
             hug
           >
-            {saving ? 'СОХРАНЯЮ…' : 'СОХРАНИТЬ ПРОГРАММУ'}
+            {saving ? 'Сохраняю…' : 'Сохранить программу'}
           </ActionButton>
         </div>,
         document.body
@@ -813,15 +811,9 @@ const styles = {
   exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   exTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
-  addButton: {
-    width: '100%', height: '55px', flexShrink: 0, padding: '0 36px',
-    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-pill)',
-    background: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)',
-    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-    pointerEvents: 'auto'
-  },
+  // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
+  // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.
+  addRow: { display: 'flex', justifyContent: 'center', paddingTop: '4px' },
   limitToastWrap: {
     position: 'fixed',
     left: 0,

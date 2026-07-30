@@ -34,7 +34,7 @@ export default function Privacy() {
 
       <div style={styles.groupCard}>
         <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
-        <ToggleRow label="Статистика" hint="Всего тренировок и часов за всё время" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
+        <ToggleRow label="Статистика" hint="Тренировки и часы за текущий месяц" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
         <ToggleRow label="Любимые упражнения" hint={`Твой топ-${FAVORITE_LIMIT}`} value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
         {/* Веса — вложены в «Любимые»: видны только когда любимые включены. Выключил
             любимые — веса и сам пункт «Показывать веса» прячутся. */}

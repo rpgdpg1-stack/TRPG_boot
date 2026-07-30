@@ -4,15 +4,16 @@ import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
+import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
 import CloseCross from './CloseCross'
 
 /**
- * Ряд метрик в карточке профиля (своей и друга) + модалки с детализацией.
+ * Две плитки-входа в карточке профиля (своей и друга) — визуально те же, что
+ * карточки на главной: иконка сверху, подпись снизу, фон `--surface`, radius-card.
+ * Цифр НЕТ (они внутри модалок), плитки только открывают детали.
  *
- * Метрики: **тренировки** (мускул + число) и **любимые** (сердечко + число) —
- * без слов-единиц, слово живёт в заголовке модалки. Тап открывает модалку по
- * центру (затемнение + крестик снизу), как остальные модалки проекта:
+ * Тап открывает модалку по центру (затемнение + крестик снизу):
  *   • «Статистика» — тоталы (тренировки/время) + разбивка по видам, справа период;
  *   • «Любимые упражнения» — список с рабочим весом.
  *
@@ -35,15 +36,15 @@ export default function ProfileMetrics({ summary, favorites = [], showWeights = 
     <>
       <div style={styles.row}>
         {hasStats && (
-          <button style={styles.metric} onClick={() => show('stats')} aria-label="Статистика">
-            <UiIcon name="muscles-line" size={20} color="var(--color-text-secondary)" />
-            <span style={styles.num}>{workouts}</span>
+          <button style={styles.tile} className="press-tile" onClick={() => show('stats')}>
+            <span style={styles.tileIcon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>
+            <span style={styles.tileTitle}>Статистика</span>
           </button>
         )}
         {hasFav && (
-          <button style={styles.metric} onClick={() => show('favorites')} aria-label="Любимые упражнения">
-            <HeartIcon filled size={20} color="var(--color-text-secondary)" />
-            <span style={styles.num}>{favCount}</span>
+          <button style={styles.tile} className="press-tile" onClick={() => show('favorites')}>
+            <span style={styles.tileIcon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>
+            <span style={styles.tileTitle}>Любимые</span>
           </button>
         )}
       </div>
@@ -121,13 +122,18 @@ function FavoritesList({ items, showWeights }) {
 }
 
 const styles = {
-  row: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' },
-  metric: {
-    display: 'inline-flex', alignItems: 'center', gap: '6px',
-    background: 'transparent', border: 'none', padding: '2px 4px', cursor: 'pointer',
+  row: { display: 'flex', alignItems: 'stretch', gap: '10px' },
+  // Плитка 1:1 с карточками главной, только компактнее по высоте (цифр нет).
+  tile: {
+    flex: 1, minWidth: 0, minHeight: '76px',
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    padding: '12px', textAlign: 'left',
+    background: 'var(--surface)',
+    borderRadius: 'var(--radius-card)', border: 'none', cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
-  num: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', letterSpacing: '0.2px', color: 'var(--color-primary)' }
+  tileIcon: { display: 'inline-flex', height: '22px' },
+  tileTitle: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)' }
 }
 
 const m = {

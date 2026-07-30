@@ -4,6 +4,7 @@ import { loadExerciseCatalog } from '../features/programs/customProgram'
 import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
+import ActionButton from './ActionButton'
 
 /**
  * Пикер упражнений для конструктора.
@@ -246,9 +247,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       {!kbOpen && (
         <div style={styles.footer}>
           <div className="dock-scrim" />
-          <button onClick={onDone} className="press-tile" style={styles.doneBtn}>
+          {/* Тот же компонент-кнопка, что «Завершить» в дне и «Добавить» в конструкторе. */}
+          <ActionButton onClick={onDone} variant="neutral" hug>
             Добавить упражнения · {count}/{max}
-          </button>
+          </ActionButton>
         </div>
       )}
     </div>
@@ -357,15 +359,6 @@ const styles = {
     // z-index → footer становится контекстом наложения, чтобы dock-scrim (z:-1)
     // лёг внутри него (за кнопкой), а не за списком пикера.
     zIndex: 2
-  },
-  doneBtn: {
-    width: '100%', height: '55px', padding: '0 36px', borderRadius: 'var(--radius-pill)',
-    border: '1px solid var(--color-border)',
-    background: 'var(--color-surface-dim)', color: 'var(--color-text-secondary)',
-    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    pointerEvents: 'auto'
   },
   addBtnWrap: {
     position: 'relative',

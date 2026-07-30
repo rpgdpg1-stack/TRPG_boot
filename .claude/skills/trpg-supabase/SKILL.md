@@ -74,6 +74,14 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - ISO-неделя: формат `IYYY-IW` (НЕ `YYYY-WW`) — для совместимости с `to_char`.
 - Стрики кэпнуты на 7 естественно структурой БД (one-workout-per-day), `LEAST()` не нужен.
 
+## Личные рекорды
+
+- `api_get_personal_records()` → `{ strength: {exercise_id,name,weight_kg}, swim: {distance_m,finished_at} }`.
+- Силовой рекорд — МАКСИМУМ по `user_exercise_weight_history` (+ текущие `user_exercise_weights`),
+  а не текущий вес: снизил вес после перерыва — рекорд остаётся. Отдельной колонки-рекорда НЕ заводим,
+  история уже источник правды (иначе два состояния надо синхронизировать).
+- Плавание — максимальная `workouts.distance_m` за одну завершённую тренировку. Кардио/растяжка — позже.
+
 ## Любимые упражнения
 
 - `user_favorite_exercises(user_id, slot, exercise_id)`, PK `(user_id, slot)`, CHECK `slot 1..5`.
