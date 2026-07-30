@@ -569,7 +569,13 @@ export default function ProgramConstructor() {
         {/* Кнопка добавления — в потоке, под последним упражнением (а не прибита к
             низу). При пустом дне идёт под подсказкой «Пусто…». Лимит — тот же тост. */}
         <div style={styles.addRow}>
-          <ActionButton onClick={handleAddTap} variant="neutral" hug>
+          {/* Лимит — красным (это стоп), обычное состояние — акцентным зелёным. */}
+          <ActionButton
+            onClick={handleAddTap}
+            variant="neutral"
+            hug
+            style={atLimit ? { color: 'var(--color-error)' } : null}
+          >
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
               : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}

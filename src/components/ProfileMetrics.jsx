@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
@@ -91,7 +92,10 @@ function MetricModal({ kind, summary, favorites, showWeights, periodLabel, onClo
   )
 }
 
-/** Список любимых: миниатюра + название + рабочий вес (в акцент группы мышц). */
+/**
+ * Список любимых: над каждым упражнением — заголовок его группы мышц в цвете
+ * группы (тот же приём, что в дне тренировки, только мельче — модалка компактная).
+ */
 function FavoritesList({ items, showWeights }) {
   return (
     <div style={m.favList}>
@@ -100,8 +104,13 @@ function FavoritesList({ items, showWeights }) {
         const has = showWeights && Number.isFinite(n) && n > 0
         const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
         const accent = getMuscleGroupColors(f.muscle_group).accent
+        const group = MUSCLE_GROUP_LABELS[f.muscle_group] || ''
         return (
-          <div key={i} style={i === 0 ? m.favRow : { ...m.favRow, ...m.favRowDivider }}>
+          <div key={i}>
+            {group && (
+              <div style={{ ...m.groupHead, color: accent, marginTop: i === 0 ? 0 : '10px' }}>{group}</div>
+            )}
+            <div style={m.favRow}>
             <div style={m.thumb}>
               {f.preview_url
                 ? <img src={f.preview_url} alt="" style={m.thumbImg} draggable={false} />
@@ -114,6 +123,7 @@ function FavoritesList({ items, showWeights }) {
                 <span style={m.favUnit}> {f.counts_reps ? 'раз' : 'кг'}</span>
               </span>
             )}
+            </div>
           </div>
         )
       })}
@@ -122,14 +132,14 @@ function FavoritesList({ items, showWeights }) {
 }
 
 const styles = {
-  row: { display: 'flex', alignItems: 'stretch', gap: '10px' },
-  // Плитка 1:1 с карточками главной, только компактнее по высоте (цифр нет).
+  // Два входа по центру карточки. Фона у плиток НЕТ: тогда отступ «линия → иконка»
+  // и «подпись → низ карточки» равны паддингам самой карточки профиля (16),
+  // как расстояние от аватара до линии. Кликабельность даёт press-эффект.
+  row: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '28px' },
   tile: {
-    flex: 1, minWidth: 0, minHeight: '76px',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-    padding: '12px', textAlign: 'left',
-    background: 'var(--surface)',
-    borderRadius: 'var(--radius-card)', border: 'none', cursor: 'pointer',
+    minWidth: '92px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+    padding: '2px 8px', background: 'transparent', border: 'none', cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
   tileIcon: { display: 'inline-flex', height: '22px' },
@@ -164,8 +174,12 @@ const m = {
   period: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
 
   favList: { display: 'flex', flexDirection: 'column' },
-  favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 2px' },
-  favRowDivider: { borderTop: '1px solid var(--border-hairline)' },
+  // Заголовок группы — как в дне тренировки, но мельче и без лишнего воздуха.
+  groupHead: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
+    letterSpacing: '1.6px', padding: '0 2px 2px'
+  },
+  favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 2px' },
   thumb: {
     flexShrink: 0, width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'

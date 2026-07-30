@@ -109,23 +109,12 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
     }
 
     // Точки внутри окна + последний вес ДО окна (для «доноса» линии от края).
-    let dataPts = []
+    const dataPts = []
     let priorWeight = null
     for (const p of points) {
       const ms = dayToMs(p.day)
       if (ms < startMs) priorWeight = p.weight
       else if (ms <= endMs) dataPts.push({ day: p.day, weight: p.weight, ms })
-    }
-
-    // Год: сжимаем до ОДНОЙ точки на месяц (последний вес месяца) — иначе за год
-    // линия превращается в частокол из ежедневных записей.
-    if (period === 'year' && dataPts.length > 1) {
-      const byMonth = new Map()
-      for (const dp of dataPts) {
-        const { y, m } = parseDay(dp.day)
-        byMonth.set(y * 12 + m, dp)   // перезапись → останется последняя точка месяца
-      }
-      dataPts = [...byMonth.values()].sort((a, b) => a.ms - b.ms)
     }
 
     if (dataPts.length === 0 && priorWeight == null) {
@@ -134,7 +123,14 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
 
     const lastKnown = dataPts.length ? dataPts[dataPts.length - 1].weight : priorWeight
     const linePts = []
-    if (priorWeight != null) linePts.push({ ms: startMs, weight: priorWeight })
+    if (priorWeight != null) {
+      linePts.push({ ms: startMs, weight: priorWeight })
+    } else if (dataPts.length) {
+      // Веса до этого периода не было: ведём линию по нулю от начала окна и
+      // поднимаем её в день первой записи — виден сам момент старта.
+      linePts.push({ ms: startMs, weight: 0 })
+      linePts.push({ ms: dataPts[0].ms, weight: 0 })
+    }
     for (const dp of dataPts) linePts.push({ ms: dp.ms, weight: dp.weight })
     // Доводим линию до правого края окна текущим уровнем (вес держится до «сейчас»).
     if (linePts[linePts.length - 1].ms < endMs) linePts.push({ ms: endMs, weight: lastKnown })
@@ -198,7 +194,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
             {/* Личный рекорд упражнения — тихо справа: кубок + лучший вес. */}
             {record > 0 && (
               <span style={styles.recordWrap}>
-                <TrophyIcon size={13} />
+                <TrophyIcon size={15} />
                 <span style={styles.recordValue}>{fmtKg(record)}<span style={styles.recordUnit}>кг</span></span>
                 <span style={styles.recordLabel}>рекорд</span>
               </span>
@@ -362,7 +358,7 @@ function Chart({ win, currentW, line, scrub }) {
 
 const styles = {
   // Рекорд в шапке: мельче основного значения, чтобы не перетягивать внимание.
-  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
+  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' },
   recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: RECORD_GOLD, letterSpacing: '0.3px' },
   recordUnit: { fontSize: '10px', fontWeight: 700, marginLeft: '1px', color: RECORD_GOLD },
   recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)' },

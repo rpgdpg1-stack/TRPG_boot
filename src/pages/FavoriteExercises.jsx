@@ -140,10 +140,13 @@ export default function FavoriteExercises() {
           }
           const colors = getMuscleGroupColors(f.muscle_group)
           const tag = title(SUB_GROUP_LABELS[f.sub_group] || MUSCLE_GROUP_LABELS[f.muscle_group] || '')
+          const group = MUSCLE_GROUP_LABELS[f.muscle_group] || ''
           const val = formatFavoriteValue(f.weight_kg, f.counts_reps)
           return (
+            <div key={slot}>
+            {/* Заголовок группы мышц над карточкой — как в дне тренировки. */}
+            {group && <div style={{ ...styles.groupHead, color: colors.accent }}>{group}</div>}
             <div
-              key={slot}
               className="press-tile"
               style={styles.card}
               onClick={() => cardClick(f)}
@@ -175,6 +178,7 @@ export default function FavoriteExercises() {
                 {!val && <div style={styles.weightHint}>задать</div>}
               </div>
             </div>
+            </div>
           )
         })}
       </div>
@@ -202,6 +206,11 @@ const styles = {
     margin: '0 auto 20px', maxWidth: '300px'
   },
   list: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  // Заголовок группы мышц над карточкой — тот же вид, что в дне тренировки.
+  groupHead: {
+    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px',
+    letterSpacing: '2px', padding: '0 4px 6px', textAlign: 'center'
+  },
   // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
   // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).
   card: {

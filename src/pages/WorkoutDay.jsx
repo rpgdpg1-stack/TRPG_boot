@@ -1356,7 +1356,7 @@ export default function WorkoutDay() {
               variant="neutral"
               hug
               className={btnMorph ? 'btn-morph' : ''}
-              style={{ gap: '8px', color: 'var(--color-primary)', opacity: canFinish ? 1 : 0.55 }}
+              style={{ gap: '8px', opacity: canFinish ? 1 : 0.55 }}
             >
               Завершить <FinishIcon size={17} />
             </ActionButton>

@@ -196,6 +196,9 @@ export default function SwapExercise() {
     meta_info: null
   } : null)
 
+  // Менять есть на что только когда выбрана ДРУГАЯ альтернатива.
+  const canSwap = !!selectedId && selectedId !== currentExerciseId
+
   return (
     <div style={styles.page}>
 
@@ -254,14 +257,16 @@ export default function SwapExercise() {
 
       <div style={styles.bottomBar}>
         <div className="dock-scrim" />
+        {/* Пока альтернатива не выбрана — тихая серая рамка с зелёным текстом;
+            выбрал — кнопка заливается акцентом (готова к действию). */}
         <ActionButton
           onClick={handleConfirm}
-          disabled={!selectedId || selectedId === currentExerciseId || saving || loading}
-          variant="gray"
+          disabled={!canSwap || saving || loading}
+          variant={canSwap ? 'accent' : 'neutral'}
           hug
-          style={{ fontSize: '15px', letterSpacing: '2px' }}
+          style={{ fontSize: '15px' }}
         >
-          {saving ? 'Сохранение...' : 'СМЕНИТЬ'}
+          {saving ? 'Сохранение…' : 'Сменить'}
         </ActionButton>
       </div>
     </div>

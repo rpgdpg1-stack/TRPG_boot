@@ -248,8 +248,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         <div style={styles.footer}>
           <div className="dock-scrim" />
           {/* Тот же компонент-кнопка, что «Завершить» в дне и «Добавить» в конструкторе. */}
-          <ActionButton onClick={onDone} variant="neutral" hug>
-            Добавить упражнения · {count}/{max}
+          <ActionButton
+            onClick={onDone}
+            variant="neutral"
+            hug
+            style={count >= max ? { color: 'var(--color-error)' } : null}
+          >
+            {count >= max ? `Достигнут лимит ${count}/${max}` : `Добавить упражнения · ${count}/${max}`}
           </ActionButton>
         </div>
       )}

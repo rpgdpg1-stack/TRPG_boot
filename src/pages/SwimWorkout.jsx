@@ -329,7 +329,7 @@ export default function SwimWorkout() {
           onClick={handleFinishTap}
           variant="neutral"
           hug
-          style={{ gap: '8px', color: 'var(--color-primary)' }}
+          style={{ gap: '8px' }}
         >
           Завершить <SwimFinishIcon size={17} />
         </ActionButton>
