@@ -217,7 +217,7 @@ src/
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile recovery reset_days reset_progress
 │                   rewards settings stats stretching support swimming
-├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross DailyQuests
+├── components/     ActionButton ActivitiesBlock AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher

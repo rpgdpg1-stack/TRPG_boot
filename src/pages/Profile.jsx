@@ -127,7 +127,6 @@ export default function Profile() {
       favorites={showFav ? favorites : []}
       showWeights={privacy.showWeights}
       periodLabel={monthLabel}
-      loading={!loaded}
     />
   ]
 
