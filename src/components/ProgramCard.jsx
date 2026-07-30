@@ -159,7 +159,9 @@ export default function ProgramCard({
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
-  const padRight = showCta ? 128 : showRight ? 96 : 18
+  // Не начата — круглая кнопка с плеем (слово «Начать» лишнее, треугольник и так
+  // читается); идёт тренировка — пилюля с текстом «Продолжить».
+  const padRight = showCta ? (isActive ? 132 : 78) : showRight ? 96 : 18
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
@@ -217,12 +219,16 @@ export default function ProgramCard({
 
         {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
             белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных). */}
-        {showCta && (
+        {showCta && (isActive ? (
           <span style={{ ...styles.ctaPill, right: 0, background: 'var(--color-primary)', border: 'none', color: 'var(--accent-on)' }}>
-            {isActive ? 'Продолжить' : 'Начать'}
+            Продолжить
             <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayIcon size={16} /></span>
           </span>
-        )}
+        ) : (
+          <span style={styles.ctaCircle}>
+            <span style={styles.ctaCirclePlay}><PlayIcon size={20} /></span>
+          </span>
+        ))}
 
         {/* Правый блок — по центру по высоте ряда, справа. */}
         {!showCta && showRight && (
@@ -347,6 +353,19 @@ const styles = {
     whiteSpace: 'nowrap',
     pointerEvents: 'none'
   },
+  // «Начать» — круглая акцентная кнопка с плеем (без слова). Плей чуть правее
+  // центра: у треугольника оптический центр смещён влево.
+  ctaCircle: {
+    position: 'absolute',
+    top: '50%', right: '18px',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+    width: '52px', height: '52px', borderRadius: '50%',
+    background: 'var(--color-primary)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    pointerEvents: 'none'
+  },
+  ctaCirclePlay: { display: 'inline-flex', color: 'var(--accent-on)', marginLeft: '2px' },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',

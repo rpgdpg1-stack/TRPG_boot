@@ -6,6 +6,7 @@ import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT, MONTHS_RU } from '
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import ClockIcon from './ClockIcon'
+import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 
@@ -46,6 +47,7 @@ export default function HomeCards() {
         title="Статистика"
         value={
           <>
+            <span style={styles.statIcon}><UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" /></span>
             <Value num={month.count} unit="трен" />
             <span style={styles.valueGap} />
             <span style={styles.clock}><ClockIcon size={16} /></span>
@@ -110,7 +112,8 @@ const styles = {
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
   // Подпись-контекст — тихая, в правом углу строки значения («Июль» / «Утро»).
   caption: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
-  // Зазор между двумя показателями статистики и серые часы перед временем.
+  // Зазор между двумя показателями статистики; серые иконки перед каждым.
   valueGap: { width: '10px', display: 'inline-block' },
+  statIcon: { display: 'inline-flex' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' }
 }

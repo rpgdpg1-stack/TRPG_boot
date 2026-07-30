@@ -184,7 +184,6 @@ export default function SectionCarousel() {
             onClick={() => { haptic.light(); setOpen(o => !o) }}
             aria-label="Выбрать раздел"
           >
-            <UiIcon name={cat.iconName} size={20} color={cat.color} />
             <span style={styles.selectorText}>{cat.title}</span>
             <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
               <ChevronIcon size={16} color="var(--color-text-secondary)" />
@@ -281,8 +280,13 @@ export default function SectionCarousel() {
                     style={styles.pinEmpty}
                     onClick={() => { if (!swiped.current) openSection(c.id) }}
                   >
-                    <span style={{ ...styles.pinEmptyPlus, color: c.color }}>＋</span>
-                    <span style={styles.pinEmptyText}>Выбрать программу</span>
+                    <span style={{
+                      ...styles.pinEmptyPill,
+                      border: `1px dashed color-mix(in srgb, ${c.color} 40%, transparent)`
+                    }}>
+                      <span style={{ ...styles.pinEmptyPlus, color: c.color }}>＋</span>
+                      <span style={styles.pinEmptyText}>Выбрать программу</span>
+                    </span>
                   </button>
                 )}
               </div>
@@ -356,11 +360,17 @@ const styles = {
     width: '100%',
     minHeight: '124px',
     background: 'transparent', border: 'none',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer'
   },
-  pinEmptyPlus: { fontSize: '20px', lineHeight: 1 },
-  pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
+  // Пунктирная пилюля вокруг «＋ Выбрать программу» — в цвет раздела, приглушённо.
+  pinEmptyPill: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px',
+    padding: '10px 18px', borderRadius: 'var(--radius-pill)',
+    opacity: 0.85
+  },
+  pinEmptyPlus: { fontSize: '18px', lineHeight: 1 },
+  pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
     flexShrink: 0, minHeight: '44px',

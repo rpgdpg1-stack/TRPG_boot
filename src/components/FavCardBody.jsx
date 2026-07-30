@@ -2,6 +2,7 @@ import { getProgramPlaces } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
+import ProgramEmblem from './ProgramEmblem'
 import PencilIcon from './PencilIcon'
 
 /**
@@ -34,6 +35,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 
   return (
     <>
+      <span style={styles.emblemWrap}><ProgramEmblem program={prog} size={48} /></span>
       <div style={styles.content}>
         <div style={styles.title}>
           {title}
@@ -120,6 +122,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 
 const styles = {
   // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
+  emblemWrap: { position: 'relative', zIndex: 1, flexShrink: 0, width: '52px', display: 'flex', justifyContent: 'center' },
   // Шаг между строками карточки (название → дни → «сегодня») — единый.
   content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '9px' },
   title: {
