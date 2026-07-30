@@ -47,7 +47,13 @@ export default function DailyQuests() {
   const [menuAnchor, setMenuAnchor] = useState(null)
 
   const swipe = useRef({ x: null })
-  const menuBtnRef = useRef(null)
+  const cardRef = useRef(null)
+  // Долгое нажатие по виджету → меню (как у карточки программы); «⋯» больше нет.
+  const longTimer = useRef(null)
+  const longFired = useRef(false)
+  const longStart = useRef({ x: 0, y: 0 })
+  const clearLong = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
+  useEffect(() => clearLong, [])
 
   // Рекомендуемые дня — по одной на окно (детерминированно).
   const recByWindow = WINDOWS.map(w => getRecommendedForWindow(w.id))
@@ -83,14 +89,6 @@ export default function DailyQuests() {
     const n = WINDOWS.length
     setSlideDir(dir > 0 ? 'right' : 'left')
     setWinIdx((winIdx + dir + n) % n)
-    haptic.light()
-  }
-
-  // Прыжок к конкретному окну (тап по полоске-индикатору).
-  const jumpTo = (i) => {
-    if (i === winIdx) return
-    setSlideDir(i > winIdx ? 'right' : 'left')
-    setWinIdx(i)
     haptic.light()
   }
 
@@ -136,43 +134,31 @@ export default function DailyQuests() {
 
   const slideClass = slideDir === 'right' ? 'hslide-in-right' : slideDir === 'left' ? 'hslide-in-left' : undefined
 
-  // Выполнено ли окно (рекомендуемая ИЛИ любая своя отмечена). Утро→1я полоска,
-  // день→2я, вечер→3я — закрашиваются акцентом именно те окна, что закрыл.
-  const doneWindows = WINDOWS.map((w, i) => {
-    const r = recByWindow[i]
-    const recDone = config.showRecommended && r && !!completed[r.id]
-    const cs = config.showCustom ? (config.custom[w.id] || []) : []
-    const customAny = cs.some(it => customDone[it.id])
-    return !!(recDone || customAny)
-  })
+  const onLongDown = (e) => {
+    longFired.current = false
+    longStart.current = { x: e.clientX, y: e.clientY }
+    clearLong()
+    longTimer.current = setTimeout(() => {
+      longFired.current = true
+      haptic.medium()
+      setMenuAnchor(cardRef.current?.getBoundingClientRect() || null)
+    }, 500)
+  }
+  const onLongMove = (e) => {
+    if (!longTimer.current) return
+    if (Math.abs(e.clientX - longStart.current.x) > 8 || Math.abs(e.clientY - longStart.current.y) > 8) clearLong()
+  }
 
   return (
-    <div style={styles.container}>
-      {/* ⋯ меню справа сверху. */}
-      <button
-        ref={menuBtnRef}
-        onClick={() => setMenuAnchor(menuBtnRef.current?.getBoundingClientRect() || null)}
-        style={styles.menuBtn}
-        aria-label="Меню активностей"
-      >⋯</button>
-
-      {/* Полоски прогресса окон (утро/день/вечер): серые → акцент при выполнении.
-          Тап — прыжок к окну. */}
-      <div style={styles.strips}>
-        {WINDOWS.map((w, i) => (
-          <button
-            key={w.id}
-            onClick={() => jumpTo(i)}
-            aria-label={w.label}
-            style={{
-              ...styles.strip,
-              background: doneWindows[i] ? 'var(--color-primary)' : 'rgba(255,255,255,0.12)',
-              opacity: i === winIdx ? 1 : 0.75
-            }}
-          />
-        ))}
-      </div>
-
+    <div
+      style={styles.container}
+      ref={cardRef}
+      onPointerDown={onLongDown}
+      onPointerMove={onLongMove}
+      onPointerUp={clearLong}
+      onPointerCancel={clearLong}
+      onPointerLeave={clearLong}
+    >
       <div style={styles.swipeArea} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div key={winIdx} className={slideClass}>
           {/* Шапка окна: эмодзи + название + (закрыто → время открытия). */}
@@ -217,6 +203,9 @@ export default function DailyQuests() {
         <AnchorMenu
           anchorRect={menuAnchor}
           onClose={() => setMenuAnchor(null)}
+          align="left"
+          gap={3}
+          motion="drop"
           items={[
             {
               key: 'toggle',
@@ -287,35 +276,6 @@ const styles = {
   },
   // ⋯ — 1:1 как на карточке программы (ProgramCard.dotsBtn): та же позиция/размер,
   // тот же AnchorMenu → попап выезжает идентично избранному.
-  menuBtn: {
-    position: 'absolute',
-    top: '8px',
-    right: '12px',
-    width: '34px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    color: '#9A9A9A',
-    fontSize: '22px',
-    fontWeight: 700,
-    lineHeight: 1,
-    letterSpacing: '1px',
-    cursor: 'pointer',
-    opacity: 0.7,
-    zIndex: 2,
-    WebkitTapHighlightColor: 'transparent'
-  },
-  // Полоски-индикатор окон: тонкие, во всю ширину, справа зазор под ⋯.
-  strips: { display: 'flex', gap: '5px', marginBottom: '12px', paddingRight: '30px' },
-  strip: {
-    flex: 1, height: '6px', borderRadius: '3px', border: 'none', padding: 0,
-    cursor: 'pointer', transition: 'background 0.2s ease, opacity 0.2s ease',
-    WebkitTapHighlightColor: 'transparent'
-  },
   swipeArea: { touchAction: 'pan-y' },
   winHeader: {
     display: 'flex',

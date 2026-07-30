@@ -84,12 +84,13 @@ export default function Profile() {
   const summary = summarizeWorkouts(workouts, 'month', new Date())
   const monthLabel = MONTHS_RU[new Date().getMonth()]
 
-  // Меню — только личное/системное. Тренировочные разделы (Статистика/Любимые/
-  // Активности) переехали на главную. Пункты без экрана помечены `soon`.
+  // Меню профиля: активности и телесные разделы + системное. Статистика и
+  // любимые живут на главной. Пункты без экрана помечены `soon`.
   const menuGroups = [
     {
-      title: 'Тело',
+      title: 'Профиль',
       items: [
+        { id: 'activities',   icon: 'ui:activity', iconColor: '#EAB308', title: 'Активности',     subtitle: 'Утро · День · Вечер',      path: '/daily-boost' },
         { id: 'recovery',     icon: 'ui:recovery', iconColor: '#06B6D4', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
         { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
         { id: 'measurements', icon: 'ui:measure',  title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
@@ -127,7 +128,6 @@ export default function Profile() {
       favorites={showFav ? favorites : []}
       showWeights={privacy.showWeights}
       periodLabel={monthLabel}
-      loading={!loaded}
     />
   ]
 

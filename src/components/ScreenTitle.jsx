@@ -45,7 +45,7 @@ const styles = {
   title: {
     margin: 0,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 600,
     letterSpacing: '0.2px',
     lineHeight: 1.2,
