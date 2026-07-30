@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
 import { resolveWeeklyStreak } from '../utils/dates'
+import { useScrollLock } from '../lib/use-scroll-lock'
 import ProfileHeader from './ProfileHeader'
 import ProfileMetrics from './ProfileMetrics'
 import CloseCross from './CloseCross'
@@ -21,6 +22,8 @@ import CloseCross from './CloseCross'
 export default function PlayerProfileModal({ row, onClose }) {
   // Стартуем из кеша (если друг уже открывался) — данные показываются сразу.
   const [pub, setPub] = useState(() => getCachedProfile(row.user_id))
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
 
   useEffect(() => {
     let cancelled = false
@@ -61,7 +64,7 @@ export default function PlayerProfileModal({ row, onClose }) {
   }
 
   return createPortal(
-    <div style={styles.overlay} onClick={onClose}>
+    <div ref={overlayRef} style={styles.overlay} onClick={onClose}>
       <div style={styles.inner} onClick={(e) => e.stopPropagation()}>
         <CloseCross
           onClose={onClose}

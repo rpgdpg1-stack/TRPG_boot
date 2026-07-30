@@ -13,6 +13,7 @@ import HeartButton from './HeartButton'
 import UiIcon from './UiIcon'
 import WeightProgressModal from './WeightProgressModal'
 import CloseCross from './CloseCross'
+import { useScrollLock } from '../lib/use-scroll-lock'
 import TrendingUpIcon from './TrendingUpIcon'
 
 /**
@@ -37,6 +38,9 @@ const NOTE_ICON_COLOR = '#FFA94D'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
+  // Фон под модалкой не должен ехать пальцем — ни снаружи, ни внутри панели.
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
 
   // Любимое: состояние сердечка + предупреждение о лимите.
   const [isFav, setIsFav] = useState(() => isFavoriteCached(slot?.exercise_id))
@@ -273,6 +277,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   return (
     <div
+      ref={overlayRef}
       style={styles.overlay}
       onClick={handleOverlayClick}
     >

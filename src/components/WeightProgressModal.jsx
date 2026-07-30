@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { getWeightHistory } from '../features/exercises/api'
 import { haptic } from '../lib/telegram'
 import CloseCross from './CloseCross'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Модалка «Прогресс веса» — минималистичный график рабочего веса во времени
@@ -54,6 +55,8 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   const [offset, setOffset] = useState(0)     // 0 — текущий месяц/год; -1 — предыдущий; …
   const [scrubIdx, setScrubIdx] = useState(null)
   const chartRef = useRef(null)
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
 
   const line = accent || 'var(--color-primary)'
 
@@ -176,7 +179,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
 
   return (
-    <div style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
+    <div ref={overlayRef} style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
           <span style={styles.eyebrow}>Прогресс веса</span>

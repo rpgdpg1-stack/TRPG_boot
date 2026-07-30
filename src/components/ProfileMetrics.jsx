@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { useScrollLock } from '../lib/use-scroll-lock'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
@@ -67,8 +68,10 @@ export default function ProfileMetrics({ summary, favorites = [], showWeights = 
 /** Модалка метрики: шапка (иконка + название, справа период) + содержимое. */
 function MetricModal({ kind, summary, favorites, showWeights, periodLabel, onClose }) {
   const isStats = kind === 'stats'
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   return (
-    <div style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
+    <div ref={overlayRef} style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={m.panel} onClick={(e) => e.stopPropagation()}>
         <div style={m.head}>
           <span style={m.headLeft}>
