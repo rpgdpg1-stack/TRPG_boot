@@ -31,3 +31,6 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Артефакты браузерных MCP-прогонов (скриншоты/логи) — локальные
+.playwright-mcp/
