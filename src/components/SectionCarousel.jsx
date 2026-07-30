@@ -39,6 +39,8 @@ const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
 const SETTLE_MS = 380
+// Сколько держится подсветка названия раздела после переключения.
+const HEAD_LIT_MS = 1200
 
 function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
@@ -77,6 +79,15 @@ export default function SectionCarousel() {
   const [settle, setSettle] = useState(null)   // 'next' | 'prev' — идёт доводка
   // Направление последней смены — для въезда названия раздела (сброс по key).
   const [headDir, setHeadDir] = useState(null)
+  // Подсветка названия цветом раздела сразу после переключения (гаснет сама).
+  const [headLit, setHeadLit] = useState(false)
+  const headLitTimer = useRef(null)
+  const litUp = () => {
+    setHeadLit(true)
+    if (headLitTimer.current) clearTimeout(headLitTimer.current)
+    headLitTimer.current = setTimeout(() => setHeadLit(false), HEAD_LIT_MS)
+  }
+  useEffect(() => () => { if (headLitTimer.current) clearTimeout(headLitTimer.current) }, [])
   const settleTimer = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
   // Свайп не должен превращаться в тап по карточке (переход в тренировку).
@@ -92,6 +103,7 @@ export default function SectionCarousel() {
     if (withHaptic) haptic.light()
     setSettle(dir)
     setHeadDir(dir)
+    litUp()
     const next = wrapIdx(dir === 'next' ? idx + 1 : idx - 1)
     settleTimer.current = setTimeout(() => {
       setIdx(next)
@@ -111,6 +123,7 @@ export default function SectionCarousel() {
     if (next === wrapIdx(idx - 1)) { slideTo('prev'); return }
     haptic.light()
     setHeadDir(next > idx ? 'next' : 'prev')
+    litUp()
     setIdx(next)
     localSet(LAST_CAT_KEY, id)
     cloudSet(LAST_CAT_KEY, id)
@@ -196,12 +209,15 @@ export default function SectionCarousel() {
             <span
               key={headIdx}
               className={headDir === 'next' ? 'hslide-in-right' : headDir === 'prev' ? 'hslide-in-left' : undefined}
-              style={styles.selectorText}
+              style={{
+                ...styles.selectorText,
+                // Вспышка цветом раздела: загорается мгновенно вместе со сменой,
+                // гаснет в нейтральный серый плавно (0.6с), чтобы не мигало.
+                color: headLit ? headCat.color : 'rgba(255, 255, 255, 0.6)',
+                transition: headLit ? 'none' : 'color 0.6s ease'
+              }}
             >
               {headCat.title}
-            </span>
-            <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
-              <ChevronIcon size={16} color="var(--color-text-secondary)" />
             </span>
           </button>
 
@@ -317,9 +333,10 @@ const styles = {
   // Обёртки-панели больше НЕТ: карточка программы идёт во всю ширину экрана.
   wrap: { display: 'flex', flexDirection: 'column' },
   // Шапка: селектор слева, «Все ›» справа — одна тихая линия, без рамки/заливки.
+  // Строка шапки опущена ближе к карточке: сверху воздуха больше, снизу — меньше.
   headRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '8px'
+    marginTop: '10px', marginBottom: '4px'
   },
   selectorWrap: { position: 'relative', minWidth: 0 },
   // Селектор — тот же вес, что заголовок секции «Мой прогресс» (Manrope 15/700,
@@ -333,10 +350,6 @@ const styles = {
   selectorText: {
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
-  },
-  selectorChev: {
-    display: 'inline-flex', marginTop: '1px',
-    transition: 'transform 0.2s var(--ease-ios)'
   },
   // Выпадающий список — под селектором.
   dropdown: {
