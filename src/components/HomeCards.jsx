@@ -60,7 +60,12 @@ export default function HomeCards() {
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
         title="Любимые"
-        value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
+        value={
+          <>
+            <span style={styles.statIcon}><HeartIcon filled size={16} color="var(--color-text-secondary)" /></span>
+            <Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />
+          </>
+        }
         onClick={() => go('/favorite-exercises')}
       />
     </div>

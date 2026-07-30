@@ -75,6 +75,8 @@ export default function SectionCarousel() {
   const viewportRef = useRef(null)
   const [dx, setDx] = useState(0)
   const [settle, setSettle] = useState(null)   // 'next' | 'prev' — идёт доводка
+  // Направление последней смены — для въезда названия раздела (сброс по key).
+  const [headDir, setHeadDir] = useState(null)
   const settleTimer = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
   // Свайп не должен превращаться в тап по карточке (переход в тренировку).
@@ -89,6 +91,7 @@ export default function SectionCarousel() {
     if (settle) return
     if (withHaptic) haptic.light()
     setSettle(dir)
+    setHeadDir(dir)
     const next = wrapIdx(dir === 'next' ? idx + 1 : idx - 1)
     settleTimer.current = setTimeout(() => {
       setIdx(next)
@@ -107,6 +110,7 @@ export default function SectionCarousel() {
     if (next === wrapIdx(idx + 1)) { slideTo('next'); return }
     if (next === wrapIdx(idx - 1)) { slideTo('prev'); return }
     haptic.light()
+    setHeadDir(next > idx ? 'next' : 'prev')
     setIdx(next)
     localSet(LAST_CAT_KEY, id)
     cloudSet(LAST_CAT_KEY, id)
@@ -152,6 +156,11 @@ export default function SectionCarousel() {
     if (fast || far) slideTo(dist < 0 ? 'next' : 'prev')
   }
 
+  // Название раздела в шапке: во время доводки показываем УЖЕ целевой — так
+  // заголовок и карточка встают на место одновременно, без «догоняния».
+  const headIdx = settle ? wrapIdx(settle === 'next' ? idx + 1 : idx - 1) : idx
+  const headCat = cats[headIdx]
+
   // ——— Данные закрепов по всем разделам (лента рендерит все четыре) ———
   void pinnedTick
   const pinnedMap = readPinnedMap()
@@ -184,7 +193,13 @@ export default function SectionCarousel() {
             onClick={() => { haptic.light(); setOpen(o => !o) }}
             aria-label="Выбрать раздел"
           >
-            <span style={styles.selectorText}>{cat.title}</span>
+            <span
+              key={headIdx}
+              className={headDir === 'next' ? 'hslide-in-right' : headDir === 'prev' ? 'hslide-in-left' : undefined}
+              style={styles.selectorText}
+            >
+              {headCat.title}
+            </span>
             <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
               <ChevronIcon size={16} color="var(--color-text-secondary)" />
             </span>

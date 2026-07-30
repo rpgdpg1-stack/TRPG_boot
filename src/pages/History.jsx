@@ -5,6 +5,9 @@ import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHistoryView, setHistoryView } from '../lib/history-view'
+import { getRecords, getRecordsSync } from '../lib/records'
+import { formatMeters } from '../utils/history'
+import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats from '../components/HistoryStats'
@@ -19,8 +22,8 @@ const PERIODS = [
 
 /**
  * История тренировок — единственное место с детальной аналитикой:
- * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь →
- * заглушки «Скоро» (рекорды, любимые упражнения).
+ * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь → график →
+ * личные рекорды (силовая: максимальный рабочий вес; плавание: лучший заплыв).
  *
  * «Месяц»/«Год» считаются за месяц/год, который сейчас ОТКРЫТ в календаре ниже:
  * листнул календарь на июнь → статистика за месяц пересчиталась на июнь.
@@ -33,6 +36,9 @@ export default function History() {
   const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
+  // Личные рекорды: старт из кеша (мгновенно), сервер догоняет.
+  const [records, setRecords] = useState(() => getRecordsSync())
+  useEffect(() => { getRecords().then(setRecords) }, [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -110,21 +116,61 @@ export default function History() {
         <WorkoutBarChart workouts={workouts} period={period} view={view} />
       </div>
 
-      {/* Скоро — тихая некликабельная заглушка. «Любимые упражнения» тут убраны:
-          это реальная фича, живёт в профиле (не дублируем заглушкой). */}
-      <div style={styles.soonGroup}>
-        <SoonRow emoji="🏆" title="Личные рекорды" />
-      </div>
+      {/* Личные рекорды — лучший результат по каждому виду. Кардио/растяжка
+          появятся, когда появятся сами программы. */}
+      <Records records={records} />
     </div>
   )
 }
 
-function SoonRow({ emoji, title }) {
+/**
+ * Личные рекорды: строка на вид активности — иконка вида в его цвете, название
+ * достижения и само значение (цифра в цвет вида, единица серым).
+ * Пока рекордов нет — блок не показываем (пустая полка ничего не сообщает).
+ */
+function Records({ records }) {
+  const strength = records?.strength || null
+  const swim = records?.swim || null
+  if (!strength && !swim) return null
+
+  const cap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : '')
+  const kg = strength ? Number(strength.weight_kg) : 0
+  const kgText = kg % 1 === 0 ? String(kg) : kg.toFixed(1).replace('.', ',')
+
   return (
-    <div style={styles.soonRow}>
-      <span style={styles.soonEmoji}>{emoji}</span>
-      <span style={styles.soonTitle}>{title}</span>
-      <span style={styles.soonTag}>Скоро</span>
+    <div style={styles.recGroup}>
+      <div style={styles.recHead}>Личные рекорды</div>
+
+      {strength && (
+        <div style={styles.recRow}>
+          <span style={{ ...styles.recBadge, background: 'var(--cat-gym)' }}>
+            <UiIcon name="power" size={13} color="#0D0C0C" />
+          </span>
+          <span style={styles.recText}>
+            <span style={styles.recTitle}>{cap(strength.name)}</span>
+            <span style={styles.recNote}>Рабочий вес</span>
+          </span>
+          <span style={styles.recValue}>
+            <span style={{ color: 'var(--cat-gym)', fontWeight: 800 }}>{kgText}</span>
+            <span style={styles.recUnit}> кг</span>
+          </span>
+        </div>
+      )}
+
+      {swim && (
+        <div style={{ ...styles.recRow, ...(strength ? styles.recDivider : null) }}>
+          <span style={{ ...styles.recBadge, background: 'var(--cat-pool)' }}>
+            <UiIcon name="swimming" size={13} color="#0D0C0C" />
+          </span>
+          <span style={styles.recText}>
+            <span style={styles.recTitle}>Плавание</span>
+            <span style={styles.recNote}>Лучший заплыв</span>
+          </span>
+          <span style={styles.recValue}>
+            <span style={{ color: 'var(--cat-pool)', fontWeight: 800 }}>{formatMeters(swim.distance_m)}</span>
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -160,26 +206,31 @@ const styles = {
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
 
-  soonGroup: {
+  // Личные рекорды — блок-карточка со строками по видам активности.
+  recGroup: {
     display: 'flex', flexDirection: 'column',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    overflow: 'hidden',
-    opacity: 0.7
+    padding: '14px 16px 6px'
   },
-  soonRow: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '14px 18px', minHeight: '56px'
+  recHead: {
+    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: '6px'
   },
-  soonEmoji: { fontSize: '20px', lineHeight: 1, width: '26px', textAlign: 'center', flexShrink: 0 },
-  soonTitle: {
-    flex: 1, fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600,
-    color: 'var(--color-text)'
+  recRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0' },
+  recDivider: { borderTop: '1px solid var(--border-hairline)' },
+  // Бейдж вида — как в сводке и календаре: чёрная иконка на цветном квадрате.
+  recBadge: {
+    width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
   },
-  soonTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
-    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
+  recText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  recTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  soonDivider: { height: '1px', background: 'var(--border-hairline)', marginLeft: '56px' }
+  recNote: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' },
+  recUnit: { color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '12px' }
 }

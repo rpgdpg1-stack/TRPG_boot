@@ -229,6 +229,7 @@ src/
 ├── features/exercises/  api.js · weight-format.js
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
 ├── lib/            accent active-workout activities auth cache cloud-storage events favorite-exercises friends
+│                   records (личные рекорды)
 │                   friends-list history-view network-status notes offline-queue persistent-cache privacy
 │                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
 │                   version-check weight-editing-state
@@ -240,6 +241,7 @@ src/
 supabase/
 ├── config.toml
 ├── migrations/     weight_history.sql (история рабочего веса: таблица + триггер + RPC)
+│                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
 │                   favorite_exercises_limit_5.sql (лимит любимых 3→5: CHECK slot + RPC)
 └── functions/telegram-auth/  index.ts · deno.json · .npmrc
 ```

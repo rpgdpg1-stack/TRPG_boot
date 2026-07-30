@@ -171,8 +171,9 @@ const styles = {
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   lastBadge: { display: 'inline-flex', alignItems: 'center' },
-  // Огонёк серии — справа, вертикально по центру строки.
-  fireWrap: { position: 'relative', flexShrink: 0 },
+  // Огонёк серии: пространство справа от аватара делим пополам — имя в левой
+  // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).
+  fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
   fireBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '3px',
     background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px',
