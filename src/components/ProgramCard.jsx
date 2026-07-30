@@ -38,6 +38,7 @@ export default function ProgramCard({
   onOpen,
   onDeleted,
   menu = false,
+  press = true,
   lastTrained = false,
   bordered = true,
   cta = false,
@@ -163,7 +164,9 @@ export default function ProgramCard({
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
 
-  const showFooter = !!footer && available
+  // При активной тренировке footer («Сегодня») скрываем — рядом с живым таймером
+  // и прогрессом он не несёт информации.
+  const showFooter = !!footer && available && !isActive
 
   const cardStyle = {
     ...styles.card,
@@ -191,7 +194,7 @@ export default function ProgramCard({
       onPointerUp={clearLong}
       onPointerLeave={clearLong}
       onPointerCancel={clearLong}
-      className={available ? 'press-tile' : ''}
+      className={available && press ? 'press-tile' : ''}
       style={cardStyle}
     >
       {/* Заливка-прогресс: светло-серый фон растёт по мере отжатых упражнений. */}

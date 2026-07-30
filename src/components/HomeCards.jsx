@@ -6,8 +6,8 @@ import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT, MONTHS_RU } from '
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import ClockIcon from './ClockIcon'
-import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
+import TrendingUpIcon from './TrendingUpIcon'
 
 /**
  * Две карточки-входа на главной: **Статистика** (шире — два показателя: мускул
@@ -42,7 +42,7 @@ export default function HomeCards() {
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
         flex={2}
-        icon={<UiIcon name="stats" size={22} color="#3FA2F7" />}
+        icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
         value={
           <>

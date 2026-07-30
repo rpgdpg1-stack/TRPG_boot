@@ -38,7 +38,6 @@ const SWIPE_RATIO = 0.22
 const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
-const SLIDE_GAP = 16
 const SETTLE_MS = 380
 
 function readPinnedMap() {
@@ -225,11 +224,13 @@ export default function SectionCarousel() {
         </button>
       </div>
 
-      {/* Лента разделов: тройка [пред, текущий, след], зазор 16px как поля экрана.
-          Средний слайд всегда по центру — база сдвига `-100% - 16px`. */}
+      {/* Рамка блока стоит на месте, листается ЕЁ СОДЕРЖИМОЕ (как виджеты iOS):
+          тройка [пред, текущий, след] едет внутри, без зазоров и без выезда из-за
+          края экрана. Прожимается вся рамка (press-tile), долгое нажатие — меню. */}
       <div
         ref={viewportRef}
         style={styles.viewport}
+        className="press-tile"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -238,12 +239,11 @@ export default function SectionCarousel() {
         <div
           style={{
             ...styles.track,
-            gap: `${SLIDE_GAP}px`,
             transform: settle === 'next'
-              ? `translate3d(calc(-200% - ${SLIDE_GAP * 2}px), 0, 0)`
+              ? 'translate3d(-200%, 0, 0)'
               : settle === 'prev'
                 ? 'translate3d(0px, 0, 0)'
-                : `translate3d(calc(-100% - ${SLIDE_GAP}px + ${dx}px), 0, 0)`,
+                : `translate3d(calc(-100% + ${dx}px), 0, 0)`,
             // Анимируем ТОЛЬКО доводку: возврат тройки в базу после смены раздела
             // должен быть мгновенным, иначе виден «отскок».
             transition: settle ? `transform ${SETTLE_MS}ms var(--ease-ios)` : 'none'
@@ -263,26 +263,26 @@ export default function SectionCarousel() {
                     menu
                     isFav
                     cta
-                    // Как закреплённая карточка внутри раздела: светло-серая заливка
-                    // БЕЗ цветной обводки (нитка в цвет раздела на главной убрана).
+                    // Фон и press-эффект живут на рамке блока — карточка внутри
+                    // только содержимое, иначе при листании ехал бы и фон.
                     bordered={false}
-                    background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
+                    press={false}
+                    background="transparent"
                     footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
                     onToggleFav={() => onToggleFav(c.id, slug)}
                     onOpen={() => guardedOpen(prog, slug)}
                     onDeleted={() => setPinnedTick(t => t + 1)}
                   />
                 ) : (
-                  // Cold-start: заглушка = рабочий CTA в цвет раздела. Тап → список
-                  // программ раздела, где выбираешь; выбранная закрепится здесь.
+                  // Cold-start: короткий рабочий CTA в цвет раздела. Тап → список
+                  // программ раздела; выбранная закрепится здесь. Рамка общая (блок),
+                  // своей пунктирной у заглушки больше нет.
                   <button
-                    style={{ ...styles.pinEmpty, border: `1px dashed color-mix(in srgb, ${c.color} 45%, transparent)` }}
-                    className="press-tile"
+                    style={styles.pinEmpty}
                     onClick={() => { if (!swiped.current) openSection(c.id) }}
                   >
                     <span style={{ ...styles.pinEmptyPlus, color: c.color }}>＋</span>
                     <span style={styles.pinEmptyText}>Выбрать программу</span>
-                    <span style={styles.pinEmptyHint}>Появится здесь для быстрого старта</span>
                   </button>
                 )}
               </div>
@@ -341,28 +341,31 @@ const styles = {
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
   // Окно ленты: горизонталь ведём сами, вертикаль отдаём нативному скроллу (pan-y).
-  viewport: { overflow: 'hidden', touchAction: 'pan-y' },
-  // Лента: ширина = окну, слайды по 100% ширины окна + зазор → соседи стоят
-  // ровно за краем экрана и въезжают только после протяжки на этот зазор.
+  // Рамка блока: фон и скругление здесь, содержимое клипается по её краям —
+  // листается ВНУТРЕННОСТЬ, сама рамка стоит на месте (как виджеты iOS).
+  viewport: {
+    overflow: 'hidden', touchAction: 'pan-y',
+    background: 'color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))',
+    borderRadius: 'var(--radius-card)',
+    cursor: 'pointer'
+  },
+  // Лента внутри рамки: слайды по 100% её ширины, БЕЗ зазоров.
   track: { display: 'flex', alignItems: 'stretch', width: '100%', willChange: 'transform' },
   slide: { width: '100%', flexShrink: 0, display: 'flex' },
   pinEmpty: {
     width: '100%',
     minHeight: '124px',
-    borderRadius: 'var(--radius-card)',
-    background: 'var(--color-card)',
-    border: '1px dashed rgba(255, 255, 255, 0.18)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+    background: 'transparent', border: 'none',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
     cursor: 'pointer'
   },
-  pinEmptyPlus: { fontSize: '22px', lineHeight: 1, marginBottom: '2px' },
+  pinEmptyPlus: { fontSize: '20px', lineHeight: 1 },
   pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
-  pinEmptyHint: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)' },
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
-    flexShrink: 0,
+    flexShrink: 0, minHeight: '44px',
     display: 'inline-flex', alignItems: 'center', gap: '1px',
-    padding: '4px 2px 4px 8px',
+    padding: '0 2px 0 12px',
     background: 'transparent', border: 'none', cursor: 'pointer',
     fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
