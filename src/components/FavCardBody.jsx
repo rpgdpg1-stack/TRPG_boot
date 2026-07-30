@@ -16,7 +16,7 @@ import PencilIcon from './PencilIcon'
  * `accent` — цвет раздела (фолбэк для буквы дня). `activeMin` — truthy, если идёт
  * тренировка по этой программе (тогда показываем ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null }) {
+export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0 }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -111,10 +111,6 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         {prog.source === 'shared' && prog.authorName && (
           <div style={styles.authorLine}>от {prog.authorName}</div>
         )}
-
-        {/* «Сегодня» / «5 дней назад» — в одной колонке с названием и днями,
-            тем же вертикальным шагом (не прижата к нижнему краю карточки). */}
-        {footer && <div style={styles.footerLine}>{footer}</div>}
       </div>
     </>
   )
@@ -123,8 +119,7 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
 const styles = {
   // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
   emblemWrap: { position: 'relative', zIndex: 1, flexShrink: 0, width: '48px', display: 'flex', justifyContent: 'center' },
-  // Шаг между строками карточки (название → дни → «сегодня») — единый.
-  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '9px' },
+  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
   title: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '18px',
@@ -165,10 +160,6 @@ const styles = {
     fontWeight: 600,
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.3px'
-  },
-  footerLine: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',

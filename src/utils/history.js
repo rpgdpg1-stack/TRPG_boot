@@ -213,23 +213,6 @@ export function periodRange(period, now = new Date()) {
   return [start, start + 7 * 86400000]
 }
 
-/**
- * Была ли СЕГОДНЯ (Москва-сутки) засчитанная тренировка этого типа.
- * Нужно, чтобы предупредить о лимите ДО старта второй силовой за день —
- * сервер (`api_finish_workout`) всё равно засчитает только первую.
- */
-export function hasWorkoutTodayOfType(workouts, typeKey, now = new Date()) {
-  const p = mskParts(now.toISOString())
-  const start = mskMidnightMs(p.y, p.m, p.d)
-  const end = start + 86400000
-  return (workouts || []).some(w => {
-    if (!w.finished_at) return false
-    const t = new Date(w.finished_at).getTime()
-    if (t < start || t >= end) return false
-    return workoutCategoryMeta(w).key === typeKey
-  })
-}
-
 // Сводка завершённых тренировок за период: общий счёт/время + разбивка по типам
 // (`byType[key] = { count, minutes, distance }`, key из workoutCategoryMeta:
 // strength/pool/cardio/stretch). Общий для карточки истории на главной и блока

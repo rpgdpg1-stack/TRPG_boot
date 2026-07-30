@@ -176,7 +176,7 @@ export default function SectionCarousel() {
 
   return (
     <div style={styles.wrap}>
-      {/* Шапка внутри общего блока: селектор раздела слева, «Все ›» справа. */}
+      {/* Одна строка: селектор раздела слева, «Все ›» справа. Без рамки и заливки. */}
       <div style={styles.headRow}>
         <div style={styles.selectorWrap} ref={selectorRef}>
           <button
@@ -187,6 +187,9 @@ export default function SectionCarousel() {
           >
             <UiIcon name={cat.iconName} size={20} color={cat.color} />
             <span style={styles.selectorText}>{cat.title}</span>
+            <span style={{ ...styles.selectorChev, transform: open ? 'rotate(180deg)' : 'none' }}>
+              <ChevronIcon size={16} color="var(--color-text-secondary)" />
+            </span>
           </button>
 
           {open && (
@@ -263,7 +266,7 @@ export default function SectionCarousel() {
                     // Как закреплённая карточка внутри раздела: светло-серая заливка
                     // БЕЗ цветной обводки (нитка в цвет раздела на главной убрана).
                     bordered={false}
-                    background="transparent"
+                    background="color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))"
                     footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
                     onToggleFav={() => onToggleFav(c.id, slug)}
                     onOpen={() => guardedOpen(prog, slug)}
@@ -273,12 +276,7 @@ export default function SectionCarousel() {
                   // Cold-start: заглушка = рабочий CTA в цвет раздела. Тап → список
                   // программ раздела, где выбираешь; выбранная закрепится здесь.
                   <button
-                    style={{
-                      ...styles.pinEmpty,
-                      border: `1px dashed color-mix(in srgb, ${c.color} 45%, transparent)`,
-                      // Верхнюю грань не рисуем — её роль выполняет разделитель блока.
-                      borderTop: 'none'
-                    }}
+                    style={{ ...styles.pinEmpty, border: `1px dashed color-mix(in srgb, ${c.color} 45%, transparent)` }}
                     className="press-tile"
                     onClick={() => { if (!swiped.current) openSection(c.id) }}
                   >
@@ -297,18 +295,12 @@ export default function SectionCarousel() {
 }
 
 const styles = {
-  // ОДИН блок: шапка раздела и карточка программы под тонкой серой линией.
-  wrap: {
-    display: 'flex', flexDirection: 'column',
-    background: 'color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))',
-    borderRadius: 'var(--radius-card)',
-    overflow: 'hidden'
-  },
-  // Шапка блока: селектор слева, «Все ›» справа; снизу — разделитель.
+  // Обёртки-панели больше НЕТ: карточка программы идёт во всю ширину экрана.
+  wrap: { display: 'flex', flexDirection: 'column' },
+  // Шапка: селектор слева, «Все ›» справа — одна тихая линия, без рамки/заливки.
   headRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '4px 14px 8px 12px',
-    borderBottom: '1px solid var(--border-hairline)'
+    marginBottom: '8px'
   },
   selectorWrap: { position: 'relative', minWidth: 0 },
   // Селектор — тот же вес, что заголовок секции «Мой прогресс» (Manrope 15/700,
@@ -349,7 +341,7 @@ const styles = {
   },
   dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
   // Окно ленты: горизонталь ведём сами, вертикаль отдаём нативному скроллу (pan-y).
-  viewport: { overflow: 'hidden', touchAction: 'pan-y', padding: '0' },
+  viewport: { overflow: 'hidden', touchAction: 'pan-y' },
   // Лента: ширина = окну, слайды по 100% ширины окна + зазор → соседи стоят
   // ровно за краем экрана и въезжают только после протяжки на этот зазор.
   track: { display: 'flex', alignItems: 'stretch', width: '100%', willChange: 'transform' },
@@ -357,8 +349,8 @@ const styles = {
   pinEmpty: {
     width: '100%',
     minHeight: '124px',
-    borderRadius: '0 0 var(--radius-card) var(--radius-card)',
-    background: 'transparent',
+    borderRadius: 'var(--radius-card)',
+    background: 'var(--color-card)',
     border: '1px dashed rgba(255, 255, 255, 0.18)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
     cursor: 'pointer'

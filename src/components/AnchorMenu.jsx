@@ -17,8 +17,7 @@ import { haptic } from '../lib/telegram'
  * @param anchorRect — DOMRect якоря (кнопки или карточки), от него позиционируется меню.
  * @param items — [{ key, icon, label, labelColor?, haptic?, onClick } | { divider:true }]
  * @param onClose — закрыть (вызывается после анимации сворачивания).
- * @param align — 'right' (к правому краю якоря) | 'center' (по центру) | 'left'
- *   (к левому краю якоря — так открываются меню долгого нажатия).
+ * @param align — 'right' (к правому краю якоря) | 'center' (по центру якоря).
  * @param gap — зазор между якорем и меню, px.
  * @param motion — 'scale' (раскрытие из угла) | 'drop' (выезд сверху вниз, 200мс).
  */
@@ -57,9 +56,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
     const vh = window.innerHeight
     let left = align === 'center'
       ? anchorRect.left + anchorRect.width / 2 - mw / 2
-      : align === 'left'
-        ? anchorRect.left
-        : anchorRect.right - mw
+      : anchorRect.right - mw
     left = Math.max(8, Math.min(left, vw - 8 - mw))
     let top = anchorRect.bottom + gap
     let place = 'below'
@@ -116,8 +113,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   const hiddenTransform = drop
     ? `translateY(${placement === 'above' ? 12 : -12}px) scale(0.98)`
     : 'scale(0.6)'
-  const originX = align === 'center' ? 'center' : align === 'left' ? 'left' : 'right'
-  const transformOrigin = `${placement === 'above' ? 'bottom' : 'top'} ${originX}`
+  const transformOrigin = `${placement === 'above' ? 'bottom' : 'top'} ${align === 'center' ? 'center' : 'right'}`
 
   const menu = (
     <div

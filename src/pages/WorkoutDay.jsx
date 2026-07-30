@@ -9,8 +9,8 @@ import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
-import { getDayMuscleTags, hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
+import { getDayMuscleTags } from '../utils/history'
+import { setLastCompletedDay, getActiveDaySync } from '../lib/storage'
 import {
   getActiveWorkout,
   startActiveWorkout,
@@ -146,7 +146,6 @@ export default function WorkoutDay() {
 
   // Подтверждение завершения (минимал-модалка перед «праздничной»).
   const [showConfirm, setShowConfirm] = useState(false)
-  const [showLimitWarn, setShowLimitWarn] = useState(false)   // предупреждение о 2-й силовой за день
   const [confirmClosing, setConfirmClosing] = useState(false)   // панель подтверждения уезжает
   const [showFinishedModal, setShowFinishedModal] = useState(false)
   const [finishStatus, setFinishStatus] = useState('idle')
@@ -775,23 +774,6 @@ export default function WorkoutDay() {
 
   // «Начать тренировку»: стартуем сессию для этого дня/места, обнуляем галочки
   // (свежий старт), таймер пойдёт от startedAt (через эффект).
-  // Вторая силовая за день: сервер её не засчитает (лимит 1/сутки). Предупреждаем
-  // ДО старта, чтобы человек решал осознанно, а не узнавал после тренировки.
-  const strengthDoneToday = () => {
-    if (program?.kind === 'swim') return false
-    const recent = getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || []
-    return hasWorkoutTodayOfType(recent, 'strength')
-  }
-
-  const handleStartTap = () => {
-    if (strengthDoneToday()) {
-      haptic.medium()
-      setShowLimitWarn(true)
-      return
-    }
-    handleStart()
-  }
-
   const handleStart = () => {
     haptic.success()
     clearWorkoutProgress(programId, day, place)
@@ -1362,7 +1344,7 @@ export default function WorkoutDay() {
             </ActionButton>
           ) : (
             <ActionButton
-              onClick={sessionBlocked ? handleBlockedStart : handleStartTap}
+              onClick={sessionBlocked ? handleBlockedStart : handleStart}
               variant={sessionBlocked ? 'dim' : 'primary'}
               hug
               className={btnMorph ? 'btn-morph' : ''}
@@ -1415,31 +1397,6 @@ export default function WorkoutDay() {
               </button>
               <button onClick={handleCancelConfirm} style={styles.cancelYesBtn} className="press-tile">
                 Да, отменить
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Предупреждение о лимите ДО старта второй силовой за день. */}
-      {showLimitWarn && createPortal(
-        <div style={styles.cancelOverlay} onClick={() => setShowLimitWarn(false)}>
-          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.cancelTitle}>Сегодня силовая уже была</div>
-            <div style={styles.cancelText}>
-              Лимит — 1 силовая в день. Вторая тренировка не попадёт в статистику и серию.
-            </div>
-            <div style={styles.cancelButtonsRow}>
-              <button onClick={() => { haptic.light(); setShowLimitWarn(false) }} style={styles.cancelKeepBtn} className="press-tile">
-                Отмена
-              </button>
-              <button
-                onClick={() => { setShowLimitWarn(false); handleStart() }}
-                style={styles.cancelKeepBtn}
-                className="press-tile"
-              >
-                Всё равно начать
               </button>
             </div>
           </div>

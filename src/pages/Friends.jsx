@@ -128,9 +128,7 @@ export default function Friends() {
         {/* Под заголовком: счётчик друзей по центру. */}
         <div style={styles.subRow}>
           <span style={styles.subInfo}>
-            {loading || friends.length === 0 ? '' : (
-              <>Друзей: <span style={styles.subCount}>{friends.length}</span></>
-            )}
+            {loading ? '' : friends.length === 0 ? '' : `Друзей: ${friends.length}`}
           </span>
         </div>
       </header>
@@ -213,7 +211,7 @@ export default function Friends() {
         <AnchorMenu
           anchorRect={menuFor.rect}
           onClose={() => setMenuFor(null)}
-          align="left"
+          align="center"
           gap={3}
           motion="drop"
           items={[
@@ -272,15 +270,13 @@ const styles = {
     alignItems: 'center',
     minHeight: '36px'
   },
-  // Кегль как у строки недели на главной; количество — акцентом.
-  subCount: { color: 'var(--color-primary)', fontWeight: 700 },
   subInfo: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: '11px',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    fontWeight: 600,
-    minHeight: '16px'
+    fontWeight: 500,
+    minHeight: '14px'
   },
   hint: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',

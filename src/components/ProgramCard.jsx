@@ -202,15 +202,7 @@ export default function ProgramCard({
       {/* Верхний ряд карточки: эмблема + контент + CTA/правый блок (позиционируются
           относительно этого ряда, чтобы footer не сдвигал их по вертикали). */}
       <div style={{ ...styles.cardRow, paddingRight: `${padRight}px`, flex: 1 }}>
-        <FavCardBody
-          entry={{ prog, activeDay: isActive ? active.day : activeDay }}
-          accent={accent}
-          activeMin={activeMin}
-          activeTimeColor={activeTimeColor}
-          activeDone={activeDone}
-          activeTotal={activeTotal}
-          footer={showFooter ? footer : null}
-        />
+        <FavCardBody entry={{ prog, activeDay: isActive ? active.day : activeDay }} accent={accent} activeMin={activeMin} activeTimeColor={activeTimeColor} activeDone={activeDone} activeTotal={activeTotal} />
 
         {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
             белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных). */}
@@ -236,11 +228,15 @@ export default function ProgramCard({
         )}
       </div>
 
+      {/* Footer «Последняя тренировка N назад» — в нижнем углу карточки (абсолютом),
+          чтобы не смещать основную композицию: она центрируется по всей высоте. */}
+      {showFooter && <div style={styles.footer}>{footer}</div>}
+
       {anchorRect && (
         <AnchorMenu
           anchorRect={anchorRect}
           onClose={closeMenu}
-          align="left"
+          align="center"
           gap={3}
           motion="drop"
           items={[
@@ -309,6 +305,16 @@ const styles = {
   },
   // Верхний ряд карточки (эмблема + контент + CTA). Позиционный контекст для CTA.
   cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '14px', width: '100%' },
+  // Footer-строка «Последняя тренировка …» — тихая, в левом нижнем углу карточки.
+  // Абсолютом: композиция (эмблема + название + дни + CTA) центрируется по всей
+  // высоте карточки и не съезжает вверх из-за этой строки.
+  footer: {
+    position: 'absolute', left: '18px', bottom: '12px', zIndex: 1,
+    fontFamily: 'var(--font-manrope)', fontSize: '11px',
+    // Светлее прежнего (был secondary под opacity 0.75 — почти сливался с фоном).
+    fontWeight: 500, color: 'rgba(255, 255, 255, 0.6)',
+    pointerEvents: 'none'
+  },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {
     position: 'absolute',

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import { localGet, localSet } from '../utils/storage'
+import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { getRecentWorkouts } from '../lib/storage'
 import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, emit, on } from '../lib/events'
@@ -10,8 +12,9 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
-import ActivitiesBlock from '../components/ActivitiesBlock'
 import StreakFlame from '../components/StreakFlame'
+import ChevronIcon from '../components/ChevronIcon'
+import TrendingUpIcon from '../components/TrendingUpIcon'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
@@ -72,6 +75,79 @@ const stripStyles = {
   // 0 — серым (как негорящий огонёк), ≥1 — оранжевым.
   countZero: { color: 'rgba(255, 255, 255, 0.4)' },
   greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
+}
+
+/**
+ * Второй план главной — «Мой прогресс»: серый заголовок-переключатель со стрелкой,
+ * под ним три карточки (Статистика / Любимые / Активности). Свёрнутость помнится
+ * кросс-девайс (CloudStorage + localStorage-кеш, как остальные UI-предпочтения).
+ */
+const PROGRESS_COLLAPSED_KEY = 'home-progress-collapsed'
+
+function ProgressSection() {
+  const [collapsed, setCollapsed] = useState(() => localGet(PROGRESS_COLLAPSED_KEY) === '1')
+
+  useEffect(() => {
+    let alive = true
+    cloudGet(PROGRESS_COLLAPSED_KEY).then(v => {
+      if (alive && (v === '1' || v === '0')) setCollapsed(v === '1')
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
+  const toggle = () => {
+    haptic.light()
+    setCollapsed(prev => {
+      const next = !prev
+      const v = next ? '1' : '0'
+      localSet(PROGRESS_COLLAPSED_KEY, v)
+      cloudSet(PROGRESS_COLLAPSED_KEY, v)
+      return next
+    })
+  }
+
+  return (
+    <div style={progressStyles.section}>
+      <button style={progressStyles.head} className="press-tile" onClick={toggle}>
+        {/* Иконка «рост» в акценте — как цветная иконка раздела в шапке карусели. */}
+        <span style={progressStyles.icon}><TrendingUpIcon size={20} color="var(--color-primary)" /></span>
+        <span style={progressStyles.title}>Мой прогресс</span>
+        <span style={{ ...progressStyles.chev, transform: collapsed ? 'rotate(-90deg)' : 'none' }}>
+          <ChevronIcon size={16} color="var(--color-text-secondary)" />
+        </span>
+      </button>
+
+      <div style={{
+        ...progressStyles.body,
+        maxHeight: collapsed ? 0 : '260px',
+        opacity: collapsed ? 0 : 1
+      }}>
+        <HomeCards />
+      </div>
+    </div>
+  )
+}
+
+const progressStyles = {
+  // Воздух от карточки программы — заметно больше, чем внутри блока.
+  section: { marginTop: '26px' },
+  head: {
+    display: 'flex', alignItems: 'center', gap: '7px',
+    padding: '4px 8px 4px 2px', marginBottom: '8px',
+    background: 'transparent', border: 'none', cursor: 'pointer'
+  },
+  // Единый стиль заголовков секций: Manrope 700/15, ~60% белого.
+  title: {
+    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px'
+  },
+  icon: { display: 'inline-flex', lineHeight: 0 },
+  chev: { display: 'inline-flex', marginLeft: '-3px', transition: 'transform 0.24s var(--ease-ios)' },
+  // Сворачивание: высота + прозрачность, клип по overflow.
+  body: {
+    overflow: 'hidden',
+    transition: 'max-height 0.3s var(--ease-ios), opacity 0.22s ease'
+  }
 }
 
 // Порог оттягивания (px) для срабатывания обновления и максимум демпфированного хода.
@@ -239,14 +315,9 @@ export default function Home() {
             (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
         <SectionCarousel />
 
-        {/* Второй план: карточки-входы (статистика/любимые) и блок активностей.
-            Заголовка-секции нет — блоки говорят сами за себя. */}
-        <div style={{ marginTop: '14px' }}>
-          <HomeCards />
-        </div>
-        <div style={{ marginTop: '14px' }}>
-          <ActivitiesBlock />
-        </div>
+        {/* Второй план: статистика / любимые / активности — под сворачиваемым
+            заголовком, с воздухом от карточки программы. */}
+        <ProgressSection />
       </div>
     </div>
   )
