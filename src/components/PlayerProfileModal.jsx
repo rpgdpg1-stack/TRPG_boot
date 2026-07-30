@@ -103,6 +103,10 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
+    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
+    // contain), сам оверлей прокручивается только если контент выше экрана.
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y',
     padding: 'var(--tg-safe-top) 16px calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'profileModalOverlay 0.25s ease-out forwards'

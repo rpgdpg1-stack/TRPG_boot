@@ -11,7 +11,16 @@ import { useRef, useState } from 'react'
  *
  * Позиционирование задаёт родитель через `style` (напр. absolute top/right, либо
  * центр-снизу под модалкой). Размеры настраиваются пропсами.
+ *
+ * Закрытие идёт по pointerUp — значит следующий синтетический `click` попал бы уже
+ * на элемент ПОД снятой модалкой (открывались «Настройки» под крестиком). Поэтому
+ * один такой клик гасим в capture-фазе.
  */
+function swallowNextClick() {
+  const swallow = (e) => { e.stopPropagation(); e.preventDefault() }
+  document.addEventListener('click', swallow, { capture: true, once: true })
+  setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400)
+}
 function CrossIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ display: 'block' }}>
@@ -37,7 +46,7 @@ export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, ico
     const armed = armedRef.current
     armedRef.current = false
     setPress(false)
-    if (armed) onClose?.()
+    if (armed) { swallowNextClick(); onClose?.() }
   }
   const cancel = () => { armedRef.current = false; setPress(false) }
 

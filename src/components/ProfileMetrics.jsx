@@ -154,6 +154,10 @@ const m = {
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10001,
+    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
+    // contain), сам оверлей прокручивается только если контент выше экрана.
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y',
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
     overflowY: 'auto',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
@@ -178,9 +182,7 @@ const m = {
   // Заголовок группы — как в дне тренировки, но мельче и без лишнего воздуха.
   groupHead: {
     fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
-    letterSpacing: '1.6px', padding: '0 2px 2px',
-    // По левому краю миниатюры — там, где заканчивается её скругление.
-    paddingLeft: '14px'
+    letterSpacing: '1.6px', padding: '0 2px 2px'
   },
   favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 2px' },
   thumb: {

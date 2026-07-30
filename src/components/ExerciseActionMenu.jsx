@@ -432,6 +432,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           exerciseName={slot.exercise_name}
           accent={colors.accent}
           currentWeight={localWeight}
+          countsReps={!!slot.counts_reps}
           onClose={() => setShowProgress(false)}
         />
       )}

@@ -48,7 +48,7 @@ function fmtKg(n) {
   return (r % 1 === 0 ? String(r) : r.toFixed(1)).replace('.', ',')
 }
 
-export default function WeightProgressModal({ exerciseId, exerciseName, accent, currentWeight, onClose }) {
+export default function WeightProgressModal({ exerciseId, exerciseName, accent, currentWeight, countsReps = false, onClose }) {
   const [points, setPoints] = useState(null) // null = грузим; [] = нет данных
   const [period, setPeriod] = useState('all')
   const [offset, setOffset] = useState(0)     // 0 — текущий месяц/год; -1 — предыдущий; …
@@ -168,6 +168,9 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
     return Math.max(fromHistory, currentW || 0)
   }, [points, currentW])
 
+  // «кг» для весовых, «раз» — для упражнений на повторы.
+  const unit = countsReps ? 'раз' : 'кг'
+
   const scrub = scrubIdx != null ? dataPts[scrubIdx] : null
   const topWeight = scrub ? scrub.weight : currentW
   const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
@@ -176,25 +179,28 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
     <div style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
-          <span style={styles.eyebrow}>ПРОГРЕСС ВЕСА</span>
+          <span style={styles.eyebrow}>Прогресс веса</span>
           <div style={styles.name}>{exerciseName}</div>
           <div style={styles.bigRow}>
             <span style={{ ...styles.bigValue, color: line }}>
-              {fmtKg(topWeight)}<span style={styles.bigUnit}>кг</span>
+              {fmtKg(topWeight)}<span style={styles.bigUnit}>{unit}</span>
             </span>
             <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>
               {topSub}
             </span>
-
-            {/* Личный рекорд упражнения — тихо справа: кубок + лучший вес. */}
-            {record > 0 && (
-              <span style={styles.recordWrap}>
-                <TrophyIcon size={16} />
-                <span style={styles.recordValue}>{fmtKg(record)}<span style={styles.recordUnit}>кг</span></span>
-                <span style={styles.recordLabel}>рекорд</span>
-              </span>
-            )}
           </div>
+
+          {/* Личный рекорд — той же строкой-композицией, что и текущее значение:
+              золотой кубок, золотая цифра, серая единица и слово «рекорд». */}
+          {record > 0 && (
+            <div style={styles.recordRow}>
+              <TrophyIcon size={26} />
+              <span style={styles.recordValue}>
+                {fmtKg(record)}<span style={styles.recordUnit}>{unit}</span>
+              </span>
+              <span style={styles.recordLabel}>рекорд</span>
+            </div>
+          )}
         </div>
 
         {/* График */}
@@ -268,11 +274,18 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   )
 }
 
-/** Кубок личного рекорда (Material trophy), золотистый. */
-function TrophyIcon({ size = 13 }) {
+/** Кубок личного рекорда: чаша с ручками, ножка и подставка. Золотистый. */
+function TrophyIcon({ size = 26 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={RECORD_GOLD} aria-hidden="true">
-      <path d="M18 3h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 12.9V16h3v2H8v-2h3v-3.1A5 5 0 0 1 7.4 10H7a4 4 0 0 1-4-4V3h3V2h12v1Zm0 2v3h.1A2 2 0 0 0 19.9 6V5H18ZM5 5v1a2 2 0 0 0 1.9 2H7V5H5Z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+      {/* Чаша */}
+      <path d="M7 3h10v5.5a5 5 0 0 1-10 0V3Z" fill={RECORD_GOLD} />
+      {/* Ручки слева и справа */}
+      <path d="M7 4.5H4.5V6a3.5 3.5 0 0 0 3 3.46M17 4.5h2.5V6a3.5 3.5 0 0 1-3 3.46"
+        stroke={RECORD_GOLD} strokeWidth="1.6" strokeLinecap="round" />
+      {/* Ножка и подставка */}
+      <path d="M12 13.5V17" stroke={RECORD_GOLD} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8.5 20.5h7l-.8-2.2a1 1 0 0 0-.94-.65h-3.52a1 1 0 0 0-.94.65L8.5 20.5Z" fill={RECORD_GOLD} />
     </svg>
   )
 }
@@ -353,17 +366,22 @@ function Chart({ win, currentW, line, scrub }) {
 
 const styles = {
   // Рекорд в шапке: мельче основного значения, чтобы не перетягивать внимание.
-  // Кубок и цифра — одной высоты и по одной линии (без «подпрыгивания» иконки).
-  recordWrap: { marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', lineHeight: 1 },
-  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', lineHeight: 1, color: RECORD_GOLD, letterSpacing: '0.3px' },
-  recordUnit: { fontSize: '10px', fontWeight: 700, marginLeft: '1px', color: RECORD_GOLD },
-  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  // Рекорд — отдельной строкой под текущим значением, тем же ритмом: иконка,
+  // крупная цифра, серая единица, серое слово-подпись.
+  recordRow: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', lineHeight: 1 },
+  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', lineHeight: 1, color: RECORD_GOLD, letterSpacing: '0.5px' },
+  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', color: 'var(--color-text-secondary)' },
+  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10000,
+    // Фон под модалкой заморожен: прокрутка не уходит на страницу (overscroll
+    // contain), сам оверлей прокручивается только если контент выше экрана.
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y',
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
     overflowY: 'auto',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
@@ -383,7 +401,7 @@ const styles = {
   name: { fontFamily: 'var(--font-geist, var(--font-manrope))', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
   bigRow: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginTop: '2px', minHeight: '34px' },
   bigValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', lineHeight: 1, letterSpacing: '0.5px' },
-  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', opacity: 0.7 },
+  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, marginLeft: '4px', color: 'var(--color-text-secondary)' },
   bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600 },
 
   segGroup: {
