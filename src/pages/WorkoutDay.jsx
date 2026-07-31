@@ -1356,9 +1356,9 @@ export default function WorkoutDay() {
               variant="neutral"
               hug
               className={btnMorph ? 'btn-morph' : ''}
-              style={{ gap: '8px', opacity: canFinish ? 1 : 0.55 }}
+              style={{ opacity: canFinish ? 1 : 0.55 }}
             >
-              <FinishIcon size={17} /> Завершить
+              <FinishIcon size={20} /> Завершить
             </ActionButton>
           ) : (
             <ActionButton
@@ -1368,7 +1368,7 @@ export default function WorkoutDay() {
               className={btnMorph ? 'btn-morph' : ''}
               style={{ gap: '8px' }}
             >
-              <PlayIcon size={17} /> Начать
+              <PlayIcon size={20} /> Начать
             </ActionButton>
           )}
         </div>

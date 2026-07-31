@@ -10,7 +10,6 @@ import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats, { Distance } from '../components/HistoryStats'
-import WorkoutBarChart from '../components/WorkoutBarChart'
 
 const PERIODS = [
   { id: 'week', label: 'Неделя' },
@@ -21,7 +20,7 @@ const PERIODS = [
 
 /**
  * История тренировок — единственное место с детальной аналитикой:
- * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь → график →
+ * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь →
  * личные рекорды (силовая: максимальный рабочий вес; плавание: лучший заплыв).
  *
  * «Месяц»/«Год» считаются за месяц/год, который сейчас ОТКРЫТ в календаре ниже:
@@ -108,11 +107,6 @@ export default function History() {
           onMonthPick={onMonthPick}
           onYearPick={onYearPick}
         />
-      </div>
-
-      {/* Столбчатый график тренировок — за тот же период, что тумблер/календарь. */}
-      <div style={{ marginBottom: '20px' }}>
-        <WorkoutBarChart workouts={workouts} period={period} view={view} />
       </div>
 
       {/* Личные рекорды — лучший результат по каждому виду. Кардио/растяжка

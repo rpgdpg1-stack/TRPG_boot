@@ -223,7 +223,7 @@ src/
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
 │                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame TrendingUpIcon
-│                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutBarChart WorkoutFinishedModal
+│                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · swim.js
 ├── features/exercises/  api.js · weight-format.js

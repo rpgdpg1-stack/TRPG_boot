@@ -69,6 +69,8 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    // Иконка ↔ текст — единый зазор во всех кнопках.
+    gap: '8px',
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
   // Размеры (высота/скругление/типографика из токенов).
@@ -82,7 +84,8 @@ const styles = {
   },
   sm: {
     height: 'var(--btn-height-sm)',
-    padding: '0 18px',
+    // Короткие подписи («ОК», «Да») — 20; длинные всё равно получают hug-паддинг 24.
+    padding: '0 20px',
     // Пилюля на ВСЕХ размерах — единый язык кнопок.
     borderRadius: 'var(--radius-pill)',
     fontSize: '15px',
@@ -92,7 +95,8 @@ const styles = {
   // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
   full: { width: '100%' },
   // По размеру контента (скругление облегает текст). Контейнер центрирует.
-  hug: { width: 'auto', padding: '0 40px' },
+  // 24 — базовый горизонтальный паддинг кнопки; 40 раздувало пилюлю.
+  hug: { width: 'auto', padding: '0 24px' },
   // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Сплошная тонкая рамка.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',
