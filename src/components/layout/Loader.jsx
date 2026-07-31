@@ -125,6 +125,12 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    // ОПТИЧЕСКИЙ центр, а не геометрический: сверху экран перекрыт шапкой Telegram
+    // (кнопки «Закрыть»/«⋯»), поэтому по центру viewport бицепс читается задранным.
+    // Отступаем на высоту шапки, а нижним паддингом поднимаем композицию на ~4%
+    // свободной области — так объект встаёт туда, куда смотрит глаз.
+    paddingTop: 'calc(var(--tg-nav-top, 56px) + var(--tg-nav-height, 44px))',
+    paddingBottom: '60px',
     zIndex: 9999
   },
   scene: {

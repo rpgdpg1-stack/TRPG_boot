@@ -86,7 +86,7 @@ export default class ErrorBoundary extends Component {
         )}
 
         <button onClick={this.handleReload} style={styles.button}>
-          ПЕРЕЗАПУСТИТЬ
+          Перезапустить
         </button>
 
         <button onClick={this.handleClose} style={styles.closeButton}>
@@ -108,7 +108,8 @@ const styles = {
     justifyContent: 'center',
     padding: '20px',
     zIndex: 9999,
-    gap: '16px'
+    // Композиция собранная: между иконкой и заголовком 8, между текстом и кнопкой 12.
+    gap: '8px'
   },
   icon: { lineHeight: 0, marginBottom: '8px' },
   title: {
@@ -157,9 +158,9 @@ const styles = {
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: '15px',
     fontWeight: 700,
-    letterSpacing: '2px',
+    letterSpacing: '0.2px',
     borderRadius: 'var(--radius-medium)',
     border: 'none',
     cursor: 'pointer',
