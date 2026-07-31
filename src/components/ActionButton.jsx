@@ -16,8 +16,9 @@
  *    рядом с основным (Назад / Отмена в модалках).
  *
  * Размер (size):
- *  - 'md' (по умолчанию): высота --btn-height (55), пилюля. Прибитые док-кнопки.
- *  - 'sm': высота --btn-height-sm (46), радиус --radius-medium. Кнопки в модалках.
+ *  - 'md' (по умолчанию): высота --btn-height (55). Прибитые док-кнопки экрана.
+ *  - 'sm': высота --btn-height-sm (46). Кнопки в модалках и внутри карточек.
+ * Скругление у обоих — пилюля (--radius-pill).
  *
  * disabled всегда перебивает variant и даёт вид 'dim'.
  */
@@ -82,7 +83,8 @@ const styles = {
   sm: {
     height: 'var(--btn-height-sm)',
     padding: '0 18px',
-    borderRadius: 'var(--radius-medium)',
+    // Пилюля на ВСЕХ размерах — единый язык кнопок.
+    borderRadius: 'var(--radius-pill)',
     fontSize: '15px',
     fontWeight: 700,
     letterSpacing: '0.3px'

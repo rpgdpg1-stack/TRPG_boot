@@ -152,13 +152,13 @@ export default function Friends() {
           <div style={styles.inviteEmoji}>
             <UiIcon name="invite-friend" size={40} color="var(--color-primary)" />
           </div>
-          <div style={styles.inviteTitle}>Друзей пока нет</div>
+          <div style={styles.inviteTitle}>Пока нет друзей</div>
           <div style={styles.inviteSubtitle}>
-            Пригласи друзей через Telegram<br />
-            и следи за прогрессом друг друга
+            Пригласи друга через Telegram<br />
+            и следите за прогрессом друг друга
           </div>
-          <ActionButton onClick={handleInviteTap} variant="neutral" size="sm" hug style={{ gap: '10px', fontSize: '15px', fontWeight: 700 }}>
-            <UiIcon name="invite-friend" size={22} color="var(--color-primary)" />
+          <ActionButton onClick={handleInviteTap} variant="primary" size="sm" hug style={{ gap: '10px' }}>
+            <UiIcon name="invite-friend" size={22} color="var(--accent-on)" />
             Пригласить друга
           </ActionButton>
         </div>
@@ -200,8 +200,8 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <ActionButton onClick={handleInviteTap} variant="neutral" size="sm" hug style={{ gap: '10px', fontSize: '15px', fontWeight: 700 }}>
-              <UiIcon name="invite-friend" size={22} color="var(--color-primary)" />
+            <ActionButton onClick={handleInviteTap} variant="primary" size="sm" hug style={{ gap: '10px' }}>
+              <UiIcon name="invite-friend" size={22} color="var(--accent-on)" />
               Пригласить друга
             </ActionButton>
           </div>
@@ -319,12 +319,12 @@ const styles = {
   skAvatar: { width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
   skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '7px' },
   skLine: { height: '12px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' },
+  // Обычная карточка, как везде: тёмная заливка, без пунктира и без контура.
   inviteBlock: {
     marginTop: '20px',
     padding: '32px 20px',
     textAlign: 'center',
-    background: 'rgba(158, 209, 83, 0.05)',
-    border: '1px dashed rgba(158, 209, 83, 0.25)',
+    background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)'
   },
   inviteEmoji: { marginBottom: '8px' },

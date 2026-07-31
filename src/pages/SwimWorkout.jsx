@@ -331,7 +331,7 @@ export default function SwimWorkout() {
           hug
           style={{ gap: '8px' }}
         >
-          Завершить <SwimFinishIcon size={17} />
+          <SwimFinishIcon size={17} /> Завершить
         </ActionButton>
       </div>
 
