@@ -13,6 +13,9 @@ import UiIcon from '../UiIcon'
  *
  * Раньше Loader закрывался по таймеру 1.8с независимо от auth, из-за чего
  * WorkoutDay был вынужден поллить getCurrentUser() каждые 100мс. Теперь — нет.
+ *
+ * «+1» на загрузке НЕ показываем: награда должна следовать за действием, а тут
+ * пользователь ещё ничего не сделал. Цифра живёт только в модалке завершения.
  */
 export default function Loader({ onFinish, readyPromise }) {
   const sceneRef = useRef(null)
@@ -88,7 +91,6 @@ export default function Loader({ onFinish, readyPromise }) {
         <div style={styles.biceps} role="img" aria-label="biceps">
           <UiIcon name="muscles" size={77} color="#FADFBE" />
         </div>
-        <div style={styles.plusOne}>+1</div>
       </div>
 
       <div style={styles.logoBlock}>
@@ -107,8 +109,6 @@ export default function Loader({ onFinish, readyPromise }) {
           10%  { opacity: 1; }
           100% { opacity: 0; transform: translateY(-80px) translateX(var(--drift, 0px)) scale(0.5); }
         }
-        @keyframes plusOneFly {
-          0%   { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.6); }
           15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
           80%  { opacity: 1; transform: translateX(-50%) translateY(-70px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-90px) scale(1); }
@@ -151,31 +151,18 @@ const styles = {
     position: 'relative',
     zIndex: 2
   },
-  plusOne: {
-    position: 'absolute',
-    top: '30%',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: '32px',
-    color: 'var(--color-primary)',
-    letterSpacing: '2px',
-    zIndex: 3,
-    opacity: 0,
-    animation: 'plusOneFly 1.8s ease-out infinite'
-  },
   logoBlock: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     // Вплотную к мускулу: гасим весь верхний gap и поднимаем ещё выше.
-    marginTop: '-46px',
+    marginTop: '-54px',
     animation: 'logoFadeIn 0.6s ease-out 0.3s both'
   },
   logo: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 800,
+    // Тоньше прежнего (было 800): на тёмном фоне жирное начертание выглядит грубо.
+    fontWeight: 600,
     fontSize: '24px',
     color: 'var(--color-primary)',
     letterSpacing: '4px',

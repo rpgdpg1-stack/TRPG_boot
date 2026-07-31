@@ -44,15 +44,23 @@
          чанк из кеша Telegram). Стили инлайн и без внешних шрифтов — работает, даже
          если основной бандл/CSS не загрузились. -->
     <div id="boot-fallback" style="display:none; position:fixed; inset:0; z-index:100000; background:#0A0A0B; color:#F0F0F0; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-      <div style="font-size:56px; line-height:1; margin-bottom:16px;">🔄</div>
-      <div style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить</div>
-      <div style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:24px;">
-        Возможно, Telegram показывает старую версию. Перезапустите приложение — это загрузит свежую.
+      <!-- Иконка обновления — монохромный SVG (Material «refresh»), а не системный
+           эмодзи: он выбивался из стиля приложения. -->
+      <div style="margin-bottom:16px; line-height:0;">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z" fill="#9A9A9A"/>
+        </svg>
       </div>
-      <button id="boot-restart" style="padding:14px 34px; background:#9ED153; color:#0D0C0C; font-size:14px; font-weight:700; letter-spacing:1px; border:none; border-radius:26px;">
+      <div style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить данные</div>
+      <!-- Причину НЕ угадываем: это может быть сеть, сервер, таймаут или кеш. -->
+      <div style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:24px;">
+        Попробуйте перезапустить приложение. Если проблема повторится — попробуйте позже.
+      </div>
+      <button id="boot-restart" style="padding:14px 28px; background:#9ED153; color:#0D0C0C; font-size:14px; font-weight:700; letter-spacing:1px; border:none; border-radius:26px;">
         ПЕРЕЗАПУСТИТЬ
       </button>
-      <button id="boot-close" style="margin-top:14px; padding:10px 20px; background:transparent; color:#9A9A9A; font-size:13px; border:none;">
+      <!-- Вторичное действие: заметно светлее подписи, чтобы читалось как действие. -->
+      <button id="boot-close" style="margin-top:16px; padding:10px 20px; background:transparent; color:rgba(255,255,255,0.75); font-size:13px; font-weight:600; border:none;">
         Закрыть приложение
       </button>
     </div>

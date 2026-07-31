@@ -60,9 +60,15 @@ export default class ErrorBoundary extends Component {
     // Экран ошибки — простой и понятный
     return (
       <div style={styles.container}>
-        <div style={styles.icon}>⚠️</div>
+        {/* Монохромная иконка вместо системного эмодзи — она не выбивается из стиля. */}
+        <div style={styles.icon}>
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3.2 1.6 21h20.8L12 3.2Zm0 4 6.9 11.8H5.1L12 7.2Z" fill="#FF8C42" />
+            <path d="M11 10h2v5h-2v-5Zm0 6.2h2v2h-2v-2Z" fill="#FF8C42" />
+          </svg>
+        </div>
 
-        <div style={styles.title}>ЧТО-ТО ПОШЛО НЕ ТАК</div>
+        <div style={styles.title}>Что-то пошло не так</div>
 
         <div style={styles.message}>
           Приложение наткнулось на неожиданную ошибку.<br />
@@ -104,17 +110,13 @@ const styles = {
     zIndex: 9999,
     gap: '16px'
   },
-  icon: {
-    fontSize: '64px',
-    lineHeight: 1,
-    marginBottom: '8px'
-  },
+  icon: { lineHeight: 0, marginBottom: '8px' },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
     fontSize: '18px',
     color: 'var(--color-text)',
-    letterSpacing: '2px',
+    letterSpacing: '0.4px',
     textAlign: 'center'
   },
   message: {
@@ -151,7 +153,7 @@ const styles = {
   },
   button: {
     marginTop: '12px',
-    padding: '14px 32px',
+    padding: '14px 28px',
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
@@ -167,10 +169,11 @@ const styles = {
     marginTop: '4px',
     padding: '10px 20px',
     background: 'transparent',
-    color: 'var(--color-text-secondary)',
+    // Заметнее обычной подписи — это действие, а не текст.
+    color: 'rgba(255, 255, 255, 0.75)',
     fontFamily: 'var(--font-manrope)',
     fontSize: '13px',
-    fontWeight: 500,
+    fontWeight: 600,
     border: 'none',
     cursor: 'pointer'
   }
