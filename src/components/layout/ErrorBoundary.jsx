@@ -37,6 +37,8 @@ export default class ErrorBoundary extends Component {
   }
 
   handleReload = () => {
+    // Тактильный отклик — как у остальных кнопок приложения.
+    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium') } catch (e) { /* ignore */ }
     // Жёсткая перезагрузка со сбросом кешей + cache-busting URL — иначе Telegram
     // мог бы снова поднять тот же битый/старый бандл из кеша WebView.
     try {
@@ -48,6 +50,7 @@ export default class ErrorBoundary extends Component {
   }
 
   handleClose = () => {
+    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light') } catch (e) { /* ignore */ }
     // Выход в бота Telegram — оттуда чистый повторный вход.
     try { window.Telegram?.WebApp?.close() } catch (e) { /* ignore */ }
   }
@@ -85,11 +88,11 @@ export default class ErrorBoundary extends Component {
           </div>
         )}
 
-        <button onClick={this.handleReload} style={styles.button}>
+        <button onClick={this.handleReload} style={styles.button} className="press-tile">
           Перезапустить
         </button>
 
-        <button onClick={this.handleClose} style={styles.closeButton}>
+        <button onClick={this.handleClose} style={styles.closeButton} className="press-tile">
           Закрыть приложение
         </button>
       </div>

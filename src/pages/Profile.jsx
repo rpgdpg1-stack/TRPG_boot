@@ -214,10 +214,12 @@ const styles = {
     textAlign: 'center', padding: '4px 12px'
   },
 
+  // Как строка меню профиля: серая карточка со скруглением radius-card. Зелёного
+  // фона и рамки нет — акцент несут только текст и иконка.
   inviteButton: {
-    width: '100%', display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px',
-    background: 'rgba(158, 209, 83, 0.08)', border: '1px solid rgba(158, 209, 83, 0.25)',
-    borderRadius: 'var(--radius-medium)', marginBottom: '20px', minHeight: '64px', textAlign: 'left'
+    width: '100%', display: 'flex', alignItems: 'center', gap: '16px', padding: '16px',
+    background: 'var(--color-card)', border: 'none',
+    borderRadius: 'var(--radius-card)', marginBottom: '20px', minHeight: '64px', textAlign: 'left'
   },
   inviteIcon: { fontSize: '22px', width: '32px', textAlign: 'center', flexShrink: 0 },
   inviteContent: { flex: 1, minWidth: 0 },

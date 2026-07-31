@@ -157,8 +157,8 @@ export default function Friends() {
             Пригласи друзей через Telegram<br />
             и следи за прогрессом друг друга
           </div>
-          <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
-            <UiIcon name="invite-friend" size={16} color="var(--accent-on)" />
+          <ActionButton onClick={handleInviteTap} variant="neutral" size="sm" hug style={{ gap: '10px', fontSize: '15px', fontWeight: 700 }}>
+            <UiIcon name="invite-friend" size={22} color="var(--color-primary)" />
             Пригласить друга
           </ActionButton>
         </div>
@@ -200,8 +200,8 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <ActionButton onClick={handleInviteTap} variant="primary" hug style={{ gap: '8px' }}>
-              <UiIcon name="invite-friend" size={16} color="var(--accent-on)" />
+            <ActionButton onClick={handleInviteTap} variant="neutral" size="sm" hug style={{ gap: '10px', fontSize: '15px', fontWeight: 700 }}>
+              <UiIcon name="invite-friend" size={22} color="var(--color-primary)" />
               Пригласить друга
             </ActionButton>
           </div>
