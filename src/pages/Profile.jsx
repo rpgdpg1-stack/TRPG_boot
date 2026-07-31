@@ -82,8 +82,10 @@ export default function Profile() {
   // В карточке профиля статистика переключается Месяц/Год (по умолчанию — год),
   // поэтому считаем обе сводки сразу.
   const stats = {
+    week: summarizeWorkouts(workouts, 'week', new Date()),
     month: summarizeWorkouts(workouts, 'month', new Date()),
-    year: summarizeWorkouts(workouts, 'year', new Date())
+    year: summarizeWorkouts(workouts, 'year', new Date()),
+    all: summarizeWorkouts(workouts, 'all', new Date())
   }
 
   // Меню профиля: активности и телесные разделы + системное. Статистика и

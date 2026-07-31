@@ -63,7 +63,6 @@ export default function PlayerProfileModal({ row, onClose }) {
         key="metrics"
         stats={friendStats}
         favorites={friendFavs || []}
-        isFriend
       />
     )
   }

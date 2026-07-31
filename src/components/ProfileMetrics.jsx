@@ -7,7 +7,7 @@ import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
-import PeriodSwitcher from './PeriodSwitcher'
+import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
 
 /**
@@ -21,19 +21,15 @@ import CloseCross from './CloseCross'
  *     внутри тогда честная заглушка;
  *   • «Любимые упражнения» — список с рабочим весом.
  *
- * Пропсы: `stats` — { month, year } (результаты `summarizeWorkouts`), favorites,
- * showWeights, `friendName` (для чужого профиля меняются тексты заглушек).
+ * Пропсы: `stats` — сводки по периодам (`{ week, month, year, all }`, любые из них),
+ * favorites, showWeights.
  */
-// Возможные периоды. Показываем только те, по которым реально есть данные:
-// свой профиль считает месяц и год из истории, друг — что отдал сервер.
-const PERIOD_DEFS = [
-  { id: 'month', label: 'Месяц' },
-  { id: 'year', label: 'Год' },
-  { id: 'all', label: 'Всё время' }
-]
+// Периоды и их подписи — те же, что на главной («7 дней · Август · 2026 · Всё»).
+// Показываем только те, по которым есть данные: свой профиль считает все четыре,
+// друг — что отдал сервер.
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function ProfileMetrics({ stats, favorites = [], showWeights = true, isFriend = false }) {
+export default function ProfileMetrics({ stats, favorites = [], showWeights = true }) {
   const [open, setOpen] = useState(null)   // 'stats' | 'favorites' | null
 
   const favCount = favorites?.length || 0
@@ -69,7 +65,6 @@ export default function ProfileMetrics({ stats, favorites = [], showWeights = tr
           stats={stats}
           favorites={favorites}
           showWeights={showWeights}
-          isFriend={isFriend}
           onClose={() => setOpen(null)}
         />,
         document.body
@@ -79,9 +74,9 @@ export default function ProfileMetrics({ stats, favorites = [], showWeights = tr
 }
 
 /** Модалка метрики: шапка + переключатель периода (у статистики) + содержимое. */
-function MetricModal({ kind, stats, favorites, showWeights, isFriend, onClose }) {
+function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
   const isStats = kind === 'stats'
-  const available = PERIOD_DEFS.filter(p => stats && p.id in stats)
+  const available = periodOptions().filter(p => stats && p.id in stats)
   // Год по умолчанию; если его нет (данных от сервера меньше) — первый доступный.
   const [period, setPeriod] = useState(() => (available.some(p => p.id === 'year') ? 'year' : available[0]?.id) || 'year')
   const overlayRef = useRef(null)
@@ -89,10 +84,12 @@ function MetricModal({ kind, stats, favorites, showWeights, isFriend, onClose })
 
   const summary = isStats ? stats?.[period] : null
   // Заглушка честно называет период и адресата (свой профиль / профиль друга).
-  const emptyWhen = period === 'month' ? 'в этом месяце' : period === 'year' ? 'в этом году' : 'пока'
-  const emptyText = isFriend
-    ? `Друг ${emptyWhen} ещё не тренировался.`
-    : `Тренировок ${emptyWhen} нет.\nЗаверши первую — статистика появится здесь.`
+  // Заглушка одинаковая для своего профиля и для друга — это карточка профиля,
+  // а не экран статистики: тут достаточно факта.
+  const emptyText = period === 'month' ? 'Не тренировался в этом месяце'
+    : period === 'year' ? 'Не тренировался в этом году'
+      : period === 'week' ? 'Не тренировался на этой неделе'
+        : 'Тренировок пока нет'
 
   return (
     <div ref={overlayRef} style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>

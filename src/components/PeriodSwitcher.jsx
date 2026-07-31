@@ -1,4 +1,19 @@
 import { haptic } from '../lib/telegram'
+import { MONTHS_RU } from '../utils/history'
+
+/**
+ * Периоды статистики и их ЖИВЫЕ подписи: «7 дней · Август · 2026 · Всё».
+ * `month`/`year` можно переопределить — на экране статистики метки показывают
+ * тот месяц/год, который сейчас открыт в календаре.
+ */
+export function periodOptions(date = new Date(), { month, year } = {}) {
+  return [
+    { id: 'week', label: '7 дней' },
+    { id: 'month', label: MONTHS_RU[month ?? date.getMonth()] },
+    { id: 'year', label: String(year ?? date.getFullYear()) },
+    { id: 'all', label: 'Всё' }
+  ]
+}
 
 /**
  * Сегмент-контрол периода — один на проект: экран статистики, попап на главной,
@@ -10,10 +25,11 @@ import { haptic } from '../lib/telegram'
  * @param items — [{ id, label }]
  * @param value — активный id
  * @param onChange — выбран другой период
+ * @param compact — мельче (встроен в карточку главной, где мало места)
  */
-export default function PeriodSwitcher({ items, value, onChange, style }) {
+export default function PeriodSwitcher({ items, value, onChange, compact = false, style }) {
   return (
-    <div style={{ ...styles.group, ...style }} onClick={(e) => e.stopPropagation()}>
+    <div style={{ ...styles.group, ...(compact ? styles.groupCompact : null), ...style }} onClick={(e) => e.stopPropagation()}>
       {items.map((p, i) => {
         const active = p.id === value
         return (
@@ -28,6 +44,7 @@ export default function PeriodSwitcher({ items, value, onChange, style }) {
             }}
             style={{
               ...styles.item,
+              ...(compact ? styles.itemCompact : null),
               ...(active ? styles.itemActive : null),
               marginLeft: i === 0 ? 0 : '-5px',
               zIndex: active ? 2 : 1,
@@ -59,6 +76,9 @@ const styles = {
     cursor: 'pointer', whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
   },
+  // Компактный — для встраивания внутрь карточки (главная).
+  groupCompact: { padding: '3px' },
+  itemCompact: { minHeight: '24px', padding: '0 6px', fontSize: '11px' },
   itemActive: {
     background: 'var(--color-surface-active)',
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'

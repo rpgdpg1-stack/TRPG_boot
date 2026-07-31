@@ -10,14 +10,7 @@ import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats, { Distance } from '../components/HistoryStats'
-import PeriodSwitcher from '../components/PeriodSwitcher'
-
-const PERIODS = [
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-  { id: 'year', label: 'Год' },
-  { id: 'all', label: 'Всё' }
-]
+import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
 
 /**
  * История тренировок — единственное место с детальной аналитикой:
@@ -67,15 +60,25 @@ export default function History() {
 
   const pickPeriod = (id) => setPeriod(id)
 
+  // Метки сегментов живые: месяц и год — те, что сейчас открыты в календаре.
+  const periodItems = periodOptions(new Date(), { month: view.month, year: view.year })
+  const emptyText = period === 'month'
+    ? 'Заверши первую тренировку в этом месяце, чтобы увидеть статистику.'
+    : period === 'year'
+      ? 'Заверши первую тренировку в этом году, чтобы увидеть статистику.'
+      : period === 'week'
+        ? 'Заверши первую тренировку на этой неделе, чтобы увидеть статистику.'
+        : 'Заверши первую тренировку, чтобы увидеть статистику.'
+
   return (
     <div className="page page-fade">
       <ScreenTitle>Статистика</ScreenTitle>
 
       {/* Блок статистики со свитчером периода */}
       <div style={styles.statsCard}>
-        <PeriodSwitcher items={PERIODS} value={period} onChange={pickPeriod} style={{ marginBottom: '16px' }} />
+        <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: '16px' }} />
 
-        <HistoryStats summary={sum} loading={!wkLoaded} />
+        <HistoryStats summary={sum} loading={!wkLoaded} emptyText={emptyText} />
       </div>
 
       {/* Календарь: месяц-режим (день-сетка) или год-режим (12 месяцев).
