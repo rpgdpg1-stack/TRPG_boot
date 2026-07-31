@@ -160,7 +160,8 @@ const styles = {
     animation: 'logoFadeIn 0.6s ease-out 0.3s both'
   },
   logo: {
-    fontFamily: 'var(--font-display)',
+    // Manrope: на тёмном фоне читается мягче, чем display-гарнитура.
+    fontFamily: 'var(--font-manrope)',
     // Тоньше прежнего (было 800): на тёмном фоне жирное начертание выглядит грубо.
     fontWeight: 600,
     fontSize: '24px',
