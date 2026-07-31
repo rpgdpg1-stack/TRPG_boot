@@ -8,7 +8,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT, MONTHS_RU } from '../utils/history'
+import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
 import ProfileMetrics from '../components/ProfileMetrics'
@@ -79,10 +79,12 @@ export default function Profile() {
   }, [])
 
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
-  // В профиле статистика — за ТЕКУЩИЙ МЕСЯЦ (за год/всё время в карточке профиля
-  // не читается; вся история — на /history).
-  const summary = summarizeWorkouts(workouts, 'month', new Date())
-  const monthLabel = MONTHS_RU[new Date().getMonth()]
+  // В карточке профиля статистика переключается Месяц/Год (по умолчанию — год),
+  // поэтому считаем обе сводки сразу.
+  const stats = {
+    month: summarizeWorkouts(workouts, 'month', new Date()),
+    year: summarizeWorkouts(workouts, 'year', new Date())
+  }
 
   // Меню профиля: активности и телесные разделы + системное. Статистика и
   // любимые живут на главной. Пункты без экрана помечены `soon`.
@@ -130,10 +132,9 @@ export default function Profile() {
       : (
         <ProfileMetrics
           key="metrics"
-          summary={privacy.showStats ? summary : null}
+          stats={privacy.showStats ? stats : null}
           favorites={showFav ? favorites : []}
           showWeights={privacy.showWeights}
-          periodLabel={monthLabel}
         />
       )
   ]

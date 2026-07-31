@@ -37,7 +37,7 @@ const TYPE_META = {
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
 }
 
-export default function HistoryStats({ summary, loading = false }) {
+export default function HistoryStats({ summary, loading = false, emptyText = 'Заверши первую тренировку, чтобы увидеть статистику.' }) {
   // Первый заход без кеша — скелетон вместо мигания пустой заглушки.
   if (loading) {
     return (
@@ -55,7 +55,7 @@ export default function HistoryStats({ summary, loading = false }) {
   }
 
   if (!summary || summary.count === 0) {
-    return <div style={styles.empty}>Завершите первую тренировку, чтобы увидеть статистику.</div>
+    return <div style={styles.empty}>{emptyText}</div>
   }
 
   const types = CATEGORY_ORDER.filter(k => summary.byType?.[k]?.count > 0)

@@ -1,26 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
+import { localGet, localSet } from '../utils/storage'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT, MONTHS_RU } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
+import AnchorMenu from './AnchorMenu'
+import PeriodSwitcher from './PeriodSwitcher'
 import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 
 /**
- * Две карточки-входа на главной: **Статистика** (шире — два показателя: мускул
- * с числом тренировок и часы с временем за месяц) и **Любимые**. Активности
- * живут отдельным блоком-виджетом ниже. Раскладка: иконка → строка значения,
- * справа в углу той же строки — период («Июль»).
+ * Две карточки-входа на главной: **Статистика** (два показателя — тренировки и
+ * время за выбранный период) и **Любимые**.
+ *
+ * Период статистики по умолчанию — ГОД (за месяц картина слишком куцая). Меняется
+ * ДОЛГИМ нажатием по карточке: выезжает попап с сегмент-контролом
+ * «7д · Август · 2026 · Всё» (тот же `PeriodSwitcher`, что на экране статистики).
+ * Обычный тап по карточке по-прежнему ведёт на `/history`.
  */
+const PERIOD_KEY = 'home-stats-period'
+const LONG_PRESS_MS = 500
+const MOVE_TOLERANCE_PX = 8
 export default function HomeCards() {
   const navigate = useNavigate()
 
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [favCount, setFavCount] = useState(() => (getFavoritesSync() || []).length)
+  // Период статистики: по умолчанию год.
+  const [period, setPeriod] = useState(() => localGet(PERIOD_KEY) || 'year')
+  const [menuRect, setMenuRect] = useState(null)   // попап выбора периода
+  const statsRef = useRef(null)
   useEffect(() => {
     let alive = true
     const load = () => {
@@ -32,30 +45,79 @@ export default function HomeCards() {
     return () => { alive = false; off() }
   }, [])
 
-  // Статистика — тренировки и время за текущий месяц + метка месяца.
-  const month = summarizeWorkouts(workouts, 'month', new Date())
-  const monthLabel = MONTHS_RU[new Date().getMonth()]
+  // Статистика за выбранный период + его подпись в углу карточки.
+  const now = new Date()
+  const sum = summarizeWorkouts(workouts, period, now)
+  const periodItems = [
+    { id: 'week', label: '7д' },
+    { id: 'month', label: MONTHS_RU[now.getMonth()] },
+    { id: 'year', label: String(now.getFullYear()) },
+    { id: 'all', label: 'Всё' }
+  ]
+  const periodLabel = periodItems.find(p => p.id === period)?.label || ''
 
   const go = (path) => { haptic.light(); navigate(path, { state: { from: '/' } }) }
+
+  // Долгое нажатие по карточке статистики → выбор периода (тап остаётся переходом).
+  const longTimer = useRef(null)
+  const longFired = useRef(false)
+  const pressStart = useRef({ x: 0, y: 0 })
+  const clearLong = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
+  useEffect(() => clearLong, [])
+
+  const statsPress = {
+    onPointerDown: (e) => {
+      if (menuRect) return
+      longFired.current = false
+      pressStart.current = { x: e.clientX, y: e.clientY }
+      clearLong()
+      longTimer.current = setTimeout(() => {
+        longFired.current = true
+        haptic.medium()
+        setMenuRect(statsRef.current?.getBoundingClientRect() || null)
+      }, LONG_PRESS_MS)
+    },
+    onPointerMove: (e) => {
+      if (!longTimer.current) return
+      if (Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
+          Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX) clearLong()
+    },
+    onPointerUp: clearLong,
+    onPointerLeave: clearLong,
+    onPointerCancel: clearLong
+  }
+
+  const openStats = () => {
+    if (menuRect) return
+    if (longFired.current) { longFired.current = false; return }
+    go('/history')
+  }
+
+  const pickPeriod = (id) => {
+    setPeriod(id)
+    localSet(PERIOD_KEY, id)
+  }
 
   return (
     <div style={styles.row}>
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
         flex={2}
+        innerRef={statsRef}
+        press={statsPress}
         icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
         value={
           <>
             <span style={styles.statIcon}><UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" /></span>
-            <Value num={month.count} unit="трен" />
+            <Value num={sum.count} unit="трен" />
             <span style={styles.valueGap} />
             <span style={styles.clock}><ClockIcon size={16} /></span>
-            <Value num={formatHours(month.minutes).replace(' ч', '')} unit="ч" />
+            <Value num={formatHours(sum.minutes).replace(' ч', '')} unit="ч" />
           </>
         }
-        caption={monthLabel}
-        onClick={() => go('/history')}
+        caption={periodLabel}
+        onClick={openStats}
       />
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
@@ -63,13 +125,29 @@ export default function HomeCards() {
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         onClick={() => go('/favorite-exercises')}
       />
+      {/* Выбор периода статистики — по центру под карточкой, как меню долгого нажатия. */}
+      {menuRect && (
+        <AnchorMenu
+          anchorRect={menuRect}
+          onClose={() => { longFired.current = false; setMenuRect(null) }}
+          align="left"
+          gap={3}
+          motion="drop"
+          items={[{
+            key: 'period',
+            custom: (
+              <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} />
+            )
+          }]}
+        />
+      )}
     </div>
   )
 }
 
-function Card({ icon, title, value, caption, flex = 1, onClick }) {
+function Card({ icon, title, value, caption, flex = 1, onClick, innerRef, press }) {
   return (
-    <button style={{ ...styles.card, flex }} className="press-tile" onClick={onClick}>
+    <button ref={innerRef} style={{ ...styles.card, flex }} className="press-tile" onClick={onClick} {...(press || {})}>
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
         <span style={styles.title}>{title}</span>

@@ -221,7 +221,7 @@ src/
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
-│                   PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
+│                   PeriodSwitcher PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
 │                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame TrendingUpIcon
 │                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
@@ -243,6 +243,7 @@ supabase/
 ├── config.toml
 ├── migrations/     weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 │                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
+│                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)
 │                   favorite_exercises_limit_5.sql (лимит любимых 3→5: CHECK slot + RPC)
 └── functions/telegram-auth/  index.ts · deno.json · .npmrc
 ```

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
+import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
@@ -10,6 +10,7 @@ import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats, { Distance } from '../components/HistoryStats'
+import PeriodSwitcher from '../components/PeriodSwitcher'
 
 const PERIODS = [
   { id: 'week', label: 'Неделя' },
@@ -64,7 +65,7 @@ export default function History() {
   const refDate = (period === 'week' || period === 'all') ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
   const sum = summarizeWorkouts(workouts, period, refDate)
 
-  const pickPeriod = (id) => { if (id !== period) { haptic.selection(); setPeriod(id) } }
+  const pickPeriod = (id) => setPeriod(id)
 
   return (
     <div className="page page-fade">
@@ -72,27 +73,7 @@ export default function History() {
 
       {/* Блок статистики со свитчером периода */}
       <div style={styles.statsCard}>
-        <div style={styles.segGroup}>
-          {PERIODS.map((p, i) => {
-            const active = p.id === period
-            return (
-              <button
-                key={p.id}
-                className="press-tile"
-                onClick={() => pickPeriod(p.id)}
-                style={{
-                  ...styles.segItem,
-                  ...(active ? styles.segItemActive : {}),
-                  marginLeft: i === 0 ? 0 : '-5px',
-                  zIndex: active ? 2 : 1,
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
-                }}
-              >
-                {p.label}
-              </button>
-            )
-          })}
-        </div>
+        <PeriodSwitcher items={PERIODS} value={period} onChange={pickPeriod} style={{ marginBottom: '16px' }} />
 
         <HistoryStats summary={sum} loading={!wkLoaded} />
       </div>
@@ -176,29 +157,6 @@ const styles = {
     padding: '16px',
     marginBottom: '20px'
   },
-  // Сегмент-контрол Неделя/Месяц/Год — мини-таб-бар (как в конструкторе/place).
-  segGroup: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    marginBottom: '16px'
-  },
-  segItem: {
-    position: 'relative', flex: 1,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '30px', padding: '0 10px',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.2px',
-    cursor: 'pointer', whiteSpace: 'nowrap',
-    transition: 'background 0.18s ease, color 0.18s ease'
-  },
-  segItemActive: {
-    background: 'var(--color-surface-active)',
-    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
-  },
-
   // Личные рекорды — блок-карточка со строками по видам активности.
   recGroup: {
     display: 'flex', flexDirection: 'column',

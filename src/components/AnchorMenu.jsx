@@ -15,7 +15,8 @@ import { haptic } from '../lib/telegram'
  *    выезжает сверху вниз (как меню чата в Telegram).
  *
  * @param anchorRect — DOMRect якоря (кнопки или карточки), от него позиционируется меню.
- * @param items — [{ key, icon, label, labelColor?, haptic?, onClick } | { divider:true }]
+ * @param items — [{ key, icon, label, labelColor?, haptic?, onClick } | { divider:true }
+ *   | { key, custom: <ReactNode> } — произвольное содержимое (напр. сегмент-контрол)]
  * @param onClose — закрыть (вызывается после анимации сворачивания).
  * @param align — 'right' (к правому краю якоря) | 'center' (по центру) | 'left'
  *   (к левому краю якоря — так открываются меню долгого нажатия).
@@ -140,6 +141,8 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
       >
         {items.map((it, i) => it.divider ? (
           <div key={`d${i}`} style={styles.divider} />
+        ) : it.custom ? (
+          <div key={it.key || `c${i}`} style={styles.custom}>{it.custom}</div>
         ) : (
           <button
             key={it.key}
@@ -219,6 +222,8 @@ const styles = {
     color: 'var(--color-text)',
     whiteSpace: 'nowrap'
   },
+  // Произвольное содержимое пункта (сегмент-контрол выбора периода и т.п.).
+  custom: { padding: '2px' },
   divider: {
     height: '1px',
     background: 'rgba(255, 255, 255, 0.08)',

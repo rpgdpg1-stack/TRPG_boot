@@ -7,6 +7,7 @@ import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
+import PeriodSwitcher from './PeriodSwitcher'
 import CloseCross from './CloseCross'
 
 /**
@@ -15,23 +16,35 @@ import CloseCross from './CloseCross'
  * Цифр НЕТ (они внутри модалок), плитки только открывают детали.
  *
  * Тап открывает модалку по центру (затемнение + крестик снизу):
- *   • «Статистика» — тоталы (тренировки/время) + разбивка по видам, справа период;
+ *   • «Статистика» — переключатель Месяц/Год (по умолчанию ГОД) + тоталы и разбивка
+ *     по видам за выбранный период; плитка доступна ВСЕГДА, даже без тренировок —
+ *     внутри тогда честная заглушка;
  *   • «Любимые упражнения» — список с рабочим весом.
  *
- * Пропсы: summary (`summarizeWorkouts`), favorites, showWeights, periodLabel.
+ * Пропсы: `stats` — { month, year } (результаты `summarizeWorkouts`), favorites,
+ * showWeights, `friendName` (для чужого профиля меняются тексты заглушек).
  */
+// Возможные периоды. Показываем только те, по которым реально есть данные:
+// свой профиль считает месяц и год из истории, друг — что отдал сервер.
+const PERIOD_DEFS = [
+  { id: 'month', label: 'Месяц' },
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё время' }
+]
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function ProfileMetrics({ summary, favorites = [], showWeights = true, periodLabel = '' }) {
+export default function ProfileMetrics({ stats, favorites = [], showWeights = true, isFriend = false }) {
   const [open, setOpen] = useState(null)   // 'stats' | 'favorites' | null
 
-  const workouts = summary?.count || 0
   const favCount = favorites?.length || 0
-  const hasStats = workouts > 0
   const hasFav = favCount > 0
-  if (!hasStats && !hasFav) return null
+  // Статистика доступна всегда: пустой период честнее показать текстом, чем
+  // прятать вход (иначе непонятно, есть ли раздел вообще).
+  const hasStats = !!stats
 
   const show = (key) => { haptic.light(); setOpen(key) }
+
+  if (!hasStats && !hasFav) return null
 
   return (
     <>
@@ -53,10 +66,10 @@ export default function ProfileMetrics({ summary, favorites = [], showWeights = 
       {open && createPortal(
         <MetricModal
           kind={open}
-          summary={summary}
+          stats={stats}
           favorites={favorites}
           showWeights={showWeights}
-          periodLabel={periodLabel}
+          isFriend={isFriend}
           onClose={() => setOpen(null)}
         />,
         document.body
@@ -65,11 +78,22 @@ export default function ProfileMetrics({ summary, favorites = [], showWeights = 
   )
 }
 
-/** Модалка метрики: шапка (иконка + название, справа период) + содержимое. */
-function MetricModal({ kind, summary, favorites, showWeights, periodLabel, onClose }) {
+/** Модалка метрики: шапка + переключатель периода (у статистики) + содержимое. */
+function MetricModal({ kind, stats, favorites, showWeights, isFriend, onClose }) {
   const isStats = kind === 'stats'
+  const available = PERIOD_DEFS.filter(p => stats && p.id in stats)
+  // Год по умолчанию; если его нет (данных от сервера меньше) — первый доступный.
+  const [period, setPeriod] = useState(() => (available.some(p => p.id === 'year') ? 'year' : available[0]?.id) || 'year')
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
+
+  const summary = isStats ? stats?.[period] : null
+  // Заглушка честно называет период и адресата (свой профиль / профиль друга).
+  const emptyWhen = period === 'month' ? 'в этом месяце' : period === 'year' ? 'в этом году' : 'пока'
+  const emptyText = isFriend
+    ? `Друг ${emptyWhen} ещё не тренировался.`
+    : `Тренировок ${emptyWhen} нет.\nЗаверши первую — статистика появится здесь.`
+
   return (
     <div ref={overlayRef} style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={m.panel} onClick={(e) => e.stopPropagation()}>
@@ -81,11 +105,15 @@ function MetricModal({ kind, summary, favorites, showWeights, periodLabel, onClo
             <span style={m.title}>{isStats ? 'Статистика' : 'Любимые упражнения'}</span>
             {!isStats && <span style={m.count}>{favorites.length}</span>}
           </span>
-          {isStats && periodLabel && <span style={m.period}>{periodLabel}</span>}
         </div>
 
+        {/* Переключатель только когда периодов больше одного. */}
+        {isStats && available.length > 1 && (
+          <PeriodSwitcher items={available} value={period} onChange={setPeriod} />
+        )}
+
         {isStats
-          ? <HistoryStats summary={summary} />
+          ? <HistoryStats summary={summary} emptyText={emptyText} />
           : <FavoritesList items={favorites} showWeights={showWeights} />}
       </div>
 
