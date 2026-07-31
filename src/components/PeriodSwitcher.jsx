@@ -1,18 +1,19 @@
 import { haptic } from '../lib/telegram'
-import { MONTHS_RU } from '../utils/history'
 
 /**
- * Периоды статистики и их ЖИВЫЕ подписи: «7 дней · Август · 2026 · Всё».
- * `month`/`year` можно переопределить — на экране статистики метки показывают
- * тот месяц/год, который сейчас открыт в календаре.
+ * Периоды статистики — ОДИН набор подписей на весь проект (главная, экран
+ * статистики, карточка профиля и друга): «Неделя · Месяц · Год · Всё».
+ * Конкретный месяц/год не подписываем — его показывает сам экран (календарь).
  */
-export function periodOptions(date = new Date(), { month, year } = {}) {
-  return [
-    { id: 'week', label: '7 дней' },
-    { id: 'month', label: MONTHS_RU[month ?? date.getMonth()] },
-    { id: 'year', label: String(year ?? date.getFullYear()) },
-    { id: 'all', label: 'Всё' }
-  ]
+export const PERIOD_OPTIONS = [
+  { id: 'week', label: 'Неделя' },
+  { id: 'month', label: 'Месяц' },
+  { id: 'year', label: 'Год' },
+  { id: 'all', label: 'Всё' }
+]
+
+export function periodOptions() {
+  return PERIOD_OPTIONS
 }
 
 /**

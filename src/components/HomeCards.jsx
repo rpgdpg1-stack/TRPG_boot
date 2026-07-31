@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { localGet, localSet } from '../utils/storage'
@@ -6,6 +6,7 @@ import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
+import AnchorMenu from './AnchorMenu'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
@@ -16,12 +17,14 @@ import TrendingUpIcon from './TrendingUpIcon'
  * Две карточки-входа на главной: **Статистика** (два показателя — тренировки и
  * время за выбранный период) и **Любимые**.
  *
- * Переключатель периода («7 дней · Август · 2026 · Всё») встроен ПРЯМО в карточку
- * шапкой над цифрами — как сегмент-контрол места в дне тренировки. Отдельной
- * подписи периода в углу нет: активный сегмент и так её заменяет.
- * По умолчанию — ГОД; выбор помнится локально. Тап мимо переключателя → `/history`.
+ * Период («Неделя · Месяц · Год · Всё») по умолчанию ГОД, выбор помнится локально.
+ * Активный период подписан СПРАВА в строке заголовка, а меняется ДОЛГИМ нажатием:
+ * от верхней кромки карточки выпадает попап с тем же `PeriodSwitcher`. Тап по
+ * карточке (короткий) ведёт на `/history`.
  */
 const PERIOD_KEY = 'home-stats-period'
+const LONG_PRESS_MS = 500
+const MOVE_TOLERANCE_PX = 8
 export default function HomeCards() {
   const navigate = useNavigate()
 
@@ -29,6 +32,8 @@ export default function HomeCards() {
   const [favCount, setFavCount] = useState(() => (getFavoritesSync() || []).length)
   // Период статистики: по умолчанию год.
   const [period, setPeriod] = useState(() => localGet(PERIOD_KEY) || 'year')
+  const [menuRect, setMenuRect] = useState(null)   // попап выбора периода
+  const statsRef = useRef(null)
   useEffect(() => {
     let alive = true
     const load = () => {
@@ -43,7 +48,8 @@ export default function HomeCards() {
   // Статистика за выбранный период + его подпись в углу карточки.
   const now = new Date()
   const sum = summarizeWorkouts(workouts, period, now)
-  const periodItems = periodOptions(now)
+  const periodItems = periodOptions()
+  const periodLabel = periodItems.find(p => p.id === period)?.label || ''
 
   const go = (path) => { haptic.light(); navigate(path, { state: { from: '/' } }) }
 
@@ -52,14 +58,53 @@ export default function HomeCards() {
     localSet(PERIOD_KEY, id)
   }
 
+  // Долгое нажатие по карточке статистики → выбор периода; короткий тап — переход.
+  const longTimer = useRef(null)
+  const longFired = useRef(false)
+  const pressStart = useRef({ x: 0, y: 0 })
+  const clearLong = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
+  useEffect(() => clearLong, [])
+
+  const statsPress = {
+    onPointerDown: (e) => {
+      if (menuRect) return
+      longFired.current = false
+      pressStart.current = { x: e.clientX, y: e.clientY }
+      clearLong()
+      longTimer.current = setTimeout(() => {
+        longFired.current = true
+        haptic.medium()
+        const r = statsRef.current?.getBoundingClientRect()
+        // Якорь — ВЕРХНЯЯ кромка карточки: попап выпадает там, где иконка.
+        if (r) setMenuRect({ left: r.left, right: r.right, top: r.top, bottom: r.top + 8, width: r.width, height: 8 })
+      }, LONG_PRESS_MS)
+    },
+    onPointerMove: (e) => {
+      if (!longTimer.current) return
+      if (Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
+          Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX) clearLong()
+    },
+    onPointerUp: clearLong,
+    onPointerLeave: clearLong,
+    onPointerCancel: clearLong
+  }
+
+  const openStats = () => {
+    if (menuRect) return
+    if (longFired.current) { longFired.current = false; return }
+    go('/history')
+  }
+
   return (
     <div style={styles.row}>
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
         flex={2}
+        innerRef={statsRef}
+        press={statsPress}
         icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
-        control={<PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} compact />}
+        titleRight={periodLabel}
         value={
           <>
             <span style={styles.statIcon}><UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" /></span>
@@ -69,7 +114,7 @@ export default function HomeCards() {
             <Value num={formatHours(sum.minutes).replace(' ч', '')} unit="ч" />
           </>
         }
-        onClick={() => go('/history')}
+        onClick={openStats}
       />
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
@@ -77,18 +122,34 @@ export default function HomeCards() {
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         onClick={() => go('/favorite-exercises')}
       />
+
+      {/* Выбор периода — попап от верхней кромки карточки (закрывается тапом мимо). */}
+      {menuRect && (
+        <AnchorMenu
+          anchorRect={menuRect}
+          onClose={() => { longFired.current = false; setMenuRect(null) }}
+          align="left"
+          gap={0}
+          motion="drop"
+          items={[{ key: 'period', custom: (
+            <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} />
+          ) }]}
+        />
+      )}
     </div>
   )
 }
 
-function Card({ icon, title, value, control, caption, flex = 1, onClick }) {
+function Card({ icon, title, titleRight, value, caption, flex = 1, onClick, innerRef, press }) {
   return (
-    <button style={{ ...styles.card, flex }} className="press-tile" onClick={onClick}>
+    <button ref={innerRef} style={{ ...styles.card, flex }} className="press-tile" onClick={onClick} {...(press || {})}>
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
-        <span style={styles.title}>{title}</span>
-        {/* Переключатель периода — шапкой над цифрами (если есть). */}
-        {control && <span style={styles.control}>{control}</span>}
+        {/* В строке заголовка справа — активный период («Год»), тихо и серым. */}
+        <span style={styles.titleRow}>
+          <span style={styles.title}>{title}</span>
+          {titleRight && <span style={styles.titlePeriod}>{titleRight}</span>}
+        </span>
         <span style={styles.valueRow}>
           <span style={styles.valueMain}>{value}</span>
           {caption && <span style={styles.caption}>{caption}</span>}
@@ -119,8 +180,12 @@ const styles = {
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
   icon: { display: 'inline-flex', height: '22px' },
-  textCol: { display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 },
-  control: { display: 'block', width: '100%' },
+  textCol: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
+  titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px', width: '100%' },
+  titlePeriod: {
+    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
+  },
   title: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   // Строка значения: слева значение, справа подпись-контекст.
   valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', minHeight: '20px', width: '100%' },

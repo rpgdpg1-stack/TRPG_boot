@@ -60,8 +60,7 @@ export default function History() {
 
   const pickPeriod = (id) => setPeriod(id)
 
-  // Метки сегментов живые: месяц и год — те, что сейчас открыты в календаре.
-  const periodItems = periodOptions(new Date(), { month: view.month, year: view.year })
+  const periodItems = periodOptions()
   const emptyText = period === 'month'
     ? 'Заверши первую тренировку в этом месяце, чтобы увидеть статистику.'
     : period === 'year'
