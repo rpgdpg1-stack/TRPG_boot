@@ -167,7 +167,7 @@ export async function shareProgramLink(programId) {
   const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
   const appName = import.meta.env.VITE_APP_NAME || 'app'
   const link = `https://t.me/${botUsername}/${appName}?startapp=share_${token}`
-  const text = `Забирай мою программу тренировок в RPG Training App 💪`
+  const text = `💪🏻 Попробуй мою программу тренировок в TRPG`
 
   if (tg && typeof tg.openTelegramLink === 'function') {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`

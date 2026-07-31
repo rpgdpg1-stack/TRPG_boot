@@ -98,7 +98,7 @@ export async function shareReferralLink() {
   const appName = import.meta.env.VITE_APP_NAME || 'app'
 
   const link = `https://t.me/${botUsername}/${appName}?startapp=${code}`
-  const text = `Качайся со мной в RPG Training App 💪`
+  const text = `💪🏻 Тренируйся со мной в TRPG`
 
   if (tg && typeof tg.openTelegramLink === 'function') {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`

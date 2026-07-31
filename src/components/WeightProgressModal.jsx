@@ -125,13 +125,20 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
     }
 
     const lastKnown = dataPts.length ? dataPts[dataPts.length - 1].weight : priorWeight
+
+    // Хвост окна: если после последней записи вес не менялся, добавляем точку
+    // «сейчас» — иначе палец упирался в последнее ИЗМЕНЕНИЕ и до правого края
+    // (сегодняшнего дня) довести скраб было нельзя.
+    const lastMs = dataPts.length ? dataPts[dataPts.length - 1].ms : null
+    if (lastKnown != null && (lastMs == null || lastMs < endMs)) {
+      dataPts.push({ day: null, weight: lastKnown, ms: endMs, isNow: true })
+    }
+
     const linePts = []
     // Линия начинается с первой записи периода (вариант «полка по нулю от края»
     // пробовали — график сплющивался по Y и читался хуже).
     if (priorWeight != null) linePts.push({ ms: startMs, weight: priorWeight })
     for (const dp of dataPts) linePts.push({ ms: dp.ms, weight: dp.weight })
-    // Доводим линию до правого края окна текущим уровнем (вес держится до «сейчас»).
-    if (linePts[linePts.length - 1].ms < endMs) linePts.push({ ms: endMs, weight: lastKnown })
 
     const spanMs = (endMs - startMs) || 86400000
     const nx = (ms) => Math.max(0, Math.min(1, (ms - startMs) / spanMs))
@@ -176,7 +183,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
 
   const scrub = scrubIdx != null ? dataPts[scrubIdx] : null
   const topWeight = scrub ? scrub.weight : currentW
-  const topSub = scrub ? formatFullDate(scrub.day) : 'сейчас'
+  const topSub = scrub ? (scrub.isNow ? 'сейчас' : formatFullDate(scrub.day)) : 'сейчас'
 
   return (
     <div ref={overlayRef} style={styles.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
