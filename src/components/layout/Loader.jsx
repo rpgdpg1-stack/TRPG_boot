@@ -93,10 +93,6 @@ export default function Loader({ onFinish, readyPromise }) {
         </div>
       </div>
 
-      <div style={styles.logoBlock}>
-        <span style={styles.logo}>TRPG</span>
-      </div>
-
       <style>{`
         @keyframes flexBiceps {
           0%   { transform: rotate(0deg) scale(1); }
@@ -113,8 +109,6 @@ export default function Loader({ onFinish, readyPromise }) {
           80%  { opacity: 1; transform: translateX(-50%) translateY(-70px) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-90px) scale(1); }
         }
-        @keyframes logoFadeIn {
-          0%   { opacity: 0; transform: translateY(8px); }
           100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -131,8 +125,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
-    gap: '24px'
+    zIndex: 9999
   },
   scene: {
     position: 'relative',
@@ -150,23 +143,5 @@ const styles = {
     transformOrigin: '60% 85%',
     position: 'relative',
     zIndex: 2
-  },
-  logoBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Вплотную к мускулу: гасим весь верхний gap и поднимаем ещё выше.
-    marginTop: '-54px',
-    animation: 'logoFadeIn 0.6s ease-out 0.3s both'
-  },
-  logo: {
-    // Manrope: на тёмном фоне читается мягче, чем display-гарнитура.
-    fontFamily: 'var(--font-manrope)',
-    // Тоньше прежнего (было 800): на тёмном фоне жирное начертание выглядит грубо.
-    fontWeight: 600,
-    fontSize: '24px',
-    color: 'var(--color-primary)',
-    letterSpacing: '4px',
-    lineHeight: 1
   }
 }
