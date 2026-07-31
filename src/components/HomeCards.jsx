@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { localGet, localSet } from '../utils/storage'
@@ -6,7 +7,6 @@ import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
-import AnchorMenu from './AnchorMenu'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
@@ -19,8 +19,9 @@ import TrendingUpIcon from './TrendingUpIcon'
  *
  * Период («Неделя · Месяц · Год · Всё») по умолчанию ГОД, выбор помнится локально.
  * Активный период подписан СПРАВА в строке заголовка, а меняется ДОЛГИМ нажатием:
- * от верхней кромки карточки выпадает попап с тем же `PeriodSwitcher`. Тап по
- * карточке (короткий) ведёт на `/history`.
+ * поверх карточки всплывает САМ переключатель (без второй рамки-обёртки) — по
+ * центру карточки, в верхней её части. Тап мимо закрывает; короткий тап по
+ * карточке ведёт на `/history`.
  */
 const PERIOD_KEY = 'home-stats-period'
 const LONG_PRESS_MS = 500
@@ -74,9 +75,9 @@ export default function HomeCards() {
       longTimer.current = setTimeout(() => {
         longFired.current = true
         haptic.medium()
+        // Позиция переключателя — по ширине карточки, в её верхней части.
         const r = statsRef.current?.getBoundingClientRect()
-        // Якорь — ВЕРХНЯЯ кромка карточки: попап выпадает там, где иконка.
-        if (r) setMenuRect({ left: r.left, right: r.right, top: r.top, bottom: r.top + 8, width: r.width, height: 8 })
+        if (r) setMenuRect({ left: r.left, top: r.top, width: r.width })
       }, LONG_PRESS_MS)
     },
     onPointerMove: (e) => {
@@ -123,18 +124,24 @@ export default function HomeCards() {
         onClick={() => go('/favorite-exercises')}
       />
 
-      {/* Выбор периода — попап от верхней кромки карточки (закрывается тапом мимо). */}
-      {menuRect && (
-        <AnchorMenu
-          anchorRect={menuRect}
-          onClose={() => { longFired.current = false; setMenuRect(null) }}
-          align="left"
-          gap={0}
-          motion="drop"
-          items={[{ key: 'period', custom: (
+      {/* Выбор периода: сам переключатель поверх карточки, без второй обёртки. */}
+      {menuRect && createPortal(
+        <div
+          style={styles.periodOverlay}
+          onClick={() => { longFired.current = false; setMenuRect(null) }}
+        >
+          <div
+            style={{
+              ...styles.periodFloat,
+              left: `${menuRect.left + 8}px`,
+              top: `${menuRect.top + 4}px`,
+              width: `${menuRect.width - 16}px`
+            }}
+          >
             <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} />
-          ) }]}
-        />
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -182,6 +189,18 @@ const styles = {
   icon: { display: 'inline-flex', height: '22px' },
   textCol: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
   titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px', width: '100%' },
+  // Слой закрытия: прозрачный, гасит прокрутку под собой.
+  periodOverlay: {
+    position: 'fixed', inset: 0, background: 'transparent',
+    touchAction: 'none', overscrollBehavior: 'contain', zIndex: 9999
+  },
+  // Сам переключатель — над карточкой, по её ширине; своей рамки-обёртки нет.
+  periodFloat: {
+    position: 'fixed',
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.45)',
+    borderRadius: 'var(--radius-pill)',
+    animation: 'metricPopIn 0.2s var(--ease-ios) forwards'
+  },
   titlePeriod: {
     fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
