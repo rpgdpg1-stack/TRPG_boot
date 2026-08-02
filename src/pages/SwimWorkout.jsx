@@ -4,6 +4,15 @@ import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
 import { getProgramBySlug } from '../features/programs/registry'
 import { setLastCompletedDay } from '../lib/storage'
+import {
+  getActiveWorkout,
+  onActiveWorkoutChange,
+  startActiveWorkout,
+  clearActiveWorkout,
+  elapsedSecFrom,
+  formatWorkoutMin,
+  workoutTimerColor
+} from '../lib/active-workout'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import {
@@ -55,6 +64,15 @@ function SwimFinishIcon({ size = 17 }) {
   )
 }
 
+/** Треугольник запуска — тот же, что на кнопке Play карточки программы. */
+function SwimStartIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
 function formatDistance(m) {
   if (m >= 1000) {
     const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
@@ -86,6 +104,30 @@ export default function SwimWorkout() {
   const [modal, setModal] = useState(null)
   const [finishStatus, setFinishStatus] = useState('idle')
   const [compact, setCompact] = useState(false)
+
+  // Сессия заплыва — та же общая на приложение, что у силовой (active-workout).
+  // День один, поэтому 'main'. Пока сессия идёт, в шапке тикает таймер, а внизу
+  // вместо «Начать» стоит «Завершить». Записывается РЕАЛЬНОЕ время сессии —
+  // с переодеванием и душем, а не оценка «≈N мин» по метражу.
+  const [active, setActive] = useState(getActiveWorkout)
+  useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
+  const isThisActive = !!active && active.programId === programId
+  const sessionBlocked = !!active && !isThisActive
+
+  // Тост «сначала заверши текущую» — по тапу на «Начать» при чужой сессии.
+  const [startBlocked, setStartBlocked] = useState(false)
+  const startBlockTimer = useRef(null)
+  const autoStartedRef = useRef(false)
+  useEffect(() => () => { if (startBlockTimer.current) clearTimeout(startBlockTimer.current) }, [])
+
+  const [elapsedSec, setElapsedSec] = useState(0)
+  useEffect(() => {
+    if (!isThisActive) { setElapsedSec(0); return }
+    const tick = () => setElapsedSec(elapsedSecFrom(active.startedAt))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [isThisActive, active?.startedAt])
 
   // Число повторов основы — единственное редактируемое поле. Стартуем мгновенно
   // из localStorage, догоняем кросс-девайс из CloudStorage; пишем в оба (как вес).
@@ -153,6 +195,19 @@ export default function SwimWorkout() {
     return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [])
 
+  // Вход по кружку Play с карточки программы — заплыв стартует сам.
+  // Стоит ДО раннего return «программа не найдена»: хук обязан вызываться
+  // в одинаковом порядке на каждом рендере.
+  useEffect(() => {
+    if (!location.state?.autoStart || autoStartedRef.current) return
+    if (!program || sessionBlocked || isThisActive) return
+    autoStartedRef.current = true
+    navigate(location.pathname, { replace: true, state: { ...location.state, autoStart: false } })
+    haptic.success()
+    startActiveWorkout(programId, 'main', 'pool')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.autoStart, program, sessionBlocked, isThisActive])
+
   if (!program || program.kind !== 'swim') {
     return (
       <div style={styles.page}>
@@ -175,9 +230,13 @@ export default function SwimWorkout() {
     setModal({ kind: 'pending' })
 
     try {
-      // Синтетический старт = сейчас − оценка минут заплыва: у заплыва нет сессии,
-      // но так в историю запишется длительность (та же, что в шапке «≈N мин»).
-      const startedAt = new Date(Date.now() - swimMinutesForMeters(totalMeters) * 60000).toISOString()
+      // Время заплыва = реальная длительность сессии (от «Начать» до «Завершить»),
+      // ровно как в силовой: в него честно входят переодевание, душ и отдых.
+      // Заплыв без сессии (старая запись/прямой финиш) — падаем на оценку по
+      // метражу, ту же, что показана в шапке «≈N мин».
+      const startedAt = isThisActive
+        ? active.startedAt
+        : new Date(Date.now() - swimMinutesForMeters(totalMeters) * 60000).toISOString()
       const result = await finishWorkout(programId, 'main', [], 0, totalMeters, startedAt)
 
       if (!result) {
@@ -186,8 +245,12 @@ export default function SwimWorkout() {
         haptic.error()
         return
       }
+      // Заплыв засчитан локально в любом исходе (оффлайн / лимит / награда):
+      // фиксируем день и закрываем сессию — как в силовой.
+      await setLastCompletedDay(programId, 'main')
+      clearActiveWorkout()
+
       if (result.offline) {
-        await setLastCompletedDay(programId, 'main')
         haptic.warning()
         setFinishStatus('idle')
         setModal({ kind: 'offline' })
@@ -199,7 +262,6 @@ export default function SwimWorkout() {
         setModal({ kind: 'limit' })
         return
       }
-      await setLastCompletedDay(programId, 'main')
       haptic.success()
       setFinishStatus('idle')
       setModal({ kind: 'reward' })
@@ -215,6 +277,21 @@ export default function SwimWorkout() {
     haptic.medium()
     runFinish()
   }
+
+  // «Начать заплыв» — открывает сессию, дальше в шапке тикает таймер.
+  // Пока идёт ДРУГАЯ тренировка, начинать нельзя (одна за раз, как в силовой).
+  const handleStartTap = () => {
+    if (sessionBlocked) {
+      haptic.error()
+      setStartBlocked(true)
+      if (startBlockTimer.current) clearTimeout(startBlockTimer.current)
+      startBlockTimer.current = setTimeout(() => setStartBlocked(false), 2600)
+      return
+    }
+    haptic.success()
+    startActiveWorkout(programId, 'main', 'pool')
+  }
+
 
   const handleModalConfirm = () => {
     if (modal?.kind === 'error') { runFinish(); return }
@@ -235,9 +312,18 @@ export default function SwimWorkout() {
           {/* Верхний ряд: тег бассейна слева, часы по центру */}
           <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
             <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
-            <span style={styles.clock}>
-              <ClockIcon size={13} />≈{swimMinutesForMeters(totalMeters)} мин
-            </span>
+            {/* Пока заплыв не начат — оценка «≈45 мин» по метражу; после «Начать»
+                на её месте живой таймер сессии с теми же порогами цвета, что в
+                силовой (зелёный <1ч → оранжевый → красный). */}
+            {isThisActive ? (
+              <span style={{ ...styles.clock, color: workoutTimerColor(elapsedSec), fontWeight: 800 }}>
+                <ClockIcon size={13} />{formatWorkoutMin(elapsedSec)}
+              </span>
+            ) : (
+              <span style={styles.clock}>
+                <ClockIcon size={13} />≈{swimMinutesForMeters(totalMeters)} мин
+              </span>
+            )}
           </div>
 
           {/* Крупный метраж по центру (сквозь пунктир) + бассейны под ним */}
@@ -323,16 +409,31 @@ export default function SwimWorkout() {
         </div>
       </div>
 
-      {/* Закреплённая кнопка «Завершить» (как док в дне силовой), синяя */}
+      {/* Док внизу: до старта — «Начать заплыв», после — «Завершить» (как в дне
+          силовой: сначала запускаешь сессию, потом закрываешь её). */}
       <div style={styles.finishBar}>
         <div className="dock-scrim" />
-        <ActionButton
-          onClick={handleFinishTap}
-          variant="neutral"
-          hug
-        >
-          <SwimFinishIcon size={20} /> Завершить
-        </ActionButton>
+        {startBlocked && (
+          <div style={styles.startBlockWrap}>
+            <div className="shake-error" style={styles.startBlockToast}>
+              Сначала заверши текущую тренировку
+            </div>
+          </div>
+        )}
+        {isThisActive ? (
+          <ActionButton onClick={handleFinishTap} variant="neutral" hug>
+            <SwimFinishIcon size={20} /> Завершить
+          </ActionButton>
+        ) : (
+          <ActionButton
+            onClick={handleStartTap}
+            variant="primary"
+            hug
+            style={sessionBlocked ? { opacity: 0.5 } : undefined}
+          >
+            <SwimStartIcon size={20} /> Начать заплыв
+          </ActionButton>
+        )}
       </div>
 
       {/* Кнопка «наверх» — при скролле вниз (как в дне силовой). */}
@@ -776,6 +877,24 @@ const styles = {
     padding: 'var(--space-12) var(--space-4) var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
+  },
+  // Тост «занято» над доком — тот же вид, что в дне силовой.
+  startBlockWrap: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 'calc(100% - var(--space-8))',
+    display: 'flex', justifyContent: 'center', pointerEvents: 'none'
+  },
+  startBlockToast: {
+    maxWidth: '240px',
+    padding: 'var(--space-3) var(--space-4)',
+    background: 'rgba(232, 69, 69, 0.16)',
+    border: '1px solid rgba(232, 69, 69, 0.5)',
+    borderRadius: 'var(--radius-medium)',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700, lineHeight: 1.35,
+    color: 'var(--color-error)', textAlign: 'center'
   },
 
   errorBlock: {
