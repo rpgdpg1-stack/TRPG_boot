@@ -58,17 +58,17 @@ function WeekStrip() {
 
 const stripStyles = {
   strip: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     // Строка-информер (фона-пилюли нет). Отступ до блока раздела — МЕЖГРУППОВОЙ
     // (16px): больше внутреннего (шапка↔карточка 6px), меньше прежних 26px,
     // из-за которых вверху зияла пустота.
-    minHeight: '32px', padding: '0 16px', marginBottom: '16px'
+    minHeight: '32px', padding: '0 var(--space-4)', marginBottom: 'var(--space-4)'
   },
-  label: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  label: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
   // Крестика «×» нет — только цифра.
-  flameGroup: { display: 'inline-flex', alignItems: 'center', gap: '3px' },
-  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: '#FF8C42', letterSpacing: '0.5px' },
+  flameGroup: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
+  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-streak)', letterSpacing: '0.5px' },
   // 0 — серым (как негорящий огонёк), ≥1 — оранжевым.
   countZero: { color: 'rgba(255, 255, 255, 0.4)' },
   greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
@@ -231,7 +231,7 @@ export default function Home() {
 
       {/* Скроллящийся контент: инфо-плашка недели + карусель разделов + карточки. */}
       <div style={styles.scrollSection}>
-        <div style={{ marginTop: '4px' }}>
+        <div style={{ marginTop: 'var(--space-1)' }}>
           <WeekStrip />
         </div>
 
@@ -241,7 +241,7 @@ export default function Home() {
 
         {/* Второй план: карточки-входы. Заголовка-обёртки нет — карточки
             подписаны сами, а заголовок только ел первый экран. */}
-        <div style={{ marginTop: '24px' }}>
+        <div style={{ marginTop: 'var(--space-6)' }}>
           <HomeCards />
         </div>
       </div>
@@ -254,9 +254,9 @@ const styles = {
     // relative — база для абсолютного индикатора/слоёв.
     position: 'relative',
     paddingTop: 0,
-    paddingLeft: '16px',
-    paddingRight: '16px',
-    paddingBottom: '24px'
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)',
+    paddingBottom: 'var(--space-6)'
   },
   // Индикатор pull-to-refresh — по центру у верхней кромки (портал в body).
   pullIndicator: {

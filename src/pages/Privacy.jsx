@@ -55,7 +55,7 @@ function ToggleRow({ label, hint, value, onToggle, divider = false, nested = fal
       ...(nested ? { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' } : {})
     }}>
       <div style={styles.rowContent}>
-        <div style={{ ...styles.rowTitle, ...(nested ? { fontSize: '14px' } : {}) }}>{label}</div>
+        <div style={{ ...styles.rowTitle, ...(nested ? { fontSize: 'var(--text-button-size)' } : {}) }}>{label}</div>
         <div style={styles.rowSubtitle}>{hint}</div>
       </div>
       <button
@@ -72,20 +72,20 @@ function ToggleRow({ label, hint, value, onToggle, divider = false, nested = fal
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   intro: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
-    margin: '0 auto 20px', maxWidth: '300px'
+    margin: '0 auto var(--space-5)', maxWidth: '300px'
   },
   groupCard: {
     display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)', overflow: 'hidden'
   },
-  toggleRow: { display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', minHeight: '64px' },
+  toggleRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', minHeight: '64px' },
   rowContent: { flex: 1, minWidth: 0 },
-  rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '2px' },
-  rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
+  rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-05)' },
+  rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
   switch: {
-    position: 'relative', flexShrink: 0, width: '42px', height: '24px', borderRadius: '12px',
+    position: 'relative', flexShrink: 0, width: '42px', height: '24px', borderRadius: 'var(--radius-small)',
     border: 'none', padding: 0, cursor: 'pointer', transition: 'background 0.2s ease', WebkitTapHighlightColor: 'transparent'
   },
   knob: {

@@ -62,7 +62,7 @@ export default function PeriodSwitcher({ items, value, onChange, compact = false
 
 const styles = {
   group: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
@@ -71,15 +71,15 @@ const styles = {
   item: {
     position: 'relative', flex: 1,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '30px', padding: '0 10px',
+    minHeight: '30px', padding: '0 var(--space-3)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.2px',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.2px',
     cursor: 'pointer', whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
   },
   // Компактный — для встраивания внутрь карточки (главная).
-  groupCompact: { padding: '3px' },
-  itemCompact: { minHeight: '24px', padding: '0 6px', fontSize: '11px' },
+  groupCompact: { padding: 'var(--space-1)' },
+  itemCompact: { minHeight: '24px', padding: '0 var(--space-15)', fontSize: 'var(--text-caption-size)' },
   itemActive: {
     background: 'var(--color-surface-active)',
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'

@@ -14,7 +14,7 @@ import UiIcon from './UiIcon'
  * (например при тапе на прогресс-бар). Меняй значение чтобы триггернуть.
  */
 export default function MuscleIcon({ size = 16, color, earned = true, flex = false, flexTrigger = 0, style }) {
-  const finalColor = color || (earned ? '#FADFBE' : 'var(--color-text-secondary)')
+  const finalColor = color || (earned ? 'var(--color-icon-muscle)' : 'var(--color-text-secondary)')
 
   // Анимация "флекса" — та же что на лоадере (flexBiceps): лёгкий поворот,
   // подъём и увеличение. flex=true → зацикленно раз в 15 сек. flexTrigger

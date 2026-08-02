@@ -151,13 +151,13 @@ const styles = {
   pill: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '7px',
-    padding: '7px 14px 7px 11px',
+    gap: 'var(--space-2)',
+    padding: 'var(--space-2) var(--space-4) var(--space-2) var(--space-3)',
     background: 'var(--color-surface-dim)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     border: '1px solid var(--color-border)',
-    borderRadius: '999px',
+    borderRadius: 'var(--radius-pill)',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
     animation: 'offlinePillIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
@@ -170,7 +170,7 @@ const styles = {
   },
   text: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     color: 'var(--color-text)',
     letterSpacing: '0.3px',

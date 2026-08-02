@@ -27,10 +27,10 @@ export default function ModalButton({ onClick, children, style, className = '', 
 const styles = {
   btn: {
     width: '100%',
-    padding: '15px 18px',
+    padding: 'var(--space-4) var(--space-5)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
+    fontSize: 'var(--text-body-size)',
     fontWeight: 700,
     letterSpacing: '0.3px',
     borderRadius: 'var(--radius-pill)',

@@ -42,7 +42,7 @@ const CATEGORIES = [
     icon: '💪',
     title: 'МЫШЦЫ И СУСТАВЫ',
     subtitle: 'Снять нагрузку и зажимы',
-    color: '#FF8C42', // оранжевый — активность, мышцы
+    color: 'var(--cat-cardio)', // категория «мышцы и суставы»
     items: [
       { id: 'mus-stretch',  title: 'Растяжка 5-10 мин',           freq: 'каждый день' },
       { id: 'mus-roll',     title: 'Самомассаж роллом 15 мин',    freq: '2-3 раза в неделю' },
@@ -173,40 +173,40 @@ export default function Recovery() {
 const styles = {
   page: {},
   header: {
-    marginBottom: '20px',
+    marginBottom: 'var(--space-5)',
     textAlign: 'center'
   },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '32px',
+    fontSize: 'var(--text-display-size)',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
     lineHeight: 1,
-    marginBottom: '6px'
+    marginBottom: 'var(--space-15)'
   },
   subtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: 'var(--text-caption-size)',
+    fontWeight: 700,
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
   sectionsWrap: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px'
+    gap: 'var(--space-6)'
   },
   section: {},
   categoryHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    marginBottom: '10px',
-    paddingLeft: '4px'
+    gap: 'var(--space-3)',
+    marginBottom: 'var(--space-3)',
+    paddingLeft: 'var(--space-1)'
   },
   categoryIcon: {
-    fontSize: '24px',
+    fontSize: 'var(--text-heading-size)',
     lineHeight: 1,
     flexShrink: 0
   },
@@ -216,27 +216,27 @@ const styles = {
   },
   categoryTitle: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '14px',
+    fontWeight: 700,
+    fontSize: 'var(--text-button-size)',
     letterSpacing: '2px',
-    marginBottom: '2px'
+    marginBottom: 'var(--space-05)'
   },
   categorySubtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     fontWeight: 500
   },
   itemsList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px'
+    gap: 'var(--space-15)'
   },
   itemCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '14px 18px',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-4) var(--space-5)',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-medium)',
     width: '100%',
@@ -249,24 +249,24 @@ const styles = {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '3px'
+    gap: 'var(--space-1)'
   },
   itemTitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 600,
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 700,
     color: 'var(--color-text)',
     lineHeight: 1.3
   },
   itemFreq: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '11px',
+    fontWeight: 700,
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px'
   },
   itemArrow: {
-    fontSize: '18px',
+    fontSize: 'var(--text-title-size)',
     color: 'var(--color-text-secondary)',
     flexShrink: 0
   }
@@ -283,7 +283,7 @@ const popupStyles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '20px',
+    padding: 'var(--space-5)',
     animation: 'recoveryOverlayFadeIn 0.2s ease-out forwards'
   },
   modal: {
@@ -291,12 +291,12 @@ const popupStyles = {
     maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
-    padding: '28px 22px 18px',
+    borderRadius: 'var(--radius-medium)',
+    padding: 'var(--space-6) var(--space-6) var(--space-5)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '10px',
+    gap: 'var(--space-2)',
     animation: 'recoveryPanelScaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
@@ -306,7 +306,7 @@ const popupStyles = {
   },
   title: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '17px',
+    fontSize: 'var(--text-title-size)',
     fontWeight: 700,
     color: 'var(--color-text)',
     textAlign: 'center',
@@ -314,30 +314,30 @@ const popupStyles = {
   },
   freq: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-primary)',
     letterSpacing: '1px',
-    marginBottom: '4px'
+    marginBottom: 'var(--space-1)'
   },
   message: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.5,
-    marginBottom: '8px'
+    marginBottom: 'var(--space-2)'
   },
   closeButton: {
     width: '100%',
-    padding: '12px',
+    padding: 'var(--space-3)',
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     letterSpacing: '1px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius-small)',
     border: 'none',
     cursor: 'pointer'
   }

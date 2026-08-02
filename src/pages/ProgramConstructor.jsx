@@ -392,8 +392,8 @@ export default function ProgramConstructor() {
                     className="press-tile"
                     style={{
                       ...styles.segItem, ...styles.segItemActive,
-                      flex: '0 0 auto', padding: '0 22px',
-                      color: 'var(--color-primary)', fontSize: '24px'
+                      flex: '0 0 auto', padding: '0 var(--space-6)',
+                      color: 'var(--color-primary)', fontSize: 'var(--text-heading-size)'
                     }}
                   >
                     {n}
@@ -406,7 +406,7 @@ export default function ProgramConstructor() {
                 key={n}
                 onClick={() => changeDayCount(n)}
                 className="press-tile"
-                style={{ ...styles.placeBare, fontSize: '20px' }}
+                style={{ ...styles.placeBare, fontSize: 'var(--text-heading-size)' }}
               >
                 {n}
               </button>
@@ -436,7 +436,7 @@ export default function ProgramConstructor() {
                       ...styles.segItem,
                       ...(active ? styles.segItemActive : {}),
                       flex: '0 0 auto',
-                      padding: '0 16px',
+                      padding: '0 var(--space-4)',
                       marginLeft: i === 0 ? 0 : '-5px',
                       zIndex: active ? 2 : 1,
                       // Активное место — цвет самого места (зал — оранжевый,
@@ -734,34 +734,34 @@ const styles = {
   // скролл на коротком списке. Без min-height:100dvh страница ровно по контенту:
   // мало упражнений → не скроллится; много → у низа фикс-зазор (paddingBottom).
   page: {
-    padding: '0 16px', paddingTop: 'var(--tg-safe-top)', paddingBottom: '100px',
+    padding: '0 var(--space-4)', paddingTop: 'var(--tg-safe-top)', paddingBottom: '100px',
     marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
   },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '40px 16px var(--tabbar-bottom)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+    padding: 'var(--space-10) var(--space-4) var(--tabbar-bottom)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)',
     pointerEvents: 'none',
     zIndex: 40
   },
   kbCatcher: { position: 'fixed', inset: 0, zIndex: 50, background: 'transparent' },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', letterSpacing: '2px', color: 'var(--color-primary)' },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-size)', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
-    height: '52px', padding: '0 20px', maxWidth: '100%',
+    height: '52px', padding: '0 var(--space-5)', maxWidth: '100%',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
-    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, outline: 'none'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, outline: 'none'
   },
-  section: { marginBottom: '20px' },
-  secLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: '10px' },
+  section: { marginBottom: 'var(--space-5)' },
+  secLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: 'var(--space-3)' },
   // Контейнер-таб-бар (как нижний таб-бар приложения): фон surface-dim + тонкая
   // обводка + блюр + тень, паддинг 4. Для дней-в-программе и дней — на всю ширину
   // (табы flex:1); для мест — width:auto (обнимает заполненные/активное).
   segGroup: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '4px', width: '100%',
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
@@ -772,8 +772,8 @@ const styles = {
   // инлайн (marginLeft), активный поверх соседей (zIndex).
   segItem: {
     flex: 1, minWidth: 0, position: 'relative',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-    alignSelf: 'stretch', minHeight: '44px', padding: '0 8px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-15)',
+    alignSelf: 'stretch', minHeight: '44px', padding: '0 var(--space-2)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease, font-size 0.18s ease'
@@ -783,43 +783,43 @@ const styles = {
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
   // Ряд мест: контейнер-таб-бар (заполненные/активное) + голые места снаружи.
-  placeRow: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
+  placeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' },
   // Голое место снаружи контейнера — просто текст+иконка, приглушённый (как
   // невыбранный таб без контейнера).
   placeBare: {
-    display: 'flex', alignItems: 'center', gap: '6px', padding: '0 10px', minHeight: '44px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-15)', padding: '0 var(--space-3)', minHeight: '44px',
     background: 'transparent', border: 'none',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
     color: 'rgba(255, 255, 255, 0.3)', whiteSpace: 'nowrap',
     transition: 'color 0.18s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   // Между секциями групп — больше воздуха (20), внутри секции ряды — 10 (совпадает
   // со страйдом перетаскивания: высота строки + 10).
-  dayList: { display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '16px', paddingBottom: '0px' },
-  daySection: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  sectionRows: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  dayList: { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', marginBottom: 'var(--space-4)', paddingBottom: '0px' },
+  daySection: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
+  sectionRows: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
   // Заголовок группы — по центру, в акцентном цвете группы (как на дне тренировки).
   groupHeader: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '13px',
-    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: '2px 0'
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: 'var(--space-05) 0'
   },
-  emptyDay: { textAlign: 'center', padding: '30px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  exRowWrap: { display: 'flex', alignItems: 'center', gap: '6px' },
-  exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px' },
+  emptyDay: { textAlign: 'center', padding: 'var(--space-8) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
+  exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
+  exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exPreviewPlaceholder: { fontSize: '28px', opacity: 0.4 },
-  exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' },
-  exName: { fontFamily: 'var(--font-geist)', fontSize: '13px', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
-  exTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  exTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: '18px', fontWeight: 700 },
+  exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
+  exName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
+  exTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
+  exTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
+  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700 },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
   // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.
-  addRow: { display: 'flex', justifyContent: 'center', paddingTop: '4px' },
+  addRow: { display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-1)' },
   limitToastWrap: {
     position: 'fixed',
     left: 0,
@@ -832,15 +832,15 @@ const styles = {
   },
   limitToast: {
     maxWidth: '200px',
-    padding: '10px 14px',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
     lineHeight: 1.35,
     color: '#FF6B6B',
     textAlign: 'center'
@@ -850,26 +850,26 @@ const styles = {
     background: 'rgba(13,12,12,0.75)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px'
+    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
   },
   exitModal: {
     width: '100%', maxWidth: '360px',
     background: 'rgba(34,34,34,0.98)',
     border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 'var(--radius-card)',
-    padding: '24px 18px 18px',
-    display: 'flex', flexDirection: 'column', gap: '8px',
+    padding: 'var(--space-6) var(--space-5) var(--space-5)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
     boxShadow: '0 8px 40px rgba(0,0,0,0.6)'
   },
   exitTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
     color: 'var(--color-text)', textAlign: 'center'
   },
   exitText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
-    color: 'var(--color-text)', textAlign: 'center', marginBottom: '14px'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text)', textAlign: 'center', marginBottom: 'var(--space-4)'
   },
   exitButtonsRow: {
-    display: 'flex', gap: '10px', width: '100%'
+    display: 'flex', gap: 'var(--space-2)', width: '100%'
   }
 }

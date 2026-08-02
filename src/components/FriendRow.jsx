@@ -150,8 +150,8 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px 16px',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-3) var(--space-4)',
     transition: 'background 0.2s ease',
     cursor: 'pointer',
     touchAction: 'pan-y'
@@ -159,7 +159,7 @@ const styles = {
   avatar: {
     width: '52px',
     height: '52px',
-    borderRadius: '16px',
+    borderRadius: 'var(--radius-medium)',
     overflow: 'hidden',
     flexShrink: 0,
     background: 'var(--surface-raised)',
@@ -174,7 +174,7 @@ const styles = {
     justifyContent: 'center',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '22px',
+    fontSize: 'var(--text-heading-size)',
     color: 'var(--color-primary)'
   },
   nameBlock: {
@@ -182,17 +182,17 @@ const styles = {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: 'var(--space-1)'
   },
   nameRow: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: '5px',
+    gap: 'var(--space-1)',
     overflow: 'hidden'
   },
   name: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     color: 'var(--color-text)',
     overflow: 'hidden',
@@ -203,12 +203,12 @@ const styles = {
   metaRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     overflow: 'hidden'
   },
   lastWorkout: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     overflow: 'hidden',

@@ -467,7 +467,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 
         <div style={{
           ...modalStyles.title,
-          color: isError || kind === 'offline' ? '#FF8C42' : 'var(--color-text)'
+          color: isError || kind === 'offline' ? 'var(--color-offline)' : 'var(--color-text)'
         }}>
           {title}
         </div>
@@ -523,18 +523,18 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
 }
 
 const styles = {
-  page: { position: 'relative', zIndex: 1, padding: '0 16px 100px', minHeight: '100dvh' },
+  page: { position: 'relative', zIndex: 1, padding: '0 var(--space-4) 100px', minHeight: '100dvh' },
   stickyHeader: {
     position: 'sticky',
     top: 0,
     zIndex: 30,
     // Фон-заливки НЕТ — контент скроллится прямо под шапкой (как в дне силовой).
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '12px',
+    paddingBottom: 'var(--space-3)',
     marginLeft: '-16px',
     marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)'
   },
   // Синяя карточка-«вода» — теперь ПОЛУПРОЗРАЧНОЕ стекло: наш голубой остаётся, но
   // с прозрачностью + backdrop-blur, контент просвечивает размытым (как в силовой).
@@ -543,8 +543,8 @@ const styles = {
     overflow: 'hidden',
     borderRadius: 'var(--radius-card)',
     minHeight: '112px',
-    paddingLeft: '16px',
-    paddingRight: '16px',
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)',
     background: 'linear-gradient(180deg, rgba(46,127,196,0.38) 0%, rgba(28,92,151,0.46) 100%)',
     backdropFilter: 'blur(14px) saturate(180%)',
     WebkitBackdropFilter: 'blur(14px) saturate(180%)',
@@ -570,10 +570,10 @@ const styles = {
     transform: 'translateX(-50%)',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: 'var(--space-1)',
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'rgba(255, 255, 255, 0.72)',
     whiteSpace: 'nowrap'
   },
@@ -588,14 +588,14 @@ const styles = {
     textAlign: 'center',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '26px',
+    fontSize: 'var(--text-display-size)',
     color: '#FFFFFF',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
     transition: 'font-size 0.28s var(--ease-ios)'
   },
-  metersMainCompact: { fontSize: '19px' },
+  metersMainCompact: { fontSize: 'var(--text-title-size)' },
   // Бассейны — под метражом, шрифтом как часы.
   metersSub: {
     position: 'absolute',
@@ -606,14 +606,14 @@ const styles = {
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'rgba(255, 255, 255, 0.72)',
     whiteSpace: 'nowrap',
     transition: 'top 0.28s var(--ease-ios)'
   },
   metersSubCompact: { top: 'calc(50% + 15px)' },
 
-  body: { position: 'relative', zIndex: 1, paddingTop: '16px' },
+  body: { position: 'relative', zIndex: 1, paddingTop: 'var(--space-4)' },
 
   // Блок = одна карточка 33px: тёмная шапка + светлые упражнения + степпер.
   blockCard: {
@@ -621,45 +621,45 @@ const styles = {
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    marginBottom: '16px'
+    marginBottom: 'var(--space-4)'
   },
   blockHead: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    padding: '12px 16px',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'rgba(0, 0, 0, 0.22)'
   },
   blockTitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     color: 'var(--color-text)'
   },
   blockMeta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
-  blockBody: { padding: '6px 16px 14px' },
+  blockBody: { padding: 'var(--space-15) var(--space-4) var(--space-4)' },
   rowDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 -4px' },
   swimRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '11px 0'
+    gap: 'var(--space-3)',
+    padding: 'var(--space-3) 0'
   },
-  swimContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  swimContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
   swimName: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     color: 'var(--color-text)'
   },
-  swimDot: { color: 'var(--color-text-secondary)', fontWeight: 400 },
+  swimDot: { color: 'var(--color-text-secondary)', fontWeight: 500 },
   swimNote: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
   swimIconWrap: {
@@ -675,10 +675,10 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '10px',
+    gap: 'var(--space-2)',
     height: '48px',
-    marginTop: '12px',
-    padding: '0 8px',
+    marginTop: 'var(--space-3)',
+    padding: '0 var(--space-2)',
     background: 'rgba(63, 162, 247, 0.12)',
     border: '1px solid rgba(63, 162, 247, 0.3)',
     borderRadius: 'var(--radius-pill)'
@@ -691,7 +691,7 @@ const styles = {
     border: 'none',
     background: 'rgba(63, 162, 247, 0.22)',
     color: 'var(--cat-pool)',
-    fontSize: '22px',
+    fontSize: 'var(--text-heading-size)',
     fontWeight: 700,
     lineHeight: 1,
     display: 'flex',
@@ -704,36 +704,36 @@ const styles = {
     textAlign: 'center',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '15px',
+    fontSize: 'var(--text-body-size)',
     letterSpacing: '0.5px',
     color: 'var(--cat-pool)',
     whiteSpace: 'nowrap'
   },
   footnote: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
-    paddingTop: '10px',
+    paddingTop: 'var(--space-3)',
     textAlign: 'center'
   },
 
   tipsBlock: {
-    marginTop: '12px',
-    padding: '16px 18px',
+    marginTop: 'var(--space-3)',
+    padding: 'var(--space-4) var(--space-5)',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
   },
   tipsTitle: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '12px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    marginBottom: '12px'
+    marginBottom: 'var(--space-3)'
   },
-  tipRow: { display: 'flex', gap: '8px', padding: '5px 0', alignItems: 'flex-start' },
-  tipMark: { color: 'var(--cat-pool)', fontSize: '14px', lineHeight: '18px', flexShrink: 0 },
+  tipRow: { display: 'flex', gap: 'var(--space-2)', padding: 'var(--space-1) 0', alignItems: 'flex-start' },
+  tipMark: { color: 'var(--cat-pool)', fontSize: 'var(--text-button-size)', lineHeight: '18px', flexShrink: 0 },
   tipText: {
     fontFamily: 'var(--font-manrope)',
     fontSize: '12.5px',
@@ -749,17 +749,17 @@ const styles = {
     right: 0,
     display: 'flex',
     justifyContent: 'center',
-    padding: '44px 16px var(--tabbar-bottom)',
+    padding: 'var(--space-12) var(--space-4) var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
   },
 
   errorBlock: {
-    padding: '40px 20px',
+    padding: 'var(--space-10) var(--space-5)',
     paddingTop: 'calc(var(--tg-safe-top) + 40px)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   }
@@ -768,7 +768,7 @@ const styles = {
 const plsStyles = {
   wrap: { display: 'inline-flex' },
   group: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '3px', width: 'auto',
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: 'auto',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
@@ -776,10 +776,10 @@ const plsStyles = {
   },
   item: {
     position: 'relative',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-    minHeight: '26px', padding: '0 11px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)',
+    minHeight: '26px', padding: '0 var(--space-3)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
   },
@@ -800,20 +800,20 @@ const modalStyles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '20px',
+    padding: 'var(--space-5)',
     animation: 'swimModalFade 0.3s ease-out forwards'
   },
   modal: {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(63, 162, 247, 0.25)',
     borderRadius: 'var(--radius-card)',
-    padding: '32px 24px 24px',
+    padding: 'var(--space-8) var(--space-6) var(--space-6)',
     width: '100%',
     maxWidth: '320px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--space-3)',
     animation: 'swimModalIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(63, 162, 247, 0.15)'
   },
@@ -822,11 +822,11 @@ const modalStyles = {
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 66, 0.2)'
   },
   icon: { fontSize: '56px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(63, 162, 247, 0.5))' },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px', letterSpacing: '2px', textAlign: 'center' },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '2px', textAlign: 'center' },
   distanceBadge: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '26px',
+    fontSize: 'var(--text-display-size)',
     color: 'var(--cat-pool)',
     letterSpacing: '1px',
     textShadow: '0 0 12px rgba(63, 162, 247, 0.4)'
@@ -834,30 +834,30 @@ const modalStyles = {
   rewardBadge: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '22px',
+    fontSize: 'var(--text-heading-size)',
     color: 'var(--color-primary)',
     letterSpacing: '1px'
   },
   message: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.5
   },
   button: {
-    marginTop: '4px',
+    marginTop: 'var(--space-1)',
     width: '100%',
-    padding: '14px',
+    padding: 'var(--space-4)',
     background: 'var(--cat-pool)',
     color: '#0D0C0C',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 800,
     letterSpacing: '2px',
     borderRadius: 'var(--radius-pill)',
     border: 'none',
     cursor: 'pointer'
   },
-  buttonError: { background: '#FF8C42' }
+  buttonError: { background: 'var(--color-offline)' }
 }

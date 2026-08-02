@@ -185,21 +185,21 @@ const styles = {
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '33px',
-    padding: '6px',
+    borderRadius: 'var(--radius-card)',
+    padding: 'var(--space-15)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px',
+    gap: 'var(--space-05)',
     boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
     transition: 'opacity 0.16s ease, transform 0.17s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '12px 16px',
+    gap: 'var(--space-4)',
+    padding: 'var(--space-3) var(--space-4)',
     border: 'none',
-    borderRadius: '90px',
+    borderRadius: 'var(--radius-pill)',
     width: '100%',
     textAlign: 'left',
     cursor: 'pointer',
@@ -217,16 +217,16 @@ const styles = {
   },
   label: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 600,
+    fontSize: 'var(--text-body-size)',
+    fontWeight: 700,
     color: 'var(--color-text)',
     whiteSpace: 'nowrap'
   },
   // Произвольное содержимое пункта (сегмент-контрол выбора периода и т.п.).
-  custom: { padding: '2px' },
+  custom: { padding: 'var(--space-05)' },
   divider: {
     height: '1px',
     background: 'rgba(255, 255, 255, 0.08)',
-    margin: '4px 8px'
+    margin: 'var(--space-1) var(--space-2)'
   }
 }

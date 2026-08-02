@@ -76,8 +76,8 @@ const styles = {
   panel: {
     position: 'fixed',
     display: 'flex',
-    gap: '6px',
-    padding: '7px',
+    gap: 'var(--space-15)',
+    padding: 'var(--space-2)',
     background: 'rgba(28, 28, 30, 0.72)',
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',

@@ -178,17 +178,17 @@ function Value({ num, unit }) {
 }
 
 const styles = {
-  row: { display: 'flex', gap: '12px', alignItems: 'stretch' },
+  row: { display: 'flex', gap: 'var(--space-3)', alignItems: 'stretch' },
   card: {
     minWidth: 0, minHeight: '96px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-    padding: '12px', textAlign: 'left',
+    padding: 'var(--space-3)', textAlign: 'left',
     background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
   icon: { display: 'inline-flex', height: '22px' },
-  textCol: { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 },
-  titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px', width: '100%' },
+  textCol: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', minWidth: 0 },
+  titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   // Слой закрытия: прозрачный, гасит прокрутку под собой.
   periodOverlay: {
     position: 'fixed', inset: 0, background: 'transparent',
@@ -202,17 +202,17 @@ const styles = {
     animation: 'metricPopIn 0.2s var(--ease-ios) forwards'
   },
   titlePeriod: {
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
   },
-  title: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   // Строка значения: слева значение, справа подпись-контекст.
-  valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px', minHeight: '20px', width: '100%' },
-  valueMain: { display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 0 },
-  valueNum: { fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
-  valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-15)', minHeight: '20px', width: '100%' },
+  valueMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)', minWidth: 0 },
+  valueNum: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
+  valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
   // Подпись-контекст — тихая, в правом углу строки значения («Июль» / «Утро»).
-  caption: { fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
+  caption: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   // Зазор между двумя показателями статистики; серые иконки перед каждым.
   valueGap: { width: '12px', display: 'inline-block' },
   statIcon: { display: 'inline-flex' },

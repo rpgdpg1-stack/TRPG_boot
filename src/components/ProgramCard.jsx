@@ -307,8 +307,8 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '16px',
+    gap: 'var(--space-4)',
+    padding: 'var(--space-4)',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
     width: '100%',
@@ -317,7 +317,7 @@ const styles = {
     textAlign: 'left'
   },
   // Верхний ряд карточки (эмблема + контент + CTA). Позиционный контекст для CTA.
-  cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: '16px', width: '100%' },
+  cardRow: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', width: '100%' },
   // Заливка-прогресс активной тренировки — за контентом (zIndex 0), клип overflow.
   cardFill: {
     position: 'absolute',
@@ -341,14 +341,14 @@ const styles = {
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '8px 12px',
+    gap: 'var(--space-15)',
+    padding: 'var(--space-2) var(--space-3)',
     // Отделяется заливкой (на ~7% светлее карточки), без рамки.
     background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 600,
+    fontSize: 'var(--text-body-size)',
+    fontWeight: 700,
     color: 'var(--color-text)',
     whiteSpace: 'nowrap',
     pointerEvents: 'none'
@@ -365,7 +365,7 @@ const styles = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     pointerEvents: 'none'
   },
-  ctaCirclePlay: { display: 'inline-flex', color: 'var(--accent-on)', marginLeft: '2px' },
+  ctaCirclePlay: { display: 'inline-flex', color: 'var(--accent-on)', marginLeft: 'var(--space-05)' },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',
@@ -376,7 +376,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: '4px',
+    gap: 'var(--space-1)',
     textAlign: 'right',
     maxWidth: '84px',
     pointerEvents: 'none'
@@ -387,6 +387,6 @@ const styles = {
     color: 'var(--color-primary)',
     filter: 'drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 35%, transparent))'
   },
-  ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '9px', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
-  ltValue: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px', lineHeight: 1.25, color: 'var(--color-text-secondary)' }
+  ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
+  ltValue: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', lineHeight: 1.25, color: 'var(--color-text-secondary)' }
 }

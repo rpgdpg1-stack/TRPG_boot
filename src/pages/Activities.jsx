@@ -33,9 +33,9 @@ export default function Activities() {
 
 const styles = {
   intro: {
-    margin: '0 4px 16px',
+    margin: '0 var(--space-1) var(--space-4)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     lineHeight: 1.4,
     color: 'var(--color-text-secondary)'
   }

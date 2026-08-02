@@ -72,7 +72,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
             : <div style={styles.flame}>{isError ? '⚠️' : '📵'}</div>}
 
           <div style={styles.body}>
-            <div style={{ ...styles.title, color: (isError || offline) ? '#FF8C42' : 'var(--color-primary)' }}>
+            <div style={{ ...styles.title, color: (isError || offline) ? 'var(--color-offline)' : 'var(--color-primary)' }}>
               {titleText}
             </div>
 
@@ -87,7 +87,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               }}>
                 <span style={styles.stat}>
                   <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
-                  <span style={{ ...styles.statNum, color: streak >= 1 ? '#FF8C42' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
+                  <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
                 </span>
                 {durationLabel && (
                   <span style={styles.stat}>
@@ -115,7 +115,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               size="sm"
               onClick={handleClick}
               disabled={isSaving}
-              style={{ marginTop: '4px', width: '100%', ...(isError ? { background: '#FF8C42', borderColor: '#C46A28', color: '#0D0C0C' } : {}) }}
+              style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: '#0D0C0C' } : {}) }}
             >
               {buttonText}
             </ActionButton>
@@ -147,7 +147,7 @@ const styles = {
     background: 'rgba(13, 12, 12, 0.9)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 9999, padding: '20px',
+    zIndex: 9999, padding: 'var(--space-5)',
     // Экран под модалкой заморожен: прокрутку гасим здесь (не трогая body —
     // position:fixed на нём дёргает закреплённую шапку дня).
     touchAction: 'none',
@@ -173,36 +173,36 @@ const styles = {
   content: {
     // Сверху воздуха больше: «+1» улетает вверх и не должен упираться в кромку.
     // Снизу жест подтянут к заголовку (отрицательный margin у сцены).
-    padding: '24px 20px 20px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
+    padding: 'var(--space-6) var(--space-5) var(--space-5)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)'
   },
   // Жест опущен ниже и придвинут к заголовку.
   gestureWrap: { marginTop: '0', marginBottom: '-16px' },
   flame: { fontSize: '58px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(255, 140, 66, 0.7))' },
   body: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', width: '100%',
     transition: `opacity ${CLOSE_MS}ms ease`
   },
   // Обычный регистр (первая заглавная), акцентный зелёный.
-  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px', letterSpacing: '0.5px', textAlign: 'center' },
-  durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: 'var(--color-primary)', letterSpacing: '0.5px' },
-  durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: '4px' },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px', textAlign: 'center' },
+  durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
+  durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: 'var(--space-1)' },
   // Похвала и заметка о лимите занимают ОДНУ и ту же строку фиксированной высоты —
   // панель не меняет размер, когда приходит ответ сервера.
   praise: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--color-text)',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', color: 'var(--color-text)',
     letterSpacing: '0.5px', textAlign: 'center',
     minHeight: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
-  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' },
-  stat: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
-  statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px' },
+  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-5)' },
+  stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
+  statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
   limitNote: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)',
     textAlign: 'center', lineHeight: 1.45, opacity: 0.85,
     minHeight: '34px', display: 'flex', flexDirection: 'column', justifyContent: 'center'
   }

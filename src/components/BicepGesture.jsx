@@ -37,7 +37,7 @@ export default function BicepGesture({ size = 84 }) {
 
   return (
     <div ref={ref} style={styles.scene}>
-      <div style={styles.biceps}><UiIcon name="muscles" size={size} color="#FADFBE" /></div>
+      <div style={styles.biceps}><UiIcon name="muscles" size={size} color="var(--color-icon-muscle)" /></div>
       <div style={styles.plusOne}>+1</div>
       <style>{`
         @keyframes bgFlex {
@@ -69,7 +69,7 @@ const styles = {
   // «+1» улетает и гаснет (как на лоадере), не остаётся висеть над бицепсом.
   plusOne: {
     position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)',
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px',
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-size)',
     color: 'var(--color-primary)', letterSpacing: '1px', zIndex: 3, opacity: 0,
     animation: 'bgPlusFly 1.15s ease-out forwards'
   }

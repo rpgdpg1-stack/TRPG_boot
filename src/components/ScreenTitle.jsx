@@ -38,15 +38,15 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '0 56px',
+    padding: '0 var(--space-12)',
     pointerEvents: 'none',
     zIndex: 95
   },
   title: {
     margin: 0,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '16px',
-    fontWeight: 600,
+    fontSize: 'var(--text-body-size)',
+    fontWeight: 700,
     letterSpacing: '0.2px',
     lineHeight: 1.2,
     color: 'rgba(255, 255, 255, 0.9)',

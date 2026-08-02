@@ -201,34 +201,34 @@ export default function FavoriteExercises() {
 
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
-  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' },
+  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-4)' },
   introHeart: { display: 'inline-flex', verticalAlign: '-2px' },
   intro: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
-    margin: '0 auto 20px', maxWidth: '300px'
+    margin: '0 auto var(--space-5)', maxWidth: '300px'
   },
-  list: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
   // Заголовок группы мышц над карточкой — тот же вид, что в дне тренировки.
   // Заголовок группы — по левому краю, там где заканчивается скругление карточки.
   groupHead: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '12px',
-    letterSpacing: '2px', padding: '0 4px 6px 28px'
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    letterSpacing: '2px', padding: '0 var(--space-1) var(--space-15) var(--space-6)'
   },
   // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
   // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).
   card: {
     position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center',
-    padding: '16px', gap: '16px', width: '100%', minHeight: '132px',
+    padding: 'var(--space-4)', gap: 'var(--space-4)', width: '100%', minHeight: '132px',
     background: 'var(--surface-raised)', border: '1px solid var(--border-hairline)',
-    borderRadius: '33px', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
+    borderRadius: 'var(--radius-card)', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
   },
   cardEmpty: {
-    justifyContent: 'center', gap: '10px', background: 'var(--surface)',
+    justifyContent: 'center', gap: 'var(--space-2)', background: 'var(--surface)',
     border: '1px dashed rgba(255, 255, 255, 0.18)'
   },
-  plus: { color: 'var(--color-primary)', fontSize: '22px', lineHeight: 1 },
-  emptyText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  plus: { color: 'var(--color-primary)', fontSize: 'var(--text-heading-size)', lineHeight: 1 },
+  emptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   heartBtn: {
     position: 'absolute', top: '10px', right: '10px', zIndex: 6, width: '40px', height: '40px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -236,21 +236,21 @@ const styles = {
     WebkitTapHighlightColor: 'transparent'
   },
   preview: {
-    flexShrink: 0, width: '100px', height: '100px', borderRadius: '33px', overflow: 'hidden',
+    flexShrink: 0, width: '100px', height: '100px', borderRadius: 'var(--radius-card)', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   previewEmoji: { fontSize: '40px' },
-  cardContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' },
-  exName: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, lineHeight: '19px', color: '#F0F0F0' },
+  cardContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'var(--space-2)' },
+  exName: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, lineHeight: '19px', color: '#F0F0F0' },
   tag: {
-    alignSelf: 'flex-start', padding: '3px 10px', borderRadius: '999px', color: '#FFFFFF',
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
+    alignSelf: 'flex-start', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-pill)', color: '#FFFFFF',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
   },
   // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard).
   weightBlock: { flexShrink: 0, width: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: '20px', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
-  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f', textAlign: 'center' },
-  weightHint: { marginTop: '2px', fontFamily: 'var(--font-manrope)', fontSize: '9px', color: 'var(--color-text-secondary)' },
-  loading: { textAlign: 'center', padding: '16px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' }
+  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
+  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f', textAlign: 'center' },
+  weightHint: { marginTop: 'var(--space-05)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
+  loading: { textAlign: 'center', padding: 'var(--space-4)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' }
 }

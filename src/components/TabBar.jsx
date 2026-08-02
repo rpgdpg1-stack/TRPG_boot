@@ -175,7 +175,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0',
-    padding: '4px',
+    padding: 'var(--space-1)',
     height: 'var(--tabbar-height)',
     // Фон как у самой прозрачной кнопки «Завершить» (вариант dim ActionButton):
     // лёгкий тёмный фон + слабый блюр. Токены: surface-dim + border.
@@ -195,8 +195,8 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '3px',
-    padding: '0 12px',
+    gap: 'var(--space-1)',
+    padding: '0 var(--space-3)',
     width: '90px',
     // Растягиваемся на всю внутреннюю высоту бара (учитывая padding и border),
     // вместо фикс-высоты — тогда отступ сверху/снизу всегда ровно 4px.
@@ -218,8 +218,8 @@ const styles = {
   },
   label: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
-    fontWeight: 600,
+    fontSize: 'var(--text-caption-size)',
+    fontWeight: 700,
     letterSpacing: '0.3px',
     transition: 'color 0.25s ease',
     whiteSpace: 'nowrap'

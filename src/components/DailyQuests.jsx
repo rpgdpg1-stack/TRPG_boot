@@ -269,7 +269,7 @@ function Row({ emoji, star, title, benefit, done, scale, onTap }) {
 const styles = {
   container: {
     position: 'relative',
-    padding: '10px 14px 12px',
+    padding: 'var(--space-3) var(--space-4) var(--space-3)',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)'
@@ -280,42 +280,42 @@ const styles = {
   winHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '7px',
-    padding: '2px 4px 8px'
+    gap: 'var(--space-2)',
+    padding: 'var(--space-05) var(--space-1) var(--space-2)'
   },
-  winEmoji: { fontSize: '17px', lineHeight: 1 },
+  winEmoji: { fontSize: 'var(--text-title-size)', lineHeight: 1 },
   winLabel: {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: 'var(--text-body-size)',
     color: 'var(--color-text)',
     letterSpacing: '0.2px'
   },
   winLocked: {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 500,
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
   rows: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: 'var(--space-15)',
     transition: 'filter 0.3s ease, opacity 0.3s ease'
   },
   emptyHint: {
-    padding: '16px 6px',
+    padding: 'var(--space-4) var(--space-15)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)'
   },
   row: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '8px 6px',
+    gap: 'var(--space-2)',
+    padding: 'var(--space-2) var(--space-15)',
     background: 'transparent',
     width: '100%',
     textAlign: 'left',
@@ -333,7 +333,7 @@ const styles = {
     justifyContent: 'center'
   },
   rowIcon: {
-    fontSize: '24px',
+    fontSize: 'var(--text-heading-size)',
     lineHeight: 1,
     flexShrink: 0,
     width: '30px',
@@ -341,16 +341,16 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center'
   },
-  textCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  textCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
   title: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
-    fontWeight: 600,
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 700,
     lineHeight: 1.2
   },
   benefit: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     lineHeight: 1.2,
     color: 'var(--color-text-secondary)'
@@ -362,7 +362,7 @@ const styles = {
     top: '2px',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: 'var(--text-body-size)',
     color: 'var(--color-primary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
@@ -370,7 +370,7 @@ const styles = {
     zIndex: 3,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: 'var(--space-1)',
     textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
     animation: 'rowRewardFly 1.1s ease-out forwards'
   }

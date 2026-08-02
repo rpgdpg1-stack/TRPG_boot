@@ -44,7 +44,7 @@ export default function SaveFriendProgramModal({ snapshot, replacing, onSaved, o
         )}
         {error && <div style={styles.error}>{error}</div>}
 
-        <ActionButton variant="gray" size="sm" onClick={handleSave} disabled={saving} style={{ width: '100%', marginBottom: '10px' }}>
+        <ActionButton variant="gray" size="sm" onClick={handleSave} disabled={saving} style={{ width: '100%', marginBottom: 'var(--space-3)' }}>
           {saving ? 'СОХРАНЯЮ…' : (replacing ? 'ЗАМЕНИТЬ ПРОГРАММУ ДРУГА' : 'СОХРАНИТЬ ПРОГРАММУ')}
         </ActionButton>
         <ActionButton variant="ghost" size="sm" onClick={onClose} disabled={saving} style={{ width: '100%', border: 'none' }}>Отмена</ActionButton>
@@ -62,18 +62,18 @@ const styles = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 200,
     background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)'
   },
   modal: {
     width: '100%', maxWidth: '340px',
     background: 'var(--color-card)', borderRadius: 'var(--radius-card)',
-    padding: '28px 24px', textAlign: 'center',
+    padding: 'var(--space-6) var(--space-6)', textAlign: 'center',
     border: '1px solid rgba(255,255,255,0.08)'
   },
-  emoji: { fontSize: '44px', marginBottom: '12px' },
-  title: { fontFamily: 'var(--font-manrope)', fontSize: '20px', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px' },
-  author: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' },
-  meta: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: '20px' },
-  warn: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E0A23C', background: 'rgba(224,162,60,0.1)', borderRadius: '12px', padding: '10px 12px', marginBottom: '16px' },
-  error: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: '#E84545', marginBottom: '12px' },
+  emoji: { fontSize: '44px', marginBottom: 'var(--space-3)' },
+  title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' },
+  author: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' },
+  meta: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: 'var(--space-5)' },
+  warn: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: '#E0A23C', background: 'rgba(224,162,60,0.1)', borderRadius: 'var(--radius-small)', padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-4)' },
+  error: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: '#E84545', marginBottom: 'var(--space-3)' },
 }

@@ -128,7 +128,7 @@ export default function ExerciseInfo() {
 
 const styles = {
   page: {
-    padding: '0 16px',
+    padding: '0 var(--space-4)',
     paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
     minHeight: '100dvh'
   },
@@ -143,8 +143,8 @@ const styles = {
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)'
   },
   stickyFade: {
     position: 'absolute',
@@ -161,54 +161,54 @@ const styles = {
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
   },
   body: {
-    paddingTop: '20px'
+    paddingTop: 'var(--space-5)'
   },
   sectionHeader: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    marginBottom: '10px',
-    paddingLeft: '4px'
+    marginBottom: 'var(--space-3)',
+    paddingLeft: 'var(--space-1)'
   },
   descriptionBlock: {
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)',
-    padding: '20px 18px',
+    padding: 'var(--space-5) var(--space-5)',
     minHeight: '120px'
   },
   descriptionText: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     color: 'var(--color-text)',
     lineHeight: 1.6
   },
   paragraph: {
-    margin: '0 0 10px 0'
+    margin: '0 0 var(--space-3) 0'
   },
   descriptionPlaceholder: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.6,
-    padding: '20px 8px'
+    padding: 'var(--space-5) var(--space-2)'
   },
   // Фоллбэки загрузки/ошибки используют обычный .page (центрируем текст).
   fallbackPage: {},
   loading: {
     textAlign: 'center',
-    padding: '60px 20px',
+    padding: '60px var(--space-5)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)'
   },
   errorBlock: {
-    padding: '40px 20px',
+    padding: 'var(--space-10) var(--space-5)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   }

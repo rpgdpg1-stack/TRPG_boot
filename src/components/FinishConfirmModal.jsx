@@ -63,7 +63,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
-    padding: '24px',
+    padding: 'var(--space-6)',
     // Гасим прокрутку страницы под модалкой (как в AnchorMenu) — без position:fixed
     // на body, иначе прыгает закреплённая шапка дня.
     touchAction: 'none',
@@ -76,11 +76,11 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-card)',
-    padding: '24px 20px 20px',
+    padding: 'var(--space-6) var(--space-5) var(--space-5)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'finishConfirmIn 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     transition: `opacity ${CONFIRM_EXIT_MS}ms ease, transform ${CONFIRM_EXIT_MS}ms var(--ease-ios)`
@@ -90,21 +90,21 @@ const styles = {
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '16px',
+    fontSize: 'var(--text-body-size)',
     letterSpacing: '0.5px',
     color: 'var(--color-text)',
     textAlign: 'center'
   },
   subtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center'
   },
   row: {
     display: 'flex',
-    gap: '12px',
+    gap: 'var(--space-3)',
     width: '100%',
-    marginTop: '16px'
+    marginTop: 'var(--space-4)'
   }
 }

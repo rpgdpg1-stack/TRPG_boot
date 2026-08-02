@@ -103,8 +103,8 @@ export default function Settings() {
   }
 
   const titleColor = (tone) =>
-    tone === 'danger' ? '#FF8C42'
-    : tone === 'warning' ? '#FFD700'
+    tone === 'danger' ? 'var(--color-error)'
+    : tone === 'warning' ? 'var(--color-warning)'
     : 'var(--color-text)'
 
   return (
@@ -162,7 +162,7 @@ const styles = {
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '32px',
+    fontSize: 'var(--text-display-size)',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
     lineHeight: 1,
@@ -173,11 +173,11 @@ const styles = {
   groupTitle: {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.2px',
-    marginBottom: '12px',
-    paddingLeft: '4px'
+    marginBottom: 'var(--space-3)',
+    paddingLeft: 'var(--space-1)'
   },
   groupCard: {
     display: 'flex',
@@ -189,8 +189,8 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '16px',
+    gap: 'var(--space-4)',
+    padding: 'var(--space-4)',
     width: '100%',
     minHeight: '60px',
     textAlign: 'left',
@@ -199,7 +199,7 @@ const styles = {
   },
   rowSoon: { opacity: 0.5, cursor: 'default' },
   soonTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
     letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
   rowContent: {
@@ -208,17 +208,17 @@ const styles = {
   },
   rowTitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 600,
-    marginBottom: '2px'
+    fontSize: 'var(--text-body-size)',
+    fontWeight: 700,
+    marginBottom: 'var(--space-05)'
   },
   rowSubtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
   rowArrow: {
-    fontSize: '18px',
+    fontSize: 'var(--text-title-size)',
     color: 'var(--color-text-secondary)',
     flexShrink: 0
   }

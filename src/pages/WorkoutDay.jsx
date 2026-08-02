@@ -1366,7 +1366,7 @@ export default function WorkoutDay() {
               variant={sessionBlocked ? 'dim' : 'primary'}
               hug
               className={btnMorph ? 'btn-morph' : ''}
-              style={{ gap: '8px' }}
+              style={{ gap: 'var(--space-2)' }}
             >
               <PlayIcon size={20} /> Начать
             </ActionButton>
@@ -1616,34 +1616,34 @@ const skeletonStyles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '16px',
-    padding: '16px',
+    gap: 'var(--space-4)',
+    padding: 'var(--space-4)',
     minHeight: '132px',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     background: '#1C1C1C'
   },
   thumb: {
     flexShrink: 0,
     width: '100px',
     height: '100px',
-    borderRadius: '33px'
+    borderRadius: 'var(--radius-card)'
   },
   lines: {
     flex: 1,
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px'
+    gap: 'var(--space-2)'
   },
   line: {
     height: '16px',
-    borderRadius: '6px'
+    borderRadius: 'var(--radius-xs)'
   },
   weight: {
     flexShrink: 0,
     width: '30px',
     height: '24px',
-    borderRadius: '6px'
+    borderRadius: 'var(--radius-xs)'
   }
 }
 
@@ -1759,8 +1759,8 @@ const pickerStyles = {
   panel: {
     position: 'fixed',
     display: 'flex',
-    gap: '6px',
-    padding: '7px',
+    gap: 'var(--space-15)',
+    padding: 'var(--space-2)',
     background: 'rgba(28, 28, 30, 0.72)',
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
@@ -1781,7 +1781,7 @@ const pickerStyles = {
     borderRadius: '50%',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '22px',
+    fontSize: 'var(--text-heading-size)',
     color: 'var(--color-text-secondary)',
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
@@ -1802,7 +1802,7 @@ const styles = {
     // свечение (SectionGlow) правильно ложится за контент и в зону нативного оттяга.
     position: 'relative',
     zIndex: 1,
-    padding: '0 16px',
+    padding: '0 var(--space-4)',
     paddingBottom: '100px',
     marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
   },
@@ -1819,8 +1819,8 @@ const styles = {
     paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)'
   },
   // Ряд для центрирования челки — абсолютный, сразу под карточкой дня (top:100%),
   // НЕ в потоке (отступы списка не трогает). Контент скроллится под челкой.
@@ -1837,10 +1837,10 @@ const styles = {
   // «Челка» — текст группы под карточкой дня. Своего фона нет — сплошная чёрная
   // полоска (stickySolid) и stickyFade ниже дают затемнение; текст поверх них.
   groupTabText: {
-    paddingTop: '5px',
+    paddingTop: 'var(--space-1)',
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     letterSpacing: '2px',
     lineHeight: 1,
     whiteSpace: 'nowrap',
@@ -1876,7 +1876,7 @@ const styles = {
   headerCard: {
     position: 'relative',
     overflow: 'hidden',
-    padding: '14px 16px',
+    padding: 'var(--space-4) var(--space-4)',
     // Матовое стекло (как таб-бар / кнопка с блюром): контент скроллится под шапкой
     // и просвечивает размытым. Полупрозрачный фон + backdrop-blur + бордер + тень.
     background: 'rgba(28, 28, 30, 0.55)',
@@ -1904,7 +1904,7 @@ const styles = {
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: 'var(--space-3)'
   },
   // Верхний ряд: место слева (в потоке), таймер и крестик — absolute (не влияют
   // на высоту ряда → блок не растёт при появлении крестика). Высота = высота тега.
@@ -1936,7 +1936,7 @@ const styles = {
   timer: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '16px',
+    fontSize: 'var(--text-body-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px',
     fontVariantNumeric: 'tabular-nums',
@@ -1944,7 +1944,7 @@ const styles = {
     display: 'inline-block'
   },
   // Таймер с иконкой часов — inline-flex.
-  timerWithClock: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
+  timerWithClock: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
   // Буква дня в сжатой строке (въезжает слева от времени).
   rowLetter: {
     display: 'inline-block',
@@ -1952,7 +1952,7 @@ const styles = {
     whiteSpace: 'nowrap',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '19px',
+    fontSize: 'var(--text-title-size)',
     lineHeight: 1
   },
   // Счётчик в сжатой строке (въезжает справа от времени).
@@ -1962,7 +1962,7 @@ const styles = {
     whiteSpace: 'nowrap',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     lineHeight: 1,
     color: 'var(--color-text-secondary)',
     fontVariantNumeric: 'tabular-nums'
@@ -1981,10 +1981,10 @@ const styles = {
   estimate: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: 'var(--space-1)',
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap'
@@ -2002,8 +2002,8 @@ const styles = {
     zIndex: 6,
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '10px 12px',
+    gap: 'var(--space-2)',
+    padding: 'var(--space-3) var(--space-3)',
     background: 'rgba(232, 69, 69, 0.28)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-medium)',
@@ -2015,21 +2015,21 @@ const styles = {
   overloadText: {
     flex: 1,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
     lineHeight: 1.35,
     color: '#FF8C7A'
   },
   overloadOk: {
     flexShrink: 0,
-    padding: '7px 18px',
+    padding: 'var(--space-2) var(--space-5)',
     borderRadius: 'var(--radius-pill)',
     background: 'rgba(255, 255, 255, 0.1)',
     border: 'none',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     letterSpacing: '1px',
     cursor: 'pointer'
   },
@@ -2039,43 +2039,43 @@ const styles = {
     background: 'rgba(13, 12, 12, 0.75)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) 20px 20px'
+    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
   },
   cancelModal: {
     width: '100%', maxWidth: '340px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-card)',
-    padding: '24px 18px 18px',
-    display: 'flex', flexDirection: 'column', gap: '8px',
+    padding: 'var(--space-6) var(--space-5) var(--space-5)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
   cancelTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: '18px', fontWeight: 800,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
     color: 'var(--color-text)', textAlign: 'center'
   },
   cancelText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '14px', lineHeight: 1.4
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 'var(--space-4)', lineHeight: 1.4
   },
-  cancelButtonsRow: { display: 'flex', gap: '10px', width: '100%' },
+  cancelButtonsRow: { display: 'flex', gap: 'var(--space-2)', width: '100%' },
   cancelKeepBtn: {
-    flex: 1, padding: '14px', borderRadius: 'var(--radius-medium)',
+    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
     background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: '13px',
+    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
   },
   cancelYesBtn: {
-    flex: 1, padding: '14px', borderRadius: 'var(--radius-medium)',
+    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
     background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
-    color: '#FF6B6B', fontFamily: 'var(--font-manrope)', fontSize: '13px',
+    color: '#FF6B6B', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '8px',
+    gap: 'var(--space-2)',
     // Подтягиваем букву дня ближе к строке «Зал / минуты» (−6px к гэпу 12px).
     marginTop: '-6px',
     touchAction: 'pan-y'
@@ -2086,7 +2086,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '6px'
+    gap: 'var(--space-15)'
   },
   // Буква дня строго по центру. Кликабельна — тап открывает пикер дней.
   dayLetterWrap: {
@@ -2101,7 +2101,7 @@ const styles = {
   dayLetter: {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
-    fontSize: '45px',
+    fontSize: 'var(--text-hero-size)',
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,
@@ -2119,16 +2119,16 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     opacity: 0.7
   },
   dayChip: {
     display: 'inline-block',
-    padding: '3px 9px',
-    borderRadius: '999px',
+    padding: 'var(--space-1) var(--space-2)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '10px',
+    fontSize: 'var(--text-caption-size)',
     letterSpacing: '0.4px',
     lineHeight: 1.3,
     color: '#FFFFFF',
@@ -2142,12 +2142,12 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     height: '22px',
-    padding: '0 8px'
+    padding: '0 var(--space-2)'
   },
   dayDescLabel: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     lineHeight: 1,
     color: 'var(--color-text-secondary)',
     letterSpacing: '1px'
@@ -2155,24 +2155,24 @@ const styles = {
   // «N/M» в тренировке — крупнее и жирнее, как активный таймер (растёт из центра).
   dayCountActive: {
     fontWeight: 700,
-    fontSize: '16px',
+    fontSize: 'var(--text-body-size)',
     fontVariantNumeric: 'tabular-nums'
   },
   body: {
     // Над свечением (zIndex 0), которое лежит за шапкой у верхней кромки.
     position: 'relative',
     zIndex: 1,
-    paddingTop: '20px'
+    paddingTop: 'var(--space-5)'
   },
   sectionsWrap: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px'
+    gap: 'var(--space-5)'
   },
   section: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: 'var(--space-3)'
   },
   // Текст заголовка стоит ровно там же, где текст закреплённого пузырька
   // (left 20px + padding-left 14px = 34px от края страницы). Страница даёт
@@ -2185,24 +2185,24 @@ const styles = {
   // так все заголовки экрана стоят в одну вертикаль.
   muscleHeader: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '13px',
+    fontWeight: 700,
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    padding: '4px 4px 4px 28px',
+    padding: 'var(--space-1) var(--space-1) var(--space-1) var(--space-6)',
     margin: 0,
     textAlign: 'left'
   },
   exerciseList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px'
+    gap: 'var(--space-4)'
   },
   empty: {
     textAlign: 'center',
-    padding: '40px 20px',
+    padding: 'var(--space-10) var(--space-5)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)'
   },
   // Человеческий экран ошибки: иконка + короткий текст + кнопка «Обновить».
@@ -2211,33 +2211,33 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     textAlign: 'center',
-    gap: '10px',
-    padding: '48px 24px'
+    gap: 'var(--space-2)',
+    padding: 'var(--space-12) var(--space-6)'
   },
   errorBoxTitle: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '17px',
+    fontSize: 'var(--text-title-size)',
     letterSpacing: '1px',
     color: 'var(--color-text)',
-    marginTop: '4px'
+    marginTop: 'var(--space-1)'
   },
   errorBoxText: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     lineHeight: 1.5,
     color: 'var(--color-text-secondary)',
     maxWidth: '260px'
   },
   retryButton: {
-    marginTop: '8px',
-    padding: '11px 28px',
+    marginTop: 'var(--space-2)',
+    padding: 'var(--space-3) var(--space-6)',
     background: 'rgba(255, 255, 255, 0.06)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
@@ -2253,7 +2253,7 @@ const styles = {
     justifyContent: 'center',
     // Отступ от низа — как у таб-бара (var(--tabbar-bottom)), а не +safe-inset,
     // иначе кнопка висит заметно выше таб-бара.
-    padding: '44px 16px var(--tabbar-bottom)',
+    padding: 'var(--space-12) var(--space-4) var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
   },
@@ -2269,15 +2269,15 @@ const styles = {
   },
   startBlockToast: {
     maxWidth: '240px',
-    padding: '10px 14px',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
     lineHeight: 1.35,
     color: '#FF6B6B',
     textAlign: 'center'

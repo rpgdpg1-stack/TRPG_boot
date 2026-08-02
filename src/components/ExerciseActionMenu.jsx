@@ -429,7 +429,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
       {/* Крестик-закрытие ПОД модалкой, по центру — единый компонент (низ экрана
           удобнее для большого пальца). Grow + светло-серый фон при удержании. */}
-      <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
+      <CloseCross onClose={onClose} style={{ marginTop: 'var(--space-4)' }} />
 
       {showProgress && (
         <WeightProgressModal
@@ -469,7 +469,7 @@ const styles = {
     touchAction: 'none',
     // Верхний отступ = системная зона Telegram + запас; низ = safe-area + запас,
     // чтобы крестик-пузырёк под модалкой не прилипал к самому низу экрана.
-    padding: 'calc(env(safe-area-inset-top) + 30px) 20px calc(env(safe-area-inset-bottom) + 20px)',
+    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) calc(env(safe-area-inset-bottom) + 20px)',
     overflowY: 'auto',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
@@ -487,27 +487,27 @@ const styles = {
     touchAction: 'pan-y',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     // Симметричные отступы 24 сверху/снизу, 16 по бокам (крестик вынесен под модалку).
-    padding: '24px 16px 24px',
+    padding: 'var(--space-6) var(--space-4) var(--space-6)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '16px',
+    gap: 'var(--space-4)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
   // Баннер лимита любимых.
   favLimit: {
     width: '100%',
-    padding: '10px 14px',
+    padding: 'var(--space-3) var(--space-4)',
     borderRadius: 'var(--radius-medium)',
     background: 'rgba(232, 69, 69, 0.12)',
     border: '1px solid rgba(232, 69, 69, 0.3)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#FF8C42',
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
+    color: 'var(--color-text-secondary)',
     textAlign: 'center',
     lineHeight: 1.4
   },
@@ -552,19 +552,19 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: '16px',
-    gap: '16px',
+    padding: 'var(--space-4)',
+    gap: 'var(--space-4)',
     width: '100%',
     minHeight: '150px',
     background: '#1C1C1C',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
   preview: {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
     background: '#FFFFFF',
     display: 'flex',
@@ -578,11 +578,11 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: '8px'
+    gap: 'var(--space-2)'
   },
   exerciseName: {
-    fontFamily: 'var(--font-geist)',
-    fontSize: '15px',
+    fontFamily: 'var(--font-display)',
+    fontSize: 'var(--text-body-size)',
     fontWeight: 700,
     lineHeight: '19px',
     color: '#F0F0F0'
@@ -591,15 +591,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     flexWrap: 'wrap'
   },
   tag: {
     display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: '999px',
+    padding: 'var(--space-1) var(--space-3)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     letterSpacing: '0.3px',
     lineHeight: '15px',
@@ -608,11 +608,11 @@ const styles = {
   tagSecondary: {
     background: 'rgba(255, 255, 255, 0.08)',
     color: '#A0A0A0',
-    fontWeight: 600
+    fontWeight: 700
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
@@ -629,7 +629,7 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'flex-end',
     gap: '0px',
-    padding: '6px',
+    padding: 'var(--space-15)',
     margin: '-6px',
     borderRadius: 'var(--radius-small)',
     position: 'relative',
@@ -647,7 +647,7 @@ const styles = {
     width: '38px',
     height: '27px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
     background: 'transparent',
@@ -668,7 +668,7 @@ const styles = {
     width: '38px',
     height: '27px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
     textAlign: 'center',
@@ -678,7 +678,7 @@ const styles = {
   weightUnit: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 800,
     lineHeight: '15px',
     letterSpacing: '0.05em',
@@ -691,14 +691,14 @@ const styles = {
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
-    marginTop: '8px'
+    gap: 'var(--space-15)',
+    marginTop: 'var(--space-2)'
   },
   actionButton: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '14px 18px',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-4) var(--space-5)',
     background: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 'var(--radius-medium)',
     border: 'none',
@@ -707,11 +707,11 @@ const styles = {
     transition: 'background 0.15s ease, transform 0.1s ease',
     cursor: 'pointer'
   },
-  actionIcon: { fontSize: '20px', lineHeight: 1, flexShrink: 0 },
+  actionIcon: { fontSize: 'var(--text-heading-size)', lineHeight: 1, flexShrink: 0 },
   actionLabel: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '15px',
-    fontWeight: 600,
+    fontSize: 'var(--text-body-size)',
+    fontWeight: 700,
     color: 'var(--color-text)'
   },
 
@@ -730,9 +730,9 @@ const styles = {
   noteAddButton: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: 'var(--space-2)',
     width: '100%',
-    padding: '14px 16px',
+    padding: 'var(--space-4) var(--space-4)',
     background: 'rgba(255, 255, 255, 0.03)',
     border: '1px dashed rgba(255, 255, 255, 0.15)',
     borderRadius: 'var(--radius-medium)',
@@ -741,7 +741,7 @@ const styles = {
   },
   noteAddLabel: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 500,
     color: 'var(--color-text-secondary)'
   },
@@ -753,9 +753,9 @@ const styles = {
   noteView: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: '10px',
+    gap: 'var(--space-2)',
     width: '100%',
-    padding: '14px 12px 14px 16px',
+    padding: 'var(--space-4) var(--space-3) var(--space-4) var(--space-4)',
     background: 'rgba(158, 209, 83, 0.06)',
     border: '1px solid rgba(158, 209, 83, 0.2)',
     borderRadius: 'var(--radius-medium)',
@@ -776,7 +776,7 @@ const styles = {
     flex: 1,
     minWidth: 0,
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 500,
     color: 'var(--color-text)',
     lineHeight: '20px',
@@ -791,12 +791,12 @@ const styles = {
     width: '100%',
     minHeight: '46px',       // ~1 строка; дальше растёт по контенту (autoGrowNote) —
                              //  совпадает по высоте с блоком просмотра, модалка не прыгает
-    padding: '12px 14px',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'rgba(0, 0, 0, 0.3)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 500,
     color: 'var(--color-text)',
     lineHeight: '20px',
@@ -809,61 +809,61 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: '8px',
-    gap: '10px'
+    marginTop: 'var(--space-2)',
+    gap: 'var(--space-2)'
   },
   noteCounter: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     flexShrink: 0
   },
   noteEditButtons: {
     display: 'flex',
-    gap: '8px'
+    gap: 'var(--space-2)'
   },
   noteCancelBtn: {
-    padding: '8px 14px',
+    padding: 'var(--space-2) var(--space-4)',
     background: 'transparent',
     border: 'none',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
   noteSaveBtn: {
-    padding: '8px 16px',
+    padding: 'var(--space-2) var(--space-4)',
     background: 'var(--color-primary)',
     color: '#0D0C0C',
     border: 'none',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     cursor: 'pointer'
   },
   noteErrorText: {
-    marginTop: '8px',
+    marginTop: 'var(--space-2)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
-    color: '#FF8C42',
+    fontSize: 'var(--text-label-size)',
+    color: 'var(--color-text-secondary)',
     textAlign: 'center'
   },
   // Кнопка «Закрыть» с крестиком. Компактнее остальных (меньше верт. паддинг),
   // иконка + текст по центру, серый нейтральный цвет.
   closeButton: {
-    marginTop: '2px',
-    padding: '9px',
+    marginTop: 'var(--space-05)',
+    padding: 'var(--space-2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '7px',
+    gap: 'var(--space-2)',
     background: 'transparent',
     border: 'none',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '14px',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 500,
     color: 'var(--color-text-secondary)',
     cursor: 'pointer',

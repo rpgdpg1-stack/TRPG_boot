@@ -121,7 +121,7 @@ const styles = {
     // внутри карточки друга (см. inner).
     touchAction: 'none',
     overscrollBehavior: 'contain',
-    padding: 'var(--tg-safe-top) 16px calc(var(--tabbar-height) + 40px)',
+    padding: 'var(--tg-safe-top) var(--space-4) calc(var(--tabbar-height) + 40px)',
     overflow: 'hidden',
     animation: 'profileModalOverlay 0.25s ease-out forwards'
   },
@@ -132,14 +132,14 @@ const styles = {
     maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: 'var(--space-3)',
     animation: 'profileModalPanel 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   friendNote: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    padding: '8px 12px 4px'
+    padding: 'var(--space-2) var(--space-3) var(--space-1)'
   }
 }

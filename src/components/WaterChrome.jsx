@@ -63,7 +63,7 @@ const styles = {
   col: {
     position: 'absolute', right: '1px', top: 0, bottom: 0,
     display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
-    alignItems: 'flex-end', gap: '13px'
+    alignItems: 'flex-end', gap: 'var(--space-3)'
   },
   // Флажок остриём ВЛЕВО: цветной правый бордер, база справа у ниточки.
   pennant: {

@@ -207,7 +207,7 @@ function CustomEditor({ initialTitle = '', initialBenefit = '', saveLabel = 'Д�
         onChange={(e) => setBenefit(e.target.value.slice(0, ACTIVITY_BENEFIT_MAX))}
         placeholder="Описание (необязательно) — напр. пробуждение"
         maxLength={ACTIVITY_BENEFIT_MAX}
-        style={{ ...styles.input, fontSize: '12px' }}
+        style={{ ...styles.input, fontSize: 'var(--text-label-size)' }}
       />
       <div style={styles.editorButtons}>
         <button onClick={onCancel} style={styles.cancelBtn}>Отмена</button>
@@ -226,7 +226,7 @@ const checkboxStyles = {
     flexShrink: 0,
     width: '22px',
     height: '22px',
-    borderRadius: '7px',
+    borderRadius: 'var(--radius-xs)',
     border: '1.5px solid',
     display: 'flex',
     alignItems: 'center',
@@ -238,9 +238,9 @@ const checkboxStyles = {
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
   intro: {
-    margin: '4px 4px 16px',
+    margin: 'var(--space-1) var(--space-1) var(--space-4)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     lineHeight: 1.4,
     color: 'var(--color-text-secondary)'
   },
@@ -249,102 +249,102 @@ const styles = {
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    marginBottom: '20px'
+    marginBottom: 'var(--space-5)'
   },
   toggleRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 'var(--space-3)',
     width: '100%',
-    padding: '14px 16px',
+    padding: 'var(--space-4) var(--space-4)',
     background: 'transparent',
     border: 'none',
     textAlign: 'left',
     cursor: 'pointer'
   },
   toggleDivider: { height: '1px', background: 'var(--border-hairline)', marginLeft: '50px' },
-  toggleText: { display: 'flex', flexDirection: 'column', gap: '2px' },
-  toggleTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
-  toggleSub: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  toggleText: { display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
+  toggleTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)' },
+  toggleSub: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
 
-  section: { marginBottom: '18px' },
-  sectionHeader: { display: 'flex', alignItems: 'center', gap: '7px', padding: '0 4px 8px' },
-  sectionEmoji: { fontSize: '16px', lineHeight: 1 },
+  section: { marginBottom: 'var(--space-5)' },
+  sectionHeader: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-1) var(--space-2)' },
+  sectionEmoji: { fontSize: 'var(--text-body-size)', lineHeight: 1 },
   sectionLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
   },
 
   recRow: {
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '12px 14px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-medium)',
-    marginBottom: '6px',
+    marginBottom: 'var(--space-15)',
     transition: 'opacity 0.2s ease'
   },
-  recEmoji: { fontSize: '22px', lineHeight: 1, flexShrink: 0, width: '28px', textAlign: 'center' },
-  textCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
-  recTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2 },
-  recBenefit: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)', lineHeight: 1.2 },
+  recEmoji: { fontSize: 'var(--text-heading-size)', lineHeight: 1, flexShrink: 0, width: '28px', textAlign: 'center' },
+  textCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
+  recTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.2 },
+  recBenefit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)', lineHeight: 1.2 },
   recTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px',
+    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
     letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
 
-  customsWrap: { display: 'flex', flexDirection: 'column', gap: '6px', transition: 'opacity 0.2s ease' },
+  customsWrap: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', transition: 'opacity 0.2s ease' },
   customRow: {
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '12px 14px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    padding: 'var(--space-3) var(--space-4)',
     background: 'var(--surface-raised)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-medium)'
   },
   // Тапабельная зона текста своей активности (открывает редактирование).
   customTap: {
-    flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px',
+    flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)',
     background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0
   },
   removeBtn: {
     flexShrink: 0, width: '28px', height: '28px', borderRadius: '50%',
     background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--color-text-secondary)',
-    fontSize: '14px', cursor: 'pointer'
+    fontSize: 'var(--text-button-size)', cursor: 'pointer'
   },
   addBtn: {
-    display: 'flex', alignItems: 'center', gap: '8px',
-    width: '100%', padding: '12px 14px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    width: '100%', padding: 'var(--space-3) var(--space-4)',
     background: 'transparent',
     border: '1px dashed rgba(255,255,255,0.15)',
     borderRadius: 'var(--radius-medium)',
     color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     cursor: 'pointer'
   },
   editor: {
-    display: 'flex', flexDirection: 'column', gap: '8px',
-    padding: '12px',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+    padding: 'var(--space-3)',
     background: 'var(--surface-raised)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-medium)'
   },
   input: {
-    width: '100%', padding: '10px 12px',
+    width: '100%', padding: 'var(--space-3) var(--space-3)',
     background: 'rgba(0,0,0,0.25)',
     border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 'var(--radius-small)',
     color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 500,
     outline: 'none', WebkitAppearance: 'none'
   },
-  editorButtons: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '2px' },
+  editorButtons: { display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-05)' },
   cancelBtn: {
-    padding: '8px 14px', background: 'transparent', border: 'none',
-    color: 'var(--color-text-secondary)', fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+    padding: 'var(--space-2) var(--space-4)', background: 'transparent', border: 'none',
+    color: 'var(--color-text-secondary)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, cursor: 'pointer'
   },
   saveBtn: {
-    padding: '8px 18px', background: 'var(--color-primary)', color: '#0A0A0B',
+    padding: 'var(--space-2) var(--space-5)', background: 'var(--color-primary)', color: '#0A0A0B',
     border: 'none', borderRadius: 'var(--radius-small)',
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, cursor: 'pointer'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, cursor: 'pointer'
   }
 }

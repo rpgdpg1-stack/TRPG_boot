@@ -134,7 +134,7 @@ const AVATAR_SIZE = 104
 const styles = {
   card: {
     display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0',
-    padding: '16px', background: 'var(--surface)',
+    padding: 'var(--space-4)', background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', width: '100%'
   },
   // Доп. секция внутри карточки: разделитель НЕ до краёв (inset по паддингу карточки,
@@ -142,32 +142,32 @@ const styles = {
   // paddingTop секции и paddingBottom карточки). Без negative-margin → линия не
   // упирается в края карточки.
   section: {
-    marginTop: '16px', paddingTop: '16px',
+    marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
     borderTop: '1px solid var(--border-hairline)'
   },
   bottomAction: {
     marginLeft: '-16px', marginRight: '-16px', marginBottom: '-16px',
     borderTop: '1px solid var(--border-hairline)'
   },
-  topPanel: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' },
+  topPanel: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)' },
   avatar: {
-    width: `${AVATAR_SIZE}px`, height: `${AVATAR_SIZE}px`, borderRadius: '29px',
+    width: `${AVATAR_SIZE}px`, height: `${AVATAR_SIZE}px`, borderRadius: 'var(--radius-card)',
     overflow: 'hidden', flexShrink: 0, background: 'var(--surface-raised)',
     border: '1px solid var(--border-hairline)'
   },
   avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   avatarPlaceholder: {
     width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '40px', color: 'var(--color-primary)'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-hero-size)', color: 'var(--color-primary)'
   },
-  infoColumn: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' },
+  infoColumn: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-15)' },
   name: {
-    fontFamily: 'var(--font-manrope)', fontSize: '22px', fontWeight: 700, color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 700, color: 'var(--color-text)',
     lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0
   },
-  lastRow: { display: 'flex', alignItems: 'center', gap: '7px', minHeight: '18px' },
+  lastRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: '18px' },
   lastWhen: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   lastBadge: { display: 'inline-flex', alignItems: 'center' },
@@ -175,28 +175,28 @@ const styles = {
   // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).
   fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
   fireBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '4px',
-    background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
+    background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-1)',
     WebkitTapHighlightColor: 'transparent'
   },
   // 1:1 со строкой недели на главной: БЕЗ крестика, только цифра, display 800/17,
   // вплотную к огоньку. Ширину НЕ резервируем — с ростом серии огонёк растёт,
   // цифра едет правее, и это нормально: пара всегда читается как одно целое.
   fireCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', letterSpacing: '0.5px',
-    lineHeight: 1, textAlign: 'left', color: '#FF8C42'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
+    lineHeight: 1, textAlign: 'left', color: 'var(--color-streak)'
   },
   popup: {
     position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '230px',
     background: 'rgba(34, 34, 34, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 140, 66, 0.35)', borderRadius: 'var(--radius-medium)',
-    padding: '12px 16px', zIndex: 50, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+    padding: 'var(--space-3) var(--space-4)', zIndex: 50, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
   },
   popupTitle: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
-    color: 'var(--color-text-secondary)', letterSpacing: '2px', marginBottom: '6px'
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)', letterSpacing: '2px', marginBottom: 'var(--space-15)'
   },
-  popupBody: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text)', lineHeight: 1.5 },
+  popupBody: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text)', lineHeight: 1.5 },
   skeletonStat: {
     width: '48px', height: '24px', borderRadius: 'var(--radius-small)',
     background: 'rgba(255, 255, 255, 0.10)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'

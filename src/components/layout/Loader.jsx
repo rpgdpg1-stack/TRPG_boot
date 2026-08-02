@@ -89,7 +89,7 @@ export default function Loader({ onFinish, readyPromise }) {
     <div style={styles.container}>
       <div ref={sceneRef} style={styles.scene}>
         <div style={styles.biceps} role="img" aria-label="biceps">
-          <UiIcon name="muscles" size={77} color="#FADFBE" />
+          <UiIcon name="muscles" size={77} color="var(--color-icon-muscle)" />
         </div>
       </div>
 

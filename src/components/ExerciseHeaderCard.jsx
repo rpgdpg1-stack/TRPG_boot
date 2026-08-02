@@ -63,19 +63,19 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: '16px',
-    gap: '16px',
+    padding: 'var(--space-4)',
+    gap: 'var(--space-4)',
     width: '100%',
     minHeight: '150px',
     background: '#1C1C1C',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
   preview: {
     flexShrink: 0,
     width: '118px',
     height: '118px',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
     background: '#FFFFFF',
     display: 'flex',
@@ -89,11 +89,11 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: '8px'
+    gap: 'var(--space-2)'
   },
   name: {
-    fontFamily: 'var(--font-geist)',
-    fontSize: '15px',
+    fontFamily: 'var(--font-display)',
+    fontSize: 'var(--text-body-size)',
     fontWeight: 700,
     lineHeight: '19px',
     color: '#F0F0F0'
@@ -102,15 +102,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     flexWrap: 'wrap'
   },
   tag: {
     display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: '999px',
+    padding: 'var(--space-1) var(--space-3)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     letterSpacing: '0.3px',
     lineHeight: '15px',
@@ -119,11 +119,11 @@ const styles = {
   tagSecondary: {
     background: 'rgba(255, 255, 255, 0.08)',
     color: '#B5B5B5',
-    fontWeight: 600
+    fontWeight: 700
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',

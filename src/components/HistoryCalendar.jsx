@@ -36,7 +36,7 @@ function badgeFor(workout) {
 function Badge({ iconName, color, size = 20, icon = 12 }) {
   return (
     <span style={{
-      width: size, height: size, borderRadius: '6px', background: color,
+      width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
       <UiIcon name={iconName} size={icon} color="#0D0C0C" />
@@ -227,7 +227,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
                 })
               : list.map((w, wi) => {
                   const b = badgeFor(w)
-                  return <span key={wi} style={{ width: '8px', height: '8px', borderRadius: '2px', background: b.color }} />
+                  return <span key={wi} style={{ width: '8px', height: '8px', borderRadius: 'var(--radius-xs)', background: b.color }} />
                 })}
           </span>
         )}
@@ -420,62 +420,62 @@ const styles = {
   wrap: {},
   headingRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '12px'
+    marginBottom: 'var(--space-3)'
   },
   heading: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '15px',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)',
     color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
   },
   card: {
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '16px'
+    padding: 'var(--space-4)'
   },
   monthNav: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '12px'
+    marginBottom: 'var(--space-3)'
   },
   chev: {
     width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'transparent', border: 'none', color: 'var(--color-text)',
-    fontSize: '24px', lineHeight: 1, fontFamily: 'var(--font-manrope)', padding: 0
+    fontSize: 'var(--text-heading-size)', lineHeight: 1, fontFamily: 'var(--font-manrope)', padding: 0
   },
   // Заглушка на месте шеврона (неделя/всё — без листания), чтобы заголовок был по центру.
   chevSpacer: { width: '40px', height: '40px', flexShrink: 0 },
   monthTitle: {
     flex: 1, textAlign: 'center',
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px',
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     color: 'var(--color-text)', letterSpacing: '0.5px'
   },
   summary: {
-    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px',
-    minHeight: '24px', marginBottom: '16px'
+    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--space-3)',
+    minHeight: '24px', marginBottom: 'var(--space-4)'
   },
-  summaryEmpty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', marginBottom: '6px' },
-  weekLabel: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px' },
-  weekDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 2px 8px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' },
+  summaryEmpty: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
+  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 'var(--space-1)', marginBottom: 'var(--space-15)' },
+  weekLabel: { textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.5px' },
+  weekDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 var(--space-05) var(--space-2)' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 'var(--space-1)' },
   cellEmpty: { aspectRatio: '1 / 1' },
   cell: {
     position: 'relative', aspectRatio: '1 / 1', borderRadius: 'var(--radius-medium)',
-    border: 'none', padding: '5px 4px', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'flex-start', gap: '3px', overflow: 'hidden'
+    border: 'none', padding: 'var(--space-1) var(--space-1)', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-1)', overflow: 'hidden'
   },
-  cellNum: { fontFamily: 'var(--font-display)', fontSize: '15px', lineHeight: 1 },
-  marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' },
+  cellNum: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-body-size)', lineHeight: 1 },
+  marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' },
 
   // Год-режим: 12 месяцев сеткой 4×3, минималистично.
-  yearGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' },
+  yearGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)' },
   monthTile: {
     position: 'relative', aspectRatio: '1 / 0.82', borderRadius: 'var(--radius-medium)',
-    border: 'none', padding: '4px', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: '3px', overflow: 'hidden'
+    border: 'none', padding: 'var(--space-1)', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)', overflow: 'hidden'
   },
-  monthTileLabel: { fontFamily: 'var(--font-display)', fontSize: '13px', lineHeight: 1, letterSpacing: '0.3px' },
+  monthTileLabel: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', lineHeight: 1, letterSpacing: '0.3px' },
   monthTileCount: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
     color: 'var(--color-primary)', lineHeight: 1
   }
 }
@@ -484,20 +484,20 @@ const dstyles = {
   overlay: {
     position: 'fixed', inset: 0, background: 'rgba(13,12,12,0.85)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', zIndex: 200
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', zIndex: 200
   },
   panel: {
     width: '100%', maxWidth: '340px', background: 'var(--surface-raised)',
-    border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', padding: '20px'
+    border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-card)', padding: 'var(--space-5)'
   },
   date: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px',
-    color: 'var(--color-text)', marginBottom: '14px', textTransform: 'capitalize'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
+    color: 'var(--color-text)', marginBottom: 'var(--space-4)', textTransform: 'capitalize'
   },
-  list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  item: { display: 'flex', alignItems: 'center', gap: '12px' },
+  list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
+  item: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)' },
   itemText: { flex: 1, minWidth: 0 },
-  itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 700, color: 'var(--color-text)' },
+  itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text)' },
   sep: { color: 'var(--color-text-secondary)', fontWeight: 500 },
-  itemMeta: { fontFamily: 'var(--font-manrope)', fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }
+  itemMeta: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-05)' }
 }

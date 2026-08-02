@@ -280,44 +280,44 @@ const styles = {
   },
   // Без верхнего padding: поле поиска начинается ровно на 16px ниже кнопок
   // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
-  header: { display: 'flex', alignItems: 'center', gap: '10px', padding: '0 16px 8px' },
+  header: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
   search: {
-    flex: 1, height: '44px', padding: '0 16px',
+    flex: 1, height: '44px', padding: '0 var(--space-4)',
     background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 'var(--radius-medium)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', outline: 'none'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', outline: 'none'
   },
   closeBtn: {
     width: '44px', height: '44px', flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    lineHeight: 1, paddingBottom: '2px',
+    lineHeight: 1, paddingBottom: 'var(--space-05)',
     background: 'var(--color-card)', border: 'none', borderRadius: '50%',
-    color: 'var(--color-text-secondary)', fontSize: '16px'
+    color: 'var(--color-text-secondary)', fontSize: 'var(--text-body-size)'
   },
   chipsRow: {
-    display: 'flex', gap: '8px', overflowX: 'auto', padding: '8px 16px 6px',
+    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) var(--space-15)',
     flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
   subPanel: {
-    margin: '2px 16px 6px',
-    padding: '10px 12px',
+    margin: 'var(--space-05) var(--space-4) var(--space-15)',
+    padding: 'var(--space-3) var(--space-3)',
     background: 'rgba(255,255,255,0.05)',
     borderRadius: 'var(--radius-medium)',
     flexShrink: 0
   },
   subChipsRow: {
-    display: 'flex', gap: '8px', overflowX: 'auto',
+    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto',
     flexWrap: 'nowrap'
   },
   chip: {
-    flexShrink: 0, padding: '8px 14px', border: 'none', borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 700,
+    flexShrink: 0, padding: 'var(--space-2) var(--space-4)', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     whiteSpace: 'nowrap', letterSpacing: '0.3px'
   },
   subChip: {
-    flexShrink: 0, padding: '6px 12px', border: 'none', borderRadius: '999px',
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap'
+    flexShrink: 0, padding: 'var(--space-15) var(--space-3)', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, whiteSpace: 'nowrap'
   },
   // Обёртка списка — даёт точку отсчёта для верхнего fade-scrim (absolute).
   listWrap: {
@@ -340,25 +340,25 @@ const styles = {
   },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: '2px 16px 100px',
+    padding: 'var(--space-05) var(--space-4) 100px',
     display: 'block',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
   },
-  empty: { textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)' },
-  row: { position: 'relative', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: '12px', minHeight: '90px', marginBottom: '10px' },
+  empty: { textAlign: 'center', padding: 'var(--space-10) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
+  row: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px', marginBottom: 'var(--space-3)' },
   preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   previewPlaceholder: { fontSize: '28px', opacity: 0.4 },
-  rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' },
-  rowName: { fontFamily: 'var(--font-geist)', fontSize: '13px', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
-  rowTags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
-  rowTag: { display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-manrope)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  addBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: '18px', fontWeight: 700 },
+  rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
+  rowName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
+  rowTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
+  rowTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
+  addBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: 'var(--text-title-size)', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: '28px 16px var(--tabbar-bottom)',
+    padding: 'var(--space-6) var(--space-4) var(--tabbar-bottom)',
     display: 'flex', justifyContent: 'center',
     pointerEvents: 'none',
     // z-index → footer становится контекстом наложения, чтобы dock-scrim (z:-1)
@@ -379,14 +379,14 @@ const styles = {
     bottom: 0,
     display: 'flex',
     alignItems: 'center',
-    padding: '0 10px',
+    padding: '0 var(--space-3)',
     background: 'rgba(232, 69, 69, 0.16)',
     border: '1px solid rgba(232, 69, 69, 0.5)',
     borderRadius: 'var(--radius-small)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     lineHeight: 1,
     color: '#FF6B6B',

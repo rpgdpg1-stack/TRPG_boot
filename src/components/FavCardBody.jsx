@@ -124,57 +124,57 @@ const styles = {
   // position/zIndex — контент ПОВЕРХ заливки-прогресса карточки (ProgramCard).
   emblemWrap: { position: 'relative', zIndex: 1, flexShrink: 0, width: '52px', display: 'flex', justifyContent: 'center' },
   // Шаг между строками карточки (название → дни → «сегодня») — единый.
-  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' },
+  content: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
   title: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '18px',
+    fontSize: 'var(--text-title-size)',
     fontWeight: 700,
     color: 'var(--color-text)',
     letterSpacing: '0.3px',
     lineHeight: 1.1
   },
   // Карандаш-индикатор сразу после названия (по центру строки текста).
-  titlePencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: '5px', marginTop: '-2px', opacity: 0.7 },
-  daysRow: { display: 'flex', alignItems: 'baseline', gap: '10px' },
+  titlePencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-1)', marginTop: '-2px', opacity: 0.7 },
+  daysRow: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
-  activeRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' },
-  activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
-  activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
-  daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '14px', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
+  activeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap' },
+  activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
+  activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
+  daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   // Шаг между буквами дней плотнее (было 12) — ряд читается как один переключатель.
-  daysList: { display: 'flex', alignItems: 'baseline', gap: '8px' },
-  dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', lineHeight: 1, transition: 'color 0.3s ease' },
+  daysList: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
+  dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', lineHeight: 1, transition: 'color 0.3s ease' },
   // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
-  dayLetterActive: { fontSize: '22px', fontWeight: 800 },
-  tags: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
+  dayLetterActive: { fontSize: 'var(--text-heading-size)', fontWeight: 800 },
+  tags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
   tag: {
     display: 'inline-block',
-    padding: '3px 9px',
-    borderRadius: '6px',
+    padding: 'var(--space-1) var(--space-2)',
+    borderRadius: 'var(--radius-xs)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     color: 'var(--color-bg)'
   },
   soonTag: {
     display: 'inline-block',
-    padding: '3px 9px',
+    padding: 'var(--space-1) var(--space-2)',
     background: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: 'var(--text-caption-size)',
+    fontWeight: 700,
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.3px'
   },
   footerLine: {
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: 'var(--text-caption-size)',
+    fontWeight: 700,
     color: 'var(--color-text-secondary)'
   }
 }

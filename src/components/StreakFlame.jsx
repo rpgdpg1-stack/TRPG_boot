@@ -48,7 +48,7 @@ export default function StreakFlame({ streak }) {
           <defs>
             <linearGradient id="flameGradHeader" x1="0%" y1="100%" x2="0%" y2="0%">
               <stop offset="0%" stopColor="#FFD700" />
-              <stop offset="50%" stopColor="#FF8C42" />
+              <stop offset="50%" stopColor="var(--color-streak)" />
               <stop offset="100%" stopColor="#E84545" />
             </linearGradient>
           </defs>
@@ -94,8 +94,8 @@ export default function StreakFlame({ streak }) {
                 top: 0,
                 width: 2,
                 height: 2,
-                background: '#FF8C42',
-                boxShadow: '0 0 3px #FF8C42',
+                background: 'var(--color-streak)',
+                boxShadow: '0 0 3px var(--color-streak)',
                 borderRadius: 1,
                 pointerEvents: 'none',
                 '--sx': '4px',

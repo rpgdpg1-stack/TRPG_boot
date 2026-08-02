@@ -21,7 +21,7 @@ const ICON = 20
 function Badge({ iconName, color, size = 22, icon = 13 }) {
   return (
     <span style={{
-      width: size, height: size, borderRadius: '6px', background: color,
+      width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
       <UiIcon name={iconName} size={icon} color="#0D0C0C" />
@@ -138,47 +138,47 @@ function Total({ icon, value, label, splitUnit = false }) {
 }
 
 const styles = {
-  totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '28px', flexWrap: 'wrap' },
-  total: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  totalTop: { display: 'inline-flex', alignItems: 'center', gap: '6px' },
+  totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 'var(--space-6)', flexWrap: 'wrap' },
+  total: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' },
+  totalTop: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'var(--color-primary)'
   },
   // Единица значения («ч») — серая и тоньше цифры.
   totalUnit: {
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', marginLeft: '-1px'
   },
   // Подпись метрики (secondary info) — серым, чтобы главной была цифра.
   totalLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
     color: 'var(--text-info)', whiteSpace: 'nowrap'
   },
-  divider: { height: '1px', background: 'var(--border-hairline)', margin: '16px 0' },
+  divider: { height: '1px', background: 'var(--border-hairline)', margin: 'var(--space-4) 0' },
 
-  list: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  row: { display: 'flex', alignItems: 'center', gap: '8px' },
+  list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
+  row: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
   // Число — в ЦВЕТ вида активности (силовая графитовая, плавание голубое…),
   // название — светло-серым, дистанция — тише всех.
   rowCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', letterSpacing: '0.2px'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.2px'
   },
   rowLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--text-label)'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--text-label)'
   },
   rowDist: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--text-info)', marginLeft: '-2px'
   },
 
   empty: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', padding: '4px 0', lineHeight: 1.4
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--space-1) 0', lineHeight: 1.4
   },
   // Скелетоны (первый заход без кеша).
-  skTotal: { width: '64px', height: '34px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)' },
-  skRow: { height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)' }
+  skTotal: { width: '64px', height: '34px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.06)' },
+  skRow: { height: '22px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.05)' }
 }

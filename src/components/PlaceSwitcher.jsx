@@ -105,19 +105,19 @@ export default function PlaceSwitcher({ program, value: cValue, onChange, locked
 const styles = {
   // Статичный тег места (карточки): вид активного сегмента, но БЕЗ контейнера/обводки.
   staticTag: {
-    display: 'inline-flex', alignItems: 'center', gap: '5px',
-    minHeight: '26px', padding: '0 10px',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
+    minHeight: '26px', padding: '0 var(--space-3)',
     borderRadius: 'var(--radius-pill)',
     background: 'var(--color-surface-active)',
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
     whiteSpace: 'nowrap'
   },
   // Hug-обёртка: пилюля по содержимому, не растягивает карточку.
   wrap: { display: 'inline-flex' },
   // Контейнер-таб-бар (как нижний таб-бар / места в конструкторе).
   group: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '3px', width: 'auto',
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: 'auto',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
@@ -127,10 +127,10 @@ const styles = {
   // красятся через color (UiIcon наследует currentColor).
   item: {
     position: 'relative',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-    minHeight: '26px', padding: '0 11px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)',
+    minHeight: '26px', padding: '0 var(--space-3)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
   },

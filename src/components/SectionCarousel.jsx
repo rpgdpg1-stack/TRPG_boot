@@ -337,19 +337,19 @@ const styles = {
   // сверху группу отделяет межгрупповой отступ строки недели.
   headRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: '6px'
+    marginBottom: 'var(--space-15)'
   },
   selectorWrap: { position: 'relative', minWidth: 0 },
   // Селектор — тот же вес, что заголовок секции «Мой прогресс» (Manrope 15/700,
   // 60% белого). Цветная только иконка; «Все ›» справа — того же размера.
   selector: {
-    display: 'inline-flex', alignItems: 'center', gap: '7px',
-    padding: '4px 8px 4px 4px',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
+    padding: 'var(--space-1) var(--space-2) var(--space-1) var(--space-1)',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
   selectorText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   // Выпадающий список — под селектором.
@@ -359,20 +359,20 @@ const styles = {
     left: 0,
     zIndex: 41,
     minWidth: '190px',
-    padding: '6px',
+    padding: 'var(--space-15)',
     background: 'var(--surface-raised)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-medium)',
     boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
-    display: 'flex', flexDirection: 'column', gap: '2px'
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-05)'
   },
   dropItem: {
-    display: 'flex', alignItems: 'center', gap: '11px',
-    width: '100%', padding: '12px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+    width: '100%', padding: 'var(--space-3)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-small)',
     cursor: 'pointer', textAlign: 'left'
   },
-  dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600 },
+  dropItemText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700 },
   // Окно ленты: горизонталь ведём сами, вертикаль отдаём нативному скроллу (pan-y).
   // Рамка блока: фон и скругление здесь, содержимое клипается по её краям —
   // листается ВНУТРЕННОСТЬ, сама рамка стоит на месте (как виджеты iOS).
@@ -394,21 +394,21 @@ const styles = {
   },
   // Пунктирная пилюля вокруг «＋ Выбрать программу» — в цвет раздела, приглушённо.
   pinEmptyPill: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px',
-    padding: '12px 20px', borderRadius: 'var(--radius-pill)',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
+    padding: 'var(--space-3) var(--space-5)', borderRadius: 'var(--radius-pill)',
     opacity: 0.85
   },
-  pinEmptyPlus: { fontSize: '18px', lineHeight: 1 },
-  pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  pinEmptyPlus: { fontSize: 'var(--text-title-size)', lineHeight: 1 },
+  pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
     flexShrink: 0, minHeight: '44px',
     display: 'inline-flex', alignItems: 'center', gap: '1px',
-    padding: '0 4px 0 12px',
+    padding: '0 var(--space-1) 0 var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   // Шеврон-стрелка «вправо» у «Все» (тот же ChevronIcon, повёрнут).
-  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: '2px' }
+  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: 'var(--space-05)' }
 }

@@ -114,7 +114,7 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
           : <FavoritesList items={favorites} showWeights={showWeights} />}
       </div>
 
-      <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
+      <CloseCross onClose={onClose} style={{ marginTop: 'var(--space-4)' }} />
     </div>
   )
 }
@@ -164,15 +164,15 @@ const styles = {
   // Два входа по центру карточки. Фона у плиток НЕТ: тогда отступ «линия → иконка»
   // и «подпись → низ карточки» равны паддингам самой карточки профиля (16),
   // как расстояние от аватара до линии. Кликабельность даёт press-эффект.
-  row: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '28px' },
+  row: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 'var(--space-6)' },
   tile: {
     minWidth: '92px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-    padding: '4px 8px', background: 'transparent', border: 'none', cursor: 'pointer',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
+    padding: 'var(--space-1) var(--space-2)', background: 'transparent', border: 'none', cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent'
   },
   tileIcon: { display: 'inline-flex', height: '22px' },
-  tileTitle: { fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)' }
+  tileTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text)' }
 }
 
 const m = {
@@ -186,7 +186,7 @@ const m = {
     // прокрутка живёт только внутри панели (см. panel).
     touchAction: 'none',
     overscrollBehavior: 'contain',
-    padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
+    padding: 'calc(env(safe-area-inset-top) + 24px) var(--space-5) calc(env(safe-area-inset-bottom) + 20px)',
     overflow: 'hidden',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
@@ -196,35 +196,35 @@ const m = {
     maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '24px',
-    padding: '16px',
-    display: 'flex', flexDirection: 'column', gap: '16px',
+    borderRadius: 'var(--radius-medium)',
+    padding: 'var(--space-4)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', paddingLeft: '4px' },
-  headLeft: { display: 'inline-flex', alignItems: 'center', gap: '8px' },
-  title: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' },
-  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--color-primary)' },
-  period: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
+  head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', paddingLeft: 'var(--space-1)' },
+  headLeft: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)' },
+  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-body-size)', color: 'var(--color-primary)' },
+  period: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
 
   favList: { display: 'flex', flexDirection: 'column' },
   // Заголовок группы — как в дне тренировки, но мельче и без лишнего воздуха.
   groupHead: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '11px',
-    letterSpacing: '1.6px', padding: '0 2px 2px'
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
+    letterSpacing: '1.6px', padding: '0 var(--space-05) var(--space-05)'
   },
-  favRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 4px' },
+  favRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-1)' },
   thumb: {
-    flexShrink: 0, width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden',
+    flexShrink: 0, width: '44px', height: '44px', borderRadius: 'var(--radius-small)', overflow: 'hidden',
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   thumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  thumbEmoji: { fontSize: '22px' },
+  thumbEmoji: { fontSize: 'var(--text-heading-size)' },
   favName: {
-    flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
+    flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  favVal: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap' },
-  favUnit: { color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '12px' }
+  favVal: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
+  favUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

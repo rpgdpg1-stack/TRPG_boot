@@ -154,7 +154,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const swipeActions = [
     { key: 'note', icon: 'notes', color: '#FFA94D', label: 'Заметка', fn: onNote },
     { key: 'info', icon: 'info', color: '#3FA2F7', label: 'Техника', fn: onInfo },
-    { key: 'swap', icon: 'change', color: '#FF8C42', label: 'Замена', fn: onSwap }
+    { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]
 
   // Цвета группы мышц — тег + акцент для цифры веса
@@ -540,7 +540,7 @@ const styles = {
   // Обёртка свайпа: клип по скруглению, панель действий под слайдером.
   swipeOuter: {
     position: 'relative',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
   // Панель действий справа (под карточкой). Открывается свайпом влево.
@@ -554,7 +554,7 @@ const styles = {
   },
   actionBtn: {
     flex: 1,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     // Панель ловит все pointer-события (drag-select); сами кнопки — только визуал.
     pointerEvents: 'none',
     position: 'relative', zIndex: 1
@@ -567,13 +567,13 @@ const styles = {
     transform: 'translateY(-50%)',
     height: '54px',
     background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-small)',
     pointerEvents: 'none',
     zIndex: 0,
     transition: 'left 0.16s var(--ease-ios)'
   },
   actionLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)'
   },
   slider: { position: 'relative', zIndex: 1 },
@@ -582,11 +582,11 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: '16px',
-    gap: '16px',
+    padding: 'var(--space-4)',
+    gap: 'var(--space-4)',
     width: '100%',
     minHeight: '132px',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
   },
@@ -595,7 +595,7 @@ const styles = {
     flexShrink: 0,
     width: '100px',
     height: '100px',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
     background: '#FFFFFF',
     display: 'flex',
@@ -622,11 +622,11 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: '8px'
+    gap: 'var(--space-2)'
   },
   exerciseName: {
-    fontFamily: 'var(--font-geist)',
-    fontSize: '14px',
+    fontFamily: 'var(--font-display)',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     lineHeight: '18px',
     color: '#F0F0F0'
@@ -636,15 +636,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '6px',
+    gap: 'var(--space-15)',
     flexWrap: 'wrap'
   },
   tag: {
     display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: '999px',
+    padding: 'var(--space-1) var(--space-3)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     letterSpacing: '0.3px',
     lineHeight: '15px',
@@ -654,7 +654,7 @@ const styles = {
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
@@ -669,7 +669,7 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'flex-end',
     gap: '0px',
-    padding: '6px',
+    padding: 'var(--space-15)',
     margin: '-6px',
     borderRadius: 'var(--radius-small)',
     position: 'relative',
@@ -687,7 +687,7 @@ const styles = {
     width: '38px',
     height: '27px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
     background: 'transparent',
@@ -708,7 +708,7 @@ const styles = {
     width: '38px',
     height: '27px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '20px',
+    fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
     textAlign: 'center',
@@ -717,7 +717,7 @@ const styles = {
   weightUnit: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 800,
     lineHeight: '15px',
     letterSpacing: '0.05em',
@@ -730,7 +730,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.32)',
     backdropFilter: 'grayscale(0.8) blur(1.5px)',
     WebkitBackdropFilter: 'grayscale(0.8) blur(1.5px)',
-    borderRadius: '33px',
+    borderRadius: 'var(--radius-card)',
     transition: 'opacity 0.35s ease',
     zIndex: 6
   },

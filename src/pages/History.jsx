@@ -75,14 +75,14 @@ export default function History() {
 
       {/* Блок статистики со свитчером периода */}
       <div style={styles.statsCard}>
-        <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: '16px' }} />
+        <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: 'var(--space-4)' }} />
 
         <HistoryStats summary={sum} loading={!wkLoaded} emptyText={emptyText} />
       </div>
 
       {/* Календарь: месяц-режим (день-сетка) или год-режим (12 месяцев).
           Сообщает открытый месяц/год наверх; тап по месяцу в год-режиме → на месяц. */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: 'var(--space-5)' }}>
         <HistoryCalendar
           mode={period}
           initialView={initialView.current}
@@ -156,8 +156,8 @@ const styles = {
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '16px',
-    marginBottom: '20px'
+    padding: 'var(--space-4)',
+    marginBottom: 'var(--space-5)'
   },
   // Личные рекорды — блок-карточка со строками по видам активности.
   recGroup: {
@@ -165,25 +165,25 @@ const styles = {
     background: 'var(--surface)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '16px 16px 8px'
+    padding: 'var(--space-4) var(--space-4) var(--space-2)'
   },
   recHead: {
-    fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: '6px'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: 'var(--space-15)'
   },
-  recRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0' },
+  recRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) 0' },
   recDivider: { borderTop: '1px solid var(--border-hairline)' },
   // Бейдж вида — как в сводке и календаре: чёрная иконка на цветном квадрате.
   recBadge: {
-    width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
+    width: '22px', height: '22px', borderRadius: 'var(--radius-xs)', flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
   },
-  recText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  recText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
   recTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600, color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  recNote: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' },
-  recUnit: { color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '12px' }
+  recNote: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
+  recUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

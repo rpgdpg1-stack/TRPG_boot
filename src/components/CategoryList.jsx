@@ -96,8 +96,8 @@ const styles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    padding: '0 18px',
+    gap: 'var(--space-3)',
+    padding: '0 var(--space-5)',
     width: '100%',
     height: '68px',
     textAlign: 'left',
@@ -114,10 +114,10 @@ const styles = {
     flexShrink: 0,
     width: '34px'
   },
-  content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
-  title: { fontFamily: 'var(--font-manrope)', fontSize: '17px', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
-  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' },
-  soonTag: { display: 'inline-block', padding: '2px 6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '9px', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
+  content: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
+  title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.3px', lineHeight: 1.1 },
+  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
+  soonTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-15)', background: 'rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-xs)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)', letterSpacing: '1px' },
   // Стрелка-шеврон строки — приглушённо-серая (как в списках Telegram).
-  arrow: { fontSize: '22px', color: 'rgba(255, 255, 255, 0.25)', flexShrink: 0, lineHeight: 1 }
+  arrow: { fontSize: 'var(--text-heading-size)', color: 'rgba(255, 255, 255, 0.25)', flexShrink: 0, lineHeight: 1 }
 }

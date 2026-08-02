@@ -266,7 +266,7 @@ function CategoryInfoModal({ meta, onClose }) {
           ))}
         </div>
 
-        <ModalButton onClick={onClose} style={{ marginTop: '20px' }}>ПОНЯТНО</ModalButton>
+        <ModalButton onClick={onClose} style={{ marginTop: 'var(--space-5)' }}>ПОНЯТНО</ModalButton>
       </div>
 
       <style>{`
@@ -286,25 +286,25 @@ const styles = {
   page: { position: 'relative' },
   // Контент над свечением.
   content: { position: 'relative', zIndex: 1 },
-  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' },
+  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-6)' },
   // Блок под заголовком (16px): иконка раздела, счётчик, инфо-кнопка (справа).
-  headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' },
+  headerBody: { position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' },
   infoButton: { position: 'absolute', top: 0, right: 0, width: '36px', height: '36px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },
-  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', fontWeight: 600, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center' },
-  programs: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
+  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-size)', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },
+  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center' },
+  programs: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' },
   createButton: {
-    width: '100%', minHeight: '56px', padding: '16px',
+    width: '100%', minHeight: '56px', padding: 'var(--space-4)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: '14px', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     background: 'rgba(255, 255, 255, 0.05)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     cursor: 'pointer'
   },
-  createPlus: { color: 'var(--color-primary)', fontSize: '18px', fontWeight: 700, lineHeight: 1 },
+  createPlus: { color: 'var(--color-primary)', fontSize: 'var(--text-title-size)', fontWeight: 700, lineHeight: 1 },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }
 }
@@ -316,7 +316,7 @@ const infoStyles = {
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
     zIndex: 9999,
-    padding: 'var(--tg-safe-top) 20px calc(var(--tabbar-height) + 40px)',
+    padding: 'var(--tg-safe-top) var(--space-5) calc(var(--tabbar-height) + 40px)',
     overflowY: 'auto',
     animation: 'catInfoOverlay 0.2s ease-out forwards'
   },
@@ -325,25 +325,25 @@ const infoStyles = {
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 'var(--radius-card)',
-    padding: '24px 22px 18px',
+    padding: 'var(--space-6) var(--space-6) var(--space-5)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     animation: 'catInfoPanel 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },
-  icon: { lineHeight: 1, marginBottom: '10px' },
+  icon: { lineHeight: 1, marginBottom: 'var(--space-3)' },
   title: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px',
-    color: 'var(--color-text)', letterSpacing: '2px', marginBottom: '8px'
+    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
+    color: 'var(--color-text)', letterSpacing: '2px', marginBottom: 'var(--space-2)'
   },
   essence: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', lineHeight: 1.5,
-    color: 'var(--color-text)', textAlign: 'center', marginBottom: '16px'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', lineHeight: 1.5,
+    color: 'var(--color-text)', textAlign: 'center', marginBottom: 'var(--space-4)'
   },
-  bullets: { width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' },
-  bulletRow: { display: 'flex', alignItems: 'flex-start', gap: '10px' },
-  bulletDot: { flexShrink: 0, width: '6px', height: '6px', borderRadius: '50%', marginTop: '6px' },
+  bullets: { width: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
+  bulletRow: { display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' },
+  bulletDot: { flexShrink: 0, width: '6px', height: '6px', borderRadius: '50%', marginTop: 'var(--space-15)' },
   bulletText: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 500,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     lineHeight: 1.4, color: 'var(--color-text-secondary)'
   },
 }

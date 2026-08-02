@@ -264,7 +264,7 @@ export default function SwapExercise() {
           disabled={!canSwap || saving || loading}
           variant={canSwap ? 'accent' : 'neutral'}
           hug
-          style={{ fontSize: '15px' }}
+          style={{ fontSize: 'var(--text-body-size)' }}
         >
           {saving ? 'Сохранение…' : 'Сменить'}
         </ActionButton>
@@ -356,8 +356,8 @@ const styles = {
   // мало. Без min-height:100dvh страница ровно по контенту: мало карточек → не
   // скроллится; много → у низа фикс-зазор (paddingBottom) и нормальный overscroll.
   page: {
-    paddingLeft: '16px',
-    paddingRight: '16px',
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)',
     paddingBottom: '100px',
     marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
   },
@@ -371,84 +371,84 @@ const styles = {
     background: 'var(--color-bg)',
     // Верх шапки — ровно 16px ниже кнопок Telegram (зашито в var).
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: '12px',
+    paddingBottom: 'var(--space-3)',
     marginLeft: '-16px',
     marginRight: '-16px',
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    paddingLeft: 'var(--space-4)',
+    paddingRight: 'var(--space-4)'
   },
   header: {
-    marginBottom: '20px',
+    marginBottom: 'var(--space-5)',
     textAlign: 'center'
   },
   title: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '24px',
+    fontSize: 'var(--text-heading-size)',
     color: 'var(--color-primary)',
     letterSpacing: '3px',
     lineHeight: 1,
-    marginBottom: '6px'
+    marginBottom: 'var(--space-15)'
   },
   subtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
-    fontWeight: 600,
+    fontSize: 'var(--text-caption-size)',
+    fontWeight: 700,
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px'
   },
   currentBlock: {
-    marginBottom: '16px'
+    marginBottom: 'var(--space-4)'
   },
   sectionLabel: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '11px',
+    fontWeight: 700,
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    marginBottom: '8px',
-    paddingLeft: '4px'
+    marginBottom: 'var(--space-2)',
+    paddingLeft: 'var(--space-1)'
   },
   alternativesHeader: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '11px',
+    fontWeight: 700,
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     letterSpacing: '2px',
-    paddingLeft: '4px'
+    paddingLeft: 'var(--space-1)'
   },
   // Список альтернатив. paddingTop: 16px — зазор между заголовком
   // "АЛЬТЕРНАТИВЫ" (в sticky-блоке) и первой карточкой.
   alternativesList: {
-    paddingTop: '16px'
+    paddingTop: 'var(--space-4)'
   },
   altList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: 'var(--space-2)'
   },
   loading: {
     textAlign: 'center',
-    padding: '24px 20px',
+    padding: 'var(--space-6) var(--space-5)',
     color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px'
+    fontSize: 'var(--text-label-size)'
   },
   empty: {
-    padding: '20px',
+    padding: 'var(--space-5)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     background: 'rgba(255, 255, 255, 0.02)',
     borderRadius: 'var(--radius-card)'
   },
   errorBlock: {
-    padding: '40px 20px',
+    padding: 'var(--space-10) var(--space-5)',
     paddingTop: 'calc(var(--tg-safe-top) + 40px)',
     textAlign: 'center',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5
   },
@@ -460,7 +460,7 @@ const styles = {
     right: '0',
     display: 'flex',
     justifyContent: 'center',
-    padding: '44px 16px var(--tabbar-bottom)',
+    padding: 'var(--space-12) var(--space-4) var(--tabbar-bottom)',
     zIndex: 50,
     pointerEvents: 'none'
   },
@@ -470,8 +470,8 @@ const rowStyles = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-3)',
     background: 'var(--color-card)',
     border: '2px solid transparent',
     borderRadius: 'var(--radius-card)',
@@ -498,28 +498,28 @@ const rowStyles = {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '5px'
+    gap: 'var(--space-1)'
   },
   nameRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 'var(--space-2)',
     flexWrap: 'wrap'
   },
   name: {
-    fontFamily: 'var(--font-geist)',
-    fontSize: '13px',
+    fontFamily: 'var(--font-display)',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     lineHeight: '16px',
     color: 'var(--color-text)'
   },
   defaultBadge: {
     fontFamily: 'var(--font-display)',
-    fontWeight: 600,
-    fontSize: '9px',
+    fontWeight: 700,
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-primary)',
     background: 'rgba(158, 209, 83, 0.15)',
-    padding: '2px 6px',
+    padding: 'var(--space-05) var(--space-15)',
     borderRadius: 'var(--radius-small)',
     letterSpacing: '1px',
     whiteSpace: 'nowrap'
@@ -528,15 +528,15 @@ const rowStyles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '5px',
+    gap: 'var(--space-1)',
     flexWrap: 'wrap'
   },
   tag: {
     display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '999px',
+    padding: 'var(--space-05) var(--space-2)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     letterSpacing: '0.2px',
     lineHeight: '13px',
@@ -544,7 +544,7 @@ const rowStyles = {
   },
   meta: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '10px',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     letterSpacing: '0.03em',
     color: '#888888',

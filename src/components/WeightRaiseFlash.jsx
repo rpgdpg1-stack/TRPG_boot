@@ -83,7 +83,7 @@ const arrowStyles = {
     right: '100%',
     top: '50%',
     transform: 'translateY(-50%)', // база; для ↑ keyframes добавляют лёгкий подъём
-    marginRight: '3px',
+    marginRight: 'var(--space-1)',
     display: 'flex',
     lineHeight: 0,
     pointerEvents: 'none'

@@ -284,7 +284,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
       </div>
 
       {/* Крестик-закрытие ПОД модалкой по центру — единый компонент. */}
-      <CloseCross onClose={onClose} style={{ marginTop: '14px' }} />
+      <CloseCross onClose={onClose} style={{ marginTop: 'var(--space-4)' }} />
     </div>
   )
 }
@@ -385,12 +385,12 @@ const styles = {
   // снизу). Чуть приглушён, чтобы не спорил с текущим значением.
   recordBlock: {
     marginLeft: 'auto', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end',
-    gap: '2px', lineHeight: 1, opacity: 0.85
+    gap: 'var(--space-05)', lineHeight: 1, opacity: 0.85
   },
-  recordTop: { display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
-  recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px', color: RECORD_GOLD },
-  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
-  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)' },
+  recordTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
+  recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px', color: RECORD_GOLD },
+  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
     background: 'rgba(13, 12, 12, 0.85)',
@@ -401,7 +401,7 @@ const styles = {
     // (контент невысокий — прокрутка внутри не нужна).
     overscrollBehavior: 'contain',
     touchAction: 'none',
-    padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 20px)',
+    padding: 'calc(env(safe-area-inset-top) + 24px) var(--space-5) calc(env(safe-area-inset-bottom) + 20px)',
     overflow: 'hidden',
     animation: 'menuOverlayFadeIn 0.2s ease-out forwards'
   },
@@ -409,30 +409,30 @@ const styles = {
     position: 'relative', width: '100%', maxWidth: '380px',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '28px',
-    padding: '20px 16px 16px',
-    display: 'flex', flexDirection: 'column', gap: '16px',
+    borderRadius: 'var(--radius-card)',
+    padding: 'var(--space-5) var(--space-4) var(--space-4)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  header: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  header: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   // Надзаголовок модалки — как заголовок группы в профиле (Manrope 700/13, серый),
   // по ЦЕНТРУ и с воздухом до названия упражнения (это разные уровни).
   eyebrow: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.2px',
-    color: 'var(--color-text-secondary)', textAlign: 'center', display: 'block', marginBottom: '12px'
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.2px',
+    color: 'var(--color-text-secondary)', textAlign: 'center', display: 'block', marginBottom: 'var(--space-3)'
   },
-  name: { fontFamily: 'var(--font-geist, var(--font-manrope))', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
-  bigRow: { display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '6px', minHeight: '42px' },
+  name: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25 },
+  bigRow: { display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', marginTop: 'var(--space-15)', minHeight: '42px' },
   // Значение: цифра и единица в строку, подпись состояния («сейчас» / дата) — снизу.
-  valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', lineHeight: 1 },
-  valueTop: { display: 'inline-flex', alignItems: 'baseline', gap: '4px' },
-  bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: '20px', lineHeight: '27px' },
-  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
-  bigSub: { fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600 },
+  valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-05)', lineHeight: 1 },
+  valueTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
+  bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px' },
+  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  bigSub: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700 },
 
   segGroup: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: '4px',
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
@@ -440,9 +440,9 @@ const styles = {
   segItem: {
     position: 'relative', flex: 1,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    minHeight: '30px', padding: '0 10px',
+    minHeight: '30px', padding: '0 var(--space-3)',
     background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
     cursor: 'pointer', whiteSpace: 'nowrap',
     transition: 'background 0.18s ease, color 0.18s ease'
   },
@@ -455,23 +455,23 @@ const styles = {
   navArrow: {
     width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    fontSize: '22px', lineHeight: 1, color: 'var(--color-text)', WebkitTapHighlightColor: 'transparent'
+    fontSize: 'var(--text-heading-size)', lineHeight: 1, color: 'var(--color-text)', WebkitTapHighlightColor: 'transparent'
   },
   navSpacer: { width: '30px', height: '30px' },
-  navLabel: { flex: 1, textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: '13px', fontWeight: 700, color: 'var(--color-text-secondary)' },
+  navLabel: { flex: 1, textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
 
   chartWrap: {
     width: '100%',
     background: 'rgba(0, 0, 0, 0.22)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: '8px', minHeight: '150px',
+    padding: 'var(--space-2)', minHeight: '150px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     touchAction: 'none'
   },
   skeleton: { width: '100%', height: '160px', borderRadius: 'var(--radius-small)', background: 'rgba(255, 255, 255, 0.04)' },
-  empty: { fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: '30px 12px' },
-  emptyIcon: { fontSize: '30px', display: 'block', marginBottom: '10px', opacity: 0.8 },
+  empty: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: 'var(--space-8) var(--space-3)' },
+  emptyIcon: { fontSize: '30px', display: 'block', marginBottom: 'var(--space-3)', opacity: 0.8 },
 
-  svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 700, opacity: 0.8 }
+  svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.8 }
 }

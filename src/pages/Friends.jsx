@@ -262,7 +262,7 @@ function RemoveFriendIcon() {
 const styles = {
   page: {},
   header: {
-    marginBottom: '16px'
+    marginBottom: 'var(--space-4)'
   },
   // Строка под заголовком: счётчик друзей по центру.
   subRow: {
@@ -276,33 +276,33 @@ const styles = {
   subCount: { color: 'var(--color-primary)', fontWeight: 700 },
   subInfo: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '13px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    fontWeight: 600,
+    fontWeight: 700,
     minHeight: '16px'
   },
   hint: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: '11px',
+    fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     textAlign: 'center',
-    marginBottom: '12px',
+    marginBottom: 'var(--space-3)',
     fontWeight: 500,
     opacity: 0.7
   },
   hintPin: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Строка «Максимум N закреплённых» — вместо ошибки в бывшей модалке.
   limitMsg: {
-    fontFamily: 'var(--font-manrope)', fontSize: '12px', fontWeight: 600,
-    color: '#E84545', textAlign: 'center', marginBottom: '10px'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: '#E84545', textAlign: 'center', marginBottom: 'var(--space-3)'
   },
   // Микро-лейбл группы «Закреплённые» (когда есть и обычные друзья).
   groupLabel: {
-    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
     letterSpacing: '1.5px', color: 'var(--color-text-secondary)',
-    padding: '0 4px 6px', textTransform: 'uppercase'
+    padding: '0 var(--space-1) var(--space-15)', textTransform: 'uppercase'
   },
   list: {
     display: 'flex',
@@ -315,37 +315,37 @@ const styles = {
     borderTop: '1px solid var(--border-hairline)'
   },
   // Скелетон строки друга (только самый первый заход без кеша).
-  skRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' },
-  skAvatar: { width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
-  skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '7px' },
-  skLine: { height: '12px', borderRadius: '5px', background: 'rgba(255,255,255,0.05)' },
+  skRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)' },
+  skAvatar: { width: '52px', height: '52px', borderRadius: 'var(--radius-medium)', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
+  skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
+  skLine: { height: '12px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.05)' },
   // Обычная карточка, как везде: тёмная заливка, без пунктира и без контура.
   inviteBlock: {
-    marginTop: '20px',
-    padding: '32px 20px',
+    marginTop: 'var(--space-5)',
+    padding: 'var(--space-8) var(--space-5)',
     textAlign: 'center',
     background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)'
   },
-  inviteEmoji: { marginBottom: '8px' },
+  inviteEmoji: { marginBottom: 'var(--space-2)' },
   inviteTitle: {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: '16px',
+    fontSize: 'var(--text-body-size)',
     color: 'var(--color-text)',
     letterSpacing: '2px',
-    marginBottom: '8px'
+    marginBottom: 'var(--space-2)'
   },
   inviteSubtitle: {
     fontFamily: 'var(--font-manrope)',
-    fontSize: '12px',
+    fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5,
-    marginBottom: '20px'
+    marginBottom: 'var(--space-5)'
   },
   bottomInvite: {
-    marginTop: '20px',
-    paddingTop: '12px',
+    marginTop: 'var(--space-5)',
+    paddingTop: 'var(--space-3)',
     display: 'flex',
     justifyContent: 'center'
   }

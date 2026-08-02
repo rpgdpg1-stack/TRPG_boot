@@ -211,48 +211,48 @@ export default function Profile() {
 
 const styles = {
   page: { paddingTop: 'var(--tg-safe-top)' },
-  headerWrap: { margin: '0 0 16px' },
+  headerWrap: { margin: '0 0 var(--space-4)' },
   hiddenNote: {
-    fontFamily: 'var(--font-manrope)', fontSize: '13px', color: 'var(--color-text-secondary)',
-    textAlign: 'center', padding: '4px 12px'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)',
+    textAlign: 'center', padding: 'var(--space-1) var(--space-3)'
   },
 
   // Как строка меню профиля: серая карточка со скруглением radius-card. Зелёного
   // фона и рамки нет — акцент несут только текст и иконка.
   inviteButton: {
-    width: '100%', display: 'flex', alignItems: 'center', gap: '16px', padding: '16px',
+    width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)',
     background: 'var(--color-card)', border: 'none',
-    borderRadius: 'var(--radius-card)', marginBottom: '20px', minHeight: '64px', textAlign: 'left'
+    borderRadius: 'var(--radius-card)', marginBottom: 'var(--space-5)', minHeight: '64px', textAlign: 'left'
   },
-  inviteIcon: { fontSize: '22px', width: '32px', textAlign: 'center', flexShrink: 0 },
+  inviteIcon: { fontSize: 'var(--text-heading-size)', width: '32px', textAlign: 'center', flexShrink: 0 },
   inviteContent: { flex: 1, minWidth: 0 },
-  inviteTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 700, color: 'var(--color-primary)', marginBottom: '2px' },
-  inviteSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
-  inviteArrow: { fontSize: '18px', color: 'var(--color-primary)', flexShrink: 0, opacity: 0.7 },
+  inviteTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 'var(--space-05)' },
+  inviteSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
+  inviteArrow: { fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', flexShrink: 0, opacity: 0.7 },
 
   // Заголовок группы — единый стиль заголовков секций: Manrope, обычный регистр
   // («Тело», не «ТЕЛО»), без моношрифта и большого трекинга.
   groupTitle: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '13px',
-    color: 'var(--color-text-secondary)', letterSpacing: '0.2px', marginBottom: '12px', paddingLeft: '4px'
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    color: 'var(--color-text-secondary)', letterSpacing: '0.2px', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)'
   },
   groupCard: {
     display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)', overflow: 'hidden'
   },
   row: {
-    display: 'flex', alignItems: 'center', gap: '16px', padding: '16px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)',
     width: '100%', minHeight: '64px', textAlign: 'left', background: 'transparent', border: 'none'
   },
   // Пункт «Скоро»: приглушён, некликабелен (без стрелки, с бейджем).
   rowSoon: { opacity: 0.5, cursor: 'default' },
-  rowIcon: { fontSize: '22px', width: '32px', textAlign: 'center', flexShrink: 0 },
+  rowIcon: { fontSize: 'var(--text-heading-size)', width: '32px', textAlign: 'center', flexShrink: 0 },
   rowContent: { flex: 1, minWidth: 0 },
-  rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: '15px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '2px' },
-  rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: '11px', color: 'var(--color-text-secondary)' },
-  rowArrow: { fontSize: '18px', color: 'var(--color-text-secondary)', flexShrink: 0 },
+  rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-05)' },
+  rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
+  rowArrow: { fontSize: 'var(--text-title-size)', color: 'var(--color-text-secondary)', flexShrink: 0 },
   soonTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '10px',
+    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
     letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   }
 }
