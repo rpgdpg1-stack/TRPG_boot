@@ -38,7 +38,7 @@ export default function BodyMeasurements() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/profile'))
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
 

@@ -49,7 +49,7 @@ export default function Support() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/settings'))
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
 

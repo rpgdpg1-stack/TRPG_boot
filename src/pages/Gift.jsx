@@ -39,7 +39,7 @@ export default function Gift() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/settings'))
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
 
@@ -88,7 +88,7 @@ export default function Gift() {
 
       <div style={styles.cta}>
         <ActionButton
-          onClick={() => { haptic.medium(); navigate('/settings') }}
+          onClick={() => { haptic.medium(); navigate(-1) }}
           variant="neutral" size="sm" hug
         >
           Напомнить, когда заработает

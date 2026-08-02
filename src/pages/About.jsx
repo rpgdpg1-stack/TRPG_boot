@@ -26,7 +26,7 @@ export default function About() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/settings'))
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
 

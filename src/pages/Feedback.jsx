@@ -38,7 +38,7 @@ export default function Feedback() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    backButton.setHandler(() => navigate('/settings'))
+    backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
 
@@ -61,7 +61,7 @@ export default function Feedback() {
           <div style={styles.doneText}>
             Мы читаем всё, что приходит. Если понадобятся детали — напишем в Telegram.
           </div>
-          <ActionButton onClick={() => navigate('/settings')} variant="neutral" size="sm" hug>
+          <ActionButton onClick={() => navigate(-1)} variant="neutral" size="sm" hug>
             Готово
           </ActionButton>
         </div>
