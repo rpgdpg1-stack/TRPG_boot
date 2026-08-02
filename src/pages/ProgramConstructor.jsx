@@ -14,6 +14,7 @@ import UiIcon from '../components/UiIcon'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
+import EmptyState from '../components/EmptyState'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -512,7 +513,10 @@ export default function ProgramConstructor() {
       <SectionLabel caps>УПРАЖНЕНИЯ</SectionLabel>
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
-          <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
+          <EmptyState
+            title="В этом дне пусто"
+            hint="Добавь упражнения кнопкой внизу — их можно будет переставить перетаскиванием."
+          />
         )}
         {daySections.map((section, sIdx) => (
           <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
@@ -793,7 +797,6 @@ const styles = {
   dayList: { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', marginBottom: 'var(--space-4)', paddingBottom: '0px' },
   daySection: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
   sectionRows: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
-  emptyDay: { textAlign: 'center', padding: 'var(--space-8) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },

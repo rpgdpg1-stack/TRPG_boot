@@ -449,75 +449,96 @@ function SwimmerIcon({ stroke, size = 34 }) {
   )
 }
 
+const SWIM_CLOSE_MS = 220
+
+/**
+ * Финал заплыва. Приведён к той же композиции, что модалка силовой тренировки
+ * (WorkoutFinishedModal): жест бицепса или иконка состояния → заголовок →
+ * строка показателя → пояснение → кнопка. Раньше это были два разных финала
+ * одного и того же действия.
+ *
+ * Отличие намеренное: показатель здесь — дистанция, и она подписана цветом
+ * категории «бассейн», чтобы финал читался именно как заплыв.
+ */
 function SwimFinishedModal({ kind, distance, status, onConfirm }) {
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
+  const [closing, setClosing] = useState(false)
   const isError = kind === 'error'
+  const offline = kind === 'offline'
   const isSaving = status === 'saving'
+  const celebratory = !isError && !offline
 
   const title = isError ? 'НЕ УДАЛОСЬ СОХРАНИТЬ'
-    : kind === 'offline' ? 'СОХРАНЕНО ЛОКАЛЬНО'
+    : offline ? 'СОХРАНЕНО ЛОКАЛЬНО'
     : 'ЗАПЛЫВ ЗАВЕРШЁН'
 
   const buttonText = isSaving ? 'СОХРАНЕНИЕ...' : isError ? 'ПОВТОРИТЬ' : 'ОК'
 
+  const handleClick = () => {
+    if (isSaving || closing) return
+    if (isError) { onConfirm?.(); return }
+    setClosing(true)
+    setTimeout(() => onConfirm?.(), SWIM_CLOSE_MS)
+  }
+
   return (
-    <div ref={overlayRef} style={modalStyles.overlay}>
-      <div style={{ ...modalStyles.modal, ...(isError ? modalStyles.modalError : {}) }}>
-        {(!isError && kind !== 'offline')
-          ? <BicepGesture size={80} />
+    <div ref={overlayRef} style={{ ...modalStyles.overlay, opacity: closing ? 0 : 1 }}>
+      <div style={{
+        ...modalStyles.modal,
+        ...(isError ? modalStyles.modalError : null),
+        ...(closing ? modalStyles.modalClosing : null)
+      }}>
+        {celebratory
+          ? <BicepGesture size={78} />
           : <div style={modalStyles.icon}><UiIcon name={isError ? 'alert' : 'network_off'} size={48} color="var(--color-offline)" /></div>}
 
         <div style={{
           ...modalStyles.title,
-          color: isError || kind === 'offline' ? 'var(--color-offline)' : 'var(--color-text)'
+          color: (isError || offline) ? 'var(--color-offline)' : 'var(--cat-pool)'
         }}>
           {title}
         </div>
 
+        {/* Строка показателя — как в модалке силовой, только показатель здесь
+            дистанция, в цвете категории «бассейн». */}
         {!isError && (
-          <div style={modalStyles.distanceBadge}>{formatDistance(distance)}</div>
+          <div style={modalStyles.statsRow}>
+            <UiIcon name="swimming" size={18} color="var(--cat-pool)" />
+            <span style={modalStyles.statNum}>{formatDistance(distance)}</span>
+          </div>
         )}
 
         {isError ? (
-          <div style={modalStyles.message}>
-            Проверь подключение к интернету и попробуй ещё раз.
-          </div>
-        ) : kind === 'reward' ? (
-          <div style={modalStyles.message}>
-            Отличная работа! 💪<br />
-            Засчитана 1 тренировка за сегодня.
-          </div>
+          <div style={modalStyles.message}>Проверь подключение к интернету и попробуй ещё раз.</div>
+        ) : offline ? (
+          <div style={modalStyles.message}>Заплыв сохранён на телефоне.<br />Данные обновятся, как только появится интернет.</div>
         ) : kind === 'limit' ? (
-          <div style={modalStyles.message}>
-            Лимит: 1 тренировка в день.<br />
-            За сегодня тренировка уже засчитана.
-          </div>
+          <div style={modalStyles.message}>Достигнут лимит — 1 тренировка в день.<br />Этот заплыв в статистику не войдёт.</div>
         ) : (
-          <div style={modalStyles.message}>
-            Заплыв сохранён на телефоне.<br />
-            Данные обновятся, как только появится интернет.
-          </div>
+          <div style={modalStyles.praise}>Отличная работа!</div>
         )}
 
-        <button
-          onClick={onConfirm}
+        <ActionButton
+          variant="accent"
+          size="sm"
+          onClick={handleClick}
           disabled={isSaving}
           style={{
-            ...modalStyles.button,
-            ...(isError ? modalStyles.buttonError : {}),
-            opacity: isSaving ? 0.6 : 1,
-            cursor: isSaving ? 'default' : 'pointer'
+            marginTop: 'var(--space-1)', width: '100%',
+            ...(isError
+              ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: 'var(--accent-on)' }
+              : { background: 'var(--cat-pool)', borderColor: 'var(--cat-pool)', color: 'var(--accent-on)' })
           }}
         >
           {buttonText}
-        </button>
+        </ActionButton>
       </div>
 
       <style>{`
         @keyframes swimModalFade { from { opacity: 0 } to { opacity: 1 } }
         @keyframes swimModalIn {
-          0%   { opacity: 0; transform: scale(0.85) translateY(16px); }
+          0%   { opacity: 0; transform: scale(0.92) translateY(10px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
@@ -794,73 +815,45 @@ const plsStyles = {
 
 const modalStyles = {
   overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999,
-    padding: 'var(--space-5)',
+    position: 'fixed', inset: 0,
+    background: 'var(--overlay-scrim)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    zIndex: 'var(--z-modal)', padding: 'var(--space-5)',
+    touchAction: 'none', overscrollBehavior: 'contain',
+    transition: 'opacity 0.22s ease',
     animation: 'swimModalFade 0.3s ease-out forwards'
   },
   modal: {
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(63, 162, 247, 0.25)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-8) var(--space-6) var(--space-6)',
-    width: '100%',
-    maxWidth: '320px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-    animation: 'swimModalIn 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(63, 162, 247, 0.15)'
+    width: '100%', maxWidth: '320px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)',
+    animation: 'swimModalIn 0.4s var(--ease-ios) forwards',
+    boxShadow: 'var(--shadow-modal)',
+    transition: 'transform 0.22s var(--ease-ios), opacity 0.22s ease'
   },
-  modalError: {
-    border: '1px solid rgba(255, 140, 66, 0.3)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 140, 66, 0.2)'
+  modalError: { borderColor: 'var(--color-offline)' },
+  modalClosing: { transform: 'scale(0.94) translateY(8px)', opacity: 0 },
+  icon: { display: 'inline-flex', lineHeight: 1 },
+  title: {
+    fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-label)',
+    fontSize: 'var(--text-title-size)', letterSpacing: '2px', textAlign: 'center'
   },
-  icon: { fontSize: '56px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(63, 162, 247, 0.5))' },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '2px', textAlign: 'center' },
-  distanceBadge: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-display-size)',
-    color: 'var(--cat-pool)',
-    letterSpacing: '1px',
-    textShadow: '0 0 12px rgba(63, 162, 247, 0.4)'
-  },
-  rewardBadge: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-heading-size)',
-    color: 'var(--color-primary)',
-    letterSpacing: '1px'
+  // Строка показателя — тот же приём, что в модалке силовой.
+  statsRow: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  statNum: {
+    fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-value)',
+    fontSize: 'var(--text-heading-size)', color: 'var(--cat-pool)', letterSpacing: '0.5px'
   },
   message: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center',
-    lineHeight: 1.5
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5
   },
-  button: {
-    marginTop: 'var(--space-1)',
-    width: '100%',
-    padding: 'var(--space-4)',
-    background: 'var(--cat-pool)',
-    color: 'var(--accent-on)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-button-size)',
-    fontWeight: 800,
-    letterSpacing: '2px',
-    borderRadius: 'var(--radius-pill)',
-    border: 'none',
-    cursor: 'pointer'
-  },
-  buttonError: { background: 'var(--color-offline)' }
+  praise: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 'var(--weight-label)', color: 'var(--text-label)', textAlign: 'center'
+  }
 }

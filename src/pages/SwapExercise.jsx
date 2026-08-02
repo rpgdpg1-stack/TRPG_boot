@@ -8,6 +8,7 @@ import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
+import EmptyState from '../components/EmptyState'
 
 /**
  * Полноэкранная страница замены упражнения.
@@ -238,7 +239,11 @@ export default function SwapExercise() {
           <div style={styles.loading}>Загрузка...</div>
         ) : alternatives.length === 0 ? (
           <div style={styles.empty}>
-            Альтернатив для этой подгруппы пока нет
+            <EmptyState
+              icon="change"
+              title="Альтернатив пока нет"
+              hint="Для этой подгруппы мышц в каталоге ещё нет замен. Мы их добавляем."
+            />
           </div>
         ) : (
           <div style={styles.altList}>
