@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { isOnline, onNetworkChange } from '../lib/network-status'
 import { getQueueSize } from '../lib/offline-queue'
 import { SYNC_EVENTS, onSyncEvent } from '../lib/sync-engine'
+import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
 
 /**
@@ -34,6 +35,13 @@ export default function OfflineBanner() {
       setPendingCount(getQueueSize())
     })
 
+    // Очередь пополнилась прямо сейчас (правка веса/заметки без сети).
+    // Внимание: `on` из events.js отдаёт САМО событие, а `onSyncEvent` ниже —
+    // уже развёрнутый detail. Контракты разные, поэтому здесь `e.detail`.
+    const offQueue = on(EVENTS.QUEUE_CHANGED, (e) => {
+      setPendingCount(e?.detail?.size ?? getQueueSize())
+    })
+
     const offStart = onSyncEvent(SYNC_EVENTS.STARTED, () => {
       setSyncing(true)
       setJustSyncedCount(null)
@@ -63,6 +71,7 @@ export default function OfflineBanner() {
 
     return () => {
       offNet()
+      offQueue()
       offStart()
       offDone()
       offFailed()

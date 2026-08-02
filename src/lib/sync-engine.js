@@ -127,6 +127,8 @@ async function sendOperation(op, userId) {
       return sendSwap(op, userId)
     case 'finish':
       return sendFinish(op, userId)
+    case 'note':
+      return sendNote(op, userId)
     default:
       console.warn('[sync] неизвестный тип операции:', op.type)
       return true // удаляем мусор из очереди
@@ -157,6 +159,27 @@ async function sendWeight(op, userId) {
       console.error('[sync] weight upsert error:', upsertErr)
       return false
     }
+  }
+  return true
+}
+
+/**
+ * Заметка — upsert (пустая строка = удаление). payload: { exercise_id, note }
+ * Как и вес: на сервере «последний выигрывает», поэтому в очереди хранится
+ * только последняя версия текста.
+ */
+async function sendNote(op, userId) {
+  const { exercise_id, note } = op.payload
+
+  const { error } = await supabase.rpc('api_save_user_note', {
+    p_user_id: userId,
+    p_exercise_id: exercise_id,
+    p_note: note || ''
+  })
+
+  if (error) {
+    console.error('[sync] note error:', error)
+    return false
   }
   return true
 }

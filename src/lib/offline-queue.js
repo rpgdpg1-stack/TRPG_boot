@@ -17,7 +17,7 @@
  *  выигрывает". Нет смысла слать промежуточные значения.
  *
  * Каждая операция хранит:
- *  - type: 'weight' | 'swap' | 'finish'
+ *  - type: 'weight' | 'swap' | 'finish' | 'note'
  *  - payload: данные для RPC
  *  - dedupKey: ключ схлопывания (по нему ищем дубль)
  *  - createdAt: когда создана (для finish важно — это реальный момент
@@ -25,6 +25,7 @@
  */
 
 import { localGet, localSet } from '../utils/storage'
+import { EVENTS, emit } from './events'
 
 const QUEUE_KEY = 'offline-operations-queue'
 
@@ -47,6 +48,9 @@ export function getQueue() {
  */
 function saveQueue(queue) {
   localSet(QUEUE_KEY, JSON.stringify(queue))
+  // Бейдж статуса слушает это событие: иначе правка, сделанная оффлайн,
+  // молча ложится в очередь и пользователь не видит, что она принята.
+  emit(EVENTS.QUEUE_CHANGED, { size: queue.length })
 }
 
 /**
@@ -61,7 +65,7 @@ export function getQueueSize() {
  * Если операция того же type с тем же dedupKey уже есть — ЗАМЕНЯЕМ её
  * (последнее значение выигрывает), а не плодим дубль.
  *
- * type     — 'weight' | 'swap' | 'finish'
+ * type     — 'weight' | 'swap' | 'finish' | 'note'
  * payload  — объект с данными для RPC (см. ниже формат каждого типа)
  * dedupKey — строка-ключ схлопывания
  */
