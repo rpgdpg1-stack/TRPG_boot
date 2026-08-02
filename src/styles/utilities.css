@@ -29,6 +29,19 @@
   transition: transform 60ms var(--press-ease);
 }
 
+/* Тихий отклик для КОНТЕЙНЕРА, внутри которого есть своё главное действие
+   (карточка программы с кнопкой Play). Только приглушение — без scale: иначе
+   съезжала бы и вложенная кнопка, и два отклика спорили бы друг с другом.
+   Полноценный press-tile остаётся у самой кнопки. */
+.press-dim {
+  transition: opacity 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.press-dim:active {
+  opacity: 0.72;
+  transition: opacity 60ms ease;
+}
+
 
 /* Строка в сгруппированной карточке (как в Telegram): без scale,
    при нажатии — серая подсветка фона. */

@@ -828,6 +828,25 @@ export default function WorkoutDay() {
     setTimeout(() => setBtnMorph(false), 460)
   }
 
+  // Вход по кружку Play с карточки программы: день открывается уже запущенным —
+  // жать «Начать» второй раз не нужно, анимация схлопывания шапки играет сама.
+  // Стартуем ОДИН раз за монтирование (ref-предохранитель) и только если сессии
+  // ещё нет: иначе возврат на экран перезапустил бы тренировку и снёс прогресс.
+  // Предупреждение о второй силовой за день не обходим — при нём вместо старта
+  // покажется тот же диалог, что и по обычному тапу.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!location.state?.autoStart || autoStartedRef.current) return
+    if (!program || sessionBlocked || isThisActive) return
+    autoStartedRef.current = true
+    // Снимаем флаг из истории, чтобы «Назад→Вперёд» не стартовало заново.
+    navigate(location.pathname, { replace: true, state: { ...location.state, autoStart: false } })
+    handleStartTap()
+    // Намеренно узкий список: handleStartTap/navigate пересоздаются каждый рендер,
+    // с ними эффект гонялся бы вхолостую (ref всё равно пропустит повторы).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.autoStart, program, sessionBlocked, isThisActive])
+
   // Целевое сжатие: пилюля (1) — на активном дне ИЛИ при скролле вниз (headerMin);
   // высокая шапка (0) — только наверху. Промежуточного «второго состояния» больше нет:
   // как начал листать — сразу собирается в пилюлю (как при «Начать»).

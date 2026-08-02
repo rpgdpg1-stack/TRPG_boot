@@ -14,6 +14,7 @@ import AnchorMenu from './AnchorMenu'
 import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
+import PlayButton from './PlayButton'
 
 // Долгое нажатие по карточке программы — те же пороги, что у карточки упражнения.
 const LONG_PRESS_MS = 500
@@ -82,6 +83,24 @@ export default function ProgramCard({
   // Читаем из localStorage по месту сессии (свой набор у каждого места).
   const activeDone = isActive ? loadWorkoutProgress(active.programId, active.day, active.place).length : 0
   const activeTotal = isActive ? getProgramDaySlots(active.programId, active.day, active.place).length : 0
+
+  // Тап по кружку Play — «открыть И сразу начать»: день откроется уже запущенным,
+  // второй раз жать «Начать» внизу не нужно. Признак autoStart читает сам экран дня
+  // (WorkoutDay/SwimWorkout) и играет там штатную анимацию старта.
+  // Если тренировка уже идёт — просто уводим в активный день, повторный старт
+  // не нужен (и был бы сбросом прогресса).
+  const handlePlay = () => {
+    if (anchorRect || !available) return
+    haptic.medium()
+    const fromHome = !!onOpen
+    if (prog.kind === 'swim') {
+      navigate(`/swim/${prog.slug}`, { state: { autoStart: !isActive, fromHome } })
+      return
+    }
+    const firstDay = prog.data?.days ? Object.keys(prog.data.days)[0] : 'A'
+    const targetDay = isActive ? active.day : (activeDay || firstDay)
+    navigate(`/workout/${prog.slug}/${targetDay}`, { state: { fromHome, autoStart: !isActive } })
+  }
 
   const handleTap = () => {
     if (anchorRect || !available) return
@@ -196,7 +215,7 @@ export default function ProgramCard({
       onPointerUp={clearLong}
       onPointerLeave={clearLong}
       onPointerCancel={clearLong}
-      className={available && press ? 'press-tile' : ''}
+      className={available && press ? 'press-dim' : ''}
       style={cardStyle}
     >
       {/* Заливка-прогресс: светло-серый фон растёт по мере отжатых упражнений. */}
@@ -225,9 +244,7 @@ export default function ProgramCard({
             <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayIcon size={16} /></span>
           </span>
         ) : (
-          <span style={styles.ctaCircle}>
-            <span style={styles.ctaCirclePlay}><PlayIcon size={21} /></span>
-          </span>
+          <PlayButton onStart={handlePlay} style={styles.ctaCircle} />
         ))}
 
         {/* Правый блок — по центру по высоте ряда, справа. */}
@@ -355,17 +372,14 @@ const styles = {
   },
   // «Начать» — круглая акцентная кнопка с плеем (без слова). Плей чуть правее
   // центра: у треугольника оптический центр смещён влево.
+  // Позиционирование кружка Play; размер, заливка и нажатое состояние — внутри
+  // PlayButton (у него свой жест, отдельный от тапа по карточке).
   ctaCircle: {
     position: 'absolute',
     top: '50%', right: '16px',
     transform: 'translateY(-50%)',
-    zIndex: 2,
-    width: '48px', height: '48px', borderRadius: '50%',
-    background: 'var(--color-primary)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    pointerEvents: 'none'
+    zIndex: 2
   },
-  ctaCirclePlay: { display: 'inline-flex', color: 'var(--accent-on)', marginLeft: 'var(--space-05)' },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.
   rightBlock: {
     position: 'absolute',

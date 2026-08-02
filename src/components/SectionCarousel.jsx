@@ -219,6 +219,16 @@ export default function SectionCarousel() {
             >
               {headCat.title}
             </span>
+            {/* Шеврон вниз — без него не читалось, что заголовок вообще нажимается.
+                Горит тем же цветом раздела, что и текст, и так же гаснет. */}
+            <span style={{
+              ...styles.selectorChev,
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              color: headLit ? headCat.color : 'rgba(255, 255, 255, 0.45)',
+              transition: headLit ? 'transform 0.22s var(--ease-ios)' : 'transform 0.22s var(--ease-ios), color 0.6s ease'
+            }}>
+              <ChevronIcon size={14} color="currentColor" />
+            </span>
           </button>
 
           {open && (
@@ -260,7 +270,7 @@ export default function SectionCarousel() {
       <div
         ref={viewportRef}
         style={styles.viewport}
-        className="press-tile"
+        className="press-dim"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -307,18 +317,24 @@ export default function SectionCarousel() {
                   // Cold-start: короткий рабочий CTA в цвет раздела. Тап → список
                   // программ раздела; выбранная закрепится здесь. Рамка общая (блок),
                   // своей пунктирной у заглушки больше нет.
-                  <button
-                    style={styles.pinEmpty}
-                    onClick={() => { if (!swiped.current) openSection(c.id) }}
-                  >
-                    <span style={{
-                      ...styles.pinEmptyPill,
-                      border: `1px dashed color-mix(in srgb, ${c.color} 40%, transparent)`
-                    }}>
+                  <div style={styles.pinEmpty}>
+                    {/* Нажимается только пилюля, а не весь блок: иначе отклик шёл
+                        от пустого поля вокруг и было непонятно, где кнопка.
+                        Пунктир в полную силу цвета раздела (был 40% — читался как
+                        неактивный) + лёгкая заливка, чтобы область читалась. */}
+                    <button
+                      className="press-tile"
+                      style={{
+                        ...styles.pinEmptyPill,
+                        border: `1px dashed ${c.color}`,
+                        background: `color-mix(in srgb, ${c.color} 8%, transparent)`
+                      }}
+                      onClick={() => { if (!swiped.current) openSection(c.id) }}
+                    >
                       <span style={{ ...styles.pinEmptyPlus, color: c.color }}>＋</span>
                       <span style={styles.pinEmptyText}>Выбрать программу</span>
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                 )}
               </div>
             )
@@ -352,6 +368,8 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
+  // Шеврон раскрытия списка разделов: вниз — закрыт, вверх — открыт.
+  selectorChev: { display: 'inline-flex', lineHeight: 0 },
   // Выпадающий список — под селектором.
   dropdown: {
     position: 'absolute',
@@ -385,18 +403,16 @@ const styles = {
   // Лента внутри рамки: слайды по 100% её ширины, БЕЗ зазоров.
   track: { display: 'flex', alignItems: 'stretch', width: '100%', willChange: 'transform' },
   slide: { width: '100%', flexShrink: 0, display: 'flex' },
+  // Обёртка-центровка (не кнопка): нажимается только пилюля внутри.
   pinEmpty: {
-    width: '100%',
-    minHeight: '124px',
-    background: 'transparent', border: 'none',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer'
+    width: '100%', minHeight: '124px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   // Пунктирная пилюля вокруг «＋ Выбрать программу» — в цвет раздела, приглушённо.
   pinEmptyPill: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
     padding: 'var(--space-3) var(--space-5)', borderRadius: 'var(--radius-pill)',
-    opacity: 0.85
+    cursor: 'pointer'
   },
   pinEmptyPlus: { fontSize: 'var(--text-title-size)', lineHeight: 1 },
   pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
