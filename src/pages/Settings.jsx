@@ -32,16 +32,16 @@ export default function Settings() {
       title: 'Основное',
       items: [
         { id: 'privacy',       icon: 'ui:privacy',       iconColor: 'var(--color-text-secondary)', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
-        { id: 'notifications', icon: 'ui:notifications', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true },
-        { id: 'about',         icon: 'ui:info',          title: 'О приложении', subtitle: 'Версия · Политика',          soon: true }
+        { id: 'notifications', icon: 'ui:notifications', iconColor: 'var(--color-text-secondary)', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true, path: '/notifications' },
+        { id: 'about',         icon: 'ui:info',          iconColor: 'var(--color-text-secondary)', title: 'О приложении', subtitle: 'Версия · Политика',          path: '/about' }
       ]
     },
     {
       title: 'Поддержка',
       items: [
-        { id: 'support',  icon: 'ui:support', title: 'Поддержка',           subtitle: 'Написать в отдел заботы',    soon: true },
-        { id: 'feedback', icon: 'ui:idea',    title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', soon: true },
-        { id: 'gift',     icon: 'ui:gift',    title: 'Подарить сертификат', subtitle: 'Подарок другу',              soon: true }
+        { id: 'support',  icon: 'ui:support', iconColor: 'var(--color-text-secondary)', title: 'Поддержка',           subtitle: 'Частые вопросы · Написать',  path: '/support' },
+        { id: 'feedback', icon: 'ui:idea',    iconColor: 'var(--color-text-secondary)', title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', soon: true, path: '/feedback' },
+        { id: 'gift',     icon: 'ui:gift',    iconColor: 'var(--color-text-secondary)', title: 'Подарить сертификат', subtitle: 'Подарок другу',              soon: true, path: '/gift' }
       ]
     },
     {
@@ -54,7 +54,8 @@ export default function Settings() {
   ]
 
   const handleSectionTap = async (item) => {
-    if (item.soon) return
+    // «Скоро» = не готов бэкенд, но экран уже можно посмотреть (см. Profile).
+    if (!item.path && !item.tone) return
     haptic.light()
 
     if (item.path) { navigate(item.path); return }
@@ -124,8 +125,8 @@ export default function Settings() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className={item.soon ? undefined : 'tg-row'}
-                disabled={item.soon}
+                className={item.path || item.tone ? 'tg-row' : undefined}
+                disabled={!item.path && !item.tone}
                 style={{
                   ...styles.row,
                   borderTop: idx === 0 ? 'none' : '1px solid var(--highlight-recent)',

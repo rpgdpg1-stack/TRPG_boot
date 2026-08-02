@@ -14,6 +14,14 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import FavoriteExercises from './pages/FavoriteExercises'
 import Privacy from './pages/Privacy'
+import PersonalData from './pages/PersonalData'
+import BodyMeasurements from './pages/BodyMeasurements'
+import Goal from './pages/Goal'
+import Notifications from './pages/Notifications'
+import About from './pages/About'
+import Support from './pages/Support'
+import Feedback from './pages/Feedback'
+import Gift from './pages/Gift'
 import DailyBoost from './pages/DailyBoost'
 import Activities from './pages/Activities'
 import Friends from './pages/Friends'
@@ -142,6 +150,16 @@ export default function App() {
           <Route path="/history" element={<History />} />
           <Route path="/favorite-exercises" element={<FavoriteExercises />} />
           <Route path="/privacy" element={<Privacy />} />
+          {/* Профиль: тело и цель */}
+          <Route path="/personal-data" element={<PersonalData />} />
+          <Route path="/measurements" element={<BodyMeasurements />} />
+          <Route path="/goal" element={<Goal />} />
+          {/* Настройки */}
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/gift" element={<Gift />} />
           <Route path="/daily-boost" element={<Activities />} />
           <Route path="/daily-boost/edit" element={<DailyBoost />} />
           <Route path="/exercise/:id" element={<ExerciseInfo />} />

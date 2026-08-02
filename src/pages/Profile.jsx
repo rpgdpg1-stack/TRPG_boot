@@ -97,9 +97,9 @@ export default function Profile() {
       items: [
         { id: 'activities',   icon: 'ui:activity', iconColor: 'var(--color-text-secondary)', title: 'Активности',     subtitle: 'Утро · День · Вечер',      path: '/daily-boost' },
         { id: 'recovery',     icon: 'ui:recovery', iconColor: 'var(--color-text-secondary)', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
-        { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
-        { id: 'measurements', icon: 'ui:measure',  title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
-        { id: 'goal',         icon: 'ui:goal',     title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }
+        { id: 'personal',     icon: 'ui:personal', iconColor: 'var(--color-text-secondary)', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true, path: '/personal-data' },
+        { id: 'measurements', icon: 'ui:measure',  iconColor: 'var(--color-text-secondary)', title: 'Замеры тела',    subtitle: 'Обхваты · История',        soon: true, path: '/measurements' },
+        { id: 'goal',         icon: 'ui:goal',     iconColor: 'var(--color-text-secondary)', title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true, path: '/goal' }
       ]
     },
     {
@@ -111,7 +111,9 @@ export default function Profile() {
   ]
 
   const handleSectionTap = (item) => {
-    if (item.soon) return
+    // «Скоро» = не готов бэкенд. Если экран уже есть — открываем: посмотреть,
+    // что будет, полезнее, чем упереться в мёртвую строку.
+    if (!item.path) return
     haptic.light()
     if (item.path) navigate(item.path, { state: { from: '/profile' } })
   }
@@ -182,8 +184,8 @@ export default function Profile() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className={item.soon ? undefined : 'tg-row'}
-                disabled={item.soon}
+                className={item.path ? 'tg-row' : undefined}
+                disabled={!item.path}
                 style={{
                   ...styles.row,
                   borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)',
