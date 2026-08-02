@@ -144,7 +144,7 @@ const styles = {
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
     fontSize: 'var(--text-caption-size)',
-    color: '#E84545',
+    color: 'var(--color-error)',
     letterSpacing: '1px',
     marginBottom: 'var(--space-15)'
   },
@@ -159,7 +159,7 @@ const styles = {
     marginTop: 'var(--space-3)',
     padding: 'var(--space-4) var(--space-6)',
     background: 'var(--color-primary)',
-    color: '#0D0C0C',
+    color: 'var(--accent-on)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-body-size)',
     fontWeight: 700,

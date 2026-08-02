@@ -11,6 +11,7 @@ import {
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
 import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import UiIcon from './UiIcon'
+import ExercisePlaceholder from './ExercisePlaceholder'
 
 /**
  * Карточка упражнения.
@@ -152,8 +153,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
   const swipeActions = [
-    { key: 'note', icon: 'notes', color: '#FFA94D', label: 'Заметка', fn: onNote },
-    { key: 'info', icon: 'info', color: '#3FA2F7', label: 'Техника', fn: onInfo },
+    { key: 'note', icon: 'notes', color: 'var(--color-text-secondary)', label: 'Заметка', fn: onNote },
+    { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
     { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]
 
@@ -416,7 +417,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       className="press-exercise-card"
       style={{
         ...styles.card,
-        background: isActive ? '#222222' : '#1C1C1C',
+        background: isActive ? '#222222' : 'var(--surface)',
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
@@ -447,7 +448,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             }}
           />
         ) : (
-          <div style={styles.previewPlaceholder}>💪</div>
+          <ExercisePlaceholder size={32} />
         )}
       </div>
 
@@ -460,7 +461,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         {/* 2. Один тег подгруппы в цвете основной группы */}
         <div style={styles.tagsRow}>
           {tagLabel && (
-            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF' }}>
+            <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)' }}>
               {tagLabel}
             </span>
           )}
@@ -566,7 +567,7 @@ const styles = {
     top: '50%',
     transform: 'translateY(-50%)',
     height: '54px',
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: 'var(--layer-2)',
     borderRadius: 'var(--radius-small)',
     pointerEvents: 'none',
     zIndex: 0,
@@ -597,7 +598,7 @@ const styles = {
     height: '100px',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    background: '#FFFFFF',
+    background: 'var(--color-text)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
@@ -609,10 +610,6 @@ const styles = {
     width: '100%',
     height: '100%',
     objectFit: 'cover'
-  },
-  previewPlaceholder: {
-    fontSize: '34px',
-    opacity: 0.4
   },
   // Текстовая колонка: название сверху, теги, подходы внизу
   content: {
@@ -629,7 +626,7 @@ const styles = {
     fontSize: 'var(--text-button-size)',
     fontWeight: 700,
     lineHeight: '18px',
-    color: '#F0F0F0'
+    color: 'var(--color-text)'
   },
   // Ряд тега подгруппы (в цвете основной группы)
   tagsRow: {
@@ -658,7 +655,7 @@ const styles = {
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
-    color: '#A8A8A8'
+    color: 'var(--color-text-secondary)'
   },
   weightBlock: {
     flexShrink: 0,
@@ -722,7 +719,7 @@ const styles = {
     lineHeight: '15px',
     letterSpacing: '0.05em',
     textAlign: 'center',
-    color: '#5f5f5f'
+    color: 'var(--color-text-secondary)'
   },
   activeOverlay: {
     position: 'absolute',

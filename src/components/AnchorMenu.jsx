@@ -154,7 +154,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
             onClick={onItem(it)}
             style={{
               ...styles.row,
-              background: pressed === it.key ? 'rgba(255,255,255,0.10)' : 'transparent',
+              background: pressed === it.key ? 'var(--layer-2)' : 'transparent',
               transform: pressed === it.key ? 'scale(0.985)' : 'scale(1)'
             }}
           >
@@ -188,7 +188,7 @@ const styles = {
     background: 'rgba(28, 28, 30, 0.7)',
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-15)',
     display: 'flex',
@@ -230,7 +230,7 @@ const styles = {
   custom: { padding: 'var(--space-05)' },
   divider: {
     height: '1px',
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     margin: 'var(--space-1) var(--space-2)'
   }
 }

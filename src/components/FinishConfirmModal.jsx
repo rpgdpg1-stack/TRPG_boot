@@ -78,7 +78,7 @@ const styles = {
     width: '100%',
     maxWidth: '300px',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-6) var(--space-5) var(--space-5)',
     display: 'flex',

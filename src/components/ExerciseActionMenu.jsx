@@ -34,7 +34,7 @@ import TrendingUpIcon from './TrendingUpIcon'
  * Закрытие: тап по оверлею или Cancel.
  */
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
-const NOTE_ICON_COLOR = '#FFA94D'
+const NOTE_ICON_COLOR = 'var(--color-text-secondary)'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
@@ -299,7 +299,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
         <div style={styles.card}>
           <HeartButton
             filled={isFav}
-            color={isFav ? 'var(--color-primary)' : '#888888'}
+            color={isFav ? 'var(--color-primary)' : 'var(--color-text-secondary)'}
             onActivate={toggleFav}
             ariaLabel={isFav ? 'Убрать из любимых' : 'В любимые'}
             style={styles.heartBtn}
@@ -327,7 +327,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
               {/* Один тег — подгруппа в цвете основной группы, opacity 0.7
                   (как на карточках упражнений в дне тренировки). */}
               {(subGroupLabel || groupLabel) && (
-                <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF', opacity: 0.7 }}>
+                <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
                   {subGroupLabel || groupLabel}
                 </span>
               )}
@@ -486,7 +486,7 @@ const styles = {
     overflowY: 'auto',
     touchAction: 'pan-y',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     // Симметричные отступы 24 сверху/снизу, 16 по бокам (крестик вынесен под модалку).
     padding: 'var(--space-6) var(--space-4) var(--space-6)',
@@ -556,7 +556,7 @@ const styles = {
     gap: 'var(--space-4)',
     width: '100%',
     minHeight: '150px',
-    background: '#1C1C1C',
+    background: 'var(--surface)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
@@ -566,7 +566,7 @@ const styles = {
     height: '118px',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    background: '#FFFFFF',
+    background: 'var(--color-text)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
@@ -585,7 +585,7 @@ const styles = {
     fontSize: 'var(--text-body-size)',
     fontWeight: 700,
     lineHeight: '19px',
-    color: '#F0F0F0'
+    color: 'var(--color-text)'
   },
   tagsRow: {
     display: 'flex',
@@ -606,7 +606,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   tagSecondary: {
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     color: '#A0A0A0',
     fontWeight: 700
   },
@@ -616,7 +616,7 @@ const styles = {
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
-    color: '#888888'
+    color: 'var(--color-text-secondary)'
   },
   // Колонка веса справа — копия с карточки упражнения (цифра + KG),
   // редактируется прозрачным инпутом поверх цифры.
@@ -683,7 +683,7 @@ const styles = {
     lineHeight: '15px',
     letterSpacing: '0.05em',
     textAlign: 'center',
-    color: '#5f5f5f'
+    color: 'var(--color-text-secondary)'
   },
 
   // Блок с кнопками действий — сверху отступ, чтобы отделить от инфо
@@ -699,7 +699,7 @@ const styles = {
     alignItems: 'center',
     gap: 'var(--space-3)',
     padding: 'var(--space-4) var(--space-5)',
-    background: 'rgba(255, 255, 255, 0.04)',
+    background: 'var(--layer-1)',
     borderRadius: 'var(--radius-medium)',
     border: 'none',
     width: '100%',
@@ -793,7 +793,7 @@ const styles = {
                              //  совпадает по высоте с блоком просмотра, модалка не прыгает
     padding: 'var(--space-3) var(--space-4)',
     background: 'rgba(0, 0, 0, 0.3)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-button-size)',
@@ -835,7 +835,7 @@ const styles = {
   noteSaveBtn: {
     padding: 'var(--space-2) var(--space-4)',
     background: 'var(--color-primary)',
-    color: '#0D0C0C',
+    color: 'var(--accent-on)',
     border: 'none',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',

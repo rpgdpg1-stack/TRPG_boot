@@ -175,9 +175,13 @@ export default function Friends() {
             </div>
           )}
 
-          {/* Закреплённые сверху — без подписи (сами выделены фоном строки). */}
+          {/* Закреплённые сверху. Разделение на две группы читалось как баг вёрстки,
+              пока было ничем не обозначено — маленький пин объясняет его без слов. */}
           {pinnedFriends.length > 0 && (
             <>
+              {otherFriends.length > 0 && (
+                <div style={styles.pinnedMark}><PinIcon filled size={12} /></div>
+              )}
               <div style={styles.list}>
                 {pinnedFriends.map((friend, idx) => (
                   <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
@@ -228,7 +232,7 @@ export default function Friends() {
               key: 'remove',
               icon: <RemoveFriendIcon />,
               label: 'Убрать из друзей',
-              labelColor: '#E84545',
+              labelColor: 'var(--color-error)',
               onClick: () => handleRemoveFriend(menuFor.friend)
             }
           ]}
@@ -250,7 +254,7 @@ export default function Friends() {
 function RemoveFriendIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="#E84545" strokeWidth="1.6" strokeLinecap="round" fill="none">
+      <g stroke="var(--color-error)" strokeWidth="1.6" strokeLinecap="round" fill="none">
         <circle cx="8.5" cy="6.5" r="3" />
         <path d="M3 16c0-2.8 2.5-4.5 5.5-4.5 1.2 0 2.3.27 3.2.76" />
         <path d="M13 14.5H18" />
@@ -296,13 +300,20 @@ const styles = {
   // Строка «Максимум N закреплённых» — вместо ошибки в бывшей модалке.
   limitMsg: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: '#E84545', textAlign: 'center', marginBottom: 'var(--space-3)'
+    color: 'var(--color-error)', textAlign: 'center', marginBottom: 'var(--space-3)'
   },
   // Микро-лейбл группы «Закреплённые» (когда есть и обычные друзья).
   groupLabel: {
     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
     letterSpacing: '1.5px', color: 'var(--color-text-secondary)',
     padding: '0 var(--space-1) var(--space-15)', textTransform: 'uppercase'
+  },
+  // Метка группы закреплённых: только иконка, без подписи — пин уже читается
+  // как «закреплено», текст был бы шумом.
+  pinnedMark: {
+    display: 'flex', alignItems: 'center',
+    paddingLeft: 'var(--space-1)', paddingBottom: 'var(--space-15)',
+    color: 'var(--color-text-secondary)'
   },
   list: {
     display: 'flex',
@@ -316,9 +327,9 @@ const styles = {
   },
   // Скелетон строки друга (только самый первый заход без кеша).
   skRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)' },
-  skAvatar: { width: '52px', height: '52px', borderRadius: 'var(--radius-medium)', background: 'rgba(255,255,255,0.06)', flexShrink: 0 },
+  skAvatar: { width: '52px', height: '52px', borderRadius: 'var(--radius-medium)', background: 'var(--highlight-recent)', flexShrink: 0 },
   skText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
-  skLine: { height: '12px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.05)' },
+  skLine: { height: '12px', borderRadius: 'var(--radius-xs)', background: 'var(--layer-1)' },
   // Обычная карточка, как везде: тёмная заливка, без пунктира и без контура.
   inviteBlock: {
     marginTop: 'var(--space-5)',

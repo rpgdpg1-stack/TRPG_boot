@@ -1625,7 +1625,7 @@ const skeletonStyles = {
     padding: 'var(--space-4)',
     minHeight: '132px',
     borderRadius: 'var(--radius-card)',
-    background: '#1C1C1C'
+    background: 'var(--surface)'
   },
   thumb: {
     flexShrink: 0,
@@ -1771,7 +1771,7 @@ const pickerStyles = {
     background: 'rgba(28, 28, 30, 0.72)',
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-pill)',
     boxShadow: '0 14px 44px rgba(0, 0, 0, 0.55)',
     transformOrigin: 'center',
@@ -1795,7 +1795,7 @@ const pickerStyles = {
   },
   // Серый кружок под текущим (просматриваемым, не запущенным) днём — «ты тут».
   cellCircle: {
-    background: 'rgba(255, 255, 255, 0.10)'
+    background: 'var(--layer-2)'
   }
 }
 
@@ -1889,7 +1889,7 @@ const styles = {
     background: 'rgba(28, 28, 30, 0.55)',
     backdropFilter: 'blur(16px) saturate(180%)',
     WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-card)',
     boxShadow: '0 6px 24px rgba(0, 0, 0, 0.28)'
   },
@@ -1900,7 +1900,7 @@ const styles = {
     left: 0,
     top: 0,
     bottom: 0,
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none',
     zIndex: 0
@@ -2025,13 +2025,13 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     lineHeight: 1.35,
-    color: '#FF8C7A'
+    color: 'var(--color-error)'
   },
   overloadOk: {
     flexShrink: 0,
     padding: 'var(--space-2) var(--space-5)',
     borderRadius: 'var(--radius-pill)',
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: 'var(--layer-2)',
     border: 'none',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
@@ -2051,7 +2051,7 @@ const styles = {
   cancelModal: {
     width: '100%', maxWidth: '340px',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-6) var(--space-5) var(--space-5)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
@@ -2068,14 +2068,14 @@ const styles = {
   cancelButtonsRow: { display: 'flex', gap: 'var(--space-2)', width: '100%' },
   cancelKeepBtn: {
     flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
-    background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--highlight-recent)', border: '1px solid var(--layer-2)',
     color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
   },
   cancelYesBtn: {
     flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
     background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
-    color: '#FF6B6B', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    color: 'var(--color-error)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
   },
   headerRow: {
@@ -2138,7 +2138,7 @@ const styles = {
     fontSize: 'var(--text-caption-size)',
     letterSpacing: '0.4px',
     lineHeight: 1.3,
-    color: '#FFFFFF',
+    color: 'var(--color-text)',
     whiteSpace: 'nowrap'
   },
   // Счётчик упражнений («N упражнений») — по центру (баланс с буквой/чипами).
@@ -2239,8 +2239,8 @@ const styles = {
   retryButton: {
     marginTop: 'var(--space-2)',
     padding: 'var(--space-3) var(--space-6)',
-    background: 'rgba(255, 255, 255, 0.06)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    background: 'var(--highlight-recent)',
+    border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)',
@@ -2286,7 +2286,7 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     lineHeight: 1.35,
-    color: '#FF6B6B',
+    color: 'var(--color-error)',
     textAlign: 'center'
   },
 }

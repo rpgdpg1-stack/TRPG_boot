@@ -3,6 +3,7 @@ import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import ScreenTitle from '../components/ScreenTitle'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
 import { useScrollLock } from '../lib/use-scroll-lock'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Экран "Восстановление" — карточки полезных советов по восстановлению,
@@ -31,7 +32,7 @@ const CATEGORIES = [
     icon: '🥗',
     title: 'ПИТАНИЕ',
     subtitle: 'Топливо для восстановления',
-    color: '#9ED153', // зелёный — свежесть, природа
+    color: 'var(--color-primary)', // зелёный — свежесть, природа
     items: [
       { id: 'food-water',   title: 'Вода 30 мл на кг веса',     freq: 'каждый день' },
       { id: 'food-protein', title: 'Белок 1.6-2 г на кг веса',   freq: 'каждый день' },
@@ -58,7 +59,7 @@ const CATEGORIES = [
     icon: '🧠',
     title: 'НЕРВНАЯ СИСТЕМА',
     subtitle: 'Голова — главный орган',
-    color: '#3FA2F7', // голубой — спокойствие, ясность
+    color: 'var(--cat-pool)', // голубой — спокойствие, ясность
     items: [
       { id: 'nerv-walk',    title: 'Прогулка 30+ минут',     freq: 'каждый день' },
       { id: 'nerv-shower',  title: 'Контрастный душ',         freq: '3-5 раз в неделю' },
@@ -70,7 +71,7 @@ const CATEGORIES = [
     icon: '🩺',
     title: 'ЗДОРОВЬЕ',
     subtitle: 'Регулярный контроль',
-    color: '#E84545', // красный — медицина, важно
+    color: 'var(--color-error)', // красный — медицина, важно
     items: [
       { id: 'hlt-blood', title: 'Анализ крови (общий + био)', freq: '2 раза в год' },
       { id: 'hlt-vitd',  title: 'Витамин D',                   freq: '2 раза в год' },
@@ -148,7 +149,7 @@ export default function Recovery() {
       {popupItem && (
         <div ref={overlayRef} style={popupStyles.overlay} onClick={closePopup}>
           <div style={popupStyles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={popupStyles.icon}>📖</div>
+            <div style={popupStyles.icon}><UiIcon name="info" size={32} color="var(--color-text-secondary)" /></div>
             <div style={popupStyles.title}>{popupItem.title}</div>
             <div style={popupStyles.freq}>{popupItem.freq}</div>
             <div style={popupStyles.message}>
@@ -271,7 +272,7 @@ const popupStyles = {
     width: '100%',
     maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-6) var(--space-6) var(--space-5)',
     display: 'flex',
@@ -313,7 +314,7 @@ const popupStyles = {
     width: '100%',
     padding: 'var(--space-3)',
     background: 'var(--color-primary)',
-    color: '#0D0C0C',
+    color: 'var(--accent-on)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-button-size)',
     fontWeight: 700,

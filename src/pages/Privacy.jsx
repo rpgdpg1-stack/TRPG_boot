@@ -61,7 +61,7 @@ function ToggleRow({ label, hint, value, onToggle, divider = false, nested = fal
       <button
         onClick={onToggle}
         aria-label={label}
-        style={{ ...styles.switch, background: value ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.14)' }}
+        style={{ ...styles.switch, background: value ? 'var(--color-primary)' : 'var(--layer-3)' }}
       >
         <span style={{ ...styles.knob, transform: value ? 'translateX(18px)' : 'translateX(0)' }} />
       </button>
@@ -90,6 +90,6 @@ const styles = {
   },
   knob: {
     position: 'absolute', top: '2px', left: '2px', width: '20px', height: '20px', borderRadius: '50%',
-    background: '#FFFFFF', transition: 'transform 0.2s var(--ease-ios)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+    background: 'var(--color-text)', transition: 'transform 0.2s var(--ease-ios)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
   }
 }

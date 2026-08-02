@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
+import ExercisePlaceholder from './ExercisePlaceholder'
 
 /**
  * Видео-превью упражнения.
@@ -93,7 +94,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
       ) : previewUrl ? (
         <img src={previewUrl} alt="" style={styles.img} draggable={false} />
       ) : (
-        <div style={styles.placeholder}>💪</div>
+        <ExercisePlaceholder size={56} />
       )}
     </div>
   )
@@ -106,7 +107,7 @@ const styles = {
     width: '100%',
     aspectRatio: '1 / 1',
     overflow: 'hidden',
-    background: '#FFFFFF',
+    background: 'var(--color-text)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,8 +125,4 @@ const styles = {
     objectFit: 'cover',
     display: 'block'
   },
-  placeholder: {
-    fontSize: '64px',
-    opacity: 0.4
-  }
 }

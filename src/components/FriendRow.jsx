@@ -107,8 +107,8 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
         // Нажатие — ярче-серый; закреплённый — мягкий серый в покое; обычный —
         // прозрачный. При скролле (не тап) pressed сбрасывается → подсветки нет.
         background: pressed
-          ? 'rgba(255, 255, 255, 0.12)'
-          : (isPinned ? 'rgba(255, 255, 255, 0.06)' : 'transparent')
+          ? 'var(--layer-3)'
+          : (isPinned ? 'var(--highlight-recent)' : 'transparent')
       }}
     >
       {/* Аватар — просто фото в скруглённом квадрате (без рамки ранга). */}

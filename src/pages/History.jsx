@@ -120,7 +120,7 @@ function Records({ records }) {
       {strength && (
         <div style={styles.recRow}>
           <span style={{ ...styles.recBadge, background: 'var(--cat-gym)' }}>
-            <UiIcon name="power" size={13} color="#0D0C0C" />
+            <UiIcon name="power" size={13} color="var(--accent-on)" />
           </span>
           <span style={styles.recText}>
             <span style={styles.recTitle}>{cap(strength.name)}</span>
@@ -136,7 +136,7 @@ function Records({ records }) {
       {swim && (
         <div style={{ ...styles.recRow, ...(strength ? styles.recDivider : null) }}>
           <span style={{ ...styles.recBadge, background: 'var(--cat-pool)' }}>
-            <UiIcon name="swimming" size={13} color="#0D0C0C" />
+            <UiIcon name="swimming" size={13} color="var(--accent-on)" />
           </span>
           <span style={styles.recText}>
             <span style={styles.recTitle}>Плавание</span>

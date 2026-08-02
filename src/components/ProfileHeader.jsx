@@ -199,10 +199,10 @@ const styles = {
   popupBody: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text)', lineHeight: 1.5 },
   skeletonStat: {
     width: '48px', height: '24px', borderRadius: 'var(--radius-small)',
-    background: 'rgba(255, 255, 255, 0.10)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
+    background: 'var(--layer-2)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
   },
   skeletonLine: {
     display: 'inline-block', width: '110px', height: '10px', borderRadius: 'var(--radius-small)',
-    background: 'rgba(255, 255, 255, 0.08)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
+    background: 'var(--layer-2)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
   }
 }

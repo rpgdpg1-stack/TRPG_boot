@@ -389,7 +389,7 @@ const styles = {
   },
   recordTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
   recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px', color: RECORD_GOLD },
-  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' },
   recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
@@ -408,7 +408,7 @@ const styles = {
   panel: {
     position: 'relative', width: '100%', maxWidth: '380px',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-5) var(--space-4) var(--space-4)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
@@ -428,7 +428,7 @@ const styles = {
   valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-05)', lineHeight: 1 },
   valueTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
   bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px' },
-  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f' },
+  bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' },
   bigSub: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700 },
 
   segGroup: {
@@ -469,7 +469,7 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     touchAction: 'none'
   },
-  skeleton: { width: '100%', height: '160px', borderRadius: 'var(--radius-small)', background: 'rgba(255, 255, 255, 0.04)' },
+  skeleton: { width: '100%', height: '160px', borderRadius: 'var(--radius-small)', background: 'var(--layer-1)' },
   empty: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: 'var(--space-8) var(--space-3)' },
   emptyIcon: { fontSize: '30px', display: 'block', marginBottom: 'var(--space-3)', opacity: 0.8 },
 

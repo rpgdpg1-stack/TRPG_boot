@@ -95,8 +95,8 @@ export default function Profile() {
     {
       title: 'Профиль',
       items: [
-        { id: 'activities',   icon: 'ui:activity', iconColor: '#EAB308', title: 'Активности',     subtitle: 'Утро · День · Вечер',      path: '/daily-boost' },
-        { id: 'recovery',     icon: 'ui:recovery', iconColor: '#06B6D4', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
+        { id: 'activities',   icon: 'ui:activity', iconColor: 'var(--color-text-secondary)', title: 'Активности',     subtitle: 'Утро · День · Вечер',      path: '/daily-boost' },
+        { id: 'recovery',     icon: 'ui:recovery', iconColor: 'var(--color-text-secondary)', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
         { id: 'personal',     icon: 'ui:personal', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true },
         { id: 'measurements', icon: 'ui:measure',  title: 'Замеры тела',    subtitle: 'Вес · Объёмы · Фото',      soon: true },
         { id: 'goal',         icon: 'ui:goal',     title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true }

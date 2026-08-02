@@ -31,7 +31,7 @@ export default function Settings() {
     {
       title: 'Основное',
       items: [
-        { id: 'privacy',       icon: 'ui:privacy',       iconColor: '#9E86FF', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
+        { id: 'privacy',       icon: 'ui:privacy',       iconColor: 'var(--color-text-secondary)', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
         { id: 'notifications', icon: 'ui:notifications', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true },
         { id: 'about',         icon: 'ui:info',          title: 'О приложении', subtitle: 'Версия · Политика',          soon: true }
       ]
@@ -47,8 +47,8 @@ export default function Settings() {
     {
       title: 'Сброс',
       items: [
-        { id: 'debug-reset-days', icon: 'ui:reset_days',     iconColor: '#FFD700', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
-        { id: 'debug-reset',      icon: 'ui:reset_progress', iconColor: '#E84545', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
+        { id: 'debug-reset-days', icon: 'ui:reset_days',     iconColor: 'var(--color-warning)', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
+        { id: 'debug-reset',      icon: 'ui:reset_progress', iconColor: 'var(--color-error)', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
       ]
     }
   ]
@@ -128,7 +128,7 @@ export default function Settings() {
                 disabled={item.soon}
                 style={{
                   ...styles.row,
-                  borderTop: idx === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--highlight-recent)',
                   ...(item.soon ? styles.rowSoon : {})
                 }}
               >

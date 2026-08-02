@@ -13,6 +13,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
 import { useScrollLock } from '../lib/use-scroll-lock'
+import ExercisePlaceholder from '../components/ExercisePlaceholder'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -549,7 +550,7 @@ export default function ProgramConstructor() {
                       <div style={styles.exPreview}>
                         {ex?.preview_url
                           ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                          : <div style={styles.exPreviewPlaceholder}>💪</div>}
+                          : <ExercisePlaceholder size={24} />}
                       </div>
                       <div style={styles.exContent}>
                         <div style={styles.exName}>{ex?.name || exId}</div>
@@ -799,12 +800,11 @@ const styles = {
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  exPreviewPlaceholder: { fontSize: '28px', opacity: 0.4 },
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   exName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   exTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
   exTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700 },
+  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700 },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
   // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.
   addRow: { display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-1)' },
@@ -830,7 +830,7 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     lineHeight: 1.35,
-    color: '#FF6B6B',
+    color: 'var(--color-error)',
     textAlign: 'center'
   },
   exitOverlay: {
@@ -843,7 +843,7 @@ const styles = {
   exitModal: {
     width: '100%', maxWidth: '360px',
     background: 'rgba(34,34,34,0.98)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-6) var(--space-5) var(--space-5)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',

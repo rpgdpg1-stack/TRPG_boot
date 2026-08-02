@@ -24,7 +24,7 @@ function Badge({ iconName, color, size = 22, icon = 13 }) {
       width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
-      <UiIcon name={iconName} size={icon} color="#0D0C0C" />
+      <UiIcon name={iconName} size={icon} color="var(--accent-on)" />
     </span>
   )
 }
@@ -179,6 +179,6 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--space-1) 0', lineHeight: 1.4
   },
   // Скелетоны (первый заход без кеша).
-  skTotal: { width: '64px', height: '34px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.06)' },
-  skRow: { height: '22px', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.05)' }
+  skTotal: { width: '64px', height: '34px', borderRadius: 'var(--radius-xs)', background: 'var(--highlight-recent)' },
+  skRow: { height: '22px', borderRadius: 'var(--radius-xs)', background: 'var(--layer-1)' }
 }

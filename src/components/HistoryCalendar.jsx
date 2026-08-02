@@ -40,7 +40,7 @@ function Badge({ iconName, color, size = 20, icon = 12 }) {
       width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
-      <UiIcon name={iconName} size={icon} color="#0D0C0C" />
+      <UiIcon name={iconName} size={icon} color="var(--accent-on)" />
     </span>
   )
 }

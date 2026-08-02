@@ -38,7 +38,7 @@ export default function ExerciseHeaderCard({
           {/* Один тег — подгруппа в цвете основной группы, opacity 0.7 (как на
               карточках упражнений в дне тренировки). */}
           {(subGroupLabel || groupLabel) && (
-            <span style={{ ...styles.tag, background: colors.tag, color: '#FFFFFF', opacity: 0.7 }}>
+            <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
               {subGroupLabel || groupLabel}
             </span>
           )}
@@ -67,7 +67,7 @@ const styles = {
     gap: 'var(--space-4)',
     width: '100%',
     minHeight: '150px',
-    background: '#1C1C1C',
+    background: 'var(--surface)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
@@ -77,7 +77,7 @@ const styles = {
     height: '118px',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    background: '#FFFFFF',
+    background: 'var(--color-text)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
@@ -96,7 +96,7 @@ const styles = {
     fontSize: 'var(--text-body-size)',
     fontWeight: 700,
     lineHeight: '19px',
-    color: '#F0F0F0'
+    color: 'var(--color-text)'
   },
   tagsRow: {
     display: 'flex',
@@ -117,7 +117,7 @@ const styles = {
     whiteSpace: 'nowrap'
   },
   tagSecondary: {
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     color: '#B5B5B5',
     fontWeight: 700
   },
@@ -127,6 +127,6 @@ const styles = {
     fontWeight: 500,
     lineHeight: '14px',
     letterSpacing: '0.03em',
-    color: '#A8A8A8'
+    color: 'var(--color-text-secondary)'
   }
 }

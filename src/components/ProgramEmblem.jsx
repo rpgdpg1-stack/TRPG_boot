@@ -49,7 +49,7 @@ export default function ProgramEmblem({ program, size = 44 }) {
         fontFamily: 'var(--font-display)',
         fontWeight: 800,
         fontSize: `${Math.round(size * 0.5)}px`,
-        color: '#0D0C0C',
+        color: 'var(--accent-on)',
         lineHeight: 1
       }}>{ch}</span>
     </span>

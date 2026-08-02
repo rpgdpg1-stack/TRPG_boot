@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getExerciseById } from '../features/exercises/api'
 import ExerciseHeaderCard from '../components/ExerciseHeaderCard'
+import UiIcon from '../components/UiIcon'
 
 /**
  * Полноэкранная страница с подробной информацией об упражнении (техника).
@@ -115,7 +116,7 @@ export default function ExerciseInfo() {
             </div>
           ) : (
             <div style={styles.descriptionPlaceholder}>
-              📖<br />
+              <UiIcon name="info" size={32} color="var(--color-text-secondary)" /><br />
               Скоро тут будет подробное описание техники,<br />
               целевые мышцы, типичные ошибки и советы
             </div>

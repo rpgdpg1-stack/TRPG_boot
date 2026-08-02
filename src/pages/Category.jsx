@@ -225,7 +225,7 @@ export default function Category() {
               cta
               bordered={false}
               background={favoriteSlug === prog.slug
-                ? 'color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))'
+                ? 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))'
                 : 'var(--color-card)'}
             />
           </div>
@@ -303,7 +303,7 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
-    background: 'rgba(255, 255, 255, 0.05)',
+    background: 'var(--layer-1)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     cursor: 'pointer'
   },
@@ -326,7 +326,7 @@ const infoStyles = {
   modal: {
     width: '100%', maxWidth: '340px', flexShrink: 0,
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-6) var(--space-6) var(--space-5)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',

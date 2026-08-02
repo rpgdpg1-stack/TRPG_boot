@@ -10,6 +10,7 @@ import HistoryStats from './HistoryStats'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
 import { GroupLabel } from './GroupLabel'
+import ExercisePlaceholder from './ExercisePlaceholder'
 
 /**
  * Две плитки-входа в карточке профиля (своей и друга) — визуально те же, что
@@ -144,7 +145,7 @@ function FavoritesList({ items, showWeights }) {
             <div style={m.thumb}>
               {f.preview_url
                 ? <img src={f.preview_url} alt="" style={m.thumbImg} draggable={false} />
-                : <span style={m.thumbEmoji}>💪</span>}
+                : <ExercisePlaceholder size={24} />}
             </div>
             <span style={m.favName}>{cap(f.name)}</span>
             {has && (
@@ -196,7 +197,7 @@ const m = {
     // Длинный список прокручивается внутри панели, а не тянет за собой страницу.
     maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-4)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
@@ -213,10 +214,9 @@ const m = {
   favRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-1)' },
   thumb: {
     flexShrink: 0, width: '44px', height: '44px', borderRadius: 'var(--radius-small)', overflow: 'hidden',
-    background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   thumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  thumbEmoji: { fontSize: 'var(--text-heading-size)' },
   favName: {
     flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'

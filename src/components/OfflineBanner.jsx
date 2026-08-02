@@ -78,16 +78,16 @@ export default function OfflineBanner() {
 
   if (syncing) {
     iconName = 'cloud_sync'
-    iconColor = '#3FA2F7'   // синий
+    iconColor = 'var(--cat-pool)'   // синий
     text = 'Синхронизация'
     spin = true
   } else if (justSyncedCount !== null) {
     iconName = 'cloud_done'
-    iconColor = '#9ED153'   // зелёный
+    iconColor = 'var(--color-primary)'   // зелёный
     text = `Синхронизировано: ${justSyncedCount}`
   } else if (!online) {
     iconName = 'network_off'
-    iconColor = '#E84545'   // красный
+    iconColor = 'var(--color-error)'   // красный
     text = pendingCount > 0
       ? `Офлайн · ${pendingCount} ${pluralChanges(pendingCount)}`
       : 'Офлайн'

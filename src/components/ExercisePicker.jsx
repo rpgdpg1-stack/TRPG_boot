@@ -6,6 +6,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
 import { useScrollLock } from '../lib/use-scroll-lock'
+import ExercisePlaceholder from './ExercisePlaceholder'
 
 /**
  * Пикер упражнений для конструктора.
@@ -148,7 +149,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               className="press-tile"
               style={{
                 ...styles.chip,
-                background: active ? c.tag : 'rgba(255,255,255,0.06)',
+                background: active ? c.tag : 'var(--highlight-recent)',
                 color: active ? '#fff' : 'var(--color-text-secondary)'
               }}
             >
@@ -175,7 +176,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   className="press-tile"
                   style={{
                     ...styles.subChip,
-                    background: active ? gc.tag : 'rgba(255,255,255,0.10)',
+                    background: active ? gc.tag : 'var(--layer-2)',
                     color: active ? '#fff' : 'var(--color-text-secondary)'
                   }}
                 >
@@ -205,7 +206,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               <div style={{ ...styles.preview, opacity: disabled ? 0.4 : 1 }}>
                 {ex.preview_url
                   ? <img src={ex.preview_url} alt="" style={styles.previewImg} draggable={false} />
-                  : <div style={styles.previewPlaceholder}>💪</div>}
+                  : <ExercisePlaceholder size={24} />}
               </div>
               <div style={{ ...styles.rowContent, opacity: disabled ? 0.4 : 1 }}>
                 <div style={styles.rowName}>{ex.name}</div>
@@ -231,7 +232,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   className="press-tile"
                   style={{
                     ...styles.addBtn,
-                    background: added ? 'rgba(158,209,83,0.15)' : 'rgba(255,255,255,0.06)',
+                    background: added ? 'rgba(158,209,83,0.15)' : 'var(--highlight-recent)',
                     color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                     opacity: disabled ? 0.45 : 1
                   }}
@@ -286,7 +287,7 @@ const styles = {
   header: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
   search: {
     flex: 1, height: '44px', padding: '0 var(--space-4)',
-    background: 'var(--color-card)', border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--color-card)', border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', outline: 'none'
   },
@@ -305,7 +306,7 @@ const styles = {
   subPanel: {
     margin: 'var(--space-05) var(--space-4) var(--space-15)',
     padding: 'var(--space-3) var(--space-3)',
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--layer-1)',
     borderRadius: 'var(--radius-medium)',
     flexShrink: 0
   },
@@ -352,7 +353,6 @@ const styles = {
   row: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px', marginBottom: 'var(--space-3)' },
   preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewPlaceholder: { fontSize: '28px', opacity: 0.4 },
   rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   rowName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   rowTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
@@ -392,7 +392,7 @@ const styles = {
     fontSize: 'var(--text-caption-size)',
     fontWeight: 700,
     lineHeight: 1,
-    color: '#FF6B6B',
+    color: 'var(--color-error)',
     whiteSpace: 'nowrap',
     zIndex: 5,
     pointerEvents: 'none'

@@ -13,6 +13,7 @@ import HeartIcon from '../components/HeartIcon'
 import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import { GroupLabel } from '../components/GroupLabel'
+import ExercisePlaceholder from '../components/ExercisePlaceholder'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
 const readPinnedGym = () => {
@@ -170,7 +171,7 @@ export default function FavoriteExercises() {
               <div style={styles.preview}>
                 {f.preview_url
                   ? <img src={f.preview_url} alt="" style={styles.previewImg} draggable={false} />
-                  : <span style={styles.previewEmoji}>💪</span>}
+                  : <ExercisePlaceholder size={40} />}
               </div>
               <div style={styles.cardContent}>
                 <div style={styles.exName}>{title(f.name)}</div>
@@ -232,20 +233,19 @@ const styles = {
   },
   preview: {
     flexShrink: 0, width: '100px', height: '100px', borderRadius: 'var(--radius-card)', overflow: 'hidden',
-    background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewEmoji: { fontSize: '40px' },
   cardContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'var(--space-2)' },
-  exName: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, lineHeight: '19px', color: '#F0F0F0' },
+  exName: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, lineHeight: '19px', color: 'var(--color-text)' },
   tag: {
-    alignSelf: 'flex-start', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-pill)', color: '#FFFFFF',
+    alignSelf: 'flex-start', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
   },
   // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard).
   weightBlock: { flexShrink: 0, width: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
   weightValue: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
-  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: '#5f5f5f', textAlign: 'center' },
+  weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', textAlign: 'center' },
   weightHint: { marginTop: 'var(--space-05)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
   loading: { textAlign: 'center', padding: 'var(--space-4)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' }
 }

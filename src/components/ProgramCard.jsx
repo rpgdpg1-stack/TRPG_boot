@@ -263,8 +263,8 @@ export default function ProgramCard({
             ...(prog.editable ? [
               { divider: true },
               { key: 'edit', icon: <PencilIcon size={20} color="var(--cat-cardio)" />, label: 'Редактировать', onClick: handleEdit },
-              { key: 'share', icon: <UiIcon name="invite-friend" size={20} color="#9ED153" />, label: 'Поделиться', onClick: handleShare },
-              { key: 'delete', icon: <TrashIcon />, label: 'Удалить', labelColor: '#E84545', onClick: handleDelete }
+              { key: 'share', icon: <UiIcon name="invite-friend" size={20} color="var(--color-primary)" />, label: 'Поделиться', onClick: handleShare },
+              { key: 'delete', icon: <TrashIcon />, label: 'Удалить', labelColor: 'var(--color-error)', onClick: handleDelete }
             ] : [])
           ]}
         />
@@ -291,7 +291,7 @@ function PlayIcon({ size = 28 }) {
 function TrashIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="#E84545" strokeWidth="1.6" strokeLinecap="round" fill="none">
+      <g stroke="var(--color-error)" strokeWidth="1.6" strokeLinecap="round" fill="none">
         <path d="M4 5.5 H16" />
         <path d="M8 5.5 V4 H12 V5.5" />
         <path d="M5.5 5.5 L6.2 16 H13.8 L14.5 5.5" />
@@ -324,7 +324,7 @@ const styles = {
     left: 0,
     top: 0,
     bottom: 0,
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     transition: 'width 0.55s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none',
     zIndex: 0

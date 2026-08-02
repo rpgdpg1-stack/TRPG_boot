@@ -13,7 +13,7 @@
  */
 
 // Достаточно флажков на самую высокую карточку; лишние обрежет overflow.
-const PENNANTS = Array.from({ length: 9 }, (_, i) => (i % 2 ? '#FFFFFF' : '#E84545'))
+const PENNANTS = Array.from({ length: 9 }, (_, i) => (i % 2 ? 'var(--color-text)' : 'var(--color-error)'))
 
 export default function WaterChrome({ dashes = false }) {
   const garland = (side) => (
@@ -71,7 +71,7 @@ const styles = {
     width: 0, height: 0,
     borderTop: '5px solid transparent',
     borderBottom: '5px solid transparent',
-    borderRight: '8px solid #FFFFFF',
+    borderRight: '8px solid var(--color-text)',
     transformOrigin: 'right center',
     animation: 'pennantSway 2.8s ease-in-out infinite'
   },
@@ -81,7 +81,7 @@ const styles = {
     top: '50%',
     height: '2px',
     transform: 'translateY(-50%)',
-    background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 12px, transparent 12px 26px)',
+    background: 'repeating-linear-gradient(90deg, var(--color-text-inactive) 0 12px, transparent 12px 26px)',
     opacity: 0.7,
     zIndex: 0
   }

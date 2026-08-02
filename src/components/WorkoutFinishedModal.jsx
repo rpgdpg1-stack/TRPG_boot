@@ -7,6 +7,7 @@ import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { useScrollLock } from '../lib/use-scroll-lock'
+import UiIcon from './UiIcon'
 
 /**
  * Модалка завершения тренировки — с фирменным жестом «+1 мускул».
@@ -72,7 +73,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
           {/* Жест «+1 мускул» (зачёт/лимит) или иконка ошибки/оффлайна. */}
           {celebratory
             ? <span style={styles.gestureWrap}><BicepGesture size={78} /></span>
-            : <div style={styles.flame}>{isError ? '⚠️' : '📵'}</div>}
+            : <div style={styles.flame}><UiIcon name={isError ? 'alert' : 'network_off'} size={48} color="var(--color-offline)" /></div>}
 
           <div style={styles.body}>
             <div style={{ ...styles.title, color: (isError || offline) ? 'var(--color-offline)' : 'var(--color-primary)' }}>
@@ -118,7 +119,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
               size="sm"
               onClick={handleClick}
               disabled={isSaving}
-              style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: '#0D0C0C' } : {}) }}
+              style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: 'var(--accent-on)' } : {}) }}
             >
               {buttonText}
             </ActionButton>

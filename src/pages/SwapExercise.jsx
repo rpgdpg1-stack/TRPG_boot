@@ -7,6 +7,7 @@ import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../f
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { SectionLabel } from '../components/GroupLabel'
+import ExercisePlaceholder from '../components/ExercisePlaceholder'
 
 /**
  * Полноэкранная страница замены упражнения.
@@ -286,7 +287,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
   if (isSelected) {
     background = 'rgba(158, 209, 83, 0.10)'
   } else if (isCurrent) {
-    background = 'rgba(255, 255, 255, 0.04)'
+    background = 'var(--layer-1)'
   } else if (isDefault) {
     background = 'rgba(158, 209, 83, 0.05)'
   }
@@ -308,7 +309,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
         {exercise.preview_url ? (
           <img src={exercise.preview_url} alt="" style={rowStyles.previewImg} />
         ) : (
-          <div style={rowStyles.previewPlaceholder}>💪</div>
+          <ExercisePlaceholder size={24} />
         )}
       </div>
 
@@ -322,7 +323,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
 
         <div style={rowStyles.tagsRow}>
           {tagLabel && (
-            <span style={{ ...rowStyles.tag, background: colors.tag, color: '#FFFFFF', opacity: 0.7 }}>
+            <span style={{ ...rowStyles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
               {tagLabel}
             </span>
           )}
@@ -478,13 +479,12 @@ const rowStyles = {
     height: '64px',
     borderRadius: 'var(--radius-medium)',
     overflow: 'hidden',
-    background: '#FFFFFF',
+    background: 'var(--color-text)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
   },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  previewPlaceholder: { fontSize: '28px', opacity: 0.4 },
   content: {
     flex: 1,
     minWidth: 0,
@@ -539,7 +539,7 @@ const rowStyles = {
     fontSize: 'var(--text-caption-size)',
     fontWeight: 500,
     letterSpacing: '0.03em',
-    color: '#888888',
+    color: 'var(--color-text-secondary)',
     lineHeight: '13px'
   },
   radio: {

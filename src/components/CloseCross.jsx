@@ -85,7 +85,7 @@ export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, ico
           justifyContent: 'center',
           borderRadius: '50%',
           color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
-          background: press ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.08)',
+          background: press ? 'rgba(255, 255, 255, 0.18)' : 'var(--layer-2)',
           transform: press ? 'scale(1.12)' : 'scale(1)',
           transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
         }}

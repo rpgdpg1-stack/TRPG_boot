@@ -102,7 +102,7 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.30)',
     backdropFilter: 'blur(var(--blur-sm))',
     WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    border: '1.5px solid rgba(255, 255, 255, 0.12)',
+    border: '1.5px solid var(--layer-3)',
     color: 'rgba(136, 136, 136, 0.55)',
     cursor: 'default'
   },
@@ -140,19 +140,19 @@ const styles = {
   graphite: {
     background: 'var(--cat-gym)',
     border: '1.5px solid rgba(0, 0, 0, 0.18)',
-    color: '#0D0C0C'
+    color: 'var(--accent-on)'
   },
   // Светло-серая — сплошная нейтральная заливка (--neutral-600) + БЕЛЫЙ текст, тонкая
   // светлая рамка. Нейтральные действия без фирменного зелёного акцента.
   gray: {
     background: 'var(--neutral-600)',
-    border: '1.5px solid rgba(255, 255, 255, 0.14)',
+    border: '1.5px solid var(--layer-3)',
     color: 'var(--color-text)'
   },
   // Прозрачная — тонкая рамка + приглушённый текст. Вторичное действие (Назад/Отмена).
   ghost: {
     background: 'transparent',
-    border: '1.5px solid rgba(255, 255, 255, 0.14)',
+    border: '1.5px solid var(--layer-3)',
     color: 'var(--color-text-secondary)'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
@@ -162,7 +162,7 @@ const styles = {
     top: 0,
     left: 0,
     bottom: 0,
-    background: 'rgba(255, 255, 255, 0.12)',
+    background: 'var(--layer-3)',
     transition: 'width 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none'
   },

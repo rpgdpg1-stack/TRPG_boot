@@ -20,7 +20,7 @@ import {
  * решают галочки: обе → обе; только мои → рекомендации выкл; ничего → обе выкл.
  * Конфиг — кросс-девайс (CloudStorage), см. lib/activities.
  */
-function StarIcon({ size = 18, color = '#FFD25A' }) {
+function StarIcon({ size = 18, color = 'var(--color-warning)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 3 L14.6 8.6 L20.7 9.3 L16.2 13.5 L17.4 19.5 L12 16.5 L6.6 19.5 L7.8 13.5 L3.3 9.3 L9.4 8.6 Z"
@@ -37,7 +37,7 @@ function Check({ on }) {
       background: on ? 'var(--color-primary)' : 'transparent',
       borderColor: on ? 'var(--color-primary)' : 'rgba(255,255,255,0.25)'
     }}>
-      {on && <UiIcon name="check" size={14} color="#0A0A0B" />}
+      {on && <UiIcon name="check" size={14} color="var(--bg-base)" />}
     </span>
   )
 }
@@ -305,7 +305,7 @@ const styles = {
   },
   removeBtn: {
     flexShrink: 0, width: '28px', height: '28px', borderRadius: '50%',
-    background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--color-text-secondary)',
+    background: 'var(--highlight-recent)', border: 'none', color: 'var(--color-text-secondary)',
     fontSize: 'var(--text-button-size)', cursor: 'pointer'
   },
   addBtn: {
@@ -328,7 +328,7 @@ const styles = {
   input: {
     width: '100%', padding: 'var(--space-3) var(--space-3)',
     background: 'rgba(0,0,0,0.25)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-small)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 500,
@@ -340,7 +340,7 @@ const styles = {
     color: 'var(--color-text-secondary)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, cursor: 'pointer'
   },
   saveBtn: {
-    padding: 'var(--space-2) var(--space-5)', background: 'var(--color-primary)', color: '#0A0A0B',
+    padding: 'var(--space-2) var(--space-5)', background: 'var(--color-primary)', color: 'var(--bg-base)',
     border: 'none', borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, cursor: 'pointer'
   }

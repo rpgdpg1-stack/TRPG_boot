@@ -361,7 +361,7 @@ const styles = {
     minWidth: '190px',
     padding: 'var(--space-15)',
     background: 'var(--surface-raised)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-05)'
@@ -378,7 +378,7 @@ const styles = {
   // листается ВНУТРЕННОСТЬ, сама рамка стоит на месте (как виджеты iOS).
   viewport: {
     overflow: 'hidden', touchAction: 'pan-y',
-    background: 'color-mix(in srgb, #FFFFFF 6%, var(--surface-raised))',
+    background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
     borderRadius: 'var(--radius-card)',
     cursor: 'pointer'
   },

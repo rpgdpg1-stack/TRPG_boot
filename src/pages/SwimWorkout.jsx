@@ -466,7 +466,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
       <div style={{ ...modalStyles.modal, ...(isError ? modalStyles.modalError : {}) }}>
         {(!isError && kind !== 'offline')
           ? <BicepGesture size={80} />
-          : <div style={modalStyles.icon}>{isError ? '⚠️' : '📵'}</div>}
+          : <div style={modalStyles.icon}><UiIcon name={isError ? 'alert' : 'network_off'} size={48} color="var(--color-offline)" /></div>}
 
         <div style={{
           ...modalStyles.title,
@@ -592,7 +592,7 @@ const styles = {
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
     fontSize: 'var(--text-display-size)',
-    color: '#FFFFFF',
+    color: 'var(--color-text)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
@@ -853,7 +853,7 @@ const modalStyles = {
     width: '100%',
     padding: 'var(--space-4)',
     background: 'var(--cat-pool)',
-    color: '#0D0C0C',
+    color: 'var(--accent-on)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-button-size)',
     fontWeight: 800,

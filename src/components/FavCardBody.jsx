@@ -159,7 +159,7 @@ const styles = {
   soonTag: {
     display: 'inline-block',
     padding: 'var(--space-1) var(--space-2)',
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'var(--layer-2)',
     borderRadius: 'var(--radius-small)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',
