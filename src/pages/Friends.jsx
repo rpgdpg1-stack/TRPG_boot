@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { usePullToRefresh, PullIndicator } from '../components/PullToRefresh'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
-import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, PIN_LIMIT } from '../lib/friends-list'
+import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, invalidateFriendsListCache, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
 import { periodRange } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
@@ -58,6 +59,15 @@ export default function Friends() {
     const off = on(EVENTS.USER_CHANGED, load)
     return off
   }, [])
+
+  // Pull-to-refresh живёт именно здесь: список друзей — единственные данные,
+  // которые меняются БЕЗ участия пользователя (друзья тренируются сами).
+  // Сбрасываем кеш и перечитываем — иначе TTL.SHORT отдаст прежний список.
+  const handleRefresh = useCallback(async () => {
+    invalidateFriendsListCache()
+    await getFriendsList().then(list => setFriends(list)).catch(() => {})
+  }, [])
+  const { pull, refreshing } = usePullToRefresh(handleRefresh)
 
   const pinnedFriends = friends.filter(f => f.pinned_at)
   const otherFriends = friends.filter(f => !f.pinned_at)
@@ -122,6 +132,9 @@ export default function Friends() {
 
   return (
     <div className="page page-fade" style={styles.page}>
+
+      {/* Индикатор оттяга — портал в body, поверх нативного отскока. */}
+      <PullIndicator pull={pull} refreshing={refreshing} />
 
       <header style={styles.header}>
         <ScreenTitle>Друзья</ScreenTitle>
