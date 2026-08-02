@@ -1,8 +1,7 @@
 /**
- * Хранилище данных пользователя.
- *
- * addXP и completeQuest теперь читают new_badge_rank_index из RPC.
- * Если значок выдан — эмитят BADGE_EARNED → модалка появляется сразу.
+ * Хранилище данных пользователя: недельный стрик, последние тренировки,
+ * дневные квесты, цикл дней программы, избранная программа категории и
+ * полный сброс прогресса.
  */
 
 import { supabase } from './supabase'
@@ -16,101 +15,9 @@ import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 import { clearQueue } from './offline-queue'
 import { pcacheClear } from './persistent-cache'
 import { debug } from './debug'
+
 function getUserId() {
   return getCurrentUser()?.id || null
-}
-
-/* ============================================ */
-/* МУСКУЛЫ */
-/* ============================================ */
-
-export async function getTotalXP() {
-  return getCurrentUser()?.total_muscles || 0
-}
-
-/**
- * Начислить мускулы. add_muscles теперь возвращает TABLE с двумя полями:
- *   total_muscles — новое общее число мускулов
- *   new_badge_rank_index — rank_index выданного значка или NULL
- *
- * Если значок выдан — эмитим BADGE_EARNED чтобы App.jsx показал модалку сразу.
- */
-export async function addXP(amount, source = 'quest', sourceId = null) {
-  const userId = getUserId()
-  if (!userId) {
-    console.warn('[storage] addXP без авторизации')
-    return 0
-  }
-
-  const { data, error } = await supabase.rpc('add_muscles', {
-    p_user_id: userId,
-    p_amount: amount,
-    p_source: source,
-    p_source_id: sourceId
-  })
-
-  if (error) {
-    console.error('[storage] addXP error:', error)
-    return getCurrentUser()?.total_muscles || 0
-  }
-
-  // RPC теперь отдаёт массив объектов (TABLE), а не скаляр. Берём первый.
-  const row = Array.isArray(data) ? data[0] : data
-  const newTotal = row?.total_muscles ?? 0
-  const newBadgeRank = row?.new_badge_rank_index ?? null
-
-  const u = getCurrentUser()
-  if (u) setCurrentUser({ ...u, total_muscles: newTotal })
-
-  cacheInvalidate(`muscle-history:${userId}`)
-
-  if (newBadgeRank !== null && newBadgeRank !== undefined) {
-    debug('[storage] new badge earned via addXP, rank_index =', newBadgeRank)
-    emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
-  }
-
-  return newTotal
-}
-
-export async function getRecentMuscleHistory(limit = 5) {
-  const userId = getUserId()
-  if (!userId) return []
-
-  const cacheKey = `muscle-history:${userId}:${limit}`
-  const cached = cacheGet(cacheKey)
-  if (cached) return cached
-
-  try {
-    const { data, error } = await supabase.rpc('api_get_recent_muscle_history', {
-      p_user_id: userId,
-      p_limit: limit
-    })
-
-    if (error) {
-      console.warn('[storage] getRecentMuscleHistory RPC error:', error)
-      const { data: fb, error: fbErr } = await supabase
-        .from('muscle_history')
-        .select('amount, source, recorded_at')
-        .eq('user_id', userId)
-        .order('recorded_at', { ascending: false })
-        .limit(limit)
-
-      if (fbErr) {
-        console.error('[storage] getRecentMuscleHistory fallback error:', fbErr)
-        return []
-      }
-      const result = (fb || []).map(r => ({ amount: r.amount, source: r.source, created_at: r.recorded_at }))
-      cacheSet(cacheKey, result, TTL.MEDIUM)
-      return result
-    }
-
-    const result = data || []
-    cacheSet(cacheKey, result, TTL.MEDIUM)
-    return result
-  } catch (e) {
-    console.error('[storage] getRecentMuscleHistory exception:', e)
-    return []
-  }
 }
 
 /* ============================================ */
@@ -124,18 +31,6 @@ export async function getWeeklyStreak() {
   if (!user) return 0
   if (user.weekly_streak_week !== getCurrentWeekKey()) return 0
   return user.weekly_streak || 0
-}
-
-export async function getTotalWorkouts() {
-  const userId = getUserId()
-  if (!userId) return 0
-  const { count, error } = await supabase
-    .from('workouts')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .not('finished_at', 'is', null)
-  if (error) { console.error('[storage] getTotalWorkouts error:', error); return 0 }
-  return count || 0
 }
 
 /**
@@ -370,7 +265,8 @@ export async function resetProgramDayCycle(programId) {
 
 const FAVORITES_KEY = 'favorite_programs'
 
-export async function getFavoritePrograms() {
+/** Карта «категория → slug избранной программы». Внутренний помощник двух функций ниже. */
+async function getFavoritePrograms() {
   const raw = await cloudGet(FAVORITES_KEY)
   if (!raw) return {}
   try {
@@ -398,83 +294,6 @@ export async function toggleFavoriteProgram(categoryId, programSlug) {
   }
 }
 
-export async function isFavorite(categoryId, programSlug) {
-  const favorites = await getFavoritePrograms()
-  return favorites[categoryId] === programSlug
-}
-
-// Кеш собранного избранного в памяти модуля — переживает уход/возврат на
-// главную и предзагружается при старте приложения (App.jsx), чтобы карточка
-// не моргала. Сбрасывается при перезапуске мини-аппа.
-let favoritesEntriesCache = null
-
-/**
- * Синхронно вернуть кеш собранного избранного (или null если ещё не грузили).
- * Используется Home для мгновенного старта без чёрного экрана.
- */
-export function getFavoritesEntriesCache() {
-  return favoritesEntriesCache
-}
-
-/**
- * СИНХРОННАЯ сборка избранного напрямую из localStorage (без await/CloudStorage).
- *
- * Зачем: cloudSet дублирует favorite_programs и program:{slug}:last_day в
- * localStorage. Значит при любом запуске кроме самого первого данные уже есть
- * локально и читаются мгновенно. Это даёт картинку без мигания — карточка
- * появляется сразу вместе с остальной главной.
- *
- * buildProgramEntrySync — синхронный колбэк (slug, activeDay) => { prog, activeDay }.
- * Возвращает массив entries или null если в localStorage ничего нет.
- */
-export function getFavoritesEntriesSync(buildProgramEntrySync) {
-  // Если уже есть собранный кеш в памяти — отдаём его (самый быстрый путь)
-  if (favoritesEntriesCache !== null) return favoritesEntriesCache
-
-  const raw = localGet(FAVORITES_KEY)
-  if (!raw) return null
-
-  let favMap
-  try {
-    favMap = JSON.parse(raw)
-    if (typeof favMap !== 'object' || favMap === null) return null
-  } catch {
-    return null
-  }
-
-  const entries = []
-  for (const [categoryId, slug] of Object.entries(favMap)) {
-    // Активный день читаем синхронно из localStorage (cloudSet туда пишет).
-    // Цикл дней универсальный — берётся из самой программы (см. nextDayInCycle).
-    const lastDay = localGet(`program:${slug}:last_day`)
-    const activeDay = nextDayInCycle(slug, lastDay)
-
-    const built = buildProgramEntrySync(slug, activeDay)
-    if (built) entries.push({ ...built, categoryId })
-  }
-
-  // Кладём в кеш памяти — дальше уже будет отдаваться мгновенно
-  favoritesEntriesCache = entries
-  return entries
-}
-
-/**
- * Собрать полные данные избранного: для каждой категории берём slug,
- * подтягиваем программу и её активный день. Кешируем результат.
- *
- * buildProgramEntry — колбэк (slug) => { prog, activeDay }, передаётся из Home
- * чтобы не тащить registry-зависимости в storage.
- */
-export async function loadFavoritesEntries(buildProgramEntry) {
-  const favMap = await getFavoritePrograms()
-  const entries = []
-  for (const [categoryId, slug] of Object.entries(favMap)) {
-    const built = await buildProgramEntry(slug)
-    if (built) entries.push({ ...built, categoryId })
-  }
-  favoritesEntriesCache = entries
-  return entries
-}
 
 /* ============================================ */
 /* СБРОС ДАННЫХ */
@@ -499,9 +318,6 @@ export async function clearAllData() {
 
   cacheInvalidate('')
 
-  // Сбрасываем in-memory кеш собранного избранного — иначе после полного
-  // сброса главная покажет старые избранные программы до перезапуска аппа.
-  favoritesEntriesCache = null
 
   // Оффлайн-инфраструктура: чистим очередь несинканутых операций и
   // persistent-кеш дней/весов/упражнений. Иначе после сброса прогресса
