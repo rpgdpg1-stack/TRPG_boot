@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import ScreenTitle from '../components/ScreenTitle'
+import { GroupLabel, SectionLabel } from '../components/GroupLabel'
 
 /**
  * Экран "Восстановление" — карточки полезных советов по восстановлению,
@@ -100,7 +101,7 @@ export default function Recovery() {
       {/* Заголовок страницы */}
       <header style={styles.header}>
         <ScreenTitle>Восстановление</ScreenTitle>
-        <div style={styles.subtitle}>СОВЕТЫ ДЛЯ ПРОГРЕССА</div>
+        <SectionLabel caps style={{ marginBottom: 0, paddingLeft: 0 }}>СОВЕТЫ ДЛЯ ПРОГРЕССА</SectionLabel>
       </header>
 
       {/* Список категорий */}
@@ -112,9 +113,9 @@ export default function Recovery() {
             <div style={styles.categoryHeader}>
               <span style={styles.categoryIcon}>{category.icon}</span>
               <div style={styles.categoryHeaderText}>
-                <div style={{ ...styles.categoryTitle, color: category.color }}>
+                <GroupLabel color={category.color} style={{ paddingBottom: 0 }}>
                   {category.title}
-                </div>
+                </GroupLabel>
                 <div style={styles.categorySubtitle}>{category.subtitle}</div>
               </div>
             </div>
@@ -176,22 +177,6 @@ const styles = {
     marginBottom: 'var(--space-5)',
     textAlign: 'center'
   },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: 'var(--text-display-size)',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    marginBottom: 'var(--space-15)'
-  },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 700,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px'
-  },
   sectionsWrap: {
     display: 'flex',
     flexDirection: 'column',
@@ -213,13 +198,6 @@ const styles = {
   categoryHeaderText: {
     flex: 1,
     minWidth: 0
-  },
-  categoryTitle: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-button-size)',
-    letterSpacing: '2px',
-    marginBottom: 'var(--space-05)'
   },
   categorySubtitle: {
     fontFamily: 'var(--font-manrope)',

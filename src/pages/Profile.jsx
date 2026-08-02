@@ -14,6 +14,7 @@ import ProfileHeader from '../components/ProfileHeader'
 import ProfileMetrics from '../components/ProfileMetrics'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import { SectionLabel } from '../components/GroupLabel'
 
 const FRIENDS_INVITE_LIMIT = 3
 
@@ -175,7 +176,7 @@ export default function Profile() {
       {/* Меню профиля. Перед первым блоком — больше воздуха (конец «профиля» → меню). */}
       {menuGroups.map((group, gi) => (
         <section key={group.title}>
-          <div style={{ ...styles.groupTitle, marginTop: gi === 0 ? '40px' : '20px' }}>{group.title}</div>
+          <SectionLabel style={{ marginTop: gi === 0 ? 'var(--space-10)' : 'var(--space-5)' }}>{group.title}</SectionLabel>
           <div style={styles.groupCard}>
             {group.items.map((item, idx) => (
               <button
@@ -230,12 +231,6 @@ const styles = {
   inviteSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
   inviteArrow: { fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', flexShrink: 0, opacity: 0.7 },
 
-  // Заголовок группы — единый стиль заголовков секций: Manrope, обычный регистр
-  // («Тело», не «ТЕЛО»), без моношрифта и большого трекинга.
-  groupTitle: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)', letterSpacing: '0.2px', marginBottom: 'var(--space-3)', paddingLeft: 'var(--space-1)'
-  },
   groupCard: {
     display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
     borderRadius: 'var(--radius-card)', overflow: 'hidden'

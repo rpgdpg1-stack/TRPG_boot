@@ -147,7 +147,7 @@ export default function HomeCards() {
   )
 }
 
-function Card({ icon, title, titleRight, value, caption, flex = 1, onClick, innerRef, press }) {
+function Card({ icon, title, titleRight, value, flex = 1, onClick, innerRef, press }) {
   return (
     <button ref={innerRef} style={{ ...styles.card, flex }} className="press-tile" onClick={onClick} {...(press || {})}>
       <span style={styles.icon}>{icon}</span>
@@ -159,7 +159,6 @@ function Card({ icon, title, titleRight, value, caption, flex = 1, onClick, inne
         </span>
         <span style={styles.valueRow}>
           <span style={styles.valueMain}>{value}</span>
-          {caption && <span style={styles.caption}>{caption}</span>}
         </span>
       </div>
     </button>
@@ -211,8 +210,6 @@ const styles = {
   valueMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)', minWidth: 0 },
   valueNum: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  // Подпись-контекст — тихая, в правом углу строки значения («Июль» / «Утро»).
-  caption: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap', flexShrink: 0 },
   // Зазор между двумя показателями статистики; серые иконки перед каждым.
   valueGap: { width: '12px', display: 'inline-block' },
   statIcon: { display: 'inline-flex' },

@@ -11,6 +11,7 @@ import ActionButton from '../components/ActionButton'
 import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import { GroupLabel, SectionLabel } from '../components/GroupLabel'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -359,7 +360,7 @@ export default function ProgramConstructor() {
       <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>
 
       <div style={styles.section}>
-        <div style={styles.secLabel}>НАЗВАНИЕ</div>
+        <SectionLabel caps>НАЗВАНИЕ</SectionLabel>
         {/* Hug-блок: ширина по плейсхолдеру, растёт по тексту в одну строку
             (size в символах). Форма как неактивный таб-бар (без выделения). */}
         <input
@@ -378,7 +379,7 @@ export default function ProgramConstructor() {
 
       {/* Количество дней */}
       <div style={styles.section}>
-        <div style={styles.secLabel}>ДНЕЙ В ПРОГРАММЕ</div>
+        <SectionLabel caps>ДНЕЙ В ПРОГРАММЕ</SectionLabel>
         <div style={styles.placeRow}>
           {[1, 2, 3].map(n => {
             const active = dayCount === n
@@ -420,7 +421,7 @@ export default function ProgramConstructor() {
           активная позиция залита (surface-active). Пустые неактивные места — голым
           текстом снаружи (как невыбранные табы). Контейнера нет, пока не тапнули. */}
       <div style={styles.section}>
-        <div style={styles.secLabel}>МЕСТО</div>
+        <SectionLabel caps>МЕСТО</SectionLabel>
         <div style={styles.placeRow}>
           {inContainerPlaces.length > 0 && (
             <div style={{ ...styles.segGroup, width: 'auto' }}>
@@ -472,7 +473,7 @@ export default function ProgramConstructor() {
 
       {/* Вкладки дней — пилюли, активный день увеличен + зелёная полоса под ним. */}
       <div style={styles.section}>
-        <div style={styles.secLabel}>ДНИ</div>
+        <SectionLabel caps>ДНИ</SectionLabel>
         <div style={styles.segGroup}>
           {LETTERS.slice(0, dayCount).map((letter, idx) => {
             const active = activeIdx === idx
@@ -504,7 +505,7 @@ export default function ProgramConstructor() {
           упражнения. На карточке — один тег подгруппы в цвете группы (как
           заголовок на дне тренировки). Перетаскивание/удаление работают по
           сквозному «плоскому» индексу (idx в currentDay). */}
-      <div style={styles.secLabel}>УПРАЖНЕНИЯ</div>
+      <SectionLabel caps>УПРАЖНЕНИЯ</SectionLabel>
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <div style={styles.emptyDay}>Пусто. Добавь упражнения кнопкой ниже.</div>
@@ -512,9 +513,9 @@ export default function ProgramConstructor() {
         {daySections.map((section, sIdx) => (
           <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
             {section.muscleGroup !== UNKNOWN_GROUP && (
-              <h3 style={{ ...styles.groupHeader, color: getMuscleGroupColors(section.muscleGroup).accent }}>
+              <GroupLabel color={getMuscleGroupColors(section.muscleGroup).accent}>
                 {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-              </h3>
+              </GroupLabel>
             )}
             <div style={styles.sectionRows}>
               {section.items.map(({ exId, idx }) => {
@@ -756,17 +757,6 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, outline: 'none'
   },
   section: { marginBottom: 'var(--space-5)' },
-  secLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', letterSpacing: '1.5px', marginBottom: 'var(--space-3)' },
-  // Контейнер-таб-бар (как нижний таб-бар приложения): фон surface-dim + тонкая
-  // обводка + блюр + тень, паддинг 4. Для дней-в-программе и дней — на всю ширину
-  // (табы flex:1); для мест — width:auto (обнимает заполненные/активное).
-  segGroup: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
-  },
   // Таб внутри контейнера: прозрачный (как неактивный таб), активный залит
   // (surface-active). Увеличивается только текст, не сам таб. Нахлёст -5 задаётся
   // инлайн (marginLeft), активный поверх соседей (zIndex).
@@ -799,11 +789,6 @@ const styles = {
   dayList: { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', marginBottom: 'var(--space-4)', paddingBottom: '0px' },
   daySection: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
   sectionRows: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
-  // Заголовок группы — по центру, в акцентном цвете группы (как на дне тренировки).
-  groupHeader: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)',
-    letterSpacing: '2px', textAlign: 'center', margin: 0, padding: 'var(--space-05) 0'
-  },
   emptyDay: { textAlign: 'center', padding: 'var(--space-8) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },

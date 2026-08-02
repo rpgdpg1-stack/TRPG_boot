@@ -12,6 +12,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import HeartIcon from '../components/HeartIcon'
 import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
+import { GroupLabel } from '../components/GroupLabel'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
 const readPinnedGym = () => {
@@ -148,7 +149,7 @@ export default function FavoriteExercises() {
           return (
             <div key={slot}>
             {/* Заголовок группы мышц над карточкой — как в дне тренировки. */}
-            {group && !sameAsPrev && <div style={{ ...styles.groupHead, color: colors.accent }}>{group}</div>}
+            {group && !sameAsPrev && <GroupLabel color={colors.accent} style={{ paddingLeft: 'var(--space-6)' }}>{group}</GroupLabel>}
             <div
               className="press-tile"
               style={styles.card}
@@ -209,12 +210,6 @@ const styles = {
     margin: '0 auto var(--space-5)', maxWidth: '300px'
   },
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
-  // Заголовок группы мышц над карточкой — тот же вид, что в дне тренировки.
-  // Заголовок группы — по левому краю, там где заканчивается скругление карточки.
-  groupHead: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)',
-    letterSpacing: '2px', padding: '0 var(--space-1) var(--space-15) var(--space-6)'
-  },
   // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
   // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).
   card: {

@@ -6,6 +6,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { SectionLabel } from '../components/GroupLabel'
 
 /**
  * Полноэкранная страница замены упражнения.
@@ -212,7 +213,7 @@ export default function SwapExercise() {
 
         {currentForRender && (
           <div style={styles.currentBlock}>
-            <div style={styles.sectionLabel}>ТЕКУЩЕЕ</div>
+            <SectionLabel caps>ТЕКУЩЕЕ</SectionLabel>
             <ExerciseRow
               exercise={currentForRender}
               muscleGroup={muscleGroup}
@@ -399,15 +400,6 @@ const styles = {
   },
   currentBlock: {
     marginBottom: 'var(--space-4)'
-  },
-  sectionLabel: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-caption-size)',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    marginBottom: 'var(--space-2)',
-    paddingLeft: 'var(--space-1)'
   },
   alternativesHeader: {
     fontFamily: 'var(--font-display)',

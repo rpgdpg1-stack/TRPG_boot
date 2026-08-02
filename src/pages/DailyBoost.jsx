@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import { SectionLabel } from '../components/GroupLabel'
 import {
   WINDOWS,
   ACTIVITY_TITLE_MAX, ACTIVITY_BENEFIT_MAX, CUSTOM_PER_WINDOW_MAX,
@@ -109,7 +110,7 @@ export default function DailyBoost() {
           <div key={win.id} style={styles.section}>
             <div style={styles.sectionHeader}>
               <span style={styles.sectionEmoji}>{win.emoji}</span>
-              <span style={styles.sectionLabel}>{win.label}</span>
+              <SectionLabel style={{ marginBottom: 0, paddingLeft: 0 }}>{win.label}</SectionLabel>
             </div>
 
             {/* Рекомендуемая (read-only) */}
@@ -270,10 +271,6 @@ const styles = {
   section: { marginBottom: 'var(--space-5)' },
   sectionHeader: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-1) var(--space-2)' },
   sectionEmoji: { fontSize: 'var(--text-body-size)', lineHeight: 1 },
-  sectionLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
-  },
 
   recRow: {
     display: 'flex', alignItems: 'center', gap: 'var(--space-2)',

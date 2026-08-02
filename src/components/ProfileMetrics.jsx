@@ -9,6 +9,7 @@ import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
+import { GroupLabel } from './GroupLabel'
 
 /**
  * Две плитки-входа в карточке профиля (своей и друга) — визуально те же, что
@@ -137,7 +138,7 @@ function FavoritesList({ items, showWeights }) {
         return (
           <div key={i}>
             {group && !sameAsPrev && (
-              <div style={{ ...m.groupHead, color: accent, marginTop: i === 0 ? 0 : '10px' }}>{group}</div>
+              <GroupLabel color={accent} style={{ marginTop: i === 0 ? 0 : 'var(--space-2)' }}>{group}</GroupLabel>
             )}
             <div style={m.favRow}>
             <div style={m.thumb}>
@@ -209,11 +210,6 @@ const m = {
   period: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
 
   favList: { display: 'flex', flexDirection: 'column' },
-  // Заголовок группы — как в дне тренировки, но мельче и без лишнего воздуха.
-  groupHead: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
-    letterSpacing: '1.6px', padding: '0 var(--space-05) var(--space-05)'
-  },
   favRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-1)' },
   thumb: {
     flexShrink: 0, width: '44px', height: '44px', borderRadius: 'var(--radius-small)', overflow: 'hidden',

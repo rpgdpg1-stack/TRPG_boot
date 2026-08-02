@@ -6,6 +6,7 @@ import { refreshCurrentUser } from '../lib/auth'
 import { PROGRAMS } from '../features/programs/registry'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import { SectionLabel } from '../components/GroupLabel'
 
 /**
  * Экран настроек.
@@ -114,9 +115,9 @@ export default function Settings() {
 
       {groups.map((group, gIdx) => (
         <section key={group.title}>
-          <div style={{ ...styles.groupTitle, marginTop: gIdx === 0 ? '4px' : '24px' }}>
+          <SectionLabel style={{ marginTop: gIdx === 0 ? 'var(--space-1)' : 'var(--space-6)' }}>
             {group.title}
-          </div>
+          </SectionLabel>
 
           <div style={styles.groupCard}>
             {group.items.map((item, idx) => (
@@ -159,26 +160,6 @@ export default function Settings() {
 
 const styles = {
   page: {},
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    fontSize: 'var(--text-display-size)',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    margin: 0
-  },
-  // Заголовок группы — как в профиле: Manrope, обычный регистр («Основное»),
-  // без моношрифта и разрядки.
-  groupTitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontWeight: 700,
-    fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.2px',
-    marginBottom: 'var(--space-3)',
-    paddingLeft: 'var(--space-1)'
-  },
   groupCard: {
     display: 'flex',
     flexDirection: 'column',

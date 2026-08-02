@@ -15,7 +15,7 @@
  *   <UiIcon name="invite-friend" size={22} color="var(--color-primary)" />
  *
  * Параметры:
- *  - name  — имя файла без .svg (например 'leaderboard' для leaderboard.svg)
+ *  - name  — имя файла без .svg (например 'swimming' для swimming.svg)
  *  - size  — px, квадрат. По умолчанию 22 (под прежний fontSize эмодзи)
  *  - color — CSS-цвет. По умолчанию currentColor (берётся от родителя)
  *  - style — дополнительные стили обёртки
