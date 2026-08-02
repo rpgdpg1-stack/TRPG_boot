@@ -12,14 +12,16 @@ import { useRef, useState } from 'react'
  * тёмно-серый, и высветление до rgba(255,255,255,0.18) — единственный способ
  * показать нажатие. Здесь наоборот: кнопка уже залита --color-primary и есть
  * самый яркий объект карточки, осветлять её некуда — следующая ступень уходит
- * в кислотный и на тёмном фоне читается как пересвет, а не как отклик. Разница
- * была бы заметна лишь рядом с ненажатым состоянием, которого в этот момент на
- * экране нет. Масштаб же читается мгновенно и на любом цвете.
+ * в кислотный и на тёмном фоне читается как пересвет, а не как отклик.
+ *
+ * ВАЖНО: scale живёт на САМОЙ кнопке, а позиционирование (translateY(-50%) и
+ * т.п.) — на внешней обёртке. Держать оба transform на одном узле нельзя:
+ * scale затирает смещение, и кнопка съезжает с вертикального центра.
  *
  * Палец ушёл за пределы кнопки — жест снимается (как у CloseCross), запуск не
  * происходит: случайный запуск тренировки дороже пропущенного тапа.
  */
-export default function PlayButton({ onStart, size = 44, iconSize = 21, ariaLabel = 'Начать тренировку', style }) {
+export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabel = 'Начать тренировку' }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const [press, setPress] = useState(false)
@@ -53,7 +55,6 @@ export default function PlayButton({ onStart, size = 44, iconSize = 21, ariaLabe
       onClick={(e) => { e.stopPropagation(); e.preventDefault() }}
       aria-label={ariaLabel}
       style={{
-        ...style,
         flexShrink: 0,
         width: `${size}px`,
         height: `${size}px`,
@@ -62,6 +63,7 @@ export default function PlayButton({ onStart, size = 44, iconSize = 21, ariaLabe
         justifyContent: 'center',
         borderRadius: '50%',
         border: 'none',
+        padding: 0,
         background: 'var(--color-primary)',
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
@@ -70,11 +72,28 @@ export default function PlayButton({ onStart, size = 44, iconSize = 21, ariaLabe
       }}
     >
       {/* Оптический центр: треугольник тяжелее слева, сдвигаем на 2px вправо. */}
-      <span style={{ display: 'inline-flex', color: 'var(--accent-on)', marginLeft: '2px' }}>
-        <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M8 5v14l11-7z" />
-        </svg>
+      <span style={{ display: 'inline-flex', color: 'var(--accent-on)', marginLeft: 'var(--space-05)' }}>
+        <PlayGlyph size={iconSize} />
       </span>
     </button>
+  )
+}
+
+/**
+ * Треугольник со скруглёнными углами. Скругление даёт не радиус в path, а
+ * обводка тем же цветом с round-стыками поверх заливки — так угол мягкий при
+ * любом размере, без пересчёта кривых.
+ */
+export function PlayGlyph({ size = 21 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        d="M8 5.6 L18 12 L8 18.4 Z"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }

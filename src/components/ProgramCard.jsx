@@ -107,11 +107,15 @@ export default function ProgramCard({
     // Только что сработало долгое нажатие — это не тап, никуда не идём.
     if (longFired.current) { longFired.current = false; return }
     // Идёт активная тренировка по этой программе — сразу в активный день.
+    // У заплыва свой маршрут (/swim/:slug): дня A/B/C у него нет, и «/workout/swim/main»
+    // роняло экран — WorkoutDay не находил такой день.
     if (isActive) {
       haptic.light()
       // fromHome — только если вход с главной (она передаёт onOpen). Иначе «Назад»
       // ушла бы в раздел (силовую), даже когда зашли с главной по активной карточке.
-      setTimeout(() => navigate(`/workout/${prog.slug}/${active.day}`, { state: onOpen ? { fromHome: true } : null }), 80)
+      const state = onOpen ? { fromHome: true } : null
+      const path = prog.kind === 'swim' ? `/swim/${prog.slug}` : `/workout/${prog.slug}/${active.day}`
+      setTimeout(() => navigate(path, { state }), 80)
       return
     }
     // Главная передаёт свой onOpen (свайп-гард + state fromHome). Остальные —
@@ -244,7 +248,11 @@ export default function ProgramCard({
             <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayIcon size={16} /></span>
           </span>
         ) : (
-          <PlayButton onStart={handlePlay} style={styles.ctaCircle} />
+          // Обёртка позиционирует (translateY), кнопка внутри масштабируется —
+          // два transform на одном узле затирали бы друг друга.
+          <span style={styles.ctaCircle}>
+            <PlayButton onStart={handlePlay} />
+          </span>
         ))}
 
         {/* Правый блок — по центру по высоте ряда, справа. */}
@@ -372,12 +380,14 @@ const styles = {
   },
   // «Начать» — круглая акцентная кнопка с плеем (без слова). Плей чуть правее
   // центра: у треугольника оптический центр смещён влево.
-  // Позиционирование кружка Play; размер, заливка и нажатое состояние — внутри
-  // PlayButton (у него свой жест, отдельный от тапа по карточке).
+  // Только позиционирование кружка Play по вертикальному центру ряда; размер,
+  // заливка и нажатое состояние — внутри PlayButton (свой жест, отдельный от
+  // тапа по карточке).
   ctaCircle: {
     position: 'absolute',
     top: '50%', right: '16px',
     transform: 'translateY(-50%)',
+    display: 'inline-flex',
     zIndex: 2
   },
   // Правый блок — по центру по высоте карточки, справа, две строки, выравнивание по правому краю.

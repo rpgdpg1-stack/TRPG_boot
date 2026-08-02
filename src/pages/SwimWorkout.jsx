@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
@@ -31,6 +32,7 @@ import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
 import BicepGesture from '../components/BicepGesture'
+import { PlayGlyph } from '../components/PlayButton'
 import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
@@ -60,15 +62,6 @@ function SwimFinishIcon({ size = 17 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.2a.7.7 0 0 1 .57 1.11L15.6 7l2.17 2.89A.7.7 0 0 1 17.2 11H7v9a1 1 0 0 1-1 1z" />
-    </svg>
-  )
-}
-
-/** Треугольник запуска — тот же, что на кнопке Play карточки программы. */
-function SwimStartIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
     </svg>
   )
 }
@@ -113,6 +106,12 @@ export default function SwimWorkout() {
   useEffect(() => onActiveWorkoutChange(() => setActive(getActiveWorkout())), [])
   const isThisActive = !!active && active.programId === programId
   const sessionBlocked = !!active && !isThisActive
+
+  // Крестик «отменить заплыв» — та же логика, что в дне силовой: подтверждение,
+  // затем сессия закрывается БЕЗ сохранения (в историю не идёт).
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const cancelOverlayRef = useRef(null)
+  useScrollLock(cancelOverlayRef)
 
   // Тост «сначала заверши текущую» — по тапу на «Начать» при чужой сессии.
   const [startBlocked, setStartBlocked] = useState(false)
@@ -316,8 +315,21 @@ export default function SwimWorkout() {
                 на её месте живой таймер сессии с теми же порогами цвета, что в
                 силовой (зелёный <1ч → оранжевый → красный). */}
             {isThisActive ? (
-              <span style={{ ...styles.clock, color: workoutTimerColor(elapsedSec), fontWeight: 800 }}>
-                <ClockIcon size={13} />{formatWorkoutMin(elapsedSec)}
+              <span style={styles.timerRow}>
+                <span style={{ ...styles.clock, color: workoutTimerColor(elapsedSec), fontWeight: 800 }}>
+                  <ClockIcon size={13} />{formatWorkoutMin(elapsedSec)}
+                </span>
+                {/* Крестик отмены — как в дне силовой: «передумал / начал случайно». */}
+                <button
+                  onClick={() => { haptic.light(); setShowCancelConfirm(true) }}
+                  style={styles.cancelCross}
+                  className="press-tile"
+                  aria-label="Отменить заплыв"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                  </svg>
+                </button>
               </span>
             ) : (
               <span style={styles.clock}>
@@ -420,6 +432,9 @@ export default function SwimWorkout() {
             </div>
           </div>
         )}
+        {/* Ровно те же две кнопки, что в дне силовой: «Начать» с треугольником
+            (primary), «Завершить» с флажком (neutral). Заблокированный старт —
+            вариант dim, как там же. */}
         {isThisActive ? (
           <ActionButton onClick={handleFinishTap} variant="neutral" hug>
             <SwimFinishIcon size={20} /> Завершить
@@ -427,17 +442,40 @@ export default function SwimWorkout() {
         ) : (
           <ActionButton
             onClick={handleStartTap}
-            variant="primary"
+            variant={sessionBlocked ? 'dim' : 'primary'}
             hug
-            style={sessionBlocked ? { opacity: 0.5 } : undefined}
+            style={{ gap: 'var(--space-2)' }}
           >
-            <SwimStartIcon size={20} /> Начать заплыв
+            <PlayGlyph size={20} /> Начать
           </ActionButton>
         )}
       </div>
 
       {/* Кнопка «наверх» — при скролле вниз (как в дне силовой). */}
       <ScrollTopButton />
+
+      {/* Подтверждение отмены — тот же текст и порядок кнопок, что в силовой. */}
+      {showCancelConfirm && createPortal(
+        <div ref={cancelOverlayRef} style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
+          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.cancelTitle}>Отменить заплыв?</div>
+            <div style={styles.cancelText}>Время не сохранится и в историю не попадёт.</div>
+            <div style={styles.cancelButtonsRow}>
+              <button onClick={() => { haptic.light(); setShowCancelConfirm(false) }} style={styles.cancelKeepBtn} className="press-tile">
+                Нет
+              </button>
+              <button
+                onClick={() => { haptic.medium(); clearActiveWorkout(); setShowCancelConfirm(false) }}
+                style={styles.cancelYesBtn}
+                className="press-tile"
+              >
+                Да, отменить
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {modal && (
         <SwimFinishedModal
@@ -877,6 +915,53 @@ const styles = {
     padding: 'var(--space-12) var(--space-4) var(--tabbar-bottom)',
     pointerEvents: 'none',
     zIndex: 40
+  },
+  // Таймер + крестик отмены в одной группе (шапка активного заплыва).
+  timerRow: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  cancelCross: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '22px', height: '22px', flexShrink: 0,
+    background: 'var(--layer-2)', border: 'none', borderRadius: '50%',
+    color: 'var(--color-text-secondary)', cursor: 'pointer', padding: 0,
+    WebkitTapHighlightColor: 'transparent'
+  },
+  // Модалка отмены заплыва — вид один в один с днём силовой.
+  cancelOverlay: {
+    position: 'fixed', inset: 0, zIndex: 300,
+    background: 'rgba(13, 12, 12, 0.75)',
+    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
+  },
+  cancelModal: {
+    width: '100%', maxWidth: '340px',
+    background: 'rgba(34, 34, 34, 0.98)',
+    border: '1px solid var(--layer-2)',
+    borderRadius: 'var(--radius-card)',
+    padding: 'var(--space-6) var(--space-5) var(--space-5)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+  },
+  cancelTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
+    color: 'var(--color-text)', textAlign: 'center'
+  },
+  cancelText: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 'var(--space-4)', lineHeight: 1.4
+  },
+  cancelButtonsRow: { display: 'flex', gap: 'var(--space-2)', width: '100%' },
+  cancelKeepBtn: {
+    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
+    background: 'var(--highlight-recent)', border: '1px solid var(--layer-2)',
+    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
+  },
+  cancelYesBtn: {
+    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
+    background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
+    color: 'var(--color-error)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
   },
   // Тост «занято» над доком — тот же вид, что в дне силовой.
   startBlockWrap: {

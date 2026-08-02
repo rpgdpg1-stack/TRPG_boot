@@ -756,9 +756,7 @@ const styles = {
     gap: 'var(--space-2)',
     width: '100%',
     padding: 'var(--space-4) var(--space-3) var(--space-4) var(--space-4)',
-    // Заливка — та же нейтральная, что у пустой «Добавить заметку»: оранжевым
-    // светится только рамка-ниточка, иначе блок начинал спорить с контентом.
-    background: 'rgba(255, 255, 255, 0.03)',
+    background: 'var(--color-note-surface)',
     border: '1px solid var(--color-note-border)',
     borderRadius: 'var(--radius-medium)',
     textAlign: 'left',

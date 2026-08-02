@@ -206,28 +206,29 @@ export default function SectionCarousel() {
             onClick={() => { haptic.light(); setOpen(o => !o) }}
             aria-label="Выбрать раздел"
           >
+            {/* Название и шеврон — ОДНА группа: и въезд при свайпе, и вспышка
+                цветом раздела достаются им вместе. Порознь шеврон стоял на месте,
+                пока название уезжало, и связь между ними разваливалась. */}
             <span
               key={headIdx}
               className={headDir === 'next' ? 'hslide-in-right' : headDir === 'prev' ? 'hslide-in-left' : undefined}
               style={{
-                ...styles.selectorText,
+                ...styles.selectorGroup,
                 // Вспышка цветом раздела: загорается мгновенно вместе со сменой,
                 // гаснет в нейтральный серый плавно (0.6с), чтобы не мигало.
                 color: headLit ? headCat.color : 'rgba(255, 255, 255, 0.6)',
                 transition: headLit ? 'none' : 'color 0.6s ease'
               }}
             >
-              {headCat.title}
-            </span>
-            {/* Шеврон вниз — без него не читалось, что заголовок вообще нажимается.
-                Горит тем же цветом раздела, что и текст, и так же гаснет. */}
-            <span style={{
-              ...styles.selectorChev,
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-              color: headLit ? headCat.color : 'rgba(255, 255, 255, 0.45)',
-              transition: headLit ? 'transform 0.22s var(--ease-ios)' : 'transform 0.22s var(--ease-ios), color 0.6s ease'
-            }}>
-              <ChevronIcon size={14} color="currentColor" />
+              <span style={styles.selectorText}>{headCat.title}</span>
+              {/* Шеврон вниз — без него не читалось, что заголовок нажимается.
+                  Размер и толщина ровно те же, что у шеврона «Все ›». */}
+              <span style={{
+                ...styles.selectorChev,
+                transform: open ? 'rotate(180deg)' : 'rotate(0deg)'
+              }}>
+                <ChevronIcon size={16} color="currentColor" />
+              </span>
             </span>
           </button>
 
@@ -364,12 +365,18 @@ const styles = {
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
+  // Группа «название + шеврон»: цвет задаётся здесь и наследуется обоими,
+  // анимация въезда тоже общая.
+  selectorGroup: { display: 'inline-flex', alignItems: 'center', gap: '1px', color: 'rgba(255, 255, 255, 0.6)' },
   selectorText: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
+    color: 'inherit', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   // Шеврон раскрытия списка разделов: вниз — закрыт, вверх — открыт.
-  selectorChev: { display: 'inline-flex', lineHeight: 0 },
+  selectorChev: {
+    display: 'inline-flex', lineHeight: 0, color: 'inherit',
+    transition: 'transform 0.22s var(--ease-ios)'
+  },
   // Выпадающий список — под селектором.
   dropdown: {
     position: 'absolute',
