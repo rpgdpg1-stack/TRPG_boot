@@ -32,7 +32,7 @@ export default function Settings() {
       title: 'Основное',
       items: [
         { id: 'privacy',       icon: 'ui:privacy',       iconColor: 'var(--color-text-secondary)', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
-        { id: 'notifications', icon: 'ui:notifications', iconColor: 'var(--color-text-secondary)', title: 'Уведомления',  subtitle: 'Напоминания о тренировках',  soon: true, path: '/notifications' },
+        { id: 'notifications', icon: 'ui:notifications', iconColor: 'var(--color-text-secondary)', title: 'Уведомления',  subtitle: 'Напоминания о тренировках', path: '/notifications' },
         { id: 'about',         icon: 'ui:info',          iconColor: 'var(--color-text-secondary)', title: 'О приложении', subtitle: 'Версия · Политика',          path: '/about' }
       ]
     },
@@ -40,8 +40,8 @@ export default function Settings() {
       title: 'Поддержка',
       items: [
         { id: 'support',  icon: 'ui:support', iconColor: 'var(--color-text-secondary)', title: 'Поддержка',           subtitle: 'Частые вопросы · Написать',  path: '/support' },
-        { id: 'feedback', icon: 'ui:idea',    iconColor: 'var(--color-text-secondary)', title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', soon: true, path: '/feedback' },
-        { id: 'gift',     icon: 'ui:gift',    iconColor: 'var(--color-text-secondary)', title: 'Подарить сертификат', subtitle: 'Подарок другу',              soon: true, path: '/gift' }
+        { id: 'feedback', icon: 'ui:idea',    iconColor: 'var(--color-text-secondary)', title: 'Идеи и предложения',  subtitle: 'Помоги улучшить приложение', path: '/feedback' },
+        { id: 'gift',     icon: 'ui:gift',    iconColor: 'var(--color-text-secondary)', title: 'Подарить сертификат', subtitle: 'Подарок другу', path: '/gift' }
       ]
     },
     {
@@ -54,7 +54,6 @@ export default function Settings() {
   ]
 
   const handleSectionTap = async (item) => {
-    // «Скоро» = не готов бэкенд, но экран уже можно посмотреть (см. Profile).
     if (!item.path && !item.tone) return
     haptic.light()
 
@@ -129,27 +128,24 @@ export default function Settings() {
                 disabled={!item.path && !item.tone}
                 style={{
                   ...styles.row,
-                  borderTop: idx === 0 ? 'none' : '1px solid var(--highlight-recent)',
-                  ...(item.soon ? styles.rowSoon : {})
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--highlight-recent)'
                 }}
               >
                 <UiIcon
                   name={item.icon.slice(3)}
                   size={22}
-                  color={item.soon ? 'var(--color-text-secondary)' : (item.iconColor || 'var(--color-text)')}
+                  color={item.iconColor || 'var(--color-text)'}
                   style={{ width: '28px', height: '22px' }}
                 />
 
                 <div style={styles.rowContent}>
-                  <div style={{ ...styles.rowTitle, color: item.soon ? 'var(--color-text)' : titleColor(item.tone) }}>
+                  <div style={{ ...styles.rowTitle, color: titleColor(item.tone) }}>
                     {item.title}
                   </div>
                   <div style={styles.rowSubtitle}>{item.subtitle}</div>
                 </div>
 
-                {item.soon
-                  ? <span style={styles.soonTag}>Скоро</span>
-                  : <span style={styles.rowArrow}>›</span>}
+                <span style={styles.rowArrow}>›</span>
               </button>
             ))}
           </div>
@@ -178,11 +174,6 @@ const styles = {
     textAlign: 'left',
     background: 'transparent',
     border: 'none'
-  },
-  rowSoon: { opacity: 0.5, cursor: 'default' },
-  soonTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
-    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
   rowContent: {
     flex: 1,

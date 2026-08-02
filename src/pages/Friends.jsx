@@ -175,21 +175,18 @@ export default function Friends() {
             </div>
           )}
 
-          {/* Закреплённые сверху. Разделение на две группы читалось как баг вёрстки,
-              пока было ничем не обозначено — маленький пин объясняет его без слов. */}
+          {/* Закреплённые сверху — отдельным блоком, без значка-заголовка: сам
+              порядок и разрыв между блоками уже объясняют группировку, а лишняя
+              булавка слева висела «в воздухе». Подсказка выше исчезает, как
+              только закреплён первый друг. */}
           {pinnedFriends.length > 0 && (
-            <>
-              {otherFriends.length > 0 && (
-                <div style={styles.pinnedMark}><PinIcon filled size={12} /></div>
-              )}
-              <div style={styles.list}>
-                {pinnedFriends.map((friend, idx) => (
-                  <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
-                    <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
-                  </div>
-                ))}
-              </div>
-            </>
+            <div style={styles.list}>
+              {pinnedFriends.map((friend, idx) => (
+                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Остальные друзья */}
@@ -310,11 +307,6 @@ const styles = {
   },
   // Метка группы закреплённых: только иконка, без подписи — пин уже читается
   // как «закреплено», текст был бы шумом.
-  pinnedMark: {
-    display: 'flex', alignItems: 'center',
-    paddingLeft: 'var(--space-1)', paddingBottom: 'var(--space-15)',
-    color: 'var(--color-text-secondary)'
-  },
   list: {
     display: 'flex',
     flexDirection: 'column',

@@ -765,6 +765,16 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, outline: 'none'
   },
   section: { marginBottom: 'var(--space-5)' },
+  // Контейнер-переключатель («Дней в программе», «Место», «Дни») — стеклянная
+  // пилюля с хайрлайном, как PeriodSwitcher и переключатель места в дне
+  // тренировки. Один язык переключателей на весь проект.
+  segGroup: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+  },
   // Таб внутри контейнера: прозрачный (как неактивный таб), активный залит
   // (surface-active). Увеличивается только текст, не сам таб. Нахлёст -5 задаётся
   // инлайн (marginLeft), активный поверх соседей (zIndex).

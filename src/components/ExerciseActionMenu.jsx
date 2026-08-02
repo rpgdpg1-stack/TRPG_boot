@@ -34,7 +34,7 @@ import TrendingUpIcon from './TrendingUpIcon'
  * Закрытие: тап по оверлею или Cancel.
  */
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
-const NOTE_ICON_COLOR = 'var(--color-text-secondary)'
+const NOTE_ICON_COLOR = 'var(--color-note)'
 
 export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const noteInputRef = useRef(null)
@@ -667,7 +667,7 @@ const styles = {
     left: 0,
     width: '38px',
     height: '27px',
-    fontFamily: 'var(--font-manrope)',
+    fontFamily: 'var(--font-display)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
@@ -756,8 +756,8 @@ const styles = {
     gap: 'var(--space-2)',
     width: '100%',
     padding: 'var(--space-4) var(--space-3) var(--space-4) var(--space-4)',
-    background: 'rgba(158, 209, 83, 0.06)',
-    border: '1px solid rgba(158, 209, 83, 0.2)',
+    background: 'var(--color-note-surface)',
+    border: '1px solid var(--color-note-border)',
     borderRadius: 'var(--radius-medium)',
     textAlign: 'left',
     cursor: 'pointer'
@@ -813,7 +813,7 @@ const styles = {
     gap: 'var(--space-2)'
   },
   noteCounter: {
-    fontFamily: 'var(--font-manrope)',
+    fontFamily: 'var(--font-display)',
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     flexShrink: 0

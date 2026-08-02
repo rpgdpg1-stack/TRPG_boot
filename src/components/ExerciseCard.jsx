@@ -153,7 +153,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
   const swipeActions = [
-    { key: 'note', icon: 'notes', color: 'var(--color-text-secondary)', label: 'Заметка', fn: onNote },
+    { key: 'note', icon: 'notes', color: 'var(--color-note)', label: 'Заметка', fn: onNote },
     { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
     { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]
@@ -704,7 +704,7 @@ const styles = {
     left: 0,
     width: '38px',
     height: '27px',
-    fontFamily: 'var(--font-manrope)',
+    fontFamily: 'var(--font-display)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',

@@ -90,16 +90,16 @@ export default function Profile() {
   }
 
   // Меню профиля: активности и телесные разделы + системное. Статистика и
-  // любимые живут на главной. Пункты без экрана помечены `soon`.
+  // любимые живут на главной.
   const menuGroups = [
     {
       title: 'Профиль',
       items: [
         { id: 'activities',   icon: 'ui:activity', iconColor: 'var(--color-text-secondary)', title: 'Активности',     subtitle: 'Утро · День · Вечер',      path: '/daily-boost' },
         { id: 'recovery',     icon: 'ui:recovery', iconColor: 'var(--color-text-secondary)', title: 'Восстановление', subtitle: 'Сон · Питание · Здоровье', path: '/recovery' },
-        { id: 'personal',     icon: 'ui:personal', iconColor: 'var(--color-text-secondary)', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст',     soon: true, path: '/personal-data' },
-        { id: 'measurements', icon: 'ui:measure',  iconColor: 'var(--color-text-secondary)', title: 'Замеры тела',    subtitle: 'Обхваты · История',        soon: true, path: '/measurements' },
-        { id: 'goal',         icon: 'ui:goal',     iconColor: 'var(--color-text-secondary)', title: 'Цель',           subtitle: 'Что хочешь достичь',       soon: true, path: '/goal' }
+        { id: 'personal',     icon: 'ui:personal', iconColor: 'var(--color-text-secondary)', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст', path: '/personal-data' },
+        { id: 'measurements', icon: 'ui:measure',  iconColor: 'var(--color-text-secondary)', title: 'Замеры тела',    subtitle: 'Обхваты · История', path: '/measurements' },
+        { id: 'goal',         icon: 'ui:goal',     iconColor: 'var(--color-text-secondary)', title: 'Цель',           subtitle: 'Что хочешь достичь', path: '/goal' }
       ]
     },
     {
@@ -111,8 +111,6 @@ export default function Profile() {
   ]
 
   const handleSectionTap = (item) => {
-    // «Скоро» = не готов бэкенд. Если экран уже есть — открываем: посмотреть,
-    // что будет, полезнее, чем упереться в мёртвую строку.
     if (!item.path) return
     haptic.light()
     if (item.path) navigate(item.path, { state: { from: '/profile' } })
@@ -188,8 +186,7 @@ export default function Profile() {
                 disabled={!item.path}
                 style={{
                   ...styles.row,
-                  borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)',
-                  ...(item.soon ? styles.rowSoon : {})
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)'
                 }}
               >
                 {item.icon.startsWith('ui:') ? (
@@ -201,7 +198,7 @@ export default function Profile() {
                   <div style={styles.rowTitle}>{item.title}</div>
                   <div style={styles.rowSubtitle}>{item.subtitle}</div>
                 </div>
-                {item.soon ? <span style={styles.soonTag}>Скоро</span> : <span style={styles.rowArrow}>›</span>}
+                <span style={styles.rowArrow}>›</span>
               </button>
             ))}
           </div>
@@ -241,15 +238,9 @@ const styles = {
     display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)',
     width: '100%', minHeight: '64px', textAlign: 'left', background: 'transparent', border: 'none'
   },
-  // Пункт «Скоро»: приглушён, некликабелен (без стрелки, с бейджем).
-  rowSoon: { opacity: 0.5, cursor: 'default' },
   rowIcon: { fontSize: 'var(--text-heading-size)', width: '32px', textAlign: 'center', flexShrink: 0 },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-05)' },
   rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
-  rowArrow: { fontSize: 'var(--text-title-size)', color: 'var(--color-text-secondary)', flexShrink: 0 },
-  soonTag: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
-    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
-  }
+  rowArrow: { fontSize: 'var(--text-title-size)', color: 'var(--color-text-secondary)', flexShrink: 0 }
 }

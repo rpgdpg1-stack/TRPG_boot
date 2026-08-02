@@ -388,7 +388,7 @@ const styles = {
     gap: 'var(--space-05)', lineHeight: 1, opacity: 0.85
   },
   recordTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
-  recordValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px', color: RECORD_GOLD },
+  recordValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px', color: RECORD_GOLD },
   recordUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' },
   recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   overlay: {
@@ -427,7 +427,7 @@ const styles = {
   // Значение: цифра и единица в строку, подпись состояния («сейчас» / дата) — снизу.
   valueBlock: { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-05)', lineHeight: 1 },
   valueTop: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-1)' },
-  bigValue: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px' },
+  bigValue: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-heading-size)', lineHeight: '27px' },
   bigUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' },
   bigSub: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700 },
 
