@@ -1,3 +1,4 @@
+import { debug } from './debug'
 /**
  * Обёртка над Telegram Web App SDK.
  * Если что-то меняется в API Телеги — правим только этот файл.
@@ -79,7 +80,7 @@ export function initTelegram() {
       tg.requestFullscreen()
     }
   } catch (e) {
-    console.log('requestFullscreen недоступен:', e?.message)
+    debug('requestFullscreen недоступен:', e?.message)
   }
 
   paintTelegramChrome()

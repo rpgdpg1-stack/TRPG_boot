@@ -26,6 +26,7 @@
 
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, emit } from './events'
+import { debug } from './debug'
 
 const QUEUE_KEY = 'offline-operations-queue'
 
@@ -89,14 +90,14 @@ export function enqueue(type, payload, dedupKey) {
     if (type === 'finish') {
       // finish обычно не дублируется (одна тренировка в день), но если вдруг —
       // оставляем первую (исходный момент завершения важнее)
-      console.log('[queue] finish уже в очереди для', dedupKey, '— оставляем исходную')
+      debug('[queue] finish уже в очереди для', dedupKey, '— оставляем исходную')
       return
     }
     queue[idx] = op
-    console.log('[queue] схлопнули', type, dedupKey)
+    debug('[queue] схлопнули', type, dedupKey)
   } else {
     queue.push(op)
-    console.log('[queue] добавили', type, dedupKey, '— размер:', queue.length)
+    debug('[queue] добавили', type, dedupKey, '— размер:', queue.length)
   }
 
   saveQueue(queue)
@@ -111,7 +112,7 @@ export function dequeue(type, dedupKey) {
   const filtered = queue.filter(o => !(o.type === type && o.dedupKey === dedupKey))
   if (filtered.length !== queue.length) {
     saveQueue(filtered)
-    console.log('[queue] удалили', type, dedupKey, '— осталось:', filtered.length)
+    debug('[queue] удалили', type, dedupKey, '— осталось:', filtered.length)
   }
 }
 

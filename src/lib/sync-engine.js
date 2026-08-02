@@ -29,6 +29,7 @@ import { getQueue, dequeue } from './offline-queue'
 import { isOnline } from './network-status'
 import { cacheInvalidate } from './cache'
 import { EVENTS } from './events'
+import { debug } from './debug'
 
 export const SYNC_EVENTS = {
   STARTED: 'sync-started',
@@ -53,18 +54,18 @@ export function onSyncEvent(eventName, handler) {
  */
 export async function syncQueue() {
   if (isSyncing) {
-    console.log('[sync] уже синхронизируется, пропускаем повторный вызов')
+    debug('[sync] уже синхронизируется, пропускаем повторный вызов')
     return
   }
 
   if (!isOnline()) {
-    console.log('[sync] нет сети, синк отложен')
+    debug('[sync] нет сети, синк отложен')
     return
   }
 
   const user = getCurrentUser()
   if (!user) {
-    console.log('[sync] нет юзера, синк отложен')
+    debug('[sync] нет юзера, синк отложен')
     return
   }
 
@@ -75,7 +76,7 @@ export async function syncQueue() {
 
   isSyncing = true
   emit(SYNC_EVENTS.STARTED, { total: queue.length })
-  console.log('[sync] старт, операций в очереди:', queue.length)
+  debug('[sync] старт, операций в очереди:', queue.length)
 
   let syncedCount = 0
   let hadError = false
@@ -107,7 +108,7 @@ export async function syncQueue() {
     cacheInvalidate(`recent-workouts:${user.id}`)
   }
 
-  console.log('[sync] завершён, отправлено:', syncedCount, 'ошибки:', hadError)
+  debug('[sync] завершён, отправлено:', syncedCount, 'ошибки:', hadError)
 
   if (hadError) {
     emit(SYNC_EVENTS.FAILED, { synced: syncedCount })
@@ -270,7 +271,7 @@ async function sendFinish(op, userId) {
   // already_completed_today=true — тоже успех (return true ниже), просто
   // начисления не было. Главное — операцию из очереди убрать.
   if (result.already_completed_today) {
-    console.log('[sync] finish: уже было засчитано за тот день, убираем из очереди')
+    debug('[sync] finish: уже было засчитано за тот день, убираем из очереди')
   }
 
   return true

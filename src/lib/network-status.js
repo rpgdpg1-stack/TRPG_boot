@@ -21,6 +21,7 @@
  */
 
 import { emit } from './events'
+import { debug } from './debug'
 
 // Имя события смены сети. Кладём прямо тут (а не в events.js EVENTS),
 // потому что это внутренняя деталь сетевого слоя — другие модули
@@ -71,7 +72,7 @@ export function onNetworkChange(handler) {
 function setStatus(next) {
   if (next === online) return
   online = next
-  console.log('[network] status changed →', online ? 'ONLINE' : 'OFFLINE')
+  debug('[network] status changed →', online ? 'ONLINE' : 'OFFLINE')
   emit(NETWORK_CHANGED, online)
 }
 
@@ -126,14 +127,14 @@ export function startNetworkMonitor() {
 
   // Браузерные события — мгновенная реакция на смену сети
   window.addEventListener('online', () => {
-    console.log('[network] browser fired "online", verifying with ping...')
+    debug('[network] browser fired "online", verifying with ping...')
     // Браузер сказал "online" — но это может быть мёртвый Wi-Fi.
     // Проверяем пингом прежде чем поверить.
     checkNow()
   })
 
   window.addEventListener('offline', () => {
-    console.log('[network] browser fired "offline"')
+    debug('[network] browser fired "offline"')
     // "offline" от браузера — доверяем сразу, пинг не нужен
     setStatus(false)
   })

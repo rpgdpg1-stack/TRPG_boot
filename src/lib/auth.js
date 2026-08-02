@@ -16,6 +16,7 @@ import { supabase } from './supabase'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
 import { localGet, localSet } from '../utils/storage'
+import { debug } from './debug'
 
 const CACHED_USER_KEY = 'cached-user'
 
@@ -114,7 +115,7 @@ export async function ensureAuth() {
     currentUser = userRecord
     cacheUser(currentUser)
     authState = 'ok'
-    console.log('[auth] Authorized as:', currentUser)
+    debug('[auth] Authorized as:', currentUser)
     emit(EVENTS.USER_READY, currentUser)
 
     // Проверяем start_param — если юзер пришёл по реф-ссылке, добавляем
@@ -123,10 +124,10 @@ export async function ensureAuth() {
     // Не блокируем return — пусть выполнится асинхронно без задержки старта.
     const refCode = getStartParamReferralCode()
     if (refCode) {
-      console.log('[auth] referral code detected:', refCode)
+      debug('[auth] referral code detected:', refCode)
       acceptReferral(refCode).then(result => {
         if (result.success) {
-          console.log('[auth] friend added via referral')
+          debug('[auth] friend added via referral')
           // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
           // место в рейтинге на главной
           emit(EVENTS.USER_CHANGED, currentUser)

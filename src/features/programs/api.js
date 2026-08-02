@@ -20,6 +20,7 @@ import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 import { isOnline, checkNow } from '../../lib/network-status'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
+import { debug } from '../../lib/debug'
 
 // Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
 // оффлайн-очередь. Supabase-клиент сам не таймаутит, а в зале Wi-Fi часто
@@ -288,7 +289,7 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  * ОНЛАЙН: как раньше — атомарная RPC, BADGE_EARNED при выдаче значка.
  */
 export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null, startedAtOverride = null) {
-  console.log('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
+  debug('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
 
   const user = getCurrentUser()
   if (!user) {
@@ -335,7 +336,7 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
 
   // ОФФЛАЙН (сеть заведомо недоступна): сразу в очередь.
   if (!isOnline()) {
-    console.log('[programs] finishWorkout сохранён ОФФЛАЙН в очередь')
+    debug('[programs] finishWorkout сохранён ОФФЛАЙН в очередь')
     return queueOfflineFinish()
   }
 
@@ -377,7 +378,7 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
       return null
     }
 
-    console.log('[programs] workout finished:', result)
+    debug('[programs] workout finished:', result)
 
     setCurrentUser({
       ...user,
@@ -396,7 +397,7 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
     emit(EVENTS.USER_CHANGED, getCurrentUser())
 
     if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
-      console.log('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
+      debug('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
       emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
     }
 

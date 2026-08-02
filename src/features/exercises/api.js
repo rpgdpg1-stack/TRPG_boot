@@ -12,6 +12,7 @@ import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
 import { isOnline } from '../../lib/network-status'
+import { debug } from '../../lib/debug'
 import {
   enqueue,
   weightDedupKey,
@@ -86,11 +87,11 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, p
     }, swapDedupKey(dbId, day, orderNum, place))
 
     cacheInvalidate(`workout-day:${user.id}:${programSlug}:`)
-    console.log('[exercises] swap сохранён ОФФЛАЙН в очередь')
+    debug('[exercises] swap сохранён ОФФЛАЙН в очередь')
     return true
   }
 
-  console.log('[exercises] saveExerciseSwap:', { dbId, day, orderNum, exerciseId, userId: user.id })
+  debug('[exercises] saveExerciseSwap:', { dbId, day, orderNum, exerciseId, userId: user.id })
 
   let success = false
 
@@ -158,7 +159,7 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
     cacheInvalidate(`user-weights:${user.id}`)
     cacheInvalidate(`workout-day:${user.id}:`)
     cacheInvalidate(`weight-history:${user.id}:${exerciseId}`)
-    console.log('[exercises] вес сохранён ОФФЛАЙН в очередь:', exerciseId, weightKg)
+    debug('[exercises] вес сохранён ОФФЛАЙН в очередь:', exerciseId, weightKg)
     return true
   }
 

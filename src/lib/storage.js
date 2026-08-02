@@ -15,6 +15,7 @@ import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 import { clearQueue } from './offline-queue'
 import { pcacheClear } from './persistent-cache'
+import { debug } from './debug'
 function getUserId() {
   return getCurrentUser()?.id || null
 }
@@ -64,7 +65,7 @@ export async function addXP(amount, source = 'quest', sourceId = null) {
   cacheInvalidate(`muscle-history:${userId}`)
 
   if (newBadgeRank !== null && newBadgeRank !== undefined) {
-    console.log('[storage] new badge earned via addXP, rank_index =', newBadgeRank)
+    debug('[storage] new badge earned via addXP, rank_index =', newBadgeRank)
     emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
   }
 
@@ -283,7 +284,7 @@ export async function completeQuest(questId, reward = 20) {
   }
 
   if (newBadgeRank !== null && newBadgeRank !== undefined) {
-    console.log('[storage] new badge earned via quest, rank_index =', newBadgeRank)
+    debug('[storage] new badge earned via quest, rank_index =', newBadgeRank)
     emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
   }
 
@@ -340,7 +341,7 @@ export async function setLastCompletedDay(programId, day) {
   const previousDateRaw = localGet(lastDayDateKey)
   const previousDate = previousDateRaw ? String(previousDateRaw).trim() : null
 
-  console.log('[setLastCompletedDay] called:', {
+  debug('[setLastCompletedDay] called:', {
     programId,
     day,
     today,
@@ -355,7 +356,7 @@ export async function setLastCompletedDay(programId, day) {
   await cloudSet(lastDayKey, day)
   await cloudSet(lastDayDateKey, today)
 
-  console.log('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
+  debug('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
 }
 
 export async function resetProgramDayCycle(programId) {

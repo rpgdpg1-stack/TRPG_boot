@@ -44,6 +44,7 @@ import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
 import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
+import { debug } from './lib/debug'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -98,7 +99,7 @@ export default function App() {
     // Когда сеть возвращается — запускаем синк очереди.
     const offNet = onNetworkChange((isOnline) => {
       if (isOnline) {
-        console.log('[App] сеть вернулась → запускаем syncQueue')
+        debug('[App] сеть вернулась → запускаем syncQueue')
         syncQueue()
       }
     })
