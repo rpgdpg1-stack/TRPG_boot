@@ -12,6 +12,7 @@ import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Две карточки-входа на главной: **Статистика** (два показателя — тренировки и
@@ -27,6 +28,8 @@ const PERIOD_KEY = 'home-stats-period'
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 8
 export default function HomeCards() {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const navigate = useNavigate()
 
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
@@ -127,6 +130,7 @@ export default function HomeCards() {
       {/* Выбор периода: сам переключатель поверх карточки, без второй обёртки. */}
       {menuRect && createPortal(
         <div
+          ref={overlayRef}
           style={styles.periodOverlay}
           onClick={() => { longFired.current = false; setMenuRect(null) }}
         >

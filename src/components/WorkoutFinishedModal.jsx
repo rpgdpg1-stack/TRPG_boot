@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ActionButton from './ActionButton'
 import ClockIcon from './ClockIcon'
 import StreakFlame from './StreakFlame'
@@ -6,6 +6,7 @@ import BicepGesture from './BicepGesture'
 import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
 import { resolveWeeklyStreak } from '../utils/dates'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Модалка завершения тренировки — с фирменным жестом «+1 мускул».
@@ -25,6 +26,8 @@ import { resolveWeeklyStreak } from '../utils/dates'
 const CLOSE_MS = 260
 
 export default function WorkoutFinishedModal({ durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const isSaving = status === 'saving'
   const isError = status === 'error'
   const celebratory = !isError && !offline
@@ -59,7 +62,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
   }
 
   return (
-    <div style={{ ...styles.overlay, opacity: closing ? 0 : 1 }}>
+    <div ref={overlayRef} style={{ ...styles.overlay, opacity: closing ? 0 : 1 }}>
       <div style={{
         ...styles.panel,
         ...(isError ? styles.panelError : null),

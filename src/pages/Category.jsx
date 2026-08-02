@@ -9,6 +9,7 @@ import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Экран категории — список программ внутри неё.
@@ -248,8 +249,10 @@ export default function Category() {
  * Стиль и поведение — как RulesModal в рейтинге (портал, тап по фону закрывает).
  */
 function CategoryInfoModal({ meta, onClose }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   return createPortal(
-    <div style={infoStyles.overlay} onClick={onClose}>
+    <div ref={overlayRef} style={infoStyles.overlay} onClick={onClose}>
       <div style={infoStyles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={infoStyles.icon}>
           <UiIcon name={meta.iconName} size={40} color={meta.color} />

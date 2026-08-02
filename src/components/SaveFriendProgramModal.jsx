@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { saveFriendProgram } from '../features/programs/customProgram'
 import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Модалка сохранения программы, полученной по ссылке от друга.
@@ -10,6 +11,8 @@ import ActionButton from './ActionButton'
  * replacing — у получателя уже есть программа от друга (будет заменена).
  */
 export default function SaveFriendProgramModal({ snapshot, replacing, onSaved, onClose }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -32,7 +35,7 @@ export default function SaveFriendProgramModal({ snapshot, replacing, onSaved, o
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
+    <div ref={overlayRef} style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.emoji}>🤝</div>
         <div style={styles.title}>{snapshot.name}</div>

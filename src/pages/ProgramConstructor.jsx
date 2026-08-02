@@ -12,6 +12,7 @@ import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 const LETTERS = ['A', 'B', 'C']
 const MAX_PER_DAY = 10
@@ -35,6 +36,8 @@ const NAME_PLACEHOLDER = 'Введите название'
  * Порядок упражнений в дне = порядок добавления (перетаскивание добавим позже).
  */
 export default function ProgramConstructor() {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const navigate = useNavigate()
   // Возврат — шаг назад по истории (navigate(-1)), а не push на конкретный путь:
   // конструктор всегда открывается ОДНИМ push'ем со страницы-источника (главная /
@@ -633,7 +636,7 @@ export default function ProgramConstructor() {
       )}
 
       {confirmExit && createPortal(
-        <div style={styles.exitOverlay} onClick={() => setConfirmExit(false)}>
+        <div ref={overlayRef} style={styles.exitOverlay} onClick={() => setConfirmExit(false)}>
           <div style={styles.exitModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.exitTitle}>Сохранить изменения?</div>
             <div style={styles.exitText}>В программе есть несохранённые изменения.</div>

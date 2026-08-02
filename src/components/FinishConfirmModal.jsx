@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 /**
  * Минималистичное подтверждение завершения тренировки.
  *
@@ -14,14 +15,17 @@
  * @param onCancel  - тап «Назад» / по фону
  */
 import ActionButton from './ActionButton'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 export const CONFIRM_EXIT_MS = 180
 
 export default function FinishConfirmModal({ done, total, closing = false, onConfirm, onCancel }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const allDone = total > 0 && done >= total
 
   return (
-    <div style={styles.overlay} onClick={closing ? undefined : onCancel}>
+    <div ref={overlayRef} style={styles.overlay} onClick={closing ? undefined : onCancel}>
       <div
         style={{ ...styles.modal, ...(closing ? styles.modalClosing : null) }}
         onClick={(e) => e.stopPropagation()}

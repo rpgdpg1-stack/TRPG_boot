@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
@@ -22,6 +22,7 @@ import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
 import BicepGesture from '../components/BicepGesture'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -449,6 +450,8 @@ function SwimmerIcon({ stroke, size = 34 }) {
 }
 
 function SwimFinishedModal({ kind, distance, status, onConfirm }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const isError = kind === 'error'
   const isSaving = status === 'saving'
 
@@ -459,7 +462,7 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
   const buttonText = isSaving ? 'СОХРАНЕНИЕ...' : isError ? 'ПОВТОРИТЬ' : 'ОК'
 
   return (
-    <div style={modalStyles.overlay}>
+    <div ref={overlayRef} style={modalStyles.overlay}>
       <div style={{ ...modalStyles.modal, ...(isError ? modalStyles.modalError : {}) }}>
         {(!isError && kind !== 'offline')
           ? <BicepGesture size={80} />

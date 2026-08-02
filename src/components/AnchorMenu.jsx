@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Компактное контекст-меню, привязанное к элементу — как нативное iOS/Telegram.
@@ -24,6 +25,8 @@ import { haptic } from '../lib/telegram'
  * @param motion — 'scale' (раскрытие из угла) | 'drop' (выезд сверху вниз, 200мс).
  */
 export default function AnchorMenu({ anchorRect, items, onClose, align = 'right', gap = 10, motion = 'scale' }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const menuRef = useRef(null)
   const [pos, setPos] = useState(null)
   const [placement, setPlacement] = useState('below')
@@ -122,6 +125,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
 
   const menu = (
     <div
+      ref={overlayRef}
       style={{ ...styles.overlay, pointerEvents: ready ? 'auto' : 'none' }}
       onClick={requestClose}
     >

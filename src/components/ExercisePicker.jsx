@@ -5,6 +5,7 @@ import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Пикер упражнений для конструктора.
@@ -14,6 +15,8 @@ import ActionButton from './ActionButton'
  * выбранные упражнения поднимаются наверх списка.
  */
 export default function ExercisePicker({ excludeIds, atLimit, count, max, onToggle, onDone }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -118,7 +121,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   useEffect(() => () => { if (limitTimer.current) clearTimeout(limitTimer.current) }, [])
 
   const content = (
-    <div style={styles.overlay}>
+    <div ref={overlayRef} style={styles.overlay}>
       <div style={styles.header}>
         <input
           ref={inputRef}

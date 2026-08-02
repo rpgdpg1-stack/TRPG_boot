@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
 import ScreenTitle from '../components/ScreenTitle'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Экран "Восстановление" — карточки полезных советов по восстановлению,
@@ -80,6 +81,8 @@ const CATEGORIES = [
 ]
 
 export default function Recovery() {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const [popupItem, setPopupItem] = useState(null)
 
   // Этот экран корневой во вкладке — кнопка назад от Telegram не нужна
@@ -143,7 +146,7 @@ export default function Recovery() {
 
       {/* Popup-заглушка при тапе по карточке */}
       {popupItem && (
-        <div style={popupStyles.overlay} onClick={closePopup}>
+        <div ref={overlayRef} style={popupStyles.overlay} onClick={closePopup}>
           <div style={popupStyles.modal} onClick={(e) => e.stopPropagation()}>
             <div style={popupStyles.icon}>📖</div>
             <div style={popupStyles.title}>{popupItem.title}</div>

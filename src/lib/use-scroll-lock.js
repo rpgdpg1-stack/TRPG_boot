@@ -13,16 +13,21 @@ import { useEffect } from 'react'
  * блок с запасом хода — не мешаем, он скроллится как обычно.
  *
  * Использование: `const ref = useRef(null); useScrollLock(ref)` и `ref` на оверлей.
+ *
+ * Слушатели висят на `document`, а не на самом оверлее, и каждый раз сверяются с
+ * `ref.current`. Это принципиально: модалка часто рендерится УСЛОВНО внутри
+ * страницы, и на момент монтирования компонента оверлея ещё нет — привязка к
+ * элементу тогда молча не срабатывала бы (эффект отработал бы один раз с null).
+ * Пока оверлея нет, обработчик выходит на первой строке и ничего не стоит.
  */
 export function useScrollLock(overlayRef) {
   useEffect(() => {
-    const el = overlayRef.current
-    if (!el) return
-
     let startY = 0
     const onStart = (e) => { startY = e.touches[0]?.clientY ?? 0 }
 
     const onMove = (e) => {
+      const el = overlayRef.current
+      if (!el || !el.contains(e.target)) return
       if (e.touches.length > 1) return
       const dy = (e.touches[0]?.clientY ?? 0) - startY
 
@@ -44,11 +49,11 @@ export function useScrollLock(overlayRef) {
       e.preventDefault()
     }
 
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
+    document.addEventListener('touchstart', onStart, { passive: true })
+    document.addEventListener('touchmove', onMove, { passive: false })
     return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchstart', onStart)
+      document.removeEventListener('touchmove', onMove)
     }
   }, [overlayRef])
 }

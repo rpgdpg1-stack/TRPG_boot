@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { useScrollLock } from '../lib/use-scroll-lock'
 import {
   MONTHS_RU, WEEKDAYS_RU, HISTORY_FETCH_LIMIT,
   mskParts, mskDayKey, formatTimeMsk,
@@ -365,13 +366,15 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
 }
 
 function DayDetail({ data, onClose }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const { key, workouts } = data
   const [y, m, d] = key.split('-').map(Number)
   const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
   const dateLabel = `${d} ${MONTHS_RU[m - 1].toLowerCase()}, ${WEEKDAYS_RU[dow]}`
 
   return createPortal(
-    <div style={dstyles.overlay} onClick={onClose}>
+    <div ref={overlayRef} style={dstyles.overlay} onClick={onClose}>
       <div style={dstyles.panel} onClick={(e) => e.stopPropagation()}>
         <div style={dstyles.date}>{dateLabel}</div>
         <div style={dstyles.list}>

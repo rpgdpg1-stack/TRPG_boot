@@ -39,6 +39,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Экран дня тренировки.
@@ -130,6 +131,10 @@ function FinishIcon({ size = 17 }) {
 }
 
 export default function WorkoutDay() {
+  const overlayRef3 = useRef(null)
+  useScrollLock(overlayRef3)
+  const overlayRef2 = useRef(null)
+  useScrollLock(overlayRef2)
   const { programId, day } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -1405,7 +1410,7 @@ export default function WorkoutDay() {
 
       {/* Подтверждение отмены тренировки (крестик): закрыть без сохранения. */}
       {showCancelConfirm && createPortal(
-        <div style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
+        <div ref={overlayRef2} style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
           <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.cancelTitle}>Отменить тренировку?</div>
             <div style={styles.cancelText}>Прогресс не сохранится и в историю не попадёт.</div>
@@ -1424,7 +1429,7 @@ export default function WorkoutDay() {
 
       {/* Предупреждение о лимите ДО старта второй силовой за день. */}
       {showLimitWarn && createPortal(
-        <div style={styles.cancelOverlay} onClick={() => setShowLimitWarn(false)}>
+        <div ref={overlayRef3} style={styles.cancelOverlay} onClick={() => setShowLimitWarn(false)}>
           <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.cancelTitle}>Сегодня силовая уже была</div>
             <div style={styles.cancelText}>
@@ -1680,6 +1685,8 @@ function groupByMuscleGroup(slots) {
  * в body; позиция fixed по центру буквы (anchorRect).
  */
 function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPick, onClose }) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
   const [entered, setEntered] = useState(false)
   const [closing, setClosing] = useState(false)
 
@@ -1706,7 +1713,7 @@ function DayPicker({ days, currentDay, sessionDay, colorForDay, anchorRect, onPi
   const shown = entered && !closing
 
   return createPortal(
-    <div style={pickerStyles.overlay} onClick={requestClose}>
+    <div ref={overlayRef} style={pickerStyles.overlay} onClick={requestClose}>
       <div
         style={{
           ...pickerStyles.panel,
