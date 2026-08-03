@@ -5,10 +5,12 @@ import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory } from '../lib/storage'
 import { localGet } from '../utils/storage'
 import { getProgramsByCategory } from '../features/programs/registry'
+import { pluralizePrograms } from '../utils/plural'
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
 import ScreenTitle from '../components/ScreenTitle'
+import { SectionLabel } from '../components/GroupLabel'
 import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
@@ -181,6 +183,32 @@ export default function Category() {
 
   const handleDeleted = () => bump(n => n + 1)
 
+  // Закреплённая отдельно от остальных — под своими заголовками. Реордер и
+  // FLIP-анимация переезда работают как прежде: ref'ы привязаны к slug, а не
+  // к позиции в списке.
+  const pinnedList = ordered.filter(p => p.slug === favoriteSlug)
+  const restList = ordered.filter(p => p.slug !== favoriteSlug)
+
+  const renderCard = (prog) => (
+    <div
+      key={prog.slug}
+      ref={el => { if (el) cardRefs.current.set(prog.slug, el); else cardRefs.current.delete(prog.slug) }}
+    >
+      <ProgramCard
+        prog={prog}
+        isFav={favoriteSlug === prog.slug}
+        onToggleFav={() => handleFavoriteTap(prog.slug)}
+        onDeleted={handleDeleted}
+        menu
+        cta
+        bordered={false}
+        background={favoriteSlug === prog.slug
+          ? 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))'
+          : 'var(--color-card)'}
+      />
+    </div>
+  )
+
   if (!meta) {
     return (
       <div className="page page-enter" style={styles.notFoundPage}>
@@ -206,34 +234,27 @@ export default function Category() {
           {/* Счётчик — тем же строем, что «Друзей: 3» на вкладке друзей:
               подпись серым, число акцентом. */}
           <div style={styles.subtitle}>
-            {/* Ноль — серым: это отсутствие, а не достижение. Появится первая
-                программа — число станет акцентным, как везде в приложении. */}
-            Программ: <span style={realPrograms.length > 0 ? styles.subCount : styles.subCountZero}>{realPrograms.length}</span>
+            {realPrograms.length} {pluralizePrograms(realPrograms.length)}
           </div>
         </div>
       </header>
 
-      <div style={styles.programs}>
-        {ordered.map(prog => (
-          <div
-            key={prog.slug}
-            ref={el => { if (el) cardRefs.current.set(prog.slug, el); else cardRefs.current.delete(prog.slug) }}
-          >
-            <ProgramCard
-              prog={prog}
-              isFav={favoriteSlug === prog.slug}
-              onToggleFav={() => handleFavoriteTap(prog.slug)}
-              onDeleted={handleDeleted}
-              menu
-              cta
-              bordered={false}
-              background={favoriteSlug === prog.slug
-                ? 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))'
-                : 'var(--color-card)'}
-            />
-          </div>
-        ))}
-      </div>
+      {/* Заголовки появляются только когда есть что разделять: пока ничего не
+          закреплено, это просто список — подписывать его нечем и незачем. */}
+      {pinnedList.length > 0 ? (
+        <>
+          <SectionLabel>Закреплённая</SectionLabel>
+          <div style={styles.programs}>{pinnedList.map(renderCard)}</div>
+          {restList.length > 0 && (
+            <>
+              <SectionLabel style={{ marginTop: 'var(--space-6)' }}>Все</SectionLabel>
+              <div style={styles.programs}>{restList.map(renderCard)}</div>
+            </>
+          )}
+        </>
+      ) : (
+        <div style={styles.programs}>{ordered.map(renderCard)}</div>
+      )}
 
       {/* «Создать» работает только в силовой — конструктор пока умеет её одну.
           В остальных разделах кнопка приглушена и подписана «Скоро», как

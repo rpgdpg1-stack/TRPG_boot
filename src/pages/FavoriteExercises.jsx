@@ -216,7 +216,7 @@ const styles = {
   card: {
     position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'center',
     padding: 'var(--space-4)', gap: 'var(--space-4)', width: '100%', minHeight: '132px',
-    background: 'var(--surface-raised)', border: '1px solid var(--border-hairline)',
+    background: 'var(--surface-raised)', border: 'none',
     borderRadius: 'var(--radius-card)', overflow: 'hidden', textAlign: 'left', cursor: 'pointer'
   },
   cardEmpty: {

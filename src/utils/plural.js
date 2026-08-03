@@ -37,3 +37,26 @@ export function pluralizeExercises(count) {
   if (n1 === 1) return 'упражнение'
   return 'упражнений'
 }
+/**
+ * "1 программа", "2 программы", "5 программ" — счётчик в шапке раздела.
+ */
+export function pluralizePrograms(count) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'программ'
+  if (n1 > 1 && n1 < 5) return 'программы'
+  if (n1 === 1) return 'программа'
+  return 'программ'
+}
+
+/**
+ * "1 друг", "2 друга", "5 друзей" — счётчик на вкладке «Друзья».
+ */
+export function pluralizeFriends(count) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'друзей'
+  if (n1 > 1 && n1 < 5) return 'друга'
+  if (n1 === 1) return 'друг'
+  return 'друзей'
+}

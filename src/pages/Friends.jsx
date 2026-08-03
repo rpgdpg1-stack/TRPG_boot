@@ -5,10 +5,12 @@ import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '..
 import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, invalidateFriendsListCache, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
 import { periodRange } from '../utils/history'
+import { pluralizeFriends } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
+import { SectionLabel } from '../components/GroupLabel'
 import PlayerProfileModal from '../components/PlayerProfileModal'
 import UiIcon from '../components/UiIcon'
 import PinIcon from '../components/PinIcon'
@@ -141,9 +143,7 @@ export default function Friends() {
         {/* Под заголовком: счётчик друзей по центру. */}
         <div style={styles.subRow}>
           <span style={styles.subInfo}>
-            {loading || friends.length === 0 ? '' : (
-              <>Друзей: <span style={styles.subCount}>{friends.length}</span></>
-            )}
+            {loading || friends.length === 0 ? '' : `${friends.length} ${pluralizeFriends(friends.length)}`}
           </span>
         </div>
       </header>
@@ -188,10 +188,11 @@ export default function Friends() {
             </div>
           )}
 
-          {/* Закреплённые сверху — отдельным блоком, без значка-заголовка: сам
-              порядок и разрыв между блоками уже объясняют группировку, а лишняя
-              булавка слева висела «в воздухе». Подсказка выше исчезает, как
-              только закреплён первый друг. */}
+          {/* Заголовки — только когда есть что разделять: пока никто не закреплён,
+              это просто список друзей. */}
+          {pinnedFriends.length > 0 && (
+            <SectionLabel>Закреплённые</SectionLabel>
+          )}
           {pinnedFriends.length > 0 && (
             <div style={styles.list}>
               {pinnedFriends.map((friend, idx) => (
@@ -203,8 +204,11 @@ export default function Friends() {
           )}
 
           {/* Остальные друзья */}
+          {pinnedFriends.length > 0 && otherFriends.length > 0 && (
+            <SectionLabel style={{ marginTop: 'var(--space-6)' }}>Все</SectionLabel>
+          )}
           {otherFriends.length > 0 && (
-            <div style={{ ...styles.list, marginTop: pinnedFriends.length > 0 ? '12px' : 0 }}>
+            <div style={styles.list}>
               {otherFriends.map((friend, idx) => (
                 <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
                   <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />

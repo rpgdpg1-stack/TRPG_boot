@@ -314,12 +314,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     if (norm.cleared) {
       if (localWeight !== 0) {
         setLocalWeight(0)
+        haptic.success()   // отклик на ДЕЙСТВИЕ, до сети (см. ниже)
         try {
           await saveExerciseWeight(exercise_id, 0)
           // Сообщаем родителю (WorkoutDay) — чтобы slots обновились и модалка
           // от долгого нажатия сразу показала свежий вес.
           onWeightSaved?.(exercise_id, 0)
-          haptic.success()
         } catch (e) {
           console.error('[ExerciseCard] saveExerciseWeight error:', e)
         }
@@ -339,13 +339,17 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     raise.trigger(rounded > localWeight ? 'up' : 'down')
 
     setLocalWeight(rounded)
+    // Вибро — СРАЗУ, вместе с новой цифрой. Раньше оно ждало ответа сервера и
+    // приходило через полсекунды после того, как всё уже поменялось: отклик
+    // читался как случайный. Хаптика подтверждает жест, а не запись в базу —
+    // офлайн правка всё равно уходит в очередь и не теряется.
+    haptic.success()
 
     try {
       const ok = await saveExerciseWeight(exercise_id, rounded)
       if (ok) {
         // Родителю — новый вес в slots (для синка с модалкой долгого нажатия).
         onWeightSaved?.(exercise_id, rounded)
-        haptic.success()
       } else {
         console.warn('[ExerciseCard] saveExerciseWeight returned false')
       }

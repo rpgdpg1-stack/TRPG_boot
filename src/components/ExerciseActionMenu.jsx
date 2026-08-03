@@ -130,10 +130,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     if (norm.cleared) {
       if (localWeight !== 0) {
         setLocalWeight(0)
+        haptic.success()
         try {
           await saveExerciseWeight(slot.exercise_id, 0)
           onWeightSaved?.(slot.exercise_id, 0)
-          haptic.success()
         } catch (e) {
           console.error('[ExerciseActionMenu] saveExerciseWeight error:', e)
         }
@@ -150,12 +150,10 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     raise.trigger(rounded > localWeight ? 'up' : 'down')
 
     setLocalWeight(rounded)
+    haptic.success()   // сразу с цифрой, не по ответу сервера (см. ExerciseCard)
     try {
       const ok = await saveExerciseWeight(slot.exercise_id, rounded)
-      if (ok) {
-        onWeightSaved?.(slot.exercise_id, rounded)
-        haptic.success()
-      }
+      if (ok) onWeightSaved?.(slot.exercise_id, rounded)
     } catch (e) {
       console.error('[ExerciseActionMenu] saveExerciseWeight error:', e)
     }
