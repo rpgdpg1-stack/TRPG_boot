@@ -131,7 +131,9 @@ export default function HomeCards() {
       />
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
-        flex="0 0 100px"
+        // Идеальный квадрат: ширина следует за высотой (aspect-ratio), а не
+        // задана числом — высота карточек может измениться, квадрат останется.
+        square
         title="Любимые"
         // Своя строка на том же уровне, что «Август» у статистики: без неё
         // карточки разъезжались по высоте и сердечко уезжало вниз. Заодно
@@ -149,13 +151,13 @@ export default function HomeCards() {
 // Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
 // селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
 // конфликтуют). Роль и tabIndex сохраняют доступность.
-function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', onClick, innerRef }) {
+function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', square = false, onClick, innerRef }) {
   return (
     <div
       ref={innerRef}
       role="button"
       tabIndex={0}
-      style={{ ...styles.card, flex }}
+      style={{ ...styles.card, flex: square ? '0 0 auto' : flex, ...(square ? styles.cardSquare : null) }}
       className="press-tile"
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.() } }}
@@ -198,12 +200,18 @@ const styles = {
   // отступ от блока раздела выше: одинаковый воздух по обеим осям.
   row: { display: 'flex', gap: 'var(--space-6)', alignItems: 'stretch' },
   card: {
-    minWidth: 0, minHeight: '96px',
+    // 110 — фактическая высота карточки с её содержимым. Задаём явно, потому
+    // что от этого значения квадратная карточка берёт ширину (aspect-ratio
+    // считает от minHeight, а не от растянутой высоты соседа).
+    minWidth: 0, minHeight: '110px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
     padding: 'var(--space-3)', textAlign: 'left',
     background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
+  // Квадратная карточка: ширина = высоте. Контент по центру — в узком столбце
+  // левое выравнивание смотрелось бы прижатым к краю.
+  cardSquare: { aspectRatio: '1 / 1', alignItems: 'center', textAlign: 'center' },
   icon: { display: 'inline-flex', height: '22px' },
   textCol: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', minWidth: 0 },
   titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },

@@ -38,6 +38,7 @@ import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
+import { isWeightEditing } from '../lib/weight-editing-state'
 import { pluralizeExercises } from '../utils/plural'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ReturnHighlight from '../components/workout/ReturnHighlight'
@@ -512,10 +513,15 @@ export default function WorkoutDay() {
     const compute = () => {
       raf = 0
       const y = liveY()
-      // Две высоты шапки с гистерезисом: компактная при y>30, высокая при y<10.
+      // Пока открыта клавиатура ввода веса — высоту шапки НЕ трогаем. iOS при
+      // фокусе сам подкручивает страницу к полю, и шапка успевала схлопнуться:
+      // layout ехал прямо под пальцем, в момент когда человек смотрит на цифру.
       let min = headerMinRef.current
-      if (min && y < 10) min = false
-      else if (!min && y > 30) min = true
+      if (!isWeightEditing()) {
+        // Две высоты шапки с гистерезисом: компактная при y>30, высокая при y<10.
+        if (min && y < 10) min = false
+        else if (!min && y > 30) min = true
+      }
       if (min !== headerMinRef.current) { headerMinRef.current = min; setHeaderMin(min) }
       // Сохраняем ТОЛЬКО для активного дня и только после того, как восстановление
       // позиции отработало — иначе первый заход перезатёр бы место нулём.

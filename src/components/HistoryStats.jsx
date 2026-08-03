@@ -96,7 +96,7 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
               <span style={styles.rowLabel}>{m.label}</span>
               {showDist && (
                 <span style={styles.rowDist}>
-                  (<Distance meters={b.distance} color={m.color} />)
+                  (<Distance meters={b.distance} color={m.color} inherit />)
                 </span>
               )}
             </div>
@@ -115,7 +115,18 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
  * Раньше единица наследовала кегль родителя, и «км» в дистанции выходил заметно
  * крупнее «кг» в весе — рядом это читалось как разнобой.
  */
-export function MetricValue({ num, unit, color = 'var(--color-primary)' }) {
+export function MetricValue({ num, unit, color = 'var(--color-primary)', inherit = false }) {
+  // inherit — значение внутри уже размеченной строки (дистанция в скобках рядом
+  // с числом вида): свой кегль там навязывать нельзя, иначе «2,25 км» выходит
+  // крупнее соседней «8». Наследуем размер и вес от родителя, задаём только цвет.
+  if (inherit) {
+    return (
+      <>
+        <span style={{ color }}>{num}</span>
+        {unit && <span> {unit}</span>}
+      </>
+    )
+  }
   return (
     <>
       <span style={{ ...styles.totalValue, color }}>{num}</span>
@@ -124,10 +135,17 @@ export function MetricValue({ num, unit, color = 'var(--color-primary)' }) {
   )
 }
 
-export function Distance({ meters, color }) {
+export function Distance({ meters, color, inherit = false }) {
   const text = formatMeters(meters)
   const i = text.lastIndexOf(' ')
-  return <MetricValue num={i > 0 ? text.slice(0, i) : text} unit={i > 0 ? text.slice(i + 1) : ''} color={color} />
+  return (
+    <MetricValue
+      num={i > 0 ? text.slice(0, i) : text}
+      unit={i > 0 ? text.slice(i + 1) : ''}
+      color={color}
+      inherit={inherit}
+    />
+  )
 }
 
 /**
