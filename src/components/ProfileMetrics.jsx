@@ -4,6 +4,7 @@ import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { periodShortLabel, periodHintSuffix } from '../utils/history'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
@@ -79,8 +80,10 @@ export default function ProfileMetrics({ stats, favorites = [], showWeights = tr
 function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
   const isStats = kind === 'stats'
   const available = periodOptions().filter(p => stats && p.id in stats)
-  // Год по умолчанию; если его нет (данных от сервера меньше) — первый доступный.
-  const [period, setPeriod] = useState(() => (available.some(p => p.id === 'year') ? 'year' : available[0]?.id) || 'year')
+  // «Всё» по умолчанию: карточка профиля — про общий итог, а не про текущий
+  // отрезок; сузить до года/месяца человек может сам. Если «Всё» недоступно
+  // (у друга сервер отдал только разбивку) — первый доступный.
+  const [period, setPeriod] = useState(() => (available.some(p => p.id === 'all') ? 'all' : available[0]?.id) || 'all')
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
 
@@ -88,9 +91,10 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
   // Заглушка честно называет период и адресата (свой профиль / профиль друга).
   // Заглушка одинаковая для своего профиля и для друга — это карточка профиля,
   // а не экран статистики: тут достаточно факта.
-  const emptyText = period === 'month' ? 'Не тренировался в этом месяце'
-    : period === 'year' ? 'Не тренировался в этом году'
-      : period === 'week' ? 'Не тренировался на этой неделе'
+  const hint = periodHintSuffix(period)
+  const emptyText = period === 'month' ? `Не тренировался в этом месяце${hint}`
+    : period === 'year' ? `Не тренировался в этом году${hint}`
+      : period === 'week' ? `Не тренировался на этой неделе${hint}`
         : 'Тренировок пока нет'
 
   return (
@@ -112,7 +116,7 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
         )}
 
         {isStats
-          ? <HistoryStats summary={summary} emptyText={emptyText} />
+          ? <HistoryStats summary={summary} periodLabel={periodShortLabel(period)} emptyText={emptyText} />
           : <FavoritesList items={favorites} showWeights={showWeights} />}
       </div>
 

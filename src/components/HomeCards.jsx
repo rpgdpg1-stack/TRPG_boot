@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
-import { localGet, localSet } from '../utils/storage'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { summarizeWorkouts, formatHours, periodShortLabel, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
+import { getHomeStatsPeriod, setHomeStatsPeriod } from '../lib/history-view'
 import { periodOptions } from './PeriodSwitcher'
 import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
@@ -24,14 +24,13 @@ import { useOutsideClose } from '../lib/use-outside-close'
  * больше нет: о скрытом жесте нельзя догадаться. Тап по остальной карточке ведёт
  * на `/history`, тап мимо списка его закрывает.
  */
-const PERIOD_KEY = 'home-stats-period'
 export default function HomeCards() {
   const navigate = useNavigate()
 
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [favCount, setFavCount] = useState(() => (getFavoritesSync() || []).length)
   // Период статистики: по умолчанию год.
-  const [period, setPeriod] = useState(() => localGet(PERIOD_KEY) || 'year')
+  const [period, setPeriod] = useState(getHomeStatsPeriod)
   const [open, setOpen] = useState(false)   // раскрыт список периодов
   useEffect(() => {
     let alive = true
@@ -57,7 +56,7 @@ export default function HomeCards() {
     if (id === period) return
     haptic.selection()
     setPeriod(id)
-    localSet(PERIOD_KEY, id)
+    setHomeStatsPeriod(id)
   }
 
   // Период меняется видимым селектором в строке заголовка (не скрытым долгим
@@ -125,6 +124,14 @@ export default function HomeCards() {
             <span style={styles.valueGap} />
             <span style={styles.clock}><ClockIcon size={16} /></span>
             <Value num={formatHours(sum.minutes).replace(' ч', '')} unit="ч" />
+            {/* Какой именно период сейчас показан: «7 дней» / «Август» / «2026».
+                У «Всё» подписи нет — период без границ нечем назвать. */}
+            {periodShortLabel(period, now) && (
+              <>
+                <span style={styles.valueGap} />
+                <span style={styles.periodMark}>{periodShortLabel(period, now)}</span>
+              </>
+            )}
           </>
         }
         onClick={openStats}
@@ -235,5 +242,10 @@ const styles = {
   // Зазор между двумя показателями статистики; серые иконки перед каждым.
   valueGap: { width: '12px', display: 'inline-block' },
   statIcon: { display: 'inline-flex' },
-  clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' }
+  clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
+  // Подпись периода в строке значений — тем же тихим серым, что иконки.
+  periodMark: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  }
 }

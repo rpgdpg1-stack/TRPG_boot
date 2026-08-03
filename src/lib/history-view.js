@@ -23,3 +23,19 @@ export function getHistoryView() {
 export function setHistoryView(v) {
   try { localSet(KEY, JSON.stringify(v)) } catch { /* ignore */ }
 }
+
+/**
+ * Период, выбранный селектором на ГЛАВНОЙ. Он — источник правды: экран
+ * `/history` открывается именно с ним, сколько бы периодов ни перелистали
+ * внутри в прошлый раз. Обратно экран статистики сюда не пишет.
+ */
+const HOME_PERIOD_KEY = 'home-stats-period'
+
+export function getHomeStatsPeriod() {
+  const v = localGet(HOME_PERIOD_KEY)
+  return PERIODS.includes(v) ? v : 'year'
+}
+
+export function setHomeStatsPeriod(period) {
+  if (PERIODS.includes(period)) localSet(HOME_PERIOD_KEY, period)
+}

@@ -37,7 +37,7 @@ const TYPE_META = {
   stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
 }
 
-export default function HistoryStats({ summary, loading = false, emptyText = 'Заверши первую тренировку, чтобы увидеть статистику.' }) {
+export default function HistoryStats({ summary, loading = false, periodLabel = '', emptyText = 'Заверши первую тренировку, чтобы увидеть статистику.' }) {
   // Первый заход без кеша — скелетон вместо мигания пустой заглушки.
   if (loading) {
     return (
@@ -62,19 +62,22 @@ export default function HistoryStats({ summary, loading = false, emptyText = 'З
 
   return (
     <div>
-      {/* Общие показатели периода */}
+      {/* Общие показатели периода. Единицы («трен», «ч») стоят рядом с числом —
+          тот же вид, что в карточке на главной. Справа — подпись периода. */}
       <div style={styles.totals}>
-        <Total
-          icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
-          value={String(summary.count)}
-          label="Тренировок"
-        />
-        <Total
-          icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
-          value={formatHours(summary.minutes)}
-          label="Время"
-          splitUnit
-        />
+        <span style={styles.totalsMain}>
+          <Total
+            icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
+            value={String(summary.count)}
+            unit="трен"
+          />
+          <Total
+            icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
+            value={formatHours(summary.minutes)}
+            splitUnit
+          />
+        </span>
+        {periodLabel && <span style={styles.periodLabel}>{periodLabel}</span>}
       </div>
 
       <div style={styles.divider} aria-hidden="true" />
@@ -121,25 +124,31 @@ export function Distance({ meters, color }) {
  * `splitUnit` — у значения есть единица («3,7 ч»): цифра акцентом, единица серая
  * и тоньше (единицы вообще никогда не красим акцентом).
  */
-function Total({ icon, value, label, splitUnit = false }) {
+// Показатель: иконка + число акцентом + тихая единица. Подписи снизу
+// («Тренировок»/«Время») убраны — единица рядом с числом говорит то же самое
+// и совпадает с карточкой на главной.
+function Total({ icon, value, unit, splitUnit = false }) {
   const i = splitUnit ? String(value).lastIndexOf(' ') : -1
   const num = i > 0 ? String(value).slice(0, i) : value
-  const unit = i > 0 ? String(value).slice(i + 1) : ''
+  const u = i > 0 ? String(value).slice(i + 1) : unit
   return (
-    <div style={styles.total}>
-      <span style={styles.totalTop}>
-        {icon}
-        <span style={styles.totalValue}>{num}</span>
-        {unit && <span style={styles.totalUnit}>{unit}</span>}
-      </span>
-      <span style={styles.totalLabel}>{label}</span>
-    </div>
+    <span style={styles.totalTop}>
+      {icon}
+      <span style={styles.totalValue}>{num}</span>
+      {u && <span style={styles.totalUnit}>{u}</span>}
+    </span>
   )
 }
 
 const styles = {
-  totals: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 'var(--space-6)', flexWrap: 'wrap' },
-  total: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' },
+  // Строка тоталов: показатели по центру, подпись периода — справа тем же
+  // тихим серым, что иконки. Ряд не переносится: подпись короткая.
+  totals: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' },
+  totalsMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-6)' },
+  periodLabel: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
+  },
   totalTop: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Цифра — акцентная зелёная (главное в показателе).
@@ -153,10 +162,6 @@ const styles = {
     color: 'var(--color-text-secondary)', marginLeft: '-1px'
   },
   // Подпись метрики (secondary info) — серым, чтобы главной была цифра.
-  totalLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
-    color: 'var(--text-info)', whiteSpace: 'nowrap'
-  },
   divider: { height: '1px', background: 'var(--border-hairline)', margin: 'var(--space-4) 0' },
 
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },

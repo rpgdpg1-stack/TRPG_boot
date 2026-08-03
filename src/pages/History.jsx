@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { getHistoryView, setHistoryView } from '../lib/history-view'
+import { summarizeWorkouts, periodShortLabel, periodHintSuffix, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { getHistoryView, setHistoryView, getHomeStatsPeriod } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
@@ -22,9 +22,13 @@ import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
  */
 export default function History() {
   const navigate = useNavigate()
-  // Стартовый вид — общий с главной (localStorage), чтобы цифры совпадали.
+  // Период при ВХОДЕ всегда берём с главной: там селектор, и он — источник
+  // правды. Внутри экрана период можно листать сколько угодно, но обратно на
+  // главную это не пишется и в следующий заход не переживает — иначе на главной
+  // стояла бы «Неделя», а экран открывался бы с тем, что накликали в прошлый раз.
+  // Открытый месяц/год календаря по-прежнему помним (history-view).
   const initialView = useRef(getHistoryView())
-  const [period, setPeriod] = useState(initialView.current.period)
+  const [period, setPeriod] = useState(() => getHomeStatsPeriod())
   const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
@@ -50,8 +54,8 @@ export default function History() {
   const onMonthPick = useCallback((year, month) => { setPeriod('month'); setView({ year, month }) }, [])
   const onYearPick = useCallback((year) => { setPeriod('year'); setView(v => ({ ...v, year })) }, [])
 
-  // Персистим выбор (период + открытый месяц/год) — тот же вид на главной.
-  useEffect(() => { setHistoryView({ period, year: view.year, month: view.month }) }, [period, view])
+  // Персистим только положение календаря. Период сюда НЕ пишем (см. выше).
+  useEffect(() => { setHistoryView({ period: initialView.current.period, year: view.year, month: view.month }) }, [view])
 
   // Неделя — всегда текущая (в календаре недели нет). Месяц/год — за открытый в
   // календаре месяц/год (refDate = 15-е число этого месяца).
@@ -61,12 +65,15 @@ export default function History() {
   const pickPeriod = (id) => setPeriod(id)
 
   const periodItems = periodOptions()
+  // Заглушка называет период и уточняет его в скобках — «в этом месяце (Август)»:
+  // календарь листается, и без уточнения непонятно, о каком месяце речь.
+  const hint = periodHintSuffix(period, refDate)
   const emptyText = period === 'month'
-    ? 'Заверши первую тренировку в этом месяце, чтобы увидеть статистику.'
+    ? `Заверши первую тренировку в этом месяце${hint}, чтобы увидеть статистику.`
     : period === 'year'
-      ? 'Заверши первую тренировку в этом году, чтобы увидеть статистику.'
+      ? `Заверши первую тренировку в этом году${hint}, чтобы увидеть статистику.`
       : period === 'week'
-        ? 'Заверши первую тренировку на этой неделе, чтобы увидеть статистику.'
+        ? `Заверши первую тренировку на этой неделе${hint}, чтобы увидеть статистику.`
         : 'Заверши первую тренировку, чтобы увидеть статистику.'
 
   return (
@@ -77,7 +84,7 @@ export default function History() {
       <div style={styles.statsCard}>
         <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: 'var(--space-4)' }} />
 
-        <HistoryStats summary={sum} loading={!wkLoaded} emptyText={emptyText} />
+        <HistoryStats summary={sum} loading={!wkLoaded} periodLabel={periodShortLabel(period, refDate)} emptyText={emptyText} />
       </div>
 
       {/* Календарь: месяц-режим (день-сетка) или год-режим (12 месяцев).
