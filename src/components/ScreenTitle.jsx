@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { useNetworkBadge } from '../lib/use-network-badge'
 
 /**
  * Единый заголовок экрана — навигейшн-бар в стиле iOS/Telegram.
@@ -17,9 +18,22 @@ import { createPortal } from 'react-dom'
  * сразу во всех экранах.
  */
 export default function ScreenTitle({ children }) {
+  // Пока есть статус сети, его пилюля занимает это же место (OfflineBanner) —
+  // заголовок уходит, чтобы они не наложились. Не размонтируем, а гасим
+  // прозрачностью: так подмена читается как переход, а не как рывок, и высота
+  // полосы не скачет.
+  const badge = useNetworkBadge()
+
   return createPortal(
     <div style={styles.bar}>
-      <h1 style={styles.title}>{children}</h1>
+      <h1 style={{
+        ...styles.title,
+        opacity: badge ? 0 : 1,
+        transform: badge ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'opacity 0.35s var(--ease-ios), transform 0.35s var(--ease-ios)'
+      }}>
+        {children}
+      </h1>
     </div>,
     document.body
   )

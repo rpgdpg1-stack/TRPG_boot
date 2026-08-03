@@ -1,125 +1,43 @@
-import { useEffect, useState, useRef } from 'react'
-import { isOnline, onNetworkChange } from '../lib/network-status'
-import { getQueueSize } from '../lib/offline-queue'
-import { SYNC_EVENTS, onSyncEvent } from '../lib/sync-engine'
-import { EVENTS, on } from '../lib/events'
+import { useNetworkBadge } from '../lib/use-network-badge'
 import UiIcon from './UiIcon'
 
 /**
  * Пилюля статуса сети и синхронизации.
  *
- * Аккуратная капсула по центру над контентом (не плашка на всю ширину).
- * Внутри: наша SVG-иконка (цветная) + текст. Цветом меняется ТОЛЬКО иконка,
- * сама пилюля — нейтральная серо-тёмная.
+ * Стоит НА МЕСТЕ ЗАГОЛОВКА экрана — на линии системных кнопок Telegram, там же,
+ * где «Тренировки» / «Сплит 2» / «Друзья». Пока статус есть, `ScreenTitle`
+ * затухает (оба читают один `useNetworkBadge`), поэтому подмена выглядит как
+ * замена одного другим, а не как два элемента внахлёст. Раньше пилюля висела
+ * отдельной строкой выше и отжимала контент.
  *
  * Состояния (приоритет сверху вниз):
- *  - syncing    → cloud_sync,  иконка синяя,    "Синхронизация"
- *  - justSynced → cloud_done,  иконка зелёная,  "Синхронизировано N" (~2.5с)
- *  - offline    → network_off, иконка красная,  "Офлайн" (+ счётчик очереди)
- *  - online + пустая очередь → ничего (пилюля скрыта)
+ *  - syncing    → cloud_sync,  иконка синяя,    «Синхронизация»
+ *  - justSynced → cloud_done,  иконка зелёная,  «Синхронизировано: N» (~2.5с)
+ *  - offline    → network_off, иконка красная,  «Офлайн» (+ счётчик очереди)
+ *  - online + пустая очередь → ничего
  *
- * Позиционируется fixed по центру сверху, с отступом 16px от системной зоны
- * Telegram — одинаково на всех экранах. zIndex ниже модалок, выше шапок.
+ * zIndex выше модалок: под модалкой заголовок и так скрыт её оверлеем, а статус
+ * сети важен именно там — без него непонятно, почему не сохраняется.
  */
 export default function OfflineBanner() {
-  const [online, setOnline] = useState(isOnline())
-  const [syncing, setSyncing] = useState(false)
-  const [justSyncedCount, setJustSyncedCount] = useState(null)
-  const [pendingCount, setPendingCount] = useState(getQueueSize())
-
-  const justSyncedTimer = useRef(null)
-
-  useEffect(() => {
-    const offNet = onNetworkChange((isOn) => {
-      setOnline(isOn)
-      setPendingCount(getQueueSize())
-    })
-
-    // Очередь пополнилась прямо сейчас (правка веса/заметки без сети).
-    // Внимание: `on` из events.js отдаёт САМО событие, а `onSyncEvent` ниже —
-    // уже развёрнутый detail. Контракты разные, поэтому здесь `e.detail`.
-    const offQueue = on(EVENTS.QUEUE_CHANGED, (e) => {
-      setPendingCount(e?.detail?.size ?? getQueueSize())
-    })
-
-    const offStart = onSyncEvent(SYNC_EVENTS.STARTED, () => {
-      setSyncing(true)
-      setJustSyncedCount(null)
-    })
-
-    const offDone = onSyncEvent(SYNC_EVENTS.DONE, (detail) => {
-      setSyncing(false)
-      setPendingCount(getQueueSize())
-      const n = detail?.synced || 0
-      if (n > 0) {
-        setJustSyncedCount(n)
-        if (justSyncedTimer.current) clearTimeout(justSyncedTimer.current)
-        justSyncedTimer.current = setTimeout(() => setJustSyncedCount(null), 2500)
-      }
-    })
-
-    const offFailed = onSyncEvent(SYNC_EVENTS.FAILED, (detail) => {
-      setSyncing(false)
-      setPendingCount(getQueueSize())
-      const n = detail?.synced || 0
-      if (n > 0) {
-        setJustSyncedCount(n)
-        if (justSyncedTimer.current) clearTimeout(justSyncedTimer.current)
-        justSyncedTimer.current = setTimeout(() => setJustSyncedCount(null), 2500)
-      }
-    })
-
-    return () => {
-      offNet()
-      offQueue()
-      offStart()
-      offDone()
-      offFailed()
-      if (justSyncedTimer.current) clearTimeout(justSyncedTimer.current)
-    }
-  }, [])
-
-  // Определяем что показывать: иконка (имя SVG), её цвет и текст.
-  let iconName = null
-  let iconColor = null
-  let text = null
-  let spin = false
-
-  if (syncing) {
-    iconName = 'cloud_sync'
-    iconColor = 'var(--cat-pool)'   // синий
-    text = 'Синхронизация'
-    spin = true
-  } else if (justSyncedCount !== null) {
-    iconName = 'cloud_done'
-    iconColor = 'var(--color-primary)'   // зелёный
-    text = `Синхронизировано: ${justSyncedCount}`
-  } else if (!online) {
-    iconName = 'network_off'
-    iconColor = 'var(--color-error)'   // красный
-    text = pendingCount > 0
-      ? `Офлайн · ${pendingCount} ${pluralChanges(pendingCount)}`
-      : 'Офлайн'
-  }
-
-  // Нечего показывать — пилюля скрыта полностью
-  if (!iconName) return null
+  const badge = useNetworkBadge()
+  if (!badge) return null
 
   return (
     <div style={styles.wrap} aria-live="polite">
       <div style={styles.pill}>
         <span style={{
           ...styles.iconWrap,
-          animation: spin ? 'offlineIconSpin 1.2s linear infinite' : 'none'
+          animation: badge.spin ? 'offlineIconSpin 1.2s linear infinite' : 'none'
         }}>
-          <UiIcon name={iconName} size={16} color={iconColor} />
+          <UiIcon name={badge.iconName} size={16} color={badge.iconColor} />
         </span>
-        <span style={styles.text}>{text}</span>
+        <span style={styles.text}>{badge.text}</span>
       </div>
 
       <style>{`
         @keyframes offlinePillIn {
-          0%   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+          0%   { opacity: 0; transform: translateY(-6px) scale(0.94); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes offlineIconSpin {
@@ -131,29 +49,21 @@ export default function OfflineBanner() {
   )
 }
 
-function pluralChanges(n) {
-  const last = n % 10
-  const lastTwo = n % 100
-  if (lastTwo >= 11 && lastTwo <= 14) return 'изменений'
-  if (last === 1) return 'изменение'
-  if (last >= 2 && last <= 4) return 'изменения'
-  return 'изменений'
-}
-
 const styles = {
-  // Контейнер во всю ширину, центрирует пилюлю. Пилюлю опускаем в 16px-отступ
-  // между системными кнопками Telegram и контентом: её ЦЕНТР — в середине этого
-  // отступа (низ зоны --tg-safe-top минус 8px), translateY(-50%) центрирует по высоте.
+  // Та же геометрия, что у ScreenTitle: полоса по центру системных кнопок.
+  // Пилюля встаёт ровно туда, откуда ушёл заголовок.
   wrap: {
     position: 'fixed',
-    top: 'calc(var(--tg-safe-top) - 4px)',
-    transform: 'translateY(-50%)',
+    top: 'var(--tg-nav-top, 56px)',
     left: 0,
     right: 0,
+    height: 'var(--tg-nav-height, 44px)',
     display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
+    padding: '0 var(--space-12)',
     pointerEvents: 'none',  // пилюля не перехватывает тапы по контенту под ней
-    zIndex: 9998
+    zIndex: 10002
   },
   // Сама пилюля — стеклянная (прозрачный surface-dim + blur+saturate как у
   // кнопок/переключателей), цветная только иконка.
@@ -161,14 +71,16 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 'var(--space-2)',
-    padding: 'var(--space-2) var(--space-4) var(--space-2) var(--space-3)',
+    maxWidth: '100%',
+    padding: 'var(--space-1) var(--space-3) var(--space-1) var(--space-2)',
     background: 'var(--color-surface-dim)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-    animation: 'offlinePillIn 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards'
+    // Мягкое проявление ~350мс — в такт затуханию заголовка под ним.
+    animation: 'offlinePillIn 0.35s var(--ease-ios) forwards'
   },
   iconWrap: {
     display: 'inline-flex',
@@ -183,6 +95,8 @@ const styles = {
     fontWeight: 700,
     color: 'var(--color-text)',
     letterSpacing: '0.3px',
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
   }
 }
