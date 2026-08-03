@@ -1672,7 +1672,7 @@ const styles = {
     pointerEvents: 'none'
   },
   timer: {
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-body-size)',
     color: 'var(--color-text-secondary)',
@@ -1720,7 +1720,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 'var(--space-1)',
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',

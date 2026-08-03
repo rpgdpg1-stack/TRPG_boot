@@ -74,7 +74,7 @@ export default function HomeCards() {
     <div style={styles.row}>
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
-        flex={2}
+        flex="1 1 auto"
         icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
         periodLabel={periodShortLabel(period, now)}
@@ -131,6 +131,7 @@ export default function HomeCards() {
       />
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
+        flex="0 0 100px"
         title="Любимые"
         // Своя строка на том же уровне, что «Август» у статистики: без неё
         // карточки разъезжались по высоте и сердечко уезжало вниз. Заодно
@@ -148,7 +149,7 @@ export default function HomeCards() {
 // Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
 // селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
 // конфликтуют). Роль и tabIndex сохраняют доступность.
-function Card({ icon, title, periodRow, periodLabel, value, flex = 1, onClick, innerRef }) {
+function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', onClick, innerRef }) {
   return (
     <div
       ref={innerRef}
@@ -193,7 +194,9 @@ function Value({ num, unit }) {
 }
 
 const styles = {
-  row: { display: 'flex', gap: 'var(--space-3)', alignItems: 'stretch' },
+  // Зазор между карточками — тот же межгрупповой шаг (24), что вертикальный
+  // отступ от блока раздела выше: одинаковый воздух по обеим осям.
+  row: { display: 'flex', gap: 'var(--space-6)', alignItems: 'stretch' },
   card: {
     minWidth: 0, minHeight: '96px',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',

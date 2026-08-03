@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { toggleFavoriteProgram, getFavoriteProgramByCategory } from '../lib/storage'
 import { localGet } from '../utils/storage'
-import { getProgramsByCategory, programCountLabel } from '../features/programs/registry'
+import { getProgramsByCategory } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ModalButton from '../components/ModalButton'
@@ -169,6 +169,9 @@ export default function Category() {
     setFavoriteSlug(nowFav ? programSlug : null)
   }
 
+  // Конструктор пока умеет только силовую.
+  const canCreate = id === 'gym'
+
   const handleCreateTap = () => {
     haptic.light()
     // Конструктор откроется push'ем и вернётся назад (navigate(-1)) сюда же.
@@ -202,10 +205,14 @@ export default function Category() {
             <UiIcon name="info" size={22} color="var(--color-text-secondary)" />
           </button>
           <span style={styles.headerIcon}>
-            <UiIcon name={meta.iconName} size={52} color={meta.color} />
+            <UiIcon name={meta.iconName} size={36} color={meta.color} />
           </span>
+          {/* Счётчик — тем же строем, что «Друзей: 3» на вкладке друзей:
+              подпись серым, число акцентом. */}
           <div style={styles.subtitle}>
-            {realPrograms.length > 0 ? programCountLabel(id) : meta.subtitle}
+            {realPrograms.length > 0
+              ? <>Программ: <span style={styles.subCount}>{realPrograms.length}</span></>
+              : meta.subtitle}
           </div>
         </div>
       </header>
@@ -232,9 +239,19 @@ export default function Category() {
         ))}
       </div>
 
+      {/* «Создать» работает только в силовой — конструктор пока умеет её одну.
+          В остальных разделах кнопка приглушена и подписана «Скоро», как
+          карточки-заглушки рядом: место под функцию видно, но она честно не
+          обещает работать. */}
       {(id !== 'gym' || !hasCustom) && (
-        <button onClick={handleCreateTap} style={styles.createButton} className="press-tile">
+        <button
+          onClick={canCreate ? handleCreateTap : undefined}
+          disabled={!canCreate}
+          style={{ ...styles.createButton, ...(canCreate ? null : styles.createSoon) }}
+          className={canCreate ? 'press-tile' : undefined}
+        >
           <span style={styles.createPlus}>＋</span> Создать
+          {!canCreate && <span style={styles.createSoonTag}>Скоро</span>}
         </button>
       )}
       </div>
@@ -295,17 +312,28 @@ const styles = {
   infoButton: { position: 'absolute', top: 0, right: 0, width: '36px', height: '36px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
   title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-size)', letterSpacing: '1.5px', lineHeight: 1, color: 'var(--color-text)', textAlign: 'center' },
-  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '2px', textAlign: 'center' },
+  // Подпись-счётчик под иконкой раздела. Разрядка снята: она была нужна капсу
+  // («2 ПРОГРАММЫ»), а обычному тексту мешает.
+  subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' },
+  subCount: { color: 'var(--color-primary)', fontWeight: 700 },
   programs: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' },
   createButton: {
     width: '100%', minHeight: '56px', padding: 'var(--space-4)',
-    border: '1px solid var(--border-hairline)',
+    // Пунктир вместо сплошной нитки: рамка «здесь можно добавить своё», а не
+    // край готового блока — тот же язык, что у «Выбрать программу» на главной.
+    border: '1px dashed var(--layer-3)',
     borderRadius: 'var(--radius-card)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     background: 'var(--layer-1)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     cursor: 'pointer'
+  },
+  createSoon: { opacity: 0.45, cursor: 'default' },
+  createSoonTag: {
+    marginLeft: 'var(--space-2)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
+    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
   },
   createPlus: { color: 'var(--color-primary)', fontSize: 'var(--text-title-size)', fontWeight: 700, lineHeight: 1 },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },

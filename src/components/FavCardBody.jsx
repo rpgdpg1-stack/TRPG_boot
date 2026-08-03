@@ -140,7 +140,7 @@ const styles = {
   activeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap' },
   activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
   activeTimeStat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
-  daysLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
+  daysLabel: { fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)', color: 'rgba(255,255,255,0.35)', letterSpacing: '1px' },
   // Шаг между буквами дней плотнее (было 12) — ряд читается как один переключатель.
   daysList: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
   dayLetter: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', lineHeight: 1, transition: 'color 0.3s ease' },

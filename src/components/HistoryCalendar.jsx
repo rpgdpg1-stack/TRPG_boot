@@ -248,7 +248,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
   }
 
   const showChev = isMonth || isYear
-  const titleText = isAll ? 'Всё время' : isYear ? String(viewY) : isWeek ? 'Эта неделя' : `${MONTHS_RU[viewM]} ${viewY}`
+  const titleText = isAll ? 'За всё время' : isYear ? String(viewY) : isWeek ? 'Эта неделя' : `${MONTHS_RU[viewM]} ${viewY}`
 
   return (
     <div style={styles.wrap}>

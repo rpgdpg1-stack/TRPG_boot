@@ -185,8 +185,10 @@ const styles = {
   rowLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--text-label)'
   },
+  // Дистанция в скобках — тем же кеглем, что число слева: это второй показатель
+  // той же строки, а не сноска. Тише только цветом.
   rowDist: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--text-info)', marginLeft: '-2px'
   },
 
