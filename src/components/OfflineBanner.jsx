@@ -72,7 +72,11 @@ const styles = {
     alignItems: 'center',
     gap: 'var(--space-2)',
     maxWidth: '100%',
-    padding: 'var(--space-1) var(--space-3) var(--space-1) var(--space-2)',
+    // Вертикаль — полушаг 6px (между 4 и 8): пилюля ≈32px, в полосе навигации
+    // 44px остаётся по 6px сверху и снизу. Горизонталь — прежняя, по шкале:
+    // слева меньше, чем справа, потому что у иконки есть свои пустые поля
+    // внутри её квадрата 16px и левый отступ кажется больше реального.
+    padding: 'var(--space-15) var(--space-4) var(--space-15) var(--space-3)',
     background: 'var(--color-surface-dim)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
