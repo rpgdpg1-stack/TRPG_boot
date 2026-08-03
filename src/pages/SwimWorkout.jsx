@@ -68,7 +68,7 @@ function SwimFinishIcon({ size = 17 }) {
 
 function formatDistance(m) {
   if (m >= 1000) {
-    const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
+    const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '').replace('.', ',')
     return `${km} км`
   }
   return `${m} м`

@@ -213,7 +213,9 @@ export function formatHours(min) {
 export function formatMeters(m) {
   if (!m) return '0 м'
   if (m < 1000) return `${m} м`
-  const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '')
+  // Дробная часть — через запятую: в русской типографике десятичный разделитель
+  // запятая, точка читается как разделитель разрядов.
+  const km = (m / 1000).toFixed(2).replace(/\.?0+$/, '').replace('.', ',')
   return `${km} км`
 }
 

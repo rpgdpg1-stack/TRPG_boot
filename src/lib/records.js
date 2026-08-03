@@ -1,5 +1,5 @@
 /**
- * Личные рекорды (экран статистики).
+ * Лучшие результаты (экран статистики) — по одному рекорду на вид активности.
  *
  * Считает сервер (`api_get_personal_records`), чтобы не тянуть на клиент все веса:
  *   • strength — самый большой рабочий вес среди ВЕСОВЫХ упражнений + его название;
@@ -12,6 +12,7 @@
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { localGet, localSet } from '../utils/storage'
+import { getExerciseById } from '../features/exercises/api'
 
 const KEY = 'personal-records'
 let cache = null
@@ -35,6 +36,15 @@ export async function getRecords() {
     const { data, error } = await supabase.rpc('api_get_personal_records')
     if (error) { console.error('[records] error:', error); return getRecordsSync() || { strength: null, swim: null } }
     const value = data || { strength: null, swim: null }
+    // Превью упражнения RPC отдаёт сама (см. миграцию). Пока новая версия
+    // функции не раскатана на прод, добираем картинку отдельным запросом —
+    // иначе у рекорда силовой вместо миниатюры висела бы заглушка.
+    if (value.strength?.exercise_id && !value.strength.preview_url) {
+      try {
+        const ex = await getExerciseById(value.strength.exercise_id)
+        if (ex?.preview_url) value.strength.preview_url = ex.preview_url
+      } catch { /* не критично — покажем заглушку */ }
+    }
     cache = value
     try { localSet(KEY, JSON.stringify(value)) } catch { /* ignore */ }
     return value

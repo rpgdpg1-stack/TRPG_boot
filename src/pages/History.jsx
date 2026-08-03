@@ -10,6 +10,7 @@ import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats, { Distance } from '../components/HistoryStats'
+import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
 
 /**
@@ -107,10 +108,29 @@ export default function History() {
 }
 
 /**
- * Личные рекорды: строка на вид активности — иконка вида в его цвете, название
- * достижения и само значение (цифра в цвет вида, единица серым).
- * Пока рекордов нет — блок не показываем (пустая полка ничего не сообщает).
+ * «Лучшие результаты» — по одному лучшему достижению на вид активности.
+ *
+ * Метрики описаны для ВСЕХ видов сразу (RECORD_META), а рисуются только те, по
+ * которым уже есть данные. Как только появится первая завершённая пробежка или
+ * растяжка, её строка встанет сюда сама — правок здесь не потребуется.
+ *
+ * У силовой есть конкретное упражнение, поэтому под метрикой идёт строка с его
+ * миниатюрой и названием (как в списке любимых). У остальных видов упражнения
+ * нет — значение стоит прямо в строке метрики.
+ *
+ * Значение — золотое: это рекорд, а не текущее число. Цвет вида остаётся на
+ * бейдже, чтобы два акцента не спорили.
  */
+const RECORD_GOLD = '#FFC83D'
+
+const RECORD_META = {
+  strength: { icon: 'power', color: 'var(--cat-gym)', label: 'Силовая', metric: 'Самый большой рабочий вес' },
+  swim: { icon: 'swimming', color: 'var(--cat-pool)', label: 'Плавание', metric: 'Самая длинная дистанция' },
+  // Появятся вместе со своими программами — метрики уже зафиксированы.
+  cardio: { icon: 'cardio', color: 'var(--cat-cardio)', label: 'Бег', metric: 'Самая длинная дистанция' },
+  stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'Самая длинная тренировка' }
+}
+
 function Records({ records }) {
   const strength = records?.strength || null
   const swim = records?.swim || null
@@ -122,38 +142,56 @@ function Records({ records }) {
 
   return (
     <div style={styles.recGroup}>
-      <div style={styles.recHead}>Личные рекорды</div>
+      <div style={styles.recHead}>Лучшие результаты</div>
 
       {strength && (
-        <div style={styles.recRow}>
-          <span style={{ ...styles.recBadge, background: 'var(--cat-gym)' }}>
-            <UiIcon name="power" size={13} color="var(--accent-on)" />
-          </span>
-          <span style={styles.recText}>
-            <span style={styles.recTitle}>{cap(strength.name)}</span>
-            <span style={styles.recNote}>Рабочий вес</span>
-          </span>
-          <span style={styles.recValue}>
-            <span style={{ color: 'var(--cat-gym)', fontWeight: 800 }}>{kgText}</span>
-            <span style={styles.recUnit}> кг</span>
-          </span>
-        </div>
+        <RecordBlock kind="strength">
+          <div style={styles.recItem}>
+            <span style={styles.recThumb}>
+              {strength.preview_url
+                ? <img src={strength.preview_url} alt="" style={styles.recThumbImg} draggable={false} />
+                : <ExercisePlaceholder size={20} />}
+            </span>
+            <span style={styles.recItemName}>{cap(strength.name)}</span>
+            <span style={styles.recValue}>
+              <span style={{ color: RECORD_GOLD, fontWeight: 800 }}>{kgText}</span>
+              <span style={styles.recUnit}> кг</span>
+            </span>
+          </div>
+        </RecordBlock>
       )}
 
       {swim && (
-        <div style={{ ...styles.recRow, ...(strength ? styles.recDivider : null) }}>
-          <span style={{ ...styles.recBadge, background: 'var(--cat-pool)' }}>
-            <UiIcon name="swimming" size={13} color="var(--accent-on)" />
-          </span>
-          <span style={styles.recText}>
-            <span style={styles.recTitle}>Плавание</span>
-            <span style={styles.recNote}>Лучший заплыв</span>
-          </span>
-          <span style={styles.recValue}>
-            <Distance meters={swim.distance_m} color="var(--cat-pool)" />
-          </span>
-        </div>
+        <RecordBlock
+          kind="swim"
+          divider={!!strength}
+          value={<Distance meters={swim.distance_m} color={RECORD_GOLD} />}
+        />
       )}
+    </div>
+  )
+}
+
+/**
+ * Одна запись: шапка вида (бейдж + название), под ней подпись метрики.
+ * `value` — значение прямо в строке метрики (виды без упражнения);
+ * `children` — строка результата под метрикой (силовая с миниатюрой).
+ */
+function RecordBlock({ kind, divider = false, value = null, children = null }) {
+  const m = RECORD_META[kind]
+  return (
+    <div style={{ ...styles.recBlock, ...(divider ? styles.recDivider : null) }}>
+      <div style={styles.recTop}>
+        <span style={{ ...styles.recBadge, background: m.color }}>
+          <UiIcon name={m.icon} size={13} color="var(--accent-on)" />
+        </span>
+        <span style={styles.recKind}>{m.label}</span>
+      </div>
+      <div style={styles.recMetricRow}>
+        <span style={styles.recMetric}>{m.metric}</span>
+        {value && <span style={styles.recValue}>{value}</span>}
+      </div>
+      {children}
     </div>
   )
 }
@@ -178,19 +216,37 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: 'var(--space-15)'
   },
-  recRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) 0' },
-  recDivider: { borderTop: '1px solid var(--border-hairline)' },
+  recBlock: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', padding: 'var(--space-3) 0' },
+  recDivider: { borderTop: '1px solid var(--border-hairline)', marginTop: 'var(--space-1)', paddingTop: 'var(--space-4)' },
+  // Шапка вида: цветной бейдж + название раздела.
+  recTop: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
+  recKind: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
+    color: 'var(--color-text)'
+  },
+  // Строка метрики: слева что меряем, справа значение (у видов без упражнения).
+  recMetricRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-3)' },
+  recMetric: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)'
+  },
+  // Строка результата с миниатюрой — как в списке любимых упражнений.
+  recItem: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-05)' },
+  recThumb: {
+    flexShrink: 0, width: '32px', height: '32px', borderRadius: 'var(--radius-small)', overflow: 'hidden',
+    background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+  },
+  recThumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  recItemName: {
+    flex: 1, minWidth: 0,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 600,
+    color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+  },
   // Бейдж вида — как в сводке и календаре: чёрная иконка на цветном квадрате.
   recBadge: {
     width: '22px', height: '22px', borderRadius: 'var(--radius-xs)', flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
   },
-  recText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
-  recTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text)',
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-  },
-  recNote: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
   recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
   recUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

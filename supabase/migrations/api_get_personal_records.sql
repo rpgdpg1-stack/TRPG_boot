@@ -17,7 +17,15 @@ DECLARE
 BEGIN
   IF uid IS NULL THEN RETURN jsonb_build_object('strength', NULL, 'swim', NULL); END IF;
 
-  SELECT jsonb_build_object('exercise_id', w.exercise_id, 'name', e.name, 'weight_kg', w.weight_kg)
+  -- preview_url отдаём сразу: в «Лучших результатах» у рекорда силовой стоит
+  -- миниатюра упражнения (как в списке любимых), и без неё клиенту пришлось бы
+  -- делать второй запрос за той же строкой каталога.
+  SELECT jsonb_build_object(
+           'exercise_id', w.exercise_id,
+           'name', e.name,
+           'preview_url', e.preview_url,
+           'weight_kg', w.weight_kg
+         )
     INTO v_strength
   FROM public.user_exercise_weights w
   JOIN public.exercises e ON e.id = w.exercise_id
