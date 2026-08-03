@@ -60,11 +60,6 @@ export function markWeightEditingEnded() {
  *  - где-то прямо сейчас редактируется вес
  *  - ИЛИ редактирование закончилось менее 300мс назад
  */
-/** Идёт ли прямо сейчас ввод веса (клавиатура открыта). */
-export function isWeightEditing() {
-  return editingState.isEditing
-}
-
 export function shouldIgnoreCardTap() {
   if (editingState.isEditing) return true
   if (Date.now() - editingState.justClosedAt < COOLDOWN_MS) return true

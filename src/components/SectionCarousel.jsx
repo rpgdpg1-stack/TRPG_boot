@@ -360,9 +360,14 @@ const styles = {
   // 60% белого). Цветная только иконка; «Все ›» справа — того же размера.
   // Зазор до шеврона — общий с «Все ›» (6px): у одного он был 8, у другого 2,
   // и строка читалась как два разных элемента, а не как пара.
+  //
+  // Вертикальные padding+отрицательный margin: зона нажатия остаётся 44px (тач),
+  // но в потоке строка занимает ровно высоту текста. Иначе пустота внутри кнопки
+  // прибавлялась к отступам, и вместо 24/16 выходило 36/28.
   selector: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
-    padding: 'var(--space-1) var(--space-2) var(--space-1) var(--space-1)',
+    padding: 'var(--space-3) var(--space-2) var(--space-3) var(--space-1)',
+    marginTop: 'calc(-1 * var(--space-3))', marginBottom: 'calc(-1 * var(--space-3))',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
   },
@@ -426,9 +431,10 @@ const styles = {
   pinEmptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
-    flexShrink: 0, minHeight: '44px',
+    flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
-    padding: '0 var(--space-1) 0 var(--space-3)',
+    padding: 'var(--space-3) var(--space-1) var(--space-3) var(--space-3)',
+    marginTop: 'calc(-1 * var(--space-3))', marginBottom: 'calc(-1 * var(--space-3))',
     background: 'transparent', border: 'none', cursor: 'pointer',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'

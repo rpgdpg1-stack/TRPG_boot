@@ -209,9 +209,9 @@ const styles = {
     background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'
   },
-  // Квадратная карточка: ширина = высоте. Контент по центру — в узком столбце
-  // левое выравнивание смотрелось бы прижатым к краю.
-  cardSquare: { aspectRatio: '1 / 1', alignItems: 'center', textAlign: 'center' },
+  // Квадратная карточка: ширина = высоте. Выравнивание и паддинги — как у
+  // соседней карточки, чтобы содержимое стояло на одной левой линии.
+  cardSquare: { aspectRatio: '1 / 1' },
   icon: { display: 'inline-flex', height: '22px' },
   textCol: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', minWidth: 0 },
   titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
