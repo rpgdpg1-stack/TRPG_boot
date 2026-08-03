@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { usePullToRefresh, PullIndicator } from '../components/PullToRefresh'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
@@ -71,6 +71,38 @@ export default function Friends() {
   }, [])
   const { pull, refreshing } = usePullToRefresh(handleRefresh)
 
+  // FLIP-переезд строк при закрепе/откреплении: снимаем позиции ДО перестройки
+  // списка, после неё сдвигаем строку обратно на старое место и отпускаем —
+  // браузер доигрывает путь сам. Анимируется только transform, поэтому это
+  // дёшево даже на длинном списке.
+  const rowRefs = useRef(new Map())
+  const flipPrev = useRef(null)
+
+  const snapshotRows = () => {
+    const snap = new Map()
+    rowRefs.current.forEach((el, id) => { if (el) snap.set(id, el.getBoundingClientRect().top) })
+    flipPrev.current = snap
+  }
+
+  useLayoutEffect(() => {
+    const prev = flipPrev.current
+    if (!prev) return
+    flipPrev.current = null
+    rowRefs.current.forEach((el, id) => {
+      if (!el) return
+      const oldTop = prev.get(id)
+      if (oldTop == null) return
+      const delta = oldTop - el.getBoundingClientRect().top
+      if (!delta) return
+      el.style.transition = 'none'
+      el.style.transform = `translateY(${delta}px)`
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.34s var(--ease-ios)'
+        el.style.transform = ''
+      })
+    })
+  }, [friends])
+
   const pinnedFriends = friends.filter(f => f.pinned_at)
   const otherFriends = friends.filter(f => !f.pinned_at)
   const pinnedCount = pinnedFriends.length
@@ -112,6 +144,7 @@ export default function Friends() {
 
   const handleTogglePin = async (friend) => {
     const wasPinned = !!friend.pinned_at
+    snapshotRows()
 
     // Если закрепляем (не открепляем) и уже лимит — не даём, показываем ошибку
     if (!wasPinned && pinnedCount >= PIN_LIMIT) {
@@ -196,7 +229,11 @@ export default function Friends() {
           {pinnedFriends.length > 0 && (
             <div style={styles.list}>
               {pinnedFriends.map((friend, idx) => (
-                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                <div
+                  key={friend.user_id}
+                  ref={el => { if (el) rowRefs.current.set(friend.user_id, el); else rowRefs.current.delete(friend.user_id) }}
+                  style={idx === 0 ? undefined : styles.rowDivider}
+                >
                   <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
                 </div>
               ))}
@@ -210,7 +247,11 @@ export default function Friends() {
           {otherFriends.length > 0 && (
             <div style={styles.list}>
               {otherFriends.map((friend, idx) => (
-                <div key={friend.user_id} style={idx === 0 ? undefined : styles.rowDivider}>
+                <div
+                  key={friend.user_id}
+                  ref={el => { if (el) rowRefs.current.set(friend.user_id, el); else rowRefs.current.delete(friend.user_id) }}
+                  style={idx === 0 ? undefined : styles.rowDivider}
+                >
                   <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
                 </div>
               ))}

@@ -10,6 +10,8 @@ import StreakFlame from '../components/StreakFlame'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
+const capitalize = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t)
+
 function pluralTraining(n) {
   const d = n % 10, dd = n % 100
   if (d === 1 && dd !== 11) return 'тренировка'
@@ -32,13 +34,12 @@ function WeekStrip() {
     return () => { off(); off2() }
   }, [])
 
-  // Формат один на все состояния: «На этой неделе 🔥 3 тренировки».
-  // Ноль — та же строка с серым огоньком и «0 тренировок».
+  // Порядок читается как фраза: огонёк → число → «Тренировок на этой неделе».
+  // Ноль — та же строка, только огонёк серый и цифра приглушена.
   const hasStreak = streak >= 1
   return (
     <div style={stripStyles.strip}>
-      <span style={stripStyles.label}>На этой неделе</span>
-      {/* Огонёк и ×N — одной группой, вплотную (счётчик принадлежит огоньку). */}
+      {/* Огонёк и число — одной группой, вплотную (счётчик принадлежит огоньку). */}
       <span style={stripStyles.flameGroup}>
         <span style={hasStreak ? undefined : stripStyles.greyFlame}>
           <StreakFlame streak={streak} />
@@ -47,19 +48,17 @@ function WeekStrip() {
           {streak}
         </span>
       </span>
-      <span style={stripStyles.label}>{pluralTraining(streak)}</span>
+      <span style={stripStyles.label}>{capitalize(pluralTraining(streak))} на этой неделе</span>
     </div>
   )
 }
 
 const stripStyles = {
-  // Карточка-информер: тот же фон и скругление, что у карточек статистики ниже,
-  // и та же высота — три блока экрана читаются одним семейством. Содержимое по
-  // центру, воздух вокруг даёт сама высота.
+  // Строка-информер, без фона и рамки: это подпись под заголовком, а не блок
+  // наравне с карточками ниже.
   strip: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
-    minHeight: '110px', padding: 'var(--space-4)', marginBottom: 'var(--space-6)',
-    background: 'var(--surface)', borderRadius: 'var(--radius-card)'
+    minHeight: '32px', marginBottom: 'var(--space-6)'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
