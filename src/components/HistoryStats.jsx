@@ -184,7 +184,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--text-label)'
   },
   rowDist: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--text-info)', marginLeft: '-2px'
   },
 

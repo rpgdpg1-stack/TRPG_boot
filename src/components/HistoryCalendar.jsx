@@ -64,6 +64,17 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
     return 0
   })
   const [dayModal, setDayModal] = useState(null)
+
+  // Смена периода возвращает календарь к текущему месяцу/году. Иначе связка
+  // «месяц → долистал до мая → год → снова месяц» открывала бы май: offset
+  // живёт в этом компоненте и сам бы не сбросился. Первый рендер пропускаем,
+  // чтобы не затирать стартовое положение из initialView.
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return }
+    setOffset(0)
+  }, [mode])
+
   const isYear = mode === 'year'
   const isWeek = mode === 'week'
   const isAll = mode === 'all'

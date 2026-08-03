@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
-import { summarizeWorkouts, periodShortLabel, periodHintSuffix, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { getHistoryView, setHistoryView, getHomeStatsPeriod } from '../lib/history-view'
+import { summarizeWorkouts, periodShortLabel, periodHintSuffix, mskParts, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { getHomeStatsPeriod } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
@@ -27,10 +27,14 @@ export default function History() {
   // правды. Внутри экрана период можно листать сколько угодно, но обратно на
   // главную это не пишется и в следующий заход не переживает — иначе на главной
   // стояла бы «Неделя», а экран открывался бы с тем, что накликали в прошлый раз.
-  // Открытый месяц/год календаря по-прежнему помним (history-view).
-  const initialView = useRef(getHistoryView())
-  const [period, setPeriod] = useState(() => getHomeStatsPeriod())
-  const [view, setView] = useState({ year: initialView.current.year, month: initialView.current.month })
+  const [period, setPeriod] = useState(getHomeStatsPeriod)
+
+  // Календарь всегда открывается на СВЕЖЕМ месяце/годе. Долистал до мая, вышел,
+  // вернулся — снова август: «где я сейчас» важнее, чем «где был в прошлый раз».
+  const nowParts = mskParts(new Date().toISOString())
+  const currentView = useRef({ year: nowParts.y, month: nowParts.m })
+  const initialView = currentView
+  const [view, setView] = useState({ year: currentView.current.year, month: currentView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   // Личные рекорды: старт из кеша (мгновенно), сервер догоняет.
@@ -55,15 +59,18 @@ export default function History() {
   const onMonthPick = useCallback((year, month) => { setPeriod('month'); setView({ year, month }) }, [])
   const onYearPick = useCallback((year) => { setPeriod('year'); setView(v => ({ ...v, year })) }, [])
 
-  // Персистим только положение календаря. Период сюда НЕ пишем (см. выше).
-  useEffect(() => { setHistoryView({ period: initialView.current.period, year: view.year, month: view.month }) }, [view])
 
   // Неделя — всегда текущая (в календаре недели нет). Месяц/год — за открытый в
   // календаре месяц/год (refDate = 15-е число этого месяца).
   const refDate = (period === 'week' || period === 'all') ? new Date() : new Date(Date.UTC(view.year, view.month, 15, 12))
   const sum = summarizeWorkouts(workouts, period, refDate)
 
-  const pickPeriod = (id) => setPeriod(id)
+  // Смена периода возвращает календарь на текущий месяц/год — иначе после
+  // «месяц (май) → год → месяц» открывался бы снова май, а не август.
+  const pickPeriod = (id) => {
+    setPeriod(id)
+    setView({ year: currentView.current.year, month: currentView.current.month })
+  }
 
   const periodItems = periodOptions()
   // Заглушка называет период и уточняет его в скобках — «в этом месяце (Август)»:

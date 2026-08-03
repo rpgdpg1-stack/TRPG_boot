@@ -640,13 +640,15 @@ const styles = {
     width: '38px',
     height: '27px'
   },
+  // Шрифт ТОТ ЖЕ, что у weightValue: иначе при тапе цифра подменялась
+  // с Geist на Manrope — размер тот же, а начертание прыгало.
   weightInput: {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '38px',
     height: '27px',
-    fontFamily: 'var(--font-manrope)',
+    fontFamily: 'var(--font-display)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',

@@ -132,6 +132,11 @@ export default function HomeCards() {
       <Card
         icon={<span style={styles.icon}><HeartIcon filled size={22} color="var(--color-primary)" /></span>}
         title="Любимые"
+        // Своя строка на том же уровне, что «Август» у статистики: без неё
+        // карточки разъезжались по высоте и сердечко уезжало вниз. Заодно
+        // объясняет лимит — избранных ровно пять.
+        periodLabel={`Топ-${FAVORITE_LIMIT}`}
+        periodRow={<span />}
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         onClick={() => go('/favorite-exercises')}
       />
