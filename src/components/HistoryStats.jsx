@@ -62,22 +62,24 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
 
   return (
     <div>
+      {/* Период — ОТДЕЛЬНЫМ уровнем над цифрами, по центру и тихо. Так цифры
+          остаются просто метриками и не конкурируют с подписью, а «за какой
+          отрезок» читается один раз сверху. */}
+      {periodLabel && <div style={styles.periodLabel}>{periodLabel}</div>}
+
       {/* Общие показатели периода. Единицы («трен», «ч») стоят рядом с числом —
-          тот же вид, что в карточке на главной. Справа — подпись периода. */}
+          тот же вид, что в карточке на главной. */}
       <div style={styles.totals}>
-        <span style={styles.totalsMain}>
-          <Total
-            icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
-            value={String(summary.count)}
-            unit="трен"
-          />
-          <Total
-            icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
-            value={formatHours(summary.minutes)}
-            splitUnit
-          />
-        </span>
-        {periodLabel && <span style={styles.periodLabel}>{periodLabel}</span>}
+        <Total
+          icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
+          value={String(summary.count)}
+          unit="трен"
+        />
+        <Total
+          icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
+          value={formatHours(summary.minutes)}
+          splitUnit
+        />
       </div>
 
       <div style={styles.divider} aria-hidden="true" />
@@ -106,17 +108,26 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
 }
 
 /** «2,25 км»: число — в цвет вида активности, единица — серым. */
+/**
+ * Пара «число + единица» — ОДИН вид на весь проект: цифра акцентом (Geist 800,
+ * title-размер), единица тише и мельче (Manrope 700, label-размер, серым).
+ *
+ * Раньше единица наследовала кегль родителя, и «км» в дистанции выходил заметно
+ * крупнее «кг» в весе — рядом это читалось как разнобой.
+ */
+export function MetricValue({ num, unit, color = 'var(--color-primary)' }) {
+  return (
+    <>
+      <span style={{ ...styles.totalValue, color }}>{num}</span>
+      {unit && <span style={styles.totalUnit}> {unit}</span>}
+    </>
+  )
+}
+
 export function Distance({ meters, color }) {
   const text = formatMeters(meters)
   const i = text.lastIndexOf(' ')
-  const num = i > 0 ? text.slice(0, i) : text
-  const unit = i > 0 ? text.slice(i + 1) : ''
-  return (
-    <>
-      <span style={{ color, fontWeight: 800 }}>{num}</span>
-      {unit && <span style={{ color: 'var(--color-text-secondary)' }}> {unit}</span>}
-    </>
-  )
+  return <MetricValue num={i > 0 ? text.slice(0, i) : text} unit={i > 0 ? text.slice(i + 1) : ''} color={color} />
 }
 
 /**
@@ -134,20 +145,18 @@ function Total({ icon, value, unit, splitUnit = false }) {
   return (
     <span style={styles.totalTop}>
       {icon}
-      <span style={styles.totalValue}>{num}</span>
-      {u && <span style={styles.totalUnit}>{u}</span>}
+      <MetricValue num={num} unit={u} />
     </span>
   )
 }
 
 const styles = {
-  // Строка тоталов: показатели по центру, подпись периода — справа тем же
-  // тихим серым, что иконки. Ряд не переносится: подпись короткая.
-  totals: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' },
-  totalsMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-6)' },
+  totals: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-6)' },
+  // Подпись периода — отдельная строка над цифрами, по центру, тихим серым.
   periodLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
+    color: 'var(--color-text-secondary)', textAlign: 'center',
+    marginBottom: 'var(--space-2)'
   },
   totalTop: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },

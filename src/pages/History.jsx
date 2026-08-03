@@ -9,7 +9,7 @@ import { getRecords, getRecordsSync } from '../lib/records'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
-import HistoryStats, { Distance } from '../components/HistoryStats'
+import HistoryStats, { Distance, MetricValue } from '../components/HistoryStats'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
 
@@ -142,7 +142,13 @@ function Records({ records }) {
 
   return (
     <div style={styles.recGroup}>
-      <div style={styles.recHead}>Лучшие результаты</div>
+      {/* Шапка блока как у карточек главной: иконка сверху, заголовок под ней.
+          Кубок золотой — тем же цветом, что и сами рекорды ниже, поэтому блок
+          читается одним смысловым куском. */}
+      <div style={styles.recHeadWrap}>
+        <span style={styles.recHeadIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
+        <div style={styles.recHead}>Лучшие результаты</div>
+      </div>
 
       {strength && (
         <RecordBlock kind="strength">
@@ -154,8 +160,7 @@ function Records({ records }) {
             </span>
             <span style={styles.recItemName}>{cap(strength.name)}</span>
             <span style={styles.recValue}>
-              <span style={{ color: RECORD_GOLD, fontWeight: 800 }}>{kgText}</span>
-              <span style={styles.recUnit}> кг</span>
+              <MetricValue num={kgText} unit="кг" color={RECORD_GOLD} />
             </span>
           </div>
         </RecordBlock>
@@ -212,9 +217,11 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4) var(--space-4) var(--space-2)'
   },
+  recHeadWrap: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', marginBottom: 'var(--space-2)' },
+  recHeadIcon: { display: 'inline-flex', height: '22px' },
   recHead: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', marginBottom: 'var(--space-15)'
+    color: 'var(--color-text)', letterSpacing: '0.2px'
   },
   recBlock: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', padding: 'var(--space-3) 0' },
   recDivider: { borderTop: '1px solid var(--border-hairline)', marginTop: 'var(--space-1)', paddingTop: 'var(--space-4)' },
@@ -248,5 +255,4 @@ const styles = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
   },
   recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
-  recUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

@@ -77,7 +77,8 @@ export default function HomeCards() {
         flex={2}
         icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
-        titleRight={
+        periodLabel={periodShortLabel(period, now)}
+        periodRow={
           <span ref={selectorRef} style={styles.selectorWrap}>
             <button
               style={styles.selector}
@@ -124,14 +125,6 @@ export default function HomeCards() {
             <span style={styles.valueGap} />
             <span style={styles.clock}><ClockIcon size={16} /></span>
             <Value num={formatHours(sum.minutes).replace(' ч', '')} unit="ч" />
-            {/* Какой именно период сейчас показан: «7 дней» / «Август» / «2026».
-                У «Всё» подписи нет — период без границ нечем назвать. */}
-            {periodShortLabel(period, now) && (
-              <>
-                <span style={styles.valueGap} />
-                <span style={styles.periodMark}>{periodShortLabel(period, now)}</span>
-              </>
-            )}
           </>
         }
         onClick={openStats}
@@ -150,7 +143,7 @@ export default function HomeCards() {
 // Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
 // селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
 // конфликтуют). Роль и tabIndex сохраняют доступность.
-function Card({ icon, title, titleRight, value, flex = 1, onClick, innerRef }) {
+function Card({ icon, title, periodRow, periodLabel, value, flex = 1, onClick, innerRef }) {
   return (
     <div
       ref={innerRef}
@@ -163,11 +156,18 @@ function Card({ icon, title, titleRight, value, flex = 1, onClick, innerRef }) {
     >
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
-        {/* В строке заголовка справа — селектор периода («Год ▾»). */}
         <span style={styles.titleRow}>
           <span style={styles.title}>{title}</span>
-          {titleRight}
         </span>
+        {/* Отдельная строка периода МЕЖДУ заголовком и цифрами: слева какой
+            отрезок показан («Август»), справа селектор. Так цифры ниже —
+            просто метрики, а «за что они» читается на своём уровне. */}
+        {periodRow && (
+          <span style={styles.periodRow}>
+            <span style={styles.periodMark}>{periodLabel}</span>
+            {periodRow}
+          </span>
+        )}
         <span style={styles.valueRow}>
           <span style={styles.valueMain}>{value}</span>
         </span>
@@ -243,7 +243,9 @@ const styles = {
   valueGap: { width: '12px', display: 'inline-block' },
   statIcon: { display: 'inline-flex' },
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
-  // Подпись периода в строке значений — тем же тихим серым, что иконки.
+  // Строка периода: подпись слева, селектор справа.
+  periodRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
+  // Подпись периода — тем же тихим серым, что иконки.
   periodMark: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'

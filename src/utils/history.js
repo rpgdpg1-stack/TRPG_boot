@@ -43,8 +43,8 @@ export const WEEKDAYS_RU = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'В�
  * («7 дней» · «Август» · «2026»). Один источник на главную, экран статистики и
  * карточку профиля, чтобы подписи не разъезжались.
  *
- * У «Всё» подписи нет: период без границ нечем назвать, а пустая строка честнее
- * выдуманного «За всё время» рядом с цифрами.
+ * У «Всё» — «За всё время»: строка периода теперь стоит отдельным уровнем над
+ * цифрами, и пустое место в ней читалось бы как недогруз.
  *
  * `refDate` — какой месяц/год назвать (на экране статистики календарь листается,
  * поэтому это не всегда «сегодня»).
@@ -54,7 +54,7 @@ export function periodShortLabel(period, refDate = new Date()) {
   if (period === 'week') return '7 дней'
   if (period === 'month') return MONTHS_RU[p.m]
   if (period === 'year') return String(p.y)
-  return ''
+  return 'За всё время'
 }
 
 /**
@@ -63,8 +63,8 @@ export function periodShortLabel(period, refDate = new Date()) {
  */
 export function periodHintSuffix(period, refDate = new Date()) {
   if (period === 'week') return ' (последние 7 дней)'
-  const label = periodShortLabel(period, refDate)
-  return label ? ` (${label})` : ''
+  if (period === 'all') return ''   // «за всё время» уточнять нечем
+  return ` (${periodShortLabel(period, refDate)})`
 }
 
 /**
