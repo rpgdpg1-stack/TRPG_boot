@@ -9,13 +9,18 @@ export default function HeartIcon({ filled = false, size = 18, color }) {
   const c = color || (filled ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.3)')
   const d = 'M12 20.8 C 6.2 16.4, 2.6 13.1, 2.6 8.7 C 2.6 5.8, 4.8 3.7, 7.5 3.7 C 9.2 3.7, 10.8 4.6, 12 6.1 C 13.2 4.6, 14.8 3.7, 16.5 3.7 C 19.2 3.7, 21.4 5.8, 21.4 8.7 C 21.4 13.1, 17.8 16.4, 12 20.8 Z'
 
+  // Сердце заполняет свой квадрат почти целиком, а Material-иконки рядом (стрелка
+  // статистики, мускул) — нет: при одном `size` оно выглядело крупнее соседей.
+  // Расширяем viewBox на 1.6 с каждой стороны — фигура садится внутрь с полями,
+  // как у остальных, при том же внешнем размере. Обводку добираем на те же ~12%,
+  // иначе у контурного варианта она бы утончилась вместе с фигурой.
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="-1.6 -1.6 27.2 27.2" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
       <path
         d={d}
         fill={filled ? c : 'none'}
         stroke={c}
-        strokeWidth={filled ? 0 : 2}
+        strokeWidth={filled ? 0 : 2.25}
         strokeLinejoin="round"
         strokeLinecap="round"
       />

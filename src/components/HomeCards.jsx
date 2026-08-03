@@ -242,7 +242,7 @@ const styles = {
   // Строка значения: слева значение, справа подпись-контекст.
   valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-15)', minHeight: '20px', width: '100%' },
   valueMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)', minWidth: 0 },
-  valueNum: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-size)', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
+  valueNum: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
   // Зазор между двумя показателями статистики; серые иконки перед каждым.
   valueGap: { width: '12px', display: 'inline-block' },

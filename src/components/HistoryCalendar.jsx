@@ -477,7 +477,7 @@ const styles = {
     border: 'none', padding: 'var(--space-1) var(--space-1)', display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-1)', overflow: 'hidden'
   },
-  cellNum: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-body-size)', lineHeight: 1 },
+  cellNum: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', lineHeight: 1 },
   marks: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' },
 
   // Год-режим: 12 месяцев сеткой 4×3, минималистично.

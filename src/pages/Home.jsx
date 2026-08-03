@@ -64,7 +64,7 @@ const stripStyles = {
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
   // Крестика «×» нет — только цифра.
   flameGroup: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
-  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-streak)', letterSpacing: '0.5px' },
+  count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-streak)', letterSpacing: '0.5px' },
   // 0 — серым (как негорящий огонёк), ≥1 — оранжевым.
   countZero: { color: 'rgba(255, 255, 255, 0.4)' },
   greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }

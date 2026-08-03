@@ -648,7 +648,7 @@ const styles = {
     left: 0,
     width: '38px',
     height: '27px',
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
@@ -669,7 +669,7 @@ const styles = {
     left: 0,
     width: '38px',
     height: '27px',
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 800,
     lineHeight: '27px',
@@ -815,7 +815,7 @@ const styles = {
     gap: 'var(--space-2)'
   },
   noteCounter: {
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
     flexShrink: 0

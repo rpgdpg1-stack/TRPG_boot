@@ -189,7 +189,7 @@ const styles = {
   },
   // Обычный регистр (первая заглавная), акцентный зелёный.
   title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px', textAlign: 'center' },
-  durationNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
+  durationNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
   durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
   errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: 'var(--space-1)' },
   // Похвала и заметка о лимите занимают ОДНУ и ту же строку фиксированной высоты —
@@ -202,7 +202,7 @@ const styles = {
   // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
   statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-5)' },
   stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
-  statNum: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
+  statNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
   limitNote: {

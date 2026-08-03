@@ -261,5 +261,5 @@ const styles = {
     width: '22px', height: '22px', borderRadius: 'var(--radius-xs)', flexShrink: 0,
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
   },
-  recValue: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
+  recValue: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
 }

@@ -1698,7 +1698,7 @@ const styles = {
     display: 'inline-block',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-button-size)',
     lineHeight: 1,

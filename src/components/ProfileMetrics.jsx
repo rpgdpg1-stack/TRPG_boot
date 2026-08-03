@@ -211,7 +211,7 @@ const m = {
   head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', paddingLeft: 'var(--space-1)' },
   headLeft: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)' },
-  count: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-body-size)', color: 'var(--color-primary)' },
+  count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', color: 'var(--color-primary)' },
   period: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
 
   favList: { display: 'flex', flexDirection: 'column' },
@@ -225,6 +225,6 @@ const m = {
     flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  favVal: { flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
+  favVal: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
   favUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

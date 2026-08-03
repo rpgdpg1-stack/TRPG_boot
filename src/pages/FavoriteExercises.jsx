@@ -244,7 +244,7 @@ const styles = {
   },
   // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard).
   weightBlock: { flexShrink: 0, width: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  weightValue: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-heading-size)', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
+  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, lineHeight: '27px', textAlign: 'center' },
   weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', textAlign: 'center' },
   weightHint: { marginTop: 'var(--space-05)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
   loading: { textAlign: 'center', padding: 'var(--space-4)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' }

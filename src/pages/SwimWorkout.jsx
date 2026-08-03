@@ -1049,7 +1049,7 @@ const modalStyles = {
   // Строка показателя — тот же приём, что в модалке силовой.
   statsRow: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
   statNum: {
-    fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-value)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 'var(--weight-value)',
     fontSize: 'var(--text-heading-size)', color: 'var(--cat-pool)', letterSpacing: '0.5px'
   },
   message: {

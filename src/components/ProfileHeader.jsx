@@ -183,7 +183,7 @@ const styles = {
   // вплотную к огоньку. Ширину НЕ резервируем — с ростом серии огонёк растёт,
   // цифра едет правее, и это нормально: пара всегда читается как одно целое.
   fireCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
     lineHeight: 1, textAlign: 'left', color: 'var(--color-streak)'
   },
   popup: {

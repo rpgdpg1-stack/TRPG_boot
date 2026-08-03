@@ -162,7 +162,7 @@ const styles = {
   clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'var(--color-primary)'
   },
   // Единица значения («ч») — серая и тоньше цифры.
@@ -177,14 +177,16 @@ const styles = {
   row: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
   // Число — в ЦВЕТ вида активности (силовая графитовая, плавание голубое…),
   // название — светло-серым, дистанция — тише всех.
+  // Строка вида — на ступень тише тоталов: это разбивка, а не главный показатель.
+  // Каждый следующий элемент мельче предыдущего (число → название → дистанция).
   rowCount: {
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.2px'
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-button-size)', letterSpacing: '0.2px'
   },
   rowLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--text-label)'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--text-label)'
   },
   rowDist: {
-    fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
     color: 'var(--text-info)', marginLeft: '-2px'
   },
 
