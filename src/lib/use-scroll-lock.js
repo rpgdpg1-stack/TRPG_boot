@@ -23,13 +23,24 @@ import { useEffect } from 'react'
 export function useScrollLock(overlayRef) {
   useEffect(() => {
     let startY = 0
-    const onStart = (e) => { startY = e.touches[0]?.clientY ?? 0 }
+    let startX = 0
+    const onStart = (e) => {
+      startY = e.touches[0]?.clientY ?? 0
+      startX = e.touches[0]?.clientX ?? 0
+    }
 
     const onMove = (e) => {
       const el = overlayRef.current
       if (!el || !el.contains(e.target)) return
       if (e.touches.length > 1) return
       const dy = (e.touches[0]?.clientY ?? 0) - startY
+      const dx = (e.touches[0]?.clientX ?? 0) - startX
+
+      // Горизонтальный жест не трогаем вовсе: страница под модалкой прокручивается
+      // по вертикали, увести её вбок он не может — зато внутри модалок живут
+      // горизонтальные ленты (пилюли групп и подгрупп в пикере упражнений), и
+      // раньше их свайп гасился здесь вместе со всем остальным.
+      if (Math.abs(dx) > Math.abs(dy)) return
 
       // Ищем прокручиваемого предка под пальцем — в пределах оверлея.
       let node = e.target
