@@ -1,9 +1,8 @@
 -- Статистика друга по периодам (месяц / год) для карточки профиля.
 -- Раньше отдавались только тоталы за всё время, из-за чего в модалке друга
 -- переключатель периодов показать было нечем.
--- НЕ применена автоматически (Supabase MCP был отключён) — применить целиком.
--- Фронт уже готов: `PlayerProfileModal` читает stats_month/stats_year и, пока их
--- нет, показывает один период «Всё время».
+-- Применено на проде 2026-08-03 (Supabase MCP). Фронт: `PlayerProfileModal`
+-- читает stats_month/stats_year; если их нет — показывает один период «Всё время».
 
 CREATE OR REPLACE FUNCTION public.api_get_user_public_profile(p_user_id bigint, p_viewer_id bigint DEFAULT NULL::bigint)
  RETURNS jsonb
