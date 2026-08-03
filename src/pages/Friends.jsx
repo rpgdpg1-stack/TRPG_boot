@@ -138,12 +138,8 @@ export default function Friends() {
 
       <header style={styles.header}>
         <ScreenTitle>Друзья</ScreenTitle>
-        {/* Под заголовком — иконка вкладки и счётчик, тем же строем, что шапка
-            раздела: иконка сверху, подпись с акцентным числом под ней. */}
+        {/* Под заголовком: счётчик друзей по центру. */}
         <div style={styles.subRow}>
-          <span style={styles.headerIcon}>
-            <UiIcon name="friends" size={36} color="var(--color-primary)" />
-          </span>
           <span style={styles.subInfo}>
             {loading || friends.length === 0 ? '' : (
               <>Друзей: <span style={styles.subCount}>{friends.length}</span></>
@@ -285,11 +281,11 @@ const styles = {
   // Строка под заголовком: счётчик друзей по центру.
   subRow: {
     position: 'relative',
-    display: 'flex', flexDirection: 'column',
-    justifyContent: 'center', alignItems: 'center', gap: 'var(--space-2)',
-    marginBottom: 'var(--space-4)'
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '36px'
   },
-  headerIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 },
   // Кегль как у строки недели на главной; количество — акцентом.
   subCount: { color: 'var(--color-primary)', fontWeight: 700 },
   subInfo: {

@@ -21,7 +21,6 @@ import { useScrollLock } from '../lib/use-scroll-lock'
 const CATEGORIES_META = {
   gym: {
     title: 'СИЛОВАЯ',
-    subtitle: 'СКОРО',
     // Цвет раздела — токен силовой (холодный металл), НЕ зелёный акцент.
     color: 'var(--cat-gym)',
     iconName: 'power',
@@ -37,7 +36,6 @@ const CATEGORIES_META = {
   },
   cardio: {
     title: 'КАРДИО',
-    subtitle: 'СКОРО',
     color: 'var(--cat-cardio)',
     iconName: 'cardio',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ',
@@ -52,7 +50,6 @@ const CATEGORIES_META = {
   },
   pool: {
     title: 'ПЛАВАНИЕ',
-    subtitle: 'СКОРО',
     color: 'var(--cat-pool)',
     iconName: 'swimming',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ',
@@ -67,7 +64,6 @@ const CATEGORIES_META = {
   },
   stretch: {
     title: 'РАСТЯЖКА',
-    subtitle: 'СКОРО',
     color: 'var(--cat-stretch)',
     iconName: 'stretching',
     createLabel: '+ СОЗДАТЬ СВОЮ ПРОГРАММУ',
@@ -210,9 +206,9 @@ export default function Category() {
           {/* Счётчик — тем же строем, что «Друзей: 3» на вкладке друзей:
               подпись серым, число акцентом. */}
           <div style={styles.subtitle}>
-            {realPrograms.length > 0
-              ? <>Программ: <span style={styles.subCount}>{realPrograms.length}</span></>
-              : meta.subtitle}
+            {/* Программ ещё нет — строка та же, просто без числа: раздел
+                выглядит пустым, а не «скоро будет». */}
+            Программ:{realPrograms.length > 0 && <> <span style={styles.subCount}>{realPrograms.length}</span></>}
           </div>
         </div>
       </header>
@@ -251,7 +247,6 @@ export default function Category() {
           className={canCreate ? 'press-tile' : undefined}
         >
           <span style={styles.createPlus}>＋</span> Создать
-          {!canCreate && <span style={styles.createSoonTag}>Скоро</span>}
         </button>
       )}
       </div>
@@ -330,11 +325,6 @@ const styles = {
     cursor: 'pointer'
   },
   createSoon: { opacity: 0.45, cursor: 'default' },
-  createSoonTag: {
-    marginLeft: 'var(--space-2)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
-    letterSpacing: '1px', color: 'var(--color-text-secondary)', textTransform: 'uppercase'
-  },
   createPlus: { color: 'var(--color-primary)', fontSize: 'var(--text-title-size)', fontWeight: 700, lineHeight: 1 },
   notFoundPage: { minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   notFoundText: { fontFamily: 'var(--font-manrope)', color: 'var(--color-text-secondary)' }

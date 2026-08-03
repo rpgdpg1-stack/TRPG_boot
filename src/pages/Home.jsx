@@ -53,12 +53,13 @@ function WeekStrip() {
 }
 
 const stripStyles = {
+  // Карточка-информер: тот же фон и скругление, что у карточек статистики ниже,
+  // и та же высота — три блока экрана читаются одним семейством. Содержимое по
+  // центру, воздух вокруг даёт сама высота.
   strip: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
-    // Строка-информер (фона-пилюли нет). Отступ до блока раздела — МЕЖГРУППОВОЙ
-    // (16px): больше внутреннего (шапка↔карточка 6px), меньше прежних 26px,
-    // из-за которых вверху зияла пустота.
-    minHeight: '32px', padding: '0 var(--space-4)', marginBottom: 'var(--space-4)'
+    minHeight: '110px', padding: 'var(--space-4)', marginBottom: 'var(--space-6)',
+    background: 'var(--surface)', borderRadius: 'var(--radius-card)'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
