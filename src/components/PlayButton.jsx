@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react'
 
+// Порог «это уже свайп, а не тап» — тот же, что у долгого нажатия по карточкам.
+const MOVE_TOLERANCE_PX = 8
+
 /**
  * Круглая кнопка запуска на карточке программы — ГЛАВНОЕ действие экрана.
  *
@@ -24,11 +27,27 @@ import { useRef, useState } from 'react'
 export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabel = 'Начать тренировку' }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
+  const startRef = useRef({ x: 0, y: 0 })
   const [press, setPress] = useState(false)
 
-  const down = (e) => { e.stopPropagation(); armedRef.current = true; setPress(true) }
+  const down = (e) => {
+    e.stopPropagation()
+    armedRef.current = true
+    startRef.current = { x: e.clientX, y: e.clientY }
+    setPress(true)
+  }
   const move = (e) => {
     if (!armedRef.current) return
+    // Сместился больше порога — это уже листание карусели, а не тап. Снимаем
+    // жест сразу, не дожидаясь выхода за границы: кнопка 48px, и при свайпе
+    // палец успевает увести ленту, ни разу не покинув её пределов.
+    const dx = e.clientX - startRef.current.x
+    const dy = e.clientY - startRef.current.y
+    if (Math.abs(dx) > MOVE_TOLERANCE_PX || Math.abs(dy) > MOVE_TOLERANCE_PX) {
+      armedRef.current = false
+      setPress(false)
+      return
+    }
     const r = ref.current?.getBoundingClientRect()
     if (!r) return
     const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom

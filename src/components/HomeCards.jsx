@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { localGet, localSet } from '../utils/storage'
@@ -7,37 +6,33 @@ import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { summarizeWorkouts, formatHours, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
-import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
+import { periodOptions } from './PeriodSwitcher'
 import ClockIcon from './ClockIcon'
 import UiIcon from './UiIcon'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
-import { useScrollLock } from '../lib/use-scroll-lock'
+import ChevronIcon from './ChevronIcon'
+import { useOutsideClose } from '../lib/use-outside-close'
 
 /**
  * Две карточки-входа на главной: **Статистика** (два показателя — тренировки и
  * время за выбранный период) и **Любимые**.
  *
  * Период («Неделя · Месяц · Год · Всё») по умолчанию ГОД, выбор помнится локально.
- * Активный период подписан СПРАВА в строке заголовка, а меняется ДОЛГИМ нажатием:
- * поверх карточки всплывает САМ переключатель (без второй рамки-обёртки) — по
- * центру карточки, в верхней её части. Тап мимо закрывает; короткий тап по
- * карточке ведёт на `/history`.
+ * Меняется ВИДИМЫМ селектором справа в строке заголовка: «Год ▾», тап раскрывает
+ * список — тот же язык, что у селектора раздела в карусели. Долгого нажатия тут
+ * больше нет: о скрытом жесте нельзя догадаться. Тап по остальной карточке ведёт
+ * на `/history`, тап мимо списка его закрывает.
  */
 const PERIOD_KEY = 'home-stats-period'
-const LONG_PRESS_MS = 500
-const MOVE_TOLERANCE_PX = 8
 export default function HomeCards() {
-  const overlayRef = useRef(null)
-  useScrollLock(overlayRef)
   const navigate = useNavigate()
 
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [favCount, setFavCount] = useState(() => (getFavoritesSync() || []).length)
   // Период статистики: по умолчанию год.
   const [period, setPeriod] = useState(() => localGet(PERIOD_KEY) || 'year')
-  const [menuRect, setMenuRect] = useState(null)   // попап выбора периода
-  const statsRef = useRef(null)
+  const [open, setOpen] = useState(false)   // раскрыт список периодов
   useEffect(() => {
     let alive = true
     const load = () => {
@@ -58,44 +53,21 @@ export default function HomeCards() {
   const go = (path) => { haptic.light(); navigate(path, { state: { from: '/' } }) }
 
   const pickPeriod = (id) => {
+    setOpen(false)
+    if (id === period) return
+    haptic.selection()
     setPeriod(id)
     localSet(PERIOD_KEY, id)
   }
 
-  // Долгое нажатие по карточке статистики → выбор периода; короткий тап — переход.
-  const longTimer = useRef(null)
-  const longFired = useRef(false)
-  const pressStart = useRef({ x: 0, y: 0 })
-  const clearLong = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
-  useEffect(() => clearLong, [])
-
-  const statsPress = {
-    onPointerDown: (e) => {
-      if (menuRect) return
-      longFired.current = false
-      pressStart.current = { x: e.clientX, y: e.clientY }
-      clearLong()
-      longTimer.current = setTimeout(() => {
-        longFired.current = true
-        haptic.medium()
-        // Позиция переключателя — по ширине карточки, в её верхней части.
-        const r = statsRef.current?.getBoundingClientRect()
-        if (r) setMenuRect({ left: r.left, top: r.top, width: r.width })
-      }, LONG_PRESS_MS)
-    },
-    onPointerMove: (e) => {
-      if (!longTimer.current) return
-      if (Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
-          Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX) clearLong()
-    },
-    onPointerUp: clearLong,
-    onPointerLeave: clearLong,
-    onPointerCancel: clearLong
-  }
+  // Период меняется видимым селектором в строке заголовка (не скрытым долгим
+  // нажатием — о нём нельзя догадаться). Тап по остальной карточке ведёт в
+  // историю. Список закрывается тапом мимо.
+  const selectorRef = useRef(null)
+  useOutsideClose(selectorRef, open, useCallback(() => setOpen(false), []))
 
   const openStats = () => {
-    if (menuRect) return
-    if (longFired.current) { longFired.current = false; return }
+    if (open) { setOpen(false); return }
     go('/history')
   }
 
@@ -104,11 +76,48 @@ export default function HomeCards() {
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
         flex={2}
-        innerRef={statsRef}
-        press={statsPress}
         icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
         title="Статистика"
-        titleRight={periodLabel}
+        titleRight={
+          <span ref={selectorRef} style={styles.selectorWrap}>
+            <button
+              style={styles.selector}
+              className="press-tile"
+              onClick={(e) => { e.stopPropagation(); haptic.light(); setOpen(o => !o) }}
+              aria-label="Период статистики"
+            >
+              <span style={styles.selectorText}>{periodLabel}</span>
+              <span style={{
+                ...styles.selectorChev,
+                transform: open ? 'rotate(180deg)' : 'rotate(0deg)'
+              }}>
+                <ChevronIcon size={12} color="currentColor" />
+              </span>
+            </button>
+
+            {open && (
+              <span style={styles.dropdown} onClick={(e) => e.stopPropagation()}>
+                {periodItems.map(p => {
+                  const on = p.id === period
+                  return (
+                    <button
+                      key={p.id}
+                      className="press-tile"
+                      style={{
+                        ...styles.dropItem,
+                        background: on ? 'var(--color-surface-active)' : 'transparent',
+                        color: on ? 'var(--color-primary)' : 'var(--color-text-secondary)'
+                      }}
+                      onClick={(e) => { e.stopPropagation(); pickPeriod(p.id) }}
+                    >
+                      {p.label}
+                    </button>
+                  )
+                })}
+              </span>
+            )}
+          </span>
+        }
         value={
           <>
             <span style={styles.statIcon}><UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" /></span>
@@ -127,45 +136,36 @@ export default function HomeCards() {
         onClick={() => go('/favorite-exercises')}
       />
 
-      {/* Выбор периода: сам переключатель поверх карточки, без второй обёртки. */}
-      {menuRect && createPortal(
-        <div
-          ref={overlayRef}
-          style={styles.periodOverlay}
-          onClick={() => { longFired.current = false; setMenuRect(null) }}
-        >
-          <div
-            style={{
-              ...styles.periodFloat,
-              left: `${menuRect.left + 8}px`,
-              top: `${menuRect.top + 4}px`,
-              width: `${menuRect.width - 16}px`
-            }}
-          >
-            <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} />
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   )
 }
 
-function Card({ icon, title, titleRight, value, flex = 1, onClick, innerRef, press }) {
+// Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
+// селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
+// конфликтуют). Роль и tabIndex сохраняют доступность.
+function Card({ icon, title, titleRight, value, flex = 1, onClick, innerRef }) {
   return (
-    <button ref={innerRef} style={{ ...styles.card, flex }} className="press-tile" onClick={onClick} {...(press || {})}>
+    <div
+      ref={innerRef}
+      role="button"
+      tabIndex={0}
+      style={{ ...styles.card, flex }}
+      className="press-tile"
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.() } }}
+    >
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
-        {/* В строке заголовка справа — активный период («Год»), тихо и серым. */}
+        {/* В строке заголовка справа — селектор периода («Год ▾»). */}
         <span style={styles.titleRow}>
           <span style={styles.title}>{title}</span>
-          {titleRight && <span style={styles.titlePeriod}>{titleRight}</span>}
+          {titleRight}
         </span>
         <span style={styles.valueRow}>
           <span style={styles.valueMain}>{value}</span>
         </span>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -192,21 +192,39 @@ const styles = {
   icon: { display: 'inline-flex', height: '22px' },
   textCol: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', minWidth: 0 },
   titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
-  // Слой закрытия: прозрачный, гасит прокрутку под собой.
-  periodOverlay: {
-    position: 'fixed', inset: 0, background: 'transparent',
-    touchAction: 'none', overscrollBehavior: 'contain', zIndex: 9999
-  },
   // Сам переключатель — над карточкой, по её ширине; своей рамки-обёртки нет.
-  periodFloat: {
-    position: 'fixed',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.45)',
-    borderRadius: 'var(--radius-pill)',
-    animation: 'metricPopIn 0.2s var(--ease-ios) forwards'
+  // Селектор периода в строке заголовка. relative — база для выпадающего списка.
+  selectorWrap: { position: 'relative', display: 'inline-flex', flexShrink: 0 },
+  selector: {
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-05)',
+    padding: 0, background: 'transparent', border: 'none', cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
-  titlePeriod: {
+  selectorText: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  },
+  selectorChev: {
+    display: 'inline-flex', lineHeight: 0, color: 'var(--color-text-secondary)',
+    transition: 'transform 0.22s var(--ease-ios)'
+  },
+  // Список — вправо по краю селектора (карточка узкая, влево он бы вылез за неё).
+  dropdown: {
+    position: 'absolute', top: 'calc(100% + var(--space-15))', right: 0,
+    zIndex: 60, minWidth: '116px',
+    padding: 'var(--space-15)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--layer-2)',
+    borderRadius: 'var(--radius-medium)',
+    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-05)'
+  },
+  dropItem: {
+    display: 'flex', alignItems: 'center',
+    width: '100%', padding: 'var(--space-2) var(--space-3)',
+    border: 'none', borderRadius: 'var(--radius-small)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap'
   },
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   // Строка значения: слева значение, справа подпись-контекст.
