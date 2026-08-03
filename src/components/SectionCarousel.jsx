@@ -261,7 +261,7 @@ export default function SectionCarousel() {
           aria-label={`Все программы раздела «${cat.title}»`}
         >
           Все
-          <span style={styles.chevRight}><ChevronIcon size={16} color="var(--color-text-secondary)" /></span>
+          <span style={styles.chevRight}><ChevronIcon size={14} color="var(--color-text-secondary)" /></span>
         </button>
       </div>
 
@@ -350,17 +350,18 @@ const styles = {
   // Обёртки-панели больше НЕТ: карточка программы идёт во всю ширину экрана.
   wrap: { display: 'flex', flexDirection: 'column' },
   // Шапка: селектор слева, «Все ›» справа — одна тихая линия, без рамки/заливки.
-  // Шапка и карточка — ОДНА группа: между ними всего 6px (закон близости),
-  // сверху группу отделяет межгрупповой отступ строки недели.
+  // До карточки — 16: строка и карточка остаются одной группой, но не слипаются.
   headRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 'var(--space-15)'
+    marginBottom: 'var(--space-4)'
   },
   selectorWrap: { position: 'relative', minWidth: 0 },
   // Селектор — тот же вес, что заголовок секции «Мой прогресс» (Manrope 15/700,
   // 60% белого). Цветная только иконка; «Все ›» справа — того же размера.
+  // Зазор до шеврона — общий с «Все ›» (6px): у одного он был 8, у другого 2,
+  // и строка читалась как два разных элемента, а не как пара.
   selector: {
-    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
     padding: 'var(--space-1) var(--space-2) var(--space-1) var(--space-1)',
     background: 'transparent', border: 'none',
     cursor: 'pointer'
@@ -426,12 +427,12 @@ const styles = {
   // «Все ›» — компактная ссылка-действие в правом верхнем углу (вход в раздел).
   allLink: {
     flexShrink: 0, minHeight: '44px',
-    display: 'inline-flex', alignItems: 'center', gap: '1px',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
     padding: '0 var(--space-1) 0 var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   // Шеврон-стрелка «вправо» у «Все» (тот же ChevronIcon, повёрнут).
-  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)', marginLeft: 'var(--space-05)' }
+  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)' }
 }

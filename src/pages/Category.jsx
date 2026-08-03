@@ -206,9 +206,9 @@ export default function Category() {
           {/* Счётчик — тем же строем, что «Друзей: 3» на вкладке друзей:
               подпись серым, число акцентом. */}
           <div style={styles.subtitle}>
-            {/* Программ ещё нет — строка та же, просто без числа: раздел
-                выглядит пустым, а не «скоро будет». */}
-            Программ:{realPrograms.length > 0 && <> <span style={styles.subCount}>{realPrograms.length}</span></>}
+            {/* Ноль — серым: это отсутствие, а не достижение. Появится первая
+                программа — число станет акцентным, как везде в приложении. */}
+            Программ: <span style={realPrograms.length > 0 ? styles.subCount : styles.subCountZero}>{realPrograms.length}</span>
           </div>
         </div>
       </header>
@@ -311,6 +311,7 @@ const styles = {
   // («2 ПРОГРАММЫ»), а обычному тексту мешает.
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' },
   subCount: { color: 'var(--color-primary)', fontWeight: 700 },
+  subCountZero: { color: 'var(--color-text-secondary)', fontWeight: 700 },
   programs: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' },
   createButton: {
     width: '100%', minHeight: '56px', padding: 'var(--space-4)',
