@@ -47,6 +47,9 @@ import { useScrollLock } from '../lib/use-scroll-lock'
  * Лимит на бонусы общий — держит api_finish_workout (одна засчитанная в сутки).
  */
 
+// Прогресс заплыва живёт рядом с сессией: этапы с галочкой и сколько кругов
+// основы реально проплыли. Сбрасывается на старте новой сессии.
+const PROGRESS_KEY = (slug) => `swim-progress:${slug}`
 const POOL_KEY = (slug) => `swim-pool:${slug}`
 const REPS_KEY = (slug) => `swim-reps:${slug}`
 const MAIN_ID = 'main'
@@ -123,6 +126,38 @@ export default function SwimWorkout() {
   // логика, что в дне силовой: запущенная тренировка не должна занимать пол-экрана.
   const pill = compact || isThisActive
 
+  // ——— Прогресс заплыва (чек-лист) ———
+  // Этап отмечается тапом по его заголовку; у основы вдобавок считаем, сколько
+  // кругов реально проплыли. Пока заплыв не начат, отмечать нечего — карточки
+  // работают как памятка.
+  const [progress, setProgress] = useState(() => {
+    try {
+      const raw = JSON.parse(localGet(PROGRESS_KEY(programId)) || 'null')
+      if (raw && Array.isArray(raw.done)) return { done: raw.done, mainDone: raw.mainDone ?? null }
+    } catch { /* ignore */ }
+    return { done: [], mainDone: null }
+  })
+
+  const saveProgress = (next) => {
+    setProgress(next)
+    try { localSet(PROGRESS_KEY(programId), JSON.stringify(next)) } catch { /* ignore */ }
+  }
+
+  const isBlockDone = (id) => progress.done.includes(id)
+
+  const toggleBlock = (id) => {
+    if (!isThisActive) return
+    haptic.selection()
+    const done = isBlockDone(id)
+      ? progress.done.filter(x => x !== id)
+      : [...progress.done, id]
+    // Отметил основу, не тронув счётчик кругов — значит проплыл план целиком.
+    const mainDone = (id === MAIN_ID && !isBlockDone(id) && progress.mainDone === null)
+      ? mainReps
+      : progress.mainDone
+    saveProgress({ done, mainDone })
+  }
+
   const [elapsedSec, setElapsedSec] = useState(0)
   useEffect(() => {
     if (!isThisActive) { setElapsedSec(0); return }
@@ -157,6 +192,32 @@ export default function SwimWorkout() {
     [mainReps]
   )
   const totalPools = poolsForMeters(totalMeters, pool)
+
+  // Сколько кругов основы отмечено (null = ещё не трогали счётчик).
+  const mainDone = progress.mainDone ?? 0
+
+  // ФАКТ: считаем сами из галочек — человеку остаётся отметить только основу,
+  // остальное приложение знает по программе. Пока заплыв не начат, факт равен
+  // плану (показывать нечего).
+  const doneMeters = useMemo(() => {
+    if (!isThisActive) return totalMeters
+    return SWIM_PROGRAM.blocks.reduce((sum, b) => {
+      if (b.id === MAIN_ID) return sum + oneRoundMeters(b) * mainDone
+      return progress.done.includes(b.id) ? sum + oneRoundMeters(b) * (b.repeat || 1) : sum
+    }, 0)
+  }, [isThisActive, totalMeters, mainDone, progress.done])
+
+  // Отметить проплытые круги основы. Дошёл до плана — этап сам получает
+  // галочку; убавил ниже плана — снимается, чтобы отметка не врала.
+  const changeDone = (delta) => {
+    const next = Math.min(mainReps, Math.max(0, mainDone + delta))
+    if (next === mainDone) return
+    haptic.selection()
+    const done = next >= mainReps
+      ? (progress.done.includes(MAIN_ID) ? progress.done : [...progress.done, MAIN_ID])
+      : progress.done.filter(x => x !== MAIN_ID)
+    saveProgress({ done, mainDone: next })
+  }
 
   const changeReps = (delta) => {
     setMainReps(prev => {
@@ -237,10 +298,13 @@ export default function SwimWorkout() {
       // ровно как в силовой: в него честно входят переодевание, душ и отдых.
       // Заплыв без сессии (старая запись/прямой финиш) — падаем на оценку по
       // метражу, ту же, что показана в шапке «≈N мин».
+      // Факт фиксируем ДО закрытия сессии: после clearActiveWorkout doneMeters
+      // снова станет равен плану.
+      const swumMeters = doneMeters
       const startedAt = isThisActive
         ? active.startedAt
         : new Date(Date.now() - swimMinutesForMeters(totalMeters) * 60000).toISOString()
-      const result = await finishWorkout(programId, 'main', [], 0, totalMeters, startedAt)
+      const result = await finishWorkout(programId, 'main', [], 0, swumMeters, startedAt)
 
       if (!result) {
         setFinishStatus('error')
@@ -252,6 +316,7 @@ export default function SwimWorkout() {
       // фиксируем день и закрываем сессию — как в силовой.
       await setLastCompletedDay(programId, 'main')
       clearActiveWorkout()
+      saveProgress({ done: [], mainDone: null })
 
       if (result.offline) {
         haptic.warning()
@@ -267,7 +332,7 @@ export default function SwimWorkout() {
       }
       haptic.success()
       setFinishStatus('idle')
-      setModal({ kind: 'reward' })
+      setModal({ kind: 'reward', distance: swumMeters, planned: totalMeters })
     } catch (e) {
       console.error('[SwimWorkout] finish error:', e)
       setFinishStatus('error')
@@ -292,6 +357,7 @@ export default function SwimWorkout() {
       return
     }
     haptic.success()
+    saveProgress({ done: [], mainDone: null })
     startActiveWorkout(programId, 'main', 'pool')
   }
 
@@ -377,8 +443,28 @@ export default function SwimWorkout() {
           const editable = block.id === MAIN_ID
           return (
             <section key={block.id} style={styles.blockCard}>
-              <div style={styles.blockHead}>
-                <span style={styles.blockTitle}>{block.index} · {block.title}</span>
+              {/* Заголовок этапа — он же чекбокс: тап отмечает «сделано».
+                  До старта заплыва не нажимается: отмечать пока нечего. */}
+              <div
+                style={{ ...styles.blockHead, cursor: isThisActive ? 'pointer' : 'default' }}
+                onClick={() => toggleBlock(block.id)}
+                role={isThisActive ? 'checkbox' : undefined}
+                aria-checked={isThisActive ? isBlockDone(block.id) : undefined}
+              >
+                <span style={styles.blockTitleWrap}>
+                  {isThisActive && (
+                    <span style={{ ...styles.blockCheck, ...(isBlockDone(block.id) ? styles.blockCheckOn : null) }}>
+                      {isBlockDone(block.id) && (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M5 12.5 L10 17.5 L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                  )}
+                  <span style={{ ...styles.blockTitle, ...(isBlockDone(block.id) ? styles.blockTitleDone : null) }}>
+                    {block.index} · {block.title}
+                  </span>
+                </span>
                 <span style={styles.blockMeta}>≈{swimMinutesForMeters(bMeters)} мин · {bMeters} м</span>
               </div>
 
@@ -407,22 +493,29 @@ export default function SwimWorkout() {
                   )
                 })}
 
+                {/* До старта степпер настраивает ПЛАН («Повторить 5 раз»), во время
+                    заплыва — отмечает ФАКТ («Выполнено: 3 из 5»). Во время тренировки
+                    человек не настраивает программу, а отмечает прогресс. */}
                 {editable && (
                   <div style={styles.stepper}>
                     <button
-                      onClick={() => changeReps(-1)}
-                      disabled={mainReps <= MIN_REPS}
-                      style={{ ...styles.stepBtn, opacity: mainReps <= MIN_REPS ? 0.35 : 1 }}
+                      onClick={() => (isThisActive ? changeDone(-1) : changeReps(-1))}
+                      disabled={isThisActive ? mainDone <= 0 : mainReps <= MIN_REPS}
+                      style={{ ...styles.stepBtn, opacity: (isThisActive ? mainDone <= 0 : mainReps <= MIN_REPS) ? 0.35 : 1 }}
                       className="press-tile"
-                      aria-label="Меньше повторов"
+                      aria-label={isThisActive ? 'Меньше кругов' : 'Меньше повторов'}
                     >−</button>
-                    <span style={styles.stepLabel}>Повторить {mainReps} раз</span>
+                    <span style={styles.stepLabel}>
+                      {isThisActive
+                        ? <>Выполнено: <span style={styles.stepDone}>{mainDone}</span> из {mainReps}</>
+                        : `Повторить ${mainReps} раз`}
+                    </span>
                     <button
-                      onClick={() => changeReps(1)}
-                      disabled={mainReps >= MAX_REPS}
-                      style={{ ...styles.stepBtn, opacity: mainReps >= MAX_REPS ? 0.35 : 1 }}
+                      onClick={() => (isThisActive ? changeDone(1) : changeReps(1))}
+                      disabled={isThisActive ? mainDone >= mainReps : mainReps >= MAX_REPS}
+                      style={{ ...styles.stepBtn, opacity: (isThisActive ? mainDone >= mainReps : mainReps >= MAX_REPS) ? 0.35 : 1 }}
                       className="press-tile"
-                      aria-label="Больше повторов"
+                      aria-label={isThisActive ? 'Больше кругов' : 'Больше повторов'}
                     >+</button>
                   </div>
                 )}
@@ -503,7 +596,8 @@ export default function SwimWorkout() {
       {modal && (
         <SwimFinishedModal
           kind={modal.kind}
-          distance={totalMeters}
+          distance={modal.distance ?? totalMeters}
+          planned={modal.planned ?? totalMeters}
           status={finishStatus}
           onConfirm={handleModalConfirm}
         />
@@ -622,7 +716,7 @@ const SWIM_CLOSE_MS = 220
  * Отличие намеренное: показатель здесь — дистанция, и она подписана цветом
  * категории «бассейн», чтобы финал читался именно как заплыв.
  */
-function SwimFinishedModal({ kind, distance, status, onConfirm }) {
+function SwimFinishedModal({ kind, distance, planned, status, onConfirm }) {
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
   const [closing, setClosing] = useState(false)
@@ -668,6 +762,15 @@ function SwimFinishedModal({ kind, distance, status, onConfirm }) {
           <div style={modalStyles.statsRow}>
             <UiIcon name="swimming" size={18} color="var(--cat-pool)" />
             <span style={modalStyles.statNum}>{formatDistance(distance)}</span>
+          </div>
+        )}
+
+        {/* Проплыл меньше плана — показываем оба числа. Это не упрёк, а факт:
+            статистика точная, а в следующий раз видно, куда тянуться.
+            Проплыл всё — второй строки нет, лишний шум ни к чему. */}
+        {!isError && planned > distance && (
+          <div style={modalStyles.planRow}>
+            План {formatDistance(planned)}
           </div>
         )}
 
@@ -838,8 +941,24 @@ const styles = {
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
-    marginBottom: 'var(--space-4)'
+    // Между карточками воздуха больше, чем внутри них: этапы отделены друг от
+    // друга, упражнения читаются как принадлежащие своему этапу.
+    marginBottom: 'var(--space-5)'
   },
+  // Заголовок этапа = чекбокс. Пустой квадрат до отметки, залитый — после.
+  blockTitleWrap: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 },
+  blockCheck: {
+    flexShrink: 0,
+    width: '18px', height: '18px', borderRadius: 'var(--radius-xs)',
+    border: '1.5px solid var(--layer-3)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--accent-on)',
+    transition: 'background 0.18s ease, border-color 0.18s ease'
+  },
+  blockCheckOn: { background: 'var(--color-primary)', borderColor: 'var(--color-primary)' },
+  // Отмеченный этап уходит на второй план — взгляд сам идёт к следующему.
+  blockTitleDone: { color: 'var(--color-text-secondary)' },
+  stepDone: { color: 'var(--color-primary)', fontWeight: 800 },
   blockHead: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -858,13 +977,15 @@ const styles = {
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
-  blockBody: { padding: 'var(--space-15) var(--space-4) var(--space-4)' },
+  blockBody: { padding: 'var(--space-1) var(--space-4) var(--space-3)' },
   rowDivider: { height: '1px', background: 'var(--border-hairline)', margin: '0 -4px' },
+  // Вертикаль строки тише: программа целиком помещается на экран, а тесноты
+  // не возникает — воздух держат разделители и отступ между карточками.
   swimRow: {
     display: 'flex',
     alignItems: 'center',
     gap: 'var(--space-3)',
-    padding: 'var(--space-3) 0'
+    padding: 'var(--space-2) 0'
   },
   swimContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)' },
   swimName: {
@@ -1101,6 +1222,10 @@ const modalStyles = {
     fontSize: 'var(--text-title-size)', letterSpacing: '2px', textAlign: 'center'
   },
   // Строка показателя — тот же приём, что в модалке силовой.
+  planRow: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text-secondary)', textAlign: 'center'
+  },
   statsRow: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
   statNum: {
     fontFamily: 'var(--font-manrope)', fontWeight: 'var(--weight-value)',
