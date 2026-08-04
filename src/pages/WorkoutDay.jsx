@@ -1614,7 +1614,9 @@ const styles = {
   headerCard: {
     position: 'relative',
     overflow: 'hidden',
-    padding: 'var(--space-4) var(--space-4)',
+    // Вертикаль тише горизонтали: так высокая шапка садится в те же ~132px,
+    // что карточка упражнения под ней, и экран читается одним ритмом.
+    padding: 'var(--space-3) var(--space-4)',
     // Матовое стекло (как таб-бар / кнопка с блюром): контент скроллится под шапкой
     // и просвечивает размытым. Полупрозрачный фон + backdrop-blur + бордер + тень.
     background: 'rgba(28, 28, 30, 0.55)',
@@ -1642,7 +1644,7 @@ const styles = {
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: 'var(--space-3)'
+    gap: 'var(--space-2)'
   },
   // Верхний ряд: место слева (в потоке), таймер и крестик — absolute (не влияют
   // на высоту ряда → блок не растёт при появлении крестика). Высота = высота тега.
@@ -1882,13 +1884,15 @@ const styles = {
     height: '22px',
     padding: '0 var(--space-2)'
   },
+  // Числовая подпись — Manrope, как все числа проекта и как счётчик «N/M»
+  // в схлопнутой пилюле: при морфе шрифт не должен подменяться.
   dayDescLabel: {
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',
     lineHeight: 1,
     color: 'var(--color-text-secondary)',
-    letterSpacing: '1px'
+    letterSpacing: '0.5px'
   },
   // «N/M» в тренировке — крупнее и жирнее, как активный таймер (растёт из центра).
   dayCountActive: {

@@ -29,6 +29,7 @@ const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скрол�
 function FriendRow({ friend, onTap, onLongPress, weekRange }) {
   const {
     first_name,
+    is_training,
     photo_url,
     last_workout_at,
     pinned_at
@@ -126,6 +127,12 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
           <span style={styles.name}>{displayName}</span>
+          {/* Тренируется прямо сейчас — одна зелёная точка рядом с именем.
+              Без текста: смысл считывается мгновенно, а строка не удлиняется.
+              Не тренируется — не показываем ничего (пустой статус не нужен). */}
+          {is_training && (
+            <span style={styles.trainingDot} aria-label="Сейчас тренируется" />
+          )}
         </div>
         <div style={styles.metaRow}>
           <span style={styles.lastWorkout}>
@@ -183,6 +190,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--space-1)'
+  },
+  // Точка «сейчас тренируется»: мягко пульсирует, чтобы читалась как живой
+  // статус, а не как метка. Анимация только opacity — дёшево на длинном списке.
+  trainingDot: {
+    flexShrink: 0, alignSelf: 'center',
+    width: '7px', height: '7px', borderRadius: '50%',
+    background: 'var(--color-primary)',
+    boxShadow: '0 0 6px color-mix(in srgb, var(--color-primary) 60%, transparent)',
+    animation: 'trainingDotPulse 2s ease-in-out infinite'
   },
   nameRow: {
     display: 'flex',
