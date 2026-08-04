@@ -25,6 +25,7 @@ import {
   swimMinutesForMeters
 } from '../data/programs/swim'
 import ScreenTitle from '../components/ScreenTitle'
+import CloseCross from '../components/CloseCross'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import ActionButton from '../components/ActionButton'
@@ -357,16 +358,14 @@ export default function SwimWorkout() {
             )}
             <span style={styles.pillPools}>{totalPools} {pluralPools(totalPools)}</span>
             {isThisActive && (
-              <button
-                onClick={() => { haptic.light(); setShowCancelConfirm(true) }}
-                style={styles.pillCross}
-                className="press-tile"
-                aria-label="Отменить заплыв"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-                </svg>
-              </button>
+              <span style={styles.pillCross}>
+                <CloseCross
+                  onClose={() => setShowCancelConfirm(true)}
+                  hitSize={44}
+                  bubbleSize={32}
+                  iconSize={16}
+                />
+              </span>
             )}
           </div>
         </div>
@@ -518,21 +517,29 @@ export default function SwimWorkout() {
  * свёрнуто одна пилюля (активная), тап раскрывает вторую справа, выбор — свёртка.
  */
 /**
- * Длина бассейна — сегмент-контрол, как переключатель места в дне силовой:
- * оба варианта видны сразу, активный залит. Раскрывающегося списка с шевроном
- * больше нет — на двух значениях он только прятал выбор за лишним тапом.
+ * Длина бассейна — тег, как «Зал / Дом / Улица» в дне силовой: свёрнутый
+ * показывает только выбранное («25 м»), тап выдвигает остальные варианты
+ * вправо. Шеврона нет — сам тег и есть кнопка.
  */
 function PoolLenSwitcher({ pool, pools, onPick }) {
+  const [open, setOpen] = useState(false)
+  const multi = pools.length > 1
+  const ordered = open ? [pool, ...pools.filter(p => p !== pool)] : [pool]
+
   return (
     <div style={plsStyles.wrap} onClick={(e) => e.stopPropagation()}>
       <div style={plsStyles.group}>
-        {pools.map((len, i) => {
+        {ordered.map((len, i) => {
           const active = len === pool
           return (
             <button
               key={len}
               className="press-tile"
-              onClick={(e) => { e.stopPropagation(); if (!active) onPick(len) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (i === 0) { if (multi) { haptic.light(); setOpen(o => !o) } }
+                else { onPick(len); setOpen(false) }
+              }}
               style={{
                 ...plsStyles.item,
                 ...(active ? plsStyles.itemActive : {}),
@@ -731,9 +738,10 @@ const styles = {
     WebkitBackdropFilter: 'blur(14px) saturate(180%)',
     border: '1px solid rgba(63, 162, 247, 0.45)',
     boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
-    transition: 'min-height 0.28s var(--ease-ios)'
+    transition: 'min-height 0.42s var(--ease-ios), padding 0.42s var(--ease-ios)'
   },
-  headerCardCompact: { minHeight: '58px' },
+  // Ровно та же высота, что у пилюли в дне силовой (46px).
+  headerCardCompact: { minHeight: '46px' },
   topRow: {
     position: 'absolute',
     top: '12px',
@@ -742,14 +750,15 @@ const styles = {
     zIndex: 2,
     display: 'flex',
     alignItems: 'center',
-    // Переключатель слева, время справа. Раньше время висело абсолютом по
-    // центру и налезало на переключатель, когда тот показал оба бассейна.
-    justifyContent: 'space-between',
-    gap: 'var(--space-2)',
+    justifyContent: 'flex-start',
     transition: 'opacity 0.2s ease'
   },
   topRowCompact: { opacity: 0, pointerEvents: 'none' },
   clock: {
+    // По центру карточки, независимо от ширины переключателя слева.
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)',
     display: 'inline-flex',
     alignItems: 'center',
     gap: 'var(--space-1)',
@@ -775,7 +784,7 @@ const styles = {
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
-    transition: 'opacity 0.22s ease'
+    transition: 'opacity 0.3s var(--ease-ios), transform 0.42s var(--ease-ios)'
   },
   metersMainCompact: { fontSize: 'var(--text-title-size)' },
   // Бассейны — под метражом, шрифтом как часы.
@@ -791,7 +800,7 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     color: 'rgba(255, 255, 255, 0.72)',
     whiteSpace: 'nowrap',
-    transition: 'opacity 0.22s ease'
+    transition: 'opacity 0.3s var(--ease-ios)'
   },
   metersSubCompact: { top: 'calc(50% + 15px)' },
 
@@ -801,30 +810,25 @@ const styles = {
     position: 'absolute', inset: 0, zIndex: 2,
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)',
     padding: '0 var(--space-4)',
-    transition: 'opacity 0.22s ease'
+    transition: 'opacity 0.3s var(--ease-ios)'
   },
   pillMeters: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     color: 'var(--color-text)', whiteSpace: 'nowrap',
     textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)'
   },
   pillTime: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)',
     color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap',
     fontVariantNumeric: 'tabular-nums'
   },
   pillPools: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)',
     color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap'
   },
-  pillCross: {
-    position: 'absolute', right: 'var(--space-3)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: '26px', height: '26px', borderRadius: '50%',
-    background: 'rgba(255, 255, 255, 0.12)', border: 'none',
-    color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer'
-  },
+  // Крестик — тот же компонент и те же размеры, что в дне силовой.
+  pillCross: { position: 'absolute', right: 'var(--space-2)', display: 'inline-flex' },
 
   body: { position: 'relative', zIndex: 1, paddingTop: 'var(--space-4)' },
 
