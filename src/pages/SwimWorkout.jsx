@@ -740,8 +740,8 @@ const styles = {
     boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
     transition: 'min-height 0.42s var(--ease-ios), padding 0.42s var(--ease-ios)'
   },
-  // Ровно та же высота, что у пилюли в дне силовой (46px).
-  headerCardCompact: { minHeight: '46px' },
+  // Ровно та же высота, что у пилюли в дне силовой (54px).
+  headerCardCompact: { minHeight: '54px' },
   topRow: {
     position: 'absolute',
     top: '12px',

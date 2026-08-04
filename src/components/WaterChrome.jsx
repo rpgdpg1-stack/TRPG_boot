@@ -15,6 +15,10 @@
 // Достаточно флажков на самую высокую карточку; лишние обрежет overflow.
 const PENNANTS = Array.from({ length: 9 }, (_, i) => (i % 2 ? 'var(--color-text)' : 'var(--color-error)'))
 
+// Анимации задаются строками в обе стороны (см. ниже, почему не undefined).
+const WAVE_ANIM = 'poolShine 3.7s linear infinite'
+const PENNANT_ANIM = 'pennantSway 2.8s ease-in-out infinite'
+
 /**
  * @param animate — запускать движение волны и качание флажков. По умолчанию
  * ВЫКЛЮЧЕНО: пока заплыв не начат, шапка стоит спокойно и не тянет на себя
@@ -27,7 +31,7 @@ export default function WaterChrome({ dashes = false, animate = false }) {
       <div style={{ ...styles.stringVert, right: 0 }} />
       <div style={styles.col}>
         {PENNANTS.map((c, i) => (
-          <span key={i} style={{ ...styles.pennant, borderRightColor: c, animation: animate ? undefined : 'none', animationDelay: `${(i % 5) * 0.22}s` }} />
+          <span key={i} style={{ ...styles.pennant, borderRightColor: c, animation: animate ? PENNANT_ANIM : 'none', animationDelay: `${(i % 5) * 0.22}s` }} />
         ))}
       </div>
     </div>
@@ -35,7 +39,7 @@ export default function WaterChrome({ dashes = false, animate = false }) {
 
   return (
     <>
-      <div style={{ ...styles.wave, animation: animate ? undefined : 'none' }} aria-hidden="true" />
+      <div style={{ ...styles.wave, animation: animate ? WAVE_ANIM : 'none', opacity: animate ? 1 : 0 }} aria-hidden="true" />
       {garland('left')}
       {garland('right')}
       {dashes && <div style={styles.dashes} aria-hidden="true" />}
@@ -49,7 +53,9 @@ const styles = {
     top: 0, bottom: 0, left: 0,
     width: '40%',
     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)',
-    animation: 'poolShine 3.7s linear infinite',
+    // Блик появляется вместе с движением: застывшая светлая полоса слева
+    // читалась как артефакт, а не как вода.
+    transition: 'opacity 0.4s ease',
     pointerEvents: 'none',
     zIndex: 0
   },
@@ -79,7 +85,7 @@ const styles = {
     borderBottom: '5px solid transparent',
     borderRight: '8px solid var(--color-text)',
     transformOrigin: 'right center',
-    animation: 'pennantSway 2.8s ease-in-out infinite'
+
   },
   dashes: {
     position: 'absolute',
