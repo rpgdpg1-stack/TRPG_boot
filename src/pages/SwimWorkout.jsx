@@ -27,7 +27,6 @@ import {
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
-import ChevronIcon from '../components/ChevronIcon'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
@@ -118,6 +117,10 @@ export default function SwimWorkout() {
   const startBlockTimer = useRef(null)
   const autoStartedRef = useRef(false)
   useEffect(() => () => { if (startBlockTimer.current) clearTimeout(startBlockTimer.current) }, [])
+
+  // Шапка складывается в пилюлю на скролле ИЛИ когда заплыв начат — та же
+  // логика, что в дне силовой: запущенная тренировка не должна занимать пол-экрана.
+  const pill = compact || isThisActive
 
   const [elapsedSec, setElapsedSec] = useState(0)
   useEffect(() => {
@@ -304,12 +307,16 @@ export default function SwimWorkout() {
 
       {/* Закреплённая шапка-карточка: синяя волна + стеклянная обводка */}
       <div style={styles.stickyHeader}>
-        <div style={{ ...styles.headerCard, ...(compact ? styles.headerCardCompact : {}) }}>
-          {/* Волна + боковые гирлянды флажков + пунктир — общий компонент */}
-          <WaterChrome dashes />
+        <div style={{ ...styles.headerCard, ...(pill ? styles.headerCardCompact : {}) }}>
+          {/* Волна и флажки оживают ТОЛЬКО когда заплыв идёт: движение означает
+              «сейчас плывёшь», а не украшает экран. */}
+          {/* Пунктирная дорожка — только в развёрнутой шапке: в пилюле она
+              проходила ровно сквозь строку и перечёркивала текст. Из кода
+              не убрана, вернётся вместе с высокой шапкой. */}
+          <WaterChrome dashes={!pill} animate={isThisActive} />
 
           {/* Верхний ряд: тег бассейна слева, часы по центру */}
-          <div style={{ ...styles.topRow, ...(compact ? styles.topRowCompact : {}) }}>
+          <div style={{ ...styles.topRow, ...(pill ? styles.topRowCompact : {}) }}>
             <PoolLenSwitcher pool={pool} pools={SWIM_PROGRAM.pools} onPick={handlePoolTap} />
             {/* Пока заплыв не начат — оценка «≈45 мин» по метражу; после «Начать»
                 на её месте живой таймер сессии с теми же порогами цвета, что в
@@ -319,17 +326,6 @@ export default function SwimWorkout() {
                 <span style={{ ...styles.clock, color: workoutTimerColor(elapsedSec), fontWeight: 800 }}>
                   <ClockIcon size={13} />{formatWorkoutMin(elapsedSec)}
                 </span>
-                {/* Крестик отмены — как в дне силовой: «передумал / начал случайно». */}
-                <button
-                  onClick={() => { haptic.light(); setShowCancelConfirm(true) }}
-                  style={styles.cancelCross}
-                  className="press-tile"
-                  aria-label="Отменить заплыв"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-                  </svg>
-                </button>
               </span>
             ) : (
               <span style={styles.clock}>
@@ -338,12 +334,40 @@ export default function SwimWorkout() {
             )}
           </div>
 
-          {/* Крупный метраж по центру (сквозь пунктир) + бассейны под ним */}
-          <div style={{ ...styles.metersMain, ...(compact ? styles.metersMainCompact : {}) }}>
+          {/* Развёрнутая шапка: крупный метраж, под ним бассейны. */}
+          <div style={{ ...styles.metersMain, opacity: pill ? 0 : 1 }}>
             {formatSwimMeters(totalMeters)}
           </div>
-          <div style={{ ...styles.metersSub, ...(compact ? styles.metersSubCompact : {}) }}>
+          <div style={{ ...styles.metersSub, opacity: pill ? 0 : 1 }}>
             {totalPools} {pluralPools(totalPools)}
+          </div>
+
+          {/* Пилюля: всё в одну строку — метраж, время, бассейны. Порядок и роли
+              те же, что в дне силовой (буква · таймер · счётчик). */}
+          <div style={{ ...styles.pillRow, opacity: pill ? 1 : 0, pointerEvents: pill ? 'auto' : 'none' }}>
+            <span style={styles.pillMeters}>{formatDistance(totalMeters)}</span>
+            {isThisActive ? (
+              <span style={{ ...styles.pillTime, color: workoutTimerColor(elapsedSec) }}>
+                <ClockIcon size={13} />{formatWorkoutMin(elapsedSec)}
+              </span>
+            ) : (
+              <span style={styles.pillTime}>
+                <ClockIcon size={13} />≈{swimMinutesForMeters(totalMeters)} мин
+              </span>
+            )}
+            <span style={styles.pillPools}>{totalPools} {pluralPools(totalPools)}</span>
+            {isThisActive && (
+              <button
+                onClick={() => { haptic.light(); setShowCancelConfirm(true) }}
+                style={styles.pillCross}
+                className="press-tile"
+                aria-label="Отменить заплыв"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -493,25 +517,22 @@ export default function SwimWorkout() {
  * Переключатель длины бассейна (25/50) — вид как тег места (PlaceSwitcher):
  * свёрнуто одна пилюля (активная), тап раскрывает вторую справа, выбор — свёртка.
  */
+/**
+ * Длина бассейна — сегмент-контрол, как переключатель места в дне силовой:
+ * оба варианта видны сразу, активный залит. Раскрывающегося списка с шевроном
+ * больше нет — на двух значениях он только прятал выбор за лишним тапом.
+ */
 function PoolLenSwitcher({ pool, pools, onPick }) {
-  const [open, setOpen] = useState(false)
-  const multi = pools.length > 1
-  const ordered = open ? [pool, ...pools.filter(p => p !== pool)] : [pool]
-
   return (
     <div style={plsStyles.wrap} onClick={(e) => e.stopPropagation()}>
       <div style={plsStyles.group}>
-        {ordered.map((len, i) => {
+        {pools.map((len, i) => {
           const active = len === pool
           return (
             <button
               key={len}
               className="press-tile"
-              onClick={(e) => {
-                e.stopPropagation()
-                if (i === 0) { if (multi) { haptic.light(); setOpen(o => !o) } }
-                else { onPick(len); setOpen(false) }
-              }}
+              onClick={(e) => { e.stopPropagation(); if (!active) onPick(len) }}
               style={{
                 ...plsStyles.item,
                 ...(active ? plsStyles.itemActive : {}),
@@ -522,11 +543,6 @@ function PoolLenSwitcher({ pool, pools, onPick }) {
             >
               <UiIcon name="swimming" size={15} />
               {len} м
-              {i === 0 && multi && (
-                <span style={{ display: 'inline-flex', marginLeft: '1px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s var(--ease-ios)' }}>
-                  <ChevronIcon size={13} color="currentColor" />
-                </span>
-              )}
             </button>
           )
         })}
@@ -705,7 +721,9 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 'var(--radius-card)',
-    minHeight: '112px',
+    // Развёрнутая — в высоту карточки упражнения (как шапка дня силовой),
+    // пилюля — в высоту её схлопнутого состояния.
+    minHeight: '132px',
     paddingLeft: 'var(--space-4)',
     paddingRight: 'var(--space-4)',
     background: 'linear-gradient(180deg, rgba(46,127,196,0.38) 0%, rgba(28,92,151,0.46) 100%)',
@@ -715,22 +733,23 @@ const styles = {
     boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
     transition: 'min-height 0.28s var(--ease-ios)'
   },
-  headerCardCompact: { minHeight: '76px' },
+  headerCardCompact: { minHeight: '58px' },
   topRow: {
     position: 'absolute',
-    top: '14px',
+    top: '12px',
     left: '16px',
     right: '16px',
     zIndex: 2,
     display: 'flex',
     alignItems: 'center',
+    // Переключатель слева, время справа. Раньше время висело абсолютом по
+    // центру и налезало на переключатель, когда тот показал оба бассейна.
+    justifyContent: 'space-between',
+    gap: 'var(--space-2)',
     transition: 'opacity 0.2s ease'
   },
   topRowCompact: { opacity: 0, pointerEvents: 'none' },
   clock: {
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
     display: 'inline-flex',
     alignItems: 'center',
     gap: 'var(--space-1)',
@@ -756,7 +775,7 @@ const styles = {
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
     textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
-    transition: 'font-size 0.28s var(--ease-ios)'
+    transition: 'opacity 0.22s ease'
   },
   metersMainCompact: { fontSize: 'var(--text-title-size)' },
   // Бассейны — под метражом, шрифтом как часы.
@@ -772,9 +791,40 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     color: 'rgba(255, 255, 255, 0.72)',
     whiteSpace: 'nowrap',
-    transition: 'top 0.28s var(--ease-ios)'
+    transition: 'opacity 0.22s ease'
   },
   metersSubCompact: { top: 'calc(50% + 15px)' },
+
+  // Пилюля: метраж · время · бассейны в одну строку по центру карточки.
+  // Порядок и роли — как в дне силовой (буква · таймер · счётчик).
+  pillRow: {
+    position: 'absolute', inset: 0, zIndex: 2,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)',
+    padding: '0 var(--space-4)',
+    transition: 'opacity 0.22s ease'
+  },
+  pillMeters: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)',
+    color: 'var(--color-text)', whiteSpace: 'nowrap',
+    textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)'
+  },
+  pillTime: {
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap',
+    fontVariantNumeric: 'tabular-nums'
+  },
+  pillPools: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap'
+  },
+  pillCross: {
+    position: 'absolute', right: 'var(--space-3)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '26px', height: '26px', borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.12)', border: 'none',
+    color: 'rgba(255, 255, 255, 0.8)', cursor: 'pointer'
+  },
 
   body: { position: 'relative', zIndex: 1, paddingTop: 'var(--space-4)' },
 

@@ -15,13 +15,19 @@
 // Достаточно флажков на самую высокую карточку; лишние обрежет overflow.
 const PENNANTS = Array.from({ length: 9 }, (_, i) => (i % 2 ? 'var(--color-text)' : 'var(--color-error)'))
 
-export default function WaterChrome({ dashes = false }) {
+/**
+ * @param animate — запускать движение волны и качание флажков. По умолчанию
+ * ВЫКЛЮЧЕНО: пока заплыв не начат, шапка стоит спокойно и не тянет на себя
+ * внимание. Движение включается вместе с таймером — тогда оно означает
+ * «идёт заплыв», а не просто украшает.
+ */
+export default function WaterChrome({ dashes = false, animate = false }) {
   const garland = (side) => (
     <div style={side === 'left' ? styles.garlandLeft : styles.garlandRight} aria-hidden="true">
       <div style={{ ...styles.stringVert, right: 0 }} />
       <div style={styles.col}>
         {PENNANTS.map((c, i) => (
-          <span key={i} style={{ ...styles.pennant, borderRightColor: c, animationDelay: `${(i % 5) * 0.22}s` }} />
+          <span key={i} style={{ ...styles.pennant, borderRightColor: c, animation: animate ? undefined : 'none', animationDelay: `${(i % 5) * 0.22}s` }} />
         ))}
       </div>
     </div>
@@ -29,7 +35,7 @@ export default function WaterChrome({ dashes = false }) {
 
   return (
     <>
-      <div style={styles.wave} aria-hidden="true" />
+      <div style={{ ...styles.wave, animation: animate ? undefined : 'none' }} aria-hidden="true" />
       {garland('left')}
       {garland('right')}
       {dashes && <div style={styles.dashes} aria-hidden="true" />}
