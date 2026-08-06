@@ -212,6 +212,16 @@ export default function SwimWorkout() {
     setOpenIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
+  // «Скрыть» жмут снизу, пролистав программу: контент под пальцем схлопывается,
+  // и основа уехала бы под закреплённую шапку. Возвращаем к верху — там она
+  // встаёт ровно на 16px под шапкой.
+  const toggleShowAll = () => {
+    haptic.light()
+    const next = !showAll
+    setShowAll(next)
+    if (!next) window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // Старт заплыва (кнопкой или автостартом с карточки) убирает лишнее.
   // Разминку и заминку НЕ схлопываем — вернёшь их глазиком уже раскрытыми,
   // как и оставил.
@@ -220,6 +230,7 @@ export default function SwimWorkout() {
     if (isThisActive && !wasActiveRef.current) {
       setShowAll(false)
       setOpenIds(prev => prev.filter(id => id !== MAIN_ID))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
     wasActiveRef.current = isThisActive
   }, [isThisActive])
@@ -530,7 +541,13 @@ export default function SwimWorkout() {
                             <div style={{ ...styles.swimName, color }}>{meta.label}</div>
                             <div style={styles.swimNote}>{sw.note}</div>
                           </div>
-                          <span style={styles.swimPools}>{pools} {pluralPools(pools)}</span>
+                          {/* Справа — та же лесенка, что слева: число в строку
+                              со стилем (белым, как значение), слово «бассейна» —
+                              в строку с примечанием, серым. */}
+                          <div style={styles.swimPoolsCol}>
+                            <div style={styles.swimPoolsNum}>{pools}</div>
+                            <div style={styles.swimPoolsWord}>{pluralPools(pools)}</div>
+                          </div>
                         </div>
                       </div>
                     )
@@ -619,7 +636,7 @@ export default function SwimWorkout() {
             variant="ghost"
             size="sm"
             hug
-            onClick={() => { haptic.light(); setShowAll(v => !v) }}
+            onClick={toggleShowAll}
             style={{ gap: 'var(--space-2)' }}
           >
             <EyeIcon off={showAll} size={18} />
@@ -939,7 +956,9 @@ const styles = {
     zIndex: 30,
     // Фон-заливки НЕТ — контент скроллится прямо под шапкой (как в дне силовой).
     paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: 'var(--space-3)',
+    // Зазор до контента держит ОДИН отступ — paddingTop у body (16px),
+    // иначе «16 пикселей от шапки» складываются из двух мест и врут.
+    paddingBottom: 0,
     marginLeft: '-16px',
     marginRight: '-16px',
     paddingLeft: 'var(--space-4)',
@@ -1140,9 +1159,22 @@ const styles = {
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
-  // Бассейны — справа строки, тихо: главное в строке стиль плавания.
-  swimPools: {
+  // Бассейны — колонкой справа, вровень со строками слева: число к стилю,
+  // слово к примечанию.
+  swimPoolsCol: {
     flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 'var(--space-05)'
+  },
+  swimPoolsNum: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 'var(--weight-value)',
+    color: 'var(--color-text)'
+  },
+  swimPoolsWord: {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)',
