@@ -355,13 +355,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                 onKeyDown={handleWeightKeyDown}
                 style={{
                   ...styles.weightInput,
-                  color: colors.accent,
+                  color: 'var(--color-text)',
                   caretColor: colors.accent,
                   opacity: editingWeight ? 1 : 0
                 }}
               />
               {!editingWeight && (
-                <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
+                <div style={{ ...styles.weightValue, color: raise.colorFor('var(--color-text)'), transition: WEIGHT_COLOR_TRANSITION }}>
                   {localWeight}
                 </div>
               )}

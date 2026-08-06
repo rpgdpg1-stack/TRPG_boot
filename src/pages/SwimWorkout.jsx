@@ -632,16 +632,10 @@ export default function SwimWorkout() {
             оставить счётчик кругов / вернуть программу целиком. Работает и до
             старта, и во время заплыва. */}
         <div style={styles.eyeRow}>
-          <ActionButton
-            variant="ghost"
-            size="sm"
-            hug
-            onClick={toggleShowAll}
-            style={{ gap: 'var(--space-2)' }}
-          >
+          <button type="button" onClick={toggleShowAll} style={styles.eyeBtn} className="press-tile">
             <EyeIcon off={showAll} size={18} />
             {showAll ? 'Скрыть' : 'Показать всё'}
-          </ActionButton>
+          </button>
         </div>
       </div>
 
@@ -1073,9 +1067,9 @@ const styles = {
   body: { position: 'relative', zIndex: 1, paddingTop: 'var(--space-4)' },
 
   // Блок = одна карточка 33px: тёмная шапка + светлые упражнения + степпер.
+  // Обводки нет — карточку держит только заливка (по просьбе Дмитрия).
   blockCard: {
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
     // Между карточками воздуха больше, чем внутри них: этапы отделены друг от
@@ -1251,7 +1245,6 @@ const styles = {
   tipsBlock: {
     marginTop: 'var(--space-3)',
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
   },
@@ -1271,8 +1264,25 @@ const styles = {
     color: 'var(--color-text)'
   },
   tipsList: { padding: '0 var(--space-5) var(--space-4)' },
-  // Глазик — тихая вторичная кнопка по центру, под всем содержимым.
+  // Глазик — не кнопка-пилюля, а голый текст со значком: служебное действие,
+  // спорить с «Начать/Завершить» внизу ему нечем.
   eyeRow: { display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-2)' },
+  eyeBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 'var(--space-2)',
+    minHeight: '44px',
+    padding: '0 var(--space-4)',
+    background: 'none',
+    border: 'none',
+    color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-manrope)',
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 'var(--weight-label)',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
+  },
   tipRow: { display: 'flex', gap: 'var(--space-2)', padding: 'var(--space-1) 0', alignItems: 'flex-start' },
   tipMark: { color: 'var(--cat-pool)', fontSize: 'var(--text-button-size)', lineHeight: '18px', flexShrink: 0 },
   tipText: {

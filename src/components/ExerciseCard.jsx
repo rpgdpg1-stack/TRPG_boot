@@ -498,13 +498,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             onPointerDown={(e) => e.stopPropagation()}
             style={{
               ...styles.weightInput,
-              color: colors.accent,
+              color: 'var(--color-text)',
               caretColor: colors.accent,
               opacity: editing ? 1 : 0
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: raise.colorFor(colors.accent), transition: WEIGHT_COLOR_TRANSITION }}>
+            <div style={{ ...styles.weightValue, color: raise.colorFor('var(--color-text)'), transition: WEIGHT_COLOR_TRANSITION }}>
               {localWeight}
             </div>
           )}
