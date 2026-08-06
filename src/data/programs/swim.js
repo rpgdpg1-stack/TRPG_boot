@@ -38,7 +38,7 @@ export const SWIM_PROGRAM = {
       title: 'Основа',
       hint: '≈28 мин',
       repeat: 5,
-      footnote: '⏸ пауза 10–15 сек между кругами',
+      footnote: 'Пауза 10–15 сек между кругами',
       swims: [
         { id: 'm1', stroke: 'crawl',  meters: 50, note: 'рабочий темп' },
         { id: 'm2', stroke: 'breast', meters: 50, note: 'техника, восстановиться' }
