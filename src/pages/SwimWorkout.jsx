@@ -86,6 +86,22 @@ function PauseIcon({ size = 20 }) {
 }
 
 /**
+ * Глаз (Material Symbols visibility / visibility_off) — переключатель «показать
+ * всё / скрыть лишнее». `off` = сейчас всё показано, тап спрячет.
+ */
+function EyeIcon({ off = false, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      {off ? (
+        <path d="M12 19q-3.35 0-6.1-1.87T1.66 12.2q-.1-.2-.14-.42T1.47 12t.05-.42.14-.43q.6-1.3 1.5-2.42T5.15 6.7L2.775 4.3q-.275-.275-.288-.687T2.775 2.9t.7-.288.7.288l16.95 16.95q.275.275.288.687t-.288.713-.712.287-.713-.287L16.2 18.1q-1 .45-2.037.675T12 19m0-2q.575 0 1.113-.075t1.062-.25L9.325 11.85q-.15.5-.238 1.038T9 14q0 1.25.875 2.125T12 17m6.9-.5-3.35-3.35q.2-.475.325-1.037T16 11q0-1.65-1.175-2.825T12 7q-.575 0-1.112.125T9.85 7.45L7.2 4.8Q8.35 4.4 9.55 4.2T12 4q3.35 0 6.1 1.87t4.24 4.93q.1.2.138.425t.037.475-.05.437-.135.413q-.5 1.075-1.213 2.037T18.9 16.5" />
+      ) : (
+        <path d="M12 16q1.875 0 3.188-1.312T16.5 11.5t-1.312-3.187T12 7 8.813 8.313 7.5 11.5t1.313 3.188T12 16m0-1.8q-1.125 0-1.912-.788T9.3 11.5t.788-1.912T12 8.8t1.913.788T14.7 11.5t-.787 1.913T12 14.2m0 4.8q-3.65 0-6.65-2.037T1 11.5q1.35-3.425 4.35-5.462T12 4t6.65 2.038T23 11.5q-1.35 3.425-4.35 5.463T12 19" />
+      )}
+    </svg>
+  )
+}
+
+/**
  * Сворачиваемая часть карточки: высота едет от реальной высоты содержимого
  * (замер по scrollHeight), поэтому анимация одинаково ровная и на трёх строках,
  * и на пяти советах — фиксированный max-height давал бы рывок в конце.
@@ -176,15 +192,18 @@ export default function SwimWorkout() {
   // логика, что в дне силовой: запущенная тренировка не должна занимать пол-экрана.
   const pill = compact || isThisActive
 
-  // ——— Свёрнутость этапов ———
-  // До старта всё раскрыто (программу читают), с началом заплыва схлопывается:
-  // на бортике нужна только плашка «Повторить N раз». Раскрыть можно тапом по
-  // шапке этапа в любой момент. Советы свёрнуты всегда.
-  const [openIds, setOpenIds] = useState(() => {
-    const now = getActiveWorkout()
-    const startedHere = !!now && now.programId === programId
-    return startedHere ? [] : SWIM_PROGRAM.blocks.map(b => b.id)
-  })
+  // ——— Что показано на экране ———
+  // Два независимых уровня:
+  //  • showAll — глазик внизу: разминка, заминка и советы либо на экране, либо
+  //    убраны совсем, и остаётся ОДНА карточка основы со счётчиком кругов;
+  //  • openIds — раскрыт ли список заплывов внутри самого этапа (тап по шапке).
+  // Старт заплыва прячет лишнее и складывает основу: на бортике нужен счётчик,
+  // а не программа. Уже спрятано — старт ничего не меняет.
+  // (инициализаторы читают состояние сессии на момент монтирования)
+  const [showAll, setShowAll] = useState(() => !isThisActive)
+  const [openIds, setOpenIds] = useState(() => (
+    SWIM_PROGRAM.blocks.filter(b => !(isThisActive && b.id === MAIN_ID)).map(b => b.id)
+  ))
   const [tipsOpen, setTipsOpen] = useState(false)
 
   const isOpen = (id) => openIds.includes(id)
@@ -193,10 +212,15 @@ export default function SwimWorkout() {
     setOpenIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
-  // Старт заплыва (кнопкой или автостартом с карточки) сворачивает всё разом.
+  // Старт заплыва (кнопкой или автостартом с карточки) убирает лишнее.
+  // Разминку и заминку НЕ схлопываем — вернёшь их глазиком уже раскрытыми,
+  // как и оставил.
   const wasActiveRef = useRef(isThisActive)
   useEffect(() => {
-    if (isThisActive && !wasActiveRef.current) setOpenIds([])
+    if (isThisActive && !wasActiveRef.current) {
+      setShowAll(false)
+      setOpenIds(prev => prev.filter(id => id !== MAIN_ID))
+    }
     wasActiveRef.current = isThisActive
   }, [isThisActive])
 
@@ -459,12 +483,14 @@ export default function SwimWorkout() {
 
       <div style={styles.body}>
         {SWIM_PROGRAM.blocks.map(block => {
-          const bMeters = oneRoundMeters(block) * (block.id === MAIN_ID ? mainReps : (block.repeat || 1))
-          const bPools = poolsForMeters(bMeters, pool)
           const editable = block.id === MAIN_ID
+          // Спрятано — на экране только основа со счётчиком кругов.
+          if (!showAll && !editable) return null
+          const bMeters = oneRoundMeters(block) * (editable ? mainReps : (block.repeat || 1))
+          const bPools = poolsForMeters(bMeters, pool)
           const open = isOpen(block.id)
           return (
-            <section key={block.id} style={styles.blockCard}>
+            <section key={block.id} style={{ ...styles.blockCard, ...(editable ? null : styles.blockCardReveal) }}>
               {/* Шапка этапа — она же кнопка «раскрыть/свернуть». Справа сводка
                   этапа через пробел: метры, время, бассейны — свёрнутый этап
                   должен читаться целиком, не раскрывая. */}
@@ -537,8 +563,10 @@ export default function SwimWorkout() {
                       className="press-tile"
                       aria-label="Меньше кругов"
                     >−</button>
+                    {/* До старта это ПЛАН («Повторить»), в заплыве — ФАКТ
+                        («Повторил»): то же поле, но спрашивает о другом. */}
                     <span style={styles.stepLabel}>
-                      Повторить <span style={styles.stepNum}>{mainReps}</span> раз
+                      {isThisActive ? 'Повторил' : 'Повторить'} <span style={styles.stepNum}>{mainReps}</span> раз
                     </span>
                     <button
                       onClick={() => changeReps(1)}
@@ -555,7 +583,8 @@ export default function SwimWorkout() {
         })}
 
         {/* Советы — свёрнуты всегда: нужны один раз, а места занимают экран. */}
-        <div style={styles.tipsBlock}>
+        {showAll && (
+        <div style={{ ...styles.tipsBlock, ...styles.blockCardReveal }}>
           <div
             style={styles.tipsHead}
             onClick={() => { haptic.light(); setTipsOpen(o => !o) }}
@@ -579,6 +608,23 @@ export default function SwimWorkout() {
               <Tip>Держи бутылку воды на бортике — в воде тоже теряешь жидкость.</Tip>
             </div>
           </Collapse>
+        </div>
+        )}
+
+        {/* Глазик — один переключатель на весь экран: убрать всё лишнее и
+            оставить счётчик кругов / вернуть программу целиком. Работает и до
+            старта, и во время заплыва. */}
+        <div style={styles.eyeRow}>
+          <ActionButton
+            variant="ghost"
+            size="sm"
+            hug
+            onClick={() => { haptic.light(); setShowAll(v => !v) }}
+            style={{ gap: 'var(--space-2)' }}
+          >
+            <EyeIcon off={showAll} size={18} />
+            {showAll ? 'Скрыть' : 'Показать всё'}
+          </ActionButton>
         </div>
       </div>
 
@@ -1017,6 +1063,8 @@ const styles = {
     // друга, упражнения читаются как принадлежащие своему этапу.
     marginBottom: 'var(--space-5)'
   },
+  // Возвращённые глазиком блоки не выпрыгивают, а мягко проявляются.
+  blockCardReveal: { animation: 'groupPillIn 0.3s var(--ease-ios) both' },
   // Шапка этапа: название слева, сводка + шеврон справа.
   blockHead: {
     display: 'flex',
@@ -1191,6 +1239,8 @@ const styles = {
     color: 'var(--color-text)'
   },
   tipsList: { padding: '0 var(--space-5) var(--space-4)' },
+  // Глазик — тихая вторичная кнопка по центру, под всем содержимым.
+  eyeRow: { display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-2)' },
   tipRow: { display: 'flex', gap: 'var(--space-2)', padding: 'var(--space-1) 0', alignItems: 'flex-start' },
   tipMark: { color: 'var(--cat-pool)', fontSize: 'var(--text-button-size)', lineHeight: '18px', flexShrink: 0 },
   tipText: {
