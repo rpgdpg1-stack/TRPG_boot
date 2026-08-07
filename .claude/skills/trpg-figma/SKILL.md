@@ -119,8 +119,9 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   - Заголовок `2:3`, caption `2:4`, row-label md `3:5`, ряд md `3:9`, row-label sm `5:27`, ряд sm `5:28`.
   - Кнопки md: accent `3:10`, gray `3:12`, graphite `3:13`, neutral `3:14`, ghost `3:15`, dim `3:16`.
   - Кнопки sm: accent `5:29`, gray `5:30`, graphite `5:31`, neutral `5:32`, ghost `5:33`, dim `5:34`.
-  - Матрица variant(6)×size(2)=12 фреймов ГОТОВА. Ждёт: Дмитрий соберёт Component Set (свойства
-    `variant`+`size`; `dim` = вид disabled, можно потом вынести в свойство `state`).
+  - Матрица variant(6)×size(2)=12 фреймов ГОТОВА и выверена (графит = `#AEB7C4` обновл. cat/gym;
+    подписи-доки почищены от px). Ждёт: Дмитрий переименует 12 фреймов в `variant=X, size=Y` →
+    Create component set (свойства `variant`+`size`; `dim` = вид disabled, можно потом в `state`).
 - **🎨 Foundations** (page `1:3`): секция `Colors · Primitives` = `12:57` (title `12:58`, wrap-ряд
   `swatches` `12:59` с 17 чипами `12:60…13:76`, у каждого имя+hex). Юзер создаёт Variables-коллекцию
   `Primitives` вручную по шпаргалке. Есть ещё его секция «Словарь» `11:56`.
