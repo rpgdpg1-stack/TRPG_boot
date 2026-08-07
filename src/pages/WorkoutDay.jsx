@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -39,7 +38,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
-import { useScrollLock } from '../lib/use-scroll-lock'
+import ConfirmModal from '../components/ConfirmModal'
 import ReturnHighlight from '../components/workout/ReturnHighlight'
 import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
 import SkeletonCard from '../components/workout/SkeletonCard'
@@ -136,10 +135,6 @@ function FinishIcon({ size = 17 }) {
 }
 
 export default function WorkoutDay() {
-  const overlayRef3 = useRef(null)
-  useScrollLock(overlayRef3)
-  const overlayRef2 = useRef(null)
-  useScrollLock(overlayRef2)
   const { programId, day } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -1432,47 +1427,29 @@ export default function WorkoutDay() {
       )}
 
       {/* Подтверждение отмены тренировки (крестик): закрыть без сохранения. */}
-      {showCancelConfirm && createPortal(
-        <div ref={overlayRef2} style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
-          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.cancelTitle}>Отменить тренировку?</div>
-            <div style={styles.cancelText}>Прогресс не сохранится и в историю не попадёт.</div>
-            <div style={styles.cancelButtonsRow}>
-              <button onClick={() => { haptic.light(); setShowCancelConfirm(false) }} style={styles.cancelKeepBtn} className="press-tile">
-                Нет
-              </button>
-              <button onClick={handleCancelConfirm} style={styles.cancelYesBtn} className="press-tile">
-                Да, отменить
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showCancelConfirm && (
+        <ConfirmModal
+          title="Отменить тренировку?"
+          text="Прогресс не сохранится и в историю не попадёт."
+          onClose={() => setShowCancelConfirm(false)}
+          actions={[
+            { label: 'Нет', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
+            { label: 'Да, отменить', onClick: handleCancelConfirm, danger: true }
+          ]}
+        />
       )}
 
       {/* Предупреждение о лимите ДО старта второй силовой за день. */}
-      {showLimitWarn && createPortal(
-        <div ref={overlayRef3} style={styles.cancelOverlay} onClick={() => setShowLimitWarn(false)}>
-          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.cancelTitle}>Сегодня силовая уже была</div>
-            <div style={styles.cancelText}>
-              Лимит — 1 силовая в день. Вторая тренировка не попадёт в статистику и серию.
-            </div>
-            <div style={styles.cancelButtonsRow}>
-              <button onClick={() => { haptic.light(); setShowLimitWarn(false) }} style={styles.cancelKeepBtn} className="press-tile">
-                Отмена
-              </button>
-              <button
-                onClick={() => { setShowLimitWarn(false); handleStart() }}
-                style={styles.cancelKeepBtn}
-                className="press-tile"
-              >
-                Всё равно начать
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showLimitWarn && (
+        <ConfirmModal
+          title="Сегодня силовая уже была"
+          text="Лимит — 1 силовая в день. Вторая тренировка не попадёт в статистику и серию."
+          onClose={() => setShowLimitWarn(false)}
+          actions={[
+            { label: 'Отмена', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
+            { label: 'Всё равно начать', onClick: () => { setShowLimitWarn(false); handleStart() } }
+          ]}
+        />
       )}
 
       {showFinishedModal && (
@@ -1772,44 +1749,6 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     letterSpacing: '1px',
     cursor: 'pointer'
-  },
-  // Модалка отмены тренировки.
-  cancelOverlay: {
-    position: 'fixed', inset: 0, zIndex: 300,
-    background: 'rgba(13, 12, 12, 0.75)',
-    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
-  },
-  cancelModal: {
-    width: '100%', maxWidth: '340px',
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid var(--layer-2)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-6) var(--space-5) var(--space-5)',
-    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
-  },
-  cancelTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
-    color: 'var(--color-text)', textAlign: 'center'
-  },
-  cancelText: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 'var(--space-4)', lineHeight: 1.4
-  },
-  cancelButtonsRow: { display: 'flex', gap: 'var(--space-2)', width: '100%' },
-  cancelKeepBtn: {
-    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
-    background: 'var(--highlight-recent)', border: '1px solid var(--layer-2)',
-    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
-  },
-  cancelYesBtn: {
-    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
-    background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
-    color: 'var(--color-error)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
   },
   headerRow: {
     display: 'flex',

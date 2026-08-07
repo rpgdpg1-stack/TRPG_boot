@@ -8,6 +8,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
+import { shouldIgnoreCardTap } from '../lib/weight-editing-state'
 import { useWeightEditor } from '../features/exercises/use-weight-editor'
 import { WEIGHT_COLOR_TRANSITION } from '../components/WeightRaiseFlash'
 import ScreenTitle from '../components/ScreenTitle'
@@ -50,6 +51,9 @@ export default function FavoriteExercises() {
   const openFavModal = (f) => { if (!guard()) return; haptic.light(); setOpenFav(f) }
 
   const cardPointerDown = (e, f) => {
+    // Идёт ввод веса (или клавиатура только что закрылась) — тап по карточке
+    // ГАСИМ: человек тапнул мимо, чтобы убрать клавиатуру, а не открыть меню.
+    if (shouldIgnoreCardTap()) return
     // Нажатие по кнопке внутри карточки — не считаем долгим тапом карточки.
     if (e.target.closest('button')) return
     lpFired.current = false
@@ -67,6 +71,7 @@ export default function FavoriteExercises() {
   }
   const cardPointerUp = () => clearLp()
   const cardClick = (f) => {
+    if (shouldIgnoreCardTap()) return
     if (lpFired.current) { lpFired.current = false; return } // долгий тап уже открыл
     openFavModal(f)
   }
@@ -166,7 +171,7 @@ export default function FavoriteExercises() {
                 <div style={styles.exName}>{title(f.name)}</div>
                 {tag && <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>}
               </div>
-              <FavWeight fav={f} showHint={!val} onSaved={load} />
+              <FavWeight fav={f} accent={colors.accent} showHint={!val} onSaved={load} />
             </div>
             </div>
           )
@@ -191,7 +196,7 @@ export default function FavoriteExercises() {
  * дне тренировки), тап по остальной карточке — меню упражнения. Поэтому гасим
  * всплытие: иначе поверх клавиатуры вылезала бы модалка.
  */
-function FavWeight({ fav, showHint, onSaved }) {
+function FavWeight({ fav, accent, showHint, onSaved }) {
   const w = useWeightEditor({
     exerciseId: fav.exercise_id,
     weight: fav.weight_kg,
@@ -205,10 +210,12 @@ function FavWeight({ fav, showHint, onSaved }) {
     >
       <div style={styles.weightInputWrap}>
         {w.raise.arrow}
+        {/* Каретка и выделение — в цвете группы мышц (как в дне тренировки),
+            а не общим зелёным: зелёный тут занят действиями. */}
         <input
           ref={w.inputRef}
           {...w.inputProps}
-          style={{ ...styles.weightInput, opacity: w.editing ? 1 : 0 }}
+          style={{ ...styles.weightInput, caretColor: accent, opacity: w.editing ? 1 : 0 }}
         />
         {!w.editing && (
           <div style={{
@@ -274,7 +281,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800,
     lineHeight: '27px', background: 'transparent', border: 'none', outline: 'none',
     textAlign: 'center', padding: 0, margin: 0,
-    color: 'var(--color-text)', caretColor: 'var(--color-primary)',
+    color: 'var(--color-text)',
     transition: 'opacity 0.12s ease'
   },
   weightValue: {

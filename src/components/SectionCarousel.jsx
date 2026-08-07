@@ -409,7 +409,7 @@ const styles = {
   // листается ВНУТРЕННОСТЬ, сама рамка стоит на месте (как виджеты iOS).
   viewport: {
     overflow: 'hidden', touchAction: 'pan-y',
-    background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
+    background: 'var(--surface-pinned)',
     borderRadius: 'var(--radius-card)',
     cursor: 'pointer'
   },

@@ -22,6 +22,12 @@ import { useScrollLock } from '../lib/use-scroll-lock'
 // Золотистый — только для личного рекорда (кубок и цифра).
 const RECORD_GOLD = '#E8B84B'
 
+// Сетка графика. Пропорцию держат ВСЕ состояния области (скелетон, пустой текст,
+// сам svg) — тогда блок не меняет высоту при загрузке.
+const CHART_W = 340
+const CHART_H = 190
+const CHART_RATIO = `${CHART_W} / ${CHART_H}`
+
 const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -156,7 +162,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
   const dataPts = win && !win.empty ? win.dataPts : []
 
   // Скраб: палец по графику → ближайшая РЕАЛЬНАЯ точка (синтетические края не в счёт).
-  const W = 340, padL = 12, padR = 12, plotW = W - padL - padR
+  const W = CHART_W, padL = 12, padR = 12, plotW = W - padL - padR
   const handleScrub = (clientX) => {
     if (!dataPts.length || !chartRef.current) return
     const r = chartRef.current.getBoundingClientRect()
@@ -230,7 +236,7 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
           onPointerCancel={endScrub}
         >
           {points === null ? (
-            <div style={styles.skeleton} />
+            <div className="skel" style={styles.skeleton} />
           ) : points.length === 0 ? (
             <Empty text={'Пока нет данных.\nПоставь рабочий вес — и точка появится здесь.'} />
           ) : win.empty ? (
@@ -308,9 +314,11 @@ function TrophyIcon({ size = 26 }) {
 
 function Empty({ text }) {
   return (
-    <div style={styles.empty}>
-      <span style={styles.emptyIcon}>📈</span>
-      {text.split('\n').map((l, i) => <div key={i}>{l}</div>)}
+    <div style={styles.emptyBox}>
+      <div style={styles.empty}>
+        <span style={styles.emptyIcon}>📈</span>
+        {text.split('\n').map((l, i) => <div key={i}>{l}</div>)}
+      </div>
     </div>
   )
 }
@@ -341,7 +349,7 @@ function smoothPath(pts) {
 }
 
 function Chart({ win, currentW, line, scrub }) {
-  const W = 340, H = 190
+  const W = CHART_W, H = CHART_H
   const padL = 12, padR = 12, padT = 18, padB = 16
   const plotW = W - padL - padR, plotH = H - padT - padB
   const { linePts, yMin, yMax } = win
@@ -461,17 +469,29 @@ const styles = {
   navSpacer: { width: '30px', height: '30px' },
   navLabel: { flex: 1, textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
 
+  // Рамка графика. Высоты НЕТ — её задаёт содержимое, а у содержимого одна и та
+  // же пропорция (CHART_RATIO) во всех трёх состояниях: скелетон, пустой текст,
+  // сам график. Поэтому блок не прыгает при загрузке (раньше было minHeight 150
+  // против svg 190 — и на подгрузке коробка подрастала с промаргиванием).
   chartWrap: {
     width: '100%',
     background: 'rgba(0, 0, 0, 0.22)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-2)', minHeight: '150px',
+    padding: 'var(--space-2)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     touchAction: 'none'
   },
-  skeleton: { width: '100%', height: '160px', borderRadius: 'var(--radius-small)', background: 'var(--layer-1)' },
-  empty: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: 'var(--space-8) var(--space-3)' },
+  // Скругление вложенного блока = внешнее минус паддинг (33 − 8 ≈ --radius-medium).
+  skeleton: {
+    width: '100%', aspectRatio: CHART_RATIO,
+    borderRadius: 'var(--radius-medium)'
+  },
+  emptyBox: {
+    width: '100%', aspectRatio: CHART_RATIO,
+    display: 'flex', alignItems: 'center', justifyContent: 'center'
+  },
+  empty: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.6, padding: '0 var(--space-3)' },
   emptyIcon: { fontSize: '30px', display: 'block', marginBottom: 'var(--space-3)', opacity: 0.8 },
 
   svgNowLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.8 }

@@ -369,7 +369,7 @@ const styles = {
     gap: 'var(--space-15)',
     padding: 'var(--space-2) var(--space-3)',
     // Отделяется заливкой (на ~7% светлее карточки), без рамки.
-    background: 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))',
+    background: 'var(--surface-pinned)',
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-body-size)',

@@ -203,7 +203,7 @@ export default function Category() {
         cta
         bordered={false}
         background={favoriteSlug === prog.slug
-          ? 'color-mix(in srgb, var(--color-text) 6%, var(--surface-raised))'
+          ? 'var(--surface-pinned)'
           : 'var(--color-card)'}
       />
     </div>

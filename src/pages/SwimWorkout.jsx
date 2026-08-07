@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
@@ -27,6 +26,7 @@ import {
 import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
 import { resolveWeeklyStreak } from '../utils/dates'
+import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import CloseCross from '../components/CloseCross'
 import UiIcon from '../components/UiIcon'
@@ -179,8 +179,6 @@ export default function SwimWorkout() {
   // Крестик «отменить заплыв» — та же логика, что в дне силовой: подтверждение,
   // затем сессия закрывается БЕЗ сохранения (в историю не идёт).
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const cancelOverlayRef = useRef(null)
-  useScrollLock(cancelOverlayRef)
 
   // Тост «сначала заверши текущую» — по тапу на «Начать» при чужой сессии.
   const [startBlocked, setStartBlocked] = useState(false)
@@ -672,27 +670,21 @@ export default function SwimWorkout() {
       {/* Кнопка «наверх» — при скролле вниз (как в дне силовой). */}
       <ScrollTopButton />
 
-      {/* Подтверждение отмены — тот же текст и порядок кнопок, что в силовой. */}
-      {showCancelConfirm && createPortal(
-        <div ref={cancelOverlayRef} style={styles.cancelOverlay} onClick={() => setShowCancelConfirm(false)}>
-          <div style={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.cancelTitle}>Отменить заплыв?</div>
-            <div style={styles.cancelText}>Время не сохранится и в историю не попадёт.</div>
-            <div style={styles.cancelButtonsRow}>
-              <button onClick={() => { haptic.light(); setShowCancelConfirm(false) }} style={styles.cancelKeepBtn} className="press-tile">
-                Нет
-              </button>
-              <button
-                onClick={() => { haptic.medium(); clearActiveWorkout(); setShowCancelConfirm(false) }}
-                style={styles.cancelYesBtn}
-                className="press-tile"
-              >
-                Да, отменить
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* Подтверждение отмены — общая модалка, как в дне силовой. */}
+      {showCancelConfirm && (
+        <ConfirmModal
+          title="Отменить заплыв?"
+          text="Время не сохранится и в историю не попадёт."
+          onClose={() => setShowCancelConfirm(false)}
+          actions={[
+            { label: 'Нет', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
+            {
+              label: 'Да, отменить',
+              danger: true,
+              onClick: () => { haptic.medium(); clearActiveWorkout(); setShowCancelConfirm(false) }
+            }
+          ]}
+        />
       )}
 
       {modal && (
@@ -1306,44 +1298,6 @@ const styles = {
   },
   // Таймер + крестик отмены в одной группе (шапка активного заплыва).
   timerRow: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
-  // Модалка отмены заплыва — вид один в один с днём силовой.
-  cancelOverlay: {
-    position: 'fixed', inset: 0, zIndex: 300,
-    background: 'rgba(13, 12, 12, 0.75)',
-    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
-  },
-  cancelModal: {
-    width: '100%', maxWidth: '340px',
-    background: 'rgba(34, 34, 34, 0.98)',
-    border: '1px solid var(--layer-2)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-6) var(--space-5) var(--space-5)',
-    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
-  },
-  cancelTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
-    color: 'var(--color-text)', textAlign: 'center'
-  },
-  cancelText: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: 'var(--space-4)', lineHeight: 1.4
-  },
-  cancelButtonsRow: { display: 'flex', gap: 'var(--space-2)', width: '100%' },
-  cancelKeepBtn: {
-    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
-    background: 'var(--highlight-recent)', border: '1px solid var(--layer-2)',
-    color: 'var(--color-text)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 700, letterSpacing: '1px', cursor: 'pointer'
-  },
-  cancelYesBtn: {
-    flex: 1, padding: 'var(--space-4)', borderRadius: 'var(--radius-medium)',
-    background: 'rgba(232, 69, 69, 0.16)', border: '1px solid rgba(232, 69, 69, 0.5)',
-    color: 'var(--color-error)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 800, letterSpacing: '1px', cursor: 'pointer'
-  },
   // Тост «занято» над доком — тот же вид, что в дне силовой.
   startBlockWrap: {
     position: 'absolute',

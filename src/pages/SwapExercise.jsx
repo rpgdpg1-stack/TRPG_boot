@@ -220,7 +220,6 @@ export default function SwapExercise() {
               exercise={currentForRender}
               muscleGroup={muscleGroup}
               isSelected={selectedId === currentForRender.id}
-              isCurrent={true}
               isDefault={false}
               onTap={() => handleSelect(currentForRender.id)}
             />
@@ -253,7 +252,6 @@ export default function SwapExercise() {
                 exercise={ex}
                 muscleGroup={muscleGroup}
                 isSelected={selectedId === ex.id}
-                isCurrent={false}
                 isDefault={shouldHighlightDefault && ex.id === defaultExerciseId}
                 onTap={() => handleSelect(ex.id)}
               />
@@ -280,16 +278,12 @@ export default function SwapExercise() {
   )
 }
 
-function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, onTap }) {
-  // Выбор показывает ТОЛЬКО точка радио справа + светлая заливка «закрепа».
-  // Зелёных обводок нет: строка списка не должна кричать ярче кнопки действия.
-  // «От программы» ничем не залито и не обведено — у него свой бейдж в углу.
-  let background = 'var(--color-card)'
-  if (isSelected) {
-    background = 'var(--highlight-recent)'
-  } else if (isCurrent) {
-    background = 'var(--layer-1)'
-  }
+function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
+  // Заливки ровно ДВЕ: выбранная строка — светло-серая «закреплённая»
+  // (`--surface-pinned`, тот же цвет, что у закреплённой программы на главной),
+  // все остальные — обычная карточка. Зелёных обводок нет: выбор показывает
+  // точка радио справа. «От программы» ничем не залито — у него бейдж в углу.
+  const background = isSelected ? 'var(--surface-pinned)' : 'var(--color-card)'
 
   const colors = getMuscleGroupColors(muscleGroup)
   // Один тег — подгруппа, в цвете основной группы (имя группы тут не дублируем).

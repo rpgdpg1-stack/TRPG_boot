@@ -34,7 +34,11 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  *  - глобальная защита от ложных активаций при открытой клавиатуре
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
-const SWIPE_PANEL_W = 116 // ширина панели действий (2 действия), открывается свайпом влево
+// Геометрия панели действий (открывается свайпом влево). Зазор ОДИН и тот же:
+// от края карточки до первой плитки, между плитками и до правого края — иначе
+// первое действие липнет к карточке, а между собой они разъезжаются.
+const SWIPE_GAP = 8   // = --space-2
+const SWIPE_CELL = 50 // ширина плитки действия
 
 // Реестр закрывашек: одновременно открыт свайп ТОЛЬКО у одной карточки. Начал свайп
 // на любой другой — остальные закрываются (той же анимацией 0.28с, что и пальцем).
@@ -98,7 +102,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const MOVE_THRESHOLD_PX = 10
 
   // Свайп влево → панель действий (техника / замена). offset: 0 закрыто,
-  // -SWIPE_PANEL_W открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
+  // -panelW открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
   const offsetRef = useRef(0)
@@ -158,6 +162,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
     { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]
+  const panelW = SWIPE_GAP + swipeActions.length * (SWIPE_CELL + SWIPE_GAP)
 
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group)
@@ -246,7 +251,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       }
     }
     if (s.swiping) {
-      setOff(Math.max(-SWIPE_PANEL_W, Math.min(0, s.start + dx)))
+      setOff(Math.max(-panelW, Math.min(0, s.start + dx)))
     }
   }
 
@@ -255,9 +260,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     const s = swipe.current
     if (s.swiping) {
       setDragging(false)
-      const opened = offsetRef.current < -SWIPE_PANEL_W / 2
+      const opened = offsetRef.current < -panelW / 2
       openRef.current = opened
-      setOff(opened ? -SWIPE_PANEL_W : 0)
+      setOff(opened ? -panelW : 0)
       openAtScrollY = opened ? scrollTopNow() : null // старт для микро-скролл защиты
       if (opened) haptic.light()
       s.suppressClick = true
@@ -380,20 +385,19 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         Drag-select: серое выделение под пальцем «плавает» между действиями. */}
     <div
       ref={panelRef}
-      style={styles.actionPanel}
+      style={{ ...styles.actionPanel, width: `${panelW}px` }}
       aria-hidden={offset === 0}
       onPointerDown={onPanelPointerDown}
       onPointerMove={onPanelPointerMove}
       onPointerUp={onPanelPointerUp}
       onPointerCancel={onPanelPointerCancel}
     >
-      {/* Ширина ячейки считается от ЧИСЛА действий — иначе выделение съезжает,
-          как только состав панели меняется. */}
+      {/* Плитка выделения встаёт по той же сетке, что и сами действия. */}
       {activeAction != null && (
         <div style={{
           ...styles.actionHighlight,
-          left: `calc(${activeAction * (100 / swipeActions.length)}% + 4px)`,
-          width: `calc(${100 / swipeActions.length}% - 8px)`
+          left: `${SWIPE_GAP + activeAction * (SWIPE_CELL + SWIPE_GAP)}px`,
+          width: `${SWIPE_CELL}px`
         }} />
       )}
       {swipeActions.map(a => (
@@ -555,9 +559,11 @@ const styles = {
   actionPanel: {
     position: 'absolute',
     top: 0, right: 0, bottom: 0,
-    width: `${SWIPE_PANEL_W}px`,
+    // ширина приходит инлайном — считается от числа действий
     display: 'flex',
     alignItems: 'stretch',
+    padding: `0 ${SWIPE_GAP}px`,
+    gap: `${SWIPE_GAP}px`,
     zIndex: 0
   },
   actionBtn: {

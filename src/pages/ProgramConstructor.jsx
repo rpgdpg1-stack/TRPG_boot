@@ -8,11 +8,10 @@ import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labe
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
-import ModalButton from '../components/ModalButton'
+import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { GroupLabel, SectionLabel } from '../components/GroupLabel'
-import { useScrollLock } from '../lib/use-scroll-lock'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
 
@@ -38,8 +37,6 @@ const NAME_PLACEHOLDER = 'Введите название'
  * Порядок упражнений в дне = порядок добавления (перетаскивание добавим позже).
  */
 export default function ProgramConstructor() {
-  const overlayRef = useRef(null)
-  useScrollLock(overlayRef)
   const navigate = useNavigate()
   // Возврат — шаг назад по истории (navigate(-1)), а не push на конкретный путь:
   // конструктор всегда открывается ОДНИМ push'ем со страницы-источника (главная /
@@ -640,40 +637,29 @@ export default function ProgramConstructor() {
         />
       )}
 
-      {confirmExit && createPortal(
-        <div ref={overlayRef} style={styles.exitOverlay} onClick={() => setConfirmExit(false)}>
-          <div style={styles.exitModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.exitTitle}>Сохранить изменения?</div>
-            <div style={styles.exitText}>В программе есть несохранённые изменения.</div>
-
-            {/* Две кнопки в ряд (как нативный confirm). «Остаться» — тап мимо
-                модалки (overlay onClick). */}
-            <div style={styles.exitButtonsRow}>
-              <ModalButton
-                style={{ flex: 1 }}
-                onClick={() => { setConfirmExit(false); haptic.light(); goBack() }}
-              >
-                Не сохранять
-              </ModalButton>
-              <ModalButton
-                style={{ flex: 1 }}
-                onClick={async () => {
-                  if (!canSave) {
-                    // Нельзя сохранить (пустой день) — подсказываем, остаёмся.
-                    haptic.error()
-                    window.alert('В каждом дне должно быть хотя бы одно упражнение.')
-                    return
-                  }
-                  setConfirmExit(false)
-                  await handleSave()
-                }}
-              >
-                Сохранить
-              </ModalButton>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {/* «Остаться» — тап мимо модалки. */}
+      {confirmExit && (
+        <ConfirmModal
+          title="Сохранить изменения?"
+          text="В программе есть несохранённые изменения."
+          onClose={() => setConfirmExit(false)}
+          actions={[
+            { label: 'Не сохранять', onClick: () => { setConfirmExit(false); haptic.light(); goBack() } },
+            {
+              label: 'Сохранить',
+              onClick: async () => {
+                if (!canSave) {
+                  // Нельзя сохранить (пустой день) — подсказываем, остаёмся.
+                  haptic.error()
+                  window.alert('В каждом дне должно быть хотя бы одно упражнение.')
+                  return
+                }
+                setConfirmExit(false)
+                await handleSave()
+              }
+            }
+          ]}
+        />
       )}
     </div>
   )
@@ -846,31 +832,4 @@ const styles = {
     color: 'var(--color-error)',
     textAlign: 'center'
   },
-  exitOverlay: {
-    position: 'fixed', inset: 0, zIndex: 300,
-    background: 'rgba(13,12,12,0.75)',
-    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
-  },
-  exitModal: {
-    width: '100%', maxWidth: '360px',
-    background: 'rgba(34,34,34,0.98)',
-    border: '1px solid var(--layer-2)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-6) var(--space-5) var(--space-5)',
-    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.6)'
-  },
-  exitTitle: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800,
-    color: 'var(--color-text)', textAlign: 'center'
-  },
-  exitText: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text)', textAlign: 'center', marginBottom: 'var(--space-4)'
-  },
-  exitButtonsRow: {
-    display: 'flex', gap: 'var(--space-2)', width: '100%'
-  }
 }
