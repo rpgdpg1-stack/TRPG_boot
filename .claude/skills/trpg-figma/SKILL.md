@@ -126,6 +126,12 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
     `dim` = disabled-вариант; полноценный state=default/disabled = матрица ×2, обсуждается).
     ВАЖНО: в коде кнопки перешли на sentence case + у Начать/Завершить появились иконки (плей/флажок),
     Начать стала зелёной — при финализации Button добавить слот иконки и свериться по графиту.
+  - Текст кнопок → стиль **Button** (Manrope 14/800) на все 12 label (юзер применяет; sm свели с 15/700).
+- **Секция `Icons` = `54:168`** (дом для иконок, страница Components). МОСТ SVG НЕ ИМПОРТИРУЕТ — иконки
+  Дмитрий вставляет вставкой (Cmd+V, Figma конвертит в вектор). Кнопочные иконки (play/finish/check/plus)
+  выданы SVG-кодом из `WorkoutDay` PlayIcon/FinishIcon + `assets/ui/check.svg`. Флоу: вставить → Create
+  component (`icon/play` и т.д.) → в Button добавить слот иконки (инстанс слева от label, gap space/2,
+  Boolean «Icon» + Instance swap). Полный набор 35 иконок — в `src/assets/ui/*.svg` (для Icon-библиотеки).
 - **🎨 Foundations** (page `1:3`): секция `Colors · Primitives` = `12:57` (title `12:58`, wrap-ряд
   `swatches` `12:59` с 17 чипами `12:60…13:76`, у каждого имя+hex). Юзер создаёт Variables-коллекцию
   `Primitives` вручную по шпаргалке. Есть ещё его секция «Словарь» `11:56`.
