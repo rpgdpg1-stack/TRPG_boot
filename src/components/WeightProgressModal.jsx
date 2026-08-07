@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { getWeightHistory } from '../features/exercises/api'
 import { haptic } from '../lib/telegram'
 import CloseCross from './CloseCross'
+import PagerArrows from './PagerArrows'
 import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
@@ -247,24 +248,19 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
         </div>
 
         {/* Строка периода + листание (для Месяц/Год) — под графиком */}
+        {/* Название периода слева, пара стрелок — у правого края той же строки. */}
         <div style={styles.navRow}>
-          {period !== 'all' ? (
-            <button
-              onClick={() => { if (win?.canLeft) { haptic.selection(); setOffset(o => o - 1) } }}
-              disabled={!win?.canLeft}
-              style={{ ...styles.navArrow, opacity: win?.canLeft ? 1 : 0.25 }}
-              aria-label="Раньше"
-            >‹</button>
-          ) : <span style={styles.navSpacer} />}
           <span style={styles.navLabel}>{win?.label || ''}</span>
-          {period !== 'all' ? (
-            <button
-              onClick={() => { if (win?.canRight) { haptic.selection(); setOffset(o => o + 1) } }}
-              disabled={!win?.canRight}
-              style={{ ...styles.navArrow, opacity: win?.canRight ? 1 : 0.25 }}
-              aria-label="Позже"
-            >›</button>
-          ) : <span style={styles.navSpacer} />}
+          {period !== 'all' && (
+            <PagerArrows
+              onPrev={() => setOffset(o => o - 1)}
+              onNext={() => setOffset(o => o + 1)}
+              canPrev={!!win?.canLeft}
+              canNext={!!win?.canRight}
+              prevLabel="Раньше"
+              nextLabel="Позже"
+            />
+          )}
         </div>
 
         {/* Переключатель периода — в самом низу панели (где была кнопка «Закрыть») */}
@@ -460,14 +456,10 @@ const styles = {
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
   },
 
-  navRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '22px' },
-  navArrow: {
-    width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    fontSize: 'var(--text-heading-size)', lineHeight: 1, color: 'var(--color-text)', WebkitTapHighlightColor: 'transparent'
-  },
-  navSpacer: { width: '30px', height: '30px' },
-  navLabel: { flex: 1, textAlign: 'center', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
+  // Высота ряда — по стрелкам (44px), чтобы блок не прыгал на «Всё время»,
+  // когда листать нечего и стрелок нет.
+  navRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '44px' },
+  navLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
 
   // Рамка графика. Высоты НЕТ — её задаёт содержимое, а у содержимого одна и та
   // же пропорция (CHART_RATIO) во всех трёх состояниях: скелетон, пустой текст,

@@ -4,6 +4,7 @@ import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import UiIcon from './UiIcon'
+import PagerArrows from './PagerArrows'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import {
@@ -260,22 +261,19 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
 
       {/* Свайп по ВСЕЙ карточке (заголовок/сводка/сетка) — листает месяцы. */}
       <div style={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        {/* Месяц/год слева, пара стрелок — у правого края той же строки. */}
         <div style={styles.monthNav}>
-          {showChev ? (
-            <button
-              style={{ ...styles.chev, opacity: canPrev ? 1 : 0.25 }}
-              className="press-tile" onClick={goPrev} disabled={!canPrev}
-              aria-label={isYear ? 'Предыдущий год' : 'Предыдущий месяц'}
-            >‹</button>
-          ) : <span style={styles.chevSpacer} />}
           <div style={styles.monthTitle}>{titleText}</div>
-          {showChev ? (
-            <button
-              style={{ ...styles.chev, opacity: canNext ? 1 : 0.25 }}
-              className="press-tile" onClick={goNext} disabled={!canNext}
-              aria-label={isYear ? 'Следующий год' : 'Следующий месяц'}
-            >›</button>
-          ) : <span style={styles.chevSpacer} />}
+          {showChev && (
+            <PagerArrows
+              onPrev={goPrev}
+              onNext={goNext}
+              canPrev={canPrev}
+              canNext={canNext}
+              prevLabel={isYear ? 'Предыдущий год' : 'Предыдущий месяц'}
+              nextLabel={isYear ? 'Следующий год' : 'Следующий месяц'}
+            />
+          )}
         </div>
 
         {isAll ? (
@@ -446,19 +444,14 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4)'
   },
+  // Высота ряда — по стрелкам (44px): без листания (неделя/всё) ряд остаётся
+  // той же высоты, карточка не прыгает при смене периода.
   monthNav: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 'var(--space-3)'
+    minHeight: '44px', marginBottom: 'var(--space-3)'
   },
-  chev: {
-    width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'transparent', border: 'none', color: 'var(--color-text)',
-    fontSize: 'var(--text-heading-size)', lineHeight: 1, fontFamily: 'var(--font-manrope)', padding: 0
-  },
-  // Заглушка на месте шеврона (неделя/всё — без листания), чтобы заголовок был по центру.
-  chevSpacer: { width: '40px', height: '40px', flexShrink: 0 },
   monthTitle: {
-    flex: 1, textAlign: 'center',
+    flex: 1, textAlign: 'left',
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     color: 'var(--color-text)', letterSpacing: '0.5px'
   },
