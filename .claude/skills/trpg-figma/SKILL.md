@@ -129,6 +129,13 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   - Текст кнопок → стиль **Button** (Manrope 14/800) на все 12 label (юзер применил). В КОДЕ тоже свёл:
     `ActionButton` md+sm → `--text-button-size/-weight` (было sm 15/700), letter-spacing 0.3 (sentence case).
   - sm-радиус в коде стал **pill** (было medium) → выровнял 6 sm-вариантов в Figma на 90 (`51:135…140`).
+  - **Графит УДАЛЁН** (0 использований в коде) — из `ActionButton` и из Figma-набора (`51:132/137`).
+    **primary НЕ в Figma, но в коде 5× (главный CTA)** — надо добавить (= accent БЕЗ обводки).
+  - **Привязка переменных к вариантам Button (сверено с ActionButton.jsx):** accent→fill `accent`/stroke
+    `accent/dark` 1.5/text `accent/on`; primary→fill `accent`/БЕЗ обводки/text `accent/on`; gray→fill
+    `neutral/600`/stroke `layer/3`/text `text/primary`; ghost→прозрач./stroke `layer/3`/text `text/secondary`;
+    neutral→#222@55%+`blur/md`/stroke #FFF@20%/**text `accent` (зелёный!)**; dim→`surface/dim`+`blur/sm`/stroke
+    `layer/3`/text #888@55%. Иконка = цвет текста варианта. neutral/dim — СТЕКЛО (opacity+Layer blur).
   - **Грабля иконок:** мост НЕ красит контур иконки и НЕ создаёт свойства компонента (Boolean/Instance
     swap). `set_fill_color` на инстансе иконки залил РАМКУ → чёрный квадрат. Вывод: цвет иконки и
     свойства — только в Figma-панели (юзер). Рекомендация лида: иконки на кнопках РЕДКИ (Начать/Завершить)
