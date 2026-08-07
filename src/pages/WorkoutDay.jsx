@@ -1337,7 +1337,6 @@ export default function WorkoutDay() {
                           isActive={activeOrderNums.has(slot.order_num)}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
-                          onNote={(s) => setActionSlot(s)}
                           onInfo={goToInfo}
                           onSwap={goToSwap}
                           onWeightSaved={handleWeightSaved}

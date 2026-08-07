@@ -197,7 +197,8 @@ export default function WeightProgressModal({ exerciseId, exerciseName, accent, 
             {/* Значение: цифра + единица СПРАВА от неё, подпись состояния — снизу. */}
             <span style={styles.valueBlock}>
               <span style={styles.valueTop}>
-                <span style={{ ...styles.bigValue, color: line }}>{fmtKg(topWeight)}</span>
+                {/* Число — белым (как вес в дне тренировки); цвет группы несёт график. */}
+                <span style={{ ...styles.bigValue, color: 'var(--color-text)' }}>{fmtKg(topWeight)}</span>
                 <span style={styles.bigUnit}>{unit}</span>
               </span>
               <span style={{ ...styles.bigSub, color: scrub ? 'var(--color-text)' : 'var(--color-text-secondary)' }}>

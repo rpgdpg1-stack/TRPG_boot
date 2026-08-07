@@ -21,10 +21,10 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  *  - Под названием — ОДИН тег подгруппы (Ширина / Бицепс / ...) в цвете основной
  *    группы. Имя группы (Спина / Грудь) показывается в заголовке секции на дне.
  *  - Под тегом — серая подпись подходов (3×8-10).
- *  - Справа цифра веса — в АКЦЕНТНОМ цвете группы. Изменение веса → короткая
- *    вспышка ~2с (useWeightRaiseFlash): повышение — зелёная стрелка ↑ + зелёное
- *    число; понижение — серая стрелка ↓ + светло-серое число; потом цвет
- *    возвращается к цвету группы.
+ *  - Справа цифра веса — БЕЛАЯ (как заголовок упражнения). Изменение веса →
+ *    короткая вспышка ~2с (useWeightRaiseFlash): повышение — зелёная стрелка ↑ +
+ *    зелёное число; понижение — серая стрелка ↓ + светло-серое число; потом цвет
+ *    возвращается к белому.
  *
  * Что СОХРАНЕНО без изменений:
  *  - long-press → onLongPress(slot) для меню "Инфо / Сменить"
@@ -34,7 +34,7 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  *  - глобальная защита от ложных активаций при открытой клавиатуре
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
-const SWIPE_PANEL_W = 172 // ширина панели действий (3 действия), открывается свайпом влево
+const SWIPE_PANEL_W = 116 // ширина панели действий (2 действия), открывается свайпом влево
 
 // Реестр закрывашек: одновременно открыт свайп ТОЛЬКО у одной карточки. Начал свайп
 // на любой другой — остальные закрываются (той же анимацией 0.28с, что и пальцем).
@@ -53,7 +53,7 @@ if (typeof window !== 'undefined') {
   }, { passive: true })
 }
 
-export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onNote, onInfo, onSwap, onWeightSaved }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
   const {
     exercise_id,
     exercise_name,
@@ -97,7 +97,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
-  // Свайп влево → панель действий (заметка / техника / замена). offset: 0 закрыто,
+  // Свайп влево → панель действий (техника / замена). offset: 0 закрыто,
   // -SWIPE_PANEL_W открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -119,7 +119,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const closeOthers = () => { swipeCloseFns.forEach(fn => { if (fn !== myCloseFnRef.current) fn() }) }
 
   // Drag-select по панели действий: нажал — серое выделение на действии под пальцем;
-  // ведёшь влево-вправо — выделение «плавает» между Заметка/Техника/Замена (без вибро);
+  // ведёшь влево-вправо — выделение «плавает» между Техника/Замена (без вибро);
   // отпустил на действии — вибро + выполнить; увёл вниз/мимо — закрыть без действия.
   const panelRef = useRef(null)
   const [activeAction, setActiveAction] = useState(null)
@@ -152,8 +152,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
   const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
+  // Заметка из свайпа убрана — она осталась в меню по долгому нажатию,
+  // где её можно сразу написать, а не открывать ещё один экран.
   const swipeActions = [
-    { key: 'note', icon: 'notes', color: 'var(--color-note)', label: 'Заметка', fn: onNote },
     { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
     { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]

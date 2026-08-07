@@ -154,7 +154,8 @@ function FavoritesList({ items, showWeights }) {
             <span style={m.favName}>{cap(f.name)}</span>
             {has && (
               <span style={m.favVal}>
-                <span style={{ color: accent, fontWeight: 800 }}>{num}</span>
+                {/* Вес — белым, как в дне тренировки; цвет группы остаётся заголовку. */}
+                <span style={{ color: 'var(--color-text)', fontWeight: 800 }}>{num}</span>
                 <span style={m.favUnit}> {f.counts_reps ? 'раз' : 'кг'}</span>
               </span>
             )}

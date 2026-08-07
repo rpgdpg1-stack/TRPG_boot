@@ -10,7 +10,8 @@ import { useEffect, useRef, useState } from 'react'
  *  - ПОВЫШЕНИЕ (новое > старого) → слева зелёная стрелка ↑ + число зеленеет
  *    (--color-primary), с лёгким «подъёмом» стрелки (keyframes weightRaiseArrow).
  *  - ПОНИЖЕНИЕ (новое < старого) → слева стрелка ↓ + число в фиксированном сером
- *    (WEIGHT_DOWN_COLOR), БЕЗ яркой анимации — мягкое появление (weightLowerArrow).
+ *    (WEIGHT_DOWN_COLOR), тем же ходом, но вниз: стрелка приезжает сверху и
+ *    останавливается (weightLowerArrow — зеркало weightRaiseArrow).
  * Равный/0 — без вспышки. Ничего не хранится.
  *
  * Хук: `trigger('up'|'down')`, `flash` ('up'|'down'|null), `colorFor(accent)`
