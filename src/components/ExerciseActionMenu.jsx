@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
@@ -273,7 +274,11 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   const groupLabel = toTitleCase(groupLabelRaw)
   const subGroupLabel = toTitleCase(subGroupLabelRaw)
 
-  return (
+  // Портал в body ОБЯЗАТЕЛЕН: страница «Любимые» висит на `.page-fade`, а у той
+  // анимации `fill-mode: both` оставляет transform — такой предок становится
+  // контейнером для `position: fixed`, и оверлей центрировался по СТРАНИЦЕ,
+  // а не по экрану (снизу списка модалка вылезала выше центра).
+  return createPortal(
     <div
       ref={overlayRef}
       style={styles.overlay}
@@ -439,7 +444,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           onClose={() => setShowProgress(false)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
 

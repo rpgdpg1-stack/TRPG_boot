@@ -1,16 +1,17 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
-import { getFavoriteExercises, getFavoritesSync, removeFavorite, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
+import { getFavoriteExercises, getFavoritesSync, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { getActiveDaySync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
 import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
+import { useWeightEditor } from '../features/exercises/use-weight-editor'
+import { WEIGHT_COLOR_TRANSITION } from '../components/WeightRaiseFlash'
 import ScreenTitle from '../components/ScreenTitle'
 import HeartIcon from '../components/HeartIcon'
-import HeartButton from '../components/HeartButton'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import { GroupLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
@@ -23,9 +24,10 @@ const readPinnedGym = () => {
 /**
  * «Любимые упражнения» — до FAVORITE_LIMIT (5). Добавляются сердечком в мини-модалке дня
  * тренировки; здесь показываются теми же карточками. Тап ИЛИ долгий тап по
- * карточке → та же мини-модалка (вес/заметка/сердечко/график). Тап по сердечку —
- * убрать. «+» ведёт в
- * закреплённую силовую, где ставишь ❤️ долгим тапом.
+ * карточке → та же мини-модалка (вес/заметка/сердечко/график) — убрать из
+ * любимых можно ТОЛЬКО там: сердечек на самих карточках нет, пять штук подряд
+ * читались как основное действие экрана. Тап по цифре веса — правка на месте.
+ * «+» ведёт в закреплённую силовую, где ставишь ❤️ долгим тапом.
  */
 export default function FavoriteExercises() {
   const navigate = useNavigate()
@@ -48,7 +50,7 @@ export default function FavoriteExercises() {
   const openFavModal = (f) => { if (!guard()) return; haptic.light(); setOpenFav(f) }
 
   const cardPointerDown = (e, f) => {
-    // Нажатие по сердечку (или другой кнопке внутри) — не считаем долгим тапом карточки.
+    // Нажатие по кнопке внутри карточки — не считаем долгим тапом карточки.
     if (e.target.closest('button')) return
     lpFired.current = false
     lpStart.current = { x: e.clientX, y: e.clientY }
@@ -96,12 +98,6 @@ export default function FavoriteExercises() {
     const prog = getProgramBySlug(slug)
     const day = getActiveDaySync(slug) || Object.keys(prog.data?.days || { A: 1 })[0] || 'A'
     navigate(`/workout/${slug}/${day}`, { state: { from: '/favorite-exercises' } })
-  }
-
-  const removeFav = async (exerciseId) => {
-    haptic.medium()
-    await removeFavorite(exerciseId)
-    load()
   }
 
   // slot-объект для ExerciseActionMenu (маппинг полей).
@@ -161,13 +157,6 @@ export default function FavoriteExercises() {
               onPointerCancel={cardPointerUp}
               onPointerLeave={cardPointerUp}
             >
-              <HeartButton
-                filled
-                color="var(--color-primary)"
-                onActivate={() => removeFav(f.exercise_id)}
-                ariaLabel="Убрать из любимых"
-                style={styles.heartBtn}
-              />
               <div style={styles.preview}>
                 {f.preview_url
                   ? <img src={f.preview_url} alt="" style={styles.previewImg} draggable={false} />
@@ -177,12 +166,7 @@ export default function FavoriteExercises() {
                 <div style={styles.exName}>{title(f.name)}</div>
                 {tag && <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>}
               </div>
-              <div style={styles.weightBlock}>
-                {/* Вес — белым, как в дне тренировки: цвет группы живёт на теге. */}
-                <div style={styles.weightValue}>{f.weight_kg != null ? f.weight_kg : 0}</div>
-                <div style={styles.weightUnit}>{f.counts_reps ? 'раз' : 'кг'}</div>
-                {!val && <div style={styles.weightHint}>задать</div>}
-              </div>
+              <FavWeight fav={f} showHint={!val} onSaved={load} />
             </div>
             </div>
           )
@@ -198,6 +182,46 @@ export default function FavoriteExercises() {
           onWeightSaved={() => load()}
         />
       )}
+    </div>
+  )
+}
+
+/**
+ * Блок веса — тапается отдельно от карточки: тап по цифре открывает ввод (как в
+ * дне тренировки), тап по остальной карточке — меню упражнения. Поэтому гасим
+ * всплытие: иначе поверх клавиатуры вылезала бы модалка.
+ */
+function FavWeight({ fav, showHint, onSaved }) {
+  const w = useWeightEditor({
+    exerciseId: fav.exercise_id,
+    weight: fav.weight_kg,
+    onSaved: () => onSaved?.()
+  })
+  return (
+    <div
+      style={styles.weightBlock}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div style={styles.weightInputWrap}>
+        {w.raise.arrow}
+        <input
+          ref={w.inputRef}
+          {...w.inputProps}
+          style={{ ...styles.weightInput, opacity: w.editing ? 1 : 0 }}
+        />
+        {!w.editing && (
+          <div style={{
+            ...styles.weightValue,
+            color: w.raise.colorFor('var(--color-text)'),
+            transition: WEIGHT_COLOR_TRANSITION
+          }}>
+            {w.value}
+          </div>
+        )}
+      </div>
+      <div style={styles.weightUnit}>{fav.counts_reps ? 'раз' : 'кг'}</div>
+      {showHint && <div style={styles.weightHint}>задать</div>}
     </div>
   )
 }
@@ -226,12 +250,6 @@ const styles = {
   },
   plus: { color: 'var(--color-primary)', fontSize: 'var(--text-heading-size)', lineHeight: 1 },
   emptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
-  heartBtn: {
-    position: 'absolute', top: '10px', right: '10px', zIndex: 6, width: '40px', height: '40px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
   preview: {
     flexShrink: 0, width: '100px', height: '100px', borderRadius: 'var(--radius-card)', overflow: 'hidden',
     background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -243,9 +261,28 @@ const styles = {
     alignSelf: 'flex-start', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
   },
-  // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard).
-  weightBlock: { flexShrink: 0, width: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  weightValue: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, lineHeight: '27px', textAlign: 'center', color: 'var(--color-text)' },
+  // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard):
+  // цифра и прозрачный инпут поверх неё лежат в одной ячейке 38×27.
+  weightBlock: {
+    position: 'relative', flexShrink: 0, width: '38px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    padding: 'var(--space-15)', margin: '-6px'
+  },
+  weightInputWrap: { position: 'relative', width: '38px', height: '27px' },
+  weightInput: {
+    position: 'absolute', top: 0, left: 0, width: '38px', height: '27px',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800,
+    lineHeight: '27px', background: 'transparent', border: 'none', outline: 'none',
+    textAlign: 'center', padding: 0, margin: 0,
+    color: 'var(--color-text)', caretColor: 'var(--color-primary)',
+    transition: 'opacity 0.12s ease'
+  },
+  weightValue: {
+    position: 'absolute', top: 0, left: 0, width: '38px', height: '27px',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800,
+    lineHeight: '27px', textAlign: 'center', color: 'var(--color-text)',
+    pointerEvents: 'none'
+  },
   weightUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 800, lineHeight: '15px', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', textAlign: 'center' },
   weightHint: { marginTop: 'var(--space-05)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
   loading: { textAlign: 'center', padding: 'var(--space-4)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' }
