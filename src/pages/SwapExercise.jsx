@@ -281,20 +281,14 @@ export default function SwapExercise() {
 }
 
 function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, onTap }) {
-  let borderColor = 'transparent'
-  if (isSelected) {
-    borderColor = 'var(--color-primary)'
-  } else if (isDefault) {
-    borderColor = 'rgba(158, 209, 83, 0.55)'
-  }
-
+  // Выбор показывает ТОЛЬКО точка радио справа + светлая заливка «закрепа».
+  // Зелёных обводок нет: строка списка не должна кричать ярче кнопки действия.
+  // «От программы» ничем не залито и не обведено — у него свой бейдж в углу.
   let background = 'var(--color-card)'
   if (isSelected) {
-    background = 'rgba(158, 209, 83, 0.10)'
+    background = 'var(--highlight-recent)'
   } else if (isCurrent) {
     background = 'var(--layer-1)'
-  } else if (isDefault) {
-    background = 'rgba(158, 209, 83, 0.05)'
   }
 
   const colors = getMuscleGroupColors(muscleGroup)
@@ -305,11 +299,11 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
   )
 
   return (
-    <button onClick={onTap} className="press-tile" style={{
-      ...rowStyles.row,
-      borderColor,
-      background
-    }}>
+    <button onClick={onTap} className="press-tile" style={{ ...rowStyles.row, background }}>
+      {/* Бейдж «от программы» — в правом верхнем углу строки, по 16px от краёв
+          (как отступ до кружка радио слева от него). */}
+      {isDefault && <span style={rowStyles.defaultBadge}>ОТ ПРОГРАММЫ</span>}
+
       <div style={rowStyles.preview}>
         {exercise.preview_url ? (
           <img src={exercise.preview_url} alt="" style={rowStyles.previewImg} />
@@ -320,10 +314,10 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isCurrent, isDefault, 
 
       <div style={rowStyles.content}>
         <div style={rowStyles.nameRow}>
-          <div style={rowStyles.name}>{exercise.name}</div>
-          {isDefault && (
-            <span style={rowStyles.defaultBadge}>ОТ ПРОГРАММЫ</span>
-          )}
+          {/* Название не заезжает под угловой бейдж — держим для него полосу. */}
+          <div style={{ ...rowStyles.name, ...(isDefault ? rowStyles.nameWithBadge : null) }}>
+            {exercise.name}
+          </div>
         </div>
 
         <div style={rowStyles.tagsRow}>
@@ -387,15 +381,6 @@ const styles = {
   header: {
     marginBottom: 'var(--space-5)',
     textAlign: 'center'
-  },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-heading-size)',
-    color: 'var(--color-primary)',
-    letterSpacing: '3px',
-    lineHeight: 1,
-    marginBottom: 'var(--space-15)'
   },
   subtitle: {
     fontFamily: 'var(--font-manrope)',
@@ -464,19 +449,24 @@ const styles = {
   },
 }
 
+// Полоса, которую название освобождает под угловой бейдж «ОТ ПРОГРАММЫ»
+// (ширина самой надписи + зазор). Токена под это нет — величину диктует текст.
+const BADGE_GUTTER = '108px'
+
 const rowStyles = {
   row: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     gap: 'var(--space-3)',
     padding: 'var(--space-3)',
     background: 'var(--color-card)',
-    border: '2px solid transparent',
+    border: 'none',
     borderRadius: 'var(--radius-card)',
     width: '100%',
     minHeight: '90px',
     textAlign: 'left',
-    transition: 'background 0.2s ease, border-color 0.2s ease'
+    transition: 'background 0.2s ease'
   },
   preview: {
     flexShrink: 0,
@@ -510,7 +500,12 @@ const rowStyles = {
     lineHeight: '16px',
     color: 'var(--color-text)'
   },
+  // Полоса под угловой бейдж: он абсолютный и текста не расталкивает.
+  nameWithBadge: { paddingRight: BADGE_GUTTER },
   defaultBadge: {
+    position: 'absolute',
+    top: 'var(--space-4)',
+    right: 'var(--space-4)',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
     fontSize: 'var(--text-caption-size)',

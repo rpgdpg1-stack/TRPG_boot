@@ -387,11 +387,13 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerUp={onPanelPointerUp}
       onPointerCancel={onPanelPointerCancel}
     >
+      {/* Ширина ячейки считается от ЧИСЛА действий — иначе выделение съезжает,
+          как только состав панели меняется. */}
       {activeAction != null && (
         <div style={{
           ...styles.actionHighlight,
-          left: `calc(${activeAction * 33.333}% + 4px)`,
-          width: 'calc(33.333% - 8px)'
+          left: `calc(${activeAction * (100 / swipeActions.length)}% + 4px)`,
+          width: `calc(${100 / swipeActions.length}% - 8px)`
         }} />
       )}
       {swipeActions.map(a => (
