@@ -119,9 +119,13 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   - Заголовок `2:3`, caption `2:4`, row-label md `3:5`, ряд md `3:9`, row-label sm `5:27`, ряд sm `5:28`.
   - Кнопки md: accent `3:10`, gray `3:12`, graphite `3:13`, neutral `3:14`, ghost `3:15`, dim `3:16`.
   - Кнопки sm: accent `5:29`, gray `5:30`, graphite `5:31`, neutral `5:32`, ghost `5:33`, dim `5:34`.
-  - Матрица variant(6)×size(2)=12 фреймов ГОТОВА и выверена (графит = `#AEB7C4` обновл. cat/gym;
-    подписи-доки почищены от px). Ждёт: Дмитрий переименует 12 фреймов в `variant=X, size=Y` →
-    Create component set (свойства `variant`+`size`; `dim` = вид disabled, можно потом в `state`).
+  - **Component Set `Button` = `51:141`** (в секции `51:84`) СОБРАН: 12 компонентов `variant=X, size=Y`
+    (`51:129…51:140`), variant∈{accent,gray,graphite,neutral,ghost,dim}, size∈{md,sm}. Надписи сведены
+    к заглушке **«Кнопка»** (sentence case — как в коде, не CAPS). Инстанс на странице — `51:142`.
+    Осталось (руками, мост не создаёт свойства): **Text Property** «Label»; решить про `state` (сейчас
+    `dim` = disabled-вариант; полноценный state=default/disabled = матрица ×2, обсуждается).
+    ВАЖНО: в коде кнопки перешли на sentence case + у Начать/Завершить появились иконки (плей/флажок),
+    Начать стала зелёной — при финализации Button добавить слот иконки и свериться по графиту.
 - **🎨 Foundations** (page `1:3`): секция `Colors · Primitives` = `12:57` (title `12:58`, wrap-ряд
   `swatches` `12:59` с 17 чипами `12:60…13:76`, у каждого имя+hex). Юзер создаёт Variables-коллекцию
   `Primitives` вручную по шпаргалке. Есть ещё его секция «Словарь» `11:56`.
