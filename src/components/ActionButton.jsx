@@ -16,9 +16,9 @@
  *    рядом с основным (Назад / Отмена в модалках).
  *
  * Размер (size):
- *  - 'md' (по умолчанию): высота --btn-height (55). Прибитые док-кнопки экрана.
- *  - 'sm': высота --btn-height-sm (46). Кнопки в модалках и внутри карточек.
- * Скругление у обоих — пилюля (--radius-pill).
+ *  - 'md' (по умолчанию): высота --btn-height (56). Прибитые док-кнопки экрана.
+ *  - 'sm': высота --btn-height-sm (48). Кнопки в модалках и внутри карточек.
+ * Скругление у обоих — пилюля (--radius-pill). Текст — единый токен Button (14/800).
  *
  * disabled всегда перебивает variant и даёт вид 'dim'.
  */
@@ -79,8 +79,8 @@ const styles = {
     padding: '0 var(--space-6)',
     borderRadius: 'var(--radius-pill)',
     fontSize: 'var(--text-button-size)',
-    fontWeight: 800,
-    letterSpacing: '1.5px'
+    fontWeight: 'var(--text-button-weight)',
+    letterSpacing: '0.3px'
   },
   sm: {
     height: 'var(--btn-height-sm)',
@@ -88,8 +88,9 @@ const styles = {
     padding: '0 var(--space-5)',
     // Пилюля на ВСЕХ размерах — единый язык кнопок.
     borderRadius: 'var(--radius-pill)',
-    fontSize: 'var(--text-body-size)',
-    fontWeight: 700,
+    // Единый стиль текста кнопки (токен Button 14/800) — и на md, и на sm.
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 'var(--text-button-weight)',
     letterSpacing: '0.3px'
   },
   // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
