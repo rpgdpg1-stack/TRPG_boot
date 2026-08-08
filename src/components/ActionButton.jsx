@@ -72,30 +72,38 @@ const styles = {
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
   // Размеры (высота/скругление/типографика из токенов).
+  // Large — основной CTA. Высота 52, текст 16, паддинг 18.
   md: {
     height: 'var(--btn-height)',
-    padding: '0 var(--space-6)',
+    padding: '0 18px',
     borderRadius: 'var(--radius-pill)',
     fontSize: 'var(--text-button-lg-size)',
     fontWeight: 'var(--text-button-weight)',
     letterSpacing: '0.3px'
   },
+  // Medium — обычные действия. Высота 36, текст 14, паддинг 12.
   sm: {
     height: 'var(--btn-height-sm)',
-    // Короткие подписи («ОК», «Да») — 20; длинные всё равно получают hug-паддинг 24.
-    padding: '0 var(--space-5)',
-    // Пилюля на ВСЕХ размерах — единый язык кнопок.
+    padding: '0 var(--space-3)',
     borderRadius: 'var(--radius-pill)',
-    // Единый стиль текста кнопки (токен Button 14/800) — и на md, и на sm.
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 'var(--text-button-weight)',
+    letterSpacing: '0.3px'
+  },
+  // Small — компактные (заметка/инлайн). Высота 30, текст 14, паддинг 10, gap 3.
+  xs: {
+    height: 'var(--btn-height-xs)',
+    padding: '0 10px',
+    gap: '3px',
+    borderRadius: 'var(--radius-pill)',
     fontSize: 'var(--text-button-size)',
     fontWeight: 'var(--text-button-weight)',
     letterSpacing: '0.3px'
   },
   // Во всю ширину (кнопки дока: «Сохранить программу» и т.п.).
   full: { width: '100%' },
-  // По размеру контента (скругление облегает текст). Контейнер центрирует.
-  // 24 — базовый горизонтальный паддинг кнопки; 40 раздувало пилюлю.
-  hug: { width: 'auto', padding: '0 var(--space-6)' },
+  // По размеру контента (скругление облегает текст). Паддинг задаёт размер (md/sm/xs).
+  hug: { width: 'auto' },
   // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. БЕЗ обводки.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',

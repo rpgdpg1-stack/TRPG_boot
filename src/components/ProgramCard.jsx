@@ -242,18 +242,14 @@ export default function ProgramCard({
 
         {/* Пилюля-действие «Начать ▶» / «Продолжить ▶» — фирменная зелёная заливка +
             белый текст/плей, единая во всех разделах (цвет раздела — на иконке/данных). */}
-        {showCta && (isActive ? (
-          <span style={{ ...styles.ctaPill, right: 0, background: 'var(--color-primary)', border: 'none', color: 'var(--accent-on)' }}>
-            Продолжить
-            <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayIcon size={16} /></span>
-          </span>
-        ) : (
+        {showCta && (
           // Обёртка позиционирует (translateY), кнопка внутри масштабируется —
-          // два transform на одном узле затирали бы друг друга.
+          // два transform на одном узле затирали бы друг друга. Активна → пилюля
+          // «Продолжить ▶» (тот же жест/scale), иначе — круглый плей «Начать».
           <span style={styles.ctaCircle}>
-            <PlayButton onStart={handlePlay} />
+            <PlayButton onStart={handlePlay} label={isActive ? 'Продолжить' : null} height={36} />
           </span>
-        ))}
+        )}
 
         {/* Правый блок — по центру по высоте ряда, справа. */}
         {!showCta && showRight && (

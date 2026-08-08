@@ -828,25 +828,35 @@ const styles = {
     display: 'flex',
     gap: 'var(--space-2)'
   },
+  // Small tertiary (30/текст 14/только текст).
   noteCancelBtn: {
-    padding: 'var(--space-2) var(--space-4)',
+    height: 'var(--btn-height-xs)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 10px',
     background: 'transparent',
     border: 'none',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    fontWeight: 500,
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 700,
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
+  // Small-кнопка (30/пилюля/текст 14) — как ActionButton size=xs, primary.
   noteSaveBtn: {
-    padding: 'var(--space-2) var(--space-4)',
+    height: 'var(--btn-height-xs)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 10px',
     background: 'var(--color-primary)',
     color: 'var(--accent-on)',
     border: 'none',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    fontWeight: 700,
+    fontSize: 'var(--text-button-size)',
+    fontWeight: 800,
     cursor: 'pointer'
   },
   noteErrorText: {

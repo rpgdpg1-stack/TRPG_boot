@@ -24,7 +24,7 @@ const MOVE_TOLERANCE_PX = 8
  * Палец ушёл за пределы кнопки — жест снимается (как у CloseCross), запуск не
  * происходит: случайный запуск тренировки дороже пропущенного тапа.
  */
-export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabel = 'Начать тренировку' }) {
+export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabel = 'Начать тренировку', label = null, height = 36 }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const startRef = useRef({ x: 0, y: 0 })
@@ -73,7 +73,28 @@ export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabe
       // программу вторым обработчиком (карточки).
       onClick={(e) => { e.stopPropagation(); e.preventDefault() }}
       aria-label={ariaLabel}
-      style={{
+      style={label ? {
+        // Пилюля с текстом («Продолжить ▶») — тот же жест/эффект, что у круглой.
+        flexShrink: 0,
+        height: `${height}px`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 'var(--space-1)',
+        padding: '0 var(--space-3)',
+        borderRadius: 'var(--radius-pill)',
+        border: 'none',
+        background: 'var(--color-primary)',
+        color: 'var(--accent-on)',
+        fontFamily: 'var(--font-manrope)',
+        fontSize: 'var(--text-button-size)',
+        fontWeight: 'var(--text-button-weight)',
+        whiteSpace: 'nowrap',
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+        transform: press ? 'scale(1.04)' : 'scale(1)',
+        transition: 'transform 0.18s var(--ease-ios)'
+      } : {
         flexShrink: 0,
         width: `${size}px`,
         height: `${size}px`,
@@ -90,10 +111,17 @@ export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabe
         transition: 'transform 0.18s var(--ease-ios)'
       }}
     >
-      {/* Оптический центр: треугольник тяжелее слева, сдвигаем на 2px вправо. */}
-      <span style={{ display: 'inline-flex', color: 'var(--accent-on)', marginLeft: 'var(--space-05)' }}>
-        <PlayGlyph size={iconSize} />
-      </span>
+      {label ? (
+        <>
+          {label}
+          <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayGlyph size={16} /></span>
+        </>
+      ) : (
+        // Оптический центр: треугольник тяжелее слева, сдвигаем на 2px вправо.
+        <span style={{ display: 'inline-flex', color: 'var(--accent-on)', marginLeft: 'var(--space-05)' }}>
+          <PlayGlyph size={iconSize} />
+        </span>
+      )}
     </button>
   )
 }

@@ -149,8 +149,9 @@
 
   /* Кнопки-действия (ActionButton). Меняешь токен — меняется во всём аппе.
      md — основная прибитая кнопка (пилюля); sm — компактная (модалки), радиус medium. */
-  --btn-height: 56px;       /* высота основной кнопки (ActionButton size=md), кратно 8 */
-  --btn-height-sm: 48px;    /* высота компактной кнопки (ActionButton size=sm, модалки) */
+  --btn-height: 52px;       /* Large — основной CTA (ActionButton size=md) */
+  --btn-height-sm: 36px;    /* Medium — обычные действия (ActionButton size=sm) */
+  --btn-height-xs: 30px;    /* Small — компактные: заметка, инлайн (ActionButton size=xs) */
 
   /* ШКАЛА ОТСТУПОВ — база 4px (мобильный стандарт: 4dp Material / 8pt Apple с полушагом).
      Полушаг 2px — ТОЛЬКО для микро-зазоров внутри строки (иконка↔цифра, цифра↔единица).
