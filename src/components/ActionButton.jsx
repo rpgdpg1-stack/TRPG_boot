@@ -124,11 +124,12 @@ const styles = {
     WebkitBackdropFilter: 'blur(var(--blur-md))',
     color: 'var(--color-primary)'
   },
-  // Primary-tonal — тёмная поверхность + ЗЕЛЁНЫЙ текст, БЕЗ обводки и БЕЗ блюра.
-  // Акцентное действие без заливки (напр. «Завершить»). Пробуем как замену neutral.
+  // Primary-tonal — приподнятая тёмная поверхность (--surface-tonal, #242427) + АКЦЕНТНЫЙ
+  // зелёный текст/иконка (--color-text-tonal), БЕЗ обводки и БЕЗ блюра. Акцентное действие
+  // без заливки (напр. «Завершить»).
   tonal: {
-    background: 'var(--surface-raised)',
-    color: 'var(--color-primary)'
+    background: 'var(--surface-tonal)',
+    color: 'var(--color-text-tonal)'
   },
   // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в инфо-попапе
   // рейтинга), сплошная рамка чуть темнее заливки. Цвет переопределяется через `style`
