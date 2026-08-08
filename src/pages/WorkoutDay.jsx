@@ -1376,7 +1376,7 @@ export default function WorkoutDay() {
           {isThisActive ? (
             <ActionButton
               onClick={handleFinishButtonTap}
-              variant="neutral"
+              variant="tonal"
               hug
               className={btnMorph ? 'btn-morph' : ''}
               style={{ opacity: canFinish ? 1 : 0.55 }}

@@ -67,8 +67,8 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // Иконка ↔ текст — единый зазор во всех кнопках.
-    gap: 'var(--space-2)',
+    // Иконка ↔ текст — единый зазор во всех кнопках (4px).
+    gap: 'var(--space-1)',
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
   // Размеры (высота/скругление/типографика из токенов).
@@ -76,7 +76,7 @@ const styles = {
     height: 'var(--btn-height)',
     padding: '0 var(--space-6)',
     borderRadius: 'var(--radius-pill)',
-    fontSize: 'var(--text-button-size)',
+    fontSize: 'var(--text-button-lg-size)',
     fontWeight: 'var(--text-button-weight)',
     letterSpacing: '0.3px'
   },
@@ -96,12 +96,11 @@ const styles = {
   // По размеру контента (скругление облегает текст). Контейнер центрирует.
   // 24 — базовый горизонтальный паддинг кнопки; 40 раздувало пилюлю.
   hug: { width: 'auto', padding: '0 var(--space-6)' },
-  // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. Сплошная тонкая рамка.
+  // Выключена: прозрачный фон + лёгкий блюр, текст тусклый. БЕЗ обводки.
   dim: {
     background: 'rgba(34, 34, 34, 0.30)',
     backdropFilter: 'blur(var(--blur-sm))',
     WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    border: '1.5px solid var(--layer-3)',
     color: 'rgba(136, 136, 136, 0.55)',
     cursor: 'default'
   },
@@ -115,7 +114,12 @@ const styles = {
     background: 'rgba(34, 34, 34, 0.55)',
     backdropFilter: 'blur(var(--blur-md))',
     WebkitBackdropFilter: 'blur(var(--blur-md))',
-    border: '1.5px solid rgba(255, 255, 255, 0.20)',
+    color: 'var(--color-primary)'
+  },
+  // Primary-tonal — тёмная поверхность + ЗЕЛЁНЫЙ текст, БЕЗ обводки и БЕЗ блюра.
+  // Акцентное действие без заливки (напр. «Завершить»). Пробуем как замену neutral.
+  tonal: {
+    background: 'var(--surface-raised)',
     color: 'var(--color-primary)'
   },
   // Зелёная — сплошная акцентная заливка + чёрный текст (как кнопка в инфо-попапе
@@ -123,7 +127,6 @@ const styles = {
   // (напр. «Завершить» заплыва — голубой). БЕЗ блюра — обычная залитая кнопка.
   accent: {
     background: 'var(--color-primary)',
-    border: '1.5px solid var(--color-primary-dark)',
     color: 'var(--accent-on)'
   },
   // ГЛАВНЫЙ CTA «Начать» — фирменная зелёная заливка + БЕЛЫЙ текст, БЕЗ обводки.
@@ -138,13 +141,11 @@ const styles = {
   // светлая рамка. Нейтральные действия без фирменного зелёного акцента.
   gray: {
     background: 'var(--neutral-600)',
-    border: '1.5px solid var(--layer-3)',
     color: 'var(--color-text)'
   },
-  // Прозрачная — тонкая рамка + приглушённый текст. Вторичное действие (Назад/Отмена).
+  // Прозрачная — только текст, БЕЗ фона и обводки (tertiary). Вторичное действие (Назад/Отмена).
   ghost: {
     background: 'transparent',
-    border: '1.5px solid var(--layer-3)',
     color: 'var(--color-text-secondary)'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.

@@ -200,7 +200,8 @@
      Ниже 11px не опускаться — на тёмном фоне нечитаемо. */
   --text-caption-size: 11px;  --text-caption-weight: 500;  --text-caption-lh: 1.4;   /* мелкие пояснения, единицы измерения */
   --text-label-size:   13px;  --text-label-weight:   700;  --text-label-lh:   1.2;   /* подписи, теги, строки списка */
-  --text-button-size:  14px;  --text-button-weight:  800;  --text-button-lh:  1.0;   /* ActionButton */
+  --text-button-size:  14px;  --text-button-weight:  800;  --text-button-lh:  1.0;   /* ActionButton md/sm (Medium/Small) */
+  --text-button-lg-size: 16px;  /* ActionButton size=md/Large (крупный CTA) */
   --text-body-size:    15px;  --text-body-weight:    500;  --text-body-lh:    1.4;   /* основной текст */
   --text-title-size:   18px;  --text-title-weight:   700;  --text-title-lh:   1.2;   /* заголовок экрана / секции */
   --text-heading-size: 22px;  --text-heading-weight: 800;  --text-heading-lh: 1.15;  /* крупное значение, заголовок модалки */
