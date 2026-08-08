@@ -164,7 +164,10 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
 - **Button v2 (РЕДИЗАЙН по разбору) = `65:351`** на Components. Чистая система: **variant** {Primary,
   Secondary, Tertiary, Destructive} × **size** {Large 56, Medium 48} × **state** {Default, Disabled,
   Loading} (Pressed = анимация scale 0.97, НЕ вариант). Icon = Boolean + swap. Итого 4×2×3 = **24**.
-  Нарисованы: Default-матрица (8, ряды Large `65:354` / Medium `66:364`) + демо States (`66:374`).
+  Нарисована ПОЛНАЯ матрица 24 (Default+Disabled+Loading × Large+Medium × 4 варианта): ряды Default
+  `65:354`/`66:364`, Disabled `70:382`/`70:392`, Loading `70:402`/`70:412` (Loading = заливка варианта +
+  спиннер-кольцо, БЕЗ текста, FIXED-ширина). Disabled = единый muted под все варианты. Осталось: собрать
+  Component Set (выделить 24 → Create component set → свойства variant/size/state).
   Цвета: Primary=fill accent/text accent-on/БЕЗ обводки; Secondary=surface-raised+hairline/белый текст;
   Tertiary=только текст secondary; Destructive=subtle красный+красный текст/рамка; Disabled=muted;
   Loading=спиннер-кольцо. Старый набор `51:141` — заменить этим. Код (accent/gray/neutral/ghost/dim/
