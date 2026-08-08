@@ -24,7 +24,7 @@ const MOVE_TOLERANCE_PX = 8
  * Палец ушёл за пределы кнопки — жест снимается (как у CloseCross), запуск не
  * происходит: случайный запуск тренировки дороже пропущенного тапа.
  */
-export default function PlayButton({ onStart, size = 48, iconSize = 21, ariaLabel = 'Начать тренировку', label = null, height = 36 }) {
+export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabel = 'Начать тренировку', label = null, height = 36 }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const startRef = useRef({ x: 0, y: 0 })

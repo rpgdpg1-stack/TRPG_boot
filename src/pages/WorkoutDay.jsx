@@ -1381,7 +1381,7 @@ export default function WorkoutDay() {
               className={btnMorph ? 'btn-morph' : ''}
               style={{ opacity: canFinish ? 1 : 0.55 }}
             >
-              <FinishIcon size={20} /> Завершить
+              <FinishIcon size={24} />Завершить
             </ActionButton>
           ) : (
             <ActionButton
@@ -1389,9 +1389,8 @@ export default function WorkoutDay() {
               variant={sessionBlocked ? 'dim' : 'primary'}
               hug
               className={btnMorph ? 'btn-morph' : ''}
-              style={{ gap: 'var(--space-2)' }}
             >
-              <PlayIcon size={20} /> Начать
+              <PlayIcon size={24} />Начать
             </ActionButton>
           )}
         </div>

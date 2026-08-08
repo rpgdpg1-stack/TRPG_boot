@@ -381,7 +381,8 @@ const styles = {
   // тапа по карточке).
   ctaCircle: {
     position: 'absolute',
-    top: '50%', right: '16px',
+    // right:0 внутри cardRow (padding карточки 16) = 16 от края, как эмблема слева.
+    top: '50%', right: 0,
     transform: 'translateY(-50%)',
     display: 'inline-flex',
     zIndex: 2
@@ -390,7 +391,7 @@ const styles = {
   rightBlock: {
     position: 'absolute',
     top: '50%',
-    right: '16px',
+    right: 0,
     transform: 'translateY(-50%)',
     zIndex: 2,
     display: 'flex',

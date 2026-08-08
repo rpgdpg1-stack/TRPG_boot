@@ -260,7 +260,7 @@ export default function Friends() {
 
           <div style={styles.bottomInvite}>
             <ActionButton onClick={handleInviteTap} variant="primary" size="sm" hug>
-              <UiIcon name="invite-friend" size={20} color="var(--accent-on)" />
+              <UiIcon name="invite-friend" size={22} color="var(--accent-on)" />
               Пригласить друга
             </ActionButton>
           </div>
