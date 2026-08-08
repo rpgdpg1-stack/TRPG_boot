@@ -1379,7 +1379,7 @@ export default function WorkoutDay() {
             <ActionButton
               onClick={handleFinishButtonTap}
               variant={canFinish ? 'tonal' : 'dim'}
-              bordered={canFinish}
+              bordered
               hug
               className={btnMorph ? 'btn-morph' : ''}
             >
