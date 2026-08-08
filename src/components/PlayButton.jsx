@@ -114,7 +114,7 @@ export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabe
       {label ? (
         <>
           {label}
-          <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayGlyph size={24} /></span>
+          <span style={{ display: 'inline-flex', color: 'var(--accent-on)' }}><PlayGlyph size={18} /></span>
         </>
       ) : (
         // Оптический центр: треугольник тяжелее слева, сдвигаем на 2px вправо.
