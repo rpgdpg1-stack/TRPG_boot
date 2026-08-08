@@ -20,6 +20,10 @@
  *  - 'sm': высота --btn-height-sm (48). Кнопки в модалках и внутри карточек.
  * Скругление у обоих — пилюля (--radius-pill). Текст — единый токен Button (14/800).
  *
+ * bordered (Boolean): опциональная внутренняя обводка 1px белый 8% (inset box-shadow,
+ * не меняет размер). Ортогональна variant — включается на любом виде, где нужна
+ * (в Figma это Boolean-свойство «Border»).
+ *
  * disabled всегда перебивает variant и даёт вид 'dim'.
  */
 export default function ActionButton({
@@ -27,6 +31,7 @@ export default function ActionButton({
   size = 'md',
   disabled = false,
   hug = false,
+  bordered = false,
   onClick,
   children,
   style,
@@ -46,7 +51,7 @@ export default function ActionButton({
       onClick={onClick}
       disabled={disabled}
       className={`press-tile ${className}`.trim()}
-      style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(showFill ? styles.clip : null), ...style }}
+      style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(bordered ? styles.bordered : null), ...(showFill ? styles.clip : null), ...style }}
       {...rest}
     >
       {showFill ? (
@@ -156,6 +161,11 @@ const styles = {
   ghost: {
     background: 'transparent',
     color: 'var(--color-text-secondary)'
+  },
+  // Опциональная внутренняя обводка (проп `bordered`): 1px белый 8% через inset
+  // box-shadow — не влияет на размер, включается/выключается независимо от variant.
+  bordered: {
+    boxShadow: 'inset 0 0 0 1px var(--border-tonal)'
   },
   // Для прогресс-заливки: обрезаем растущий фон по скруглению кнопки.
   clip: { position: 'relative', overflow: 'hidden' },
