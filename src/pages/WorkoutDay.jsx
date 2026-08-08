@@ -1025,7 +1025,6 @@ export default function WorkoutDay() {
 
   const sections = groupByMuscleGroup(slots)
   sectionsRef.current = sections
-  const canFinish = activeOrderNums.size > 0
 
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
@@ -1371,15 +1370,14 @@ export default function WorkoutDay() {
           )}
 
           {/* «Начать» — зелёная заливка + белый текст + плей (как на главной).
-              «Завершить» — прозрачная (как была), но текст+флажок зелёным акцентом;
-              тусклее, пока ничего не отжато, ярче — как только есть отмеченные. */}
+              «Завершить» — прозрачная, текст+флажок ПОЛНЫМ акцентным зелёным (как
+              заливка «Начать»), без гашения прозрачностью. */}
           {isThisActive ? (
             <ActionButton
               onClick={handleFinishButtonTap}
               variant="tonal"
               hug
               className={btnMorph ? 'btn-morph' : ''}
-              style={{ opacity: canFinish ? 1 : 0.55 }}
             >
               <FinishIcon size={24} />Завершить
             </ActionButton>
