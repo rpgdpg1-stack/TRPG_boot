@@ -1025,6 +1025,9 @@ export default function WorkoutDay() {
 
   const sections = groupByMuscleGroup(slots)
   sectionsRef.current = sections
+  // Пока не отмечено ни одного упражнения — «Завершить» показываем в disabled-виде
+  // («ещё рано»), но кнопка остаётся нажимаемой (тап → подтверждение раннего конца).
+  const canFinish = activeOrderNums.size > 0
 
   const totalSlots = slots.length || 1
   const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
@@ -1370,12 +1373,12 @@ export default function WorkoutDay() {
           )}
 
           {/* «Начать» — зелёная заливка + белый текст + плей (как на главной).
-              «Завершить» — прозрачная, текст+флажок ПОЛНЫМ акцентным зелёным (как
-              заливка «Начать»), без гашения прозрачностью. */}
+              «Завершить»: отмечено хоть одно упражнение → tonal (полный акцентный
+              зелёный, как заливка «Начать»); ещё ничего → disabled-вид «ещё рано». */}
           {isThisActive ? (
             <ActionButton
               onClick={handleFinishButtonTap}
-              variant="tonal"
+              variant={canFinish ? 'tonal' : 'dim'}
               hug
               className={btnMorph ? 'btn-morph' : ''}
             >
