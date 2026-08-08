@@ -161,7 +161,16 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
   card 33 / medium 20 / small 10). Юзер создаёт Number-коллекции `Spacing` и `Radius`.
 - **Мобильная сетка:** экран-фрейм 390×844; Layout Grid = Columns, 4 колонки, margin 16, gutter 16,
   stretch (боковые поля 16 = `.page padding` в коде). Safe-top ≈108, таб-бар 63 + 16 снизу.
-- TODO дальше: Components (Icon Button, Tag, Card, TabBar) → Patterns → Screens.
+- **Button v2 (РЕДИЗАЙН по разбору) = `65:351`** на Components. Чистая система: **variant** {Primary,
+  Secondary, Tertiary, Destructive} × **size** {Large 56, Medium 48} × **state** {Default, Disabled,
+  Loading} (Pressed = анимация scale 0.97, НЕ вариант). Icon = Boolean + swap. Итого 4×2×3 = **24**.
+  Нарисованы: Default-матрица (8, ряды Large `65:354` / Medium `66:364`) + демо States (`66:374`).
+  Цвета: Primary=fill accent/text accent-on/БЕЗ обводки; Secondary=surface-raised+hairline/белый текст;
+  Tertiary=только текст secondary; Destructive=subtle красный+красный текст/рамка; Disabled=muted;
+  Loading=спиннер-кольцо. Старый набор `51:141` — заменить этим. Код (accent/gray/neutral/ghost/dim/
+  primary) привести к Primary/Secondary/Tertiary/Destructive — ОТДЕЛЬНЫМ аккуратным заходом.
+- TODO дальше: дорисовать Disabled/Loading для всех вариантов → собрать Component Set → Icon Button,
+  Tag, Card, TabBar → Patterns → Screens.
 
 ## Синк код ↔ Figma
 
