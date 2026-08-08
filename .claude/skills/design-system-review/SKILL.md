@@ -31,7 +31,7 @@ description: "Страж целостности дизайн-системы TRPG
   красный `#E84545`, оранж `#FF8C42`, жёлтый `#FFD700`, голубой `--blue/--cat-pool`). Свести в токены.
 - **Surface:** ✓ 3 уровня `--bg-base` / `--surface` / `--surface-raised` (= card / modal).
 - **Text:** ✓ `--color-text` (primary), `--color-text-secondary`, `--text-label`, `--text-info`
-  (tertiary); inverse = `--accent-on`. ⚠ явный `text-disabled`.
+  (tertiary); inverse = `--accent-on`; disabled = `--color-text-disabled` (#4F4F4F).
 - **Border:** ✓ `--border-hairline` (default/subtle). ⚠ `border-strong`, `border-focus`.
 - **Icon:** иконки красятся текстовыми/accent-токенами (inline SVG `currentColor`). ⚠ явных
   icon-токенов нет — держим соответствие text/accent.
@@ -49,8 +49,8 @@ description: "Страж целостности дизайн-системы TRPG
   убрать случайные 17px.
 - **Shadow:** ⚠ токенов нет (тени/эффекты хардкод: таб-бар, модалки). Цель: `none/sm/md/lg` (+ учесть,
   что часть «высоты» у нас даётся блюром-стеклом, а не тенью — держать консистентно).
-- **Opacity:** частично (`--overlay-hover`, disabled через opacity). ⚠ токены `disabled/pressed/
-  selected`.
+- **Opacity:** частично (`--overlay-hover`). disabled — не opacity, а сплошные `--surface-disabled`
+  (#1A1A1B) + `--color-text-disabled` (#4F4F4F). ⚠ токены `pressed/selected`.
 - **Z-index:** значения есть (таб-бар 100, заголовок 90–95, скрим 90, оффлайн 9998, модалки 9999),
   ⚠ не токенизированы. Правило: НИКАКИХ `z-index: 999999`; ввести `base/header/fab/modal/toast/tooltip`.
 - **Grid / safe area:** ✓ `--tg-safe-top`, `--tabbar-height/-bottom`, `.page` padding, `--tg-nav-*`.
@@ -84,7 +84,7 @@ disabled · selected · loading · error · success`. Hover/focus на Telegram-
 для a11y/десктопа держать в уме.
 
 **Универсальные (уровень 1):**
-- Button — ✓ `ActionButton` (variant: accent/gray/graphite/neutral/ghost/dim · size: md/sm · disabled).
+- Button — ✓ `ActionButton` (variant: primary/accent/tonal/neutral/gray/ghost/dim · size: md/sm/xs · disabled).
 - Icon Button — ✓ семейство 36px (`+`/`✓`/`✕`), см. trpg-ui «Икон-кнопки».
 - Modal — ✓ паттерны + `ModalButton` (серый pill дисмисс). Bottom Sheet — ⚠/по мере надобности.
 - Tabs / Tab Bar — ✓ `TabBar` (низ). Header / NavBar — ✓ `ScreenTitle`.
