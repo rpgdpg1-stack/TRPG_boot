@@ -839,7 +839,7 @@ const styles = {
     border: 'none',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-button-size)',
-    fontWeight: 700,
+    fontWeight: 'var(--text-button-weight)',
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
@@ -856,7 +856,7 @@ const styles = {
     borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-button-size)',
-    fontWeight: 800,
+    fontWeight: 'var(--text-button-weight)',
     cursor: 'pointer'
   },
   noteErrorText: {
