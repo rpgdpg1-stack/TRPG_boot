@@ -35,11 +35,17 @@ const PING_INTERVAL_MS = 20 * 1000
 // Таймаут одного пинга. Если Supabase не ответил за 5 сек — считаем оффлайн.
 const PING_TIMEOUT_MS = 5 * 1000
 
-// URL для пинга. Берём из той же переменной что и Supabase-клиент.
-// Дёргаем /auth/v1/health — лёгкий публичный эндпоинт, не требует ключа,
-// отвечает быстро. Если его не будет — упадём в catch и сочтём оффлайн,
-// что безопасно (лучше ложный оффлайн чем ложный онлайн).
+// URL для пинга. Берём из тех же переменных что и Supabase-клиент.
+// Дёргаем /auth/v1/health — самый лёгкий эндпоинт, отвечает быстро. Если его
+// не будет — упадём в catch и сочтём оффлайн, что безопасно (лучше ложный
+// оффлайн чем ложный онлайн).
+//
+// Ключ обязателен: шлюз Supabase отбивает ЛЮБОЙ запрос без apikey (401
+// «No API key found in request»). Проверке это не мешало (важен сам факт
+// ответа), но каждые 20 секунд сыпало предупреждением в логи проекта — и
+// настоящие 4xx в них терялись.
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || ''
 const PING_URL = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/health` : ''
 
 // Текущий статус в памяти. Стартуем с того что говорит браузер —
@@ -103,6 +109,7 @@ export async function checkNow() {
     await fetch(PING_URL, {
       method: 'GET',
       cache: 'no-store',
+      headers: SUPABASE_KEY ? { apikey: SUPABASE_KEY } : undefined,
       signal: controller.signal
     })
 
