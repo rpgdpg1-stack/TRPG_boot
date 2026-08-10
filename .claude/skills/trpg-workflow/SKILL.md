@@ -293,7 +293,8 @@ src/
 
 supabase/
 ├── config.toml
-├── migrations/     weight_history.sql (история рабочего веса: таблица + триггер + RPC)
+├── migrations/     fk_indexes.sql (индексы под 10 внешних ключей; применена 2026-08-08)
+│                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 │                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
 │                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)
 │                   favorite_exercises_limit_5.sql (лимит любимых 3→5: CHECK slot + RPC)
