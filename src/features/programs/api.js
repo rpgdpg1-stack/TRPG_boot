@@ -286,7 +286,7 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  * оптимистично НЕ делаем (чтобы не было расхождений — реальные цифры придут
  * при синке от сервера).
  *
- * ОНЛАЙН: как раньше — атомарная RPC, BADGE_EARNED при выдаче значка.
+ * ОНЛАЙН: как раньше — атомарная RPC.
  */
 export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null, startedAtOverride = null) {
   debug('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
@@ -390,16 +390,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
     cacheInvalidate('workout-day:')
     cacheInvalidate(`muscle-history:${user.id}`)
     cacheInvalidate(`recent-workouts:${user.id}`)
-    cacheInvalidate(`leaderboard-friends:${user.id}`)
-    cacheInvalidate(`leaderboard-league:${user.id}`)
-    cacheInvalidate(`my-friend-place:${user.id}`)
 
     emit(EVENTS.USER_CHANGED, getCurrentUser())
-
-    if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
-      debug('[programs] new badge earned via workout, rank_index =', result.new_badge_rank_index)
-      emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
-    }
 
     return {
       offline: false,

@@ -23,8 +23,7 @@ export const PIN_LIMIT = 6
 /**
  * Список друзей текущего юзера (БЕЗ самого юзера).
  * Возвращает массив: { user_id, first_name, username, photo_url,
- *   last_workout_at, pinned_at }. Сервер также отдаёт устаревшие league-поля
- * (rank_index/league_place/… — литералы-заглушки), фронт их НЕ использует.
+ *   last_workout_at, pinned_at, is_training }.
  *
  * Уже отсортирован сервером: закреплённые (новее выше) → по свежести тренировки.
  */

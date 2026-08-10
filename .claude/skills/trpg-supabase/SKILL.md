@@ -95,8 +95,9 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 - Дружба — таблица `friendships(user_a_id, user_b_id)`, **симметричная** (одна строка на
   пару, направление любое). Закрепы — `friend_pins(owner_id, friend_id)`, лимит **6**.
-- RPC: `api_get_friends_list(p_user_id)` (список без меня: last_workout_at + закреп; league-поля
-  в TABLE — устаревшие литералы-заглушки, фронт не читает), `api_toggle_pin_friend`,
+- RPC: `api_get_friends_list(p_user_id)` (список без меня: `user_id, first_name, username,
+  photo_url, last_workout_at, pinned_at, is_training` — поля-заглушки лиг из ответа УБРАНЫ,
+  миграция `drop_league_leftovers.sql`), `api_toggle_pin_friend`,
   `api_remove_friend(p_user_id, p_friend_id)` (удаляет дружбу в обе стороны + закрепы пары;
   `not_friend`/`bad_args`). Клиент — `removeFriend` в `lib/friends-list.js`, UI — «Убрать из
   друзей» в модалке долгого нажатия (Friends.jsx, рядом с «Закрепить», с подтверждением).
@@ -163,6 +164,22 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - При замене видео — всегда НОВОЕ имя файла; старый удалять с задержкой (из-за immutable-кэша).
 - Не смешивать публичные и приватные файлы в одном бакете.
 - Модерация пользовательских аватаров — только server-side через Edge Function.
+
+## Соревновательной части в базе НЕТ (аудит 2026-08-11)
+
+Лиги, сезоны, ранги, значки, титулы, подстраховка — вычищены. Проверено запросами:
+таблиц, колонок, cron-задач, представлений и триггеров под них **не осталось ни одного**.
+Убраны и последние следы: дубли-оверлоуды `api_get_shared_program(p_share_code, p_viewer_id)`
+и `api_save_shared_program`, пять полей-заглушек в `api_get_friends_list`.
+
+**Осталось намеренно:** `new_badge_rank_index` в `api_finish_workout` и `complete_daily_quest` —
+поле всегда NULL (тело не заполняет), но убрать его = пересоздать функцию с выдачей прав, а
+`api_finish_workout` это критический путь каждого завершения тренировки. Польза нулевая, риск
+реальный. Фронт поле не читает. Трогать только заодно с другой правкой этих функций.
+
+**НЕ путать с живым:** `users.total_muscles` (валюта личного прогресса), `workouts.muscles_earned`,
+`users.weekly_streak` + `weekly_streak_week`, `exercises.muscle_group`/`muscle_icon`,
+`daily_quests.reward` — всё это в работе, не удалять.
 
 ## Важно
 

@@ -295,6 +295,7 @@ supabase/
 ├── config.toml
 ├── migrations/     fk_indexes.sql (индексы под 10 внешних ключей; применена 2026-08-08)
 │                   drop_leaderboard_index.sql (снят users(total_muscles DESC) — рейтингов нет)
+│                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
 │                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 │                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
 │                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)

@@ -142,10 +142,9 @@ export async function getDailyQuests() {
 }
 
 /**
- * Выполнить квест. complete_daily_quest теперь возвращает 3 поля:
- *   was_new, new_total_muscles, new_badge_rank_index.
- *
- * Если значок выдан (new_badge_rank_index != null) — эмитим BADGE_EARNED.
+ * Выполнить квест. complete_daily_quest возвращает was_new и new_total_muscles
+ * (в сигнатуре есть ещё new_badge_rank_index от снятой системы значков — он
+ * всегда пустой, не читаем).
  */
 export async function completeQuest(questId, reward = 20) {
   const userId = getUserId()
@@ -167,7 +166,6 @@ export async function completeQuest(questId, reward = 20) {
   }
 
   const result = data?.[0] || data || {}
-  const newBadgeRank = result.new_badge_rank_index ?? null
 
   if (result.was_new && result.new_total_muscles !== undefined) {
     const u = getCurrentUser()
@@ -176,11 +174,6 @@ export async function completeQuest(questId, reward = 20) {
       emit(EVENTS.USER_CHANGED, getCurrentUser())
     }
     cacheInvalidate(`muscle-history:${userId}`)
-  }
-
-  if (newBadgeRank !== null && newBadgeRank !== undefined) {
-    debug('[storage] new badge earned via quest, rank_index =', newBadgeRank)
-    emit(EVENTS.BADGE_EARNED, { rank_index: newBadgeRank })
   }
 
   const completed = await getDailyQuests()
@@ -328,9 +321,9 @@ export async function clearAllData() {
   if (!userId) return
 
   // Сброс прогресса через DEFINER-функцию: обнуляет total_muscles/стрик,
-  // чистит muscle_history/daily_quests/league_badges, историю тренировок
-  // (workouts + exercise_sets каскадом) и полученные подстраховки, плюс
-  // ставит метку last_progress_reset_at. Прямой апдейт users невозможен
+  // чистит muscle_history/daily_quests, историю тренировок
+  // (workouts + exercise_sets каскадом), плюс ставит метку
+  // last_progress_reset_at. Прямой апдейт users невозможен
   // (колоночная защита от накрутки), поэтому идём через RPC.
   const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
   if (resetErr) {

@@ -28,7 +28,6 @@ import { emit } from './events'
 import { getQueue, dequeue } from './offline-queue'
 import { isOnline } from './network-status'
 import { cacheInvalidate } from './cache'
-import { EVENTS } from './events'
 import { debug } from './debug'
 
 export const SYNC_EVENTS = {
@@ -261,11 +260,6 @@ async function sendFinish(op, userId) {
       total_muscles: result.new_total_muscles,
       weekly_streak: result.new_weekly_streak
     })
-  }
-
-  // Значок лиги мог выдаться при синке — шлём событие, App покажет модалку
-  if (result.new_badge_rank_index !== null && result.new_badge_rank_index !== undefined) {
-    emit(EVENTS.BADGE_EARNED, { rank_index: result.new_badge_rank_index })
   }
 
   // already_completed_today=true — тоже успех (return true ниже), просто
