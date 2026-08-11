@@ -7,6 +7,7 @@
  */
 
 import { SPLIT_PROGRAM } from '../../data/programs/split'
+import { FULLBODY_PROGRAM } from '../../data/programs/fullbody'
 import { SWIM_PROGRAM } from '../../data/programs/swim'
 
 /**
@@ -24,6 +25,17 @@ export const PROGRAMS = [
     available: true,
     comingSoon: false,
     data: SPLIT_PROGRAM
+  },
+  {
+    slug: 'fullbody',
+    dbId: 'prog_002',
+    title: 'ФУЛБАДИ',
+    emoji: '🏋️',
+    tags: ['зал'],
+    category: 'gym',
+    available: true,
+    comingSoon: false,
+    data: FULLBODY_PROGRAM
   },
   {
     slug: 'swim',

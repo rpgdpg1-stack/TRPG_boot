@@ -33,7 +33,8 @@ description: "Входной скил для ЛЮБОГО запроса по п
   ежедневные активности/квесты, история тренировок, любимые упражнения, друзья+профиль на личном
   прогрессе (приватность). **Отказ (удалено из кода):** лиги, XP-как-система, сезоны, лидерборды/рейтинг,
   ранги/рамки-награды, подстраховка. Не возвращать без явной просьбы. См. память «соц-архитектура».
-- **Программы:** `split` (A/B/C силовой) и `swim` («Заплыв 45», дистанция). Плюс пользовательские:
+- **Программы:** `split` (A/B/C силовой), `fullbody` (A/B, каждый день на всё тело — 2 дня × 12)
+  и `swim` («Заплыв 45», дистанция). Плюс пользовательские:
   своя (`source: 'custom'`) и от друга (`source: 'shared'`) — грузятся в реестр в рантайме.
   Упражнения — в Supabase.
 
@@ -235,8 +236,11 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
 ## Новая программа тренировок
 
 Уточнить: название, дни, упражнения по дням. Затем пакетом одним коммитом:
-`src/data/programs/<slug>.js` → запись в `registry.js` → INSERT в Supabase →
-универсализация мест с захардкоженным `'split'`. (Следующая — Full Body.)
+`src/data/programs/<slug>.js` → запись в `registry.js` → INSERT в `programs` (Supabase,
+`source='global'`) → универсализация мест с захардкоженным `'split'`.
+**Сверять `muscle_group/sub_group/type` каждого слота с каталогом `exercises`** — при расхождении
+типа экран замены отдаёт пустой список (см. граблю в trpg-supabase).
+(Сделаны: Сплит, Фулбади. Дальше — по запросу.)
 
 ## Чистота кода
 
@@ -274,10 +278,10 @@ src/
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PagerArrows PeriodSwitcher PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
-│                   SaveFriendProgramModal ScreenTitle ScrollTopButton SectionCarousel SectionPicker StreakFlame TrendingUpIcon
+│                   SaveFriendProgramModal ScreenTitle ScrollTopButton ShieldCheckIcon SectionCarousel SectionPicker StreakFlame TrendingUpIcon
 │                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
-├── data/programs/  split.js · swim.js
+├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
 ├── lib/            accent active-workout activities auth cache cloud-storage events favorite-exercises friends
@@ -296,6 +300,7 @@ supabase/
 ├── migrations/     fk_indexes.sql (индексы под 10 внешних ключей; применена 2026-08-08)
 │                   drop_leaderboard_index.sql (снят users(total_muscles DESC) — рейтингов нет)
 │                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
+│                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
 │                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 │                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
 │                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)

@@ -4,6 +4,7 @@ import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
 import PencilIcon from './PencilIcon'
+import ShieldCheckIcon from './ShieldCheckIcon'
 
 /**
  * Тело карточки программы — общее для главной, избранного и раздела.
@@ -39,9 +40,14 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
       <div style={styles.content}>
         <div style={styles.title}>
           {title}
-          {/* Серый карандаш рядом с названием — индикатор «созданная мной программа». */}
+          {/* Метка происхождения программы, серым, в одном и том же месте:
+              карандаш — «создана мной, редактируется», щит с галочкой — «готовая,
+              от приложения». У программы друга метки нет: она и не моя, и не наша. */}
           {prog.source === 'custom' && (
-            <span style={styles.titlePencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>
+            <span style={styles.titleMark}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>
+          )}
+          {!prog.source && (
+            <span style={styles.titleMark}><ShieldCheckIcon size={13} /></span>
           )}
         </div>
 
@@ -134,7 +140,7 @@ const styles = {
     lineHeight: 1.1
   },
   // Карандаш-индикатор сразу после названия (по центру строки текста).
-  titlePencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-1)', marginTop: '-2px', opacity: 0.7 },
+  titleMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-1)', marginTop: '-2px', opacity: 0.7 },
   daysRow: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
   activeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap' },

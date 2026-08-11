@@ -16,7 +16,11 @@ import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
 
 const LETTERS = ['A', 'B', 'C']
-const MAX_PER_DAY = 10
+// Лимит упражнений на день. Поднят с 10 до 12: последние позиции дня — мелочь
+// (руки, приводящие/отводящие, икры, пресс), их объединяют в суперсеты и они
+// почти не удлиняют тренировку. Второе место лимита — RPC api_save_my_program
+// (проверка `v_order > 12`), менять оба разом.
+const MAX_PER_DAY = 12
 // Плейсхолдер группы, пока каталог не загружен (у упражнения ещё нет muscle_group):
 // такие упражнения собираются в одну секцию без заголовка.
 const UNKNOWN_GROUP = '—'

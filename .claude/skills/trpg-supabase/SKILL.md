@@ -104,12 +104,26 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 ## Программы и места (Зал/Дом/Улица)
 
+**Лимит упражнений на день — 12** (был 10, поднят 2026-08-11: хвост дня это мелочь вроде икр,
+приводящих и пресса, их делают суперсетами и тренировку они почти не удлиняют). Живёт в ДВУХ
+местах, менять разом: `v_order > 12` в `api_save_my_program` и `MAX_PER_DAY` в `ProgramConstructor.jsx`.
+
+**Встроенные программы** (`split`, `fullbody`, `swim`) держат слоты в КОДЕ (`data/programs/*.js`),
+но строка в таблице `programs` им нужна — на неё ссылаются `workouts.program_id` и
+`user_exercise_swaps.program_id`. Новая встроенная программа = файл данных + запись в `registry.js`
++ INSERT в `programs` (`source='global'`, `owner_id=NULL`).
+
+**Грабля: `type` слота обязан совпадать с `type` упражнения в каталоге.** Экран замены ищет
+альтернативы по `sub_group + type` — при расхождении список пустой. Так были сломаны икры
+(в слоте `accessory`, в каталоге `isolation`), починено 2026-08-11. Заводишь слот — сверяйся с
+`exercises`, а не переписывай тип из соседней строки.
+
 - Слоты программ — таблица `program_days` (program_id, day A/B/C, **location** `gym|home|outdoor`,
   order_num, muscle_group, sub_group, type, exercise_id). Уникальность —
   `(program_id, location, day, order_num)` + CHECK на location.
 - `api_save_my_program(p_user_id, p_name, p_day_count int, p_days jsonb)` — `p_days` это объект по
   местам `{ "gym": [ ["ex_001",...] /*день A*/, ... ], "home": [...], "outdoor": [...] }`. Удаляет все
-  слоты программы и пересобирает; пустые дни/места пропускает; ≤10 упр/день. Плюс чистит протухшие
+  слоты программы и пересобирает; пустые дни/места пропускает; **≤12 упр/день**. Плюс чистит протухшие
   `user_exercise_swaps` этой программы: после пересборки order_num смещаются и свап мог бы попасть в
   чужой слот — остаются только совпавшие с новой раскладкой по (day, location, order_num)+sub_group+type.
   Зеркальная защита на клиенте — в `getWorkoutDay` (см. trpg-workflow «грабли»).
