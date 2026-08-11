@@ -57,7 +57,7 @@ if (typeof window !== 'undefined') {
   }, { passive: true })
 }
 
-export default function ExerciseCard({ slot, isActive = false, fullTag = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
   const {
     exercise_id,
     exercise_name,
@@ -167,19 +167,13 @@ export default function ExerciseCard({ slot, isActive = false, fullTag = false, 
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group)
 
-  // Тег в цвете основной группы. Обычно это ТОЛЬКО подгруппа («Ширина»,
-  // «Бицепс»…) — имя группы живёт в заголовке секции и на карточке не
-  // дублируется. Но если заголовков нет (`fullTag`, см. showGroupHeaders у
-  // программы), тег берёт всё на себя: «Ноги — Бицепс бедра». Когда группа и
-  // подгруппа совпадают («Грудь — Грудь»), вторую половину не пишем.
-  const subLabel = toTitleCase(
+  // Один тег — подгруппа («Ширина», «Бицепс»…), в цвете основной группы. Имя
+  // группы живёт в заголовке секции на дне тренировки, на карточке не дублируется.
+  // Если подгруппы нет — откатываемся на имя группы, чтобы тег не был пустым.
+  const tagLabel = toTitleCase(
     SUB_GROUP_LABELS[sub_group] || sub_group ||
     MUSCLE_GROUP_LABELS[muscle_group] || muscle_group || ''
   )
-  const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[muscle_group] || muscle_group || '')
-  const tagLabel = (fullTag && groupLabel && subLabel && groupLabel !== subLabel)
-    ? `${groupLabel} — ${subLabel}`
-    : subLabel
 
   useEffect(() => {
     setLocalWeight(
