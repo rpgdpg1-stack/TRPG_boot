@@ -255,12 +255,15 @@ export default function WorkoutDay() {
   // чтобы шапка сразу была пилюлей и морф не дёргал список.
   const [headerMin, setHeaderMin] = useState(() => (location.state?.scrollY || 0) > 30)
   const headerMinRef = useRef((location.state?.scrollY || 0) > 30)
-  const sectionHeaderRefs = useRef(new Map()) // sIdx -> элемент h2 (замер позиции)
   const sectionsRef = useRef([])              // текущие секции
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
+  // Заголовки групп над карточками. Программа может их отключить
+  // (`showGroupHeaders: false` — сейчас так у фулбади): тогда список сплошной,
+  // а группа переезжает в тег внутри карточки («Ноги — Бицепс бедра»).
+  const showGroupHeaders = program?.showGroupHeaders !== false
   // Имя программы для навбара: кастомную/от друга показываем как ввёл юзер,
   // встроенную — нормализуем регистр (СПЛИТ → Сплит), как на карточках.
   const programTitle = program
@@ -1297,22 +1300,23 @@ export default function WorkoutDay() {
         )}
 
         {!loading && sections.length > 0 && (
-          <div style={styles.sectionsWrap}>
+          <div style={{ ...styles.sectionsWrap, ...(showGroupHeaders ? null : styles.sectionsWrapFlat) }}>
             {sections.map((section, sIdx) => (
               <section
                 key={`${section.muscleGroup}-${sIdx}`}
                 style={styles.section}
               >
-                <h2
-                  ref={(el) => { if (el) sectionHeaderRefs.current.set(sIdx, el); else sectionHeaderRefs.current.delete(sIdx) }}
-                  style={{
-                    ...styles.muscleHeader,
-                    color: getMuscleGroupColors(section.muscleGroup).accent
-                  }}
-                >
-                  <MuscleGroupIcon group={section.muscleGroup} />
-                  {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-                </h2>
+                {showGroupHeaders && (
+                  <h2
+                    style={{
+                      ...styles.muscleHeader,
+                      color: getMuscleGroupColors(section.muscleGroup).accent
+                    }}
+                  >
+                    <MuscleGroupIcon group={section.muscleGroup} />
+                    {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
+                  </h2>
+                )}
 
                 <div style={styles.exerciseList}>
                   {section.slots.map(slot => {
@@ -1334,6 +1338,7 @@ export default function WorkoutDay() {
                         <ExerciseCard
                           slot={slot}
                           isActive={activeOrderNums.has(slot.order_num)}
+                          fullTag={!showGroupHeaders}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
                           onInfo={goToInfo}
@@ -1853,6 +1858,9 @@ const styles = {
     flexDirection: 'column',
     gap: 'var(--space-5)'
   },
+  // Без заголовков групп список сплошной — шаг между карточками одинаковый,
+  // иначе видны «швы» бывших секций.
+  sectionsWrapFlat: { gap: 'var(--space-4)' },
   section: {
     display: 'flex',
     flexDirection: 'column',
