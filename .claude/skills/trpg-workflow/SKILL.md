@@ -264,6 +264,9 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
         .github/workflows/keepalive.yml
         .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md
 
+design/muscle-icons/  body-torso.svg · body-legs.svg (исходники силуэта для Figma;
+                      правишь форму там → переносишь координаты в MuscleGroupIcon.jsx)
+
 src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
