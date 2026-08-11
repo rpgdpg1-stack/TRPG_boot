@@ -21,7 +21,7 @@ import MuscleGroupIcon from './MuscleGroupIcon'
 export function GroupLabel({ children, color, muscleGroup, style }) {
   return (
     <div style={{ ...s.group, ...(muscleGroup ? s.withIcon : null), ...(color ? { color } : null), ...style }}>
-      {muscleGroup && <MuscleGroupIcon group={muscleGroup} size={16} />}
+      {muscleGroup && <MuscleGroupIcon group={muscleGroup} />}
       {children}
     </div>
   )
@@ -48,7 +48,7 @@ const s = {
     paddingBottom: 'var(--space-05)'
   },
   // С иконкой заголовок становится строкой: силуэт и надпись по центру друг друга.
-  withIcon: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
+  withIcon: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
   section: {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 'var(--weight-label)',

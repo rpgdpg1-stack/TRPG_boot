@@ -1310,7 +1310,7 @@ export default function WorkoutDay() {
                     color: getMuscleGroupColors(section.muscleGroup).accent
                   }}
                 >
-                  <MuscleGroupIcon group={section.muscleGroup} size={16} />
+                  <MuscleGroupIcon group={section.muscleGroup} />
                   {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
                 </h2>
 
@@ -1870,7 +1870,7 @@ const styles = {
   muscleHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: 'var(--space-15)',
+    gap: 'var(--space-2)',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',

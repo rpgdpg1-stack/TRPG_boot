@@ -147,8 +147,11 @@ const LEG_GROUPS = new Set(['legs', 'glutes'])
  * @param group — ключ группы мышц (back/chest/legs/…), как в MUSCLE_GROUP_LABELS.
  * Незнакомая группа (например «разминка») → ничего не рисуем: пустая рамка
  * хуже, чем её отсутствие.
+ *
+ * Размер задан ЗДЕСЬ и нигде больше: места использования его не передают,
+ * поэтому поменять иконки во всём приложении = поправить одно число.
  */
-export default function MuscleGroupIcon({ group, size = 16, style }) {
+export default function MuscleGroupIcon({ group, size = 24, style }) {
   const shape = SHAPES[group]
   if (!shape) return null
 
