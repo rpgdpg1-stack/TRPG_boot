@@ -276,7 +276,7 @@ src/
 ├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross ConfirmModal DailyQuests
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
-│                   HomeCards ModalButton MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
+│                   HomeCards ModalButton MuscleGroupIcon MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
 │                   PagerArrows PeriodSwitcher PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
 │                   SaveFriendProgramModal ScreenTitle ScrollTopButton ShieldCheckIcon SectionCarousel SectionPicker StreakFlame TrendingUpIcon
 │                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal

@@ -39,6 +39,7 @@ import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
 import ConfirmModal from '../components/ConfirmModal'
+import MuscleGroupIcon from '../components/MuscleGroupIcon'
 import ReturnHighlight from '../components/workout/ReturnHighlight'
 import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
 import SkeletonCard from '../components/workout/SkeletonCard'
@@ -1309,6 +1310,7 @@ export default function WorkoutDay() {
                     color: getMuscleGroupColors(section.muscleGroup).accent
                   }}
                 >
+                  <MuscleGroupIcon group={section.muscleGroup} size={16} />
                   {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
                 </h2>
 
@@ -1866,6 +1868,9 @@ const styles = {
   // Заголовок группы — по ЛЕВОМУ краю, на уровне конца скругления карточки (33px):
   // так все заголовки экрана стоят в одну вертикаль.
   muscleHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-15)',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',

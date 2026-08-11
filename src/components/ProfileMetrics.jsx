@@ -143,7 +143,7 @@ function FavoritesList({ items, showWeights }) {
         return (
           <div key={i}>
             {group && !sameAsPrev && (
-              <GroupLabel color={accent} style={{ marginTop: i === 0 ? 0 : 'var(--space-2)' }}>{group}</GroupLabel>
+              <GroupLabel color={accent} muscleGroup={f.muscle_group} style={{ marginTop: i === 0 ? 0 : 'var(--space-2)' }}>{group}</GroupLabel>
             )}
             <div style={m.favRow}>
             <div style={m.thumb}>

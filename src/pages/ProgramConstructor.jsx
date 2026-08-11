@@ -522,7 +522,7 @@ export default function ProgramConstructor() {
         {daySections.map((section, sIdx) => (
           <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
             {section.muscleGroup !== UNKNOWN_GROUP && (
-              <GroupLabel color={getMuscleGroupColors(section.muscleGroup).accent}>
+              <GroupLabel color={getMuscleGroupColors(section.muscleGroup).accent} muscleGroup={section.muscleGroup}>
                 {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
               </GroupLabel>
             )}

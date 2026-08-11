@@ -151,7 +151,7 @@ export default function FavoriteExercises() {
           return (
             <div key={slot}>
             {/* Заголовок группы мышц над карточкой — как в дне тренировки. */}
-            {group && !sameAsPrev && <GroupLabel color={colors.accent} style={{ paddingLeft: 'var(--space-6)' }}>{group}</GroupLabel>}
+            {group && !sameAsPrev && <GroupLabel color={colors.accent} muscleGroup={f.muscle_group} style={{ paddingLeft: 'var(--space-6)' }}>{group}</GroupLabel>}
             <div
               className="press-tile"
               style={styles.card}
