@@ -1,5 +1,4 @@
 import { getProgramPlaces } from '../features/programs/registry'
-import { getMuscleGroupColors } from '../features/programs/colors'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
@@ -14,10 +13,10 @@ import ShieldCheckIcon from './ShieldCheckIcon'
  * буква активного дня (крупнее/жирнее). Правый блок (время/прогресс/«последняя»)
  * и заливку-прогресс рисует вызывающий (`ProgramCard`).
  *
- * `accent` — цвет раздела (фолбэк для буквы дня). `activeMin` — truthy, если идёт
- * тренировка по этой программе (тогда показываем ТОЛЬКО активный день, крупно).
+ * `activeMin` — truthy, если идёт тренировка по этой программе (тогда показываем
+ * ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, accent = 'var(--color-primary)', activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null }) {
+export default function FavCardBody({ entry, activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -28,11 +27,9 @@ export default function FavCardBody({ entry, accent = 'var(--color-primary)', ac
         : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const places = getProgramPlaces(prog)
-  // Цвет буквы дня = акцент ПЕРВОЙ группы мышц этого дня (спина/грудь/ноги…).
-  const dayColor = (d) => {
-    const g = prog.data?.days?.[d]?.[0]?.muscle_group
-    return (g && getMuscleGroupColors(g).accent) || accent
-  }
+  // Буква дня — фирменный акцент, а не цвет первой группы мышц: цвет здесь
+  // значит «рекомендованный/запущенный день», а не «какие мышцы» (см. WorkoutDay).
+  const dayColor = () => 'var(--color-primary)'
 
   return (
     <>

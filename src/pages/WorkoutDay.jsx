@@ -7,8 +7,7 @@ import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../featu
 import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
 
-import { getMuscleGroupColors } from '../features/programs/colors'
-import { getDayMuscleTags, hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
 import {
   getActiveWorkout,
@@ -277,19 +276,12 @@ export default function WorkoutDay() {
 
   const programSlots = useMemo(() => getProgramDaySlots(programId, day, place), [programId, day, place])
 
-  const dayTags = useMemo(() => getDayMuscleTags(program?.dbId, day), [program, day])
-  // Акцентный цвет дня = цвет ПЕРВОЙ группы мышц дня (спина/грудь/ноги…). Им
-  // красится крупная буква активного/фокусного дня (не общим зелёным).
-  const dayGroupAccent = dayTags[0]
-    ? getMuscleGroupColors(dayTags[0].key).accent
-    : 'var(--color-primary)'
-
-  // Акцент ЛЮБОГО дня программы (по первой группе) — для пикера дней: в попапе
-  // каждый день красится своим цветом на 100%.
-  const accentForDay = (d) => {
-    const tags = getDayMuscleTags(program?.dbId, d)
-    return tags[0] ? getMuscleGroupColors(tags[0].key).accent : 'var(--color-primary)'
-  }
+  // Буква дня — ВСЕГДА фирменный акцент (зелёный), а не цвет первой группы мышц.
+  // Раньше день A мог быть красным, B розовым, C зелёным — шапка пестрила, и
+  // цвет не значил ничего полезного (группы и так написаны в тегах карточек).
+  // Теперь цвет тут значит одно: «этот день — твой сегодняшний».
+  const dayGroupAccent = 'var(--color-primary)'
+  const accentForDay = () => 'var(--color-primary)'
 
   const currentDayIdx = days.indexOf(day)
   const prevDay = currentDayIdx > 0 ? days[currentDayIdx - 1] : days[days.length - 1]

@@ -232,7 +232,6 @@ export default function ProgramCard({
       <div style={{ ...styles.cardRow, paddingRight: `${padRight}px`, flex: 1 }}>
         <FavCardBody
           entry={{ prog, activeDay: isActive ? active.day : activeDay }}
-          accent={accent}
           activeMin={activeMin}
           activeTimeColor={activeTimeColor}
           activeDone={activeDone}

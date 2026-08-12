@@ -93,7 +93,9 @@ export function formatWorkoutMin(totalSec) {
 export const TIMER_ORANGE_SEC = 3600
 export const TIMER_RED_SEC = 5400
 export const WORKOUT_TIMER_COLORS = {
-  green: 'var(--color-primary)',
+  // НЕ --color-primary: им теперь красится буква дня, и в одной шапке два
+  // одинаковых зелёных сливались бы. Свой мятный оттенок — см. --color-timer.
+  green: 'var(--color-timer)',
   orange: '#F0883E',
   red: '#E84545'
 }
