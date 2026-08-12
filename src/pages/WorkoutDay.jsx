@@ -1519,9 +1519,9 @@ export default function WorkoutDay() {
             <RocketIcon size={26} lit={quickPopup === 'on'} />
           </span>
           <div style={styles.quickPopupTitle}>
-            Быстрый режим:{' '}
+            Быстрый режим{' '}
             <span style={{ color: quickPopup === 'on' ? 'var(--color-primary)' : 'var(--color-error)' }}>
-              {quickPopup === 'on' ? 'вкл' : 'выкл'}
+              {quickPopup === 'on' ? 'включён' : 'выключён'}
             </span>
           </div>
         </div>,

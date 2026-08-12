@@ -24,9 +24,8 @@ import UiIcon from './UiIcon'
  *   называют поле по-разному, а список один.
  * @param picked — массив id, отмеченных как важные.
  */
-export const QUICK_HINT = 'Быстрый режим тренировки — короткая версия дня, только самое важное. ' +
-  'Оставь отмеченным то, без чего тренировка не считается, и сними остальное. ' +
-  'В день тренировки это включается ракетой — на случай, когда времени мало.'
+export const QUICK_HINT =
+  'Отметь упражнения для быстрого режима тренировки. Не отмеченные не войдут в тренировку.'
 
 export default function QuickPickList({ items, picked, onToggle, showHint = true }) {
   const isPicked = (id) => picked.includes(id)
