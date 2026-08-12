@@ -85,7 +85,7 @@
      --color-primary, и будь таймер тем же зелёным, две цифры в одной шапке
      слились бы в пятно. Мятно-бирюзовый: та же яркость, явно другой тон —
      «сколько идёт» и «какой день» читаются раздельно. */
-  --green-timer: #3FD9A4;
+  --green-timer: #33A756;
   --color-timer: var(--green-timer);
   --color-text: var(--neutral-0);
   --color-text-secondary: var(--neutral-500);

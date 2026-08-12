@@ -23,22 +23,17 @@ import {
   pluralPools,
   swimMinutesForMeters
 } from '../data/programs/swim'
-import { getCurrentUser } from '../lib/auth'
-import { EVENTS, on } from '../lib/events'
-import { resolveWeeklyStreak } from '../utils/dates'
 import ConfirmModal from '../components/ConfirmModal'
+import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import ScreenTitle from '../components/ScreenTitle'
 import CloseCross from '../components/CloseCross'
 import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import ChevronIcon from '../components/ChevronIcon'
-import StreakFlame from '../components/StreakFlame'
 import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
-import BicepGesture from '../components/BicepGesture'
 import { PlayGlyph } from '../components/PlayButton'
-import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -414,7 +409,6 @@ export default function SwimWorkout() {
     startActiveWorkout(programId, 'main', 'pool')
   }
 
-
   const handleModalConfirm = () => {
     if (modal?.kind === 'error') { runFinish(); return }
     setModal(null)
@@ -687,12 +681,17 @@ export default function SwimWorkout() {
         />
       )}
 
+      {/* Финиш — ОБЩАЯ модалка с силовой: разница только в том, что у заплыва
+          в строке показателей есть дистанция. Своя копия была лишней. */}
       {modal && (
-        <SwimFinishedModal
-          kind={modal.kind}
-          distance={modal.distance ?? totalMeters}
-          seconds={modal.seconds ?? 0}
-          status={finishStatus}
+        <WorkoutFinishedModal
+          distanceLabel={formatDistance(modal.distance ?? totalMeters)}
+          durationLabel={formatWorkoutMin(modal.seconds ?? 0)}
+          durationColor={workoutTimerColor(modal.seconds ?? 0)}
+          limitNote={<>Достигнут лимит — 1 тренировка в день.<br />Этот заплыв в статистику не войдёт.</>}
+          status={finishStatus === 'error' ? 'error' : finishStatus}
+          offline={modal.kind === 'offline'}
+          alreadyToday={modal.kind === 'limit'}
           onConfirm={handleModalConfirm}
         />
       )}
@@ -746,17 +745,6 @@ function PoolLenSwitcher({ pool, pools, onPick }) {
   )
 }
 
-/** «750 м» / «45 мин»: числа — крупно и цветом, единицы — мельче и серым. */
-function MetricValue({ label, color }) {
-  return (
-    <>
-      {String(label).split(' ').map((part, i) => (
-        <span key={i} style={/^\d/.test(part) ? { ...modalStyles.statNum, color } : modalStyles.statUnit}>{part}</span>
-      ))}
-    </>
-  )
-}
-
 function Tip({ children }) {
   return (
     <div style={styles.tipRow}>
@@ -807,130 +795,6 @@ function SwimmerIcon({ stroke, size = 34 }) {
         </g>
       )}
     </svg>
-  )
-}
-
-const SWIM_CLOSE_MS = 220
-
-/**
- * Финал заплыва. Приведён к той же композиции, что модалка силовой тренировки
- * (WorkoutFinishedModal): жест бицепса или иконка состояния → заголовок →
- * строка показателя → пояснение → кнопка. Раньше это были два разных финала
- * одного и того же действия.
- *
- * Отличие намеренное: показатель здесь — дистанция, и она подписана цветом
- * категории «бассейн», чтобы финал читался именно как заплыв.
- */
-function SwimFinishedModal({ kind, distance, seconds, status, onConfirm }) {
-  const overlayRef = useRef(null)
-  useScrollLock(overlayRef)
-  const [closing, setClosing] = useState(false)
-
-  // Серия за неделю — как в модалке силовой: тренировка сохраняется параллельно,
-  // поэтому цифру досчитываем по USER_CHANGED.
-  const [streak, setStreak] = useState(() => {
-    const u = getCurrentUser()
-    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
-  })
-  useEffect(() => {
-    const upd = () => {
-      const u = getCurrentUser()
-      setStreak(resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week))
-    }
-    const off = on(EVENTS.USER_CHANGED, upd)
-    const off2 = on(EVENTS.USER_READY, upd)
-    return () => { off(); off2() }
-  }, [])
-
-  const isError = kind === 'error'
-  const offline = kind === 'offline'
-  const isSaving = status === 'saving'
-  const celebratory = !isError && !offline
-
-  const title = isError ? 'НЕ УДАЛОСЬ СОХРАНИТЬ'
-    : offline ? 'СОХРАНЕНО ЛОКАЛЬНО'
-    : 'ЗАПЛЫВ ЗАВЕРШЁН'
-
-  const buttonText = isSaving ? 'СОХРАНЕНИЕ...' : isError ? 'ПОВТОРИТЬ' : 'ОК'
-
-  const handleClick = () => {
-    if (isSaving || closing) return
-    if (isError) { onConfirm?.(); return }
-    setClosing(true)
-    setTimeout(() => onConfirm?.(), SWIM_CLOSE_MS)
-  }
-
-  return (
-    <div ref={overlayRef} style={{ ...modalStyles.overlay, opacity: closing ? 0 : 1 }}>
-      <div style={{
-        ...modalStyles.modal,
-        ...(isError ? modalStyles.modalError : null),
-        ...(closing ? modalStyles.modalClosing : null)
-      }}>
-        {celebratory
-          ? <BicepGesture size={78} />
-          : <div style={modalStyles.icon}><UiIcon name={isError ? 'alert' : 'network_off'} size={48} color="var(--color-offline)" /></div>}
-
-        <div style={{
-          ...modalStyles.title,
-          color: (isError || offline) ? 'var(--color-offline)' : 'var(--cat-pool)'
-        }}>
-          {title}
-        </div>
-
-        {/* Строка показателей — как в модалке силовой: серия, затем дистанция
-            (в цвете категории «бассейн» — она здесь главная) и время. */}
-        {!isError && (
-          <div style={modalStyles.statsRow}>
-            <span style={modalStyles.stat}>
-              <span style={streak >= 1 ? undefined : modalStyles.flameGrey}><StreakFlame streak={streak} /></span>
-              <span style={{ ...modalStyles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
-            </span>
-            <span style={modalStyles.stat}>
-              <UiIcon name="swimming" size={18} color="var(--cat-pool)" />
-              <MetricValue label={formatDistance(distance)} color="var(--cat-pool)" />
-            </span>
-            <span style={modalStyles.stat}>
-              <span style={modalStyles.statClock}><ClockIcon size={18} /></span>
-              <MetricValue label={formatWorkoutMin(seconds)} color="var(--color-text)" />
-            </span>
-          </div>
-        )}
-
-        {isError ? (
-          <div style={modalStyles.message}>Проверь подключение к интернету и попробуй ещё раз.</div>
-        ) : offline ? (
-          <div style={modalStyles.message}>Заплыв сохранён на телефоне.<br />Данные обновятся, как только появится интернет.</div>
-        ) : kind === 'limit' ? (
-          <div style={modalStyles.message}>Достигнут лимит — 1 тренировка в день.<br />Этот заплыв в статистику не войдёт.</div>
-        ) : (
-          <div style={modalStyles.praise}>Отличная работа!</div>
-        )}
-
-        <ActionButton
-          variant="accent"
-          size="sm"
-          onClick={handleClick}
-          disabled={isSaving}
-          style={{
-            marginTop: 'var(--space-1)', width: '100%',
-            ...(isError
-              ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: 'var(--accent-on)' }
-              : { background: 'var(--cat-pool)', borderColor: 'var(--cat-pool)', color: 'var(--accent-on)' })
-          }}
-        >
-          {buttonText}
-        </ActionButton>
-      </div>
-
-      <style>{`
-        @keyframes swimModalFade { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes swimModalIn {
-          0%   { opacity: 0; transform: scale(0.92) translateY(10px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
-    </div>
   )
 }
 
@@ -1352,54 +1216,3 @@ const plsStyles = {
   }
 }
 
-const modalStyles = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'var(--overlay-scrim)',
-    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 'var(--z-modal)', padding: 'var(--space-5)',
-    touchAction: 'none', overscrollBehavior: 'contain',
-    transition: 'opacity 0.22s ease',
-    animation: 'swimModalFade 0.3s ease-out forwards'
-  },
-  modal: {
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-8) var(--space-6) var(--space-6)',
-    width: '100%', maxWidth: '320px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)',
-    animation: 'swimModalIn 0.4s var(--ease-ios) forwards',
-    boxShadow: 'var(--shadow-modal)',
-    transition: 'transform 0.22s var(--ease-ios), opacity 0.22s ease'
-  },
-  modalError: { borderColor: 'var(--color-offline)' },
-  modalClosing: { transform: 'scale(0.94) translateY(8px)', opacity: 0 },
-  icon: { display: 'inline-flex', lineHeight: 1 },
-  title: {
-    fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-label)',
-    fontSize: 'var(--text-title-size)', letterSpacing: '2px', textAlign: 'center'
-  },
-  // Строка показателей — тот же приём, что в модалке силовой: серия · дистанция · время.
-  statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' },
-  stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
-  statNum: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 'var(--weight-value)',
-    fontSize: 'var(--text-title-size)', letterSpacing: '0.5px'
-  },
-  statUnit: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 'var(--weight-text)',
-    fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)'
-  },
-  statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
-  flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
-  message: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5
-  },
-  praise: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 'var(--weight-label)', color: 'var(--text-label)', textAlign: 'center'
-  }
-}

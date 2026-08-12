@@ -26,7 +26,17 @@ import UiIcon from './UiIcon'
  */
 const CLOSE_MS = 260
 
-export default function WorkoutFinishedModal({ durationLabel = '', status = 'idle', errorMsg = '', offline = false, alreadyToday = false, onConfirm }) {
+export default function WorkoutFinishedModal({
+  durationLabel = '',
+  durationColor = 'var(--color-timer)',
+  distanceLabel = '',
+  limitNote = '',
+  status = 'idle',
+  errorMsg = '',
+  offline = false,
+  alreadyToday = false,
+  onConfirm
+}) {
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
   const isSaving = status === 'saving'
@@ -52,7 +62,7 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
   }, [])
 
   const titleText = isError ? 'Не удалось сохранить' : offline ? 'Сохранено локально' : 'Тренировка завершена'
-  const buttonText = isSaving ? 'СОХРАНЕНИЕ...' : isError ? 'ПОВТОРИТЬ' : 'ОК'
+  const buttonText = isSaving ? 'Сохранение…' : isError ? 'Повторить' : 'ОК'
 
   const handleClick = () => {
     if (isSaving || closing) return
@@ -93,10 +103,18 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
                   <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
                   <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
                 </span>
+                {/* Дистанция — только у плавания. Обычная метрика: число
+                    акцентом, единица серым. Иконки вида тут НЕТ — строка и так
+                    читается, а лишний значок делал её пёстрой. */}
+                {distanceLabel && <Metric label={distanceLabel} />}
                 {durationLabel && (
                   <span style={styles.stat}>
-                    <span style={styles.statClock}><ClockIcon size={18} /></span>
-                    <Duration label={durationLabel} />
+                    {/* Время — СИГНАЛ (уложился / затянул / перебрал), поэтому
+                        вся группа целиком в цвет зоны: часы, число и единица.
+                        Покрась тут одну цифру — читалось бы как «важное число»,
+                        а не как предупреждение. */}
+                    <span style={{ ...styles.statClock, color: durationColor }}><ClockIcon size={18} /></span>
+                    <Duration label={durationLabel} color={durationColor} />
                   </span>
                 )}
               </div>
@@ -109,14 +127,15 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
             ) : alreadyToday ? (
               // Лимит занимает МЕСТО похвалы (не добавляется под ней) — иначе
               // панель прыгала, когда сервер отвечал «уже засчитано».
-              <div style={styles.limitNote}>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</div>
+              <div style={styles.limitNote}>{limitNote || <>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</>}</div>
             ) : (
               <div style={styles.praise}>Отличная работа!</div>
             )}
 
+            {/* Кнопка — крупная (md), как «Начать» в дне: это главное действие
+                экрана, мельчить его незачем. */}
             <ActionButton
-              variant="accent"
-              size="sm"
+              variant="primary"
               onClick={handleClick}
               disabled={isSaving}
               style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: 'var(--accent-on)' } : {}) }}
@@ -134,14 +153,28 @@ export default function WorkoutFinishedModal({ durationLabel = '', status = 'idl
   )
 }
 
-/** «45 мин» / «1 ч 20 мин»: числа — акцентом, единицы — серым. */
-function Duration({ label }) {
+/**
+ * Время тренировки — вся строка одним цветом зоны (см. комментарий выше).
+ * Единица чуть мельче числа, но того же цвета: это одно пятно-сигнал.
+ */
+function Duration({ label, color }) {
   return (
     <>
       {String(label).split(' ').map((part, i) => (
-        <span key={i} style={/^\d/.test(part) ? styles.durationNum : styles.durationUnit}>{part}</span>
+        <span key={i} style={{ ...(/^\d/.test(part) ? styles.durationNum : styles.durationUnit), color }}>{part}</span>
       ))}
     </>
+  )
+}
+
+/** Обычная метрика («750 м»): число акцентом, единица серым. */
+function Metric({ label }) {
+  return (
+    <span style={styles.stat}>
+      {String(label).split(' ').map((part, i) => (
+        <span key={i} style={/^[\d,.]/.test(part) ? styles.metricNum : styles.metricUnit}>{part}</span>
+      ))}
+    </span>
   )
 }
 
@@ -189,8 +222,10 @@ const styles = {
   },
   // Обычный регистр (первая заглавная), акцентный зелёный.
   title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px', textAlign: 'center' },
-  durationNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
-  durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
+  durationNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
+  durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500 },
+  metricNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
+  metricUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
   errorMessage: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.5, padding: 'var(--space-1)' },
   // Похвала и заметка о лимите занимают ОДНУ и ту же строку фиксированной высоты —
   // панель не меняет размер, когда приходит ответ сервера.

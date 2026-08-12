@@ -3,15 +3,15 @@ import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
+import { workoutTimerColor } from '../lib/active-workout'
 import UiIcon from './UiIcon'
+import ClockIcon from './ClockIcon'
 import PagerArrows from './PagerArrows'
-import { getMuscleGroupColors } from '../features/programs/colors'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import {
   MONTHS_RU, WEEKDAYS_RU, HISTORY_FETCH_LIMIT,
   mskParts, mskDayKey, formatTimeMsk,
-  workoutCategoryMeta, describeWorkout, getDayMuscleTags,
-  workoutMinutes, formatDuration
+  workoutCategoryMeta, describeWorkout, workoutMinutes, formatDuration
 } from '../utils/history'
 
 // Вся история (ничего не обрезаем по времени) — листаем календарь до самой первой
@@ -21,11 +21,6 @@ import {
 const MONTHS_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
 // Акцентный цвет силового дня = цвет первой группы мышц (как на карточках/в шапке).
-function strengthAccent(workout) {
-  const key = getDayMuscleTags(workout.program_id, workout.day)[0]?.key
-  return key ? getMuscleGroupColors(key).accent : 'var(--color-primary)'
-}
-
 // Бейдж раздела на конкретную тренировку: чёрная иконка на цветном прямоугольнике.
 // Цвет = цвет РАЗДЕЛА (силовая — зелёный, как заголовки), НЕ группы мышц. Акцент
 // группы остаётся только для буквы дня в попапе.
@@ -395,9 +390,28 @@ function DayDetail({ data, onClose }) {
             // Длительность (мин) — из started_at/finished_at, и для силовой, и для
             // заплыва (у заплыва started_at синтетический, см. finishWorkout).
             const minutes = workoutMinutes(w)
+            // Порядок: сначала дистанция (если есть), потом длительность, потом
+            // время старта. Правило цвета метрик:
+            //   • обычная метрика (метраж) — ЧИСЛО акцентом, единица серым;
+            //   • длительность — СИГНАЛ (уложился/затянул/перебрал), поэтому вся
+            //     группа с часами в цвет зоны, как таймер в шапке дня;
+            //   • время суток — просто факт, остаётся серым.
             const metaParts = []
-            if (minutes > 0) metaParts.push(<span key="min">{formatDuration(minutes)}</span>)
-            if (w.distance_m) metaParts.push(<span key="dist" style={{ color: 'var(--cat-pool)', fontWeight: 700 }}>{w.distance_m} м</span>)
+            if (w.distance_m) {
+              metaParts.push(
+                <span key="dist">
+                  <span style={dstyles.metricNum}>{w.distance_m}</span>
+                  <span style={dstyles.metricUnit}> м</span>
+                </span>
+              )
+            }
+            if (minutes > 0) {
+              metaParts.push(
+                <span key="min" style={{ ...dstyles.duration, color: workoutTimerColor(minutes * 60) }}>
+                  <ClockIcon size={13} />{formatDuration(minutes)}
+                </span>
+              )
+            }
             metaParts.push(<span key="time">{formatTimeMsk(w.finished_at)}</span>)
             return (
               <div key={i} style={dstyles.item}>
@@ -408,7 +422,7 @@ function DayDetail({ data, onClose }) {
                     {letter && (
                       <>
                         <span style={dstyles.sep}> · День </span>
-                        <span style={{ color: strengthAccent(w), fontWeight: 800 }}>{letter}</span>
+                        <span style={{ color: 'var(--color-primary)', fontWeight: 800 }}>{letter}</span>
                       </>
                     )}
                   </div>
@@ -505,6 +519,9 @@ const dstyles = {
   item: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)' },
   itemText: { flex: 1, minWidth: 0 },
   itemTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text)' },
+   metricNum: { color: 'var(--color-primary)', fontWeight: 800 },
+   metricUnit: { color: 'var(--color-text-secondary)', fontWeight: 500 },
+   duration: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-05)', fontWeight: 700 },
   sep: { color: 'var(--color-text-secondary)', fontWeight: 500 },
   itemMeta: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-05)' }
 }

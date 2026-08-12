@@ -22,7 +22,8 @@ import {
   formatWorkoutMin,
   TIMER_ORANGE_SEC,
   TIMER_RED_SEC,
-  WORKOUT_TIMER_COLORS
+  WORKOUT_TIMER_COLORS,
+  workoutTimerColor
 } from '../lib/active-workout'
 import {
   loadWorkoutProgress,
@@ -1567,6 +1568,7 @@ export default function WorkoutDay() {
       {showFinishedModal && (
         <WorkoutFinishedModal
           durationLabel={formatWorkoutMin(finishedSec)}
+          durationColor={workoutTimerColor(finishedSec)}
           status={finishStatus}
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
