@@ -304,6 +304,7 @@ supabase/
 │                   drop_leaderboard_index.sql (снят users(total_muscles DESC) — рейтингов нет)
 │                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
 │                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
+│                   public_profile_favorites_subgroup.sql (sub_group в любимых у друга)
 │                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
 │                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
 │                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)

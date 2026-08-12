@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
@@ -269,10 +269,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
   if (!slot) return null
 
   const colors = getMuscleGroupColors(slot.muscle_group)
-  const groupLabelRaw = MUSCLE_GROUP_LABELS[slot.muscle_group] || (slot.muscle_group || '').toUpperCase()
-  const subGroupLabelRaw = SUB_GROUP_LABELS[slot.sub_group] || (slot.sub_group || '').toUpperCase()
-  const groupLabel = toTitleCase(groupLabelRaw)
-  const subGroupLabel = toTitleCase(subGroupLabelRaw)
+  // Тег такой же, как на карточке дня: «Ноги — Квадрицепс».
+  const tagLabel = exerciseTagLabel(slot.muscle_group, slot.sub_group)
 
   // Портал в body ОБЯЗАТЕЛЕН: страница «Любимые» висит на `.page-fade`, а у той
   // анимации `fill-mode: both` оставляет transform — такой предок становится
@@ -329,9 +327,9 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
             <div style={styles.tagsRow}>
               {/* Один тег — подгруппа в цвете основной группы, opacity 0.7
                   (как на карточках упражнений в дне тренировки). */}
-              {(subGroupLabel || groupLabel) && (
+              {tagLabel && (
                 <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
-                  {subGroupLabel || groupLabel}
+                  {tagLabel}
                 </span>
               )}
             </div>
@@ -447,11 +445,6 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     </div>,
     document.body
   )
-}
-
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {

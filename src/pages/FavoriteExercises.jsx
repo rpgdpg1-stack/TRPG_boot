@@ -5,7 +5,7 @@ import { getFavoriteExercises, getFavoritesSync, formatFavoriteValue, FAVORITE_L
 import { getActiveDaySync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import { shouldIgnoreCardTap } from '../lib/weight-editing-state'
@@ -14,7 +14,6 @@ import { WEIGHT_COLOR_TRANSITION } from '../components/WeightRaiseFlash'
 import ScreenTitle from '../components/ScreenTitle'
 import HeartIcon from '../components/HeartIcon'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
-import { GroupLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
@@ -131,11 +130,8 @@ export default function FavoriteExercises() {
       </p>
 
       <div style={styles.list}>
-        {slots.map((slot, si) => {
+        {slots.map((slot) => {
           const f = byslot[slot]
-          // Подряд идущие упражнения одной группы — под общим заголовком.
-          const prev = byslot[slots[si - 1]]
-          const sameAsPrev = !!prev && !!f && prev.muscle_group === f.muscle_group
           if (!f) {
             return (
               <button key={slot} className="press-tile" style={{ ...styles.card, ...styles.cardEmpty }} onClick={goAdd}>
@@ -145,14 +141,12 @@ export default function FavoriteExercises() {
             )
           }
           const colors = getMuscleGroupColors(f.muscle_group)
-          const tag = title(SUB_GROUP_LABELS[f.sub_group] || MUSCLE_GROUP_LABELS[f.muscle_group] || '')
-          const group = MUSCLE_GROUP_LABELS[f.muscle_group] || ''
+          // Группа живёт в теге («Ноги — Квадрицепс»), заголовков над карточками нет.
+          const tag = exerciseTagLabel(f.muscle_group, f.sub_group)
           const val = formatFavoriteValue(f.weight_kg, f.counts_reps)
           return (
-            <div key={slot}>
-            {/* Заголовок группы мышц над карточкой — как в дне тренировки. */}
-            {group && !sameAsPrev && <GroupLabel color={colors.accent} muscleGroup={f.muscle_group} style={{ paddingLeft: 'var(--space-6)' }}>{group}</GroupLabel>}
             <div
+              key={slot}
               className="press-tile"
               style={styles.card}
               onClick={() => cardClick(f)}
@@ -172,7 +166,6 @@ export default function FavoriteExercises() {
                 {tag && <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>}
               </div>
               <FavWeight fav={f} accent={colors.accent} showHint={!val} onSaved={load} />
-            </div>
             </div>
           )
         })}

@@ -3,14 +3,13 @@ import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { useScrollLock } from '../lib/use-scroll-lock'
-import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { periodShortLabel, periodHintSuffix } from '../utils/history'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import HistoryStats from './HistoryStats'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
-import { GroupLabel } from './GroupLabel'
 import ExercisePlaceholder from './ExercisePlaceholder'
 
 /**
@@ -126,8 +125,9 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
 }
 
 /**
- * Список любимых: над каждым упражнением — заголовок его группы мышц в цвете
- * группы (тот же приём, что в дне тренировки, только мельче — модалка компактная).
+ * Список любимых. Заголовков групп нет — принадлежность упражнения пишет тег
+ * ВТОРОЙ строкой под названием («Ноги — Квадрицепс»), в цвете группы. Так же,
+ * как на карточках дня и на странице «Любимые».
  */
 function FavoritesList({ items, showWeights }) {
   return (
@@ -136,30 +136,26 @@ function FavoritesList({ items, showWeights }) {
         const n = Number(f.weight_kg)
         const has = showWeights && Number.isFinite(n) && n > 0
         const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
-        const accent = getMuscleGroupColors(f.muscle_group).accent
-        const group = MUSCLE_GROUP_LABELS[f.muscle_group] || ''
-        // Подряд идущие упражнения одной группы — под общим заголовком.
-        const sameAsPrev = i > 0 && items[i - 1].muscle_group === f.muscle_group
+        const colors = getMuscleGroupColors(f.muscle_group)
+        const tag = exerciseTagLabel(f.muscle_group, f.sub_group)
         return (
-          <div key={i}>
-            {group && !sameAsPrev && (
-              <GroupLabel color={accent} muscleGroup={f.muscle_group} style={{ marginTop: i === 0 ? 0 : 'var(--space-2)' }}>{group}</GroupLabel>
-            )}
-            <div style={m.favRow}>
+          <div key={i} style={m.favRow}>
             <div style={m.thumb}>
               {f.preview_url
                 ? <img src={f.preview_url} alt="" style={m.thumbImg} draggable={false} />
                 : <ExercisePlaceholder size={24} />}
             </div>
-            <span style={m.favName}>{cap(f.name)}</span>
+            <div style={m.favContent}>
+              <div style={m.favName}>{cap(f.name)}</div>
+              {tag && <span style={{ ...m.favTag, background: colors.tag }}>{tag}</span>}
+            </div>
             {has && (
               <span style={m.favVal}>
-                {/* Вес — белым, как в дне тренировки; цвет группы остаётся заголовку. */}
+                {/* Вес — белым, как в дне тренировки; цвет группы несёт тег. */}
                 <span style={{ color: 'var(--color-text)', fontWeight: 800 }}>{num}</span>
                 <span style={m.favUnit}> {f.counts_reps ? 'раз' : 'кг'}</span>
               </span>
             )}
-            </div>
           </div>
         )
       })}
@@ -222,9 +218,16 @@ const m = {
     background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   thumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  // Название и тег — колонкой, чтобы тег встал второй строкой под именем.
+  favContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-1)' },
   favName: {
-    flex: 1, minWidth: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
+    maxWidth: '100%', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+  },
+  favTag: {
+    padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
+    opacity: 0.7, whiteSpace: 'nowrap'
   },
   favVal: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
   favUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }

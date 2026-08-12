@@ -62,3 +62,24 @@ export const SUB_GROUP_LABELS = {
   neck_extensors: 'РАЗГИБАТЕЛИ ШЕИ',
   warmup:         'РАЗМИНКА'
 }
+
+/** «СПИНА» → «Спина». */
+const titleCase = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '')
+
+/**
+ * Подпись тега упражнения: «Ноги — Квадрицепс».
+ *
+ * Заголовков групп над карточками в приложении НЕТ — группа переехала внутрь
+ * тега, поэтому подпись собирается здесь один раз на все экраны (день
+ * тренировки, меню долгого нажатия, любимые, конструктор, рекорды).
+ *
+ * Группа и подгруппа совпали — второй половины нет: «Бицепс», а не
+ * «Бицепс — Бицепс». Подгруппы нет вовсе — остаётся имя группы.
+ */
+export function exerciseTagLabel(muscleGroup, subGroup) {
+  const group = titleCase(MUSCLE_GROUP_LABELS[muscleGroup] || muscleGroup || '')
+  const sub = titleCase(SUB_GROUP_LABELS[subGroup] || subGroup || '')
+  if (!sub) return group
+  if (!group || group === sub) return sub
+  return `${group} — ${sub}`
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { saveExerciseWeight } from '../features/exercises/api'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { haptic } from '../lib/telegram'
 import {
@@ -167,13 +167,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group)
 
-  // Один тег — подгруппа («Ширина», «Бицепс»…), в цвете основной группы. Имя
-  // группы живёт в заголовке секции на дне тренировки, на карточке не дублируется.
-  // Если подгруппы нет — откатываемся на имя группы, чтобы тег не был пустым.
-  const tagLabel = toTitleCase(
-    SUB_GROUP_LABELS[sub_group] || sub_group ||
-    MUSCLE_GROUP_LABELS[muscle_group] || muscle_group || ''
-  )
+  // Тег несёт ВСЮ принадлежность упражнения — «Ноги — Квадрицепс», в цвете
+  // основной группы. Заголовков групп над карточками больше нет, поэтому
+  // группа живёт здесь (общий помощник, один формат на все экраны).
+  const tagLabel = exerciseTagLabel(muscle_group, sub_group)
 
   useEffect(() => {
     setLocalWeight(
@@ -543,11 +540,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
  * "СПИНА" → "Спина", "БИЦЕПС БЕДРА" → "Бицепс бедра".
  * Локальный хелпер — наружу выносить пока незачем.
  */
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
 const styles = {
   // Обёртка свайпа: клип по скруглению, панель действий под слайдером.
   swipeOuter: {

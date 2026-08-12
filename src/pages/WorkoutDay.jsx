@@ -6,7 +6,7 @@ import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
 import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
-import { MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { getDayMuscleTags, hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
@@ -39,7 +39,6 @@ import UiIcon from '../components/UiIcon'
 import ClockIcon from '../components/ClockIcon'
 import { pluralizeExercises } from '../utils/plural'
 import ConfirmModal from '../components/ConfirmModal'
-import MuscleGroupIcon from '../components/MuscleGroupIcon'
 import ReturnHighlight from '../components/workout/ReturnHighlight'
 import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
 import SkeletonCard from '../components/workout/SkeletonCard'
@@ -535,7 +534,6 @@ export default function WorkoutDay() {
       flush() // уход с дня/размонтирование — сохранить финальную позицию (активный день)
     }
   }, [isThisActive, programId, day])
-
 
 
   // Возврат с "Сменить"/"Инфо": восстанавливаем ТОЧНУЮ позицию скролла ДО
@@ -1302,16 +1300,6 @@ export default function WorkoutDay() {
                 key={`${section.muscleGroup}-${sIdx}`}
                 style={styles.section}
               >
-                <h2
-                  style={{
-                    ...styles.muscleHeader,
-                    color: getMuscleGroupColors(section.muscleGroup).accent
-                  }}
-                >
-                  <MuscleGroupIcon group={section.muscleGroup} />
-                  {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-                </h2>
-
                 <div style={styles.exerciseList}>
                   {section.slots.map(slot => {
                     const isGlowed = glowedOrderNum === slot.order_num
@@ -1846,37 +1834,17 @@ const styles = {
     zIndex: 1,
     paddingTop: 'var(--space-5)'
   },
+  // Заголовков групп нет — список сплошной, шаг между всеми карточками один
+  // и тот же (группа теперь написана в теге внутри карточки).
   sectionsWrap: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 'var(--space-5)'
+    gap: 'var(--space-4)'
   },
   section: {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--space-3)'
-  },
-  // Текст заголовка стоит ровно там же, где текст закреплённого пузырька
-  // (left 20px + padding-left 14px = 34px от края страницы). Страница даёт
-  // отступ 16px, значит у заголовка padding-left 18px → текст тоже на 34px.
-  // Так при скролле пилюля-пузырёк появляется ВОКРУГ заголовка, а сам текст
-  // не сдвигается.
-  // Заголовок группы в контенте — по центру (как в конструкторе). Обычный, в потоке;
-  // уезжая вверх, прячется под карточкой дня, а его группу подхватывает пилюля.
-  // Заголовок группы — по ЛЕВОМУ краю, на уровне конца скругления карточки (33px):
-  // так все заголовки экрана стоят в одну вертикаль.
-  muscleHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-2)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '2px',
-    padding: 'var(--space-1) var(--space-1) var(--space-1) var(--space-6)',
-    margin: 0,
-    textAlign: 'left'
   },
   exerciseList: {
     display: 'flex',

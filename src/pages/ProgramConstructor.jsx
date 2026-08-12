@@ -4,14 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/registry'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
-import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
 import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
-import { GroupLabel, SectionLabel } from '../components/GroupLabel'
+import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
 
@@ -21,14 +21,16 @@ const LETTERS = ['A', 'B', 'C']
 // почти не удлиняют тренировку. Второе место лимита — RPC api_save_my_program
 // (проверка `v_order > 12`), менять оба разом.
 const MAX_PER_DAY = 12
-// Плейсхолдер группы, пока каталог не загружен (у упражнения ещё нет muscle_group):
-// такие упражнения собираются в одну секцию без заголовка.
-const UNKNOWN_GROUP = '—'
 // Авто-скролл при перетаскивании у краёв экрана: зоны (px от верх/низ вьюпорта) и
 // макс. скорость (px/кадр) — чтобы дотащить карточку до верха/низа списка.
 const EDGE_TOP_PX = 110     // под системными кнопками Telegram
 const EDGE_BOTTOM_PX = 130  // над доком кнопки «Сохранить»
 const EDGE_MAX_SPEED = 14
+// Зазор между строками списка. Числом, а не токеном: его же использует расчёт
+// шага перетаскивания (stride), а из CSS-переменной число не достать. Раньше
+// стиль брал --space-2 (8px), а stride был зашит на 10 — на длинном дне карточка
+// уезжала мимо цели. Меняешь одно — меняется и второе.
+const ROW_GAP = 8              // = --space-2
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
 
@@ -255,7 +257,6 @@ export default function ProgramConstructor() {
 
   // Упражнения дня, сгруппированные по основной группе мышц (по порядку
   // добавления). Заголовки секций и единый тег-подгруппа держатся на этом.
-  const daySections = groupDayByMuscle(currentDay, exMap)
 
   // Места внутри контейнера-таб-бара (заполненные + активное после тапа) и
   // снаружи (пустые неактивные — голым текстом, как невыбранные табы).
@@ -276,7 +277,7 @@ export default function ProgramConstructor() {
     e.stopPropagation()
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
     const el = rowRefs.current[idx]
-    const stride = (el?.offsetHeight || 90) + 10 // высота строки + gap списка (10px)
+    const stride = (el?.offsetHeight || 90) + ROW_GAP // высота строки + зазор списка
     const len = (byLoc[activeLoc]?.[activeIdx] || []).length
     const data = {
       startIndex: idx, targetIndex: idx, dy: 0, stride,
@@ -519,62 +520,48 @@ export default function ProgramConstructor() {
             hint="Добавь упражнения кнопкой внизу — их можно будет переставить перетаскиванием."
           />
         )}
-        {daySections.map((section, sIdx) => (
-          <div key={`${section.muscleGroup}-${sIdx}`} style={styles.daySection}>
-            {section.muscleGroup !== UNKNOWN_GROUP && (
-              <GroupLabel color={getMuscleGroupColors(section.muscleGroup).accent} muscleGroup={section.muscleGroup}>
-                {MUSCLE_GROUP_LABELS[section.muscleGroup] || section.muscleGroup.toUpperCase()}
-              </GroupLabel>
-            )}
-            <div style={styles.sectionRows}>
-              {section.items.map(({ exId, idx }) => {
-                const ex = exMap[exId]
-                const c = getMuscleGroupColors(ex?.muscle_group)
-                const isDragging = drag?.startIndex === idx
-                const subLabel = toTitleCase(
-                  SUB_GROUP_LABELS[ex?.sub_group] || ex?.sub_group ||
-                  MUSCLE_GROUP_LABELS[ex?.muscle_group] || ex?.muscle_group || ''
-                )
-                return (
-                  <div
-                    key={exId}
-                    ref={(el) => { rowRefs.current[idx] = el }}
-                    style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
-                  >
-                    <div
-                      onPointerDown={(e) => handleDragStart(e, idx)}
-                      onPointerMove={handleDragMove}
-                      onPointerUp={handleDragEnd}
-                      onPointerCancel={handleDragEnd}
-                      style={styles.dragHandle}
-                      aria-label="Перетащить"
-                    >
-                      <GripIcon />
+        {currentDay.map((exId, idx) => {
+          const ex = exMap[exId]
+          const c = getMuscleGroupColors(ex?.muscle_group)
+          const isDragging = drag?.startIndex === idx
+          const tagLabel = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
+          return (
+            <div
+              key={exId}
+              ref={(el) => { rowRefs.current[idx] = el }}
+              style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
+            >
+              <div
+                onPointerDown={(e) => handleDragStart(e, idx)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                style={styles.dragHandle}
+                aria-label="Перетащить"
+              >
+                <GripIcon />
+              </div>
+              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
+                <div style={styles.exPreview}>
+                  {ex?.preview_url
+                    ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
+                    : <ExercisePlaceholder size={24} />}
+                </div>
+                <div style={styles.exContent}>
+                  <div style={styles.exName}>{ex?.name || exId}</div>
+                  {ex && tagLabel && (
+                    <div style={styles.exTags}>
+                      <span style={{ ...styles.exTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
+                        {tagLabel}
+                      </span>
                     </div>
-                    <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
-                      <div style={styles.exPreview}>
-                        {ex?.preview_url
-                          ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                          : <ExercisePlaceholder size={24} />}
-                      </div>
-                      <div style={styles.exContent}>
-                        <div style={styles.exName}>{ex?.name || exId}</div>
-                        {ex && subLabel && (
-                          <div style={styles.exTags}>
-                            <span style={{ ...styles.exTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
-                              {subLabel}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
-                    </div>
-                  </div>
-                )
-              })}
+                  )}
+                </div>
+                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Кнопка добавления — в потоке, под последним упражнением (а не прибита к
             низу). При пустом дне идёт под подсказкой «Пусто…». Лимит — тот же тост. */}
@@ -669,30 +656,11 @@ export default function ProgramConstructor() {
   )
 }
 
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
 // Группировка упражнений дня по основной группе мышц (в порядке добавления):
 // подряд идущие упражнения одной группы образуют секцию. Сохраняем сквозной
 // «плоский» индекс каждого упражнения (idx в currentDay) — на нём держатся
 // перетаскивание и удаление. Пока каталог не загружен (нет muscle_group) —
 // упражнение попадает в секцию UNKNOWN_GROUP (рисуется без заголовка).
-function groupDayByMuscle(dayIds, exMap) {
-  const sections = []
-  let current = null
-  dayIds.forEach((exId, idx) => {
-    const mg = exMap[exId]?.muscle_group || UNKNOWN_GROUP
-    if (!current || current.muscleGroup !== mg) {
-      current = { muscleGroup: mg, items: [] }
-      sections.push(current)
-    }
-    current.items.push({ exId, idx })
-  })
-  return sections
-}
-
 // Дни одного места из existing.data.locations[loc] (или data.days для «Зал» —
 // фолбэк на старый кеш до перезагрузки из БД).
 function buildDaysForLoc(existing, locKey, dayCount) {
@@ -794,9 +762,9 @@ const styles = {
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
   // Между секциями групп — больше воздуха (20), внутри секции ряды — 10 (совпадает
   // со страйдом перетаскивания: высота строки + 10).
-  dayList: { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', marginBottom: 'var(--space-4)', paddingBottom: '0px' },
-  daySection: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
-  sectionRows: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
+  // Заголовков групп нет — список сплошной, шаг между строками ROW_GAP
+  // (тот же, что в расчёте перетаскивания).
+  dayList: { display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`, marginBottom: 'var(--space-4)', paddingBottom: '0px' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },

@@ -6,6 +6,8 @@ import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, periodShortLabel, periodHintSuffix, mskParts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHomeStatsPeriod } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
+import { exerciseTagLabel } from '../features/programs/labels'
+import { getMuscleGroupColors } from '../features/programs/colors'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
@@ -144,6 +146,8 @@ function Records({ records }) {
   if (!strength && !swim) return null
 
   const cap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : '')
+  // Тег принадлежности — тот же формат, что на карточках упражнений.
+  const strengthTag = strength ? exerciseTagLabel(strength.muscle_group, strength.sub_group) : ''
   const kg = strength ? Number(strength.weight_kg) : 0
   const kgText = kg % 1 === 0 ? String(kg) : kg.toFixed(1).replace('.', ',')
 
@@ -165,7 +169,14 @@ function Records({ records }) {
                 ? <img src={strength.preview_url} alt="" style={styles.recThumbImg} draggable={false} />
                 : <ExercisePlaceholder size={20} />}
             </span>
-            <span style={styles.recItemName}>{cap(strength.name)}</span>
+            <span style={styles.recItemCol}>
+              <span style={styles.recItemName}>{cap(strength.name)}</span>
+              {strengthTag && (
+                <span style={{ ...styles.recItemTag, background: getMuscleGroupColors(strength.muscle_group).tag }}>
+                  {strengthTag}
+                </span>
+              )}
+            </span>
             <span style={styles.recValue}>
               <MetricValue num={kgText} unit="кг" color={RECORD_GOLD} />
             </span>
@@ -251,6 +262,13 @@ const styles = {
     background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   recThumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
+  // Название и тег — колонкой: тег встаёт второй строкой под названием.
+  recItemCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-1)' },
+  recItemTag: {
+    padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
+    opacity: 0.7, whiteSpace: 'nowrap'
+  },
   recItemName: {
     flex: 1, minWidth: 0,
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 600,

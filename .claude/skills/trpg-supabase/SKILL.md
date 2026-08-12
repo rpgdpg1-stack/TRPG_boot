@@ -90,6 +90,8 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
   и `FAVORITE_LIMIT` во фронте (`src/lib/favorite-exercises.js`, оттуда же берут тексты про лимит).
   Превышение → `{success:false, error:'limit'}`, фронт показывает баннер в меню упражнения.
 - `api_get_user_public_profile` отдаёт любимые БЕЗ своего лимита (сколько есть, столько и вернёт).
+  В каждом любимом есть и `muscle_group`, и **`sub_group`** — без подгруппы тег у друга выходил
+  урезанным («Спина» вместо «Спина — Ширина»). Миграция `public_profile_favorites_subgroup.sql`.
 
 ## Друзья
 

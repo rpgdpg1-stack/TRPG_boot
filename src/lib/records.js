@@ -39,10 +39,14 @@ export async function getRecords() {
     // Превью упражнения RPC отдаёт сама (см. миграцию). Пока новая версия
     // функции не раскатана на прод, добираем картинку отдельным запросом —
     // иначе у рекорда силовой вместо миниатюры висела бы заглушка.
-    if (value.strength?.exercise_id && !value.strength.preview_url) {
+    // Заодно берём группу/подгруппу — под названием рекорда стоит тег
+    // «Ноги — Квадрицепс», как на карточках упражнений. RPC их не отдаёт.
+    if (value.strength?.exercise_id && (!value.strength.preview_url || !value.strength.muscle_group)) {
       try {
         const ex = await getExerciseById(value.strength.exercise_id)
         if (ex?.preview_url) value.strength.preview_url = ex.preview_url
+        if (ex?.muscle_group) value.strength.muscle_group = ex.muscle_group
+        if (ex?.sub_group) value.strength.sub_group = ex.sub_group
       } catch { /* не критично — покажем заглушку */ }
     }
     cache = value

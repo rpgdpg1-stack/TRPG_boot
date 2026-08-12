@@ -1,5 +1,3 @@
-import MuscleGroupIcon from './MuscleGroupIcon'
-
 /**
  * Заголовки-надписи над списками. Два РАЗНЫХ смысла, которые до этого писались
  * заново в каждом файле с разным кеглем и разрядкой (1.5 / 1.6 / 2 / 3px):
@@ -13,18 +11,8 @@ import MuscleGroupIcon from './MuscleGroupIcon'
  * Правило: цветным бывает только GroupLabel. Если хочется покрасить секцию —
  * это значит, что она на самом деле группа.
  */
-/**
- * @param muscleGroup — ключ группы (back/chest/legs/…). Передан → слева от текста
- * встаёт силуэт с подсвеченной мышцей, в том же цвете, что и надпись. Не передан
- * (напр. категории «Восстановления») — заголовок как раньше, без иконки.
- */
-export function GroupLabel({ children, color, muscleGroup, style }) {
-  return (
-    <div style={{ ...s.group, ...(muscleGroup ? s.withIcon : null), ...(color ? { color } : null), ...style }}>
-      {muscleGroup && <MuscleGroupIcon group={muscleGroup} />}
-      {children}
-    </div>
-  )
+export function GroupLabel({ children, color, style }) {
+  return <div style={{ ...s.group, ...(color ? { color } : null), ...style }}>{children}</div>
 }
 
 /**
@@ -47,8 +35,6 @@ const s = {
     color: 'var(--color-text-secondary)',
     paddingBottom: 'var(--space-05)'
   },
-  // С иконкой заголовок становится строкой: силуэт и надпись по центру друг друга.
-  withIcon: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
   section: {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 'var(--weight-label)',
