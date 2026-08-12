@@ -6,14 +6,15 @@ import { haptic } from '../lib/telegram'
  * Тумблер «Быстрая тренировка» в шапке дня.
  *
  * Выключен — тёмно-серая ракета «на земле». Тап: короткий взлёт вправо-вверх
- * (0.42с) со шлейфом, ракета загорается акцентом + `haptic.medium()`.
- * Выключение — тот же ход назад, без вспышки.
+ * (0.42с), ракета загорается акцентом + `haptic.medium()`. Выключение — тот же
+ * ход назад. `active` (тренировка ИДЁТ) зажигает оранжевый хвост: «летит» должно
+ * значить движение, а не просто выбранный режим.
  *
  * `interactive={false}` — ракета показана, но не нажимается: так она выглядит
  * в свёрнутой пилюле и на прокрученной шапке (там это индикатор «режим включён»,
  * а не кнопка; переключать можно только в раскрытой шапке).
  */
-export default function RocketToggle({ on, onToggle, onLongPress, interactive = true, size = 22 }) {
+export default function RocketToggle({ on, onToggle, onLongPress, active = false, interactive = true, size = 22 }) {
   // Долгий тап — настройка набора. Порог и отмена по сдвигу — как у карточек
   // упражнений, чтобы жест ощущался одинаково во всём приложении.
   const timer = useRef(null)
@@ -65,7 +66,7 @@ export default function RocketToggle({ on, onToggle, onLongPress, interactive = 
         key={on ? 'on' : 'off'}
         style={{ ...styles.glyph, animation: `${on ? 'rocketLaunch' : 'rocketLand'} 0.42s var(--ease-ios)` }}
       >
-        <RocketIcon size={size} lit={on} />
+        <RocketIcon size={size} lit={on} flame={on && active} />
       </span>
     </button>
   )

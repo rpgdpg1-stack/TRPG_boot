@@ -1181,6 +1181,7 @@ export default function WorkoutDay() {
             }}>
               <RocketToggle
                 on={quickOn}
+                active={isThisActive}
                 onToggle={handleRocketTap}
                 onLongPress={openQuickSetup}
                 interactive={rowCollapse < 0.5}

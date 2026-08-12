@@ -1,5 +1,5 @@
 import ExerciseVideo from './ExerciseVideo'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 
 /**
@@ -22,8 +22,8 @@ export default function ExerciseHeaderCard({
   style
 }) {
   const colors = getMuscleGroupColors(muscleGroup)
-  const groupLabel = toTitleCase(MUSCLE_GROUP_LABELS[muscleGroup] || (muscleGroup || '').toUpperCase())
-  const subGroupLabel = toTitleCase(SUB_GROUP_LABELS[subGroup] || (subGroup || '').toUpperCase())
+  // Тег такой же, как на карточках упражнений: «Ноги — Квадрицепс».
+  const tagLabel = exerciseTagLabel(muscleGroup, subGroup)
 
   return (
     <div style={{ ...styles.card, ...style }}>
@@ -37,9 +37,9 @@ export default function ExerciseHeaderCard({
         <div style={styles.tagsRow}>
           {/* Один тег — подгруппа в цвете основной группы, opacity 0.7 (как на
               карточках упражнений в дне тренировки). */}
-          {(subGroupLabel || groupLabel) && (
+          {tagLabel && (
             <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
-              {subGroupLabel || groupLabel}
+              {tagLabel}
             </span>
           )}
         </div>
@@ -50,11 +50,6 @@ export default function ExerciseHeaderCard({
       {right}
     </div>
   )
-}
-
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {

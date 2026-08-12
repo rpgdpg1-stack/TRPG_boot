@@ -495,7 +495,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 'var(--space-4)',
+    // gap НЕТ: расстояние «аватар → заметка» должно равняться отступу
+    // «край карточки → аватар» (16), а его уже даёт нижний паддинг карточки.
+    // Общий gap добавлял бы вторые 16 и отрывал заметку.
+    gap: 0,
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
   },

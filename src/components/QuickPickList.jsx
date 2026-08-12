@@ -65,15 +65,17 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
                 <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>
               )}
             </div>
-            <button
-              type="button"
+            {/* Не <button>: iOS рисует нативной кнопке свой нажатый вид поверх
+                наших стилей — на круглой отметке он мигал серым квадратом
+                с острыми углами. У span такой отрисовки нет вовсе. Тап по
+                карточке и так переключает — доступность держит role/aria. */}
+            <span
               className="press-tile"
               style={{ ...styles.pick, ...(on ? styles.pickOn : null) }}
-              onClick={(e) => { e.stopPropagation(); onToggle(id) }}
-              aria-label={on ? 'Убрать из быстрой' : 'Вернуть в быструю'}
+              aria-hidden="true"
             >
               {on && <UiIcon name="check" size={18} color="var(--accent-on)" />}
-            </button>
+            </span>
           </div>
         )
       })}
@@ -113,11 +115,8 @@ const styles = {
   pick: {
     width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--layer-2)', border: 'none', cursor: 'pointer', padding: 0,
-    transition: 'background 0.18s ease',
-    // Без этого iOS рисует поверх кнопки свою серую подсветку с прямыми углами —
-    // она мигала на каждое снятие галочки.
-    WebkitTapHighlightColor: 'transparent'
+    background: 'var(--layer-2)', padding: 0,
+    transition: 'background 0.18s ease'
   },
   pickOn: { background: 'var(--color-primary)' },
   hint: {
