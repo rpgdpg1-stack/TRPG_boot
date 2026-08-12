@@ -62,7 +62,7 @@ export default function WorkoutFinishedModal({
   }, [])
 
   const titleText = isError ? 'Не удалось сохранить' : offline ? 'Сохранено локально' : 'Тренировка завершена'
-  const buttonText = isSaving ? 'Сохранение…' : isError ? 'Повторить' : 'ОК'
+  const buttonText = isSaving ? 'Сохранение…' : isError ? 'Повторить' : 'Готово'
 
   const handleClick = () => {
     if (isSaving || closing) return
