@@ -92,8 +92,6 @@ export default function QuickWorkout() {
   }
 
   const items = slots.map(s => ({ id: s.exercise_id, exercise: s }))
-  const count = picked ? picked.length : 0
-  const cut = slots.length - count
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -104,22 +102,12 @@ export default function QuickWorkout() {
         <div style={styles.headTitle}>
           {program ? `День ${day}` : 'День'}
         </div>
-        <div style={styles.headText}>
-          Оставь отмеченным то, без чего тренировка не считается. Остальное
-          выключится, когда включишь ракету в дне — на случай, когда мало времени.
-        </div>
       </div>
 
       {loading ? (
         <div style={styles.list}>{[0, 1, 2].map(i => <SkeletonCard key={i} />)}</div>
       ) : (
-        <>
-          <div style={styles.counter}>
-            Останется <span style={styles.counterNum}>{count}</span> из {slots.length}
-            {cut > 0 && <span style={styles.counterCut}> · короче на {cut}</span>}
-          </div>
-          <QuickPickList items={items} picked={picked || []} onToggle={toggle} />
-        </>
+        <QuickPickList items={items} picked={picked || []} onToggle={toggle} />
       )}
 
       <div style={styles.dock}>
@@ -153,18 +141,6 @@ const styles = {
     fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-size)',
     fontWeight: 800, color: 'var(--color-text)'
   },
-  headText: {
-    maxWidth: '320px', fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', lineHeight: 1.45
-  },
-  counter: {
-    marginBottom: 'var(--space-3)', textAlign: 'center',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 700, color: 'var(--color-text-secondary)'
-  },
-  counterNum: { color: 'var(--color-primary)', fontWeight: 800 },
-  counterCut: { color: 'var(--color-text-secondary)', fontWeight: 500 },
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' },
   dock: {
     position: 'fixed', bottom: 0, left: 0, right: 0,

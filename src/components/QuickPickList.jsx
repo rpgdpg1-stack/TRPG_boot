@@ -15,14 +15,33 @@ import UiIcon from './UiIcon'
  * упражнений правится во вкладке «Все». Отметка снята — карточка гаснет, но
  * остаётся на месте: это не удаление.
  *
- * @param items — [{ id, exercise }] в порядке дня; `exercise` — строка каталога.
+ * Пояснение и счётчик рисует САМ компонент — так текст физически один и тот же
+ * в обоих местах и не может разойтись при правке одного из экранов.
+ *
+ * @param items — [{ id, exercise }] в порядке дня. У `exercise` имя берётся
+ *   из `name` ИЛИ `exercise_name`: каталог конструктора и слоты дня тренировки
+ *   называют поле по-разному, а список один.
  * @param picked — массив id, отмеченных как важные.
  */
-export default function QuickPickList({ items, picked, onToggle }) {
+export const QUICK_HINT = 'Короткая версия дня — только самое важное. ' +
+  'Оставь отмеченным то, без чего тренировка не считается, и сними остальное. ' +
+  'В день тренировки это включается ракетой — на случай, когда времени мало.'
+
+export default function QuickPickList({ items, picked, onToggle, showHint = true }) {
   const isPicked = (id) => picked.includes(id)
+  const count = picked.length
+  const cut = items.length - count
 
   return (
-    <div style={styles.list}>
+    <>
+      {showHint && <div style={styles.hint}>{QUICK_HINT}</div>}
+
+      <div style={styles.counter}>
+        Останется <span style={styles.counterNum}>{count}</span> из {items.length}
+        {cut > 0 && <span style={styles.counterCut}> · короче на {cut}</span>}
+      </div>
+
+      <div style={styles.list}>
       {items.map(({ id, exercise: ex }) => {
         const colors = getMuscleGroupColors(ex?.muscle_group)
         const tag = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
@@ -41,7 +60,7 @@ export default function QuickPickList({ items, picked, onToggle }) {
                 : <ExercisePlaceholder size={24} />}
             </div>
             <div style={styles.content}>
-              <div style={styles.name}>{ex?.name || id}</div>
+              <div style={styles.name}>{ex?.name || ex?.exercise_name || id}</div>
               {ex && tag && (
                 <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>
               )}
@@ -58,7 +77,8 @@ export default function QuickPickList({ items, picked, onToggle }) {
           </div>
         )
       })}
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -94,7 +114,23 @@ const styles = {
     width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'var(--layer-2)', border: 'none', cursor: 'pointer', padding: 0,
-    transition: 'background 0.18s ease'
+    transition: 'background 0.18s ease',
+    // Без этого iOS рисует поверх кнопки свою серую подсветку с прямыми углами —
+    // она мигала на каждое снятие галочки.
+    WebkitTapHighlightColor: 'transparent'
   },
-  pickOn: { background: 'var(--color-primary)' }
+  pickOn: { background: 'var(--color-primary)' },
+  hint: {
+    marginBottom: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)',
+    background: 'var(--layer-1)', borderRadius: 'var(--radius-medium)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)', lineHeight: 1.5
+  },
+  counter: {
+    marginBottom: 'var(--space-3)', textAlign: 'center',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 700, color: 'var(--color-text-secondary)'
+  },
+  counterNum: { color: 'var(--color-primary)', fontWeight: 800 },
+  counterCut: { color: 'var(--color-text-secondary)', fontWeight: 500 }
 }

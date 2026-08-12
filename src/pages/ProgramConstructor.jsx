@@ -585,14 +585,6 @@ export default function ProgramConstructor() {
       </div>
       </div>
 
-      {listMode === 'quick' && (
-        <div style={styles.quickHint}>
-          Короткая версия дня — только самое важное. Оставь отмеченным то, без чего
-          тренировка не считается, и сними остальное. В день тренировки это
-          включается ракетой — на случай, когда времени мало.
-        </div>
-      )}
-
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <EmptyState
@@ -611,34 +603,23 @@ export default function ProgramConstructor() {
           const c = getMuscleGroupColors(ex?.muscle_group)
           const isDragging = drag?.startIndex === idx
           const tagLabel = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
-          // В «Быстрой» снятое упражнение гаснет — видно, что оно останется
-          // в полной версии, но в короткую не войдёт.
-          const quickPicked = isQuickPicked(exId)
-          const quickDimmed = listMode === 'quick' && !quickPicked
           return (
             <div
               key={exId}
               ref={(el) => { rowRefs.current[idx] = el }}
               style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
             >
-              {/* В «Быстрой» ручка гаснет и не тащит: там отмечают галочки, и
-                  случайно переставить порядок РЕАЛЬНОЙ программы оттуда было бы
-                  сюрпризом. Место под ручку остаётся — список не прыгает. */}
               <div
-                onPointerDown={listMode === 'quick' ? undefined : (e) => handleDragStart(e, idx)}
-                onPointerMove={listMode === 'quick' ? undefined : handleDragMove}
-                onPointerUp={listMode === 'quick' ? undefined : handleDragEnd}
-                onPointerCancel={listMode === 'quick' ? undefined : handleDragEnd}
-                style={{ ...styles.dragHandle, ...(listMode === 'quick' ? styles.dragHandleOff : null) }}
+                onPointerDown={(e) => handleDragStart(e, idx)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                style={styles.dragHandle}
                 aria-label="Перетащить"
               >
                 <GripIcon />
               </div>
-              <div style={{
-              ...styles.exCard,
-              ...(isDragging ? styles.exCardDragging : {}),
-              ...(quickDimmed ? styles.exCardDimmed : null)
-            }}>
+              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
                 <div style={styles.exPreview}>
                   {ex?.preview_url
                     ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
@@ -654,20 +635,7 @@ export default function ProgramConstructor() {
                     </div>
                   )}
                 </div>
-                {listMode === 'quick' ? (
-                  <button
-                    onClick={() => toggleQuick(exId)}
-                    className="press-tile"
-                    style={{ ...styles.pickBtn, ...(quickPicked ? styles.pickBtnOn : null) }}
-                    role="checkbox"
-                    aria-checked={quickPicked}
-                    aria-label={quickPicked ? 'Убрать из быстрой' : 'Вернуть в быструю'}
-                  >
-                    {quickPicked && <UiIcon name="check" size={18} color="var(--accent-on)" />}
-                  </button>
-                ) : (
-                  <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
-                )}
+                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
               </div>
             </div>
           )
@@ -879,26 +847,10 @@ const styles = {
   dayList: { display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`, marginBottom: 'var(--space-4)', paddingBottom: '0px' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
-  // Снятое в «Быстрой» — гаснет, но остаётся на месте (это не удаление).
-  exCardDimmed: { opacity: 0.4 },
-  quickHint: {
-    marginBottom: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)',
-    background: 'var(--layer-1)', borderRadius: 'var(--radius-medium)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
-    color: 'var(--color-text-secondary)', lineHeight: 1.5
-  },
   // Отметка «входит в быструю» — круглая, как икон-кнопки проекта (36px).
-  pickBtn: {
-    width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--layer-2)', border: 'none', cursor: 'pointer', padding: 0,
-    transition: 'background 0.18s ease'
-  },
-  pickBtnOn: { background: 'var(--color-primary)' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
   // Переключатель режима — по содержимому, а не во всю ширину.
   modeRow: { display: 'flex', marginBottom: 'var(--space-3)' },
-  dragHandleOff: { opacity: 0.25, cursor: 'default', touchAction: 'auto' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
