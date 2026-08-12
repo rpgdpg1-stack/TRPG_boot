@@ -77,7 +77,6 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
                 с острыми углами. У span такой отрисовки нет вовсе. Тап по
                 карточке и так переключает — доступность держит role/aria. */}
             <span
-              className="press-tile"
               style={{ ...styles.pick, ...(on ? styles.pickOn : null) }}
               aria-hidden="true"
             >
@@ -98,6 +97,9 @@ const styles = {
     background: 'var(--color-card)', borderRadius: 'var(--radius-card)',
     padding: 'var(--space-3)', minHeight: '90px', cursor: 'pointer',
     transition: 'opacity 0.18s ease',
+    // Слой создаётся заранее: иначе iOS поднимает карточку в слой в момент
+    // анимации прозрачности, и скругления детей кадр мигают квадратами.
+    willChange: 'opacity',
     WebkitTapHighlightColor: 'transparent'
   },
   // Снятое гаснет, но остаётся на месте — это не удаление.
@@ -123,7 +125,10 @@ const styles = {
     width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'var(--layer-2)', padding: 0,
-    transition: 'background 0.18s ease'
+    transition: 'background 0.18s ease',
+    // Страховка от того же артефакта, если слой всё-таки будет создан.
+    WebkitBackfaceVisibility: 'hidden',
+    backfaceVisibility: 'hidden'
   },
   pickOn: { background: 'var(--color-primary)' },
   hint: {

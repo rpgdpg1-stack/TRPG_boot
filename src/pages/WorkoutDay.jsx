@@ -1301,11 +1301,12 @@ export default function WorkoutDay() {
                   className={dayLetterAnimClass}
                   style={{
                     ...styles.dayLetter,
-                    // Фокусный (рекомендованный/активный) день — акцент группы 100% + свечение;
-                    // прочие — СЕРЫМ (как счётчик), чтобы не пестрило множеством цветов.
+                    // Фокусный (рекомендованный/активный) день — акцентным цветом,
+                    // прочие серым. Свечения НЕТ: на крупной букве ореол читался
+                    // как пересвет, а цвета и так достаточно.
                     ...(day === focusDay
-                      ? { color: dayGroupAccent, textShadow: `0 0 12px color-mix(in srgb, ${dayGroupAccent} 30%, transparent)` }
-                      : { color: 'var(--color-text-secondary)', textShadow: 'none' }),
+                      ? { color: dayGroupAccent }
+                      : { color: 'var(--color-text-secondary)' }),
                     fontSize: `${dayLetterSize}px`
                   }}
                 >
@@ -1917,7 +1918,6 @@ const styles = {
     color: 'var(--color-primary)',
     letterSpacing: '0',
     lineHeight: 1,
-    textShadow: '0 0 12px rgba(158, 209, 83, 0.3)',
     display: 'inline-block'
   },
   // Не-фокусный день (не сегодняшний по плану и не активный) — серая буква.
