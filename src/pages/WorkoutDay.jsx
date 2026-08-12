@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
@@ -6,6 +7,9 @@ import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
 import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
+import RocketToggle from '../components/RocketToggle'
+import RocketIcon from '../components/RocketIcon'
+import { getQuickSet, getQuickSetSync, isQuickOn, setQuickOn, syncQuickOn, applyQuickSet } from '../lib/quick-workout'
 
 import { hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
@@ -138,7 +142,37 @@ export default function WorkoutDay() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [slots, setSlots] = useState([])
+  const [allSlots, setAllSlots] = useState([])
+  // «Быстрая тренировка»: набор — что входит в короткую версию (настраивается
+  // в конструкторе), quickOn — горит ли ракета сейчас.
+  const [quickIds, setQuickIds] = useState(null)
+  const [quickOn, setQuickOnState] = useState(() => isQuickOn(programId))
+  const [quickPopup, setQuickPopup] = useState(false)
+  const quickPopupTimer = useRef(null)
+  useEffect(() => () => { if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current) }, [])
+
+  // Видимый список дня. Ракета горит и набор настроен → показываем короткую
+  // версию. Всё, что ниже считает прогресс, секции и счётчики, работает уже
+  // с ЭТИМ списком — поэтому «12 упражнений» само превращается в «6».
+  // Тумблер ракеты. Включили — короткий поп-ап с объяснением (один раз на тап,
+  // не на каждый заход), выключили — молча.
+  const toggleQuick = (next) => {
+    setQuickOnState(next)
+    setQuickOn(programId, next)
+    if (next) {
+      setQuickPopup(true)
+      if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current)
+      quickPopupTimer.current = setTimeout(() => setQuickPopup(false), 2600)
+    }
+  }
+
+  const slots = useMemo(
+    () => (quickOn ? applyQuickSet(allSlots, quickIds) : allSlots),
+    [allSlots, quickOn, quickIds]
+  )
+  // Ракету показываем только когда есть что сокращать: набор настроен и он
+  // реально короче дня. Иначе тумблер обещал бы то, чего нет.
+  const quickAvailable = !!quickIds && quickIds.length > 0 && quickIds.length < allSlots.length
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   // Тик повторной загрузки (кнопка «Обновить» на экране ошибки).
@@ -406,6 +440,22 @@ export default function WorkoutDay() {
     return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
 
+  // Набор быстрой версии — свой для каждой пары место+день; состояние ракеты —
+  // одно на программу. Оба стартуют мгновенно из localStorage, облако догоняет.
+  useEffect(() => {
+    setQuickIds(getQuickSetSync(programId, place, day))
+    let alive = true
+    getQuickSet(programId, place, day).then(v => { if (alive) setQuickIds(v) })
+    return () => { alive = false }
+  }, [programId, place, day])
+
+  useEffect(() => {
+    setQuickOnState(isQuickOn(programId))
+    let alive = true
+    syncQuickOn(programId).then(v => { if (alive) setQuickOnState(v) })
+    return () => { alive = false }
+  }, [programId])
+
   // Префилл из памяти ДО отрисовки (на каждую смену дня/места): если слоты уже
   // загружались — показываем их сразу, без скелетона (возврат с Инфо/Смены,
   // свайп на ранее открытый день). useLayoutEffect → успеваем до paint, скролл
@@ -413,10 +463,10 @@ export default function WorkoutDay() {
   useLayoutEffect(() => {
     const cached = slotsMemory.get(`${programId}/${day}/${place}`)
     if (cached && cached.length) {
-      setSlots(cached)
+      setAllSlots(cached)
       setLoading(false)
     } else {
-      setSlots([])
+      setAllSlots([])
       setLoading(true)
     }
   }, [programId, day, place])
@@ -440,7 +490,7 @@ export default function WorkoutDay() {
         if (!cancelled) {
           const arr = data || []
           slotsMemory.set(`${programId}/${day}/${place}`, arr)
-          setSlots(arr)
+          setAllSlots(arr)
           setLoading(false)
         }
       } catch (e) {
@@ -641,7 +691,7 @@ export default function WorkoutDay() {
   // Вес отредактировали в модалке действий — обновляем слоты, чтобы карточка
   // под модалкой сразу показала новую цифру (без перезахода на экран).
   const handleWeightSaved = (exerciseId, weight) => {
-    setSlots(prev => prev.map(s =>
+    setAllSlots(prev => prev.map(s =>
       s.exercise_id === exerciseId ? { ...s, user_weight_kg: weight } : s
     ))
   }
@@ -1116,6 +1166,25 @@ export default function WorkoutDay() {
               {/* Место можно менять даже во время активной сессии (по просьбе). */}
               <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
+            {/* Ракета «быстрой» — левый НИЗ карточки, под тегом места. В пилюле
+                (rowCollapse→1) она остаётся, только если режим ВКЛЮЧЁН: выключенная
+                там была бы шумом. Нажимается лишь в раскрытой шапке — в пилюле и
+                на прокрутке это индикатор, а не кнопка (иначе легко задеть локтем
+                посреди подхода). */}
+            {quickAvailable && (quickOn || rowCollapse < 0.5) && (
+              <div style={{
+                ...styles.rocketSlot,
+                opacity: quickOn ? 1 : 1 - rowCollapse,
+                pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto'
+              }}>
+                <RocketToggle
+                  on={quickOn}
+                  onToggle={toggleQuick}
+                  interactive={rowCollapse < 0.5}
+                />
+              </div>
+            )}
+
             {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
                 смене цвета); до старта — часы + примерная длительность (баланс
                 строки + подсказка «сколько займёт»). */}
@@ -1372,7 +1441,12 @@ export default function WorkoutDay() {
               hug
               className={btnMorph ? 'btn-morph' : ''}
             >
-              <PlayIcon size={24} />Начать
+              {/* Режим включён — ракета слева на самой кнопке: перед стартом
+                  видно, что запускаешь короткую версию, а не полную. */}
+              {quickOn && quickAvailable
+                ? <RocketIcon size={22} color="var(--color-text)" lit />
+                : <PlayIcon size={24} />}
+              Начать
             </ActionButton>
           )}
         </div>
@@ -1408,6 +1482,19 @@ export default function WorkoutDay() {
       )}
 
       {/* Подтверждение отмены тренировки (крестик): закрыть без сохранения. */}
+      {/* Поп-ап «включена быстрая» — по центру экрана, гаснет сам. Не модалка:
+          он ничего не спрашивает, только объясняет, и не должен перехватывать тап. */}
+      {quickPopup && createPortal(
+        <div style={styles.quickPopup}>
+          <span style={styles.quickPopupIcon}><RocketIcon size={26} lit /></span>
+          <div style={styles.quickPopupTitle}>Быстрая тренировка</div>
+          <div style={styles.quickPopupText}>
+            Только самое важное — идеально, когда мало времени.
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showCancelConfirm && (
         <ConfirmModal
           title="Отменить тренировку?"
@@ -1618,6 +1705,39 @@ const styles = {
   placeSlot: {
     position: 'relative',
     zIndex: 2
+  },
+  // Ракета — левый нижний угол карточки-шапки (место остаётся сверху слева).
+  // Поп-ап режима: по центру экрана, сквозной для тапов (pointerEvents:none) —
+  // он информирует, а не спрашивает.
+  quickPopup: {
+    position: 'fixed', left: '50%', top: '50%',
+    transform: 'translate(-50%, -50%)',
+    zIndex: 'var(--z-modal)', pointerEvents: 'none',
+    width: 'min(280px, calc(100vw - 64px))',
+    padding: 'var(--space-5) var(--space-5) var(--space-4)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--layer-2)',
+    borderRadius: 'var(--radius-card)',
+    boxShadow: 'var(--shadow-modal)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
+    textAlign: 'center',
+    animation: 'quickPopIn 2.6s var(--ease-ios) forwards'
+  },
+  quickPopupIcon: { display: 'inline-flex', marginBottom: 'var(--space-1)' },
+  quickPopupTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)',
+    fontWeight: 'var(--weight-value)', color: 'var(--color-primary)'
+  },
+  quickPopupText: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 'var(--weight-text)', color: 'var(--color-text-secondary)', lineHeight: 1.45
+  },
+  rocketSlot: {
+    position: 'absolute',
+    left: 'var(--space-1)',
+    bottom: 'var(--space-1)',
+    zIndex: 3,
+    transition: 'opacity 0.2s ease'
   },
   // Таймер строго по центру строки (место слева, крестик справа разной ширины).
   timerCenter: {

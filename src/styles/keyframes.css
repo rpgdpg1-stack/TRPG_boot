@@ -167,3 +167,24 @@
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.45; }
 }
+
+/* Ракета «быстрой тренировки»: включение — короткий взлёт вправо-вверх с лёгким
+   наклоном и возвратом на место (тумблер, а не улёт за экран). Выключение —
+   тот же ход назад, спокойнее. */
+@keyframes rocketLaunch {
+  0%   { transform: translate(0, 0) scale(1); }
+  45%  { transform: translate(7px, -7px) scale(1.12); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes rocketLand {
+  0%   { transform: translate(0, 0) scale(1); }
+  45%  { transform: translate(-3px, 3px) scale(0.94); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+/* Поп-ап «режим включён» — выплывает по центру и через паузу гаснет. */
+@keyframes quickPopIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+}

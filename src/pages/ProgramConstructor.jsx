@@ -14,6 +14,8 @@ import UiIcon from '../components/UiIcon'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
+import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
+import RocketIcon from '../components/RocketIcon'
 
 const LETTERS = ['A', 'B', 'C']
 // Лимит упражнений на день. Поднят с 10 до 12: последние позиции дня — мелочь
@@ -33,6 +35,15 @@ const EDGE_MAX_SPEED = 14
 const ROW_GAP = 8              // = --space-2
 const NAME_MAX = 24            // лимит длины названия (фронт) — чтоб влезало в строку
 const NAME_PLACEHOLDER = 'Введите название'
+// Конструктор всегда правит СВОЮ программу (slug 'my') — набор быстрой
+// сохраняется под тем же слагом, что и сама программа.
+const QUICK_SLUG = 'my'
+// Вкладки списка упражнений. «Все» — состав дня (добавить/удалить/переставить),
+// «Быстрая» — отметить, что войдёт в короткую версию.
+const LIST_MODES = [
+  { key: 'all', label: 'Все' },
+  { key: 'quick', label: 'Быстрая' }
+]
 
 /**
  * Конструктор своей программы.
@@ -69,6 +80,13 @@ export default function ProgramConstructor() {
   const [placeTouched, setPlaceTouched] = useState(
     () => Object.keys(existing?.data?.locations || {}).length > 0
   )
+  // Вкладка списка: «Все» (правим состав дня) или «Быстрая» (отмечаем, что войдёт
+  // в короткую версию). По умолчанию ВСЕГДА «Все» — быстрая это донастройка,
+  // а не то, с чем открывают конструктор.
+  const [listMode, setListMode] = useState('all')   // 'all' | 'quick'
+  // Набор быстрой для ТЕКУЩЕГО места+дня. null = ещё не настраивали → считаем,
+  // что отмечено всё (в этом режиме удобнее снимать лишнее, чем набирать с нуля).
+  const [quickIds, setQuickIds] = useState(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
@@ -126,6 +144,16 @@ export default function ProgramConstructor() {
     return () => { cancelled = true }
   }, [])
   
+  // Набор быстрой перечитываем на каждую смену места/дня: он хранится отдельно
+  // для каждой пары (в разных днях важное разное).
+  useEffect(() => {
+    const day = LETTERS[activeIdx]
+    setQuickIds(getQuickSetSync(QUICK_SLUG, activeLoc, day))
+    let alive = true
+    getQuickSet(QUICK_SLUG, activeLoc, day).then(v => { if (alive) setQuickIds(v) })
+    return () => { alive = false }
+  }, [activeLoc, activeIdx])
+
   // Конструктор всегда открывается с самого верха страницы.
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -253,6 +281,19 @@ export default function ProgramConstructor() {
   }
 
   const currentDay = byLoc[activeLoc]?.[activeIdx] || []
+
+  // Не настраивали — считаем отмеченным весь день. Так вкладка открывается
+  // «всё включено», и человек снимает лишнее, а не собирает список заново.
+  const quickSelected = quickIds || currentDay
+  const isQuickPicked = (exId) => quickSelected.includes(exId)
+  const toggleQuick = (exId) => {
+    haptic.selection()
+    const next = isQuickPicked(exId)
+      ? quickSelected.filter(id => id !== exId)
+      : [...quickSelected, exId]
+    setQuickIds(next)
+    setQuickSet(QUICK_SLUG, activeLoc, LETTERS[activeIdx], next, currentDay.length)
+  }
   const atLimit = currentDay.length >= MAX_PER_DAY
 
   // Упражнения дня, сгруппированные по основной группе мышц (по порядку
@@ -513,6 +554,42 @@ export default function ProgramConstructor() {
           заголовок на дне тренировки). Перетаскивание/удаление работают по
           сквозному «плоскому» индексу (idx в currentDay). */}
       <SectionLabel caps>УПРАЖНЕНИЯ</SectionLabel>
+
+      {/* Вкладка списка — тот же сегмент-контрол, что у мест: «Все» правит состав
+          дня, «Быстрая» отмечает, что войдёт в короткую версию тренировки. */}
+      <div style={{ ...styles.segGroup, width: 'auto', marginBottom: 'var(--space-3)' }}>
+        {LIST_MODES.map((mode, i) => {
+          const active = listMode === mode.key
+          return (
+            <button
+              key={mode.key}
+              onClick={() => { haptic.light(); setListMode(mode.key) }}
+              className="press-tile"
+              style={{
+                ...styles.segItem,
+                ...(active ? styles.segItemActive : {}),
+                flex: '0 0 auto',
+                padding: '0 var(--space-4)',
+                marginLeft: i === 0 ? 0 : '-5px',
+                zIndex: active ? 2 : 1,
+                color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+              }}
+            >
+              {mode.key === 'quick' && <RocketIcon size={15} lit={active} />}
+              {mode.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {listMode === 'quick' && (
+        <div style={styles.quickHint}>
+          Короткая версия дня — только самое важное. Оставь отмеченным то, без чего
+          тренировка не считается, и сними остальное. В день тренировки это
+          включается ракетой — на случай, когда времени мало.
+        </div>
+      )}
+
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
           <EmptyState
@@ -525,23 +602,34 @@ export default function ProgramConstructor() {
           const c = getMuscleGroupColors(ex?.muscle_group)
           const isDragging = drag?.startIndex === idx
           const tagLabel = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
+          // В «Быстрой» снятое упражнение гаснет — видно, что оно останется
+          // в полной версии, но в короткую не войдёт.
+          const quickPicked = isQuickPicked(exId)
+          const quickDimmed = listMode === 'quick' && !quickPicked
           return (
             <div
               key={exId}
               ref={(el) => { rowRefs.current[idx] = el }}
               style={{ ...styles.exRowWrap, ...rowDragStyle(idx) }}
             >
+              {/* В «Быстрой» ручка гаснет и не тащит: там отмечают галочки, и
+                  случайно переставить порядок РЕАЛЬНОЙ программы оттуда было бы
+                  сюрпризом. Место под ручку остаётся — список не прыгает. */}
               <div
-                onPointerDown={(e) => handleDragStart(e, idx)}
-                onPointerMove={handleDragMove}
-                onPointerUp={handleDragEnd}
-                onPointerCancel={handleDragEnd}
-                style={styles.dragHandle}
+                onPointerDown={listMode === 'quick' ? undefined : (e) => handleDragStart(e, idx)}
+                onPointerMove={listMode === 'quick' ? undefined : handleDragMove}
+                onPointerUp={listMode === 'quick' ? undefined : handleDragEnd}
+                onPointerCancel={listMode === 'quick' ? undefined : handleDragEnd}
+                style={{ ...styles.dragHandle, ...(listMode === 'quick' ? styles.dragHandleOff : null) }}
                 aria-label="Перетащить"
               >
                 <GripIcon />
               </div>
-              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
+              <div style={{
+              ...styles.exCard,
+              ...(isDragging ? styles.exCardDragging : {}),
+              ...(quickDimmed ? styles.exCardDimmed : null)
+            }}>
                 <div style={styles.exPreview}>
                   {ex?.preview_url
                     ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
@@ -557,7 +645,20 @@ export default function ProgramConstructor() {
                     </div>
                   )}
                 </div>
-                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+                {listMode === 'quick' ? (
+                  <button
+                    onClick={() => toggleQuick(exId)}
+                    className="press-tile"
+                    style={{ ...styles.pickBtn, ...(quickPicked ? styles.pickBtnOn : null) }}
+                    role="checkbox"
+                    aria-checked={quickPicked}
+                    aria-label={quickPicked ? 'Убрать из быстрой' : 'Вернуть в быструю'}
+                  >
+                    {quickPicked && <UiIcon name="check" size={18} color="var(--accent-on)" />}
+                  </button>
+                ) : (
+                  <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+                )}
               </div>
             </div>
           )
@@ -767,7 +868,24 @@ const styles = {
   dayList: { display: 'flex', flexDirection: 'column', gap: `${ROW_GAP}px`, marginBottom: 'var(--space-4)', paddingBottom: '0px' },
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
+  // Снятое в «Быстрой» — гаснет, но остаётся на месте (это не удаление).
+  exCardDimmed: { opacity: 0.4 },
+  quickHint: {
+    marginBottom: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)',
+    background: 'var(--layer-1)', borderRadius: 'var(--radius-medium)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)', lineHeight: 1.5
+  },
+  // Отметка «входит в быструю» — круглая, как икон-кнопки проекта (36px).
+  pickBtn: {
+    width: '36px', height: '36px', flexShrink: 0, borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--layer-2)', border: 'none', cursor: 'pointer', padding: 0,
+    transition: 'background 0.18s ease'
+  },
+  pickBtnOn: { background: 'var(--color-primary)' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
+  dragHandleOff: { opacity: 0.25, cursor: 'default', touchAction: 'auto' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },

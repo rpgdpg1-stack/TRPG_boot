@@ -277,6 +277,7 @@ src/
 │                   place-home place-street power privacy profile recovery reset_days reset_progress
 │                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross ConfirmModal DailyQuests
+│                   RocketIcon RocketToggle
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleGroupIcon MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
@@ -288,6 +289,7 @@ src/
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
 ├── lib/            accent active-workout activities auth cache cloud-storage events favorite-exercises friends
+│                   quick-workout (быстрая тренировка: набор + вкл/выкл)
 │                   use-scroll-lock (заморозка фона под модалками)
 │                   records (личные рекорды)
 │                   friends-list history-view network-status notes offline-queue persistent-cache privacy
