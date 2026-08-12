@@ -43,7 +43,7 @@ const QUICK_SLUG = 'my'
 // «Быстрая» — отметить, что войдёт в короткую версию.
 const LIST_MODES = [
   { key: 'all', label: 'Все' },
-  { key: 'quick', label: 'Быстрая' }
+  { key: 'quick', label: 'Быстрый режим' }
 ]
 
 /**

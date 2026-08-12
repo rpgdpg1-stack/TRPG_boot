@@ -147,7 +147,7 @@ export default function WorkoutDay() {
   // в конструкторе), quickOn — горит ли ракета сейчас.
   const [quickIds, setQuickIds] = useState(null)
   const [quickOn, setQuickOnState] = useState(false)
-  const [quickPopup, setQuickPopup] = useState(false)
+  const [quickPopup, setQuickPopup] = useState(null)   // null | 'on' | 'off'
   const [quickIntro, setQuickIntro] = useState(false)
   const quickPopupTimer = useRef(null)
   useEffect(() => () => { if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current) }, [])
@@ -171,11 +171,11 @@ export default function WorkoutDay() {
   const toggleQuick = (next) => {
     setQuickOnState(next)
     setQuickOn(programId, place, day, next)
-    if (next) {
-      setQuickPopup(true)
-      if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current)
-      quickPopupTimer.current = setTimeout(() => setQuickPopup(false), 2600)
-    }
+    // Поп-ап и на включение, и на выключение: тумблер в углу мелкий, и без
+    // подтверждения непонятно, что именно сейчас произошло.
+    setQuickPopup(next ? 'on' : 'off')
+    if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current)
+    quickPopupTimer.current = setTimeout(() => setQuickPopup(null), 2600)
   }
 
   const slots = useMemo(
@@ -1501,7 +1501,7 @@ export default function WorkoutDay() {
           Вместо мёртвого тумблера — что это за режим и предложение настроить. */}
       {quickIntro && (
         <ConfirmModal
-          title="Быстрая тренировка"
+          title="Быстрый режим"
           text="Короткая версия дня — только самое важное. Для этого дня она ещё не настроена: отметь упражнения, без которых тренировка не считается."
           onClose={() => setQuickIntro(false)}
           actions={[
@@ -1515,10 +1515,14 @@ export default function WorkoutDay() {
           он ничего не спрашивает, только объясняет, и не должен перехватывать тап. */}
       {quickPopup && createPortal(
         <div style={styles.quickPopup}>
-          <span style={styles.quickPopupIcon}><RocketIcon size={26} lit /></span>
-          <div style={styles.quickPopupTitle}>Быстрая тренировка</div>
-          <div style={styles.quickPopupText}>
-            Только самое важное — идеально, когда мало времени.
+          <span style={styles.quickPopupIcon}>
+            <RocketIcon size={26} lit={quickPopup === 'on'} />
+          </span>
+          <div style={styles.quickPopupTitle}>
+            Быстрый режим:{' '}
+            <span style={{ color: quickPopup === 'on' ? 'var(--color-primary)' : 'var(--color-error)' }}>
+              {quickPopup === 'on' ? 'вкл' : 'выкл'}
+            </span>
           </div>
         </div>,
         document.body
@@ -1753,13 +1757,10 @@ const styles = {
     animation: 'quickPopIn 2.6s var(--ease-ios) forwards'
   },
   quickPopupIcon: { display: 'inline-flex', marginBottom: 'var(--space-1)' },
+  // «Быстрый режим» белым, состояние цветом: вкл — акцент, выкл — красный.
   quickPopupTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)',
-    fontWeight: 'var(--weight-value)', color: 'var(--color-primary)'
-  },
-  quickPopupText: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 'var(--weight-text)', color: 'var(--color-text-secondary)', lineHeight: 1.45
+    fontWeight: 'var(--weight-value)', color: 'var(--color-text)'
   },
   // Ракета — левый край карточки-шапки. Привязана к НИЗУ: в раскрытой шапке это
   // нижний угол (тег места сверху), а в низкой пилюле те же 4px от низа ставят

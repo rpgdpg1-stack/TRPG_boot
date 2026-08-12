@@ -95,7 +95,7 @@ export default function QuickWorkout() {
 
   return (
     <div className="page page-fade" style={styles.page}>
-      <ScreenTitle>Быстрая</ScreenTitle>
+      <ScreenTitle>Быстрый режим</ScreenTitle>
 
       <div style={styles.head}>
         <span style={styles.headIcon}><RocketIcon size={26} lit /></span>
@@ -118,7 +118,7 @@ export default function QuickWorkout() {
       {confirmExit && (
         <ConfirmModal
           title="Сохранить изменения?"
-          text="Набор быстрой тренировки изменён."
+          text="Набор быстрого режима изменён."
           onClose={() => setConfirmExit(false)}
           actions={[
             { label: 'Не сохранять', onClick: () => { setConfirmExit(false); haptic.light(); goBack() } },
