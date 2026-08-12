@@ -1466,12 +1466,10 @@ export default function WorkoutDay() {
               hug
               className={btnMorph ? 'btn-morph' : ''}
             >
-              {/* Режим включён — ракета слева на самой кнопке: перед стартом
-                  видно, что запускаешь короткую версию, а не полную. */}
-              {quickOn && quickAvailable
-                ? <RocketIcon size={22} color="var(--accent-on)" lit />
-                : <PlayIcon size={24} />}
-              Начать
+              {/* Иконка кнопки НЕ зависит от режима: «Начать» — это всегда старт,
+                  и подменять плей ракетой значит менять смысл кнопки. Про режим
+                  говорит сама ракета в шапке — там ей и место. */}
+              <PlayIcon size={24} />Начать
             </ActionButton>
           )}
         </div>
