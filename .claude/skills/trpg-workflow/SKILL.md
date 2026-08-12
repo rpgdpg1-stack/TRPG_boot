@@ -277,7 +277,7 @@ src/
 │                   place-home place-street power privacy profile recovery reset_days reset_progress
 │                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross ConfirmModal DailyQuests
-│                   RocketIcon RocketToggle
+│                   QuickPickList RocketIcon RocketToggle
 │                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
 │                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
 │                   HomeCards ModalButton MuscleGroupIcon MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
@@ -296,7 +296,7 @@ src/
 │                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
 │                   version-check weight-editing-state
 ├── pages/          Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
-│                   Profile ProgramConstructor Recovery Settings SwapExercise SwimWorkout WorkoutDay
+│                   Profile ProgramConstructor QuickWorkout Recovery Settings SwapExercise SwimWorkout WorkoutDay
 │                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
 └── utils/          dates history plural storage workout-progress
 

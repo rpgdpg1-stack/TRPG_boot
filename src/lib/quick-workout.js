@@ -24,7 +24,10 @@ import { emit } from './events'
 export const QUICK_CHANGED = 'quick-workout-changed'
 
 const setKey = (slug, place, day) => `quick-set:${slug}:${place || 'gym'}:${day}`
-const onKey = (slug) => `quick-on:${slug}`
+// Включённость — НА КАЖДЫЙ ДЕНЬ отдельно, не на программу: «сегодня спешу» —
+// это про конкретную тренировку. Включил в дне A — в дне B ракета серая, пока
+// не нажмёшь там сам.
+const onKey = (slug, place, day) => `quick-on:${slug}:${place || 'gym'}:${day}`
 
 const parse = (raw) => {
   if (!raw) return null
@@ -69,24 +72,25 @@ export function setQuickSet(slug, place, day, ids, totalCount) {
   emit(QUICK_CHANGED, { slug, place, day })
 }
 
-/** Горит ли ракета у программы. */
-export function isQuickOn(slug) {
-  return localGet(onKey(slug)) === '1'
+/** Горит ли ракета в ЭТОМ дне. */
+export function isQuickOn(slug, place, day) {
+  return localGet(onKey(slug, place, day)) === '1'
 }
 
-export function setQuickOn(slug, on) {
-  localSet(onKey(slug), on ? '1' : '')
-  cloudSet(onKey(slug), on ? '1' : '')
-  emit(QUICK_CHANGED, { slug, on })
+export function setQuickOn(slug, place, day, on) {
+  const key = onKey(slug, place, day)
+  localSet(key, on ? '1' : '')
+  cloudSet(key, on ? '1' : '')
+  emit(QUICK_CHANGED, { slug, place, day, on })
 }
 
 /** Догнать состояние ракеты из облака (зашли с другого устройства). */
-export async function syncQuickOn(slug) {
+export async function syncQuickOn(slug, place, day) {
   try {
-    const v = await cloudGet(onKey(slug))
-    if (v === '1' || v === '') localSet(onKey(slug), v)
+    const v = await cloudGet(onKey(slug, place, day))
+    if (v === '1' || v === '') localSet(onKey(slug, place, day), v)
     return v === '1'
-  } catch { return isQuickOn(slug) }
+  } catch { return isQuickOn(slug, place, day) }
 }
 
 /**

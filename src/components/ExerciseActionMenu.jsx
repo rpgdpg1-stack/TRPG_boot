@@ -373,8 +373,12 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           </div>
         </div>
 
+        {/* Перегородка между карточкой-шапкой и содержимым модалки: раньше их
+            разделяла разница фонов, теперь фон общий — делит серая линия. */}
+        <div style={styles.cardDivider} />
+
         {/* Заметка к упражнению — сразу под карточкой */}
-        <div style={styles.noteBlock}>
+        <div style={{ ...styles.noteBlock, ...styles.belowCard }}>
           {!noteLoaded ? (
             <div style={styles.noteSkeleton} />
           ) : editingNote ? (
@@ -482,11 +486,14 @@ const styles = {
     maxHeight: '100%',
     overflowY: 'auto',
     touchAction: 'pan-y',
-    background: 'rgba(34, 34, 34, 0.98)',
+    background: 'var(--surface)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
-    // Симметричные отступы 24 сверху/снизу, 16 по бокам (крестик вынесен под модалку).
-    padding: 'var(--space-6) var(--space-4) var(--space-6)',
+    // Верх и бока БЕЗ паддинга: карточка упражнения работает шапкой модалки —
+    // растянута во всю ширину и прижата к верхнему скруглению. Свои отступы
+    // задают блоки ниже (заметка и т.п.).
+    overflow: 'hidden',
+    padding: '0 0 var(--space-6)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -544,6 +551,9 @@ const styles = {
     WebkitTapHighlightColor: 'transparent'
   },
   // Карточка-шапка — вид карточки упражнения из дней тренировки.
+  // Карточка = шапка модалки: во всю ширину, скругления только ВЕРХНИЕ (низ
+  // прямой — дальше идёт содержимое модалки), снизу серая линия-перегородка
+  // с отступами от краёв.
   card: {
     position: 'relative',
     display: 'flex',
@@ -553,10 +563,19 @@ const styles = {
     gap: 'var(--space-4)',
     width: '100%',
     minHeight: '150px',
-    background: 'var(--surface)',
-    borderRadius: 'var(--radius-card)',
+    // Своего фона НЕТ — тот же, что у модалки: карточка и есть её верхняя часть.
+    borderRadius: 'var(--radius-card) var(--radius-card) 0 0',
     overflow: 'hidden'
   },
+  // Перегородка вместо смены цвета: не доходит до краёв слева и справа.
+  cardDivider: {
+    width: 'calc(100% - var(--space-8))',
+    height: '1px',
+    background: 'var(--layer-2)',
+    flexShrink: 0
+  },
+  // Блоки под карточкой живут в своих боковых отступах (у модалки их больше нет).
+  belowCard: { width: '100%', padding: '0 var(--space-4)' },
   preview: {
     flexShrink: 0,
     width: '118px',

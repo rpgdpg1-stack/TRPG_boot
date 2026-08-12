@@ -9,6 +9,8 @@
  * силуэт читается и мелким.
  */
 export default function RocketIcon({ size = 20, lit = false, color }) {
+  // `color` перебивает всё — им ракету красят под фон кнопки (на зелёной
+  // заливке «Начать» она чёрная, как и текст кнопки).
   const tint = color || (lit ? 'var(--color-primary)' : 'var(--color-text-secondary)')
 
   return (
@@ -23,11 +25,9 @@ export default function RocketIcon({ size = 20, lit = false, color }) {
       {/* Шлейф — только у включённой: у выключенной ракета «стоит на земле». */}
       {lit && (
         <path
-          d="M9.6 16.6 7.4 20.9c-.2.4.2.8.6.6l4.2-2.2"
-          stroke="var(--color-streak)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.9"
+          d="M10.4 15.6 6.9 21c-.25.38.16.8.55.56l5.3-3.35"
+          fill="var(--color-streak)"
+          opacity="0.95"
         />
       )}
       {/* Корпус: нос вверх-вправо, как у взлетающей. */}

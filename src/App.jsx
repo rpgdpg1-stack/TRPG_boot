@@ -29,6 +29,7 @@ import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
 import SwimWorkout from './pages/SwimWorkout'
 import ProgramConstructor from './pages/ProgramConstructor'
+import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
@@ -142,6 +143,7 @@ export default function App() {
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swim/:programId" element={<SwimWorkout />} />
           <Route path="/constructor" element={<ProgramConstructor />} />
+          <Route path="/quick/:programId/:day" element={<QuickWorkout />} />
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           
           <Route path="/profile" element={<Profile />} />

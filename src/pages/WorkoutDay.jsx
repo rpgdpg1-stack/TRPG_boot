@@ -146,8 +146,9 @@ export default function WorkoutDay() {
   // «Быстрая тренировка»: набор — что входит в короткую версию (настраивается
   // в конструкторе), quickOn — горит ли ракета сейчас.
   const [quickIds, setQuickIds] = useState(null)
-  const [quickOn, setQuickOnState] = useState(() => isQuickOn(programId))
+  const [quickOn, setQuickOnState] = useState(false)
   const [quickPopup, setQuickPopup] = useState(false)
+  const [quickIntro, setQuickIntro] = useState(false)
   const quickPopupTimer = useRef(null)
   useEffect(() => () => { if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current) }, [])
 
@@ -156,9 +157,20 @@ export default function WorkoutDay() {
   // с ЭТИМ списком — поэтому «12 упражнений» само превращается в «6».
   // Тумблер ракеты. Включили — короткий поп-ап с объяснением (один раз на тап,
   // не на каждый заход), выключили — молча.
+  // Тап по ракете. Набор для этого дня не настроен — включать нечего: вместо
+  // мёртвого тумблера показываем, что это за режим, и зовём настроить.
+  const handleRocketTap = (next) => {
+    if (next && !quickAvailable) { setQuickIntro(true); return }
+    toggleQuick(next)
+  }
+
+  const openQuickSetup = () => {
+    navigate(`/quick/${programId}/${day}`, { state: { place, from: location.pathname } })
+  }
+
   const toggleQuick = (next) => {
     setQuickOnState(next)
-    setQuickOn(programId, next)
+    setQuickOn(programId, place, day, next)
     if (next) {
       setQuickPopup(true)
       if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current)
@@ -449,12 +461,13 @@ export default function WorkoutDay() {
     return () => { alive = false }
   }, [programId, place, day])
 
+  // Ракета — на каждый день своя: включил в A, в B она серая, пока не нажмёшь там.
   useEffect(() => {
-    setQuickOnState(isQuickOn(programId))
+    setQuickOnState(isQuickOn(programId, place, day))
     let alive = true
-    syncQuickOn(programId).then(v => { if (alive) setQuickOnState(v) })
+    syncQuickOn(programId, place, day).then(v => { if (alive) setQuickOnState(v) })
     return () => { alive = false }
-  }, [programId])
+  }, [programId, place, day])
 
   // Префилл из памяти ДО отрисовки (на каждую смену дня/места): если слоты уже
   // загружались — показываем их сразу, без скелетона (возврат с Инфо/Смены,
@@ -1155,6 +1168,26 @@ export default function WorkoutDay() {
           {isThisActive && (
             <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
           )}
+          {/* Ракета «быстрой» — левый НИЗ самой карточки-шапки (тег места остаётся
+              сверху слева). Лежит ВНЕ headerCardInner: та колонка центрирует
+              содержимое, а ракете нужен угол. В пилюле остаётся, только если режим
+              включён, и там не нажимается — индикатор, а не кнопка (легко задеть
+              посреди подхода). Долгий тап — настройка набора. */}
+          {!loading && slots.length > 0 && (quickOn || rowCollapse < 0.5) && (
+            <div style={{
+              ...styles.rocketSlot,
+              opacity: quickOn ? 1 : 1 - rowCollapse,
+              pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto'
+            }}>
+              <RocketToggle
+                on={quickOn}
+                onToggle={handleRocketTap}
+                onLongPress={openQuickSetup}
+                interactive={rowCollapse < 0.5}
+              />
+            </div>
+          )}
+
           <div style={styles.headerCardInner}>
 
           <div style={styles.topMetaRow}>
@@ -1166,25 +1199,6 @@ export default function WorkoutDay() {
               {/* Место можно менять даже во время активной сессии (по просьбе). */}
               <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
             </div>
-            {/* Ракета «быстрой» — левый НИЗ карточки, под тегом места. В пилюле
-                (rowCollapse→1) она остаётся, только если режим ВКЛЮЧЁН: выключенная
-                там была бы шумом. Нажимается лишь в раскрытой шапке — в пилюле и
-                на прокрутке это индикатор, а не кнопка (иначе легко задеть локтем
-                посреди подхода). */}
-            {quickAvailable && (quickOn || rowCollapse < 0.5) && (
-              <div style={{
-                ...styles.rocketSlot,
-                opacity: quickOn ? 1 : 1 - rowCollapse,
-                pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto'
-              }}>
-                <RocketToggle
-                  on={quickOn}
-                  onToggle={toggleQuick}
-                  interactive={rowCollapse < 0.5}
-                />
-              </div>
-            )}
-
             {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
                 смене цвета); до старта — часы + примерная длительность (баланс
                 строки + подсказка «сколько займёт»). */}
@@ -1444,7 +1458,7 @@ export default function WorkoutDay() {
               {/* Режим включён — ракета слева на самой кнопке: перед стартом
                   видно, что запускаешь короткую версию, а не полную. */}
               {quickOn && quickAvailable
-                ? <RocketIcon size={22} color="var(--color-text)" lit />
+                ? <RocketIcon size={22} color="var(--accent-on)" lit />
                 : <PlayIcon size={24} />}
               Начать
             </ActionButton>
@@ -1482,6 +1496,20 @@ export default function WorkoutDay() {
       )}
 
       {/* Подтверждение отмены тренировки (крестик): закрыть без сохранения. */}
+      {/* Ракету нажали, а набор для этого дня не настроен: включать нечего.
+          Вместо мёртвого тумблера — что это за режим и предложение настроить. */}
+      {quickIntro && (
+        <ConfirmModal
+          title="Быстрая тренировка"
+          text="Короткая версия дня — только самое важное. Для этого дня она ещё не настроена: отметь упражнения, без которых тренировка не считается."
+          onClose={() => setQuickIntro(false)}
+          actions={[
+            { label: 'Отмена', onClick: () => { haptic.light(); setQuickIntro(false) } },
+            { label: 'Настроить', onClick: () => { setQuickIntro(false); openQuickSetup() } }
+          ]}
+        />
+      )}
+
       {/* Поп-ап «включена быстрая» — по центру экрана, гаснет сам. Не модалка:
           он ничего не спрашивает, только объясняет, и не должен перехватывать тап. */}
       {quickPopup && createPortal(

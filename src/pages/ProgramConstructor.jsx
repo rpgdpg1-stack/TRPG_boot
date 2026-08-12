@@ -16,6 +16,7 @@ import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
 import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
 import RocketIcon from '../components/RocketIcon'
+import QuickPickList from '../components/QuickPickList'
 
 const LETTERS = ['A', 'B', 'C']
 // Лимит упражнений на день. Поднят с 10 до 12: последние позиции дня — мелочь
@@ -557,7 +558,8 @@ export default function ProgramConstructor() {
 
       {/* Вкладка списка — тот же сегмент-контрол, что у мест: «Все» правит состав
           дня, «Быстрая» отмечает, что войдёт в короткую версию тренировки. */}
-      <div style={{ ...styles.segGroup, width: 'auto', marginBottom: 'var(--space-3)' }}>
+      <div style={styles.modeRow}>
+      <div style={{ ...styles.segGroup, width: 'auto' }}>
         {LIST_MODES.map((mode, i) => {
           const active = listMode === mode.key
           return (
@@ -581,6 +583,7 @@ export default function ProgramConstructor() {
           )
         })}
       </div>
+      </div>
 
       {listMode === 'quick' && (
         <div style={styles.quickHint}>
@@ -597,7 +600,13 @@ export default function ProgramConstructor() {
             hint="Добавь упражнения кнопкой внизу — их можно будет переставить перетаскиванием."
           />
         )}
-        {currentDay.map((exId, idx) => {
+        {listMode === 'quick' ? (
+          <QuickPickList
+            items={currentDay.map(id => ({ id, exercise: exMap[id] }))}
+            picked={quickSelected}
+            onToggle={toggleQuick}
+          />
+        ) : currentDay.map((exId, idx) => {
           const ex = exMap[exId]
           const c = getMuscleGroupColors(ex?.muscle_group)
           const isDragging = drag?.startIndex === idx
@@ -666,6 +675,7 @@ export default function ProgramConstructor() {
 
         {/* Кнопка добавления — в потоке, под последним упражнением (а не прибита к
             низу). При пустом дне идёт под подсказкой «Пусто…». Лимит — тот же тост. */}
+        {listMode === 'all' && (
         <div style={styles.addRow}>
           {/* Лимит — красным (это стоп), обычное состояние — акцентным зелёным. */}
           <ActionButton
@@ -679,6 +689,7 @@ export default function ProgramConstructor() {
               : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
           </ActionButton>
         </div>
+        )}
       </div>
 
       {/* Перехватчик тапа при открытой клавиатуре: прозрачный слой поверх всего —
@@ -885,6 +896,8 @@ const styles = {
   },
   pickBtnOn: { background: 'var(--color-primary)' },
   exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
+  // Переключатель режима — по содержимому, а не во всю ширину.
+  modeRow: { display: 'flex', marginBottom: 'var(--space-3)' },
   dragHandleOff: { opacity: 0.25, cursor: 'default', touchAction: 'auto' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
   exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
