@@ -1,4 +1,5 @@
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { haptic } from '../lib/telegram'
 import { exerciseTagLabel } from '../features/programs/labels'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import UiIcon from './UiIcon'
@@ -32,6 +33,13 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
   const count = picked.length
   const cut = items.length - count
 
+  // Снять ВСЁ нельзя: пустая быстрая тренировка — это не тренировка, отжимать
+  // будет нечего. Последняя отметка не снимается, тап по ней — вибро ошибки.
+  const toggle = (id) => {
+    if (isPicked(id) && count <= 1) { haptic.error(); return }
+    onToggle(id)
+  }
+
   return (
     <>
       {showHint && <div style={styles.hint}>{QUICK_HINT}</div>}
@@ -50,7 +58,7 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
           <div
             key={id}
             style={{ ...styles.card, ...(on ? null : styles.cardDimmed) }}
-            onClick={() => onToggle(id)}
+            onClick={() => toggle(id)}
             role="checkbox"
             aria-checked={on}
           >

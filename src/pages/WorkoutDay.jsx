@@ -1032,7 +1032,10 @@ export default function WorkoutDay() {
     setAlreadyToday(false)
 
     try {
-      const exerciseIds = slots
+      // ВАЖНО: из allSlots, а не из slots. «Быстрая» — режим ПОКАЗА: если
+      // человек отжал упражнение, а потом включил ракету и оно скрылось,
+      // в отчёт оно всё равно должно попасть.
+      const exerciseIds = allSlots
         .filter(s => activeOrderNums.has(s.order_num))
         .map(s => s.exercise_id)
         .filter(Boolean)
@@ -1083,7 +1086,10 @@ export default function WorkoutDay() {
   const canFinish = activeOrderNums.size > 0
 
   const totalSlots = slots.length || 1
-  const progressPct = Math.min(100, (activeOrderNums.size / totalSlots) * 100)
+  // Считаем отжатое СРЕДИ ВИДИМЫХ: в «быстрой» часть отмеченных скрыта, и
+  // общий размер счётчика давал бы «5/4» и прогресс за 100%.
+  const doneVisible = slots.filter(s => activeOrderNums.has(s.order_num)).length
+  const progressPct = Math.min(100, (doneVisible / totalSlots) * 100)
 
   // Всё сжатие идёт от анимированного `collapse` (к целевому `collapseTarget`):
   //  • 0 — высокая шапка; 1 — пилюля (строка). letterShrink 0→1 при collapse 0→0.6
@@ -1097,7 +1103,7 @@ export default function WorkoutDay() {
   // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
   // плавный скролл к следующему НЕотжатому (по кругу сверху вниз) + зелёная
   // подсветка-обводка. Нажатие «растущее» с отменой при уводе пальца (как крестик).
-  const remainingCount = slots.length - activeOrderNums.size
+  const remainingCount = slots.length - doneVisible
   const pillTapEnabled = isThisActive && rowCollapse >= 0.95 && remainingCount >= 1 && remainingCount <= 3
   const pillDown = (e) => {
     if (!pillTapEnabled) return
@@ -1168,23 +1174,17 @@ export default function WorkoutDay() {
           {isThisActive && (
             <div style={{ ...styles.headerFill, width: `${progressPct}%` }} aria-hidden="true" />
           )}
-          {/* Ракета «быстрой» — левый НИЗ самой карточки-шапки (тег места остаётся
-              сверху слева). Лежит ВНЕ headerCardInner: та колонка центрирует
-              содержимое, а ракете нужен угол. В пилюле остаётся, только если режим
-              включён, и там не нажимается — индикатор, а не кнопка (легко задеть
-              посреди подхода). Долгий тап — настройка набора. */}
-          {!loading && slots.length > 0 && (quickOn || rowCollapse < 0.5) && (
-            <div style={{
-              ...styles.rocketSlot,
-              opacity: quickOn ? 1 : 1 - rowCollapse,
-              pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto'
-            }}>
+          {/* Ракета «быстрой» — левый край карточки-шапки (тег места сверху слева).
+              Лежит ВНЕ headerCardInner: та колонка центрирует содержимое, а ракете
+              нужен угол. Видна и РАБОТАЕТ везде — в раскрытой шапке, в пилюле,
+              во время тренировки: ускориться решают как раз посреди неё. */}
+          {!loading && slots.length > 0 && (
+            <div style={styles.rocketSlot}>
               <RocketToggle
                 on={quickOn}
                 active={isThisActive}
                 onToggle={handleRocketTap}
                 onLongPress={openQuickSetup}
-                interactive={rowCollapse < 0.5}
               />
             </div>
           )}
@@ -1241,7 +1241,7 @@ export default function WorkoutDay() {
                   }}
                 >
                   {isThisActive
-                    ? `${activeOrderNums.size}/${slots.length}`
+                    ? `${doneVisible}/${slots.length}`
                     : `${slots.length} упр`}
                 </span>
               </div>
@@ -1330,7 +1330,7 @@ export default function WorkoutDay() {
               style={{ ...styles.dayDescLabel, ...(isThisActive ? styles.dayCountActive : null) }}
             >
               {loading ? '...'
-                : isThisActive ? `${activeOrderNums.size}/${slots.length}`
+                : isThisActive ? `${doneVisible}/${slots.length}`
                 : `${slots.length} ${pluralizeExercises(slots.length)}`}
             </span>
           </div>
@@ -1488,7 +1488,7 @@ export default function WorkoutDay() {
 
       {showConfirm && (
         <FinishConfirmModal
-          done={activeOrderNums.size}
+          done={doneVisible}
           total={slots.length}
           closing={confirmClosing}
           onConfirm={handleConfirmFinishYes}
@@ -1761,12 +1761,14 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     fontWeight: 'var(--weight-text)', color: 'var(--color-text-secondary)', lineHeight: 1.45
   },
+  // Ракета — левый край карточки-шапки. Привязана к НИЗУ: в раскрытой шапке это
+  // нижний угол (тег места сверху), а в низкой пилюле те же 4px от низа ставят
+  // её ровно по центру строки.
   rocketSlot: {
     position: 'absolute',
     left: 'var(--space-1)',
     bottom: 'var(--space-1)',
-    zIndex: 3,
-    transition: 'opacity 0.2s ease'
+    zIndex: 3
   },
   // Таймер строго по центру строки (место слева, крестик справа разной ширины).
   timerCenter: {
