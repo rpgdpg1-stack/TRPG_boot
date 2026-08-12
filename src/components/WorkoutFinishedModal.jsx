@@ -221,7 +221,8 @@ const styles = {
     transition: `opacity ${CLOSE_MS}ms ease`
   },
   // Обычный регистр (первая заглавная), акцентный зелёный.
-  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px', textAlign: 'center' },
+  // Ступень выше остальных строк: это главная фраза экрана (title 18 → heading 22).
+  title: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-heading-size)', letterSpacing: '0.5px', textAlign: 'center' },
   durationNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   durationUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500 },
   metricNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' },
