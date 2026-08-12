@@ -111,6 +111,10 @@ const TIMER_COLORS = {
 // ~2 мин работы (3×~40с) + ~4 мин отдых (2×~120с) + ~1 мин переход ≈ 7 мин/упр.
 // Общая оценка дня = число упражнений × это значение (напр. 8 → ~56 мин, 10 → ~1 ч 10 мин).
 const EST_MIN_PER_EXERCISE = 7
+// Сколько висит поп-ап переключения режима. Короткий: это подтверждение тапа,
+// а не сообщение — на переключателях принято ~1.5-2с, чтобы частые нажатия
+// не упирались в предыдущий показ.
+const QUICK_POPUP_MS = 1800
 
 // Источник входа в тренировку (true = с главной, false = из раздела). Модульная Map
 // переживает очистку location.state (после возврата с Инфо/Замены) и перемонтирование —
@@ -147,9 +151,10 @@ export default function WorkoutDay() {
   // в конструкторе), quickOn — горит ли ракета сейчас.
   const [quickIds, setQuickIds] = useState(null)
   const [quickOn, setQuickOnState] = useState(false)
-  const [quickPopup, setQuickPopup] = useState(null)   // null | 'on' | 'off'
+  const [quickPopup, setQuickPopup] = useState(null)   // null | { on, nonce }
   const [quickIntro, setQuickIntro] = useState(false)
   const quickPopupTimer = useRef(null)
+  const quickPopupNonce = useRef(0)
   useEffect(() => () => { if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current) }, [])
 
   // Видимый список дня. Ракета горит и набор настроен → показываем короткую
@@ -173,9 +178,13 @@ export default function WorkoutDay() {
     setQuickOn(programId, place, day, next)
     // Поп-ап и на включение, и на выключение: тумблер в углу мелкий, и без
     // подтверждения непонятно, что именно сейчас произошло.
-    setQuickPopup(next ? 'on' : 'off')
+    // Нонс обязателен: без него повторный тап в пределах показа НЕ перезапускал
+    // бы анимацию — элемент остаётся смонтированным, анимация уже доиграна
+    // (forwards → прозрачность 0), и поп-ап просто не появлялся.
+    quickPopupNonce.current += 1
+    setQuickPopup({ on: next, nonce: quickPopupNonce.current })
     if (quickPopupTimer.current) clearTimeout(quickPopupTimer.current)
-    quickPopupTimer.current = setTimeout(() => setQuickPopup(null), 2600)
+    quickPopupTimer.current = setTimeout(() => setQuickPopup(null), QUICK_POPUP_MS)
   }
 
   const slots = useMemo(
@@ -1515,15 +1524,18 @@ export default function WorkoutDay() {
       {/* Поп-ап «включена быстрая» — по центру экрана, гаснет сам. Не модалка:
           он ничего не спрашивает, только объясняет, и не должен перехватывать тап. */}
       {quickPopup && createPortal(
-        <div style={styles.quickPopup}>
+        <div key={quickPopup.nonce} style={styles.quickPopup}>
           <span style={styles.quickPopupIcon}>
-            <RocketIcon size={26} lit={quickPopup === 'on'} />
+            <RocketIcon size={26} lit={quickPopup.on} />
           </span>
-          <div style={styles.quickPopupTitle}>
-            Быстрый режим{' '}
-            <span style={{ color: quickPopup === 'on' ? 'var(--color-primary)' : 'var(--color-error)' }}>
-              {quickPopup === 'on' ? 'включён' : 'выключён'}
-            </span>
+          {/* Состояние ВСЕГДА на второй строке: «выключён» длиннее и переносился
+              сам, а «включён» влезал в строку — два поп-апа выглядели по-разному. */}
+          <div style={styles.quickPopupTitle}>Быстрый режим</div>
+          <div style={{
+            ...styles.quickPopupState,
+            color: quickPopup.on ? 'var(--color-primary)' : 'var(--color-error)'
+          }}>
+            {quickPopup.on ? 'включён' : 'выключён'}
           </div>
         </div>,
         document.body
@@ -1755,13 +1767,17 @@ const styles = {
     boxShadow: 'var(--shadow-modal)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
     textAlign: 'center',
-    animation: 'quickPopIn 2.6s var(--ease-ios) forwards'
+    animation: `quickPopIn ${QUICK_POPUP_MS}ms var(--ease-ios) forwards`
   },
   quickPopupIcon: { display: 'inline-flex', marginBottom: 'var(--space-1)' },
   // «Быстрый режим» белым, состояние цветом: вкл — акцент, выкл — красный.
   quickPopupTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)',
     fontWeight: 'var(--weight-value)', color: 'var(--color-text)'
+  },
+  quickPopupState: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)',
+    fontWeight: 'var(--weight-value)'
   },
   // Ракета — левый край карточки-шапки. Привязана к НИЗУ: в раскрытой шапке это
   // нижний угол (тег места сверху), а в низкой пилюле те же 4px от низа ставят
