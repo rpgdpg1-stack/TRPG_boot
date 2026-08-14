@@ -426,7 +426,10 @@ export default function ProgramConstructor() {
     <div className="page page-enter" style={styles.page}>
       {/* Пикер открывается поверх и ставит СВОЙ заголовок — иначе два встали бы
           друг на друга в одной полосе. */}
-      {!pickerOpen && <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>}
+      {/* Один заголовок на оба режима: человек и в первый раз, и при правке
+          находится в одном и том же месте — своей программе. «Редактировать»
+          называло действие, а заголовок должен называть экран. */}
+      {!pickerOpen && <ScreenTitle>Моя программа</ScreenTitle>}
 
       <div style={styles.section}>
         <SectionLabel caps>НАЗВАНИЕ</SectionLabel>
@@ -686,7 +689,7 @@ export default function ProgramConstructor() {
           >
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
-              : `Добавить упражнения · ${currentDay.length}/${MAX_PER_DAY}`}
+              : `Добавить ${currentDay.length}/${MAX_PER_DAY}`}
           </ActionButton>
         </div>
         )}
@@ -713,7 +716,7 @@ export default function ProgramConstructor() {
             variant="primary"
             hug
           >
-            {saving ? 'Сохраняю…' : 'Сохранить программу'}
+            {saving ? 'Сохраняю…' : 'Сохранить'}
           </ActionButton>
         </div>,
         document.body

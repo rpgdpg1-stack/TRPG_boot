@@ -600,7 +600,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             hug
             style={count >= max ? { color: 'var(--color-error)' } : null}
           >
-            {count >= max ? `Достигнут лимит ${count}/${max}` : `Добавить упражнения · ${count}/${max}`}
+            {/* Без слова «упражнения»: оно уже стоит заголовком экрана. */}
+            {count >= max ? `Достигнут лимит ${count}/${max}` : `Добавить ${count}/${max}`}
           </ActionButton>
         </div>
       )}
@@ -687,10 +688,10 @@ const styles = {
   // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
   // gap НЕ ставим: он держал бы пустое место справа и без крестика поле не
   // доходило бы до края экрана. Зазор даёт сам слот крестика, когда появляется.
-  header: { pointerEvents: 'auto', display: 'flex', alignItems: 'center', padding: '0 var(--space-4) var(--space-2)' },
+  header: { pointerEvents: 'auto', display: 'flex', alignItems: 'center', padding: '0 var(--space-4)' },
 
   // Сегмент-контрол вкладок — один в один с «Все / Быстрый режим» в конструкторе.
-  tabsRow: { display: 'flex', padding: '0 var(--space-4) var(--space-3)', flexShrink: 0 },
+  tabsRow: { display: 'flex', padding: '0 var(--space-4) var(--space-4)', flexShrink: 0 },
   segGroup: {
     pointerEvents: 'auto',
     display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
@@ -775,6 +776,9 @@ const styles = {
   },
   // Нижнего отступа у фильтров нет: расстояние до первой карточки задаёт сам
   // список (16px), иначе оно складывалось бы из двух отступов и плыло.
+  // Сверху 8px — тот же зазор, что между группами и панелью подгрупп: поиск,
+  // группы и подгруппы это один инструмент подбора, и держаться друг от друга
+  // они должны одинаково.
   chipsRow: {
     pointerEvents: 'auto',
     display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) 0',
