@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { MUSCLE_GROUP_LABELS, exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -7,6 +7,7 @@ import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
 import ChevronIcon from './ChevronIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
+import ScreenTitle from './ScreenTitle'
 
 /**
  * Форма своего упражнения — заведение и правка.
@@ -27,7 +28,7 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  * Картинки нет — загрузку изображений не даём, у своего упражнения всегда
  * placeholder.
  */
-export default function CustomExerciseForm({ groups = [], initial = null, onSave, onClose }) {
+export default function CustomExerciseForm({ groups = [], initial = null, onSave, onDirtyChange, submitRef }) {
   const isEdit = !!initial
   const parsed = parseMetaInfo(initial?.meta_info)
 
@@ -42,6 +43,15 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
   const [error, setError] = useState('')
   const nameRef = useRef(null)
 
+  // Снимок «с чем пришли» — по нему пикер решает, спрашивать ли подтверждение
+  // при уходе назад. Сравниваем значения, а не факт касания полей: вернул как
+  // было — значит правок нет.
+  const snapshot = JSON.stringify({ name, group, subGroup, sets, reps, countsReps })
+  const initialSnapshot = useRef(snapshot)
+  useEffect(() => {
+    onDirtyChange?.(snapshot !== initialSnapshot.current)
+  }, [snapshot, onDirtyChange])
+
   const tagLabel = exerciseTagLabel(group, subGroup)
   const colors = getMuscleGroupColors(group, true)
   const meta = buildMetaInfo(sets, reps)
@@ -53,6 +63,13 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
     setGroup(prev => (prev === key ? '' : key))
     setGroupsOpen(false)
   }
+
+  // Пикер зовёт этот submit из модалки «Сохранить изменения?» — иначе кнопка
+  // «Сохранить» в подтверждении не смогла бы сохранить форму, которая живёт тут.
+  useEffect(() => {
+    if (submitRef) submitRef.current = () => submit()
+    return () => { if (submitRef) submitRef.current = null }
+  })
 
   const submit = async () => {
     if (!canSave) return
@@ -76,10 +93,10 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
 
   const content = (
     <div style={styles.overlay}>
-      <div style={styles.header}>
-        <div style={styles.title}>{isEdit ? 'Своё упражнение' : 'Новое упражнение'}</div>
-        <button onClick={onClose} style={styles.closeBtn} aria-label="Закрыть">✕</button>
-      </div>
+      {/* Заголовок — в общей навигационной полосе, как на всех экранах. Своего
+          крестика нет: выход отсюда один и тот же — системная кнопка «Назад»,
+          и два способа закрыть один экран только сбивают. */}
+      <ScreenTitle zIndex={111}>{isEdit ? 'Своё упражнение' : 'Новое упражнение'}</ScreenTitle>
 
       <div style={styles.scroll}>
         {/* Живой предпросмотр карточки — видно результат, а не поля. */}
@@ -252,24 +269,9 @@ const styles = {
     display: 'flex', flexDirection: 'column',
     paddingTop: 'var(--tg-safe-top)'
   },
-  header: {
-    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-    padding: '0 var(--space-4) var(--space-3)'
-  },
-  title: {
-    flex: 1, fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-size)',
-    fontWeight: 800, color: 'var(--color-text)'
-  },
-  closeBtn: {
-    width: '44px', height: '44px', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--color-card)', border: 'none', borderRadius: '50%',
-    color: 'var(--color-text-secondary)', fontSize: 'var(--text-body-size)',
-    WebkitTapHighlightColor: 'transparent'
-  },
   scroll: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: '0 var(--space-4) 120px'
+    padding: 'var(--space-2) var(--space-4) 120px'
   },
 
   // Предпросмотр — та же раскладка, что у карточки в списке (картинка слева,

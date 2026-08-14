@@ -9,10 +9,15 @@ import UiIcon from './UiIcon'
  *
  * Правило текста: заголовок — ФАКТ («Пока пусто»), подсказка — ДЕЙСТВИЕ или
  * причина. Извинений и «упс» не пишем.
+ *
+ * `compact` — без собственных вертикальных отступов. Для пустого блока ВНУТРИ
+ * экрана (пустой день в конструкторе), где расстояния задаёт соседний контент;
+ * просторные отступы полноэкранной заглушки там отрывали текст от того, к чему
+ * он относится.
  */
-export default function EmptyState({ icon = 'muscles', title, hint, action }) {
+export default function EmptyState({ icon = 'muscles', title, hint, action, compact = false }) {
   return (
-    <div style={s.wrap}>
+    <div style={{ ...s.wrap, ...(compact ? s.wrapCompact : null) }}>
       <span style={s.icon}>
         <UiIcon name={icon} size={32} color="var(--color-text-secondary)" />
       </span>
@@ -29,6 +34,7 @@ const s = {
     gap: 'var(--space-2)', textAlign: 'center',
     padding: 'var(--space-10) var(--space-5)'
   },
+  wrapCompact: { padding: '0 var(--space-5)' },
   icon: { display: 'inline-flex', opacity: 0.5, marginBottom: 'var(--space-1)' },
   title: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)',

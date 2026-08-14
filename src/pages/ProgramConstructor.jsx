@@ -16,6 +16,7 @@ import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PencilIcon from '../components/PencilIcon'
 import MarqueeTag from '../components/MarqueeTag'
+import { pluralizeExercises } from '../utils/plural'
 import EmptyState from '../components/EmptyState'
 import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
 import RocketIcon from '../components/RocketIcon'
@@ -93,6 +94,7 @@ export default function ProgramConstructor() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const [confirmDrop, setConfirmDrop] = useState(null)   // { n, lost } — убавляем дни с данными
   const [kbOpen, setKbOpen] = useState(false)
   const [limitToast, setLimitToast] = useState(false)
   const [limitNonce, setLimitNonce] = useState(0)
@@ -132,14 +134,13 @@ export default function ProgramConstructor() {
   const autoScrollRef = useRef(0)        // rAF-петля авто-скролла у краёв
 
   useEffect(() => {
-    if (pickerOpen) {
-      backButton.setHandler(() => setPickerOpen(false))
-    } else {
-      backButton.setHandler(() => {
-        if (isDirty()) setConfirmExit(true)
-        else goBack()
-      })
-    }
+    // Пока открыт пикер, «Назад» принадлежит ему: у него внутри своя глубина
+    // (форма своего упражнения), и он сам решает, на какой шаг возвращать.
+    if (pickerOpen) return
+    backButton.setHandler(() => {
+      if (isDirty()) setConfirmExit(true)
+      else goBack()
+    })
     lockVerticalSwipes()
     // isDirty читает name/byLoc на момент тапа через замыкание эффекта —
     // поэтому держим их в зависимостях, чтобы handler был свежий.
@@ -221,8 +222,25 @@ export default function ProgramConstructor() {
   }
 
 
+  // Сколько упражнений пропадёт, если оставить n дней. Считаем по ВСЕМ местам:
+  // день C может быть пустым в зале и собранным дома.
+  const exercisesBeyond = (n) => PLACES.reduce((sum, loc) => {
+    const arr = byLoc[loc] || []
+    return sum + arr.slice(n).reduce((k, day) => k + day.length, 0)
+  }, 0)
+
   const changeDayCount = (n) => {
     if (n === dayCount) return
+    // Убавляем дни и в отрезаемых что-то собрано — спрашиваем. Молча стирать
+    // чужую работу нельзя, а отменить это действие потом нечем: конструктор
+    // хранит только текущее состояние. В обратную сторону (дней больше) ничего
+    // не теряется, там подтверждение было бы шумом.
+    const lost = n < dayCount ? exercisesBeyond(n) : 0
+    if (lost > 0) { haptic.error(); setConfirmDrop({ n, lost }); return }
+    applyDayCount(n)
+  }
+
+  const applyDayCount = (n) => {
     haptic.light()
     setByLoc(prev => {
       const next = {}
@@ -609,10 +627,16 @@ export default function ProgramConstructor() {
 
       <div style={styles.dayList}>
         {currentDay.length === 0 && (
-          <EmptyState
-            title="В этом дне пусто"
-            hint="Добавь упражнения кнопкой внизу — их можно будет переставить перетаскиванием."
-          />
+          // Своя обёртка вместо просторных отступов EmptyState: тот рассчитан на
+          // пустой экран целиком, а здесь под пустым днём сразу идёт кнопка
+          // «Добавить», и текст проваливался вниз, отрываясь от переключателя.
+          <div style={styles.emptyDay}>
+            <EmptyState
+              compact
+              title="В этом дне пусто"
+              hint="Добавь упражнения кнопкой внизу — их можно будет переставить перетаскиванием."
+            />
+          </div>
         )}
         {listMode === 'quick' ? (
           <QuickPickList
@@ -739,6 +763,25 @@ export default function ProgramConstructor() {
           max={MAX_PER_DAY}
           onToggle={handleToggle}
           onDone={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* Убавили дни, а в отрезаемых собраны упражнения. Называем цифру: «два
+          упражнения» человек соотнесёт со своей работой, «данные будут удалены» —
+          нет. «Оставить как есть» — тап мимо модалки. */}
+      {confirmDrop && (
+        <ConfirmModal
+          title={`Удалить день ${LETTERS[confirmDrop.n]}?`}
+          text={`В нём собрано ${confirmDrop.lost} ${pluralizeExercises(confirmDrop.lost)}. Уменьшив число дней, ты их потеряешь.`}
+          onClose={() => setConfirmDrop(null)}
+          actions={[
+            { label: 'Отмена', onClick: () => setConfirmDrop(null) },
+            {
+              label: 'Удалить',
+              danger: true,
+              onClick: () => { const n = confirmDrop.n; setConfirmDrop(null); applyDayCount(n) }
+            }
+          ]}
         />
       )}
 
@@ -897,6 +940,9 @@ const styles = {
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
   // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.
+  // 20px сверху и снизу: текст стоит на таком же расстоянии от переключателя
+  // режима, как встала бы первая карточка, и столько же до кнопки «Добавить».
+  emptyDay: { margin: '20px 0' },
   addRow: { display: 'flex', justifyContent: 'center', paddingTop: 'var(--space-1)' },
   limitToastWrap: {
     position: 'fixed',

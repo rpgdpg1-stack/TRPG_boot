@@ -7,7 +7,7 @@ import {
   loadMyExercises, getMyExercisesSync, createMyExercise, updateMyExercise,
   deleteMyExercise, MY_EXERCISE_LIMIT
 } from '../features/programs/userExercises'
-import { haptic } from '../lib/telegram'
+import { haptic, backButton } from '../lib/telegram'
 import ActionButton from './ActionButton'
 import AnchorMenu from './AnchorMenu'
 import ConfirmModal from './ConfirmModal'
@@ -74,6 +74,9 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [form, setForm] = useState(null)        // { mode:'new' } | { mode:'edit', ex }
   const [menu, setMenu] = useState(null)        // { rect, ex } — меню долгого нажатия
   const [confirmDel, setConfirmDel] = useState(null)
+  const [formDirty, setFormDirty] = useState(false)
+  const [confirmFormExit, setConfirmFormExit] = useState(false)
+  const formSubmit = useRef(null)
   const [mineError, setMineError] = useState('')
   const longTimer = useRef(null)
   const pressStart = useRef({ x: 0, y: 0 })
@@ -106,6 +109,21 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     setSearchFocused(false)
     try { inputRef.current?.blur() } catch { /* ignore */ }
   }
+
+  // Пока пикер открыт, системная «Назад» принадлежит ЕМУ. Из формы она
+  // возвращает в список упражнений, а не выкидывает в конструктор: человек
+  // пришёл сюда из пикера и ждёт возврата на шаг, а не на два.
+  useEffect(() => {
+    backButton.setHandler(() => {
+      if (form) {
+        if (formDirty) setConfirmFormExit(true)
+        else setForm(null)
+        return
+      }
+      onDone?.()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, formDirty])
 
   useEffect(() => {
     let cancelled = false
@@ -200,6 +218,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     if (form?.mode === 'edit') await updateMyExercise(form.ex.id, values)
     else await createMyExercise(values)
     setMine(await loadMyExercises())
+    setFormDirty(false)
     setForm(null)
   }
 
@@ -365,11 +384,16 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     <div ref={overlayRef} style={styles.overlay}>
       {/* Пикер открывается поверх конструктора, поэтому полосу заголовка
           приходится поднимать над оверлеем — иначе она осталась бы под ним. */}
-      <ScreenTitle zIndex={101}>Упражнения</ScreenTitle>
+      {!form && <ScreenTitle zIndex={101}>Упражнения</ScreenTitle>}
 
       {/* Шапка закреплена ПОВЕРХ списка и полностью прозрачна: карточки видно,
           как они уезжают под фильтры. Своего фона у неё нет — стекло держат сами
           пилюли, а верхнюю кромку экрана и так закрывает общий скрим приложения. */}
+      {/* Тот же верхний скрим, что у обычных экранов (.app::before). Пикер —
+          оверлей выше его слоя, поэтому общий сюда не достаёт: рисуем свой,
+          иначе карточки уезжали бы под полосу заголовка резким краем. */}
+      <div style={styles.topScrim} aria-hidden="true" />
+
       <div ref={headRef} style={styles.head}>
 
       {/* Вкладки — тот же сегмент-контрол, что «Все / Быстрый режим» в конструкторе.
@@ -549,8 +573,21 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       ) : (
         <div style={styles.list}>
-          {/* Кнопка заведения — первой строкой, ростом с карточку: это такой же
-              элемент списка, а не служебная мелочь под ним. */}
+          {mineError && <div style={styles.mineError}>{mineError}</div>}
+
+          {mine.length === 0 && (
+            <div style={styles.empty}>
+              Здесь будут упражнения, которых нет в каталоге.<br />
+              Название, группа и подходы — на твоё усмотрение.
+            </div>
+          )}
+
+          {mine.map(ex => renderRow(ex, { custom: true }))}
+
+          {/* Кнопка заведения — ПОСЛЕДНЕЙ строкой, ростом с карточку. Внизу
+              потому, что список растёт сверху вниз: заведённое остаётся на
+              месте, а «создать ещё» всегда в конце — как пустая строка в конце
+              списка дел. Сверху она отодвигала бы уже созданное каждый раз. */}
           <button
             onClick={() => {
               if (atMineLimit) { haptic.error(); setMineError(`Достигнут лимит — ${MY_EXERCISE_LIMIT} своих упражнений`); return }
@@ -565,17 +602,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               <span style={styles.createCount}>{mine.length}/{MY_EXERCISE_LIMIT}</span>
             </span>
           </button>
-
-          {mineError && <div style={styles.mineError}>{mineError}</div>}
-
-          {mine.length === 0 && (
-            <div style={styles.empty}>
-              Здесь будут упражнения, которых нет в каталоге.<br />
-              Название, группа и подходы — на твоё усмотрение.
-            </div>
-          )}
-
-          {mine.map(ex => renderRow(ex, { custom: true }))}
 
           {mine.length > 0 && (
             <div style={styles.mineHint}>
@@ -640,7 +666,20 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           groups={groups.map(g => g.group)}
           initial={form.mode === 'edit' ? form.ex : null}
           onSave={handleFormSave}
-          onClose={() => setForm(null)}
+          onDirtyChange={setFormDirty}
+          submitRef={formSubmit}
+        />
+      )}
+
+      {confirmFormExit && (
+        <ConfirmModal
+          title="Сохранить изменения?"
+          text="Упражнение изменено."
+          onClose={() => setConfirmFormExit(false)}
+          actions={[
+            { label: 'Не сохранять', onClick: () => { setConfirmFormExit(false); haptic.light(); setForm(null) } },
+            { label: 'Сохранить', onClick: () => { setConfirmFormExit(false); formSubmit.current?.() } }
+          ]}
         />
       )}
 
@@ -672,6 +711,15 @@ const styles = {
     height: '100dvh',
     background: 'var(--color-bg)',
     overflow: 'hidden'
+  },
+  topScrim: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: 'calc(var(--tg-safe-top) + 14px)',
+    zIndex: 7, pointerEvents: 'none',
+    backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)',
+    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%)'
   },
   // Шапка поверх списка и БЕЗ своего фона: сквозь неё видно, как карточки
   // уезжают под фильтры. Раньше здесь была сплошная заливка, и список обрывался
@@ -781,7 +829,12 @@ const styles = {
   // они должны одинаково.
   chipsRow: {
     pointerEvents: 'auto',
-    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) 0',
+    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto',
+    // Поля 16px — МАРЖИНОМ, а не паддингом: паддинг не обрезает, и чипы при
+    // прокрутке заезжали в безопасную зону у самой кромки экрана. С маржином
+    // лента кончается там же, где остальной контент, и обрезанный чип сам
+    // показывает, что список листается.
+    margin: '0 var(--space-4)', padding: 'var(--space-2) 0 0',
     flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
@@ -793,6 +846,9 @@ const styles = {
     // как «раскрытая группа», а не как чужеродная плашка.
     border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
+    // Контент уезжает В СКРУГЛЕНИЕ: без overflow чипы обрезались прямой
+    // вертикальной линией поперёк пилюли, будто её край им не указ.
+    overflow: 'hidden',
     transition: 'border-color 0.22s ease',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
