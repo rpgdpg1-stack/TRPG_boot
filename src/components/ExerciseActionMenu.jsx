@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { isCustomExercise } from '../features/programs/userExercises'
 import { getExerciseNote, getExerciseNoteCached, saveExerciseNote, NOTE_MAX_LENGTH } from '../lib/notes'
 import { saveExerciseWeight } from '../features/exercises/api'
 import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercises/weight-format'
@@ -268,7 +269,8 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
   if (!slot) return null
 
-  const colors = getMuscleGroupColors(slot.muscle_group)
+  const custom = isCustomExercise(slot.exercise_id)
+  const colors = getMuscleGroupColors(slot.muscle_group, custom)
   // Тег такой же, как на карточке дня: «Ноги — Квадрицепс».
   const tagLabel = exerciseTagLabel(slot.muscle_group, slot.sub_group)
 

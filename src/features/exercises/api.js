@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../../lib/supabase'
+import { isCustomExercise, loadExercisesByIds } from '../programs/userExercises'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
@@ -42,6 +43,14 @@ export async function getExercisesForSubgroup(subGroup, type) {
 }
 
 export async function getExerciseById(exerciseId) {
+  // Своё упражнение прямым select не достать: политика RLS отдаёт наружу только
+  // каталог приложения (иначе чужие личные упражнения читал бы кто угодно).
+  // Для них — функция, которая отвечает по конкретным id.
+  if (isCustomExercise(exerciseId)) {
+    const rows = await loadExercisesByIds([exerciseId])
+    return rows[0] || null
+  }
+
   const { data, error } = await supabase
     .from('exercises')
     .select('*')

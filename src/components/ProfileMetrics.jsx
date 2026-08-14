@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { haptic } from '../lib/telegram'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { isCustomExercise } from '../features/programs/userExercises'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { periodShortLabel, periodHintSuffix } from '../utils/history'
@@ -136,7 +137,7 @@ function FavoritesList({ items, showWeights }) {
         const n = Number(f.weight_kg)
         const has = showWeights && Number.isFinite(n) && n > 0
         const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
-        const colors = getMuscleGroupColors(f.muscle_group)
+        const colors = getMuscleGroupColors(f.muscle_group, isCustomExercise(f.exercise_id))
         const tag = exerciseTagLabel(f.muscle_group, f.sub_group)
         return (
           <div key={i} style={m.favRow}>

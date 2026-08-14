@@ -11,6 +11,7 @@ import { deleteMyProgram, shareProgramLink } from '../features/programs/customPr
 import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
 import AnchorMenu from './AnchorMenu'
+import TrashIcon from './TrashIcon'
 import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
@@ -304,20 +305,6 @@ function PlayIcon({ size = 28 }) {
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-    </svg>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="var(--color-error)" strokeWidth="1.6" strokeLinecap="round" fill="none">
-        <path d="M4 5.5 H16" />
-        <path d="M8 5.5 V4 H12 V5.5" />
-        <path d="M5.5 5.5 L6.2 16 H13.8 L14.5 5.5" />
-        <path d="M8.5 8.5 V13" />
-        <path d="M11.5 8.5 V13" />
-      </g>
     </svg>
   )
 }

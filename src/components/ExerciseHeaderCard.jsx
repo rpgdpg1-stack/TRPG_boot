@@ -10,6 +10,8 @@ import { getMuscleGroupColors } from '../features/programs/colors'
  *
  * @param right - опциональный правый блок (например, вес с редактированием).
  *                Раскладка: превью | контент | right.
+ * @param custom - своё упражнение пользователя: тег красится акцентным, если
+ *                 группа придумана и цветов у неё нет.
  */
 export default function ExerciseHeaderCard({
   videoUrl,
@@ -18,10 +20,11 @@ export default function ExerciseHeaderCard({
   muscleGroup,
   subGroup,
   meta,
+  custom = false,
   right = null,
   style
 }) {
-  const colors = getMuscleGroupColors(muscleGroup)
+  const colors = getMuscleGroupColors(muscleGroup, custom)
   // Тег такой же, как на карточках упражнений: «Ноги — Квадрицепс».
   const tagLabel = exerciseTagLabel(muscleGroup, subGroup)
 

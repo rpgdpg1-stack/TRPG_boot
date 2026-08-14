@@ -20,6 +20,7 @@ import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 import { isOnline, checkNow } from '../../lib/network-status'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
+import { loadMyExercises, loadExercisesByIds, isCustomExercise } from './userExercises'
 import { debug } from '../../lib/debug'
 
 // Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
@@ -180,14 +181,29 @@ export async function getWorkoutDay(programSlug, day, place = null) {
   const slotsRaw = getProgramDaySlots(programSlug, day, place)
   if (!slotsRaw.length) return []
 
-  const [swapsByOrder, exercises, weightsByEx] = await Promise.all([
+  // Свои упражнения подмешиваем в тот же справочник, что и каталог приложения:
+  // дальше по коду разницы между ними нет вовсе — имя, метаданные, вес и замена
+  // разрешаются одним и тем же способом.
+  const [swapsByOrder, catalogExercises, myExercises, weightsByEx] = await Promise.all([
     loadUserSwaps(user.id, dbId, day, placeKey),
     loadAllExercises(),
+    loadMyExercises(),
     loadUserWeights(user.id)
   ])
+  const exercises = [...catalogExercises, ...myExercises]
 
   const exById = {}
   for (const e of exercises) exById[e.id] = e
+
+  // Программа, сохранённая у друга, может ссылаться на ЕГО личное упражнение —
+  // его нет ни в каталоге, ни в своих. Догружаем такие точечно по id, иначе
+  // вместо названия человек увидел бы «подгруппа (тип)».
+  const missingCustom = slotsRaw
+    .map(s => s.default_exercise_id)
+    .filter(id => id && isCustomExercise(id) && !exById[id])
+  if (missingCustom.length) {
+    for (const e of await loadExercisesByIds(missingCustom)) exById[e.id] = e
+  }
 
   const result = slotsRaw.map(slot => {
     // Свап применяем ТОЛЬКО если он валиден для слота: упражнение есть в каталоге
@@ -228,6 +244,9 @@ export async function getWorkoutDay(programSlug, day, place = null) {
       preview_url: ex?.preview_url || null,
       video_url: ex?.video_url || null,
       is_swapped: isSwapped,
+      // Своё упражнение: карточка ставит карандаш, а «Замену» не предлагает —
+      // подбирать замену не из чего, аналогов у личного упражнения нет.
+      is_custom: isCustomExercise(exerciseId),
       user_weight_kg: weightsByEx[exerciseId] ?? null,
       counts_reps: ex?.counts_reps ?? false
     }

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getExerciseById } from '../features/exercises/api'
 import ExerciseHeaderCard from '../components/ExerciseHeaderCard'
+import { isCustomExercise } from '../features/programs/userExercises'
 import UiIcon from '../components/UiIcon'
 
 /**
@@ -100,6 +101,7 @@ export default function ExerciseInfo() {
           muscleGroup={exercise.muscle_group}
           subGroup={exercise.sub_group}
           meta={exercise.meta_info}
+          custom={isCustomExercise(exercise.id)}
         />
         <div style={styles.stickyFade} aria-hidden="true" />
       </div>

@@ -12,6 +12,7 @@ import { sanitizeWeightInput, normalizeWeightForSave } from '../features/exercis
 import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash'
 import UiIcon from './UiIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
+import PencilIcon from './PencilIcon'
 
 /**
  * Карточка упражнения.
@@ -65,7 +66,8 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     sub_group,
     meta_info,
     preview_url,
-    user_weight_kg
+    user_weight_kg,
+    is_custom
   } = slot
 
   const [editing, setEditing] = useState(false)
@@ -158,14 +160,16 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const runAction = (fn) => { closePanel(); fn?.(slot) }
   // Заметка из свайпа убрана — она осталась в меню по долгому нажатию,
   // где её можно сразу написать, а не открывать ещё один экран.
+  // У своего упражнения «Замены» нет: подбирать не из чего — аналог личному
+  // упражнению взять неоткуда, экран открылся бы пустым.
   const swipeActions = [
     { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
-    { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
+    ...(is_custom ? [] : [{ key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }])
   ]
   const panelW = SWIPE_GAP + swipeActions.length * (SWIPE_CELL + SWIPE_GAP)
 
   // Цвета группы мышц — тег + акцент для цифры веса
-  const colors = getMuscleGroupColors(muscle_group)
+  const colors = getMuscleGroupColors(muscle_group, is_custom)
 
   // Тег несёт ВСЮ принадлежность упражнения — «Ноги — Квадрицепс», в цвете
   // основной группы. Заголовков групп над карточками больше нет, поэтому
@@ -464,6 +468,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         {/* 1. Название упражнения — сверху, крупно */}
         <div style={styles.exerciseName}>
           {exercise_name}
+          {/* Карандаш — метка «это упражнение завёл ты». Правится оно только
+              в конструкторе программы; здесь это просто опознавательный знак. */}
+          {is_custom && <span style={styles.customMark}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
         </div>
 
         {/* 2. Один тег подгруппы в цвете основной группы */}
@@ -633,6 +640,7 @@ const styles = {
     lineHeight: '18px',
     color: 'var(--color-text)'
   },
+  customMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
   // Ряд тега подгруппы (в цвете основной группы)
   tagsRow: {
     display: 'flex',

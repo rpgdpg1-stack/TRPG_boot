@@ -5,6 +5,7 @@ import { getFavoriteExercises, getFavoritesSync, formatFavoriteValue, FAVORITE_L
 import { getActiveDaySync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { isCustomExercise } from '../features/programs/userExercises'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
@@ -140,7 +141,7 @@ export default function FavoriteExercises() {
               </button>
             )
           }
-          const colors = getMuscleGroupColors(f.muscle_group)
+          const colors = getMuscleGroupColors(f.muscle_group, isCustomExercise(f.exercise_id))
           // Группа живёт в теге («Ноги — Квадрицепс»), заголовков над карточками нет.
           const tag = exerciseTagLabel(f.muscle_group, f.sub_group)
           const val = formatFavoriteValue(f.weight_kg, f.counts_reps)

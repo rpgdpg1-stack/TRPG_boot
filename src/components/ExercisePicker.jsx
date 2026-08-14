@@ -1,12 +1,29 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { loadExerciseCatalog } from '../features/programs/customProgram'
-import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS } from '../features/programs/labels'
+import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS, exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import {
+  loadMyExercises, getMyExercisesSync, createMyExercise, updateMyExercise,
+  deleteMyExercise, MY_EXERCISE_LIMIT
+} from '../features/programs/userExercises'
 import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
+import AnchorMenu from './AnchorMenu'
+import ConfirmModal from './ConfirmModal'
+import CustomExerciseForm from './CustomExerciseForm'
+import PencilIcon from './PencilIcon'
+import TrashIcon from './TrashIcon'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ExercisePlaceholder from './ExercisePlaceholder'
+
+const LONG_PRESS_MS = 500
+const MOVE_TOLERANCE_PX = 10
+
+const TABS = [
+  { key: 'all', label: 'Все упражнения' },
+  { key: 'mine', label: 'Мои' }
+]
 
 /**
  * Пикер упражнений для конструктора.
@@ -14,6 +31,16 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  * Полноэкранный оверлей (портал в body). Фильтр: группа мышц → подгруппа + поиск.
  * Порядок групп/подгрупп — как в каталоге (сортировка по id). Без фильтра уже
  * выбранные упражнения поднимаются наверх списка.
+ *
+ * ДВЕ ВКЛАДКИ: «Все упражнения» — каталог приложения, «Мои» — то, что человек
+ * завёл сам. Заведение живёт именно здесь, а не отдельным пунктом в профиле:
+ * нужда в своём упражнении возникает ровно в момент сборки дня — «нужного нет».
+ * Уводить за этим на другой экран и заставлять возвращаться значит ломать
+ * главный сценарий ради аккуратности меню.
+ *
+ * В «Моих» поиска и фильтров нет намеренно: там максимум дюжина карточек,
+ * фильтровать нечего. Карточки те же по размеру — это один список, не две разные
+ * сущности.
  */
 export default function ExercisePicker({ excludeIds, atLimit, count, max, onToggle, onDone }) {
   const overlayRef = useRef(null)
@@ -28,6 +55,16 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [limitNonce, setLimitNonce] = useState(0)
   const inputRef = useRef(null)
   const limitTimer = useRef(null)
+
+  // Вкладка и всё, что относится к своим упражнениям.
+  const [tab, setTab] = useState('all')
+  const [mine, setMine] = useState(getMyExercisesSync)
+  const [form, setForm] = useState(null)        // { mode:'new' } | { mode:'edit', ex }
+  const [menu, setMenu] = useState(null)        // { rect, ex } — меню долгого нажатия
+  const [confirmDel, setConfirmDel] = useState(null)
+  const [mineError, setMineError] = useState('')
+  const longTimer = useRef(null)
+  const pressStart = useRef({ x: 0, y: 0 })
 
   const excluded = useMemo(
     () => (excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])),
@@ -50,6 +87,57 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadMyExercises().then(list => { if (!cancelled) setMine(list) })
+    return () => { cancelled = true }
+  }, [])
+
+  // Долгое нажатие по своей карточке — меню «Редактировать / Удалить», тот же
+  // жест и тот же AnchorMenu, что у программы на главной и у строки друга.
+  // Допуск на смещение обязателен: палец на удержании всегда чуть плывёт, и без
+  // допуска меню не открывалось бы, а список при этом должен листаться свободно.
+  const startLongPress = (e, ex) => {
+    const el = e.currentTarget
+    pressStart.current = { x: e.clientX, y: e.clientY }
+    if (longTimer.current) clearTimeout(longTimer.current)
+    longTimer.current = setTimeout(() => {
+      haptic.medium()
+      setMenu({ rect: el.getBoundingClientRect(), ex })
+    }, LONG_PRESS_MS)
+  }
+  const moveLongPress = (e) => {
+    if (!longTimer.current) return
+    if (Math.abs(e.clientX - pressStart.current.x) > MOVE_TOLERANCE_PX ||
+        Math.abs(e.clientY - pressStart.current.y) > MOVE_TOLERANCE_PX) cancelLongPress()
+  }
+  const cancelLongPress = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
+  useEffect(() => cancelLongPress, [])
+
+  const handleFormSave = async (values) => {
+    if (form?.mode === 'edit') await updateMyExercise(form.ex.id, values)
+    else await createMyExercise(values)
+    setMine(await loadMyExercises())
+    setForm(null)
+  }
+
+  const handleDelete = async (ex) => {
+    setConfirmDel(null)
+    try {
+      await deleteMyExercise(ex.id)
+      // Упражнение могло стоять в собираемом сейчас дне — снимаем и оттуда,
+      // иначе конструктор сохранил бы ссылку на удалённое.
+      if (excluded.has(ex.id)) onToggle(ex)
+      setMine(await loadMyExercises())
+      haptic.success()
+    } catch (err) {
+      haptic.error()
+      setMineError(err?.message || 'Не удалось удалить')
+    }
+  }
+
+  const atMineLimit = mine.length >= MY_EXERCISE_LIMIT
 
   // Клавиатура: прячем кнопку сразу, показываем с задержкой при закрытии.
   useEffect(() => {
@@ -121,8 +209,100 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
 
   useEffect(() => () => { if (limitTimer.current) clearTimeout(limitTimer.current) }, [])
 
+  // Строка списка — одна и та же в обеих вкладках: свои упражнения не должны
+  // выглядеть «другим сортом», отличие только в карандаше и цвете тега.
+  const renderRow = (ex, { custom = false } = {}) => {
+    const added = excluded.has(ex.id)
+    const c = getMuscleGroupColors(ex.muscle_group, custom)
+    const disabled = atLimit && !added
+    const tag = custom
+      ? exerciseTagLabel(ex.muscle_group, ex.sub_group)
+      : toTitleCase(
+          SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group ||
+          MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group
+        )
+    return (
+      <div
+        key={ex.id}
+        style={styles.row}
+        onPointerDown={custom ? (e) => startLongPress(e, ex) : undefined}
+        onPointerUp={custom ? cancelLongPress : undefined}
+        onPointerMove={custom ? moveLongPress : undefined}
+        onPointerCancel={custom ? cancelLongPress : undefined}
+      >
+        <div style={{ ...styles.preview, opacity: disabled ? 0.4 : 1 }}>
+          {ex.preview_url
+            ? <img src={ex.preview_url} alt="" style={styles.previewImg} draggable={false} />
+            : <ExercisePlaceholder size={24} />}
+        </div>
+        <div style={{ ...styles.rowContent, opacity: disabled ? 0.4 : 1 }}>
+          <div style={styles.rowName}>
+            {ex.name}
+            {/* Карандаш = «это завёл ты, это можно править». В каталоге его нет
+                вовсе — так видно с одного взгляда, где своё. */}
+            {custom && <span style={styles.pencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
+          </div>
+          <div style={styles.rowTags}>
+            {tag && (
+              <span style={{ ...styles.rowTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
+                {tag}
+              </span>
+            )}
+          </div>
+          {custom && ex.meta_info && <div style={styles.rowMeta}>{ex.meta_info}</div>}
+        </div>
+        <div style={styles.addBtnWrap}>
+          {limitRowId === ex.id && (
+            <div key={limitNonce} className="shake-error" style={styles.limitBubble}>
+              Лимит {max}/{max}
+            </div>
+          )}
+          <button
+            onClick={() => handleToggle(ex)}
+            className="press-tile"
+            style={{
+              ...styles.addBtn,
+              background: added ? 'rgba(158,209,83,0.15)' : 'var(--highlight-recent)',
+              color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+              opacity: disabled ? 0.45 : 1
+            }}
+            aria-label={added ? 'Убрать' : 'Добавить'}
+          >
+            {added ? '✓' : '+'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const content = (
     <div ref={overlayRef} style={styles.overlay}>
+      {/* Вкладки — тот же сегмент-контрол, что «Все / Быстрый режим» в конструкторе. */}
+      <div style={styles.tabsRow}>
+        <div style={styles.segGroup}>
+          {TABS.map((t, i) => {
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => { haptic.light(); setTab(t.key) }}
+                className="press-tile"
+                style={{
+                  ...styles.segItem,
+                  ...(active ? styles.segItemActive : null),
+                  marginLeft: i === 0 ? 0 : '-5px',
+                  zIndex: active ? 2 : 1,
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {tab === 'all' && (
       <div style={styles.header}>
         <input
           ref={inputRef}
@@ -136,8 +316,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         />
         <button onClick={handleClearSearch} className="press-tile" style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
       </div>
+      )}
 
       {/* Чипы групп мышц */}
+      {tab === 'all' && (
       <div style={styles.chipsRow}>
         {groups.map(({ group }) => {
           const c = getMuscleGroupColors(group)
@@ -158,10 +340,11 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           )
         })}
       </div>
+      )}
 
       {/* Подгруппы активной группы — как содержимое открытой вкладки:
           отдельная панель с фоном чуть светлее, чтобы не путать с группами. */}
-      {activeGroup && activeSubs.length > 0 && (
+      {tab === 'all' && activeGroup && activeSubs.length > 0 && (
         <div style={styles.subPanel}>
           <div style={styles.subChipsRow}>
             {activeSubs.map(sub => {
@@ -194,57 +377,51 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         <div style={styles.topFade} aria-hidden="true" />
       {/* Список. key пересоздаёт контейнер при смене фильтра — новый монтируется
           с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает). */}
-      <div key={`${activeGroup || 'all'}-${activeSub || 'all'}-${search}`} style={styles.list}>
-        {loading && <div style={styles.empty}>Загрузка…</div>}
-        {!loading && filtered.length === 0 && <div style={styles.empty}>Ничего не найдено</div>}
-        {!loading && filtered.map(ex => {
-          const added = excluded.has(ex.id)
-          const c = getMuscleGroupColors(ex.muscle_group)
-          const disabled = atLimit && !added
-          return (
-            <div key={ex.id} style={styles.row}>
-              <div style={{ ...styles.preview, opacity: disabled ? 0.4 : 1 }}>
-                {ex.preview_url
-                  ? <img src={ex.preview_url} alt="" style={styles.previewImg} draggable={false} />
-                  : <ExercisePlaceholder size={24} />}
-              </div>
-              <div style={{ ...styles.rowContent, opacity: disabled ? 0.4 : 1 }}>
-                <div style={styles.rowName}>{ex.name}</div>
-                <div style={styles.rowTags}>
-                  {/* Один тег — подгруппа, в цвете основной группы (как заголовок
-                      группы на дне тренировки). Имя группы — только в фильтр-чипах. */}
-                  <span style={{ ...styles.rowTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
-                    {toTitleCase(
-                      SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group ||
-                      MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group
-                    )}
-                  </span>
-                </div>
-              </div>
-              <div style={styles.addBtnWrap}>
-                {limitRowId === ex.id && (
-                  <div key={limitNonce} className="shake-error" style={styles.limitBubble}>
-                    Лимит {max}/{max}
-                  </div>
-                )}
-                <button
-                  onClick={() => handleToggle(ex)}
-                  className="press-tile"
-                  style={{
-                    ...styles.addBtn,
-                    background: added ? 'rgba(158,209,83,0.15)' : 'var(--highlight-recent)',
-                    color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                    opacity: disabled ? 0.45 : 1
-                  }}
-                  aria-label={added ? 'Убрать' : 'Добавить'}
-                >
-                  {added ? '✓' : '+'}
-                </button>
-              </div>
+      {tab === 'all' ? (
+        // key пересоздаёт контейнер при смене фильтра — новый монтируется
+        // с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает).
+        <div key={`${activeGroup || 'all'}-${activeSub || 'all'}-${search}`} style={styles.list}>
+          {loading && <div style={styles.empty}>Загрузка…</div>}
+          {!loading && filtered.length === 0 && <div style={styles.empty}>Ничего не найдено</div>}
+          {!loading && filtered.map(ex => renderRow(ex))}
+        </div>
+      ) : (
+        <div style={styles.list}>
+          {/* Кнопка заведения — первой строкой, ростом с карточку: это такой же
+              элемент списка, а не служебная мелочь под ним. */}
+          <button
+            onClick={() => {
+              if (atMineLimit) { haptic.error(); setMineError(`Достигнут лимит — ${MY_EXERCISE_LIMIT} своих упражнений`); return }
+              haptic.light(); setMineError(''); setForm({ mode: 'new' })
+            }}
+            className="press-tile"
+            style={{ ...styles.createRow, opacity: atMineLimit ? 0.45 : 1 }}
+          >
+            <span style={styles.createPlus}>+</span>
+            <span style={styles.createText}>
+              Создать упражнение
+              <span style={styles.createCount}>{mine.length}/{MY_EXERCISE_LIMIT}</span>
+            </span>
+          </button>
+
+          {mineError && <div style={styles.mineError}>{mineError}</div>}
+
+          {mine.length === 0 && (
+            <div style={styles.empty}>
+              Здесь будут упражнения, которых нет в каталоге.<br />
+              Название, группа и подходы — на твоё усмотрение.
             </div>
-          )
-        })}
-      </div>
+          )}
+
+          {mine.map(ex => renderRow(ex, { custom: true }))}
+
+          {mine.length > 0 && (
+            <div style={styles.mineHint}>
+              Долгое нажатие по своему упражнению — правка и удаление.
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Кнопку прячем при открытой клавиатуре; показываем с задержкой при закрытии. */}
@@ -261,6 +438,52 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             {count >= max ? `Достигнут лимит ${count}/${max}` : `Добавить упражнения · ${count}/${max}`}
           </ActionButton>
         </div>
+      )}
+      {menu && (
+        <AnchorMenu
+          anchorRect={menu.rect}
+          onClose={() => setMenu(null)}
+          align="left"
+          gap={3}
+          motion="drop"
+          items={[
+            {
+              key: 'edit',
+              icon: <PencilIcon size={20} color="var(--cat-cardio)" />,
+              label: 'Редактировать',
+              onClick: () => setForm({ mode: 'edit', ex: menu.ex })
+            },
+            { divider: true },
+            {
+              key: 'delete',
+              icon: <TrashIcon />,
+              label: 'Удалить',
+              labelColor: 'var(--color-error)',
+              onClick: () => setConfirmDel(menu.ex)
+            }
+          ]}
+        />
+      )}
+
+      {form && (
+        <CustomExerciseForm
+          groups={groups.map(g => g.group)}
+          initial={form.mode === 'edit' ? form.ex : null}
+          onSave={handleFormSave}
+          onClose={() => setForm(null)}
+        />
+      )}
+
+      {confirmDel && (
+        <ConfirmModal
+          title="Удалить упражнение?"
+          text="Оно исчезнет из программ, где стоит. Прошлые тренировки и веса останутся в истории."
+          onClose={() => setConfirmDel(null)}
+          actions={[
+            { label: 'Отмена', onClick: () => setConfirmDel(null) },
+            { label: 'Удалить', danger: true, onClick: () => handleDelete(confirmDel) }
+          ]}
+        />
       )}
     </div>
   )
@@ -285,6 +508,68 @@ const styles = {
   // Без верхнего padding: поле поиска начинается ровно на 16px ниже кнопок
   // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
   header: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
+
+  // Сегмент-контрол вкладок — один в один с «Все / Быстрый режим» в конструкторе.
+  tabsRow: { display: 'flex', padding: '0 var(--space-4) var(--space-3)', flexShrink: 0 },
+  segGroup: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+  },
+  segItem: {
+    flex: 1, minWidth: 0, position: 'relative',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-15)',
+    alignSelf: 'stretch', minHeight: '44px', padding: '0 var(--space-2)',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease'
+  },
+  segItemActive: {
+    background: 'var(--color-surface-active)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
+  },
+
+  // Строка заведения — ростом с карточку списка (90px), чтобы читалась как его
+  // часть, а не как кнопка над ним.
+  createRow: {
+    display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%',
+    background: 'var(--layer-1)', border: '1px dashed var(--color-border)',
+    borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px',
+    marginBottom: 'var(--space-3)', textAlign: 'left',
+    WebkitTapHighlightColor: 'transparent'
+  },
+  createPlus: {
+    width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--layer-2)', color: 'var(--color-primary)',
+    fontSize: 'var(--text-heading-size)', fontWeight: 700, lineHeight: 1
+  },
+  createText: {
+    flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-05)',
+    fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text)'
+  },
+  createCount: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    fontWeight: 500, color: 'var(--color-text-secondary)'
+  },
+  mineError: {
+    marginBottom: 'var(--space-3)', textAlign: 'center',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    fontWeight: 700, color: 'var(--color-error)'
+  },
+  mineHint: {
+    padding: 'var(--space-3) var(--space-2) 0', textAlign: 'center',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)', lineHeight: 1.5
+  },
+  pencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
+  rowMeta: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)'
+  },
   search: {
     flex: 1, height: '44px', padding: '0 var(--space-4)',
     background: 'var(--color-card)', border: '1px solid var(--layer-2)',

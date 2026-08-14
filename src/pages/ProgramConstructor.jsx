@@ -6,6 +6,7 @@ import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/reg
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { isCustomExercise, loadMyExercises } from '../features/programs/userExercises'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
 import ConfirmModal from '../components/ConfirmModal'
@@ -13,6 +14,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
+import PencilIcon from '../components/PencilIcon'
 import EmptyState from '../components/EmptyState'
 import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
 import RocketIcon from '../components/RocketIcon'
@@ -139,9 +141,13 @@ export default function ProgramConstructor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, pickerOpen, name, byLoc])
 
+  // Каталог приложения и свои упражнения — в одном справочнике: строка дня
+  // ищет имя и тег одинаково, чьё бы упражнение в ней ни стояло.
   useEffect(() => {
     let cancelled = false
-    loadExerciseCatalog().then(list => { if (!cancelled) setCatalog(list) })
+    Promise.all([loadExerciseCatalog(), loadMyExercises()]).then(([all, mine]) => {
+      if (!cancelled) setCatalog([...all, ...mine])
+    })
     return () => { cancelled = true }
   }, [])
   
@@ -600,7 +606,8 @@ export default function ProgramConstructor() {
           />
         ) : currentDay.map((exId, idx) => {
           const ex = exMap[exId]
-          const c = getMuscleGroupColors(ex?.muscle_group)
+          const custom = isCustomExercise(exId)
+          const c = getMuscleGroupColors(ex?.muscle_group, custom)
           const isDragging = drag?.startIndex === idx
           const tagLabel = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
           return (
@@ -626,7 +633,10 @@ export default function ProgramConstructor() {
                     : <ExercisePlaceholder size={24} />}
                 </div>
                 <div style={styles.exContent}>
-                  <div style={styles.exName}>{ex?.name || exId}</div>
+                  <div style={styles.exName}>
+                    {ex?.name || exId}
+                    {custom && <span style={styles.exPencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
+                  </div>
                   {ex && tagLabel && (
                     <div style={styles.exTags}>
                       <span style={{ ...styles.exTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
@@ -856,6 +866,7 @@ const styles = {
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   exName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
+  exPencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
   exTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
   exTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },

@@ -31,9 +31,21 @@ export const MUSCLE_GROUP_COLORS = {
 const FALLBACK = { tag: '#3A3A3A', accent: '#888888' }
 
 /**
- * Безопасный геттер: всегда возвращает объект { tag, accent }.
- * Если группы нет в карте — отдаст серые цвета.
+ * Своё упражнение с придуманной группой («Кроссфит», «Растяжка») — цвета этой
+ * группы взять неоткуда. Красим в акцентный, приглушённый до плотности
+ * остальных тегов: это читается как «моё», а не как «сломанная группа», в
+ * которую превращал серый фолбэк.
+ *
+ * Если же человек выбрал существующую группу из списка — работают её цвета,
+ * своё упражнение встаёт в общий строй.
  */
-export function getMuscleGroupColors(muscleGroup) {
-  return MUSCLE_GROUP_COLORS[muscleGroup] || FALLBACK
+const CUSTOM = { tag: 'var(--green-700)', accent: 'var(--color-primary)' }
+
+/**
+ * Безопасный геттер: всегда возвращает объект { tag, accent }.
+ * Если группы нет в карте — серые цвета, а для своего упражнения (`custom`) —
+ * акцентные.
+ */
+export function getMuscleGroupColors(muscleGroup, custom = false) {
+  return MUSCLE_GROUP_COLORS[muscleGroup] || (custom ? CUSTOM : FALLBACK)
 }

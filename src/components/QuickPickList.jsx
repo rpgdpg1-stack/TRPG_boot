@@ -1,8 +1,10 @@
 import { getMuscleGroupColors } from '../features/programs/colors'
+import { isCustomExercise } from '../features/programs/userExercises'
 import { haptic } from '../lib/telegram'
 import { exerciseTagLabel } from '../features/programs/labels'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import UiIcon from './UiIcon'
+import PencilIcon from './PencilIcon'
 
 /**
  * Список упражнений с отметками «входит в быструю версию».
@@ -50,7 +52,8 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
 
       <div style={styles.list}>
       {items.map(({ id, exercise: ex }) => {
-        const colors = getMuscleGroupColors(ex?.muscle_group)
+        const custom = isCustomExercise(id)
+        const colors = getMuscleGroupColors(ex?.muscle_group, custom)
         const tag = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
         const on = isPicked(id)
         return (
@@ -67,7 +70,10 @@ export default function QuickPickList({ items, picked, onToggle, showHint = true
                 : <ExercisePlaceholder size={24} />}
             </div>
             <div style={styles.content}>
-              <div style={styles.name}>{ex?.name || ex?.exercise_name || id}</div>
+              <div style={styles.name}>
+                {ex?.name || ex?.exercise_name || id}
+                {custom && <span style={styles.pencil}><PencilIcon size={12} color="var(--color-text-secondary)" /></span>}
+              </div>
               {ex && tag && (
                 <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>
               )}
@@ -115,6 +121,7 @@ const styles = {
     fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     lineHeight: '16px', color: 'var(--color-text)'
   },
+  pencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
   tag: {
     padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)', fontFamily: 'var(--font-manrope)',
