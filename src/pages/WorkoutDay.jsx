@@ -31,6 +31,8 @@ import {
   clearWorkoutProgress
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
+import EmptyState from '../components/EmptyState'
+import AdoptExercisesModal from '../components/AdoptExercisesModal'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import CloseCross from '../components/CloseCross'
 import ScrollTopButton from '../components/ScrollTopButton'
@@ -1365,6 +1367,17 @@ export default function WorkoutDay() {
           </div>
         )}
 
+        {/* Программа от друга ещё не «присвоена»: в ней личные упражнения автора,
+            в которые нельзя вести свой вес. Открыть день можно было бы и так, но
+            это была бы витрина без работы — поэтому объяснение поверх и выход. */}
+        {program?.pendingCustom > 0 && (
+          <AdoptExercisesModal
+            program={program}
+            onClose={() => navigate(-1)}
+            onAdopted={() => window.location.reload()}
+          />
+        )}
+
         {/* Скелетон на время загрузки — чтобы контент не «прыгал». */}
         {loading && !error && (
           <div style={styles.sectionsWrap}>
@@ -1374,10 +1387,21 @@ export default function WorkoutDay() {
           </div>
         )}
 
+        {/* День может опустеть на ровном месте: человек удалил своё упражнение,
+            и оно ушло из всех программ, где стояло. Поэтому не сухая серая
+            строка, а состояние с выходом — у своей программы сразу в конструктор. */}
         {!loading && !error && slots.length === 0 && (
-          <div style={styles.empty}>
-            День пуст — упражнения не настроены для этой программы
-          </div>
+          <EmptyState
+            title="В этом дне пусто"
+            hint={program?.editable
+              ? 'Все упражнения из него удалены. Собери день заново в конструкторе.'
+              : 'Упражнения для этого дня не настроены.'}
+            action={program?.editable ? (
+              <ActionButton onClick={() => { haptic.light(); navigate('/constructor') }} variant="neutral" hug>
+                Открыть конструктор
+              </ActionButton>
+            ) : null}
+          />
         )}
 
         {!loading && sections.length > 0 && (

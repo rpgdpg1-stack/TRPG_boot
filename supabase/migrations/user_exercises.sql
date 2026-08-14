@@ -1,79 +1,94 @@
 -- СВОИ УПРАЖНЕНИЯ ПОЛЬЗОВАТЕЛЯ
 --
--- Ключевое решение: НЕ заводим отдельную таблицу user_exercises, а добавляем
--- владельца в существующую `exercises`.
+-- ПРИМЕНЕНО НА ПРОДЕ 2026-08-14 пятью миграциями через коннектор:
+--   user_exercises, user_exercises_program_guard,
+--   friend_program_custom_exercises, adopt_exercises_by_share_token,
+--   my_programs_pending_custom.
+-- Файл — их слепок для истории репозитория. Повторный прогон безопасен
+-- (всё идемпотентно), но не нужен.
 --
--- Почему. На exercises.id завязано внешними ключами почти всё приложение:
--- program_days.exercise_id, user_exercise_weights, user_exercise_swaps,
--- user_favorite_exercises, workout_exercises, история весов, рекорды. Отдельная
--- таблица означала бы либо снять эти FK (потерять целостность), либо продублировать
--- каждую механику «а если упражнение из второй таблицы». С колонкой владельца
--- своё упражнение автоматически полноправно везде: вес сохраняется, попадает
--- в историю и рекорды, работает в оффлайне — без единой правки этих механик.
+-- ── ГЛАВНОЕ РЕШЕНИЕ ──────────────────────────────────────────────────────────
+-- НЕ заводим отдельную таблицу user_exercises, а добавляем владельца
+-- в существующую `exercises`.
 --
--- Системное упражнение: owner_id IS NULL. Своё: owner_id = users.id.
+-- Почему. На exercises.id завязаны внешними ключами почти все механики:
+-- program_days, user_exercise_weights, user_exercise_swaps,
+-- user_favorite_exercises, exercise_sets (подходы прошлых тренировок).
+-- Отдельная таблица означала бы либо снять эти ключи (потерять целостность),
+-- либо продублировать каждую механику «а если упражнение из второй таблицы».
+-- С колонкой владельца своё упражнение полноправно везде без единой правки
+-- этих механик.
 --
--- Применить целиком одним запуском.
+-- Масштаб: своих не больше 12 на человека. Тысяча пользователей — 12 тысяч
+-- строк в таблице, где сейчас 88. Для Postgres это ничто; индекс по владельцу
+-- частичный, системный каталог читается тем же планом, что и раньше.
+--
+-- Системное упражнение: owner_id IS NULL. Своё: owner_id = users.id, id `ux_N`.
 
--- ── 1. Колонки ────────────────────────────────────────────────────────────────
+-- ── 1. Колонки и последовательность ──────────────────────────────────────────
 
 ALTER TABLE public.exercises
-  ADD COLUMN IF NOT EXISTS owner_id    bigint REFERENCES public.users(id) ON DELETE CASCADE,
-  ADD COLUMN IF NOT EXISTS archived_at timestamptz;
+  ADD COLUMN IF NOT EXISTS owner_id bigint REFERENCES public.users(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_exercises_owner_id
   ON public.exercises (owner_id) WHERE owner_id IS NOT NULL;
 
--- Сквозная нумерация своих упражнений. Именно последовательность, а не
--- «первый свободный номер у пользователя»: переиспользованный id прицепил бы
--- к новому упражнению историю весов удалённого.
+-- Сквозная нумерация. Именно последовательность, а не «первый свободный номер
+-- у пользователя»: переиспользованный id прицепил бы к новому упражнению
+-- историю удалённого.
 CREATE SEQUENCE IF NOT EXISTS public.user_exercise_seq START 1;
 
--- ── 2. RLS: чужие свои упражнения не видны вообще ────────────────────────────
--- Каталог читается прямым select с anon-ключом (RLS «exercises = public read»),
--- а у приложения нет сессии Supabase — по политике пользователя не различить.
--- Поэтому режем на уровне таблицы: RESTRICTIVE-политика складывается с любой
--- существующей через AND, поэтому имя старой политики знать не нужно и прямой
--- select физически не может вернуть ничью пользовательскую строку.
--- Свои приходят только через SECURITY DEFINER функции ниже (они обходят RLS).
+-- ── 2. RLS: чужие личные упражнения не видны вообще ──────────────────────────
+-- Каталог читается прямым select с anon-ключом, а сессии Supabase у приложения
+-- нет — по политике пользователя не различить. Поэтому режем на уровне таблицы:
+-- RESTRICTIVE-политика складывается с существующей public_read_exercises через
+-- AND, поэтому имя старой знать не нужно, и прямой select физически не может
+-- вернуть ничью пользовательскую строку.
 DROP POLICY IF EXISTS exercises_public_reads_system_only ON public.exercises;
 CREATE POLICY exercises_public_reads_system_only ON public.exercises
   AS RESTRICTIVE FOR SELECT TO anon, authenticated
   USING (owner_id IS NULL);
 
--- ── 3. Чтение своих ──────────────────────────────────────────────────────────
+-- КРИТИЧНО: SECURITY DEFINER обходит RLS, и без этого фильтра общий каталог
+-- раздавал бы всем чужие личные упражнения.
+CREATE OR REPLACE FUNCTION public.api_get_all_exercises()
+ RETURNS TABLE(id text, name text, sub_group text, type text, meta_info text, preview_url text, video_url text, priority integer, counts_reps boolean)
+ LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+  SELECT id, name, sub_group, type, meta_info, preview_url, video_url, priority, counts_reps
+  FROM public.exercises
+  WHERE owner_id IS NULL
+  ORDER BY priority ASC;
+$function$;
+
+-- ── 3. Чтение ────────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.api_get_my_exercises(p_user_id bigint)
 RETURNS TABLE (
   id text, name text, muscle_group text, sub_group text, type text,
   meta_info text, preview_url text, video_url text, counts_reps boolean
 )
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path TO 'public'
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $function$
   SELECT e.id, e.name, e.muscle_group, e.sub_group, e.type,
          e.meta_info, e.preview_url, e.video_url, coalesce(e.counts_reps, false)
   FROM exercises e
-  WHERE e.owner_id = p_user_id AND e.archived_at IS NULL
+  WHERE e.owner_id = p_user_id
   ORDER BY e.id;
 $function$;
 
 REVOKE ALL ON FUNCTION public.api_get_my_exercises(bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_get_my_exercises(bigint) TO anon, authenticated, service_role;
 
--- Разрешить названия для чужих своих упражнений — но ТОЛЬКО по точному списку id.
--- Нужно ровно для одного случая: сохранил программу друга, а в ней его личное
--- упражнение. Без этого слот показал бы «подгруппа (тип)» вместо названия.
--- Перебрать каталог так нельзя — функция отвечает лишь на конкретные id.
+-- Названия чужих личных упражнений — ТОЛЬКО по точному списку id. Нужна для
+-- программы друга, пока её упражнения ещё не скопированы себе. Перебрать
+-- каталог через неё нельзя.
 CREATE OR REPLACE FUNCTION public.api_get_exercises_by_ids(p_ids text[])
 RETURNS TABLE (
   id text, name text, muscle_group text, sub_group text, type text,
   meta_info text, preview_url text, video_url text, counts_reps boolean
 )
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path TO 'public'
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $function$
   SELECT e.id, e.name, e.muscle_group, e.sub_group, e.type,
          e.meta_info, e.preview_url, e.video_url, coalesce(e.counts_reps, false)
@@ -85,18 +100,14 @@ $function$;
 REVOKE ALL ON FUNCTION public.api_get_exercises_by_ids(text[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_get_exercises_by_ids(text[]) TO anon, authenticated, service_role;
 
--- ── 4. Создание ──────────────────────────────────────────────────────────────
--- Группа и подгруппа — свободный текст. Если группа совпала с ключом системной
--- ('legs', 'back'…), тег в приложении окрасится в цвет этой группы; иначе —
--- в акцентный. Пустая строка вместо NULL: колонки участвуют в сравнениях
--- слотов, NULL там ведёт себя иначе, чем «не задано».
+-- ── 4. Заведение и правка ────────────────────────────────────────────────────
+-- Группа и подгруппа — свободный текст. Пустая строка вместо NULL: колонки
+-- NOT NULL и участвуют в сравнении слотов.
 
 CREATE OR REPLACE FUNCTION public.api_create_my_exercise(
   p_user_id bigint, p_name text, p_group text, p_sub_group text, p_meta text
 ) RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
 declare
   v_name text := btrim(coalesce(p_name, ''));
@@ -106,8 +117,7 @@ begin
   if v_name = '' then raise exception 'name is required'; end if;
   if length(v_name) > 60 then raise exception 'name too long'; end if;
 
-  select count(*) into v_count from exercises
-  where owner_id = p_user_id and archived_at is null;
+  select count(*) into v_count from exercises where owner_id = p_user_id;
   if v_count >= 12 then raise exception 'limit reached: 12 custom exercises'; end if;
 
   v_id := 'ux_' || nextval('user_exercise_seq')::text;
@@ -115,8 +125,8 @@ begin
   insert into exercises (id, name, muscle_group, sub_group, type, meta_info,
                          preview_url, video_url, counts_reps, priority, owner_id)
   values (v_id, v_name,
-          btrim(coalesce(p_group, '')), btrim(coalesce(p_sub_group, '')),
-          'accessory', nullif(btrim(coalesce(p_meta, '')), ''),
+          left(btrim(coalesce(p_group, '')), 30), left(btrim(coalesce(p_sub_group, '')), 30),
+          'accessory', nullif(left(btrim(coalesce(p_meta, '')), 30), ''),
           null, null, false, 9999, p_user_id);
 
   return v_id;
@@ -126,37 +136,30 @@ $function$;
 REVOKE ALL ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text) TO anon, authenticated, service_role;
 
--- ── 5. Правка ────────────────────────────────────────────────────────────────
--- Группа/подгруппа меняются и в самом упражнении, и в слотах программ, где оно
--- стоит: program_days хранит их копией, и без этого тег в дне тренировки остался
--- бы старым.
-
+-- Группа/подгруппа лежат копией и в слотах программ — иначе тег в дне
+-- тренировки остался бы старым.
 CREATE OR REPLACE FUNCTION public.api_update_my_exercise(
   p_user_id bigint, p_exercise_id text, p_name text, p_group text, p_sub_group text, p_meta text
 ) RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
 declare
   v_name text := btrim(coalesce(p_name, ''));
-  v_group text := btrim(coalesce(p_group, ''));
-  v_sub text := btrim(coalesce(p_sub_group, ''));
+  v_group text := left(btrim(coalesce(p_group, '')), 30);
+  v_sub text := left(btrim(coalesce(p_sub_group, '')), 30);
 begin
   if v_name = '' then raise exception 'name is required'; end if;
   if length(v_name) > 60 then raise exception 'name too long'; end if;
 
   update exercises
   set name = v_name, muscle_group = v_group, sub_group = v_sub,
-      meta_info = nullif(btrim(coalesce(p_meta, '')), '')
-  where id = p_exercise_id and owner_id = p_user_id and archived_at is null;
+      meta_info = nullif(left(btrim(coalesce(p_meta, '')), 30), '')
+  where id = p_exercise_id and owner_id = p_user_id;
 
   if not found then return false; end if;
 
-  update program_days pd
-  set muscle_group = v_group, sub_group = v_sub
-  where pd.exercise_id = p_exercise_id
-    and exists (select 1 from programs p where p.id = pd.program_id and p.owner_id = p_user_id);
+  update program_days pd set muscle_group = v_group, sub_group = v_sub
+  where pd.exercise_id = p_exercise_id;
 
   return true;
 end;
@@ -165,31 +168,32 @@ $function$;
 REVOKE ALL ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text) TO anon, authenticated, service_role;
 
--- ── 6. Удаление ──────────────────────────────────────────────────────────────
--- НЕ delete, а архивация. Строка остаётся, потому что на неё ссылается история:
--- workout_exercises, история весов, рекорды. Физическое удаление либо снесло бы
--- каскадом отработанные тренировки, либо упёрлось бы в FK. Архивное упражнение
--- пропадает из «Моих» и из программ, но прошлые тренировки читаются как прежде.
--- Возвращает, из скольких слотов программ оно было вынуто.
-
+-- ── 5. Удаление — ПОЛНОЕ, без архива ─────────────────────────────────────────
+-- От упражнения не остаётся ничего: подходы прошлых тренировок, заметка,
+-- история веса, любимое, слоты программ. Сами тренировки (дата, длительность,
+-- серия) не трогаются — они в workouts, день в календаре остаётся на месте.
+-- Порядок важен: exercise_sets держит FK с RESTRICT, program_days — с NO ACTION,
+-- поэтому обе чистим руками до удаления самой строки.
 CREATE OR REPLACE FUNCTION public.api_delete_my_exercise(p_user_id bigint, p_exercise_id text)
 RETURNS integer
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
 declare
   v_removed int := 0;
 begin
-  update exercises set archived_at = now()
-  where id = p_exercise_id and owner_id = p_user_id and archived_at is null;
-  if not found then return -1; end if;
+  if not exists (select 1 from exercises where id = p_exercise_id and owner_id = p_user_id) then
+    return -1;
+  end if;
+
+  delete from exercise_sets                 where exercise_id = p_exercise_id;
+  delete from user_exercise_notes           where exercise_id = p_exercise_id;
+  delete from user_exercise_weight_history  where exercise_id = p_exercise_id;
+  delete from user_favorite_exercises       where exercise_id = p_exercise_id;
+  delete from user_exercise_swaps           where exercise_id = p_exercise_id;
+  delete from user_exercise_weights         where exercise_id = p_exercise_id;
 
   with gone as (
-    delete from program_days pd
-    where pd.exercise_id = p_exercise_id
-      and exists (select 1 from programs p where p.id = pd.program_id and p.owner_id = p_user_id)
-    returning 1
+    delete from program_days where exercise_id = p_exercise_id returning program_id, day, location
   )
   select count(*) into v_removed from gone;
 
@@ -205,7 +209,7 @@ begin
   update program_days pd set order_num = renum.rn
   from renum where pd.ctid = renum.ctid and pd.order_num <> renum.rn;
 
-  delete from user_favorite_exercises where exercise_id = p_exercise_id and user_id = p_user_id;
+  delete from exercises where id = p_exercise_id and owner_id = p_user_id;
 
   return v_removed;
 end;
@@ -214,85 +218,103 @@ $function$;
 REVOKE ALL ON FUNCTION public.api_delete_my_exercise(bigint, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_delete_my_exercise(bigint, text) TO anon, authenticated, service_role;
 
--- ── 7. Защита сборки программы ───────────────────────────────────────────────
+-- ── 6. Защита сборки программы ───────────────────────────────────────────────
 -- Единственная правка в теле api_save_my_program: в слот пускаем системное
--- упражнение ИЛИ своё, но только своё собственное. Иначе, подставив чужой id
--- запросом мимо интерфейса, можно было бы затащить в программу приватное
--- упражнение другого человека. Остальное тело не тронуто.
+-- упражнение ИЛИ своё собственное. Иначе, подставив чужой id запросом мимо
+-- интерфейса, можно было бы затащить в программу приватное упражнение другого
+-- человека. Полное тело — в проде, здесь для истории только суть условия:
+--
+--   from exercises e
+--   where e.id = v_ex and (e.owner_id is null or e.owner_id = p_user_id)
 
-CREATE OR REPLACE FUNCTION public.api_save_my_program(p_user_id bigint, p_name text, p_day_count integer, p_days jsonb)
- RETURNS text
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
+-- ── 7. ПРОГРАММА ДРУГА СО СВОИМИ УПРАЖНЕНИЯМИ АВТОРА ─────────────────────────
+--
+-- Личное упражнение автора нельзя «одолжить»: получателю нужно вести в него
+-- СВОЙ вес, а вес привязан к упражнению. Поэтому при сохранении программы такие
+-- упражнения КОПИРУЮТСЯ получателю и становятся его личными — дальше он их
+-- правит и удаляет наравне со своими.
+--
+-- Копия делается из снимка в момент шеринга (shared_programs.custom_exercises),
+-- а не из живой строки автора: автор мог успеть переименовать или удалить
+-- упражнение, а поделился он конкретной версией.
+--
+-- Не хватило места в лимите 12 — программа всё равно сохраняется, но остаётся
+-- ЗАБЛОКИРОВАННОЙ: в слотах стоят id автора, приложение не даёт её открыть
+-- и говорит, сколько мест освободить. Освободил — кнопка копирует и открывает.
+-- Признак блокировки — pending_custom в api_get_my_programs.
+
+ALTER TABLE public.shared_programs ADD COLUMN IF NOT EXISTS custom_exercises jsonb;
+
+-- Программа от друга помнит, из какой ссылки пришла: снимок лежит в той же
+-- строке shared_programs. Без этого снимок пришлось бы угадывать по автору,
+-- а он мог поделиться несколькими программами.
+ALTER TABLE public.programs ADD COLUMN IF NOT EXISTS share_token text;
+
+CREATE OR REPLACE FUNCTION public.api_adopt_program_exercises(p_user_id bigint, p_program_id text)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
 declare
-  v_pid text := 'usr_' || p_user_id::text;
-  v_letters text[] := array['A','B','C'];
-  v_locs text[] := array['gym','home','outdoor'];
-  v_loc text; v_letter text; v_ex text;
-  v_day_list jsonb; v_day_arr jsonb;
-  v_idx int; v_order int; v_filled boolean := false;
+  v_ids text[]; v_need int; v_free int; v_copied int := 0;
+  v_old text; v_new text; v_src jsonb; v_snap jsonb; v_token text;
 begin
-  if jsonb_typeof(p_days) <> 'object' then raise exception 'p_days must be a JSON object'; end if;
-  if p_day_count < 1 or p_day_count > 3 then raise exception 'day_count must be 1..3, got %', p_day_count; end if;
+  if not exists (select 1 from programs where id = p_program_id and owner_id = p_user_id) then
+    raise exception 'program not found or not yours';
+  end if;
 
-  insert into programs (id, name, category, days_count, tags, available, owner_id, source, author_id)
-  values (v_pid, coalesce(nullif(btrim(p_name), ''), 'Моя программа'), 'gym', p_day_count,
-          array[]::text[], true, p_user_id, 'custom', null)
-  on conflict (id) do update
-    set name = excluded.name, days_count = excluded.days_count, available = true,
-        owner_id = p_user_id, source = 'custom';
+  select coalesce(array_agg(distinct pd.exercise_id), '{}')
+  into v_ids
+  from program_days pd
+  join exercises e on e.id = pd.exercise_id
+  where pd.program_id = p_program_id
+    and e.owner_id is not null and e.owner_id <> p_user_id;
 
-  delete from program_days where program_id = v_pid;
+  v_need := coalesce(array_length(v_ids, 1), 0);
+  select 12 - count(*) into v_free from exercises where owner_id = p_user_id;
 
-  foreach v_loc in array v_locs loop
-    v_day_list := p_days -> v_loc;
-    if v_day_list is null or jsonb_typeof(v_day_list) <> 'array' then continue; end if;
+  if v_need = 0 then
+    return jsonb_build_object('ok', true, 'need', 0, 'free', greatest(v_free, 0), 'copied', 0);
+  end if;
+  if v_need > v_free then
+    return jsonb_build_object('ok', false, 'need', v_need, 'free', greatest(v_free, 0), 'copied', 0);
+  end if;
 
-    for v_idx in 0 .. least(jsonb_array_length(v_day_list), p_day_count) - 1 loop
-      v_day_arr := v_day_list -> v_idx;
-      v_letter := v_letters[v_idx + 1];
-      if v_day_arr is null or jsonb_typeof(v_day_arr) <> 'array' then continue; end if;
+  select p.share_token into v_token from programs p where p.id = p_program_id;
+  select sp.custom_exercises into v_snap from shared_programs sp where sp.token = v_token;
 
-      v_order := 0;
-      for v_ex in select jsonb_array_elements_text(v_day_arr) loop
-        v_order := v_order + 1;
-        if v_order > 12 then raise exception 'day % (%) exceeds 12 exercises', v_letter, v_loc; end if;
-        insert into program_days (program_id, day, location, order_num, muscle_group, sub_group, type, exercise_id)
-        select v_pid, v_letter, v_loc, v_order, e.muscle_group, e.sub_group, e.type, e.id
-        from exercises e
-        where e.id = v_ex
-          and e.archived_at is null
-          and (e.owner_id is null or e.owner_id = p_user_id);
-        if not found then raise exception 'unknown exercise %', v_ex; end if;
-        v_filled := true;
-      end loop;
-    end loop;
+  foreach v_old in array v_ids loop
+    v_src := coalesce(v_snap -> v_old, '{}'::jsonb);
+    v_new := 'ux_' || nextval('user_exercise_seq')::text;
+
+    -- Данные из снимка ссылки; живая строка автора — запасной вариант для
+    -- старых ссылок, где снимка ещё не было.
+    insert into exercises (id, name, muscle_group, sub_group, type, meta_info,
+                           preview_url, video_url, counts_reps, priority, owner_id)
+    select v_new,
+           coalesce(v_src->>'name', e.name),
+           coalesce(v_src->>'muscle_group', e.muscle_group),
+           coalesce(v_src->>'sub_group', e.sub_group),
+           coalesce(v_src->>'type', e.type),
+           coalesce(v_src->>'meta_info', e.meta_info),
+           null, null, false, 9999, p_user_id
+    from exercises e where e.id = v_old;
+
+    update program_days set exercise_id = v_new
+    where program_id = p_program_id and exercise_id = v_old;
+
+    v_copied := v_copied + 1;
   end loop;
 
-  if not v_filled then raise exception 'program has no exercises'; end if;
-
-  -- Чистим протухшие свапы этой программы: после пересборки order_num могут
-  -- сместиться, и старый свап оказался бы в чужом слоте (упражнение другой
-  -- группы). Оставляем только те, что совпадают с новой раскладкой по
-  -- (day, location, order_num) и по подгруппе+типу слота. Остальные удаляем.
-  delete from user_exercise_swaps s
-  where s.program_id = v_pid
-    and not exists (
-      select 1 from program_days pd
-      join exercises e on e.id = s.exercise_id
-      where pd.program_id = s.program_id
-        and pd.day = s.day
-        and pd.location = s.location
-        and pd.order_num = s.order_num
-        and pd.sub_group = e.sub_group
-        and pd.type = e.type
-    );
-
-  return v_pid;
+  return jsonb_build_object('ok', true, 'need', v_need, 'free', v_free - v_copied, 'copied', v_copied);
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION public.api_save_my_program(bigint, text, integer, jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.api_save_my_program(bigint, text, integer, jsonb) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.api_adopt_program_exercises(bigint, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.api_adopt_program_exercises(bigint, text) TO anon, authenticated, service_role;
+
+-- api_share_my_program дополнительно кладёт в снимок сами личные упражнения,
+-- задействованные в программе; api_save_friend_program после вставки слотов
+-- зовёт api_adopt_program_exercises; api_get_my_programs отдаёт pending_custom —
+-- количество чужих личных упражнений, ещё не скопированных себе.
+-- Полные тела — в проде (миграции friend_program_custom_exercises,
+-- adopt_exercises_by_share_token, my_programs_pending_custom).

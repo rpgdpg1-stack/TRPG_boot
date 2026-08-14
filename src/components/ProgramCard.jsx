@@ -12,6 +12,7 @@ import { formatRelative } from '../utils/history'
 import FavCardBody from './FavCardBody'
 import AnchorMenu from './AnchorMenu'
 import TrashIcon from './TrashIcon'
+import AdoptExercisesModal from './AdoptExercisesModal'
 import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
@@ -52,6 +53,7 @@ export default function ProgramCard({
   // getActiveDay ниже догонит из Cloud, если на другом устройстве сменилось.
   const [activeDay, setActiveDay] = useState(() => getActiveDaySync(prog.slug))
   const [anchorRect, setAnchorRect] = useState(null) // null = меню закрыто
+  const [adopt, setAdopt] = useState(false)            // модалка «скопировать упражнения автора»
   const cardRef = useRef(null)
 
   const available = prog.available !== false
@@ -107,6 +109,10 @@ export default function ProgramCard({
     if (anchorRect || !available) return
     // Только что сработало долгое нажатие — это не тап, никуда не идём.
     if (longFired.current) { longFired.current = false; return }
+    // Программа от друга с его личными упражнениями: пока они не скопированы
+    // себе, открывать нечего — вес вести не во что. Объясняем и предлагаем
+    // скопировать вместо молчаливого перехода в полурабочий день.
+    if (prog.pendingCustom > 0) { haptic.error(); setAdopt(true); return }
     // Идёт активная тренировка по этой программе — сразу в активный день.
     // У заплыва свой маршрут (/swim/:slug): дня A/B/C у него нет, и «/workout/swim/main»
     // роняло экран — WorkoutDay не находил такой день.
@@ -265,6 +271,16 @@ export default function ProgramCard({
           </div>
         )}
       </div>
+
+      {adopt && (
+        <AdoptExercisesModal
+          program={prog}
+          onClose={() => setAdopt(false)}
+          // onDeleted у карточки означает «программа изменилась, перечитай
+          // список» — после копирования упражнений это ровно то, что нужно.
+          onAdopted={() => { setAdopt(false); onDeleted?.() }}
+        />
+      )}
 
       {anchorRect && (
         <AnchorMenu

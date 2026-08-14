@@ -45,6 +45,10 @@ function mapToRegistry(p) {
     editable: !!p.editable,         // редактировать можно только свою
     authorId: p.author_id || null,
     authorName: p.author_name || null,
+    // Сколько личных упражнений автора ещё не скопировано себе. > 0 — программа
+    // ЗАБЛОКИРОВАНА: открыть её нельзя, пока они не станут своими (вес привязан
+    // к упражнению, а чужое личное упражнение весом не наполнишь).
+    pendingCustom: p.pending_custom || 0,
     // days — набор «Зал» (для экрана дня, совместимость); locations — карта по
     // местам { gym:{A:[...]}, home:{...}, outdoor:{...} } для карточек/конструктора.
     data: { days: p.days || {}, locations: p.locations || {} }

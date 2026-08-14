@@ -151,9 +151,13 @@ export async function updateMyExercise(exerciseId, { name, group, subGroup, meta
 }
 
 /**
- * Убрать своё упражнение. В базе оно архивируется, а не стирается: на него
- * ссылаются прошлые тренировки и история весов — стереть значит переписать
- * прошлое. Из «Моих» и из программ пропадает сразу.
+ * Убрать своё упражнение — НАСОВСЕМ. В базе не остаётся ничего: подходы прошлых
+ * тренировок, заметка, история веса, любимое, слоты программ. Сами тренировки
+ * (дата, длительность, серия) не трогаются — день в календаре остаётся на месте.
+ *
+ * Из программ оно вынимается, порядок в дне пересобирается подряд. День может
+ * от этого опустеть — экран дня показывает состояние с выходом в конструктор.
+ *
  * Возвращает, из скольких слотов программ его вынули.
  */
 export async function deleteMyExercise(exerciseId) {
@@ -172,6 +176,35 @@ export async function deleteMyExercise(exerciseId) {
   dropCaches(user.id)
   await loadMyExercises()
   return data ?? 0
+}
+
+/**
+ * Скопировать себе личные упражнения автора программы, полученной от друга.
+ *
+ * Одолжить их нельзя: получателю нужно вести в них свой вес, а вес привязан
+ * к упражнению. Поэтому они становятся его собственными — дальше он их правит
+ * и удаляет наравне со своими. Данные берутся из снимка ссылки, а не из живой
+ * строки автора: поделился он конкретной версией.
+ *
+ * Возвращает { ok, need, free, copied }. `ok: false` — не хватило места в лимите,
+ * программа остаётся заблокированной, пока человек не освободит `need - free`.
+ */
+export async function adoptProgramExercises(programDbId) {
+  const user = getCurrentUser()
+  if (!user) throw new Error('Нет авторизации')
+  if (!isOnline()) throw new Error('Нужен интернет')
+
+  const { data, error } = await supabase.rpc('api_adopt_program_exercises', {
+    p_user_id: user.id,
+    p_program_id: programDbId
+  })
+  if (error) {
+    console.error('[userExercises] adopt error:', error)
+    throw new Error('Не удалось скопировать. Попробуй ещё раз.')
+  }
+  dropCaches(user.id)
+  await loadMyExercises()
+  return data || { ok: false, need: 0, free: 0, copied: 0 }
 }
 
 /**
