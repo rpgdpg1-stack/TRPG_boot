@@ -10,7 +10,9 @@ import { useRef, useState } from 'react'
  * Переход плавный (микро-анимация transform + background).
  *
  * Позиционирование задаёт родитель через `style` (напр. absolute top/right, либо
- * центр-снизу под модалкой). Размеры настраиваются пропсами.
+ * центр-снизу под модалкой). Размеры настраиваются пропсами. `bubbleStyle` —
+ * доводка самого кружка (фон, обводка), когда крестик стоит в ряд с другими
+ * стеклянными контролами и должен быть с ними одного семейства.
  *
  * Закрытие идёт по pointerUp — значит следующий синтетический `click` попал бы уже
  * на элемент ПОД снятой модалкой (открывались «Настройки» под крестиком). Поэтому
@@ -29,7 +31,7 @@ function CrossIcon({ size = 20 }) {
   )
 }
 
-export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, style }) {
+export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, style, bubbleStyle }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const [press, setPress] = useState(false)
@@ -87,7 +89,8 @@ export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, ico
           color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
           background: press ? 'rgba(255, 255, 255, 0.18)' : 'var(--layer-2)',
           transform: press ? 'scale(1.12)' : 'scale(1)',
-          transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
+          transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease',
+          ...bubbleStyle
         }}
       >
         <CrossIcon size={iconSize} />

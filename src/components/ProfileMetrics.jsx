@@ -154,7 +154,7 @@ function FavoritesList({ items, showWeights }) {
                   тапу НЕТ. Тапать в профиле не по чему, и «живой» тег обещал бы
                   взаимодействие, которого здесь нет. */}
               {tag && (
-                <MarqueeTag label={tag} background={colors.tag} interactive={false} style={m.favTag} />
+                <MarqueeTag label={tag} background={colors.tag} style={m.favTag} />
               )}
             </div>
             {has && (

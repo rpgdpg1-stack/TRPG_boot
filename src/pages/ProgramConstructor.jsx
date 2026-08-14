@@ -661,7 +661,6 @@ export default function ProgramConstructor() {
                         label={tagLabel}
                         background={c.tag}
                         color="#fff"
-                        interactive={false}
                         style={styles.exTag}
                       />
                     </div>

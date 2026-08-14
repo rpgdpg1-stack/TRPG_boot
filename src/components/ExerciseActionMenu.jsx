@@ -333,7 +333,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
                   обрезается многоточием и прокатывается по тапу: под цифру веса
                   он лезть не должен, а прочитать целиком нужно уметь. */}
               {tagLabel && (
-                <MarqueeTag label={tagLabel} background={colors.tag} style={styles.tag} />
+                <MarqueeTag label={tagLabel} background={colors.tag} interactive style={styles.tag} />
               )}
             </div>
 

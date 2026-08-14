@@ -59,7 +59,7 @@ if (typeof window !== 'undefined') {
   }, { passive: true })
 }
 
-export default function ExerciseCard({ slot, isActive = false, tagStatic = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
   const {
     exercise_id,
     exercise_name,
@@ -475,10 +475,11 @@ export default function ExerciseCard({ slot, isActive = false, tagStatic = false
         </div>
 
         {/* 2. Один тег подгруппы в цвете основной группы. Длинный обрезается
-            многоточием и прокатывается по тапу — под цифру веса он не лезет. */}
+            многоточием; прокатки тут НЕТ — карточка ловит долгое нажатие, и живой
+            тег съедал бы эту зону. Прочитать целиком можно в меню упражнения. */}
         <div style={styles.tagsRow}>
           {tagLabel && (
-            <MarqueeTag label={tagLabel} background={colors.tag} interactive={!tagStatic} style={styles.tag} />
+            <MarqueeTag label={tagLabel} background={colors.tag} style={styles.tag} />
           )}
         </div>
 

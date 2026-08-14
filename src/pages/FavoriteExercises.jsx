@@ -164,6 +164,8 @@ export default function FavoriteExercises() {
               </div>
               <div style={styles.cardContent}>
                 <div style={styles.exName}>{title(f.name)}</div>
+                {/* Многоточие без прокатки: карточка ловит долгое нажатие, и живой тег
+                    отбирал бы у неё эту зону. Целиком подпись читается в меню. */}
                 {tag && <MarqueeTag label={tag} background={colors.tag} style={styles.tag} />}
               </div>
               <FavWeight fav={f} accent={colors.accent} showHint={!val} onSaved={load} />

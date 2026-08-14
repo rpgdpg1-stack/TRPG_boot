@@ -26,6 +26,11 @@ const MOVE_TOLERANCE_PX = 10
 
 // «Все», а не «Все упражнения»: слово «Упражнения» теперь стоит в навигации
 // сверху, и повторять его во вкладке значит говорить одно и то же дважды.
+// Плотность «стекла» в пикере. Общий --color-surface-dim (30%) годится таб-бару
+// над спокойным фоном, но здесь под шапкой едут карточки с картинками, и подписи
+// фильтров сквозь него не читались.
+const GLASS = 'rgba(28, 28, 28, 0.78)'
+
 const TABS = [
   { key: 'all', label: 'Все' },
   { key: 'mine', label: 'Мои' }
@@ -429,12 +434,25 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         {/* Крестик СНАРУЖИ пилюли, отдельным кружком: внутри поля он читался
             как часть ввода, а он отменяет поиск целиком. Поле под него плавно
             ужимается — кружок не появляется поверх текста. */}
-        <div style={{ ...styles.clearSlot, width: showClear ? '44px' : 0, opacity: showClear ? 1 : 0 }}>
+        <div style={{
+          ...styles.clearSlot,
+          width: showClear ? '44px' : 0,
+          marginLeft: showClear ? 'var(--space-2)' : 0,
+          opacity: showClear ? 1 : 0
+        }}>
           <CloseCross
             onClose={handleClearSearch}
             hitSize={44}
             bubbleSize={40}
             iconSize={17}
+            // Тот же стеклянный фон и хайрлайн, что у поля поиска рядом:
+            // два контрола одной строки должны быть из одного материала.
+            bubbleStyle={{
+              background: GLASS,
+              border: '1px solid var(--color-border)',
+              backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+              WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
+            }}
           />
         </div>
       </div>
@@ -457,7 +475,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                 // смысл «здесь ты сейчас». Остальные стеклянные, чтобы выбранный
                 // читался с одного взгляда, а не выискивался по оттенку.
                 ...(active ? null : styles.chipGlass),
-                background: active ? c.tag : 'var(--color-surface-dim)',
+                background: active ? c.tag : GLASS,
                 color: active ? '#fff' : 'var(--color-text-secondary)'
               }}
             >
@@ -471,14 +489,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       {/* Подгруппы активной группы — как содержимое открытой вкладки:
           отдельная панель с фоном чуть светлее, чтобы не путать с группами. */}
       {tab === 'all' && activeGroup && activeSubs.length > 0 && (
-        // Обводка панели горит цветом выбранной группы, ПОКА подгруппа не
-        // выбрана: цвет показывает, где сейчас акцент. Выбрали подгруппу — акцент
-        // переезжает на неё, а панель гаснет до обычной серой линии. Так в любой
-        // момент видно ровно одно активное место, а не два спорящих.
-        <div style={{
-          ...styles.subPanel,
-          borderColor: activeSub ? 'var(--color-border)' : getMuscleGroupColors(activeGroup).accent
-        }}>
+        // Обводка панели ВСЕГДА нейтральная. Цветом кричит только выбранная
+        // пилюля внутри — обвести цветом ещё и всю область значит поднять фон
+        // до уровня выбора и спорить с ним.
+        <div style={styles.subPanel}>
           <div style={styles.subChipsRow}>
             {activeSubs.map(sub => {
               const active = activeSub === sub
@@ -497,7 +511,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   style={{
                     ...styles.subChip,
                     ...(active ? null : styles.chipGlass),
-                    background: active ? gc.tag : 'var(--color-surface-dim)',
+                    background: active ? gc.tag : GLASS,
                     color: active ? '#fff' : 'var(--color-text-secondary)'
                   }}
                 >
@@ -671,14 +685,16 @@ const styles = {
   },
   // Без верхнего padding: поле поиска начинается ровно на 16px ниже кнопок
   // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
-  header: { pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
+  // gap НЕ ставим: он держал бы пустое место справа и без крестика поле не
+  // доходило бы до края экрана. Зазор даёт сам слот крестика, когда появляется.
+  header: { pointerEvents: 'auto', display: 'flex', alignItems: 'center', padding: '0 var(--space-4) var(--space-2)' },
 
   // Сегмент-контрол вкладок — один в один с «Все / Быстрый режим» в конструкторе.
   tabsRow: { display: 'flex', padding: '0 var(--space-4) var(--space-3)', flexShrink: 0 },
   segGroup: {
     pointerEvents: 'auto',
     display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    background: GLASS, border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
@@ -740,7 +756,7 @@ const styles = {
     flex: 1, minWidth: 0, height: '44px',
     display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
     padding: '0 var(--space-2) 0 var(--space-4)',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    background: GLASS, border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
@@ -749,7 +765,7 @@ const styles = {
   clearSlot: {
     flexShrink: 0, height: '44px', overflow: 'hidden', pointerEvents: 'auto',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'width 0.22s var(--ease-ios), opacity 0.18s ease'
+    transition: 'width 0.22s var(--ease-ios), margin-left 0.22s var(--ease-ios), opacity 0.18s ease'
   },
   search: {
     flex: 1, minWidth: 0, height: '100%', padding: 0,
@@ -757,16 +773,18 @@ const styles = {
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)'
   },
+  // Нижнего отступа у фильтров нет: расстояние до первой карточки задаёт сам
+  // список (16px), иначе оно складывалось бы из двух отступов и плыло.
   chipsRow: {
     pointerEvents: 'auto',
-    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) var(--space-15)',
+    display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) 0',
     flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
   subPanel: { pointerEvents: 'auto',
-    margin: 'var(--space-05) var(--space-4) var(--space-15)',
+    margin: 'var(--space-2) var(--space-4) 0',
     padding: 'var(--space-2)',
-    background: 'var(--color-surface-dim)',
+    background: GLASS,
     // Пилюля в пилюлях — та же форма, что у самих чипов внутри: панель читается
     // как «раскрытая группа», а не как чужеродная плашка.
     border: '1px solid var(--color-border)',
@@ -781,7 +799,11 @@ const styles = {
     flexWrap: 'nowrap'
   },
   // Общее «стекло» невыбранной пилюли — одно на группы и подгруппы.
+  // Своя, более плотная подложка вместо --color-surface-dim (30%): сквозь неё
+  // просвечивали карточки и подписи фильтров становились нечитаемыми. Стекло
+  // здесь работает на глубину, а не на прозрачность ради прозрачности.
   chipGlass: {
+    background: GLASS,
     border: '1px solid var(--color-border)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
@@ -801,7 +823,7 @@ const styles = {
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
   },
-  list: { padding: 'var(--space-05) var(--space-4) 120px', display: 'block' },
+  list: { padding: 'var(--space-4) var(--space-4) 120px', display: 'block' },
   empty: { textAlign: 'center', padding: 'var(--space-10) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
   row: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px', marginBottom: 'var(--space-3)' },
   preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
