@@ -102,7 +102,7 @@ function dropCaches(userId) {
  * Завести своё упражнение. Возвращает id (`ux_…`).
  * Бросает Error с понятным текстом — форма показывает его как есть.
  */
-export async function createMyExercise({ name, group, subGroup, meta }) {
+export async function createMyExercise({ name, group, subGroup, meta, countsReps }) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
   if (!isOnline()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
@@ -112,7 +112,8 @@ export async function createMyExercise({ name, group, subGroup, meta }) {
     p_name: name,
     p_group: group || '',
     p_sub_group: subGroup || '',
-    p_meta: meta || ''
+    p_meta: meta || '',
+    p_counts_reps: !!countsReps
   })
   if (error) {
     console.error('[userExercises] create error:', error)
@@ -128,7 +129,7 @@ export async function createMyExercise({ name, group, subGroup, meta }) {
 }
 
 /** Переписать своё упражнение. */
-export async function updateMyExercise(exerciseId, { name, group, subGroup, meta }) {
+export async function updateMyExercise(exerciseId, { name, group, subGroup, meta, countsReps }) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
   if (!isOnline()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
@@ -139,7 +140,8 @@ export async function updateMyExercise(exerciseId, { name, group, subGroup, meta
     p_name: name,
     p_group: group || '',
     p_sub_group: subGroup || '',
-    p_meta: meta || ''
+    p_meta: meta || '',
+    p_counts_reps: !!countsReps
   })
   if (error) {
     console.error('[userExercises] update error:', error)

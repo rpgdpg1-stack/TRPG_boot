@@ -13,6 +13,7 @@ import { useWeightRaiseFlash, WEIGHT_COLOR_TRANSITION } from './WeightRaiseFlash
 import UiIcon from './UiIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import PencilIcon from './PencilIcon'
+import MarqueeTag from './MarqueeTag'
 
 /**
  * Карточка упражнения.
@@ -473,12 +474,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           {is_custom && <span style={styles.customMark}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
         </div>
 
-        {/* 2. Один тег подгруппы в цвете основной группы */}
+        {/* 2. Один тег подгруппы в цвете основной группы. Длинный обрезается
+            многоточием и прокатывается по тапу — под цифру веса он не лезет. */}
         <div style={styles.tagsRow}>
           {tagLabel && (
-            <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)' }}>
-              {tagLabel}
-            </span>
+            <MarqueeTag label={tagLabel} background={colors.tag} style={styles.tag} />
           )}
         </div>
 
@@ -647,21 +647,14 @@ const styles = {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 'var(--space-15)',
-    flexWrap: 'wrap'
+    // minWidth: 0 — чтобы длинный тег ужимался внутри колонки, а не распирал её
+    // под блок веса. Ширину задаёт content (flex: 1, minWidth: 0).
+    minWidth: 0,
+    maxWidth: '100%'
   },
-  tag: {
-    display: 'inline-block',
-    padding: 'var(--space-1) var(--space-3)',
-    borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 700,
-    letterSpacing: '0.3px',
-    lineHeight: '15px',
-    whiteSpace: 'nowrap',
-    // Слегка приглушён, как чипы групп в шапке дня (единый спокойный вид).
-    opacity: 0.7
-  },
+  // Форма пилюли живёт в MarqueeTag — здесь только приглушение, как у чипов
+  // групп в шапке дня (единый спокойный вид).
+  tag: { opacity: 0.7 },
   meta: {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',

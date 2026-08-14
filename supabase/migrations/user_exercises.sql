@@ -3,7 +3,7 @@
 -- ПРИМЕНЕНО НА ПРОДЕ 2026-08-14 пятью миграциями через коннектор:
 --   user_exercises, user_exercises_program_guard,
 --   friend_program_custom_exercises, adopt_exercises_by_share_token,
---   my_programs_pending_custom.
+--   my_programs_pending_custom, user_exercise_counts_reps.
 -- Файл — их слепок для истории репозитория. Повторный прогон безопасен
 -- (всё идемпотентно), но не нужен.
 --
@@ -104,8 +104,12 @@ GRANT EXECUTE ON FUNCTION public.api_get_exercises_by_ids(text[]) TO anon, authe
 -- Группа и подгруппа — свободный текст. Пустая строка вместо NULL: колонки
 -- NOT NULL и участвуют в сравнении слотов.
 
+-- p_counts_reps — единица измерения: false = кг, true = раз. Колонка counts_reps
+-- в exercises уже была и уже управляет подписью под цифрой в карточке дня, меню
+-- долгого нажатия и любимых; своему упражнению просто даём ею управлять.
 CREATE OR REPLACE FUNCTION public.api_create_my_exercise(
-  p_user_id bigint, p_name text, p_group text, p_sub_group text, p_meta text
+  p_user_id bigint, p_name text, p_group text, p_sub_group text, p_meta text,
+  p_counts_reps boolean
 ) RETURNS text
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
@@ -127,19 +131,20 @@ begin
   values (v_id, v_name,
           left(btrim(coalesce(p_group, '')), 30), left(btrim(coalesce(p_sub_group, '')), 30),
           'accessory', nullif(left(btrim(coalesce(p_meta, '')), 30), ''),
-          null, null, false, 9999, p_user_id);
+          null, null, coalesce(p_counts_reps, false), 9999, p_user_id);
 
   return v_id;
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text, boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.api_create_my_exercise(bigint, text, text, text, text, boolean) TO anon, authenticated, service_role;
 
 -- Группа/подгруппа лежат копией и в слотах программ — иначе тег в дне
 -- тренировки остался бы старым.
 CREATE OR REPLACE FUNCTION public.api_update_my_exercise(
-  p_user_id bigint, p_exercise_id text, p_name text, p_group text, p_sub_group text, p_meta text
+  p_user_id bigint, p_exercise_id text, p_name text, p_group text, p_sub_group text,
+  p_meta text, p_counts_reps boolean
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$
@@ -153,7 +158,8 @@ begin
 
   update exercises
   set name = v_name, muscle_group = v_group, sub_group = v_sub,
-      meta_info = nullif(left(btrim(coalesce(p_meta, '')), 30), '')
+      meta_info = nullif(left(btrim(coalesce(p_meta, '')), 30), ''),
+      counts_reps = coalesce(p_counts_reps, false)
   where id = p_exercise_id and owner_id = p_user_id;
 
   if not found then return false; end if;
@@ -165,8 +171,8 @@ begin
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text, boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.api_update_my_exercise(bigint, text, text, text, text, text, boolean) TO anon, authenticated, service_role;
 
 -- ── 5. Удаление — ПОЛНОЕ, без архива ─────────────────────────────────────────
 -- От упражнения не остаётся ничего: подходы прошлых тренировок, заметка,

@@ -36,6 +36,7 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
   const [subGroup, setSubGroup] = useState(initial?.sub_group || '')
   const [sets, setSets] = useState(parsed.sets)
   const [reps, setReps] = useState(parsed.reps)
+  const [countsReps, setCountsReps] = useState(!!initial?.counts_reps)
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -62,7 +63,8 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
         name: name.trim(),
         group: group.trim(),
         subGroup: subGroup.trim(),
-        meta
+        meta,
+        countsReps
       })
       haptic.success()
     } catch (e) {
@@ -89,6 +91,10 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
               <span style={{ ...styles.previewTag, background: colors.tag }}>{tagLabel}</span>
             )}
             {meta && <div style={styles.previewMeta}>{meta}</div>}
+          </div>
+          <div style={styles.previewWeight}>
+            <div style={styles.previewWeightNum}>0</div>
+            <div style={styles.previewWeightUnit}>{countsReps ? 'раз' : 'кг'}</div>
           </div>
         </div>
 
@@ -159,6 +165,31 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
               maxLength={30}
               style={styles.input}
             />
+          </Field>
+
+          {/* В чём меряем результат. Это та же настройка, что делит каталог на
+              «жим 80 кг» и «подтягивания 12 раз»: подпись под цифрой в карточке
+              дня, в меню долгого нажатия и в любимых берётся отсюда. */}
+          <Field label="Считаем в" divider>
+            <div style={styles.unitRow}>
+              {[{ v: false, label: 'кг' }, { v: true, label: 'раз' }].map(o => {
+                const active = countsReps === o.v
+                return (
+                  <button
+                    key={o.label}
+                    onClick={() => { haptic.selection(); setCountsReps(o.v) }}
+                    className="press-tile"
+                    style={{
+                      ...styles.unitBtn,
+                      ...(active ? styles.unitBtnActive : null),
+                      color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
           </Field>
 
           <Field label="Подходы и повторения" divider>
@@ -299,6 +330,33 @@ const styles = {
     padding: 'var(--space-15) var(--space-3)', border: 'none', borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
     fontWeight: 700, whiteSpace: 'nowrap'
+  },
+  unitRow: {
+    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)',
+    alignSelf: 'flex-start',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)'
+  },
+  unitBtn: {
+    minWidth: '64px', minHeight: '32px', padding: '0 var(--space-3)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 700, whiteSpace: 'nowrap',
+    transition: 'background 0.18s ease, color 0.18s ease'
+  },
+  unitBtnActive: { background: 'var(--color-surface-active)' },
+  previewWeight: {
+    flexShrink: 0, display: 'flex', flexDirection: 'column',
+    alignItems: 'flex-end', justifyContent: 'center'
+  },
+  previewWeightNum: {
+    fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-size)',
+    fontWeight: 800, color: 'var(--color-text)', lineHeight: 1
+  },
+  previewWeightUnit: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)'
   },
   setsRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)' },
   setsInput: { flex: '0 0 40px', width: '40px', textAlign: 'center' },

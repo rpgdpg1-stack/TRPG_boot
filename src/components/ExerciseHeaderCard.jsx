@@ -1,4 +1,5 @@
 import ExerciseVideo from './ExerciseVideo'
+import MarqueeTag from './MarqueeTag'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 
@@ -39,11 +40,10 @@ export default function ExerciseHeaderCard({
 
         <div style={styles.tagsRow}>
           {/* Один тег — подгруппа в цвете основной группы, opacity 0.7 (как на
-              карточках упражнений в дне тренировки). */}
+              карточках упражнений в дне тренировки). Длинный обрезается
+              многоточием и прокатывается по тапу, под правый блок не лезет. */}
           {tagLabel && (
-            <span style={{ ...styles.tag, background: colors.tag, color: 'var(--color-text)', opacity: 0.7 }}>
-              {tagLabel}
-            </span>
+            <MarqueeTag label={tagLabel} background={colors.tag} style={styles.tag} />
           )}
         </div>
 
@@ -101,19 +101,11 @@ const styles = {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 'var(--space-15)',
-    flexWrap: 'wrap'
+    minWidth: 0,
+    maxWidth: '100%'
   },
-  tag: {
-    display: 'inline-block',
-    padding: 'var(--space-1) var(--space-3)',
-    borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 700,
-    letterSpacing: '0.3px',
-    lineHeight: '15px',
-    whiteSpace: 'nowrap'
-  },
+  // Форма пилюли — в MarqueeTag; здесь только приглушение.
+  tag: { opacity: 0.7 },
   tagSecondary: {
     background: 'var(--layer-2)',
     color: '#B5B5B5',

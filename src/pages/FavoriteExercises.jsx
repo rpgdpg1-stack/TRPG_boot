@@ -16,6 +16,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import HeartIcon from '../components/HeartIcon'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
+import MarqueeTag from '../components/MarqueeTag'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
 const readPinnedGym = () => {
@@ -164,7 +165,7 @@ export default function FavoriteExercises() {
               </div>
               <div style={styles.cardContent}>
                 <div style={styles.exName}>{title(f.name)}</div>
-                {tag && <span style={{ ...styles.tag, background: colors.tag }}>{tag}</span>}
+                {tag && <MarqueeTag label={tag} background={colors.tag} style={styles.tag} />}
               </div>
               <FavWeight fav={f} accent={colors.accent} showHint={!val} onSaved={load} />
             </div>
@@ -258,10 +259,8 @@ const styles = {
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   cardContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'var(--space-2)' },
   exName: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, lineHeight: '19px', color: 'var(--color-text)' },
-  tag: {
-    alignSelf: 'flex-start', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap'
-  },
+  // Форма пилюли — в MarqueeTag; здесь выравнивание в колонке и приглушение.
+  tag: { alignSelf: 'flex-start', opacity: 0.7 },
   // Блок веса 1:1 с карточкой упражнения в дне тренировки (ExerciseCard):
   // цифра и прозрачный инпут поверх неё лежат в одной ячейке 38×27.
   weightBlock: {

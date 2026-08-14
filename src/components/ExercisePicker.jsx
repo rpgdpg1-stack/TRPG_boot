@@ -16,6 +16,8 @@ import PencilIcon from './PencilIcon'
 import TrashIcon from './TrashIcon'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ExercisePlaceholder from './ExercisePlaceholder'
+import ScreenTitle from './ScreenTitle'
+import SearchIcon from './SearchIcon'
 
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 10
@@ -48,6 +50,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
   const [activeGroup, setActiveGroup] = useState(null)
   const [activeSub, setActiveSub] = useState(null)
@@ -74,6 +77,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const handleClearSearch = () => {
     haptic.selection()
     setSearch('')
+    setSearchFocused(false)
     try { inputRef.current?.blur() } catch { /* ignore */ }
   }
 
@@ -224,6 +228,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     return (
       <div
         key={ex.id}
+        // press-dim, а не press-tile: внутри карточки своя кнопка «+», и scale
+        // увёл бы её вместе с карточкой. Отклик тот же, что у строки друга —
+        // подсветка светлее, пока держишь.
+        className={custom ? 'press-dim' : undefined}
         style={styles.row}
         onPointerDown={custom ? (e) => startLongPress(e, ex) : undefined}
         onPointerUp={custom ? cancelLongPress : undefined}
@@ -277,6 +285,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
 
   const content = (
     <div ref={overlayRef} style={styles.overlay}>
+      {/* Пикер открывается поверх конструктора, поэтому полосу заголовка
+          приходится поднимать над оверлеем — иначе она осталась бы под ним. */}
+      <ScreenTitle zIndex={101}>Упражнения</ScreenTitle>
+
       {/* Вкладки — тот же сегмент-контрол, что «Все / Быстрый режим» в конструкторе. */}
       <div style={styles.tabsRow}>
         <div style={styles.segGroup}>
@@ -304,17 +316,32 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
 
       {tab === 'all' && (
       <div style={styles.header}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onFocus={() => haptic.selection()}
-          placeholder="Поиск упражнения"
-          className="press-grow"
-          style={styles.search}
-        />
-        <button onClick={handleClearSearch} className="press-tile" style={styles.closeBtn} aria-label="Очистить поиск">✕</button>
+        {/* Поле во всю строку. Крестик появляется только когда есть что убирать:
+            курсор в поле или введён текст. Иначе он висел бы всегда и читался
+            как «закрыть пикер» — а закрывает он поиск. */}
+        <div style={styles.searchWrap}>
+          <span style={styles.searchIcon}><SearchIcon size={18} /></span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => { haptic.selection(); setSearchFocused(true) }}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Поиск упражнения"
+            style={styles.search}
+          />
+          {(searchFocused || search) && (
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleClearSearch}
+              style={styles.clearBtn}
+              aria-label="Очистить поиск"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
       )}
 
@@ -331,7 +358,11 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               className="press-tile"
               style={{
                 ...styles.chip,
-                background: active ? c.tag : 'var(--highlight-recent)',
+                // Выбранный — сплошной цвет своей группы, без стекла: он несёт
+                // смысл «здесь ты сейчас». Остальные стеклянные, чтобы выбранный
+                // читался с одного взгляда, а не выискивался по оттенку.
+                ...(active ? null : styles.chipGlass),
+                background: active ? c.tag : 'var(--color-surface-dim)',
                 color: active ? '#fff' : 'var(--color-text-secondary)'
               }}
             >
@@ -359,7 +390,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                   className="press-tile"
                   style={{
                     ...styles.subChip,
-                    background: active ? gc.tag : 'var(--layer-2)',
+                    ...(active ? null : styles.chipGlass),
+                    background: active ? gc.tag : 'var(--color-surface-dim)',
                     color: active ? '#fff' : 'var(--color-text-secondary)'
                   }}
                 >
@@ -371,10 +403,14 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       )}
 
-      {/* Обёртка списка: сверху fade-scrim (как под карточкой игрока на главной) —
-          список уезжает под теги групп/подгрупп плавно, без обрыва. */}
-      <div style={styles.listWrap}>
-        <div style={styles.topFade} aria-hidden="true" />
+      {/* Затемнения над списком нет: пилюли фильтров сами стеклянные, список
+          виден сквозь них — второй слой поверх только мутил картинку. */}
+      <div
+        style={styles.listWrap}
+        // Тап или протяжка по списку убирает клавиатуру: поле поиска не должно
+        // держать её, пока человек уже смотрит результаты.
+        onPointerDown={() => { if (searchFocused) inputRef.current?.blur() }}
+      >
       {/* Список. key пересоздаёт контейнер при смене фильтра — новый монтируется
           с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает). */}
       {tab === 'all' ? (
@@ -428,10 +464,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       {!kbOpen && (
         <div style={styles.footer}>
           <div className="dock-scrim" />
-          {/* Тот же компонент-кнопка, что «Завершить» в дне и «Добавить» в конструкторе. */}
+          {/* Ровно тот же вид, что «Завершить» в дне: tonal + hairline. Раньше
+              была «neutral» — полупрозрачная с блюром, и на фоне списка кнопка
+              выглядела бледнее, чем главное действие экрана. */}
           <ActionButton
             onClick={onDone}
-            variant="neutral"
+            variant="tonal"
+            bordered
             hug
             style={count >= max ? { color: 'var(--color-error)' } : null}
           >
@@ -570,18 +609,30 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
-  search: {
-    flex: 1, height: '44px', padding: '0 var(--space-4)',
-    background: 'var(--color-card)', border: '1px solid var(--layer-2)',
-    borderRadius: 'var(--radius-medium)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', outline: 'none'
+  // Поле поиска — стеклянная пилюля того же семейства, что таб-бар и фильтры.
+  searchWrap: {
+    flex: 1, minWidth: 0, height: '44px',
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    padding: '0 var(--space-2) 0 var(--space-4)',
+    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-pill)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
   },
-  closeBtn: {
-    width: '44px', height: '44px', flexShrink: 0,
+  searchIcon: { display: 'inline-flex', flexShrink: 0 },
+  search: {
+    flex: 1, minWidth: 0, height: '100%', padding: 0,
+    background: 'transparent', border: 'none', outline: 'none',
+    color: 'var(--color-text)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)'
+  },
+  clearBtn: {
+    width: '32px', height: '32px', flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    lineHeight: 1, paddingBottom: 'var(--space-05)',
-    background: 'var(--color-card)', border: 'none', borderRadius: '50%',
-    color: 'var(--color-text-secondary)', fontSize: 'var(--text-body-size)'
+    lineHeight: 1, background: 'var(--layer-2)', border: 'none', borderRadius: '50%',
+    color: 'var(--color-text-secondary)', fontSize: 'var(--text-label-size)',
+    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
+    WebkitTapHighlightColor: 'transparent'
   },
   chipsRow: {
     display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) var(--space-15)',
@@ -591,13 +642,22 @@ const styles = {
   subPanel: {
     margin: 'var(--space-05) var(--space-4) var(--space-15)',
     padding: 'var(--space-3) var(--space-3)',
-    background: 'var(--layer-1)',
+    background: 'var(--color-surface-dim)',
+    border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-medium)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     flexShrink: 0
   },
   subChipsRow: {
     display: 'flex', gap: 'var(--space-2)', overflowX: 'auto',
     flexWrap: 'nowrap'
+  },
+  // Общее «стекло» невыбранной пилюли — одно на группы и подгруппы.
+  chipGlass: {
+    border: '1px solid var(--color-border)',
+    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
+    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
   },
   chip: {
     flexShrink: 0, padding: 'var(--space-2) var(--space-4)', border: 'none', borderRadius: 'var(--radius-pill)',
@@ -615,17 +675,6 @@ const styles = {
     minHeight: 0,
     display: 'flex',
     flexDirection: 'column'
-  },
-  // Верхний fade-scrim — как под карточкой игрока на главной (градиент + blur).
-  topFade: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '24px',
-    zIndex: 5,
-    pointerEvents: 'none',
-    background: 'var(--scrim-sticky)'
   },
   list: {
     flex: '1 1 0%', minHeight: 0, overflowY: 'auto',

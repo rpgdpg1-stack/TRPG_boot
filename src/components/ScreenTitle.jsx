@@ -16,8 +16,12 @@ import { useNetworkBadge } from '../lib/use-network-badge'
  *
  * Тонкий, без капса, по центру, чуть приглушённый белый. Размер/вес/цвет — здесь,
  * сразу во всех экранах.
+ *
+ * @param zIndex — поднять полосу выше обычного слоя заголовка. Нужно там, где
+ *   экран открывается полноэкранным оверлеем поверх страницы (пикер упражнений):
+ *   иначе заголовок остался бы под ним.
  */
-export default function ScreenTitle({ children }) {
+export default function ScreenTitle({ children, zIndex }) {
   // Пока есть статус сети, его пилюля занимает это же место (OfflineBanner) —
   // заголовок уходит, чтобы они не наложились. Не размонтируем, а гасим
   // прозрачностью: так подмена читается как переход, а не как рывок, и высота
@@ -25,7 +29,7 @@ export default function ScreenTitle({ children }) {
   const badge = useNetworkBadge()
 
   return createPortal(
-    <div style={styles.bar}>
+    <div style={{ ...styles.bar, ...(zIndex ? { zIndex } : null) }}>
       <h1 style={{
         ...styles.title,
         opacity: badge ? 0 : 1,

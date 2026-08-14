@@ -6,7 +6,7 @@ import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/reg
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
-import { isCustomExercise, loadMyExercises } from '../features/programs/userExercises'
+import { isCustomExercise, loadMyExercises, getMyExercisesSync } from '../features/programs/userExercises'
 import ExercisePicker from '../components/ExercisePicker'
 import ActionButton from '../components/ActionButton'
 import ConfirmModal from '../components/ConfirmModal'
@@ -107,7 +107,12 @@ export default function ProgramConstructor() {
   // Снимок исходного состояния — чтобы понять, были ли изменения.
   const initialSnapshot = useRef(null)
 
-  const [catalog, setCatalog] = useState([])
+  // Каталог приложения и свои упражнения держим раздельно: свои меняются прямо
+  // в пикере (завёл, переименовал, удалил), и их надо перечитывать, а каталог —
+  // нет. Слитый справочник — то, из чего строка дня берёт имя и тег.
+  const [sysCatalog, setSysCatalog] = useState([])
+  const [myCatalog, setMyCatalog] = useState(getMyExercisesSync)
+  const catalog = useMemo(() => [...sysCatalog, ...myCatalog], [sysCatalog, myCatalog])
   const exMap = useMemo(() => Object.fromEntries(catalog.map(e => [e.id, e])), [catalog])
 
   // Снимок при первом рендере: с чем пришли (для сравнения «были ли правки»).
@@ -141,15 +146,21 @@ export default function ProgramConstructor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, pickerOpen, name, byLoc])
 
-  // Каталог приложения и свои упражнения — в одном справочнике: строка дня
-  // ищет имя и тег одинаково, чьё бы упражнение в ней ни стояло.
   useEffect(() => {
     let cancelled = false
-    Promise.all([loadExerciseCatalog(), loadMyExercises()]).then(([all, mine]) => {
-      if (!cancelled) setCatalog([...all, ...mine])
-    })
+    loadExerciseCatalog().then(list => { if (!cancelled) setSysCatalog(list) })
     return () => { cancelled = true }
   }, [])
+
+  // Свои перечитываем и на входе, и на КАЖДОЕ закрытие пикера. Без второго
+  // упражнение, заведённое только что, приходило в день голым `ux_16` без тега:
+  // справочник был снят до того, как оно появилось.
+  useEffect(() => {
+    if (pickerOpen) return
+    let cancelled = false
+    loadMyExercises().then(list => { if (!cancelled) setMyCatalog(list) })
+    return () => { cancelled = true }
+  }, [pickerOpen])
   
   // Набор быстрой перечитываем на каждую смену места/дня: он хранится отдельно
   // для каждой пары (в разных днях важное разное).
@@ -412,7 +423,9 @@ export default function ProgramConstructor() {
 
   return (
     <div className="page page-enter" style={styles.page}>
-      <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>
+      {/* Пикер открывается поверх и ставит СВОЙ заголовок — иначе два встали бы
+          друг на друга в одной полосе. */}
+      {!pickerOpen && <ScreenTitle>{isEdit ? 'Редактировать' : 'Своя программа'}</ScreenTitle>}
 
       <div style={styles.section}>
         <SectionLabel caps>НАЗВАНИЕ</SectionLabel>
@@ -658,7 +671,8 @@ export default function ProgramConstructor() {
           {/* Лимит — красным (это стоп), обычное состояние — акцентным зелёным. */}
           <ActionButton
             onClick={handleAddTap}
-            variant="neutral"
+            variant="tonal"
+            bordered
             hug
             style={atLimit ? { color: 'var(--color-error)' } : null}
           >
