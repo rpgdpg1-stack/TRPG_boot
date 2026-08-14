@@ -11,6 +11,9 @@ import MuscleIcon from './MuscleIcon'
  *  - Активный таб: фон серое стекло (--color-surface-active) + блюр; ИКОНКА и ЛЕЙБЛ
  *    красятся в АКЦЕНТ (--color-primary) — «ты здесь» через цвет взаимодействия,
  *    без яркой заливки (принцип Active Tab ≠ Primary Button). Меняется с темой accent.
+ *  - ФОРМА иконки тоже меняется: неактивная контурная, активная ЗАЛИТАЯ. Цвет
+ *    один и тот же значок отличает слабо (тем более на маленьком размере),
+ *    а вес пятна виден боковым зрением — тот же приём, что в iOS и Telegram.
  *  - Неактив везде: иконка/лейбл --color-text-inactive (белый 50%)
  *  - Активный таб: gap иконка→лейбл 1px (неактив 0.5px)
  *
@@ -119,6 +122,7 @@ export default function TabBar() {
             {tab.id === 'workouts' ? (
               <MuscleIcon
                 size={32}
+                filled={tab.isActive}
                 color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 flexTrigger={tab.isActive ? muscleFlexTick : 0}
               />
@@ -132,7 +136,7 @@ export default function TabBar() {
                 }}
               >
                 <UiIcon
-                  name="profile"
+                  name={tab.isActive ? 'profile-fill' : 'profile'}
                   size={32}
                   color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 />
@@ -147,7 +151,7 @@ export default function TabBar() {
                 }}
               >
                 <UiIcon
-                  name="friends"
+                  name={tab.isActive ? 'friends-fill' : 'friends'}
                   size={32}
                   color={tab.isActive ? 'var(--color-primary)' : 'var(--color-text-inactive)'}
                 />

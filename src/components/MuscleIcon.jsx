@@ -12,8 +12,11 @@ import UiIcon from './UiIcon'
  * flex (bool) — зацикленная анимация "сжатия" бицепса раз в 15 сек.
  * flexTrigger (любое значение) — при его смене проигрывает разовое сжатие
  * (например при тапе на прогресс-бар). Меняй значение чтобы триггернуть.
+ *
+ * filled (bool) — залитый силуэт вместо контурного. Нужен активному табу:
+ * форма отличает выбранное надёжнее цвета, особенно на 32px.
  */
-export default function MuscleIcon({ size = 16, color, earned = true, flex = false, flexTrigger = 0, style }) {
+export default function MuscleIcon({ size = 16, color, earned = true, flex = false, flexTrigger = 0, filled = false, style }) {
   const finalColor = color || (earned ? 'var(--color-icon-muscle)' : 'var(--color-text-secondary)')
 
   // Анимация "флекса" — та же что на лоадере (flexBiceps): лёгкий поворот,
@@ -34,7 +37,7 @@ export default function MuscleIcon({ size = 16, color, earned = true, flex = fal
         ...style
       }}
     >
-      <UiIcon name="muscles-line" size={size} color={finalColor} />
+      <UiIcon name={filled ? 'muscles' : 'muscles-line'} size={size} color={finalColor} />
       <style>{`
         @keyframes muscleFlexOnce {
           0%   { transform: rotate(0deg) scale(1); }
