@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { backButton, lockVerticalSwipes } from '../lib/telegram'
+import { useEffect, useRef, useState } from 'react'
+import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { EVENTS, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
@@ -7,6 +7,7 @@ import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
 import StreakFlame from '../components/StreakFlame'
+import StreakInfoPopup from '../components/StreakInfoPopup'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
@@ -24,6 +25,9 @@ function WeekStrip() {
     const u = getCurrentUser()
     return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
   })
+  const [info, setInfo] = useState(false)
+  const stripRef = useRef(null)
+  const openInfo = () => { haptic.light(); setInfo(v => !v) }
   useEffect(() => {
     const upd = () => {
       const u = getCurrentUser()
@@ -37,28 +41,46 @@ function WeekStrip() {
   // Порядок читается как фраза: огонёк → число → «Тренировок на этой неделе».
   // Ноль — та же строка, только огонёк серый и цифра приглушена.
   const hasStreak = streak >= 1
+
+  // Строка целиком — кнопка-пояснение. Именно здесь человек впервые видит
+  // огонёк и цифру, и именно здесь чаще всего непонятно, что они значат;
+  // тапать он будет по всей фразе, а не прицельно в значок.
   return (
-    <div style={stripStyles.strip}>
-      {/* Огонёк и число — одной группой, вплотную (счётчик принадлежит огоньку). */}
-      <span style={stripStyles.flameGroup}>
-        <span style={hasStreak ? undefined : stripStyles.greyFlame}>
-          <StreakFlame streak={streak} />
+    <div style={stripStyles.wrap} ref={stripRef}>
+      <button style={stripStyles.strip} onClick={openInfo} aria-label="Что такое серия за неделю">
+        {/* Огонёк и число — одной группой, вплотную (счётчик принадлежит огоньку). */}
+        <span style={stripStyles.flameGroup}>
+          <span style={hasStreak ? undefined : stripStyles.greyFlame}>
+            <StreakFlame streak={streak} />
+          </span>
+          <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
+            {streak}
+          </span>
         </span>
-        <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
-          {streak}
-        </span>
-      </span>
-      <span style={stripStyles.label}>{capitalize(pluralTraining(streak))} на этой неделе</span>
+        <span style={stripStyles.label}>{capitalize(pluralTraining(streak))} на этой неделе</span>
+      </button>
+
+      <StreakInfoPopup
+        streak={streak}
+        open={info}
+        onClose={() => setInfo(false)}
+        align="center"
+        anchorRef={stripRef}
+      />
     </div>
   )
 }
 
 const stripStyles = {
+  // Обёртка держит поп-ап: он absolute относительно неё.
+  wrap: { position: 'relative', marginBottom: 'var(--space-6)' },
   // Строка-информер, без фона и рамки: это подпись под заголовком, а не блок
   // наравне с карточками ниже.
   strip: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
-    minHeight: '32px', marginBottom: 'var(--space-6)'
+    minHeight: '32px', width: '100%',
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.

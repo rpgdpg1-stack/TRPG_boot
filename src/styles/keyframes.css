@@ -188,3 +188,10 @@
   78%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
 }
+
+/* Поп-ап-подсказка (серия за неделю) — выезд сверху вниз, как меню долгого
+   нажатия: одинаковая подача у всего, что раскрывается под элементом. */
+@keyframes popupDrop {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}

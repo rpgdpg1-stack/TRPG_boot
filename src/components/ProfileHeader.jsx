@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { formatRelative } from '../utils/history'
 import StreakFlame from './StreakFlame'
+import StreakInfoPopup from './StreakInfoPopup'
 
 /**
  * Карточка-шапка профиля (соц-концепция без статусов — см. память проекта).
@@ -35,18 +36,6 @@ export default function ProfileHeader({
   const s = streak || 0
 
   const lastWhen = lastWorkout ? formatRelative(lastWorkout.finished_at) : null
-
-  // Поп-ап серии: автозакрытие 6с + тап вне.
-  useEffect(() => {
-    if (!interactiveStreak || !showStreakInfo) return
-    const t = setTimeout(() => setShowStreakInfo(false), 6000)
-    const onOutside = (e) => {
-      if (fireRef.current?.contains(e.target)) return
-      setShowStreakInfo(false)
-    }
-    document.addEventListener('pointerdown', onOutside)
-    return () => { clearTimeout(t); document.removeEventListener('pointerdown', onOutside) }
-  }, [showStreakInfo, interactiveStreak])
 
   const toggleStreak = () => {
     if (!interactiveStreak) return   // в профиле друга огонёк не тапается
@@ -95,15 +84,13 @@ export default function ProfileHeader({
             )}
           </button>
 
-          {interactiveStreak && showStreakInfo && (
-            <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
-              <div style={styles.popupTitle}>СЕРИЯ ЗА НЕДЕЛЮ</div>
-              <div style={styles.popupBody}>
-                {s >= 1
-                  ? `${s} ${plur(s)} на этой неделе. Тренируйся, чтобы серия росла — она сбрасывается каждую неделю.`
-                  : 'На этой неделе ещё нет тренировок. Заверши тренировку — загорится огонёк серии.'}
-              </div>
-            </div>
+          {interactiveStreak && (
+            <StreakInfoPopup
+              streak={s}
+              open={showStreakInfo}
+              onClose={() => setShowStreakInfo(false)}
+              anchorRef={fireRef}
+            />
           )}
         </div>
       </div>
@@ -120,13 +107,6 @@ export default function ProfileHeader({
       `}</style>
     </div>
   )
-}
-
-function plur(n) {
-  const d = n % 10, dd = n % 100
-  if (d === 1 && dd !== 11) return 'тренировка'
-  if (d >= 2 && d <= 4 && (dd < 10 || dd >= 20)) return 'тренировки'
-  return 'тренировок'
 }
 
 const AVATAR_SIZE = 104
@@ -170,7 +150,6 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
-  lastBadge: { display: 'inline-flex', alignItems: 'center' },
   // Огонёк серии: пространство справа от аватара делим пополам — имя в левой
   // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).
   fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
@@ -186,17 +165,6 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
     lineHeight: 1, textAlign: 'left', color: 'var(--color-streak)'
   },
-  popup: {
-    position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '230px',
-    background: 'rgba(34, 34, 34, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 140, 66, 0.35)', borderRadius: 'var(--radius-medium)',
-    padding: 'var(--space-3) var(--space-4)', zIndex: 50, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
-  },
-  popupTitle: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
-    color: 'var(--color-text-secondary)', letterSpacing: '2px', marginBottom: 'var(--space-15)'
-  },
-  popupBody: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text)', lineHeight: 1.5 },
   skeletonStat: {
     width: '48px', height: '24px', borderRadius: 'var(--radius-small)',
     background: 'var(--layer-2)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
