@@ -49,8 +49,6 @@ export default function FavoriteExercises() {
   const clearLp = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null } }
   useEffect(() => () => clearLp(), [])
 
-  const openFavModal = (f) => { if (!guard()) return; haptic.light(); setOpenFav(f) }
-
   const cardPointerDown = (e, f) => {
     // Идёт ввод веса (или клавиатура только что закрылась) — тап по карточке
     // ГАСИМ: человек тапнул мимо, чтобы убрать клавиатуру, а не открыть меню.
@@ -71,11 +69,12 @@ export default function FavoriteExercises() {
     if (Math.abs(e.clientX - lpStart.current.x) > LP_MOVE || Math.abs(e.clientY - lpStart.current.y) > LP_MOVE) clearLp()
   }
   const cardPointerUp = () => clearLp()
-  const cardClick = (f) => {
-    if (shouldIgnoreCardTap()) return
-    if (lpFired.current) { lpFired.current = false; return } // долгий тап уже открыл
-    openFavModal(f)
-  }
+  // Обычный тап по карточке НИЧЕГО не открывает. На этом экране рабочих действий
+  // ровно два: поправить вес (тап по цифре) и прочитать длинный тег (тап по нему).
+  // Меню — только долгим нажатием, как у программы на главной и у строки друга.
+  // Раньше короткий тап открывал меню, и любая попытка тронуть вес мимо цифры
+  // выкидывала в модалку.
+  const cardClick = () => { lpFired.current = false }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -151,7 +150,7 @@ export default function FavoriteExercises() {
               key={slot}
               className="press-tile"
               style={styles.card}
-              onClick={() => cardClick(f)}
+              onClick={cardClick}
               onPointerDown={(e) => cardPointerDown(e, f)}
               onPointerMove={cardPointerMove}
               onPointerUp={cardPointerUp}

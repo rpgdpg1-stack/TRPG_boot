@@ -16,8 +16,13 @@ import { haptic } from '../lib/telegram'
  *
  * Прокатка бежит только когда есть что показывать. Влез целиком — тап ничего
  * не делает и вибрации нет: отклик на пустое действие врёт.
+ *
+ * `interactive={false}` — только многоточие, без прокатки и без перехвата тапов.
+ * Нужно там, где тап по карточке важнее подписи: во время идущей тренировки
+ * (палец занят отметками, лишняя зона-ловушка мешает) и в чужом профиле, где
+ * любимые упражнения — витрина, а не рабочий список.
  */
-export default function MarqueeTag({ label, background, color = 'var(--color-text)', style }) {
+export default function MarqueeTag({ label, background, color = 'var(--color-text)', interactive = true, style }) {
   const boxRef = useRef(null)
   const trackRef = useRef(null)
   const [shift, setShift] = useState(0)
@@ -37,10 +42,10 @@ export default function MarqueeTag({ label, background, color = 'var(--color-tex
   // Влез целиком — тег ведёт себя как обычная подпись и тапы пропускает
   // карточке. Перехватывать их «на всякий случай» значило бы сделать часть
   // карточки мёртвой зоной.
-  const overflowing = () => hiddenPx() > 1
+  const overflowing = () => interactive && hiddenPx() > 1
 
   const onTap = (e) => {
-    if (running) return
+    if (!interactive || running) return
     const hidden = hiddenPx()
     if (hidden <= 1) return
 
@@ -69,7 +74,7 @@ export default function MarqueeTag({ label, background, color = 'var(--color-tex
       onClick={onTap}
       onPointerDown={swallow}
       onPointerUp={swallow}
-      style={{ ...styles.box, background, color, ...style }}
+      style={{ ...styles.box, background, color, ...(interactive ? null : styles.static), ...style }}
     >
       <span
         ref={trackRef}
@@ -108,6 +113,8 @@ const styles = {
     verticalAlign: 'middle',
     WebkitTapHighlightColor: 'transparent'
   },
+  // Без прокатки тег — обычная подпись: тапы сквозь него идут карточке.
+  static: { pointerEvents: 'none' },
   track: { display: 'block', whiteSpace: 'nowrap' },
   trackIdle: { maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' },
   trackRunning: { maxWidth: 'none', overflow: 'visible', textOverflow: 'clip' }

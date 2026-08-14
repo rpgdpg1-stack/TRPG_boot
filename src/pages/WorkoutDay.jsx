@@ -1431,6 +1431,10 @@ export default function WorkoutDay() {
                         <ExerciseCard
                           slot={slot}
                           isActive={activeOrderNums.has(slot.order_num)}
+                          // Тренировка идёт — тег перестаёт быть кликабельным:
+                          // палец занят отметками, и зона-ловушка посреди
+                          // карточки только мешает. Многоточие остаётся.
+                          tagStatic={isThisActive}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
                           onInfo={goToInfo}

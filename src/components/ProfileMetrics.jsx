@@ -12,6 +12,7 @@ import HistoryStats from './HistoryStats'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
 import ExercisePlaceholder from './ExercisePlaceholder'
+import MarqueeTag from './MarqueeTag'
 
 /**
  * Две плитки-входа в карточке профиля (своей и друга) — визуально те же, что
@@ -148,7 +149,13 @@ function FavoritesList({ items, showWeights }) {
             </div>
             <div style={m.favContent}>
               <div style={m.favName}>{cap(f.name)}</div>
-              {tag && <span style={{ ...m.favTag, background: colors.tag }}>{tag}</span>}
+              {/* Тут любимые — витрина (и своя, и в чужом профиле), а не рабочий
+                  список: длинный тег просто обрезается многоточием, прокатки по
+                  тапу НЕТ. Тапать в профиле не по чему, и «живой» тег обещал бы
+                  взаимодействие, которого здесь нет. */}
+              {tag && (
+                <MarqueeTag label={tag} background={colors.tag} interactive={false} style={m.favTag} />
+              )}
             </div>
             {has && (
               <span style={m.favVal}>
@@ -225,11 +232,8 @@ const m = {
     maxWidth: '100%', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  favTag: {
-    padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
-    opacity: 0.7, whiteSpace: 'nowrap'
-  },
+  // Форма пилюли — в MarqueeTag; здесь только приглушение.
+  favTag: { alignSelf: 'flex-start', opacity: 0.7 },
   favVal: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
   favUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
 }

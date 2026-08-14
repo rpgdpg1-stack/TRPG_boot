@@ -10,6 +10,11 @@ import { haptic } from '../lib/telegram'
  * помогает читаемости кнопки над контентом.
  *
  * Для длинных прокручиваемых экранов (день тренировки, заплыв). В профиле НЕ нужен.
+ *
+ * @param scrollRef — ref прокручиваемого КОНТЕЙНЕРА. По умолчанию кнопка следит
+ *   за окном, но в пикере упражнений список крутится внутри своего блока,
+ *   и окно там неподвижно — без этого кнопка не появлялась бы никогда.
+ * @param zIndex — поднять над полноэкранным оверлеем (пикер).
  */
 function ArrowUp({ size = 22 }) {
   return (
@@ -19,29 +24,35 @@ function ArrowUp({ size = 22 }) {
   )
 }
 
-export default function ScrollTopButton({ threshold = 180 }) {
+export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIndex }) {
   const [show, setShow] = useState(false)
   const [press, setPress] = useState(false)
   const ref = useRef(null)
   const armed = useRef(false)
 
   useEffect(() => {
+    const box = scrollRef?.current || null
+    const target = box || window
     let raf = 0
     const onScroll = () => {
       if (raf) return
       raf = requestAnimationFrame(() => {
         raf = 0
-        const y = window.scrollY || document.scrollingElement?.scrollTop || 0
+        const y = box
+          ? box.scrollTop
+          : (window.scrollY || document.scrollingElement?.scrollTop || 0)
         setShow(y > threshold)
       })
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
+    target.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
-    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
-  }, [threshold])
+    return () => { target.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [threshold, scrollRef])
 
   const toTop = () => {
     haptic.light()
+    const box = scrollRef?.current
+    if (box) { box.scrollTo({ top: 0, behavior: 'smooth' }); return }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -69,6 +80,7 @@ export default function ScrollTopButton({ threshold = 180 }) {
       aria-label="Наверх"
       style={{
         ...styles.hit,
+        ...(zIndex ? { zIndex } : null),
         opacity: show ? 1 : 0,
         transform: show ? 'translateY(0)' : 'translateY(8px)',
         pointerEvents: show ? 'auto' : 'none'

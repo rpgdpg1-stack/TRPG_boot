@@ -18,6 +18,8 @@ import { useScrollLock } from '../lib/use-scroll-lock'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import ScreenTitle from './ScreenTitle'
 import SearchIcon from './SearchIcon'
+import ScrollTopButton from './ScrollTopButton'
+import CloseCross from './CloseCross'
 
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 10
@@ -69,10 +71,27 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   const longTimer = useRef(null)
   const pressStart = useRef({ x: 0, y: 0 })
 
+  // Шапка: закреплена поверх прозрачного списка. Вкладки видны всегда, а поиск
+  // и фильтры сворачиваются при прокрутке вниз и возвращаются от первого же
+  // движения вверх — как навигация в iOS и Telegram.
+  const listRef = useRef(null)
+  const headRef = useRef(null)
+  const [headH, setHeadH] = useState(0)
+  const [collapsed, setCollapsed] = useState(false)
+  const lastY = useRef(0)
+  // Пока открыта клавиатура (и ~350мс после закрытия) тап по фильтру ТОЛЬКО
+  // убирает клавиатуру. Иначе первый же промах по чипу и закрывал клавиатуру,
+  // и менял фильтр — человек этого не просил.
+  const kbGuardUntil = useRef(0)
+
   const excluded = useMemo(
     () => (excludeIds instanceof Set ? excludeIds : new Set(excludeIds || [])),
     [excludeIds]
   )
+
+  // Крестик нужен, только когда есть что отменять: курсор в поле или введён
+  // текст. Иначе он висел бы всегда и читался как «закрыть пикер».
+  const showClear = searchFocused || !!search
 
   const handleClearSearch = () => {
     haptic.selection()
@@ -118,6 +137,57 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   }
   const cancelLongPress = () => { if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null } }
   useEffect(() => cancelLongPress, [])
+
+  // Высота шапки задаёт верхний отступ списка: под ней контент виден насквозь,
+  // но начинаться должен ниже. Меряем, а не задаём числом — состав шапки разный
+  // на вкладках и при открытой панели подгрупп.
+  useEffect(() => {
+    const el = headRef.current
+    if (!el) return
+    const measure = () => setHeadH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [tab, activeGroup, searchFocused, search])
+
+  useEffect(() => {
+    const box = listRef.current
+    if (!box) return
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const y = box.scrollTop
+        const dy = y - lastY.current
+        lastY.current = y
+        // У самой кромки шапка всегда развёрнута — иначе она «залипала» бы
+        // свёрнутой на коротких списках.
+        if (y <= 8) { setCollapsed(false); return }
+        if (dy > 4) setCollapsed(true)
+        else if (dy < -4) setCollapsed(false)
+      })
+    }
+    box.addEventListener('scroll', onScroll, { passive: true })
+    return () => { box.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [tab])
+
+  // Смена вкладки/фильтра начинает список сначала — и прокрутку, и шапку.
+  useEffect(() => {
+    setCollapsed(false)
+    lastY.current = 0
+    if (listRef.current) listRef.current.scrollTop = 0
+  }, [tab, activeGroup, activeSub, search])
+
+  // Тап мимо поля: убрать клавиатуру и на 350мс проглотить действие под пальцем.
+  const dismissKeyboard = () => {
+    if (!searchFocused) return false
+    try { inputRef.current?.blur() } catch { /* ignore */ }
+    kbGuardUntil.current = Date.now() + 350
+    return true
+  }
+  const kbGuarded = () => dismissKeyboard() || Date.now() < kbGuardUntil.current
 
   const handleFormSave = async (values) => {
     if (form?.mode === 'edit') await updateMyExercise(form.ex.id, values)
@@ -192,6 +262,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   }, [catalog, activeGroup, activeSub, search, excluded])
 
   const handleGroupTap = (g) => {
+    if (kbGuarded()) return
     haptic.light()
     setActiveSub(null)
     setActiveGroup(prev => (prev === g ? null : g))
@@ -289,7 +360,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           приходится поднимать над оверлеем — иначе она осталась бы под ним. */}
       <ScreenTitle zIndex={101}>Упражнения</ScreenTitle>
 
-      {/* Вкладки — тот же сегмент-контрол, что «Все / Быстрый режим» в конструкторе. */}
+      {/* Шапка закреплена ПОВЕРХ списка и полностью прозрачна: карточки видно,
+          как они уезжают под фильтры. Своего фона у неё нет — стекло держат сами
+          пилюли, а верхнюю кромку экрана и так закрывает общий скрим приложения. */}
+      <div ref={headRef} style={styles.head}>
+
+      {/* Вкладки — тот же сегмент-контрол, что «Все / Быстрый режим» в конструкторе.
+          Они на месте всегда: это не фильтр, а «где я нахожусь». */}
       <div style={styles.tabsRow}>
         <div style={styles.segGroup}>
           {TABS.map((t, i) => {
@@ -297,7 +374,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             return (
               <button
                 key={t.key}
-                onClick={() => { haptic.light(); setTab(t.key) }}
+                onClick={() => { if (kbGuarded()) return; haptic.light(); setTab(t.key) }}
                 className="press-tile"
                 style={{
                   ...styles.segItem,
@@ -314,6 +391,21 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       </div>
 
+      {/* Сворачиваемая часть: поиск и фильтры. Уходит вверх и тает при прокрутке
+          вниз, возвращается от первого движения вверх. Место под ней НЕ
+          схлопывается — иначе список дёргался бы на каждом сворачивании; вместо
+          этого сквозь освободившуюся прозрачную зону видно карточки. */}
+      <div
+        style={{
+          ...styles.collapsible,
+          transform: collapsed ? 'translateY(-10px)' : 'translateY(0)',
+          opacity: collapsed ? 0 : 1,
+          // Не 'auto': тогда кликабельным стал бы весь прямоугольник шапки,
+          // включая прозрачные поля, и тапы по карточкам под ним пропадали бы.
+          // Кликабельность включена точечно у самих контролов.
+          pointerEvents: collapsed ? 'none' : undefined
+        }}
+      >
       {tab === 'all' && (
       <div style={styles.header}>
         {/* Поле во всю строку. Крестик появляется только когда есть что убирать:
@@ -327,20 +419,21 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onFocus={() => { haptic.selection(); setSearchFocused(true) }}
-            onBlur={() => setSearchFocused(false)}
+            onBlur={() => { setSearchFocused(false); kbGuardUntil.current = Date.now() + 350 }}
             placeholder="Поиск упражнения"
             style={styles.search}
           />
-          {(searchFocused || search) && (
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleClearSearch}
-              style={styles.clearBtn}
-              aria-label="Очистить поиск"
-            >
-              ✕
-            </button>
-          )}
+        </div>
+        {/* Крестик СНАРУЖИ пилюли, отдельным кружком: внутри поля он читался
+            как часть ввода, а он отменяет поиск целиком. Поле под него плавно
+            ужимается — кружок не появляется поверх текста. */}
+        <div style={{ ...styles.clearSlot, width: showClear ? '44px' : 0, opacity: showClear ? 1 : 0 }}>
+          <CloseCross
+            onClose={handleClearSearch}
+            hitSize={44}
+            bubbleSize={40}
+            iconSize={17}
+          />
         </div>
       </div>
       )}
@@ -386,7 +479,11 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               return (
                 <button
                   key={sub}
-                  onClick={() => { haptic.light(); setActiveSub(prev => (prev === sub ? null : sub)) }}
+                  onClick={() => {
+                    if (kbGuarded()) return
+                    haptic.light()
+                    setActiveSub(prev => (prev === sub ? null : sub))
+                  }}
                   className="press-tile"
                   style={{
                     ...styles.subChip,
@@ -403,19 +500,25 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
         </div>
       )}
 
+      </div>
+      </div>
+
       {/* Затемнения над списком нет: пилюли фильтров сами стеклянные, список
           виден сквозь них — второй слой поверх только мутил картинку. */}
+      {/* Прокручивается САМ этот блок, а не вложенный список: шапка над ним
+          закреплена, и следить за прокруткой (сворачивание, кнопка «наверх»)
+          нужно за одним постоянным элементом. Верхний отступ = высота шапки. */}
       <div
-        style={styles.listWrap}
+        ref={listRef}
+        style={{ ...styles.listWrap, paddingTop: headH ? `${headH}px` : 'var(--tg-safe-top)' }}
         // Тап или протяжка по списку убирает клавиатуру: поле поиска не должно
         // держать её, пока человек уже смотрит результаты.
-        onPointerDown={() => { if (searchFocused) inputRef.current?.blur() }}
+        onPointerDown={dismissKeyboard}
       >
-      {/* Список. key пересоздаёт контейнер при смене фильтра — новый монтируется
-          с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает). */}
       {tab === 'all' ? (
-        // key пересоздаёт контейнер при смене фильтра — новый монтируется
-        // с нулевым скроллом, без ручного scrollTop (на WebKit он запаздывает).
+        // key пересоздаёт содержимое при смене фильтра. Скролл при этом сбрасываем
+        // отдельным эффектом — крутится теперь внешний блок, и ремаунт внутреннего
+        // сам по себе его наверх больше не возвращает.
         <div key={`${activeGroup || 'all'}-${activeSub || 'all'}-${search}`} style={styles.list}>
           {loading && <div style={styles.empty}>Загрузка…</div>}
           {!loading && filtered.length === 0 && <div style={styles.empty}>Ничего не найдено</div>}
@@ -478,6 +581,10 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           </ActionButton>
         </div>
       )}
+      {/* Стрелка «наверх» — та же, что в дне тренировки, но следит за списком
+          пикера: окно здесь неподвижно. Прячем при открытой клавиатуре. */}
+      {!kbOpen && <ScrollTopButton scrollRef={listRef} zIndex={102} />}
+
       {menu && (
         <AnchorMenu
           anchorRect={menu.rect}
@@ -540,17 +647,27 @@ const styles = {
     position: 'fixed', inset: 0, zIndex: 100,
     height: '100dvh',
     background: 'var(--color-bg)',
-    display: 'flex', flexDirection: 'column',
-    paddingTop: 'var(--tg-safe-top)',
     overflow: 'hidden'
+  },
+  // Шапка поверх списка и БЕЗ своего фона: сквозь неё видно, как карточки
+  // уезжают под фильтры. Раньше здесь была сплошная заливка, и список обрывался
+  // ровной чёрной полосой.
+  head: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 6,
+    paddingTop: 'var(--tg-safe-top)',
+    pointerEvents: 'none'
+  },
+  collapsible: {
+    transition: 'transform 0.24s var(--ease-ios), opacity 0.2s ease'
   },
   // Без верхнего padding: поле поиска начинается ровно на 16px ниже кнопок
   // Telegram (отступ задаёт var(--tg-safe-top) у overlay).
-  header: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
+  header: { pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '0 var(--space-4) var(--space-2)' },
 
   // Сегмент-контрол вкладок — один в один с «Все / Быстрый режим» в конструкторе.
   tabsRow: { display: 'flex', padding: '0 var(--space-4) var(--space-3)', flexShrink: 0 },
   segGroup: {
+    pointerEvents: 'auto',
     display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
@@ -620,26 +737,24 @@ const styles = {
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
   },
   searchIcon: { display: 'inline-flex', flexShrink: 0 },
+  clearSlot: {
+    flexShrink: 0, height: '44px', overflow: 'hidden', pointerEvents: 'auto',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'width 0.22s var(--ease-ios), opacity 0.18s ease'
+  },
   search: {
     flex: 1, minWidth: 0, height: '100%', padding: 0,
     background: 'transparent', border: 'none', outline: 'none',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)'
   },
-  clearBtn: {
-    width: '32px', height: '32px', flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    lineHeight: 1, background: 'var(--layer-2)', border: 'none', borderRadius: '50%',
-    color: 'var(--color-text-secondary)', fontSize: 'var(--text-label-size)',
-    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    WebkitTapHighlightColor: 'transparent'
-  },
   chipsRow: {
+    pointerEvents: 'auto',
     display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', padding: 'var(--space-2) var(--space-4) var(--space-15)',
     flexWrap: 'nowrap', flexShrink: 0
   },
   // Панель подгрупп — «содержимое открытой вкладки группы».
-  subPanel: {
+  subPanel: { pointerEvents: 'auto',
     margin: 'var(--space-05) var(--space-4) var(--space-15)',
     padding: 'var(--space-3) var(--space-3)',
     background: 'var(--color-surface-dim)',
@@ -668,21 +783,13 @@ const styles = {
     flexShrink: 0, padding: 'var(--space-15) var(--space-3)', border: 'none', borderRadius: 'var(--radius-pill)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, whiteSpace: 'nowrap'
   },
-  // Обёртка списка — даёт точку отсчёта для верхнего fade-scrim (absolute).
   listWrap: {
-    position: 'relative',
-    flex: '1 1 0%',
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  list: {
-    flex: '1 1 0%', minHeight: 0, overflowY: 'auto',
-    padding: 'var(--space-05) var(--space-4) 100px',
-    display: 'block',
+    position: 'absolute', inset: 0,
+    overflowY: 'auto',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y'
   },
+  list: { padding: 'var(--space-05) var(--space-4) 120px', display: 'block' },
   empty: { textAlign: 'center', padding: 'var(--space-10) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
   row: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px', marginBottom: 'var(--space-3)' },
   preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
