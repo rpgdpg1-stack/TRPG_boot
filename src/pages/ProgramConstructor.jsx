@@ -66,7 +66,6 @@ export default function ProgramConstructor() {
   const goBack = () => navigate(-1)
 
   const existing = useMemo(() => getProgramBySlug('my'), [])
-  const isEdit = !!existing
 
   const [name, setName] = useState(existing?.title || '')
   const [dayCount, setDayCount] = useState(() => {
