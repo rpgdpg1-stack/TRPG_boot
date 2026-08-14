@@ -122,7 +122,7 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Протяжка со штангой"
+              placeholder="Например: Протяжка со штангой"
               maxLength={60}
               style={styles.input}
             />
@@ -219,6 +219,9 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
                 placeholder="3"
                 style={{ ...styles.input, ...styles.setsInput }}
               />
+              {/* Крестик стоит РОВНО между полями: подходы прижаты к нему справа,
+                  повторения начинаются слева. При выравнивании подходов по центру
+                  цифра болталась в своём поле и до крестика оставалась дыра. */}
               <span style={styles.times}>×</span>
               <input
                 type="text"
@@ -363,9 +366,9 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)'
   },
-  setsRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)' },
-  setsInput: { flex: '0 0 40px', width: '40px', textAlign: 'center' },
-  repsInput: { flex: '0 0 90px', width: '90px' },
+  setsRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' },
+  setsInput: { flex: '0 0 28px', width: '28px', textAlign: 'right' },
+  repsInput: { flex: '0 0 90px', width: '90px', textAlign: 'left' },
   times: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)',
     color: 'var(--color-text-secondary)'
