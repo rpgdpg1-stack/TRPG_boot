@@ -15,6 +15,7 @@ import UiIcon from '../components/UiIcon'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PencilIcon from '../components/PencilIcon'
+import MarqueeTag from '../components/MarqueeTag'
 import EmptyState from '../components/EmptyState'
 import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
 import RocketIcon from '../components/RocketIcon'
@@ -652,9 +653,17 @@ export default function ProgramConstructor() {
                   </div>
                   {ex && tagLabel && (
                     <div style={styles.exTags}>
-                      <span style={{ ...styles.exTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
-                        {tagLabel}
-                      </span>
+                      {/* Многоточие без прокатки: справа крестик удаления, и тег
+                          не должен на него налезать. Прокатывать тут нечего —
+                          строка ещё и таскается за ручку, лишний тап-жест на ней
+                          спорил бы с перетаскиванием. */}
+                      <MarqueeTag
+                        label={tagLabel}
+                        background={c.tag}
+                        color="#fff"
+                        interactive={false}
+                        style={styles.exTag}
+                      />
                     </div>
                   )}
                 </div>
@@ -881,8 +890,9 @@ const styles = {
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   exName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   exPencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
-  exTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
-  exTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
+  exTags: { display: 'flex', gap: 'var(--space-15)', minWidth: 0, maxWidth: '100%' },
+  // Форма пилюли — в MarqueeTag; здесь только приглушение и мелкий шрифт строки.
+  exTag: { padding: 'var(--space-05) var(--space-2)', fontSize: 'var(--text-caption-size)', letterSpacing: '0.2px', lineHeight: '13px', opacity: 0.7 },
   removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
   // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.

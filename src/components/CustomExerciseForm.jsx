@@ -348,7 +348,10 @@ const styles = {
   unitBtnActive: { background: 'var(--color-surface-active)' },
   previewWeight: {
     flexShrink: 0, display: 'flex', flexDirection: 'column',
-    alignItems: 'flex-end', justifyContent: 'center'
+    alignItems: 'flex-end', justifyContent: 'center',
+    // Отступ от правого края: без него цифра прижималась к кромке карточки,
+    // а в карточке дня она стоит с воздухом.
+    marginRight: 'var(--space-2)'
   },
   previewWeightNum: {
     fontFamily: 'var(--font-display)', fontSize: 'var(--text-title-size)',

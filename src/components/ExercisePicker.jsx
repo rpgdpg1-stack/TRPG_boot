@@ -24,8 +24,10 @@ import CloseCross from './CloseCross'
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 10
 
+// «Все», а не «Все упражнения»: слово «Упражнения» теперь стоит в навигации
+// сверху, и повторять его во вкладке значит говорить одно и то же дважды.
 const TABS = [
-  { key: 'all', label: 'Все упражнения' },
+  { key: 'all', label: 'Все' },
   { key: 'mine', label: 'Мои' }
 ]
 
@@ -469,7 +471,14 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
       {/* Подгруппы активной группы — как содержимое открытой вкладки:
           отдельная панель с фоном чуть светлее, чтобы не путать с группами. */}
       {tab === 'all' && activeGroup && activeSubs.length > 0 && (
-        <div style={styles.subPanel}>
+        // Обводка панели горит цветом выбранной группы, ПОКА подгруппа не
+        // выбрана: цвет показывает, где сейчас акцент. Выбрали подгруппу — акцент
+        // переезжает на неё, а панель гаснет до обычной серой линии. Так в любой
+        // момент видно ровно одно активное место, а не два спорящих.
+        <div style={{
+          ...styles.subPanel,
+          borderColor: activeSub ? 'var(--color-border)' : getMuscleGroupColors(activeGroup).accent
+        }}>
           <div style={styles.subChipsRow}>
             {activeSubs.map(sub => {
               const active = activeSub === sub
@@ -756,10 +765,13 @@ const styles = {
   // Панель подгрупп — «содержимое открытой вкладки группы».
   subPanel: { pointerEvents: 'auto',
     margin: 'var(--space-05) var(--space-4) var(--space-15)',
-    padding: 'var(--space-3) var(--space-3)',
+    padding: 'var(--space-2)',
     background: 'var(--color-surface-dim)',
+    // Пилюля в пилюлях — та же форма, что у самих чипов внутри: панель читается
+    // как «раскрытая группа», а не как чужеродная плашка.
     border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-medium)',
+    borderRadius: 'var(--radius-pill)',
+    transition: 'border-color 0.22s ease',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     flexShrink: 0

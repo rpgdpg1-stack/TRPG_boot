@@ -23,7 +23,6 @@ import { haptic } from '../lib/telegram'
  * любимые упражнения — витрина, а не рабочий список.
  */
 export default function MarqueeTag({ label, background, color = 'var(--color-text)', interactive = true, style }) {
-  const boxRef = useRef(null)
   const trackRef = useRef(null)
   const [shift, setShift] = useState(0)
   const [dur, setDur] = useState(0)
@@ -32,12 +31,15 @@ export default function MarqueeTag({ label, background, color = 'var(--color-tex
 
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
-  // Хвост, который не поместился. Меряем по треку: у него на покое стоит
-  // ellipsis, но scrollWidth всё равно отдаёт полную ширину текста.
+  // Хвост, который не поместился. Обе величины берём У ТРЕКА: clientWidth — это
+  // видимая ширина без паддингов пилюли, scrollWidth — полная ширина текста.
+  // Раньше вычиталась ширина ПИЛЮЛИ (box.clientWidth), а она включает
+  // горизонтальные паддинги — и текст недокатывался ровно на них, хвост
+  // оставался за кадром.
   const hiddenPx = () => {
-    const box = boxRef.current, track = trackRef.current
-    if (!box || !track) return 0
-    return Math.ceil(track.scrollWidth - box.clientWidth)
+    const track = trackRef.current
+    if (!track) return 0
+    return Math.ceil(track.scrollWidth - track.clientWidth)
   }
   // Влез целиком — тег ведёт себя как обычная подпись и тапы пропускает
   // карточке. Перехватывать их «на всякий случай» значило бы сделать часть
@@ -70,7 +72,6 @@ export default function MarqueeTag({ label, background, color = 'var(--color-tex
 
   return (
     <span
-      ref={boxRef}
       onClick={onTap}
       onPointerDown={swallow}
       onPointerUp={swallow}
