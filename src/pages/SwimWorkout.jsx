@@ -354,7 +354,7 @@ export default function SwimWorkout() {
       const startedAt = isThisActive
         ? active.startedAt
         : new Date(Date.now() - spentSec * 1000).toISOString()
-      const result = await finishWorkout(programId, 'main', [], 0, swumMeters, startedAt)
+      const result = await finishWorkout(programId, 'main', [], swumMeters, startedAt)
 
       if (!result) {
         setFinishStatus('error')

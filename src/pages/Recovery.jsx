@@ -19,7 +19,7 @@ const CATEGORIES = [
     icon: '🛌',
     title: 'СОН',
     subtitle: 'Без него остальное не работает',
-    color: '#B47BFF', // фиолетовый — спокойствие, ночь
+    color: 'var(--purple-500)', // фиолетовый — спокойствие, ночь
     items: [
       { id: 'sleep-hours',    title: 'Сон 7-9 часов',          freq: 'каждый день' },
       { id: 'sleep-dark',     title: 'Темнота в комнате',       freq: 'каждый день' },
@@ -258,7 +258,7 @@ const popupStyles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
     display: 'flex',

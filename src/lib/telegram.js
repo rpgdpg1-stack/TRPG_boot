@@ -274,20 +274,6 @@ export function bindLifecycle() {
   }
 }
 
-export const mainButton = {
-  show: (text, onClick) => {
-    if (!tg?.MainButton) return
-    tg.MainButton.setText(text)
-    tg.MainButton.show()
-    tg.MainButton.onClick(onClick)
-  },
-  hide: () => {
-    if (!tg?.MainButton) return
-    tg.MainButton.hide()
-    tg.MainButton.offClick()
-  }
-}
-
 /**
  * Нативный диалог подтверждения Telegram.
  * Возвращает Promise<boolean>: true если подтвердил, false если отменил.
@@ -304,10 +290,6 @@ export function confirm(message) {
     }
     resolve(window.confirm(message))
   })
-}
-
-export function closeApp() {
-  tg?.close()
 }
 
 export const webApp = tg

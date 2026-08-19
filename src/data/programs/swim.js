@@ -62,14 +62,14 @@ export const SWIM_PROGRAM = {
  * Цвета используются и для иконки пловца, и для текста.
  */
 export const SWIM_STROKES = {
-  crawl:  { label: 'Кроль', color: '#3FA2F7' },
+  crawl:  { label: 'Кроль', color: 'var(--cat-pool)' },
   breast: { label: 'Брасс', color: '#2DD4A7' },
-  back:   { label: 'Спина', color: '#B47BFF' }
+  back:   { label: 'Спина', color: 'var(--purple-500)' }
 }
 
 /** Цвет стиля. */
 export function strokeColor(stroke) {
-  return SWIM_STROKES[stroke]?.color || '#888888'
+  return SWIM_STROKES[stroke]?.color || 'var(--color-text-secondary)'
 }
 
 /** Метры одного блока (с учётом повторов). */

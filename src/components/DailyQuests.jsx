@@ -4,7 +4,7 @@ import { haptic } from '../lib/telegram'
 import { getDailyQuests, getDailyQuestsSync, completeQuest } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import {
-  WINDOWS, SLOT_XP,
+  WINDOWS,
   getActivitiesConfigSync, fetchActivitiesConfig, saveActivitiesConfig,
   getCurrentWindowIndex, isWindowOpen, windowOpenLabel,
   getRecommendedForWindow, getCustomDone, setCustomDone
@@ -107,7 +107,7 @@ export default function DailyQuests() {
     if (!rec || completed[rec.id] || animating || !isWindowOpen(win)) return
     haptic.success()
     setAnimating(rec.id)
-    const result = await completeQuest(rec.id, SLOT_XP)
+    const result = await completeQuest(rec.id)
     setCompleted(result.completed)
     setTimeout(() => setAnimating(null), 600)
   }
@@ -355,23 +355,4 @@ const styles = {
     lineHeight: 1.2,
     color: 'var(--color-text-secondary)'
   },
-  // +20 улетает вверх из строки по тапу (правый край, где раньше был бейдж).
-  rowFly: {
-    position: 'absolute',
-    right: '10px',
-    top: '2px',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-body-size)',
-    color: 'var(--color-primary)',
-    letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    zIndex: 3,
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 'var(--space-1)',
-    textShadow: '0 0 8px rgba(158, 209, 83, 0.7)',
-    animation: 'rowRewardFly 1.1s ease-out forwards'
-  }
 }

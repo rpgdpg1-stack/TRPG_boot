@@ -61,10 +61,6 @@ export function setUserPrograms(list) {
   USER_PROGRAMS = Array.isArray(list) ? list : []
 }
 
-export function getUserPrograms() {
-  return USER_PROGRAMS
-}
-
 /** Все программы: статические + пользовательские (для сбросов/обходов). */
 export function getAllPrograms() {
   return [...PROGRAMS, ...USER_PROGRAMS]
@@ -86,14 +82,6 @@ export function getProgramByDbId(dbId) {
   return PROGRAMS.find(p => p.dbId === dbId)
     || USER_PROGRAMS.find(p => p.dbId === dbId)
     || null
-}
-
-/**
- * Универсальный поиск: принимает либо slug, либо dbId.
- * Используется когда не уверены что пришло (например, при миграции старых URL).
- */
-export function getProgramByAnyId(id) {
-  return getProgramBySlug(id) || getProgramByDbId(id)
 }
 
 /**
@@ -127,14 +115,6 @@ export function pluralPrograms(n) {
 }
 
 /**
- * Готовая подпись «N программ» с правильным склонением.
- */
-export function programCountLabel(categoryId) {
-  const n = getCategoryProgramCount(categoryId)
-  return `${n} ${pluralPrograms(n)}`
-}
-
-/**
  * Получить слоты дня программы по slug и (опц.) месту.
  * Если место передано и у программы есть набор для него (data.locations[place]) —
  * берём его; иначе фолбэк на data.days (набор «Зал» / встроенная программа).
@@ -147,14 +127,6 @@ export function getProgramDaySlots(slug, day, place) {
     return program.data.locations[place][day] || []
   }
   return program.data.days?.[day] || []
-}
-
-/**
- * Эмодзи программы по slug. Единый источник для карточек (Home, Category).
- * Дефолт 💪 — чтобы незнакомая/placeholder-программа не ломала вёрстку.
- */
-export function getProgramEmoji(slug) {
-  return getProgramBySlug(slug)?.emoji || '💪'
 }
 
 /**
@@ -189,20 +161,4 @@ export function getProgramPlaces(program) {
   }
   if ((program.tags || []).includes('зал')) return ['gym']
   return []
-}
-
-/**
- * Цвет тега программы. Единый источник для карточек (Home, Category).
- * Кастомная программа (source === 'custom') — всегда акцентный зелёный.
- * Встроенные — по названию тега. Незнакомый тег → серый.
- */
-export function getProgramTagColor(tag, source) {
-  if (source === 'custom') return 'var(--color-primary)'
-  switch ((tag || '').toLowerCase()) {
-    case 'зал': return 'var(--tag-gym)'
-    case 'дом': return 'var(--tag-home)'
-    case 'улица': return 'var(--tag-outdoor)'
-    case 'бассейн': return 'var(--cat-pool)'
-    default: return 'var(--color-text-secondary)'
-  }
 }

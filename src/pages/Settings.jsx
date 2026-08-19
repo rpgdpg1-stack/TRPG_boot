@@ -61,7 +61,7 @@ export default function Settings() {
 
     if (item.id === 'debug-reset-days') {
       const confirmed = await tgConfirm(
-        'Сбросить порядок дней?\n\nПрогресс, мускулы и стрик НЕ пострадают.\n\nПосле сброса все три буквы дней станут серыми — выберешь сам с какого дня хочешь начать.'
+        'Сбросить порядок дней?\n\nИстория тренировок и серия НЕ пострадают.\n\nПосле сброса все три буквы дней станут серыми — выберешь сам с какого дня хочешь начать.'
       )
       if (!confirmed) return
 
@@ -84,14 +84,13 @@ export default function Settings() {
 
     if (item.id === 'debug-reset') {
       const confirmed = await tgConfirm(
-        'Сбросить весь прогресс?\n\nУдалятся: мускулы, недельный стрик, все квесты, история начислений, значки лиг, история тренировок и полученные подстраховки.\n\nЭто действие нельзя отменить.'
+        'Сбросить весь прогресс?\n\nУдалятся: история тренировок, серия за неделю, отметки активностей, закреплённые программы и любимые упражнения.\n\nЭто действие нельзя отменить.'
       )
       if (!confirmed) return
 
       try {
         await clearAllData()
         await refreshCurrentUser()
-        window.dispatchEvent(new CustomEvent('xp-updated'))
         haptic.success()
         window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
       } catch (err) {

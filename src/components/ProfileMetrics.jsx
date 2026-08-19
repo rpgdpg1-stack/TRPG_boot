@@ -189,7 +189,7 @@ const styles = {
 const m = {
   overlay: {
     position: 'fixed', inset: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10001,
@@ -217,7 +217,6 @@ const m = {
   headLeft: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)' },
   count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', color: 'var(--color-primary)' },
-  period: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '0.5px' },
 
   favList: { display: 'flex', flexDirection: 'column' },
   favRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-1)' },

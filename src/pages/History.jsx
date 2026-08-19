@@ -259,7 +259,7 @@ const styles = {
   recItem: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-05)' },
   recThumb: {
     flexShrink: 0, width: '32px', height: '32px', borderRadius: 'var(--radius-small)', overflow: 'hidden',
-    background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   recThumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
   // Название и тег — колонкой: тег встаёт второй строкой под названием.

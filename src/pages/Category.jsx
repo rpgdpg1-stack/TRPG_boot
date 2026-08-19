@@ -22,7 +22,6 @@ import { useScrollLock } from '../lib/use-scroll-lock'
 
 const CATEGORIES_META = {
   gym: {
-    title: 'СИЛОВАЯ',
     // Цвет раздела — токен силовой (холодный металл), НЕ зелёный акцент.
     color: 'var(--cat-gym)',
     iconName: 'power',
@@ -279,7 +278,7 @@ export default function Category() {
 
 /**
  * Поповер «о разделе»: суть направления + что прокачивает.
- * Стиль и поведение — как RulesModal в рейтинге (портал, тап по фону закрывает).
+ * Портал + тап по фону закрывает — как остальные модалки приложения.
  */
 function CategoryInfoModal({ meta, onClose }) {
   const overlayRef = useRef(null)
@@ -331,8 +330,6 @@ const styles = {
   // Подпись-счётчик под иконкой раздела. Разрядка снята: она была нужна капсу
   // («2 ПРОГРАММЫ»), а обычному тексту мешает.
   subtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'center' },
-  subCount: { color: 'var(--color-primary)', fontWeight: 700 },
-  subCountZero: { color: 'var(--color-text-secondary)', fontWeight: 700 },
   programs: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' },
   createButton: {
     width: '100%', minHeight: '56px', padding: 'var(--space-4)',
@@ -355,7 +352,7 @@ const styles = {
 const infoStyles = {
   overlay: {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
     zIndex: 9999,

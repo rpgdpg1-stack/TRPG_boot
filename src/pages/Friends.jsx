@@ -331,8 +331,6 @@ const styles = {
     alignItems: 'center',
     minHeight: '36px'
   },
-  // Кегль как у строки недели на главной; количество — акцентом.
-  subCount: { color: 'var(--color-primary)', fontWeight: 700 },
   subInfo: {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-label-size)',
@@ -356,12 +354,6 @@ const styles = {
   limitMsg: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-error)', textAlign: 'center', marginBottom: 'var(--space-3)'
-  },
-  // Микро-лейбл группы «Закреплённые» (когда есть и обычные друзья).
-  groupLabel: {
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)',
-    letterSpacing: '1.5px', color: 'var(--color-text-secondary)',
-    padding: '0 var(--space-1) var(--space-15)', textTransform: 'uppercase'
   },
   // Метка группы закреплённых: только иконка, без подписи — пин уже читается
   // как «закреплено», текст был бы шумом.

@@ -13,7 +13,7 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
-import { cacheGet, cacheSet, cacheDelete, TTL } from './cache'
+import { cacheGet, cacheSet, TTL } from './cache'
 import { pcacheGet, pcacheSet } from './persistent-cache'
 import { isOnline } from './network-status'
 import { enqueue } from './offline-queue'
@@ -131,9 +131,4 @@ export async function saveExerciseNote(exerciseId, note) {
     console.error('[notes] saveExerciseNote exception:', e?.message)
     return queueIt()
   }
-}
-
-/** Сбросить кеш заметки в памяти — например после синка, чтобы перечитать серверную версию. */
-export function invalidateNoteCache(userId, exerciseId) {
-  cacheDelete(noteCacheKey(userId, exerciseId))
 }

@@ -16,7 +16,7 @@
  * без сети лучше показать чуть устаревшее чем пустой экран.
  */
 
-import { localGet, localSet, localRemove } from '../utils/storage'
+import { localGet, localRemove, localSet } from '../utils/storage'
 
 const PREFIX = 'pcache:'
 
@@ -55,13 +55,6 @@ export function pcacheSet(key, data, ttlMs = DEFAULT_TTL_MS) {
     expiresAt: Date.now() + ttlMs
   }
   localSet(PREFIX + key, JSON.stringify(entry))
-}
-
-/**
- * Удалить один ключ.
- */
-export function pcacheDelete(key) {
-  localRemove(PREFIX + key)
 }
 
 /**

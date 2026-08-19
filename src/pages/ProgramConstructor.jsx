@@ -686,7 +686,7 @@ export default function ProgramConstructor() {
                       <MarqueeTag
                         label={tagLabel}
                         background={c.tag}
-                        color="#fff"
+                        color="var(--color-text)"
                         style={styles.exTag}
                       />
                     </div>
@@ -869,7 +869,6 @@ const styles = {
     zIndex: 40
   },
   kbCatcher: { position: 'fixed', inset: 0, zIndex: 50, background: 'transparent' },
-  title: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-display-size)', letterSpacing: '2px', color: 'var(--color-primary)' },
   nameInput: {
     height: '52px', padding: '0 var(--space-5)', maxWidth: '100%',
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
@@ -929,7 +928,7 @@ const styles = {
   // Переключатель режима — по содержимому, а не во всю ширину.
   modeRow: { display: 'flex', marginBottom: 'var(--space-3)' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
-  exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  exPreview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   exPreviewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   exContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   exName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },

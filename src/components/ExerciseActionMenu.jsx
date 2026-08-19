@@ -610,11 +610,6 @@ const styles = {
   },
   // Форма пилюли — в MarqueeTag; здесь только приглушение.
   tag: { opacity: 0.7 },
-  tagSecondary: {
-    background: 'var(--layer-2)',
-    color: '#A0A0A0',
-    fontWeight: 700
-  },
   meta: {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',
@@ -693,34 +688,6 @@ const styles = {
     color: 'var(--color-text-secondary)'
   },
 
-  // Блок с кнопками действий — сверху отступ, чтобы отделить от инфо
-  actionsBlock: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-15)',
-    marginTop: 'var(--space-2)'
-  },
-  actionButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-    padding: 'var(--space-4) var(--space-5)',
-    background: 'var(--layer-1)',
-    borderRadius: 'var(--radius-medium)',
-    border: 'none',
-    width: '100%',
-    textAlign: 'left',
-    transition: 'background 0.15s ease, transform 0.1s ease',
-    cursor: 'pointer'
-  },
-  actionIcon: { fontSize: 'var(--text-heading-size)', lineHeight: 1, flexShrink: 0 },
-  actionLabel: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-body-size)',
-    fontWeight: 700,
-    color: 'var(--color-text)'
-  },
 
   // Блок заметки — под карточкой. Отступ задаёт gap модалки (16), своего marginTop
   // не добавляем (иначе двойной отступ).
@@ -867,23 +834,4 @@ const styles = {
     color: 'var(--color-text-secondary)',
     textAlign: 'center'
   },
-  // Кнопка «Закрыть» с крестиком. Компактнее остальных (меньше верт. паддинг),
-  // иконка + текст по центру, серый нейтральный цвет.
-  closeButton: {
-    marginTop: 'var(--space-05)',
-    padding: 'var(--space-2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 'var(--space-2)',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 'var(--radius-small)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-button-size)',
-    fontWeight: 500,
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    transition: 'background 0.15s ease, color 0.15s ease'
-  }
 }

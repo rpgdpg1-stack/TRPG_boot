@@ -503,7 +503,7 @@ const styles = {
 
 const dstyles = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(13,12,12,0.85)',
+    position: 'fixed', inset: 0, background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', zIndex: 200
   },

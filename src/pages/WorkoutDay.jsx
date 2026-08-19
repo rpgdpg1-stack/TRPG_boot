@@ -1034,7 +1034,7 @@ export default function WorkoutDay() {
 
   // Сохранение тренировки. Идёт СРАЗУ при открытии модалки завершения, а её вид
   // (награда / лимит / оффлайн / ошибка) определяется результатом — чтобы не
-  // обещать +150 до того, как сервер подтвердит начисление.
+  // показывать результат до того, как сервер подтвердит запись.
   const runFinish = async () => {
     if (finishStatus === 'saving') return
 
@@ -1052,7 +1052,7 @@ export default function WorkoutDay() {
         .map(s => s.exercise_id)
         .filter(Boolean)
 
-      const result = await finishWorkout(programId, day, exerciseIds, 0)
+      const result = await finishWorkout(programId, day, exerciseIds)
 
       if (!result) {
         setFinishStatus('error')
@@ -1674,54 +1674,6 @@ const styles = {
     paddingLeft: 'var(--space-4)',
     paddingRight: 'var(--space-4)'
   },
-  // Ряд для центрирования челки — абсолютный, сразу под карточкой дня (top:100%),
-  // НЕ в потоке (отступы списка не трогает). Контент скроллится под челкой.
-  groupPillRow: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    pointerEvents: 'none',
-    zIndex: 31
-  },
-  // «Челка» — текст группы под карточкой дня. Своего фона нет — сплошная чёрная
-  // полоска (stickySolid) и stickyFade ниже дают затемнение; текст поверх них.
-  groupTabText: {
-    paddingTop: 'var(--space-1)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-label-size)',
-    letterSpacing: '2px',
-    lineHeight: 1,
-    whiteSpace: 'nowrap',
-    animation: 'groupPillIn 0.22s ease-out'
-  },
-  // Сплошная чёрная полоска в зазоре сразу под карточкой дня — контент не
-  // просвечивает в промежутке до фейда. Всегда есть (даже без заголовка).
-  stickySolid: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    height: '6px',
-    background: 'var(--color-bg)',
-    pointerEvents: 'none',
-    zIndex: 30
-  },
-  // Fade-переход под блоком дня: контент уходит под шапку плавно (градиент + blur).
-  // Опущен на 6px (100% + 6px) — под сплошной полоской; заголовок читается чётче.
-  stickyFade: {
-    position: 'absolute',
-    top: 'calc(100% + 6px)',
-    left: 0,
-    right: 0,
-    height: '24px',
-    pointerEvents: 'none',
-    zIndex: 29,
-    background: 'var(--scrim-sticky)'
-  },
   // Один целиковый блок — фон и строук как у карточки игрока на главной.
   // position:relative + overflow:hidden — под заливку-прогресс (headerFill),
   // клип по скруглению. Раскладку контента держит headerCardInner.
@@ -1960,32 +1912,6 @@ const styles = {
     lineHeight: 1,
     display: 'inline-block'
   },
-  // Не-фокусный день (не сегодняшний по плану и не активный) — серая буква.
-  dayLetterMuted: {
-    color: 'var(--color-text-secondary)',
-    textShadow: 'none'
-  },
-  // Чипы групп дня — по центру под буквой, в цвете группы, белый текст.
-  // Всегда слегка приглушены (opacity), как и подгруппы на карточках упражнений.
-  dayChips: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 'var(--space-15)',
-    opacity: 0.7
-  },
-  dayChip: {
-    display: 'inline-block',
-    padding: 'var(--space-1) var(--space-2)',
-    borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-caption-size)',
-    letterSpacing: '0.4px',
-    lineHeight: 1.3,
-    color: 'var(--color-text)',
-    whiteSpace: 'nowrap'
-  },
   // Счётчик упражнений («N упражнений») — по центру (баланс с буквой/чипами).
   // Фикс. высота — чтобы блок не рос от увеличения шрифта (13→16 при старте):
   // шрифт растёт «из геометрического центра», высота строки та же.
@@ -2034,13 +1960,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--space-4)'
-  },
-  empty: {
-    textAlign: 'center',
-    padding: 'var(--space-10) var(--space-5)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)'
   },
   // Человеческий экран ошибки: иконка + короткий текст + кнопка «Обновить».
   errorBox: {

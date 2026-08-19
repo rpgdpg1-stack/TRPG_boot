@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
-import { localGet, localSet, localRemove } from '../../utils/storage'
+import { localGet, localSet } from '../../utils/storage'
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
@@ -249,12 +249,4 @@ export async function loadExerciseCatalog() {
   }
   _catalog = data || []
   return _catalog
-}
-
-/**
- * Сбросить кэш и реестр пользовательских программ (например при сбросе данных).
- */
-export function clearUserProgramsCache() {
-  localRemove(CACHE_KEY)
-  setUserPrograms([])
 }

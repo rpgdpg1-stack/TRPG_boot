@@ -52,7 +52,6 @@ const PING_URL = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/health` : ''
 // потом первый ping уточнит.
 let online = typeof navigator !== 'undefined' ? navigator.onLine : true
 
-let pingTimer = null
 let started = false
 
 /**
@@ -156,7 +155,7 @@ export function startNetworkMonitor() {
   })
 
   // Периодический пинг пока приложение активно
-  pingTimer = setInterval(() => {
+  setInterval(() => {
     // Пингуем только когда вкладка видима — не жжём батарею в фоне
     if (document.visibilityState === 'visible') {
       checkNow()
@@ -165,16 +164,4 @@ export function startNetworkMonitor() {
 
   // Первая проверка сразу при старте
   checkNow()
-}
-
-/**
- * Остановить мониторинг (на случай если понадобится — сейчас не используется,
- * но пусть будет для чистоты).
- */
-export function stopNetworkMonitor() {
-  if (pingTimer) {
-    clearInterval(pingTimer)
-    pingTimer = null
-  }
-  started = false
 }

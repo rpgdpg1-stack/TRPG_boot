@@ -49,10 +49,6 @@ export function isFavoriteCached(exerciseId) {
   return idsCache ? idsCache.has(exerciseId) : false
 }
 
-export function favoritesCountCached() {
-  return idsCache ? idsCache.size : 0
-}
-
 /** Полный список любимых с данными упражнения и весом. Обновляет кэш id. */
 export async function getFavoriteExercises() {
   const user = getCurrentUser()

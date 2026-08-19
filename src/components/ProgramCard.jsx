@@ -352,30 +352,6 @@ const styles = {
     pointerEvents: 'none',
     zIndex: 0
   },
-  // Тёмная пилюля-подсказка (iOS): фон на уровень светлее карточки (surface-raised),
-  // белый текст+плей, без градиента/тени/свечения/обводки.
-  ctaPill: {
-    position: 'absolute',
-    top: '50%',
-    // Отступ до правого края = горизонтальному паддингу карточки (18px), чтобы
-    // справа было столько же воздуха, сколько слева от эмблемы до края.
-    right: '16px',
-    transform: 'translateY(-50%)',
-    zIndex: 2,
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 'var(--space-15)',
-    padding: 'var(--space-2) var(--space-3)',
-    // Отделяется заливкой (на ~7% светлее карточки), без рамки.
-    background: 'var(--surface-pinned)',
-    borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-body-size)',
-    fontWeight: 700,
-    color: 'var(--color-text)',
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none'
-  },
   // «Начать» — круглая акцентная кнопка с плеем (без слова). Плей чуть правее
   // центра: у треугольника оптический центр смещён влево.
   // Только позиционирование кружка Play по вертикальному центру ряда; размер,

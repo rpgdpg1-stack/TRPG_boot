@@ -301,14 +301,13 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  *
  * ОФФЛАЙН: кладём в очередь с finishDedupKey (program|day|дата), createdAt
  * операции = момент завершения. Возвращаем { offline: true } — WorkoutDay
- * покажет "сохранено локально, синканётся". Локально обновляем стрик/мускулы
- * оптимистично НЕ делаем (чтобы не было расхождений — реальные цифры придут
- * при синке от сервера).
+ * покажет "сохранено локально, синканётся". Стрик оптимистично НЕ трогаем,
+ * чтобы не было расхождений: реальное число придёт при синке от сервера.
  *
- * ОНЛАЙН: как раньше — атомарная RPC.
+ * ОНЛАЙН: атомарная RPC.
  */
-export async function finishWorkout(programSlug, day, exerciseIds, reward = 150, distanceM = null, startedAtOverride = null) {
-  debug('[programs] finishWorkout:', { programSlug, day, exerciseIds, reward })
+export async function finishWorkout(programSlug, day, exerciseIds, distanceM = null, startedAtOverride = null) {
+  debug('[programs] finishWorkout:', { programSlug, day, exerciseIds })
 
   const user = getCurrentUser()
   if (!user) {
@@ -340,14 +339,12 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
       program_id: dbId,
       day,
       exercise_ids: exerciseIds,
-      reward,
       started_at: startedAt,
       distance_m: distanceM
     }, finishDedupKey(dbId, day, finishedAt))
     return {
       offline: true,
       workoutId: null,
-      newTotalMuscles: user.total_muscles || 0,
       newWeeklyStreak: user.weekly_streak || 0,
       alreadyCompletedToday: false
     }
@@ -370,7 +367,6 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
       p_program_id: dbId,
       p_day: day,
       p_exercise_ids: exerciseIds,
-      p_reward: reward,
       p_started_at: startedAt,
       p_distance_m: distanceM
     })
@@ -401,13 +397,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
 
     setCurrentUser({
       ...user,
-      total_muscles: result.new_total_muscles,
       weekly_streak: result.new_weekly_streak,
       weekly_streak_week: getCurrentWeekKey()
     })
 
     cacheInvalidate('workout-day:')
-    cacheInvalidate(`muscle-history:${user.id}`)
     cacheInvalidate(`recent-workouts:${user.id}`)
 
     emit(EVENTS.USER_CHANGED, getCurrentUser())
@@ -415,7 +409,6 @@ export async function finishWorkout(programSlug, day, exerciseIds, reward = 150,
     return {
       offline: false,
       workoutId: result.workout_id,
-      newTotalMuscles: result.new_total_muscles,
       newWeeklyStreak: result.new_weekly_streak,
       alreadyCompletedToday: result.already_completed_today || false
     }

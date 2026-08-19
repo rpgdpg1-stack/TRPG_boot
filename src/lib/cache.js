@@ -90,13 +90,6 @@ export function cacheInvalidate(prefix) {
 }
 
 /**
- * Полная очистка кеша. Используется при logout / reset.
- */
-export function cacheClear() {
-  cache.clear()
-}
-
-/**
  * Запустить функцию в момент когда браузер свободен.
  * Используется для предзагрузки соседних дней — не блокирует UI.
  *

@@ -150,15 +150,6 @@ const styles = {
   // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
   dayLetterActive: { fontSize: 'var(--text-heading-size)', fontWeight: 800 },
   tags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
-  tag: {
-    display: 'inline-block',
-    padding: 'var(--space-1) var(--space-2)',
-    borderRadius: 'var(--radius-xs)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 700,
-    color: 'var(--color-bg)'
-  },
   soonTag: {
     display: 'inline-block',
     padding: 'var(--space-1) var(--space-2)',

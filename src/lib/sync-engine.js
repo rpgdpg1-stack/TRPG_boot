@@ -227,7 +227,7 @@ async function sendSwap(op, userId) {
  * already_completed_today=true — НЕ ошибка, операцию убираем (return true).
  */
 async function sendFinish(op, userId) {
-  const { program_id, day, exercise_ids, reward, started_at, distance_m } = op.payload
+  const { program_id, day, exercise_ids, started_at, distance_m } = op.payload
   const finishedAt = op.createdAt // ISO-строка момента завершения оффлайн
 
   const { data, error } = await supabase.rpc('api_finish_workout', {
@@ -235,7 +235,6 @@ async function sendFinish(op, userId) {
     p_program_id: program_id,
     p_day: day,
     p_exercise_ids: exercise_ids,
-    p_reward: reward,
     p_finished_at: finishedAt,
     p_started_at: started_at ?? null,
     p_distance_m: distance_m ?? null
@@ -252,18 +251,14 @@ async function sendFinish(op, userId) {
     return false
   }
 
-  // Обновляем локального юзера свежими цифрами с сервера
+  // Обновляем локального юзера свежим стриком с сервера
   const u = getCurrentUser()
   if (u) {
-    setCurrentUser({
-      ...u,
-      total_muscles: result.new_total_muscles,
-      weekly_streak: result.new_weekly_streak
-    })
+    setCurrentUser({ ...u, weekly_streak: result.new_weekly_streak })
   }
 
-  // already_completed_today=true — тоже успех (return true ниже), просто
-  // начисления не было. Главное — операцию из очереди убрать.
+  // already_completed_today=true — тоже успех (return true ниже): запись за тот
+  // день уже есть. Главное — операцию из очереди убрать.
   if (result.already_completed_today) {
     debug('[sync] finish: уже было засчитано за тот день, убираем из очереди')
   }

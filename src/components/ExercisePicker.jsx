@@ -349,7 +349,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           </div>
           <div style={styles.rowTags}>
             {tag && (
-              <span style={{ ...styles.rowTag, background: c.tag, color: '#fff', opacity: 0.7 }}>
+              <span style={{ ...styles.rowTag, background: c.tag, color: 'var(--color-text)', opacity: 0.7 }}>
                 {tag}
               </span>
             )}
@@ -500,7 +500,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                 // читался с одного взгляда, а не выискивался по оттенку.
                 ...(active ? null : styles.chipGlass),
                 background: active ? c.tag : GLASS,
-                color: active ? '#fff' : 'var(--color-text-secondary)'
+                color: active ? 'var(--color-text)' : 'var(--color-text-secondary)'
               }}
             >
               {toTitleCase(MUSCLE_GROUP_LABELS[group] || group)}
@@ -536,7 +536,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                     ...styles.subChip,
                     ...(active ? null : styles.chipGlass),
                     background: active ? gc.tag : GLASS,
-                    color: active ? '#fff' : 'var(--color-text-secondary)'
+                    color: active ? 'var(--color-text)' : 'var(--color-text-secondary)'
                   }}
                 >
                   {toTitleCase(SUB_GROUP_LABELS[sub] || sub)}
@@ -886,7 +886,7 @@ const styles = {
   list: { padding: 'var(--space-4) var(--space-4) 120px', display: 'block' },
   empty: { textAlign: 'center', padding: 'var(--space-10) var(--space-5)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-text-secondary)' },
   row: { position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px', marginBottom: 'var(--space-3)' },
-  preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  preview: { width: '64px', height: '64px', flexShrink: 0, borderRadius: 'var(--radius-medium)', overflow: 'hidden', background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewImg: { width: '100%', height: '100%', objectFit: 'cover' },
   rowContent: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },
   rowName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },

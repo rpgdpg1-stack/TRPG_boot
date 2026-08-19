@@ -106,11 +106,6 @@ const styles = {
   },
   // Форма пилюли — в MarqueeTag; здесь только приглушение.
   tag: { opacity: 0.7 },
-  tagSecondary: {
-    background: 'var(--layer-2)',
-    color: '#B5B5B5',
-    fontWeight: 700
-  },
   meta: {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-caption-size)',

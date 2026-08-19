@@ -398,7 +398,7 @@ const styles = {
   recordLabel: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0,
-    background: 'rgba(13, 12, 12, 0.85)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     zIndex: 10000,

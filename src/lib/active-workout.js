@@ -49,17 +49,6 @@ export function clearActiveWorkout() {
   emitChange()
 }
 
-/**
- * Активна ли сессия для программы (и, опционально, дня). Место намеренно НЕ
- * учитываем: сессия привязана к (program, day), смена места внутри дня её не рвёт.
- */
-export function isActiveWorkout(programId, day = null) {
-  const a = getActiveWorkout()
-  if (!a || a.programId !== programId) return false
-  if (day != null && a.day !== day) return false
-  return true
-}
-
 function emitChange() {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(EVT))
 }
@@ -97,7 +86,7 @@ export const WORKOUT_TIMER_COLORS = {
   // одинаковых зелёных сливались бы. Свой мятный оттенок — см. --color-timer.
   green: 'var(--color-timer)',
   orange: '#F0883E',
-  red: '#E84545'
+  red: 'var(--color-error)'
 }
 
 /** Цвет таймера по прошедшим секундам (зелёный → оранжевый → красный). */

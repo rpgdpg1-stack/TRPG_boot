@@ -21,7 +21,7 @@ import { debug } from './debug'
 const CACHED_USER_KEY = 'cached-user'
 
 // При старте сразу поднимаем последнего известного юзера из localStorage,
-// чтобы UI показал актуальные данные (мускулы, ранг) мгновенно, даже без
+// чтобы UI показал актуальные данные (стрик, имя) мгновенно, даже без
 // сети — без мигания дефолтным Новичком.
 let currentUser = (() => {
   const raw = localGet(CACHED_USER_KEY)
@@ -30,7 +30,6 @@ let currentUser = (() => {
 })()
 
 let authPromise = null
-let authState = 'pending' // 'pending' | 'no-telegram' | 'ok' | 'error'
 
 export function getCurrentUser() {
   return currentUser
@@ -43,10 +42,6 @@ function cacheUser(user) {
   if (user) {
     localSet(CACHED_USER_KEY, JSON.stringify(user))
   }
-}
-
-export function getAuthState() {
-  return authState
 }
 
 /**
@@ -63,7 +58,6 @@ export async function ensureAuth() {
     if (!initData) {
       // Нет данных Telegram — вход невозможен.
       // Веб-вход через почту появится позже как отдельный провайдер.
-      authState = 'no-telegram'
       console.warn('[auth] Telegram initData not available. Open through Telegram.')
       return null
     }
@@ -77,7 +71,6 @@ export async function ensureAuth() {
 
     if (fnError || !authData?.success || !authData?.token_hash) {
       console.error('[auth] telegram-auth failed:', fnError || authData)
-      authState = 'error'
       authPromise = null
       return null
     }
@@ -93,7 +86,6 @@ export async function ensureAuth() {
 
     if (otpError || !otpData?.user?.id) {
       console.error('[auth] verifyOtp error:', otpError)
-      authState = 'error'
       authPromise = null
       return null
     }
@@ -107,14 +99,12 @@ export async function ensureAuth() {
 
     if (userError || !userRecord) {
       console.error('[auth] user record not found by auth_id:', userError)
-      authState = 'error'
       authPromise = null
       return null
     }
 
     currentUser = userRecord
     cacheUser(currentUser)
-    authState = 'ok'
     debug('[auth] Authorized as:', currentUser)
     emit(EVENTS.USER_READY, currentUser)
 
@@ -129,7 +119,7 @@ export async function ensureAuth() {
         if (result.success) {
           debug('[auth] friend added via referral')
           // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
-          // место в рейтинге на главной
+          // серия за неделю на главной
           emit(EVENTS.USER_CHANGED, currentUser)
         } else {
           console.warn('[auth] referral failed:', result.error)
@@ -146,7 +136,7 @@ export async function ensureAuth() {
 }
 
 /**
- * Перечитать юзера из БД (например после начисления мускулов).
+ * Перечитать юзера из БД (например после сброса прогресса).
  */
 export async function refreshCurrentUser() {
   if (!currentUser) return null

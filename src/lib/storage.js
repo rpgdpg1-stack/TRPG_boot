@@ -142,46 +142,29 @@ export async function getDailyQuests() {
 }
 
 /**
- * Выполнить квест. complete_daily_quest возвращает was_new и new_total_muscles
- * (в сигнатуре есть ещё new_badge_rank_index от снятой системы значков — он
- * всегда пустой, не читаем).
+ * Отметить активность выполненной. Никакой награды за это не начисляется —
+ * отметка нужна только самому дню (галочка + подсчёт «сколько закрыто»).
+ * RPC отвечает одним признаком: засчиталась ли отметка впервые.
  */
-export async function completeQuest(questId, reward = 20) {
+export async function completeQuest(questId) {
   const userId = getUserId()
   if (!userId) {
     console.warn('[storage] completeQuest без авторизации')
-    return { completed: {}, wasNew: false, newTotalMuscles: 0 }
+    return { completed: {}, wasNew: false }
   }
 
   const { data, error } = await supabase.rpc('complete_daily_quest', {
     p_user_id: userId,
     p_day_key: getTodayKey(),
-    p_quest_id: questId,
-    p_reward: reward
+    p_quest_id: questId
   })
 
   if (error) {
     console.error('[storage] completeQuest error:', error)
-    return { completed: await getDailyQuests(), wasNew: false, newTotalMuscles: 0 }
+    return { completed: await getDailyQuests(), wasNew: false }
   }
 
-  const result = data?.[0] || data || {}
-
-  if (result.was_new && result.new_total_muscles !== undefined) {
-    const u = getCurrentUser()
-    if (u) {
-      setCurrentUser({ ...u, total_muscles: result.new_total_muscles })
-      emit(EVENTS.USER_CHANGED, getCurrentUser())
-    }
-    cacheInvalidate(`muscle-history:${userId}`)
-  }
-
-  const completed = await getDailyQuests()
-  return {
-    completed,
-    wasNew: result.was_new || false,
-    newTotalMuscles: result.new_total_muscles || 0
-  }
+  return { completed: await getDailyQuests(), wasNew: !!data }
 }
 
 /* ============================================ */
