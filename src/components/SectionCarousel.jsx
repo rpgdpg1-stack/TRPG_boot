@@ -5,7 +5,7 @@ import { useOutsideClose } from '../lib/use-outside-close'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
 import { onActiveWorkoutChange } from '../lib/active-workout'
-import { getActiveDaySync, toggleFavoriteProgram } from '../lib/storage'
+import { getActiveDaySync, toggleFavoriteProgram, getFavoritePrograms } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { formatRelative } from '../utils/history'
@@ -42,6 +42,10 @@ const SETTLE_MS = 380
 // Сколько держится подсветка названия раздела после переключения.
 const HEAD_LIT_MS = 1200
 
+// Закрепы для ПЕРВОГО кадра — синхронно из localStorage, чтобы карточка не
+// мигала пустой. Настоящий источник правды — CloudStorage Telegram (см. эффект
+// ниже): localStorage привязан к домену и обнуляется при переезде приложения
+// на другой адрес, а закрепы должны это переживать.
 function readPinnedMap() {
   try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
 }
@@ -57,6 +61,16 @@ export default function SectionCarousel() {
 
   // Старт/финиш тренировки → перечитать «последнюю» и состояние карточки.
   useEffect(() => onActiveWorkoutChange(() => setPinnedTick(t => t + 1)), [])
+
+  // Догоняем закрепы из CloudStorage. Нужно ровно для случая «localStorage пуст,
+  // а облако помнит»: новое устройство или, как случилось при переезде с Vercel
+  // на свой домен, — смена адреса приложения. cloudGet сам положит найденное
+  // в localStorage, нам остаётся перечитать карту.
+  useEffect(() => {
+    let cancelled = false
+    getFavoritePrograms().then(() => { if (!cancelled) setPinnedTick(t => t + 1) })
+    return () => { cancelled = true }
+  }, [])
 
   // Догоняем выбранный раздел из облака (кросс-девайс).
   useEffect(() => {

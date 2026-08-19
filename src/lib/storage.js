@@ -241,8 +241,15 @@ export async function resetProgramDayCycle(programId) {
 
 const FAVORITES_KEY = 'favorite_programs'
 
-/** Карта «категория → slug избранной программы». Внутренний помощник двух функций ниже. */
-async function getFavoritePrograms() {
+/**
+ * Карта «категория → slug закреплённой программы».
+ *
+ * Читает через cloudGet: сперва localStorage (мгновенно), затем сверяет
+ * с CloudStorage Telegram и подтягивает оттуда, если локально пусто.
+ * Именно поэтому она ASYNC и экспортируется — главной нужен способ
+ * восстановить закрепы, когда localStorage пуст, а облако помнит.
+ */
+export async function getFavoritePrograms() {
   const raw = await cloudGet(FAVORITES_KEY)
   if (!raw) return {}
   try {
