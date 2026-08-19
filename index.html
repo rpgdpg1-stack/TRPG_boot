@@ -60,9 +60,13 @@
           <path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z" fill="#9A9A9A"/>
         </svg>
       </div>
-      <div style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить данные</div>
-      <!-- Причину НЕ угадываем: это может быть сеть, сервер, таймаут или кеш. -->
-      <div style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:12px;">
+      <div id="boot-title" style="font-size:17px; font-weight:700; letter-spacing:0.4px; margin-bottom:10px;">Не удалось загрузить данные</div>
+      <!-- Один случай мы РАЗЛИЧАЕМ точно: приложение открыли вне Telegram.
+           Тогда вход невозможен в принципе (нет подписанных данных Telegram),
+           и предлагать «перезапустить» — врать: сколько ни перезапускай,
+           в браузере оно не заработает. Остальные причины (сеть, сервер,
+           таймаут, кеш) снаружи не отличить, поэтому там текст общий. -->
+      <div id="boot-text" style="font-size:14px; color:#9A9A9A; line-height:1.5; max-width:290px; margin-bottom:12px;">
         Попробуйте перезапустить приложение. Если проблема повторится — попробуйте позже.
       </div>
       <button id="boot-restart" style="padding:14px 28px; background:#9ED153; color:#0D0C0C; font-size:15px; font-weight:700; letter-spacing:0.2px; border:none; border-radius:26px;">
@@ -118,10 +122,26 @@
         // Приложение выставляет window.__APP_BOOTED__ = true, когда прошло загрузчик
         // (App.jsx). Если за таймаут флаг не встал — показываем спасатель.
         setTimeout(function () {
-          if (!window.__APP_BOOTED__) {
-            var f = el('boot-fallback');
-            if (f) f.style.display = 'flex';
+          if (window.__APP_BOOTED__) return;
+          var f = el('boot-fallback');
+          if (!f) return;
+
+          // Вне Telegram initData пустой — приложению нечем подтвердить, кто ты.
+          // Говорим об этом прямо и убираем «Перезапустить»: кнопка, которая
+          // заведомо не поможет, злит сильнее, чем её отсутствие.
+          var tg = window.Telegram && window.Telegram.WebApp;
+          if (!tg || !tg.initData) {
+            var t = el('boot-title');
+            var x = el('boot-text');
+            var r = el('boot-restart');
+            var c = el('boot-close');
+            if (t) t.textContent = 'Откройте через Telegram';
+            if (x) x.textContent = 'Приложение работает внутри Telegram — там оно узнаёт вас без пароля. По прямой ссылке в браузере войти не получится.';
+            if (r) r.style.display = 'none';
+            if (c) c.style.display = 'none';
           }
+
+          f.style.display = 'flex';
         }, BOOT_TIMEOUT_MS);
 
         // Если приложение поднялось уже ПОСЛЕ показа спасателя (медленная сеть) —
