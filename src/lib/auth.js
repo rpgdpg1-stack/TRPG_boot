@@ -121,6 +121,11 @@ export async function ensureAuth() {
           // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
           // серия за неделю на главной
           emit(EVENTS.USER_CHANGED, currentUser)
+          // Дружба завелась уже ПОСЛЕ старта приложения: страница «Друзья» к
+          // этому моменту могла успеть отрисоваться с пустым списком. Отдельным
+          // событием просим её сбросить кеш и перечитать — без этого человек,
+          // пришедший по ссылке, видел «Пока нет друзей» до перезахода.
+          emit(EVENTS.FRIENDS_CHANGED, { friendId: result.friend_id })
         } else {
           console.warn('[auth] referral failed:', result.error)
         }

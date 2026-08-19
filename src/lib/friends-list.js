@@ -41,7 +41,12 @@ export function getFriendsListSync() {
   if (!raw) return null
   try {
     const arr = JSON.parse(raw)
-    if (Array.isArray(arr)) { cacheSet(`friends-list:${user.id}`, arr, TTL.SHORT); return arr }
+    // ВАЖНО: прочитанное с диска в память НЕ кладём. Раньше клали — и сетевой
+    // кеш считал старый список свежим целых 30 секунд, поэтому getFriendsList()
+    // вообще не ходил в базу при открытии экрана. Друг, добавленный по ссылке,
+    // из-за этого появлялся только после перезахода. Диск — для первого кадра,
+    // сеть — для правды.
+    if (Array.isArray(arr)) return arr
   } catch { /* ignore */ }
   return null
 }

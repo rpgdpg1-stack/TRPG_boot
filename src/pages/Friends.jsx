@@ -59,7 +59,11 @@ export default function Friends() {
   useEffect(() => {
     load()
     const off = on(EVENTS.USER_CHANGED, load)
-    return off
+    // Друг, пришедший по реферальной ссылке, добавляется в фоне уже после того,
+    // как экран отрисовался. Кеш тут сбрасываем обязательно: без этого load()
+    // вернул бы только что сохранённый пустой список.
+    const offFriends = on(EVENTS.FRIENDS_CHANGED, () => { invalidateFriendsListCache(); load() })
+    return () => { off(); offFriends() }
   }, [])
 
   // Pull-to-refresh живёт именно здесь: список друзей — единственные данные,

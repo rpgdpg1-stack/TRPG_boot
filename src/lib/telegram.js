@@ -171,16 +171,34 @@ export function getUser() {
   return tg?.initDataUnsafe?.user || null
 }
 
+/**
+ * Один безопасный вызов хаптики.
+ *
+ * Telegram НЕ игнорирует методы, которых нет в версии клиента, — он бросает
+ * исключение (то же самое видно на CloudStorage в старых сборках). А хаптика
+ * почти везде стоит ПЕРВОЙ строкой обработчика, перед setState: один бросок
+ * рвал обработчик целиком, и на старом клиенте кнопка просто переставала
+ * работать — без единой видимой ошибки.
+ *
+ * Вибрация — украшение, её отсутствие не должно ничего ломать. Вызываем через
+ * сам объект HapticFeedback (не выдёргивая метод), иначе теряется `this`.
+ */
+const buzz = (method, arg) => {
+  try {
+    tg?.HapticFeedback?.[method]?.(arg)
+  } catch { /* старый клиент без хаптики — молча пропускаем */ }
+}
+
 export const haptic = {
-  light: () => tg?.HapticFeedback?.impactOccurred('light'),
-  medium: () => tg?.HapticFeedback?.impactOccurred('medium'),
-  heavy: () => tg?.HapticFeedback?.impactOccurred('heavy'),
-  soft: () => tg?.HapticFeedback?.impactOccurred('soft'),
-  rigid: () => tg?.HapticFeedback?.impactOccurred('rigid'),
-  success: () => tg?.HapticFeedback?.notificationOccurred('success'),
-  warning: () => tg?.HapticFeedback?.notificationOccurred('warning'),
-  error: () => tg?.HapticFeedback?.notificationOccurred('error'),
-  selection: () => tg?.HapticFeedback?.selectionChanged()
+  light: () => buzz('impactOccurred', 'light'),
+  medium: () => buzz('impactOccurred', 'medium'),
+  heavy: () => buzz('impactOccurred', 'heavy'),
+  soft: () => buzz('impactOccurred', 'soft'),
+  rigid: () => buzz('impactOccurred', 'rigid'),
+  success: () => buzz('notificationOccurred', 'success'),
+  warning: () => buzz('notificationOccurred', 'warning'),
+  error: () => buzz('notificationOccurred', 'error'),
+  selection: () => buzz('selectionChanged')
 }
 
 /**

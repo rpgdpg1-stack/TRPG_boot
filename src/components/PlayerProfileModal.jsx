@@ -22,6 +22,7 @@ import CloseCross from './CloseCross'
 export default function PlayerProfileModal({ row, onClose }) {
   // Стартуем из кеша (если друг уже открывался) — данные показываются сразу.
   const [pub, setPub] = useState(() => getCachedProfile(row.user_id))
+  const [failed, setFailed] = useState(false)
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
 
@@ -30,7 +31,10 @@ export default function PlayerProfileModal({ row, onClose }) {
     getUserPublicProfile(row.user_id).then(data => {
       if (data) setCachedProfile(row.user_id, data)
       if (cancelled) return
-      setPub(data)
+      // Пустой ответ НЕ затирает показанное: раньше `setPub(null)` при сетевой
+      // ошибке гасил уже нарисованную карточку и оставлял её в вечной загрузке.
+      if (data) setPub(data)
+      else setFailed(true)
     })
     return () => { cancelled = true }
   }, [row.user_id])
@@ -73,6 +77,13 @@ export default function PlayerProfileModal({ row, onClose }) {
       <div key="note" style={styles.friendNote}>Инфо скрыто</div>
     )
   }
+  // Сеть не ответила и показать нечего. Отдельная строка, а не «Инфо скрыто»:
+  // свалить сбой связи на приватность друга — прямая ложь.
+  if (!pub && failed) {
+    friendSections.push(
+      <div key="note" style={styles.friendNote}>Данные не загрузились</div>
+    )
+  }
 
   return createPortal(
     <div ref={overlayRef} style={styles.overlay} onClick={onClose}>
@@ -89,7 +100,7 @@ export default function PlayerProfileModal({ row, onClose }) {
           streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
           lastWorkout={pub?.last_workout || null}
           showLastWorkout={pub?.show_last_workout ?? true}
-          statsLoading={pub === null}
+          statsLoading={pub === null && !failed}
           sections={friendSections}
         />
       </div>
