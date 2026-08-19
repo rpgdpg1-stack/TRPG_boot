@@ -29,10 +29,11 @@ description: "Входной скил для ЛЮБОГО запроса по п
 - **Стек:** Vite + React 18 + React Router 6 + Supabase + Telegram WebApp SDK.
   Деплой на Vercel. Медиа на Selectel S3, бакет `trpg`. Стили — CSS (НЕ Tailwind).
 - **Supabase Ref:** `jybwxbqmnommazjfucbq`. Бот: `@TrainingRPGbot`.
-- **Прогресс (ЛИЧНЫЙ, без соревновательности):** мускулы 💪 (валюта прогресса), недельные стрики,
-  ежедневные активности/квесты, история тренировок, любимые упражнения, друзья+профиль на личном
-  прогрессе (приватность). **Отказ (удалено из кода):** лиги, XP-как-система, сезоны, лидерборды/рейтинг,
-  ранги/рамки-награды, подстраховка. Не возвращать без явной просьбы. См. память «соц-архитектура».
+- **Прогресс (ЛИЧНЫЙ, без соревновательности):** недельная серия, ежедневные активности,
+  история тренировок, рабочие веса, любимые упражнения, друзья + профиль на личном прогрессе
+  (приватность). **Отказ (удалено из кода и БАЗЫ):** любая валюта — мускулы, XP, очки, награды;
+  лиги, сезоны, лидерборды/рейтинг, ранги/рамки, подстраховка. Не возвращать без явной просьбы.
+  См. память «соц-архитектура».
 - **Программы:** `split` (A/B/C силовой), `fullbody` (A/B, каждый день на всё тело — 2 дня × 12)
   и `swim` («Заплыв 45», дистанция). Плюс пользовательские:
   своя (`source: 'custom'`) и от друга (`source: 'shared'`) — грузятся в реестр в рантайме.
@@ -278,7 +279,6 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
         .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md
 
 design/muscle-icons/  body-torso.svg · body-legs.svg (исходники силуэта для Figma;
-                      правишь форму там → переносишь координаты в MuscleGroupIcon.jsx)
 
 src/
 ├── App.jsx · main.jsx (Sentry PROD)
@@ -289,14 +289,18 @@ src/
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile recovery reset_days reset_progress
 │                   rewards settings stats stretching support swimming
-├── components/     ActionButton AnchorMenu CategoryList ChevronIcon ClockIcon CloseCross ConfirmModal DailyQuests
-│                   QuickPickList RocketIcon RocketToggle
-│                   ExerciseActionMenu ExerciseCard ExerciseHeaderCard ExercisePicker ExerciseVideo FavCardBody
-│                   FinishConfirmModal FriendRow HeartButton HeartIcon HistoryCalendar HistoryStats
-│                   HomeCards ModalButton MuscleGroupIcon MuscleIcon OfflineBanner PencilIcon PinIcon PixelCheckbox PlaceSwitcher
-│                   PagerArrows PeriodSwitcher PlayerProfileModal ProfileMetrics PoolTag ProfileHeader ProgramCard ProgramEmblem BicepGesture
-│                   SaveFriendProgramModal ScreenTitle ScrollTopButton ShieldCheckIcon SectionCarousel SectionPicker StreakFlame TrendingUpIcon
-│                   TabBar UiIcon WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
+├── components/     ActionButton AdoptExercisesModal AnchorMenu BicepGesture ChevronIcon ClockIcon CloseCross
+│                   ConfirmModal CustomExerciseForm DailyQuests EmptyState ExerciseActionMenu
+│                   ExerciseCard ExerciseHeaderCard ExercisePicker ExercisePlaceholder
+│                   ExerciseVideo FavCardBody FinishConfirmModal FormControls FriendRow
+│                   GroupLabel HeartButton HeartIcon HistoryCalendar HistoryStats HomeCards
+│                   MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows PencilIcon
+│                   PeriodSwitcher PinIcon PlaceSwitcher PlayButton PlayIcon PlayerProfileModal
+│                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
+│                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
+│                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon
+│                   StarIcon StreakFlame StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
+│                   WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
@@ -316,7 +320,7 @@ src/
 supabase/
 ├── config.toml
 ├── migrations/     fk_indexes.sql (индексы под 10 внешних ключей; применена 2026-08-08)
-│                   drop_leaderboard_index.sql (снят users(total_muscles DESC) — рейтингов нет)
+│                   drop_leaderboard_index.sql (снят индекс под рейтинг — рейтингов нет)
 │                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
 │                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
 │                   public_profile_favorites_subgroup.sql (sub_group в любимых у друга)

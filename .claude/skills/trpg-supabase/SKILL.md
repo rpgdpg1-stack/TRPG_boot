@@ -59,7 +59,6 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 - Все таблицы защищены реальными политиками через `auth.uid()`.
 - Хелпер `current_user_id()` мапит `auth.uid()` → внутренний `users.id`.
-- Колоночная защита таблицы `users` от накрутки мускулов.
 - DEFINER-функция `api_reset_my_progress()` для сброса прогресса.
 - Тестовые внутренние user ID: 2 (Дмитрий), 10, 11, 12 (друзья).
 
@@ -98,7 +97,8 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - Дружба — таблица `friendships(user_a_id, user_b_id)`, **симметричная** (одна строка на
   пару, направление любое). Закрепы — `friend_pins(owner_id, friend_id)`, лимит **6**.
 - RPC: `api_get_friends_list(p_user_id)` (список без меня: `user_id, first_name, username,
-  photo_url, last_workout_at, pinned_at, is_training` — поля-заглушки лиг из ответа УБРАНЫ,
+  photo_url, last_workout_at, pinned_at, is_training` — поля-заглушки прежней
+  соревновательной части из ответа УБРАНЫ,
   миграция `drop_league_leftovers.sql`), `api_toggle_pin_friend`,
   `api_remove_friend(p_user_id, p_friend_id)` (удаляет дружбу в обе стороны + закрепы пары;
   `not_friend`/`bad_args`). Клиент — `removeFriend` в `lib/friends-list.js`, UI — «Убрать из
@@ -136,11 +136,12 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 ## История тренировок (`workouts`) и `api_finish_workout`
 
-- Таблица `workouts` (user_id, program_id, day, started_at, finished_at, muscles_earned,
-  notes, **distance_m**). `started_at` = реальный старт сессии (для длительности =
-  `finished_at − started_at`); **distance_m** = метраж заплыва (плавание).
-- `api_finish_workout(p_user_id, p_program_id, p_day, p_exercise_ids, p_reward,
-  p_finished_at DEFAULT now(), p_started_at DEFAULT NULL, p_distance_m DEFAULT NULL)`.
+- Таблица `workouts` (user_id, program_id, day, started_at, finished_at, **distance_m**).
+  `started_at` = реальный старт сессии (для длительности = `finished_at − started_at`);
+  **distance_m** = метраж заплыва (плавание).
+- `api_finish_workout(p_user_id, p_program_id, p_day, p_exercise_ids,
+  p_finished_at DEFAULT now(), p_started_at DEFAULT NULL, p_distance_m DEFAULT NULL)`
+  → `(workout_id, new_weekly_streak, already_completed_today)`.
   `started_at := COALESCE(p_started_at, p_finished_at)` (силовая шлёт реальный старт из
   активной сессии; заплыв — null → длительность 0, меряется метрами). При добавлении
   параметра — **DROP старого оверлоуда + CREATE** (иначе PostgREST не выберет функцию из
@@ -252,21 +253,27 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 - Не смешивать публичные и приватные файлы в одном бакете.
 - Модерация пользовательских аватаров — только server-side через Edge Function.
 
-## Соревновательной части в базе НЕТ (аудит 2026-08-11)
+## Соревновательной части и «валюты» в базе НЕТ (аудит 2026-08-19)
 
-Лиги, сезоны, ранги, значки, титулы, подстраховка — вычищены. Проверено запросами:
-таблиц, колонок, cron-задач, представлений и триггеров под них **не осталось ни одного**.
-Убраны и последние следы: дубли-оверлоуды `api_get_shared_program(p_share_code, p_viewer_id)`
-и `api_save_shared_program`, пять полей-заглушек в `api_get_friends_list`.
+Лиги, сезоны, ранги, значки, титулы, подстраховка вычищены давно. Ревью 19.08 добило
+последнее — то, что оставалось заглушками:
 
-**Осталось намеренно:** `new_badge_rank_index` в `api_finish_workout` и `complete_daily_quest` —
-поле всегда NULL (тело не заполняет), но убрать его = пересоздать функцию с выдачей прав, а
-`api_finish_workout` это критический путь каждого завершения тренировки. Польза нулевая, риск
-реальный. Фронт поле не читает. Трогать только заодно с другой правкой этих функций.
+- поля `new_total_muscles` и `new_badge_rank_index` в `api_finish_workout`
+  и `complete_daily_quest` (тела возвращали жёсткие 0 и NULL);
+- параметр `p_reward` там же — он никогда никуда не записывался;
+- колонки `users.total_muscles`, `workouts.muscles_earned`, `daily_quests.reward`.
 
-**НЕ путать с живым:** `users.total_muscles` (валюта личного прогресса), `workouts.muscles_earned`,
-`users.weekly_streak` + `weekly_streak_week`, `exercises.muscle_group`/`muscle_icon`,
-`daily_quests.reward` — всё это в работе, не удалять.
+Тогда же снесены три функции, которые не звал никто: `api_get_program_day`,
+`get_workout_day` (сборка дня переехала на клиент; вторая вдобавок была
+единственной без SECURITY DEFINER) и `upsert_user` (авторизация идёт через
+Edge Function `telegram-auth`, которая пишет в `users` напрямую).
+
+**НЕ путать с живым:** `users.weekly_streak` + `weekly_streak_week` (серия за неделю),
+`exercises.muscle_group` / `muscle_icon` (группы мышц — это навигация, а не игра),
+`workouts.distance_m`. Всё это в работе.
+
+**Правило на будущее:** заглушка в сигнатуре — это не «безобидный ноль», а обещание,
+которое читает следующий разработчик. Либо поле работает, либо его нет.
 
 ## Важно
 

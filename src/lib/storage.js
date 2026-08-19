@@ -303,11 +303,10 @@ export async function clearAllData() {
 
   if (!userId) return
 
-  // Сброс прогресса через DEFINER-функцию: обнуляет total_muscles/стрик,
-  // чистит muscle_history/daily_quests, историю тренировок
-  // (workouts + exercise_sets каскадом), плюс ставит метку
-  // last_progress_reset_at. Прямой апдейт users невозможен
-  // (колоночная защита от накрутки), поэтому идём через RPC.
+  // Сброс прогресса через DEFINER-функцию: обнуляет недельную серию, чистит
+  // отметки активностей и историю тренировок (workouts + exercise_sets
+  // каскадом), плюс ставит метку last_progress_reset_at. Идём через RPC,
+  // потому что политики RLS не дают клиенту править users напрямую.
   const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
   if (resetErr) {
     console.error('[storage] api_reset_my_progress error:', resetErr)
