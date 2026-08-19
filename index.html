@@ -129,8 +129,17 @@
           // Вне Telegram initData пустой — приложению нечем подтвердить, кто ты.
           // Говорим об этом прямо и убираем «Перезапустить»: кнопка, которая
           // заведомо не поможет, злит сильнее, чем её отсутствие.
+          //
+          // ОДНОГО initData МАЛО. Внутри Telegram он тоже бывает пустым — если
+          // telegram-web-app.js не успел загрузиться на плохой связи. Тогда
+          // человек СИДИТ в Telegram, а мы бы отправили его «открыть через
+          // Telegram» и спрятали единственную рабочую кнопку. Поэтому вторым
+          // признаком смотрим адрес: открывая Mini App, Telegram дописывает
+          // в него tgWebApp-параметры, и они на месте даже когда скрипт не дошёл.
           var tg = window.Telegram && window.Telegram.WebApp;
-          if (!tg || !tg.initData) {
+          var url = String(window.location.href || '');
+          var launchedByTelegram = url.indexOf('tgWebApp') !== -1;
+          if ((!tg || !tg.initData) && !launchedByTelegram) {
             var t = el('boot-title');
             var x = el('boot-text');
             var r = el('boot-restart');
