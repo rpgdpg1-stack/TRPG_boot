@@ -61,13 +61,6 @@ export function cacheSet(key, data, ttlMs = TTL.MEDIUM) {
 }
 
 /**
- * Удалить конкретный ключ из кеша.
- */
-export function cacheDelete(key) {
-  cache.delete(key)
-}
-
-/**
  * Удалить все ключи начинающиеся с prefix.
  *
  * Пример: после сохранения свапа надо инвалидировать ВСЕ дни программы,

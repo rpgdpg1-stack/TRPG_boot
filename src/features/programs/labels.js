@@ -63,8 +63,12 @@ export const SUB_GROUP_LABELS = {
   warmup:         'РАЗМИНКА'
 }
 
-/** «СПИНА» → «Спина». */
-const titleCase = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '')
+/**
+ * «СПИНА» → «Спина». Подписи групп и подгрупп хранятся капсом (так они пришли
+ * из первой версии), а показываются обычным регистром — приведение живёт здесь,
+ * одно на всех, чтобы копии в экранах не разъезжались.
+ */
+export const titleCase = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '')
 
 /**
  * Подпись тега упражнения: «Ноги — Квадрицепс».

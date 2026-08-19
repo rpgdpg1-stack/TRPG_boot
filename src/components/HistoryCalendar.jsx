@@ -4,9 +4,9 @@ import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { workoutTimerColor } from '../lib/active-workout'
-import UiIcon from './UiIcon'
 import ClockIcon from './ClockIcon'
 import PagerArrows from './PagerArrows'
+import SectionBadge from './SectionBadge'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import {
   MONTHS_RU, WEEKDAYS_RU, HISTORY_FETCH_LIMIT,
@@ -27,18 +27,6 @@ const MONTHS_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Ию
 function badgeFor(workout) {
   const meta = workoutCategoryMeta(workout)
   return { iconName: meta.iconName, color: meta.color }
-}
-
-// Прямоугольный бейдж с чёрной иконкой (единый вид: ячейка, сводка, попап).
-function Badge({ iconName, color, size = 20, icon = 12 }) {
-  return (
-    <span style={{
-      width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-    }}>
-      <UiIcon name={iconName} size={icon} color="var(--accent-on)" />
-    </span>
-  )
 }
 
 /**
@@ -231,7 +219,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
             {list.length <= 2
               ? list.map((w, wi) => {
                   const b = badgeFor(w)
-                  return <Badge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
+                  return <SectionBadge key={wi} iconName={b.iconName} color={b.color} size={18} icon={11} />
                 })
               : list.map((w, wi) => {
                   const b = badgeFor(w)
@@ -415,7 +403,7 @@ function DayDetail({ data, onClose }) {
             metaParts.push(<span key="time">{formatTimeMsk(w.finished_at)}</span>)
             return (
               <div key={i} style={dstyles.item}>
-                <Badge iconName={b.iconName} color={b.color} size={30} icon={16} />
+                <SectionBadge iconName={b.iconName} color={b.color} size={30} icon={16} />
                 <div style={dstyles.itemText}>
                   <div style={dstyles.itemTitle}>
                     {title}

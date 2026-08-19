@@ -95,16 +95,6 @@ export function formatTimeMsk(iso) {
   return `${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }
 
-// "02.05.26"
-export function formatWorkoutDateShort(iso) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const dd = String(d.getUTCDate()).padStart(2, '0')
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const yy = String(d.getUTCFullYear()).slice(-2)
-  return `${dd}.${mm}.${yy}`
-}
-
 // Относительно: "Сегодня" | "Вчера" | "N дней назад" | "Очень давно" (90+).
 export function formatRelative(iso) {
   if (!iso) return ''

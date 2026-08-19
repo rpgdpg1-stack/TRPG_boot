@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import StarIcon from '../components/StarIcon'
 import { SectionLabel } from '../components/GroupLabel'
 import {
   WINDOWS,
@@ -10,24 +11,6 @@ import {
   getActivitiesConfigSync, fetchActivitiesConfig, saveActivitiesConfig,
   getRecommendedForWindow
 } from '../lib/activities'
-
-/**
- * Конструктор «Активности» (открывается из профиля и по ⋯ на главной).
- *
- * Вверху — две галочки: Рекомендации (базовые, по одной на окно) и Мои активности.
- * Ниже — окна Утро/День/Вечер: рекомендуемая (read-only) + своя (добавить/удалить
- * одну на окно: короткий текст + необязательное описание). Что показывать на главной,
- * решают галочки: обе → обе; только мои → рекомендации выкл; ничего → обе выкл.
- * Конфиг — кросс-девайс (CloudStorage), см. lib/activities.
- */
-function StarIcon({ size = 18, color = 'var(--color-warning)' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3 L14.6 8.6 L20.7 9.3 L16.2 13.5 L17.4 19.5 L12 16.5 L6.6 19.5 L7.8 13.5 L3.3 9.3 L9.4 8.6 Z"
-        fill={color} stroke={color} strokeWidth="1" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 // Галочка-переключатель (чистая): квадрат со скруглением, при вкл — зелёная заливка + галка.
 function Check({ on }) {

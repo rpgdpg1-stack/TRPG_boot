@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { loadExerciseCatalog } from '../features/programs/customProgram'
-import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS, exerciseTagLabel } from '../features/programs/labels'
+import { MUSCLE_GROUP_LABELS, SUB_GROUP_LABELS, exerciseTagLabel, titleCase } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import {
   loadMyExercises, getMyExercisesSync, createMyExercise, updateMyExercise,
@@ -318,7 +318,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
     const disabled = atLimit && !added
     const tag = custom
       ? exerciseTagLabel(ex.muscle_group, ex.sub_group)
-      : toTitleCase(
+      : titleCase(
           SUB_GROUP_LABELS[ex.sub_group] || ex.sub_group ||
           MUSCLE_GROUP_LABELS[ex.muscle_group] || ex.muscle_group
         )
@@ -503,7 +503,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                 color: active ? 'var(--color-text)' : 'var(--color-text-secondary)'
               }}
             >
-              {toTitleCase(MUSCLE_GROUP_LABELS[group] || group)}
+              {titleCase(MUSCLE_GROUP_LABELS[group] || group)}
             </button>
           )
         })}
@@ -539,7 +539,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
                     color: active ? 'var(--color-text)' : 'var(--color-text-secondary)'
                   }}
                 >
-                  {toTitleCase(SUB_GROUP_LABELS[sub] || sub)}
+                  {titleCase(SUB_GROUP_LABELS[sub] || sub)}
                 </button>
               )
             })}
@@ -698,11 +698,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
   )
 
   return createPortal(content, document.body)
-}
-
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {

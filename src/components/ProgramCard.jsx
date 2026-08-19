@@ -17,6 +17,7 @@ import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
 import PlayButton from './PlayButton'
+import PlayIcon from './PlayIcon'
 
 // Долгое нажатие по карточке программы — те же пороги, что у карточки упражнения.
 const LONG_PRESS_MS = 500
@@ -307,21 +308,6 @@ export default function ProgramCard({
         />
       )}
     </div>
-  )
-}
-
-// Плей-треугольник со скруглёнными углами (fill + round join), currentColor.
-function PlayIcon({ size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path
-        d="M8 5.6 L18 12 L8 18.4 Z"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }
 

@@ -95,26 +95,6 @@ export function getProgramsByCategory(categoryId) {
 }
 
 /**
- * Кол-во программ в категории (статические + пользовательские).
- * Для динамической подписи «N программ» на главной и в разделе.
- */
-export function getCategoryProgramCount(categoryId) {
-  return getProgramsByCategory(categoryId).length
-}
-
-/**
- * Склонение слова «программа» по числу: 1 программа, 2 программы, 5 программ.
- */
-export function pluralPrograms(n) {
-  const last = n % 10
-  const lastTwo = n % 100
-  if (lastTwo >= 11 && lastTwo <= 14) return 'программ'
-  if (last === 1) return 'программа'
-  if (last >= 2 && last <= 4) return 'программы'
-  return 'программ'
-}
-
-/**
  * Получить слоты дня программы по slug и (опц.) месту.
  * Если место передано и у программы есть набор для него (data.locations[place]) —
  * берём его; иначе фолбэк на data.days (набор «Зал» / встроенная программа).

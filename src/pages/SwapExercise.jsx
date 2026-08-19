@@ -4,7 +4,7 @@ import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
 import { getExercisesForSubgroup, saveExerciseSwap, getExerciseById } from '../features/exercises/api'
-import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS } from '../features/programs/labels'
+import { SUB_GROUP_LABELS, MUSCLE_GROUP_LABELS, titleCase } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
@@ -288,7 +288,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
 
   const colors = getMuscleGroupColors(muscleGroup)
   // Один тег — подгруппа, в цвете основной группы (имя группы тут не дублируем).
-  const tagLabel = toTitleCase(
+  const tagLabel = titleCase(
     SUB_GROUP_LABELS[exercise.sub_group] || exercise.sub_group ||
     MUSCLE_GROUP_LABELS[muscleGroup] || muscleGroup || ''
   )
@@ -338,11 +338,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
       </div>
     </button>
   )
-}
-
-function toTitleCase(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 const styles = {

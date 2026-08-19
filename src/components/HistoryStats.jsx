@@ -1,6 +1,7 @@
 import UiIcon from './UiIcon'
 import ClockIcon from './ClockIcon'
 import { formatHours, formatMeters, CATEGORY_ORDER } from '../utils/history'
+import SectionBadge from './SectionBadge'
 
 // Иконки показателей — одного размера (мускул / часы).
 const ICON = 20
@@ -16,18 +17,6 @@ const ICON = 20
  *   Нет тренировок → мотивирующая заглушка.
  * `summary` — результат `summarizeWorkouts` (`{ count, minutes, byType }`).
  */
-
-// Прямоугольный бейдж с чёрной иконкой (единый вид с ячейками/сводкой календаря).
-function Badge({ iconName, color, size = 22, icon = 13 }) {
-  return (
-    <span style={{
-      width: size, height: size, borderRadius: 'var(--radius-xs)', background: color,
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-    }}>
-      <UiIcon name={iconName} size={icon} color="var(--accent-on)" />
-    </span>
-  )
-}
 
 // Вид активности: иконка/цвет/название + какая метрика (счёт или дистанция).
 const TYPE_META = {
@@ -91,7 +80,7 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
           const showDist = m.metric === 'distance' && b.distance > 0
           return (
             <div key={k} style={styles.row}>
-              <Badge iconName={m.icon} color={m.color} />
+              <SectionBadge iconName={m.icon} color={m.color} />
               <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
               <span style={styles.rowLabel}>{m.label}</span>
               {showDist && (

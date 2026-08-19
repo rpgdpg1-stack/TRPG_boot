@@ -50,6 +50,7 @@ import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
 import SkeletonCard from '../components/workout/SkeletonCard'
 import DayPicker from '../components/workout/DayPicker'
 import { getRealScrollY, groupByMuscleGroup } from '../utils/workout-day'
+import PlayIcon from '../components/PlayIcon'
 
 /**
  * Экран дня тренировки.
@@ -125,15 +126,6 @@ const QUICK_POPUP_MS = 1800
 const workoutEntryFromHome = new Map()
 // Вход из «Любимых упражнений» (по «+») — «Назад» возвращает шагом истории туда.
 const workoutEntryFromFav = new Map()
-
-/** Плей-треугольник (как на главной) — для кнопки «Начать». */
-function PlayIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5.6 L18 12 L8 18.4 Z" stroke="currentColor" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 /** Флажок-финиш (Material-стиль) — для кнопки «Завершить». */
 function FinishIcon({ size = 17 }) {
