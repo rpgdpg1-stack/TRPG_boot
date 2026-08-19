@@ -45,7 +45,7 @@ const PING_TIMEOUT_MS = 5 * 1000
 // ответа), но каждые 20 секунд сыпало предупреждением в логи проекта — и
 // настоящие 4xx в них терялись.
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || ''
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_KEY || ''
 const PING_URL = SUPABASE_URL ? `${SUPABASE_URL}/auth/v1/health` : ''
 
 // Текущий статус в памяти. Стартуем с того что говорит браузер —
