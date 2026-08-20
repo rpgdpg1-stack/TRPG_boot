@@ -5,11 +5,15 @@
  * так что cache-заголовки и загрузочный сторож в index.html не срабатывают.
  *
  * Решение: в бандл вшит __BUILD_ID__ (vite.config.js), рядом с ним на сервере
- * лежит version.json с тем же id. Когда приложение просыпается после ≥60с
- * скрытости (visibilitychange → visible; Telegram-событие activated ведёт себя
- * так же через видимость) — фетчим version.json с no-store и сравниваем. Не
- * совпало → на сервере уже другая сборка, а мы живём старой → жёсткая
- * перезагрузка (сброс caches + cache-busting URL), как в ErrorBoundary/стороже.
+ * лежит version.json с тем же id. Фетчим его с no-store и сравниваем в двух
+ * точках:
+ *   • на СТАРТЕ приложения — WebView может поднять index.html из своего кеша
+ *     при полном перезапуске мини-аппа (хостинг заголовков кеширования не
+ *     отдаёт), и тогда человек открывает заведомо старую сборку;
+ *   • при пробуждении после ≥60с скрытости (visibilitychange → visible;
+ *     Telegram-событие activated ведёт себя так же через видимость).
+ * Сервер новее → жёсткая перезагрузка (сброс caches + cache-busting URL),
+ * как в ErrorBoundary/стороже.
  *
  * Пробуждение — безопасный момент для перезагрузки: юзер ещё не начал
  * взаимодействовать, а весь рабочий прогресс (активная сессия, галочки,
@@ -38,7 +42,18 @@ function hardReload() {
       window.caches.keys().then(ks => ks.forEach(k => window.caches.delete(k)))
     }
   } catch (e) { /* ignore */ }
-  window.location.replace(window.location.pathname + '?r=' + Date.now())
+  // Адрес пересобираем ЦЕЛИКОМ, сохраняя query и hash. Раньше оставался голый
+  // pathname — а Telegram передаёт initData и start_param именно в hash, и
+  // после такой перезагрузки приложение могло проснуться без подписи входа
+  // (экран «Откройте через Telegram») или потерять ссылку-приглашение.
+  // Метка ?r= остаётся: она обходит кеш WebView на самом index.html.
+  try {
+    const url = new URL(window.location.href)
+    url.searchParams.set('r', Date.now().toString(36))
+    window.location.replace(url.toString())
+  } catch (e) {
+    window.location.reload()
+  }
 }
 
 function recentlyReloaded() {
@@ -54,15 +69,44 @@ async function checkVersion() {
     const res = await fetch('/version.json?ts=' + Date.now(), { cache: 'no-store' })
     if (!res.ok) return
     const data = await res.json()
-    if (data?.id && data.id !== MY_BUILD_ID) {
+    if (data?.id && data.id !== MY_BUILD_ID && isNewer(data.id, MY_BUILD_ID)) {
       console.warn('[version-check] устаревшая сборка', MY_BUILD_ID, '→', data.id, '— перезагружаю')
       hardReload()
     }
   } catch (e) { /* сети нет / dev — молча, оффлайн работе не мешаем */ }
 }
 
+/**
+ * Серверная сборка новее нашей? id — это время сборки в base36, поэтому
+ * сравниваем как числа, а не как строки.
+ *
+ * Зачем: «не совпало» само по себе не значит «мы устарели». Промежуточный кеш
+ * вполне может отдать version.json СТАРЕЕ того бандла, который у нас уже
+ * загружен, — и тогда перезагрузка ничего не исправит, а просто мигнёт экраном.
+ * Реагируем только на движение вперёд; всё непонятное (id не разбирается)
+ * трактуем как «обновление есть», иначе сторож замолчит на первой же неудаче.
+ */
+function isNewer(serverId, myId) {
+  const a = parseInt(serverId, 36)
+  const b = parseInt(myId, 36)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return true
+  return a > b
+}
+
 /** Запустить вахтёра (один раз, из App). */
 export function startVersionWatch() {
+  // Проверка на СТАРТЕ — главный случай, а не запасной. Заголовков кеширования
+  // хостинг не отдаёт, поэтому WebView Telegram спокойно достаёт index.html из
+  // своего кеша при полном перезапуске мини-аппа: человек «закрыл и открыл
+  // заново», получил старый бандл, а перехода фон→экран не было — и сторож,
+  // слушающий только видимость, молчал. Именно так и живут по нескольку дней
+  // на версии, которую давно починили.
+  //
+  // Запускаем сразу, не выжидая: ответ приходит за доли секунды и обычно
+  // успевает попасть в загрузочный экран, так что перезагрузка проходит
+  // незаметно. Прогресс тренировки лежит в localStorage и её переживает.
+  checkVersion()
+
   let hiddenAt = 0
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
