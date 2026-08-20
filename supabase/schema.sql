@@ -54,7 +54,8 @@ CREATE SEQUENCE IF NOT EXISTS public.workouts_id_seq;
 -- (сессию выдаёт GoTrue). show_* — настройки приватности профиля.
 CREATE TABLE IF NOT EXISTS public.users (
   id bigint DEFAULT nextval('users_id_seq'::regclass) NOT NULL,
-  telegram_id bigint NOT NULL,
+  -- Не NOT NULL: аккаунт может родиться в браузере и никогда не увидеть Telegram.
+  telegram_id bigint,
   first_name text,
   username text,
   photo_url text,
@@ -70,7 +71,11 @@ CREATE TABLE IF NOT EXISTS public.users (
   show_stats boolean DEFAULT false NOT NULL,
   show_favorites boolean DEFAULT false NOT NULL,
   show_weights boolean DEFAULT true NOT NULL,
-  training_since timestamp with time zone
+  training_since timestamp with time zone,
+  -- Второй способ входа. Хранится только нормализованным (нижний регистр,
+  -- без пробелов) — этим занимается normalize_email.
+  email text,
+  email_verified_at timestamp with time zone
 );
 
 -- Каталог упражнений. owner_id IS NULL — упражнение приложения, owner_id
@@ -236,6 +241,24 @@ CREATE TABLE IF NOT EXISTS public.heartbeat (
   last_ping timestamp with time zone DEFAULT now() NOT NULL
 );
 
+-- Одноразовые коды подтверждения почты.
+-- Хранится НЕ код, а его отпечаток: утёкшая таблица не отдаёт действующие коды.
+-- Отпечаток считает Edge Function с секретной солью (иначе шесть цифр
+-- перебираются по словарю за секунды).
+CREATE TABLE IF NOT EXISTS public.email_codes (
+  id bigserial PRIMARY KEY,
+  email text NOT NULL,
+  code_hash text NOT NULL,
+  -- 'login' — вход в браузере, 'link' — привязка почты изнутри Telegram.
+  -- Разделены намеренно: код для привязки не должен работать как ключ входа.
+  purpose text NOT NULL CHECK (purpose IN ('login', 'link')),
+  user_id bigint REFERENCES public.users(id) ON DELETE CASCADE,
+  attempts smallint NOT NULL DEFAULT 0,
+  expires_at timestamp with time zone NOT NULL,
+  consumed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 ALTER TABLE public.friend_pins ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY;
 ALTER TABLE public.user_exercise_notes ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY;
 
@@ -306,6 +329,13 @@ ALTER TABLE public.workouts ADD CONSTRAINT workouts_program_id_fkey FOREIGN KEY 
 ALTER TABLE public.workouts ADD CONSTRAINT workouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 
+-- Железное правило: у записи обязан остаться хотя бы один способ войти.
+-- Держим его в базе, а не в коде, — тогда ошибка в отвязке не сможет запереть
+-- человека снаружи собственного аккаунта.
+ALTER TABLE public.users ADD CONSTRAINT users_has_login_method
+  CHECK (telegram_id IS NOT NULL OR email IS NOT NULL);
+
+
 -- ── ИНДЕКСЫ ────────────────────────────────────────────────────────────────
 -- Дубли неуникальных индексов рядом с UNIQUE тут не заводить: уникальный
 -- обслуживает те же запросы, а лишний обновляется на каждой записи.
@@ -332,6 +362,14 @@ CREATE INDEX IF NOT EXISTS idx_user_exercise_weights_exercise_id ON public.user_
 CREATE INDEX IF NOT EXISTS idx_user_favorite_exercises_exercise_id ON public.user_favorite_exercises USING btree (exercise_id);
 CREATE INDEX IF NOT EXISTS idx_workouts_program_id ON public.workouts USING btree (program_id);
 CREATE INDEX IF NOT EXISTS idx_workouts_user ON public.workouts USING btree (user_id, finished_at DESC);
+
+
+-- Уникальность почты по lower(): страховка на случай записи мимо normalize_email.
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key
+  ON public.users (lower(email)) WHERE email IS NOT NULL;
+-- По нему идут обе горячие операции с кодами: проверка и счёт частоты запросов.
+CREATE INDEX IF NOT EXISTS email_codes_email_created_idx
+  ON public.email_codes (email, created_at DESC);
 
 
 -- ── ФУНКЦИИ ────────────────────────────────────────────────────────────────
@@ -1438,6 +1476,317 @@ end;
 $function$;
 
 
+-- ВХОД ПО ПОЧТЕ (второй способ входа рядом с Telegram).
+-- Функции с префиксом srv_ фронту НЕ предназначены: их зовёт только Edge
+-- Function под service_role. Префикс важен буквально — блок прав в конце файла
+-- выдаёт anon доступ ко всем api_*, и под тем именем srv_email_attach позволил
+-- бы привязать свою почту к чужому аккаунту, то есть войти в него.
+
+CREATE OR REPLACE FUNCTION public.normalize_email(p_email text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+  SELECT NULLIF(lower(btrim(COALESCE(p_email, ''))), '');
+$function$;
+
+-- Пустой ли аккаунт — вопрос ровно один: потеряет ли человек что-нибудь, если
+-- эту запись стереть. Поэтому смотрим ВСЁ, что он мог накопить, а не только
+-- тренировки: программа, своё упражнение, друг и даже сохранённый вес — повод
+-- аккаунт не трогать.
+CREATE OR REPLACE FUNCTION public.account_is_empty(p_user_id bigint)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT NOT (
+       EXISTS (SELECT 1 FROM public.workouts               WHERE user_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.programs               WHERE owner_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.exercises              WHERE owner_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.user_exercise_weights  WHERE user_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.user_favorite_exercises WHERE user_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.user_exercise_notes    WHERE user_id = p_user_id)
+    OR EXISTS (SELECT 1 FROM public.friendships            WHERE user_a_id = p_user_id OR user_b_id = p_user_id)
+  );
+$function$;
+
+-- Выпуск кода. Ограничения от перебора живут ЗДЕСЬ, а не в приложении: минута
+-- между письмами — чтобы адрес нельзя было завалить почтой, пять в час — чтобы
+-- рассылкой не пользовались через нашу форму.
+CREATE OR REPLACE FUNCTION public.srv_email_issue_code(p_email text, p_purpose text, p_code_hash text, p_ttl_seconds integer DEFAULT 600, p_user_id bigint DEFAULT NULL::bigint)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_email text := public.normalize_email(p_email);
+  v_last timestamptz;
+  v_hour_count int;
+BEGIN
+  IF v_email IS NULL OR v_email NOT LIKE '%_@_%.__%' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'bad_email');
+  END IF;
+  IF p_purpose NOT IN ('login', 'link') OR p_code_hash IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'bad_args');
+  END IF;
+
+  SELECT max(created_at) INTO v_last
+    FROM public.email_codes WHERE email = v_email;
+
+  IF v_last IS NOT NULL AND v_last > now() - interval '60 seconds' THEN
+    RETURN jsonb_build_object(
+      'ok', false, 'error', 'too_soon',
+      'retry_after', ceil(extract(epoch FROM (v_last + interval '60 seconds' - now())))::int
+    );
+  END IF;
+
+  SELECT count(*) INTO v_hour_count
+    FROM public.email_codes
+   WHERE email = v_email AND created_at > now() - interval '1 hour';
+
+  IF v_hour_count >= 5 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'rate_limited');
+  END IF;
+
+  -- Прошлые коды этого адреса гасим: действующим остаётся только последний,
+  -- иначе старое письмо из почты работало бы наравне со свежим.
+  UPDATE public.email_codes SET consumed_at = now()
+   WHERE email = v_email AND consumed_at IS NULL;
+
+  INSERT INTO public.email_codes (email, code_hash, purpose, user_id, expires_at)
+  VALUES (v_email, p_code_hash, p_purpose, p_user_id,
+          now() + make_interval(secs => greatest(60, least(p_ttl_seconds, 1800))));
+
+  DELETE FROM public.email_codes WHERE created_at < now() - interval '1 day';
+
+  RETURN jsonb_build_object('ok', true, 'email', v_email);
+END;
+$function$;
+
+-- Проверка кода. Пять попыток: человек ошибается один-два раза, перебор шести
+-- цифр требует тысяч. На шестой код сгорает — новый запрашивается письмом,
+-- а там своя минутная пауза.
+CREATE OR REPLACE FUNCTION public.srv_email_verify_code(p_email text, p_purpose text, p_code_hash text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_email text := public.normalize_email(p_email);
+  v_row public.email_codes;
+BEGIN
+  IF v_email IS NULL OR p_code_hash IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'bad_args');
+  END IF;
+
+  SELECT * INTO v_row
+    FROM public.email_codes
+   WHERE email = v_email
+     AND purpose = p_purpose
+     AND consumed_at IS NULL
+     AND expires_at > now()
+   ORDER BY created_at DESC
+   LIMIT 1;
+
+  IF v_row.id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_code');
+  END IF;
+
+  IF v_row.attempts >= 5 THEN
+    UPDATE public.email_codes SET consumed_at = now() WHERE id = v_row.id;
+    RETURN jsonb_build_object('ok', false, 'error', 'too_many_attempts');
+  END IF;
+
+  IF v_row.code_hash <> p_code_hash THEN
+    UPDATE public.email_codes SET attempts = attempts + 1 WHERE id = v_row.id;
+    RETURN jsonb_build_object('ok', false, 'error', 'wrong_code',
+                              'attempts_left', 4 - v_row.attempts);
+  END IF;
+
+  UPDATE public.email_codes SET consumed_at = now() WHERE id = v_row.id;
+
+  RETURN jsonb_build_object('ok', true, 'email', v_email, 'user_id', v_row.user_id);
+END;
+$function$;
+
+-- Привязка почты. Здесь живёт решение «аккаунты НЕ сливаем»: вместо переноса
+-- чужих тренировок с разбором конфликтов переносим СПОСОБ ВХОДА с пустого
+-- аккаунта на тот, где есть данные. Пустой аккаунт потерять нельзя — в нём
+-- нечего терять. Данные с обеих сторон — честный отказ, решает человек.
+-- final_user_id может ОТЛИЧАТЬСЯ от исходного: сессию выдавать на него.
+CREATE OR REPLACE FUNCTION public.srv_email_attach(p_user_id bigint, p_email text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_email text := public.normalize_email(p_email);
+  v_me public.users;
+  v_other public.users;
+  v_freed_auth uuid;
+BEGIN
+  IF v_email IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'bad_email');
+  END IF;
+
+  SELECT * INTO v_me FROM public.users WHERE id = p_user_id;
+  IF v_me.id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_user');
+  END IF;
+
+  SELECT * INTO v_other FROM public.users
+   WHERE lower(email) = v_email AND id <> p_user_id;
+
+  IF v_me.email IS NOT NULL AND lower(v_me.email) = v_email THEN
+    RETURN jsonb_build_object('ok', true, 'final_user_id', v_me.id,
+                              'final_auth_id', v_me.auth_id, 'changed', false);
+  END IF;
+
+  IF v_other.id IS NOT NULL THEN
+    IF public.account_is_empty(v_other.id) THEN
+      v_freed_auth := v_other.auth_id;
+      DELETE FROM public.users WHERE id = v_other.id;
+
+    ELSIF public.account_is_empty(v_me.id) THEN
+      IF v_other.telegram_id IS NOT NULL AND v_other.telegram_id IS DISTINCT FROM v_me.telegram_id THEN
+        RETURN jsonb_build_object('ok', false, 'error', 'other_has_telegram');
+      END IF;
+
+      -- ПОРЯДОК ВАЖЕН: сначала сносим пустую запись, только потом переносим
+      -- её telegram_id. Наоборот нельзя — номер уникален, и на миг он
+      -- принадлежал бы сразу двум записям. Обнулить номер заранее тоже не
+      -- выйдет: у пустой записи нет почты, а база не разрешает остаться
+      -- совсем без способа входа.
+      v_freed_auth := v_me.auth_id;
+      DELETE FROM public.users WHERE id = v_me.id;
+
+      UPDATE public.users
+         SET telegram_id = COALESCE(v_me.telegram_id, telegram_id),
+             first_name  = COALESCE(first_name, v_me.first_name),
+             username    = COALESCE(username, v_me.username),
+             photo_url   = COALESCE(photo_url, v_me.photo_url),
+             email_verified_at = COALESCE(email_verified_at, now()),
+             updated_at = now()
+       WHERE id = v_other.id;
+
+      RETURN jsonb_build_object('ok', true, 'final_user_id', v_other.id,
+                                'final_auth_id', v_other.auth_id,
+                                'freed_auth_id', v_freed_auth,
+                                'moved', true, 'changed', true);
+    ELSE
+      RETURN jsonb_build_object('ok', false, 'error', 'both_have_data');
+    END IF;
+  END IF;
+
+  UPDATE public.users
+     SET email = v_email, email_verified_at = now(), updated_at = now()
+   WHERE id = p_user_id;
+
+  RETURN jsonb_build_object('ok', true, 'final_user_id', v_me.id,
+                            'final_auth_id', v_me.auth_id,
+                            'freed_auth_id', v_freed_auth, 'changed', true);
+END;
+$function$;
+
+-- Вход по почте: находим аккаунт или заводим новый, вообще без Telegram.
+CREATE OR REPLACE FUNCTION public.srv_email_login_user(p_email text, p_auth_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_email text := public.normalize_email(p_email);
+  v_user public.users;
+  v_id bigint;
+BEGIN
+  IF v_email IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'bad_email');
+  END IF;
+
+  SELECT * INTO v_user FROM public.users WHERE lower(email) = v_email;
+
+  IF v_user.id IS NOT NULL THEN
+    -- auth_id проставляем, только если его нет: перезаписывать существующий
+    -- нельзя, иначе разорвём вход через Telegram у того же человека.
+    IF v_user.auth_id IS NULL AND p_auth_id IS NOT NULL THEN
+      UPDATE public.users SET auth_id = p_auth_id, updated_at = now() WHERE id = v_user.id;
+      v_user.auth_id := p_auth_id;
+    END IF;
+    UPDATE public.users SET email_verified_at = COALESCE(email_verified_at, now())
+     WHERE id = v_user.id;
+    RETURN jsonb_build_object('ok', true, 'user_id', v_user.id,
+                              'auth_id', v_user.auth_id, 'created', false);
+  END IF;
+
+  INSERT INTO public.users (email, email_verified_at, auth_id, first_name)
+  VALUES (v_email, now(), p_auth_id, split_part(v_email, '@', 1))
+  RETURNING id INTO v_id;
+
+  RETURN jsonb_build_object('ok', true, 'user_id', v_id,
+                            'auth_id', p_auth_id, 'created', true);
+END;
+$function$;
+
+-- Отвязка. Обе кнопки упираются в одно правило: последнюю дверь убрать нельзя.
+-- Проверка стоит и здесь, и в CHECK на users — здесь ради внятного ответа
+-- человеку, там ради того, чтобы ошибка в коде не заперла его снаружи.
+CREATE OR REPLACE FUNCTION public.api_unlink_my_email()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  uid bigint := public.current_user_id();
+  v_user public.users;
+BEGIN
+  IF uid IS NULL THEN RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated'); END IF;
+  SELECT * INTO v_user FROM public.users WHERE id = uid;
+
+  IF v_user.email IS NULL THEN
+    RETURN jsonb_build_object('ok', true, 'changed', false);
+  END IF;
+  IF v_user.telegram_id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'last_login_method');
+  END IF;
+
+  UPDATE public.users SET email = NULL, email_verified_at = NULL, updated_at = now()
+   WHERE id = uid;
+  RETURN jsonb_build_object('ok', true, 'changed', true);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.api_unlink_my_telegram()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  uid bigint := public.current_user_id();
+  v_user public.users;
+BEGIN
+  IF uid IS NULL THEN RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated'); END IF;
+  SELECT * INTO v_user FROM public.users WHERE id = uid;
+
+  IF v_user.telegram_id IS NULL THEN
+    RETURN jsonb_build_object('ok', true, 'changed', false);
+  END IF;
+  IF v_user.email IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'last_login_method');
+  END IF;
+
+  UPDATE public.users SET telegram_id = NULL, updated_at = now() WHERE id = uid;
+  RETURN jsonb_build_object('ok', true, 'changed', true);
+END;
+$function$;
+
+
 -- ── ТРИГГЕРЫ ───────────────────────────────────────────────────────────────
 CREATE TRIGGER trg_record_weight_point
   AFTER INSERT OR UPDATE OF weight_kg ON public.user_exercise_weights
@@ -1558,6 +1907,13 @@ CREATE POLICY "Allow all heartbeat" ON public.heartbeat FOR ALL TO public
   USING (true) WITH CHECK (true);
 
 
+-- Коды подтверждения: политик НЕТ намеренно. Ни anon, ни authenticated не
+-- должны видеть эту таблицу вовсе — с ней работает только сервер под
+-- service_role, который RLS обходит.
+ALTER TABLE public.email_codes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.email_codes FROM anon, authenticated;
+
+
 -- ── ПРАВА НА ФУНКЦИИ ───────────────────────────────────────────────────────
 -- Приложение ходит anon-ключом, поэтому право на выполнение нужно роли anon.
 -- Сначала снимаем у PUBLIC, потом выдаём явно — чтобы список был осознанным,
@@ -1577,3 +1933,13 @@ END $$;
 
 GRANT EXECUTE ON FUNCTION public.complete_daily_quest(bigint, text, text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.current_user_id() TO anon, authenticated, service_role;
+
+-- Серверные функции входа по почте: только service_role. Общий блок выше их
+-- не трогает — он про api_*, и это единственная причина, по которой они
+-- называются srv_*.
+REVOKE ALL ON FUNCTION public.srv_email_issue_code(text, text, text, int, bigint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_email_attach(bigint, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_email_login_user(text, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.account_is_empty(bigint) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.normalize_email(text) TO anon, authenticated, service_role;
