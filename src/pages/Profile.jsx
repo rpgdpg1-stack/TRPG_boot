@@ -105,6 +105,7 @@ export default function Profile() {
     {
       title: 'Система',
       items: [
+        { id: 'account',  icon: 'ui:mail',     iconColor: 'var(--color-text-secondary)', title: 'Вход',      subtitle: 'Telegram · Почта', path: '/account' },
         { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
       ]
     }

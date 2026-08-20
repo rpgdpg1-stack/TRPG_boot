@@ -8,8 +8,10 @@
  *   3. Обмениваем возвращённый одноразовый token_hash на сессию через verifyOtp.
  *      После этого supabase-клиент работает от имени проверенного юзера (auth.uid()).
  *
- * Без данных Telegram вход не происходит — приложение работает в read-only режиме.
- * Веб-вход через почту появится позже как отдельный провайдер Supabase Auth.
+ * ВТОРОЙ ВХОД — ПОЧТА. Вне Telegram данных для входа нет, но может быть уже
+ * выданная сессия: человек входил по коду из письма, и supabase-клиент хранит
+ * её сам. Поэтому без initData мы не сдаёмся сразу, а сперва спрашиваем, нет
+ * ли живой сессии. Нет — приложение покажет экран входа по почте.
  */
 
 import { supabase } from './supabase'
@@ -56,9 +58,13 @@ export async function ensureAuth() {
     const initData = window.Telegram?.WebApp?.initData
 
     if (!initData) {
-      // Нет данных Telegram — вход невозможен.
-      // Веб-вход через почту появится позже как отдельный провайдер.
-      console.warn('[auth] Telegram initData not available. Open through Telegram.')
+      // Браузер. Telegram тут не при чём, но человек мог войти по почте раньше —
+      // сессия хранится клиентом и переживает перезапуск.
+      const fromSession = await loadUserFromSession()
+      if (fromSession) return fromSession
+
+      debug('[auth] нет ни Telegram, ни сессии — покажем вход по почте')
+      authPromise = null
       return null
     }
 
@@ -138,6 +144,45 @@ export async function ensureAuth() {
   })()
 
   return authPromise
+}
+
+/**
+ * Поднять пользователя по уже существующей сессии (вход по почте).
+ *
+ * Возвращает запись из users или null. Используется и при старте в браузере,
+ * и сразу после ввода кода — в обоих случаях сессия уже установлена, остаётся
+ * найти, чья она.
+ */
+export async function loadUserFromSession() {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const authId = sessionData?.session?.user?.id
+    if (!authId) return null
+
+    const { data: userRecord, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_id', authId)
+      .maybeSingle()
+
+    if (error || !userRecord) {
+      // Сессия есть, а записи нет — например, аккаунт удалили с другого
+      // устройства. Держать мёртвую сессию незачем: она будет молча ломать
+      // каждый запрос, поэтому гасим её и просим войти заново.
+      console.warn('[auth] сессия без пользователя, выходим:', error)
+      await supabase.auth.signOut()
+      return null
+    }
+
+    currentUser = userRecord
+    cacheUser(currentUser)
+    debug('[auth] вход по сессии почты:', currentUser.id)
+    emit(EVENTS.USER_READY, currentUser)
+    return currentUser
+  } catch (e) {
+    console.error('[auth] loadUserFromSession exception:', e)
+    return null
+  }
 }
 
 /**

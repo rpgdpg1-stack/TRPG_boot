@@ -33,6 +33,8 @@ import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
+import EmailLogin from './components/EmailLogin'
+import AccountAccess from './pages/AccountAccess'
 import { getRecentWorkouts } from './lib/storage'
 import { HISTORY_FETCH_LIMIT } from './utils/history'
 import { getFriendsList } from './lib/friends-list'
@@ -49,6 +51,10 @@ import { debug } from './lib/debug'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
+  // Кто вошёл. Нужно ровно для одного решения: показывать приложение или экран
+  // входа по почте. Внутри Telegram сюда всегда приезжает человек, снаружи —
+  // только если он уже входил раньше и сессия жива.
+  const [user, setUser] = useState(() => getCurrentUser())
 
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
@@ -65,7 +71,9 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     authPromiseRef.current?.then(async user => {
-      if (cancelled || !user) return
+      if (cancelled) return
+      setUser(user)
+      if (!user) return
       // После авторизации — пробуем разгрести очередь (вдруг с прошлого
       // раза остались несинканутые операции и сеть уже есть).
       syncQueue()
@@ -128,6 +136,31 @@ export default function App() {
     )
   }
 
+  // Не вошли и мы не в Telegram — значит человек открыл приложение в браузере.
+  // Там подтвердить личность нечем, кроме письма: показываем вход по почте.
+  //
+  // Признак Telegram двойной. Одного initData мало: внутри Telegram он бывает
+  // пустым, если его скрипт не успел загрузиться на плохой связи, — и тогда мы
+  // подсунули бы форму входа человеку, который и так уже вошёл. Второй признак
+  // надёжнее: открывая мини-приложение, Telegram дописывает свои параметры
+  // прямо в адрес, и они на месте, даже когда скрипт не доехал.
+  const insideTelegram = !!window.Telegram?.WebApp?.initData ||
+    String(window.location.href || '').indexOf('tgWebApp') !== -1
+
+  if (!user && !insideTelegram) {
+    return (
+      <EmailLogin
+        onSuccess={() => {
+          // Перезагрузка, а не переключение состояния: за стартом приложения
+          // стоит целая цепочка (программы, история, друзья, любимые), и
+          // повторять её вручную из экрана входа значит однажды забыть звено.
+          // Заодно из адреса уходит код приглашения — он уже отработал.
+          window.location.replace(window.location.pathname)
+        }}
+      />
+    )
+  }
+
   return (
     <ErrorBoundary>
       <div className="app">
@@ -149,6 +182,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/account" element={<AccountAccess />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/history" element={<History />} />
           <Route path="/favorite-exercises" element={<FavoriteExercises />} />

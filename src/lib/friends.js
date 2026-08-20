@@ -82,10 +82,15 @@ export function getStartParamReferralCode() {
 /**
  * Поделиться реферальной ссылкой через Telegram.
  *
- * Используем tg.openTelegramLink + URL вида https://t.me/share/url?url=...&text=...
- * который открывает нативный share-диалог. Это работает во всех версиях Telegram.
+ * Ссылка РАЗНАЯ в зависимости от того, откуда приглашают, и это принципиально:
  *
- * Если SDK недоступен (dev в браузере) — копируем ссылку в буфер обмена.
+ *   • из Telegram — ссылка на мини-приложение (t.me/бот/апп?startapp=код) плюс
+ *     нативный диалог «Поделиться»;
+ *   • из браузера — ссылка на сайт (адрес?ref=код), которую открывает кто угодно.
+ *
+ * Наоборот нельзя: человеку, который сидит в браузере и Telegram не пользуется,
+ * ссылка на мини-приложение бесполезна — он её просто не откроет. А раньше
+ * копировалась именно она, потому что браузер считался режимом разработки.
  */
 export async function shareReferralLink() {
   const code = getMyReferralCode()
@@ -94,25 +99,41 @@ export async function shareReferralLink() {
     return false
   }
 
-  const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
-  const appName = import.meta.env.VITE_APP_NAME || 'app'
+  const text = '💪🏻 Тренируйся со мной в TRPG'
+  const insideTelegram = !!tg?.initData
 
-  const link = `https://t.me/${botUsername}/${appName}?startapp=${code}`
-  const text = `💪🏻 Тренируйся со мной в TRPG`
-
-  if (tg && typeof tg.openTelegramLink === 'function') {
+  if (insideTelegram && typeof tg.openTelegramLink === 'function') {
+    const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
+    const appName = import.meta.env.VITE_APP_NAME || 'app'
+    const link = `https://t.me/${botUsername}/${appName}?startapp=${code}`
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
     tg.openTelegramLink(shareUrl)
     return true
   }
 
-  // Fallback для разработки в браузере: копируем в буфер
+  // Браузер: ссылка на сайт. Пришедший по ней попадёт на вход по почте, а код
+  // приглашения доедет до сервера вместе с кодом из письма — дружба заведётся
+  // сама, без отдельного шага «а теперь найдите друга».
+  const webLink = `${window.location.origin}/?ref=${encodeURIComponent(code)}`
+
+  // Родное меню «Поделиться» есть почти на всех телефонах — оно удобнее буфера,
+  // потому что сразу предлагает мессенджеры.
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'TRPG', text, url: webLink })
+      return true
+    } catch (e) {
+      // Человек закрыл меню — это не ошибка, молча уходим в копирование.
+      if (e?.name === 'AbortError') return false
+    }
+  }
+
   try {
-    await navigator.clipboard.writeText(link)
-    window.alert(`Ссылка скопирована:\n${link}`)
+    await navigator.clipboard.writeText(webLink)
+    window.alert(`Ссылка скопирована:\n${webLink}`)
     return true
   } catch (e) {
-    window.alert(`Скопируй ссылку вручную:\n${link}`)
+    window.alert(`Скопируй ссылку вручную:\n${webLink}`)
     return false
   }
 }

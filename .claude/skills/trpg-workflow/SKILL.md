@@ -305,14 +305,15 @@ src/
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            accent active-workout activities auth cache cloud-storage events favorite-exercises friends
+├── lib/            accent active-workout activities auth cache cloud-storage email-auth events favorite-exercises friends
 │                   quick-workout (быстрая тренировка: набор + вкл/выкл)
 │                   use-scroll-lock (заморозка фона под модалками)
 │                   records (личные рекорды)
 │                   friends-list history-view network-status notes offline-queue persistent-cache privacy
 │                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
 │                   version-check weight-editing-state
-├── pages/          Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
+├── pages/          AccountAccess (/account — способы входа: Telegram и почта)
+│                   Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
 │                   Profile ProgramConstructor QuickWorkout Recovery Settings SwapExercise SwimWorkout WorkoutDay
 │                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
 └── utils/          dates history plural storage workout-progress
