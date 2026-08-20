@@ -2,6 +2,7 @@
 /* TRPG — стили (разбито на модули для навигации) */
 /* Порядок важен: токены → база → keyframes → утилиты */
 /* ============================================ */
+@import './styles/fonts.css';       /* @font-face — свои файлы шрифтов (не Google) */
 @import './styles/tokens.css';      /* :root — все дизайн-токены (цвета, отступы, типо, z, тени…) */
 @import './styles/base.css';        /* reset + html/body + .app/скримы + .page (глобальный каркас) */
 @import './styles/keyframes.css';   /* все @keyframes (анимации) */
