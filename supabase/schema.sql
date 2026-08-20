@@ -1835,9 +1835,17 @@ CREATE POLICY read_program_days ON public.program_days FOR SELECT TO public
    FROM programs p
   WHERE ((p.id = program_days.program_id) AND ((p.owner_id IS NULL) OR (p.owner_id = current_user_id()))))));
 
--- Профиль виден всем (имя и аватар нужны в списке друзей), править может только
--- владелец.
-CREATE POLICY us_select_all ON public.users FOR SELECT TO public USING (true);
+-- Своя запись — и только она. Раньше чтение было открыто всем: имя и аватар
+-- нужны в списке друзей, и это казалось безобидным. С появлением почты стало
+-- утечкой персональных данных — anon-ключ лежит в коде приложения, то есть
+-- у всех, и одного запроса хватило бы, чтобы выгрузить адреса.
+--
+-- Списку друзей открытая таблица и не нужна: чужие профили отдают SECURITY
+-- DEFINER функции (api_get_friends_list, api_get_user_public_profile), которые
+-- RLS обходят и возвращают только разрешённые поля. В приложении все прямые
+-- чтения users — свои собственные.
+CREATE POLICY users_select_own ON public.users FOR SELECT TO public
+  USING ((id = current_user_id()));
 CREATE POLICY us_update_own ON public.users FOR UPDATE TO public
   USING ((id = current_user_id())) WITH CHECK ((id = current_user_id()));
 CREATE POLICY us_delete_own ON public.users FOR DELETE TO public
@@ -1943,3 +1951,10 @@ REVOKE ALL ON FUNCTION public.srv_email_attach(bigint, text) FROM PUBLIC, anon, 
 REVOKE ALL ON FUNCTION public.srv_email_login_user(text, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.account_is_empty(bigint) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.normalize_email(text) TO anon, authenticated, service_role;
+
+-- Таблица пользователей: клиенту доступно только чтение (и то — своей записи,
+-- см. политику выше). Записи заводит и правит сервер: Edge Function под
+-- service_role и DEFINER-функции. Право писать у роли приложения означало бы
+-- ровно одно — возможность обойти всю логику входа.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.users FROM anon, authenticated;
+GRANT SELECT ON public.users TO anon, authenticated;
