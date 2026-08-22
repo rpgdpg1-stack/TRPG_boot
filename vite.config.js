@@ -49,7 +49,9 @@ export default defineConfig({
   ].filter(Boolean),
   build: {
     // Карты генерим только под загрузку в Sentry (см. sentryPlugin выше).
-    sourcemap: Boolean(sentryToken)
+    // 'hidden' — карты создаются, но ссылки на них в коде НЕ остаётся: даже
+    // если файл случайно уедет на сервер, браузер о нём не объявит.
+    sourcemap: sentryToken ? 'hidden' : false
   },
   define: {
     __BUILD_ID__: JSON.stringify(buildId)

@@ -19,9 +19,9 @@ export default [
   // Базовые рекомендации ESLint
   js.configs.recommended,
 
-  // Конфиги сборки исполняются в Node — им нужен process (переменные окружения).
+  // Конфиги и скрипты сборки исполняются в Node — им нужны process и console.
   {
-    files: ['vite.config.js'],
+    files: ['vite.config.js', 'scripts/**/*.mjs'],
     languageOptions: { globals: { ...globals.node } },
   },
 

@@ -33,10 +33,11 @@ export async function hashCode(code: string, email: string): Promise<string> {
 /**
  * Письмо с кодом.
  *
- * Вёрстка нарочно простая и светлая: почтовые клиенты режут современный CSS,
- * а тёмный фон половина из них покажет как чёрный прямоугольник с невидимым
- * текстом. Код продублирован обычным текстом — на случай, если картинку писем
- * человек отключил вовсе.
+ * Вёрстка на таблицах и инлайн-стилях: почтовые клиенты режут современный CSS.
+ * Полотно светлое намеренно — сплошной тёмный фон половина клиентов покажет
+ * чёрным прямоугольником с невидимым текстом; фирменная темнота отдана только
+ * плашке с кодом, где потерять её не страшно. Код продублирован обычным
+ * текстом — на случай, если картинки в письмах человек отключил вовсе.
  */
 export async function sendCodeEmail(to: string, code: string, purpose: "login" | "link") {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
@@ -48,15 +49,41 @@ export async function sendCodeEmail(to: string, code: string, purpose: "login" |
     ? "Вы привязываете эту почту к своему аккаунту TRPG."
     : "Вы входите в TRPG по этой почте.";
 
+  // Логотип берём с боевого домена: base64-картинки Gmail и часть клиентов
+  // режут, а внешний PNG по HTTPS показывают все. Если картинки отключены —
+  // на её месте остаётся alt-текст «TRPG», письмо не разваливается.
+  const logo = "https://trpg1.ru/icon-192.png";
+
   const html = `<!doctype html>
-<html lang="ru"><body style="margin:0;padding:24px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;">
-    <tr><td>
-      <div style="font-size:13px;letter-spacing:1px;color:#9ca3af;text-transform:uppercase;">TRPG</div>
-      <h1 style="margin:12px 0 8px;font-size:20px;color:#111827;">${title}</h1>
+<html lang="ru"><body style="margin:0;padding:24px 16px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;">
+    <tr><td style="padding:32px 32px 28px;">
+
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+        <tr>
+          <td style="vertical-align:middle;">
+            <img src="${logo}" width="44" height="44" alt="TRPG"
+                 style="display:block;width:44px;height:44px;border-radius:12px;border:0;" />
+          </td>
+          <td style="vertical-align:middle;padding-left:12px;">
+            <div style="font-size:17px;font-weight:700;color:#0A0A0B;letter-spacing:0.5px;">TRPG</div>
+            <div style="font-size:12px;color:#9ca3af;">тренировки</div>
+          </td>
+        </tr>
+      </table>
+
+      <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#0A0A0B;">${title}</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#4b5563;">${lead} Введите код в приложении:</p>
-      <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#111827;text-align:center;padding:16px 0;background:#f9fafb;border-radius:12px;">${code}</div>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#6b7280;">Код действует 10 минут. Если вы этого не запрашивали — просто удалите письмо, ничего не произойдёт.</p>
+
+      <div style="background:#0A0A0B;border-radius:14px;padding:20px 16px;text-align:center;">
+        <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#9ED153;font-family:'SF Mono',Menlo,Consolas,monospace;">${code}</div>
+      </div>
+
+      <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#6b7280;">Код действует 10 минут. Если вы этого не запрашивали — просто удалите письмо, ничего не произойдёт.</p>
+
+    </td></tr>
+    <tr><td style="padding:16px 32px 20px;border-top:1px solid #f0f0f1;">
+      <div style="font-size:12px;color:#9ca3af;">trpg1.ru · письмо отправлено автоматически, отвечать на него не нужно</div>
     </td></tr>
   </table>
 </body></html>`;
