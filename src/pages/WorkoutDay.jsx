@@ -1171,13 +1171,13 @@ export default function WorkoutDay() {
           style={{
             ...styles.headerCard,
             padding: `${14 - rowCollapse * 6}px 16px`,
-            // Сжавшись в пилюлю, шапка на 2px уходит внутрь с каждой стороны.
+            // Сжавшись в пилюлю, шапка на 4px уходит внутрь с каждой стороны.
             // В развёрнутом виде она — карточка и стоит по общей сетке экрана;
             // пилюля же читается как элемент управления, и лёгкий отступ от
             // краёв отделяет её от списка под ней. Считается от той же доли
             // сжатия, поэтому подбирается плавно, а не скачком в конце.
-            marginLeft: `${rowCollapse * 2}px`,
-            marginRight: `${rowCollapse * 2}px`,
+            marginLeft: `${rowCollapse * 4}px`,
+            marginRight: `${rowCollapse * 4}px`,
             transform: pillArmed ? 'scale(1.03)' : 'scale(1)',
             transition: 'transform 0.16s var(--ease-ios)'
           }}
