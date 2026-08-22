@@ -192,14 +192,17 @@ const styles = {
     flexDirection: 'column',
     gap: 'var(--space-1)'
   },
-  // Точка «сейчас тренируется»: мягко пульсирует, чтобы читалась как живой
-  // статус, а не как метка. Анимация только opacity — дёшево на длинном списке.
+  // Точка «сейчас тренируется». БЕЗ пульсации: движение в списке цепляет глаз
+  // сильнее, чем того стоит статус, и на длинном списке несколько мигающих
+  // точек превращаются в мельтешение. Свечение оставлено — оно и делает точку
+  // «живой», не требуя анимации.
   trainingDot: {
     flexShrink: 0, alignSelf: 'center',
     width: '7px', height: '7px', borderRadius: '50%',
     background: 'var(--color-primary)',
-    boxShadow: '0 0 6px color-mix(in srgb, var(--color-primary) 60%, transparent)',
-    animation: 'trainingDotPulse 2s ease-in-out infinite'
+    boxShadow: '0 0 8px color-mix(in srgb, var(--color-primary) 75%, transparent)',
+    // Отступ от имени: вплотную точка читалась как часть слова.
+    marginLeft: 'var(--space-1)'
   },
   nameRow: {
     display: 'flex',

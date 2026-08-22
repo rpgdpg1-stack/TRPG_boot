@@ -17,6 +17,7 @@
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { localGet, localSet } from '../utils/storage'
+import { cloudGet, cloudKeys } from './cloud-storage'
 import { EVENTS, emit } from './events'
 
 let memory = null
@@ -113,4 +114,55 @@ export async function setPref(key, value) {
 export function resetPrefs() {
   memory = null
   loadedForUser = null
+}
+
+/**
+ * РАЗОВЫЙ ПЕРЕЕЗД старых данных из облака Telegram в настройки аккаунта.
+ *
+ * До браузерной версии здесь жили выбранный раздел, активный день программы
+ * и наборы быстрой тренировки. Просто бросить их нельзя: у людей, которые уже
+ * пользуются приложением, цикл A/B/C начался бы заново, а короткие версии дней
+ * исчезли бы. Поэтому при первом запуске после обновления забираем всё разом.
+ *
+ * Работает только внутри Telegram (в браузере облака нет) и только когда
+ * настройки аккаунта ещё пусты — то есть ровно один раз.
+ */
+export async function migrateFromCloud() {
+  const user = getCurrentUser()
+  if (!user) return
+
+  const already = getPrefsSync()
+  if (Object.keys(already).length > 0) return
+
+  const keys = await cloudKeys()
+  if (!keys.length) return
+
+  // Переносим только знакомое. Мусор и чужие ключи в аккаунт не тащим.
+  const wanted = keys.filter(k =>
+    k === 'favorite_programs' ||
+    k === 'category-swiper-last' ||
+    k.startsWith('program:') ||
+    k.startsWith('quick-set:') ||
+    k.startsWith('quick-on:')
+  )
+  if (!wanted.length) return
+
+  const collected = {}
+  for (const key of wanted) {
+    const raw = await cloudGet(key)
+    if (raw === null || raw === undefined || raw === '') continue
+
+    // Значения приезжают строками — приводим к тому виду, в котором их теперь
+    // читает приложение, иначе «1» не станет включённой ракетой.
+    if (key.startsWith('quick-on:')) collected[key] = raw === '1'
+    else if (key.startsWith('quick-set:') || key === 'favorite_programs') {
+      try { collected[key] = JSON.parse(raw) } catch { /* битое — пропускаем */ }
+    } else collected[key] = raw
+  }
+
+  const entries = Object.entries(collected)
+  if (!entries.length) return
+
+  for (const [key, value] of entries) await setPref(key, value)
+  console.info(`[prefs] перенесено из облака Telegram: ${entries.length}`)
 }

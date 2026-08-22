@@ -143,3 +143,22 @@ function removeCloudItemPromise(key) {
     })
   })
 }
+
+
+/**
+ * Все ключи, что лежат в облаке Telegram. Нужна ровно для одного — разового
+ * переезда старых данных в настройки аккаунта: имена ключей у быстрой
+ * тренировки складываются из программы, места и дня, перечислить их заранее
+ * нельзя. После переезда функция больше никем не используется.
+ */
+export function cloudKeys() {
+  return new Promise((resolve) => {
+    try {
+      const cs = window.Telegram?.WebApp?.CloudStorage
+      if (!cs?.getKeys) { resolve([]); return }
+      cs.getKeys((err, keys) => resolve(err ? [] : (keys || [])))
+    } catch {
+      resolve([])
+    }
+  })
+}

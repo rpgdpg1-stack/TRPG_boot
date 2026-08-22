@@ -34,7 +34,7 @@ import QuickWorkout from './pages/QuickWorkout'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
 import EmailLogin from './components/EmailLogin'
-import { loadPrefs } from './lib/prefs'
+import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
 import FriendInviteModal from './components/FriendInviteModal'
 import { acceptReferral } from './lib/friends'
@@ -85,7 +85,9 @@ export default function App() {
       syncQueue()
       // Настройки аккаунта (закрепы и прочее) — до отрисовки главной, чтобы
       // закреплённая программа не появлялась рывком вторым кадром.
-      loadPrefs().catch(() => {})
+      // Сначала разовый переезд старых данных из облака Telegram, потом чтение:
+      // порядок важен, иначе первое чтение вернёт пусто и запишет пустоту в кеш.
+      migrateFromCloud().catch(() => {}).finally(() => { loadPrefs().catch(() => {}) })
 
       // Пришли по ссылке-приглашению, УЖЕ имея аккаунт. Отдельный случай:
       // у новичка приглашение обрабатывается при входе по коду из письма,

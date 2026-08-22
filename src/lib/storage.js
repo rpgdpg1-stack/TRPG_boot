@@ -10,7 +10,7 @@ import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
 import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
-import { cloudGet, cloudSet, cloudRemove } from './cloud-storage'
+import { cloudGet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 import { clearQueue } from './offline-queue'
@@ -188,29 +188,34 @@ function nextDayInCycle(programId, lastCompleted) {
   return days[(idx + 1) % days.length]
 }
 
+// Ключи настроек: последний завершённый день программы и дата, когда его
+// засчитали. Дата нужна, чтобы вторая тренировка за сутки не сдвигала цикл.
+const lastDayKeyOf = (programId) => `program:${programId}:last_day`
+const lastDayDateKeyOf = (programId) => `program:${programId}:last_day_date`
+
 export async function getActiveDay(programId) {
-  const lastCompleted = await cloudGet(`program:${programId}:last_day`)
-  return nextDayInCycle(programId, lastCompleted)
+  await loadPrefs()
+  return getActiveDaySync(programId)
 }
 
 /**
- * Синхронно: активный день из localStorage (cloudSet дублирует туда же ключ
- * last_day). Нужен для мгновенного старта карточки без мигания «серый→зелёный» —
- * стартовое значение `useState`, а `getActiveDay` потом догонит из Cloud (кросс-
- * девайс). Первый-первый запуск без локального ключа → null (как и раньше).
+ * Синхронно — для мгновенного старта карточки без мигания «серый→зелёный».
+ *
+ * Живёт в настройках АККАУНТА: раньше день лежал в облаке Telegram, и в
+ * браузере цикл A/B/C начинался заново, будто человек не тренировался.
  */
 export function getActiveDaySync(programId) {
-  const lastCompleted = localGet(`program:${programId}:last_day`)
+  const lastCompleted = getPrefSync(lastDayKeyOf(programId), null)
   return nextDayInCycle(programId, lastCompleted)
 }
 
 export async function setLastCompletedDay(programId, day) {
   const today = getTodayKey()
 
-  const lastDayDateKey = `program:${programId}:last_day_date`
-  const lastDayKey = `program:${programId}:last_day`
+  const lastDayDateKey = lastDayDateKeyOf(programId)
+  const lastDayKey = lastDayKeyOf(programId)
 
-  const previousDateRaw = localGet(lastDayDateKey)
+  const previousDateRaw = getPrefSync(lastDayDateKey, null)
   const previousDate = previousDateRaw ? String(previousDateRaw).trim() : null
 
   debug('[setLastCompletedDay] called:', {
@@ -225,15 +230,18 @@ export async function setLastCompletedDay(programId, day) {
     return
   }
 
-  await cloudSet(lastDayKey, day)
-  await cloudSet(lastDayDateKey, today)
+  await setPref(lastDayKey, day)
+  await setPref(lastDayDateKey, today)
 
   debug('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
 }
 
 export async function resetProgramDayCycle(programId) {
-  await cloudRemove(`program:${programId}:last_day`)
-  await cloudRemove(`program:${programId}:last_day_date`)
+  // null, а не удаление строки: настройка снова становится «дня не было»,
+  // и цикл начинается с A. Отдельной операции удаления в настройках нет —
+  // и заводить её ради этого не стоит, разница только в лишней строке в базе.
+  await setPref(lastDayKeyOf(programId), null)
+  await setPref(lastDayDateKeyOf(programId), null)
 }
 
 /* ============================================ */

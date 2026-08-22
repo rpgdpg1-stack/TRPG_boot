@@ -161,3 +161,13 @@ body.keyboard-open .app::after { display: none; }
   --tg-nav-height: 44px;
   --tg-safe-top: calc(env(safe-area-inset-top, 0px) + 52px);
 }
+
+/* Нативное «потянуть, чтобы обновить» в браузере выключаем.
+   Оно перезагружает страницу мимо приложения, а на внутренних адресах
+   (/friends, /profile) вместо обновления предлагало СКАЧАТЬ файл. Своё
+   обновление жестом на главной и в друзьях от этого не страдает: оно
+   слушает касания напрямую и не зависит от прокрутки страницы. */
+:root.in-browser,
+:root.in-browser body {
+  overscroll-behavior-y: none;
+}

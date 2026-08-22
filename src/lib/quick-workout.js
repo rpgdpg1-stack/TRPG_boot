@@ -1,5 +1,4 @@
-import { cloudGet, cloudSet } from './cloud-storage'
-import { localGet, localSet } from '../utils/storage'
+import { loadPrefs, getPrefSync, setPref } from './prefs'
 import { emit } from './events'
 
 /**
@@ -29,33 +28,19 @@ const setKey = (slug, place, day) => `quick-set:${slug}:${place || 'gym'}:${day}
 // не нажмёшь там сам.
 const onKey = (slug, place, day) => `quick-on:${slug}:${place || 'gym'}:${day}`
 
-const parse = (raw) => {
-  if (!raw) return null
-  try {
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : null
-  } catch { return null }
-}
-
 /**
  * Набор упражнений короткой версии дня. `null` = не настраивали (тогда короткой
  * версии просто нет — прятать ракету, а не показывать пустой день).
  */
 export function getQuickSetSync(slug, place, day) {
-  return parse(localGet(setKey(slug, place, day)))
+  const value = getPrefSync(setKey(slug, place, day), null)
+  return Array.isArray(value) && value.length > 0 ? value : null
 }
 
-/** То же, но с догоном из облака (другое устройство). */
+/** То же, но дождавшись настроек аккаунта (первый заход на устройстве). */
 export async function getQuickSet(slug, place, day) {
-  const local = getQuickSetSync(slug, place, day)
-  try {
-    const remote = parse(await cloudGet(setKey(slug, place, day)))
-    if (remote) {
-      localSet(setKey(slug, place, day), JSON.stringify(remote))
-      return remote
-    }
-  } catch { /* оффлайн — остаёмся на локальном */ }
-  return local
+  await loadPrefs()
+  return getQuickSetSync(slug, place, day)
 }
 
 /**
@@ -63,34 +48,28 @@ export async function getQuickSet(slug, place, day) {
  * версии нет» — храним null, чтобы ракета не появлялась ради ничего.
  */
 export function setQuickSet(slug, place, day, ids, totalCount) {
-  const key = setKey(slug, place, day)
   const list = Array.isArray(ids) ? ids : []
   const meaningful = list.length > 0 && (!totalCount || list.length < totalCount)
-  const value = meaningful ? JSON.stringify(list) : ''
-  localSet(key, value)
-  cloudSet(key, value)
+  // Бессмысленный набор храним как null, а не как пустой список: в базе не
+  // копится мусор, а «короткой версии нет» читается одним значением.
+  setPref(setKey(slug, place, day), meaningful ? list : null)
   emit(QUICK_CHANGED, { slug, place, day })
 }
 
 /** Горит ли ракета в ЭТОМ дне. */
 export function isQuickOn(slug, place, day) {
-  return localGet(onKey(slug, place, day)) === '1'
+  return getPrefSync(onKey(slug, place, day), false) === true
 }
 
 export function setQuickOn(slug, place, day, on) {
-  const key = onKey(slug, place, day)
-  localSet(key, on ? '1' : '')
-  cloudSet(key, on ? '1' : '')
+  setPref(onKey(slug, place, day), !!on)
   emit(QUICK_CHANGED, { slug, place, day, on })
 }
 
-/** Догнать состояние ракеты из облака (зашли с другого устройства). */
+/** Догнать состояние ракеты после загрузки настроек аккаунта. */
 export async function syncQuickOn(slug, place, day) {
-  try {
-    const v = await cloudGet(onKey(slug, place, day))
-    if (v === '1' || v === '') localSet(onKey(slug, place, day), v)
-    return v === '1'
-  } catch { return isQuickOn(slug, place, day) }
+  await loadPrefs()
+  return isQuickOn(slug, place, day)
 }
 
 /**
