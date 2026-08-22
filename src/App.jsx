@@ -33,6 +33,7 @@ import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
+import { isTelegramEnv } from './lib/telegram'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
@@ -114,6 +115,28 @@ export default function App() {
       getFriendsList().catch(() => {})
       getFavoriteExercises().catch(() => {})
     })
+
+    // ПЕРВЫЙ КАДР В БРАУЗЕРЕ: заставляем Safari пересчитать высоту экрана.
+    //
+    // Открытое из ярлыка на домашнем экране приложение показывает таб-бар
+    // приподнятым — Safari при первом кадре считает высоту по «свёрнутому»
+    // состоянию, будто снизу есть его панель, и прижатые к низу элементы
+    // встают выше. Пересчитывает он это только после первого касания, отчего
+    // таб-бар на глазах опускается на место.
+    //
+    // Лечится единственным способом: коротким «пинком» прокрутки — тем самым
+    // событием, которого Safari и ждёт. Сдвиг на пиксель и возврат в тот же
+    // кадр незаметны, зато раскладка встаёт сразу правильной.
+    //
+    // Только в браузере: в Telegram высоту сообщает сам Telegram, и трогать
+    // прокрутку там незачем.
+    if (!isTelegramEnv()) {
+      requestAnimationFrame(() => {
+        const y = window.scrollY
+        window.scrollTo(0, y + 1)
+        requestAnimationFrame(() => window.scrollTo(0, y))
+      })
+    }
 
     // Глобальный детектор клавиатуры: вешаем body.keyboard-open пока она открыта.
     // По нему CSS гасит нижний fade-scrim (.app::after), который на iOS иначе
