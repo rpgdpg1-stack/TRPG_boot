@@ -307,7 +307,13 @@ export default function WorkoutDay() {
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
   const program = useMemo(() => getProgramBySlug(programId), [programId])
-  const days = useMemo(() => (program ? Object.keys(program.data.days) : ['A']), [program])
+  const days = useMemo(() => Object.keys(program?.data?.days || { A: 1 }), [program])
+
+  // Плавание живёт на своей странице (/swim/:slug) — дней у него нет. По прямой
+  // ссылке на /workout/swim/... сюда всё же попадали и падали на пустых днях.
+  useEffect(() => {
+    if (program?.kind === 'swim') navigate(`/swim/${programId}`, { replace: true })
+  }, [program, programId, navigate])
   // Имя программы для навбара: кастомную/от друга показываем как ввёл юзер,
   // встроенную — нормализуем регистр (СПЛИТ → Сплит), как на карточках.
   const programTitle = program
