@@ -1,0 +1,59 @@
+name: Напоминания
+
+# Всё время в cron — UTC. Москва = UTC+3.
+#   воскресенье 19:00 МСК → 16:00 UTC вс
+#   понедельник 12:00 МСК → 09:00 UTC пн
+#   1-е число  12:00 МСК → 09:00 UTC 1-го
+on:
+  schedule:
+    - cron: '0 16 * * 0'   # итоги недели
+    - cron: '0 9 * * 1'    # пинки
+    - cron: '0 9 1 * *'    # итоги месяца
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Что разослать
+        required: true
+        type: choice
+        options: [weekly, nudge, monthly]
+      dry_run:
+        description: Только показать в логе, ничего не отправлять
+        type: boolean
+        default: true
+      only:
+        description: Отправить только этому telegram_id (пусто — всем)
+        type: string
+        default: ''
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      # Какая из трёх строк расписания сработала — видно в github.event.schedule.
+      # При ручном запуске её нет, берём выбор из формы.
+      - name: Определить вид рассылки
+        id: kind
+        run: |
+          case "${{ github.event.schedule }}" in
+            '0 16 * * 0') echo "kind=weekly"  >> $GITHUB_OUTPUT ;;
+            '0 9 * * 1')  echo "kind=nudge"   >> $GITHUB_OUTPUT ;;
+            '0 9 1 * *')  echo "kind=monthly" >> $GITHUB_OUTPUT ;;
+            *)            echo "kind=${{ inputs.kind }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Разослать
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          NOTIFY_DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          NOTIFY_ONLY: ${{ inputs.only }}
+        run: node scripts/notify.mjs ${{ steps.kind.outputs.kind }}

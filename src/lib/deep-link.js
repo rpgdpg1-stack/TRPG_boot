@@ -26,6 +26,10 @@ export function routeFromStartParam(param) {
   if (!param) return null
 
   if (param === 'stats') return '/history'
+  // 'open' — «просто открой приложение»: бот шлёт его, когда вести некуда
+  // (закреплённой программы нет или пауза больше месяца). Никуда не уводим,
+  // человек остаётся на главной — это и есть нужное поведение.
+  if (param === 'open') return null
 
   const parts = param.split('-')
 

@@ -1564,6 +1564,137 @@ $function$;
 -- Выпуск кода. Ограничения от перебора живут ЗДЕСЬ, а не в приложении: минута
 -- между письмами — чтобы адрес нельзя было завалить почтой, пять в час — чтобы
 -- рассылкой не пользовались через нашу форму.
+-- ═══════════════════════════════════════════════════════════════════════════
+--  Рассылка напоминаний. Кого оповещать — считает база: выборка «кто не
+--  тренировался неделю» это запрос, а не логика приложения. Время московское,
+--  как и всё в приложении. Только service_role: функции видят чужие telegram_id.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Категория тренировки. Повторяет workoutCategoryMeta из utils/history.js.
+CREATE OR REPLACE FUNCTION public.srv_workout_category(p_program_id text)
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  SELECT CASE (SELECT category FROM public.programs WHERE id = p_program_id)
+           WHEN 'pool' THEN 'pool' WHEN 'cardio' THEN 'cardio'
+           WHEN 'stretch' THEN 'stretch' ELSE 'strength' END;
+$$;
+
+-- Итоги за отрезок — общая начинка недельной и месячной сводки.
+CREATE OR REPLACE FUNCTION public.srv_period_summary(p_user_id bigint, p_from timestamptz, p_to timestamptz)
+RETURNS TABLE (total_count integer, total_minutes integer, breakdown jsonb)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH w AS (
+    SELECT public.srv_workout_category(program_id) AS cat,
+           GREATEST(0, ROUND(EXTRACT(EPOCH FROM (finished_at - started_at)) / 60)::int) AS mins,
+           COALESCE(distance_m, 0) AS meters
+    FROM public.workouts
+    WHERE user_id = p_user_id AND finished_at IS NOT NULL
+      AND finished_at >= p_from AND finished_at < p_to
+  )
+  SELECT COALESCE(count(*), 0)::int, COALESCE(sum(mins), 0)::int,
+         COALESCE((SELECT jsonb_object_agg(cat, jsonb_build_object('count', c, 'meters', m))
+                   FROM (SELECT cat, count(*)::int AS c, sum(meters)::int AS m FROM w GROUP BY cat) g),
+                  '{}'::jsonb)
+  FROM w;
+$$;
+
+-- Итоги недели (воскресенье вечером). Пустых недель тут нет — для них пинок.
+CREATE OR REPLACE FUNCTION public.srv_weekly_digest()
+RETURNS TABLE (user_id bigint, telegram_id bigint, total_count integer, total_minutes integer, breakdown jsonb)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH bounds AS (SELECT date_trunc('week', timezone('Europe/Moscow', now())) AS week_start)
+  SELECT u.id, u.telegram_id, s.total_count, s.total_minutes, s.breakdown
+  FROM public.users u CROSS JOIN bounds b
+  CROSS JOIN LATERAL public.srv_period_summary(u.id,
+    timezone('Europe/Moscow', b.week_start),
+    timezone('Europe/Moscow', b.week_start + interval '7 days')) s
+  WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
+$$;
+
+-- Итоги месяца (1-го числа). prev_count отдаём сырым: сравнение показывается
+-- только когда оно в плюс, и решает это бот.
+CREATE OR REPLACE FUNCTION public.srv_monthly_digest()
+RETURNS TABLE (user_id bigint, telegram_id bigint, month_start date,
+               total_count integer, total_minutes integer, breakdown jsonb, prev_count integer)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH bounds AS (SELECT date_trunc('month', timezone('Europe/Moscow', now())) - interval '1 month' AS m_start)
+  SELECT u.id, u.telegram_id, (b.m_start)::date, s.total_count, s.total_minutes, s.breakdown, p.total_count
+  FROM public.users u CROSS JOIN bounds b
+  CROSS JOIN LATERAL public.srv_period_summary(u.id,
+    timezone('Europe/Moscow', b.m_start),
+    timezone('Europe/Moscow', b.m_start + interval '1 month')) s
+  CROSS JOIN LATERAL public.srv_period_summary(u.id,
+    timezone('Europe/Moscow', b.m_start - interval '1 month'),
+    timezone('Europe/Moscow', b.m_start)) p
+  WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
+$$;
+
+-- Кому слать пинок (понедельник днём). Условие «пустая прошлая неделя» строже,
+-- чем «7 дней тишины»: отзанимавшийся в воскресенье укора не получит.
+-- Никогда не тренировавшимся не пишем вовсе — новичку это упрёк на ровном месте.
+-- est_minutes — та же формула, что в features/programs/duration.js.
+CREATE OR REPLACE FUNCTION public.srv_nudge_candidates()
+RETURNS TABLE (user_id bigint, telegram_id bigint, days_since integer, nudge_ignored integer,
+               program_id text, program_name text, category text, last_day text, est_minutes integer)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH bounds AS (SELECT date_trunc('week', timezone('Europe/Moscow', now())) AS this_week),
+  last_w AS (
+    SELECT w.user_id, max(w.finished_at) AS last_at FROM public.workouts w
+    WHERE w.finished_at IS NOT NULL GROUP BY w.user_id
+  ),
+  pinned AS (
+    SELECT p.user_id, e.key AS category, e.value #>> '{}' AS slug
+    FROM public.user_prefs p CROSS JOIN LATERAL jsonb_each(p.value) e
+    WHERE p.key = 'favorite_programs'
+  ),
+  last_cat AS (
+    SELECT DISTINCT ON (w.user_id) w.user_id,
+           CASE (SELECT pr.category FROM public.programs pr WHERE pr.id = w.program_id)
+             WHEN 'pool' THEN 'pool' ELSE 'gym' END AS category
+    FROM public.workouts w WHERE w.finished_at IS NOT NULL
+    ORDER BY w.user_id, w.finished_at DESC
+  ),
+  base AS (
+    SELECT u.id AS uid, u.telegram_id AS tg,
+           EXTRACT(DAY FROM (now() - lw.last_at))::int AS days_since,
+           u.nudge_ignored AS ignored, pn.slug AS slug, pr.name AS pname, pn.category AS cat,
+           (SELECT up.value #>> '{}' FROM public.user_prefs up
+             WHERE up.user_id = u.id AND up.key = 'program:' || pn.slug || ':last_day') AS lday
+    FROM public.users u CROSS JOIN bounds b
+    JOIN last_w lw ON lw.user_id = u.id
+    LEFT JOIN last_cat lc ON lc.user_id = u.id
+    LEFT JOIN pinned pn ON pn.user_id = u.id AND pn.category = COALESCE(lc.category, 'gym')
+    LEFT JOIN public.programs pr ON pr.id = pn.slug
+    WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
+      AND NOT EXISTS (SELECT 1 FROM public.workouts w2 WHERE w2.user_id = u.id
+        AND w2.finished_at >= timezone('Europe/Moscow', b.this_week - interval '7 days')
+        AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
+      AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
+        AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
+      AND (u.nudge_ignored < 3 OR u.last_nudge_at IS NULL
+           OR u.last_nudge_at < now() - interval '30 days')
+  )
+  SELECT base.uid, base.tg, base.days_since, base.ignored,
+         base.slug, base.pname, base.cat, base.lday,
+         NULLIF((SELECT count(*)::int * 7 FROM public.program_days pd
+                 WHERE pd.program_id = base.slug AND pd.day = COALESCE(base.lday, 'A')
+                   AND pd.location = 'gym'), 0)
+  FROM base;
+$$;
+
+-- Отметка отправленного пинка. Счётчик обнулит заход (api_touch_last_seen).
+CREATE OR REPLACE FUNCTION public.srv_mark_nudge_sent(p_user_id bigint)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  UPDATE public.users
+  SET last_nudge_at = now(), nudge_ignored = nudge_ignored + 1
+  WHERE id = p_user_id;
+$$;
+
 CREATE OR REPLACE FUNCTION public.srv_email_issue_code(p_email text, p_purpose text, p_code_hash text, p_ttl_seconds integer DEFAULT 600, p_user_id bigint DEFAULT NULL::bigint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -1996,6 +2127,12 @@ GRANT EXECUTE ON FUNCTION public.current_user_id() TO anon, authenticated, servi
 -- не трогает — он про api_*, и это единственная причина, по которой они
 -- называются srv_*.
 REVOKE ALL ON FUNCTION public.srv_email_issue_code(text, text, text, int, bigint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_workout_category(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_period_summary(bigint, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_weekly_digest() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_nudge_candidates() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_mark_nudge_sent(bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_attach(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_login_user(text, uuid) FROM PUBLIC, anon, authenticated;
