@@ -75,7 +75,16 @@ CREATE TABLE IF NOT EXISTS public.users (
   -- Второй способ входа. Хранится только нормализованным (нижний регистр,
   -- без пробелов) — этим занимается normalize_email.
   email text,
-  email_verified_at timestamp with time zone
+  email_verified_at timestamp with time zone,
+  -- Напоминания в Telegram. Лежат в базе, а не в CloudStorage: рассылку делает
+  -- бот со стороны сервера, а CloudStorage виден только самому приложению.
+  notify_digest boolean DEFAULT true NOT NULL,
+  notify_nudge boolean DEFAULT true NOT NULL,
+  -- Правило тишины: пинков подряд без реакции. Три — и бот притихает.
+  nudge_ignored integer DEFAULT 0 NOT NULL,
+  last_nudge_at timestamp with time zone,
+  -- Последний заход в приложение: по нему видно, сработал ли пинок.
+  last_seen_at timestamp with time zone
 );
 
 -- Каталог упражнений. owner_id IS NULL — упражнение приложения, owner_id
@@ -411,6 +420,47 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
+
+-- Настройки напоминаний своего аккаунта. Права раздаёт общий блок для api_*
+-- в секции прав ниже (приложение ходит anon-ключом).
+CREATE OR REPLACE FUNCTION public.api_get_notification_settings()
+RETURNS TABLE (notify_digest boolean, notify_nudge boolean)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT u.notify_digest, u.notify_nudge
+  FROM public.users u
+  WHERE u.id = current_user_id();
+$$;
+
+-- Сохранение настроек. Оба флага передаются всегда: экран держит их вместе,
+-- частичные апдейты плодили бы гонки между двумя тумблерами.
+CREATE OR REPLACE FUNCTION public.api_set_notification_settings(p_digest boolean, p_nudge boolean)
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  UPDATE public.users
+  SET notify_digest = COALESCE(p_digest, notify_digest),
+      notify_nudge  = COALESCE(p_nudge,  notify_nudge),
+      updated_at    = now()
+  WHERE id = current_user_id();
+$$;
+
+-- Отметка захода в приложение: обнуляет счётчик тишины.
+CREATE OR REPLACE FUNCTION public.api_touch_last_seen()
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  UPDATE public.users
+  SET last_seen_at  = now(),
+      nudge_ignored = 0
+  WHERE id = current_user_id();
+$$;
 
 CREATE OR REPLACE FUNCTION public.api_add_favorite_exercise(p_exercise_id text)
  RETURNS jsonb
