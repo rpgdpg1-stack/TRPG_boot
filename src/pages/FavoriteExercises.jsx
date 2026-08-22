@@ -2,12 +2,11 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFavoriteExercises, getFavoritesSync, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
-import { getActiveDaySync } from '../lib/storage'
+import { getActiveDaySync, getFavoriteProgramsSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { isCustomExercise } from '../features/programs/userExercises'
 import { exerciseTagLabel } from '../features/programs/labels'
-import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import { shouldIgnoreCardTap } from '../lib/weight-editing-state'
 import { useWeightEditor } from '../features/exercises/use-weight-editor'
@@ -19,9 +18,9 @@ import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import MarqueeTag from '../components/MarqueeTag'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
-const readPinnedGym = () => {
-  try { return (JSON.parse(localGet('favorite_programs') || '{}') || {}).gym || null } catch { return null }
-}
+// Закреплённая силовая программа — из настроек аккаунта. Прямое чтение
+// localStorage тут больше не работает: закрепы переехали в аккаунт.
+const readPinnedGym = () => getFavoriteProgramsSync().gym || null
 
 /**
  * «Любимые упражнения» — до FAVORITE_LIMIT (5). Добавляются сердечком в мини-модалке дня

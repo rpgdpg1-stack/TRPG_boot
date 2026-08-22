@@ -128,16 +128,19 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
       <div style={styles.nameBlock}>
         <div style={styles.nameRow}>
           <span style={styles.name}>{displayName}</span>
-          {/* Тренируется прямо сейчас — одна зелёная точка рядом с именем.
-              Без текста: смысл считывается мгновенно, а строка не удлиняется.
-              Не тренируется — не показываем ничего (пустой статус не нужен). */}
-          {is_training && (
-            <span style={styles.trainingDot} aria-label="Сейчас тренируется" />
-          )}
         </div>
         <div style={styles.metaRow}>
-          <span style={styles.lastWorkout}>
-            {lastWorkoutText || 'Ещё не тренировался'}
+          {/* Тренируется прямо сейчас — ЗАМЕНЯЕТ строку «когда тренировался»,
+              а не добавляется к ней точкой рядом с именем.
+              Так честнее: строка под именем отвечает на вопрос «что у него
+              с тренировками», и «прямо сейчас» — такой же ответ, как «3 дня
+              назад», только свежайший. Точка же сообщала то же самое вторым
+              способом и в другом месте, отчего строка ниже начинала врать:
+              человек тренируется, а под именем «3 дня назад». */}
+          <span style={is_training ? styles.trainingNow : styles.lastWorkout}>
+            {is_training
+              ? 'Тренируется сейчас'
+              : (lastWorkoutText || 'Ещё не тренировался')}
           </span>
         </div>
       </div>
@@ -192,17 +195,16 @@ const styles = {
     flexDirection: 'column',
     gap: 'var(--space-1)'
   },
-  // Точка «сейчас тренируется». БЕЗ пульсации: движение в списке цепляет глаз
-  // сильнее, чем того стоит статус, и на длинном списке несколько мигающих
-  // точек превращаются в мельтешение. Свечение оставлено — оно и делает точку
-  // «живой», не требуя анимации.
-  trainingDot: {
-    flexShrink: 0, alignSelf: 'center',
-    width: '7px', height: '7px', borderRadius: '50%',
-    background: 'var(--color-primary)',
-    boxShadow: '0 0 8px color-mix(in srgb, var(--color-primary) 75%, transparent)',
-    // Отступ от имени: вплотную точка читалась как часть слова.
-    marginLeft: 'var(--space-1)'
+  // «Тренируется сейчас» — та же строка, что «3 дня назад», но акцентным
+  // цветом и жирнее. Отдельного значка не нужно: цвет в сером списке заметен
+  // сам по себе, а лишний элемент пришлось бы выравнивать и объяснять.
+  trainingNow: {
+    fontFamily: 'var(--font-manrope)',
+    // Тот же кегль, что у «3 дня назад»: строка подменяется, и прыгать
+    // по высоте она не должна.
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
+    color: 'var(--color-primary)'
   },
   nameRow: {
     display: 'flex',

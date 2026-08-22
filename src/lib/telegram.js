@@ -343,6 +343,11 @@ export function bindLifecycle() {
  */
 export function confirm(message) {
   return new Promise((resolve) => {
+    // В браузере спрашиваем сразу средствами браузера. Заглушка Telegram там
+    // тоже отвечает на вызов — но может промолчать вместо ответа, и тогда
+    // обещание не разрешится никогда: диалог не появится, а действие повиснет.
+    if (!isTelegramEnv()) { resolve(window.confirm(message)); return }
+
     if (tg && typeof tg.showConfirm === 'function') {
       try {
         tg.showConfirm(message, (confirmed) => resolve(!!confirmed))

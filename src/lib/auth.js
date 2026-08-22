@@ -17,8 +17,9 @@
 import { supabase } from './supabase'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
-import { localGet, localSet } from '../utils/storage'
+import { localGet, localSet, localRemove, localRemoveByPrefix } from '../utils/storage'
 import { debug } from './debug'
+import { resetPrefs } from './prefs'
 
 const CACHED_USER_KEY = 'cached-user'
 
@@ -232,4 +233,37 @@ export function setCurrentUser(user) {
   currentUser = user
   cacheUser(currentUser)
   emit(EVENTS.USER_CHANGED, currentUser)
+}
+
+
+/**
+ * Выйти из аккаунта. Только для браузерной версии: в Telegram выходить некуда —
+ * приложение узнаёт человека по подписи Telegram при каждом запуске, и кнопка
+ * «выйти» там означала бы «выйти и тут же зайти обратно».
+ *
+ * Чистим ВСЁ, что помнит про человека: сессию, кеш пользователя, настройки
+ * аккаунта и кеши данных. Иначе следующий, кто войдёт на этом устройстве,
+ * увидит чужие закрепы и чужой список друзей до первого обновления.
+ */
+export async function signOut() {
+  try {
+    await supabase.auth.signOut()
+  } catch (e) {
+    console.warn('[auth] signOut:', e)
+  }
+
+  currentUser = null
+  authPromise = null
+  resetPrefs()
+
+  try {
+    localRemove(CACHED_USER_KEY)
+    // Кеши списков и настроек лежат под ключами с id человека — снимаем всё,
+    // что начинается с известных префиксов.
+    for (const prefix of ['prefs:', 'friends-list:', 'pcache:']) {
+      localRemoveByPrefix(prefix)
+    }
+  } catch (e) { /* хранилище недоступно — не критично */ }
+
+  emit(EVENTS.USER_CHANGED, null)
 }

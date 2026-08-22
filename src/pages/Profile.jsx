@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { haptic, backButton, lockVerticalSwipes, getUser } from '../lib/telegram'
+import { haptic, backButton, lockVerticalSwipes, getUser, isTelegramEnv, confirm as tgConfirm } from '../lib/telegram'
+import { signOut } from '../lib/auth'
 import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getFriendsList } from '../lib/friends-list'
 import { getCurrentUser } from '../lib/auth'
@@ -91,6 +92,8 @@ export default function Profile() {
 
   // Меню профиля: активности и телесные разделы + системное. Статистика и
   // любимые живут на главной.
+  const insideTelegram = isTelegramEnv()
+
   const menuGroups = [
     {
       title: 'Профиль',
@@ -106,15 +109,32 @@ export default function Profile() {
       title: 'Система',
       items: [
         { id: 'account',  icon: 'ui:mail',     iconColor: 'var(--color-text-secondary)', title: 'Вход',      subtitle: 'Telegram · Почта', path: '/account' },
-        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' }
+        { id: 'settings', icon: 'ui:settings', iconColor: 'var(--color-text-secondary)', title: 'Настройки', subtitle: 'Уведомления · Сброс прогресса', path: '/settings' },
+        // Выход есть ТОЛЬКО в браузере. В Telegram выходить некуда: приложение
+        // узнаёт человека по подписи Telegram при каждом запуске, и кнопка
+        // означала бы «выйти и тут же зайти обратно».
+        ...(insideTelegram ? [] : [{
+          id: 'logout', icon: 'ui:power', iconColor: 'var(--color-error)',
+          title: 'Выйти', subtitle: 'Из этого браузера', action: 'logout', danger: true
+        }])
       ]
     }
   ]
 
-  const handleSectionTap = (item) => {
+  const handleSectionTap = async (item) => {
+    if (item.action === 'logout') {
+      haptic.medium()
+      const ok = await tgConfirm('Выйти из аккаунта? Чтобы вернуться, понадобится код из письма.')
+      if (!ok) return
+      await signOut()
+      // Перезагрузка, а не переход: после выхода приложение должно собраться
+      // заново, с чистого листа — иначе на экранах останутся данные ушедшего.
+      window.location.replace('/')
+      return
+    }
     if (!item.path) return
     haptic.light()
-    if (item.path) navigate(item.path, { state: { from: '/profile' } })
+    navigate(item.path, { state: { from: '/profile' } })
   }
 
   const handleInviteTap = async () => {
@@ -183,8 +203,8 @@ export default function Profile() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className={item.path ? 'tg-row' : undefined}
-                disabled={!item.path}
+                className={(item.path || item.action) ? 'tg-row' : undefined}
+                disabled={!item.path && !item.action}
                 style={{
                   ...styles.row,
                   borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)'
@@ -196,10 +216,10 @@ export default function Profile() {
                   <span style={styles.rowIcon}>{item.icon}</span>
                 )}
                 <div style={styles.rowContent}>
-                  <div style={styles.rowTitle}>{item.title}</div>
+                  <div style={{ ...styles.rowTitle, ...(item.danger ? { color: 'var(--color-error)' } : null) }}>{item.title}</div>
                   <div style={styles.rowSubtitle}>{item.subtitle}</div>
                 </div>
-                <span style={styles.rowArrow}>›</span>
+                {!item.danger && <span style={styles.rowArrow}>›</span>}
               </button>
             ))}
           </div>
