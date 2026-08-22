@@ -1,38 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
-import { localGet, localSet } from '../utils/storage'
+import { getCachedSettings, fetchSettings, saveSettings } from '../lib/notifications'
 import ScreenTitle from '../components/ScreenTitle'
 import { SectionLabel } from '../components/GroupLabel'
-import { FormCard, ToggleRow, ChoiceRow, SoonNote } from '../components/FormControls'
+import { FormCard, ToggleRow } from '../components/FormControls'
 
 /**
  * Напоминания о тренировках.
  *
- * Приходить будут в Telegram от бота, поэтому экран не просит системных
- * разрешений — только настраивает, что и когда слать.
+ * Приходят в Telegram от бота, поэтому экран не просит системных разрешений —
+ * только решает, что и когда слать.
  *
- * Осознанно скупой набор: чем больше типов уведомлений, тем быстрее их
- * отключают целиком. Три переключателя, а не десять.
+ * Два переключателя, а не пять. Причина не в лени: чем длиннее список, тем
+ * чаще человек выключает всё разом вместо того, чтобы разбираться. Отчёт и
+ * напоминание — разные по смыслу вещи (первое хотят почти все, второе не все),
+ * и это единственное деление, которое стоит выбора.
  *
- * Дни недели заданы расписанием программы, отдельного выбора здесь нет —
- * иначе появятся два источника правды о том, когда тренировка.
+ * Времени суток здесь нет намеренно. Оно продиктовано смыслом сообщения:
+ * итоги — вечером воскресенья, когда неделя закрыта; напоминание — днём
+ * понедельника. Настройка сделала бы вторым источником правды то, у чего
+ * источник один.
  */
-const KEY = 'notification-settings'
-
-const TIME = [
-  { id: 'morning', label: 'Утро' },
-  { id: 'day',     label: 'День' },
-  { id: 'evening', label: 'Вечер' }
-]
-
-const DEFAULTS = { workout: true, time: 'evening', streak: true, weekly: false }
-
 export default function Notifications() {
   const navigate = useNavigate()
-  const [cfg, setCfg] = useState(() => {
-    try { return { ...DEFAULTS, ...JSON.parse(localGet(KEY) || '{}') } } catch { return DEFAULTS }
-  })
+  const [cfg, setCfg] = useState(getCachedSettings)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -40,56 +32,58 @@ export default function Notifications() {
     lockVerticalSwipes()
   }, [navigate])
 
-  const set = (key, value) => {
-    const next = { ...cfg, [key]: value }
+  // База — источник правды: человек мог переключить тумблер на другом
+  // устройстве. Кеш показан первым кадром, ответ базы просто уточняет.
+  useEffect(() => {
+    let cancelled = false
+    fetchSettings().then((fresh) => { if (!cancelled) setCfg(fresh) })
+    return () => { cancelled = true }
+  }, [])
+
+  const set = (key) => {
+    const next = { ...cfg, [key]: !cfg[key] }
     setCfg(next)
-    localSet(KEY, JSON.stringify(next))
+    saveSettings(next)
   }
+
+  const allOff = !cfg.digest && !cfg.nudge
 
   return (
     <div className="page page-fade" style={styles.page}>
       <ScreenTitle>Напоминания</ScreenTitle>
 
-      <SectionLabel>Тренировки</SectionLabel>
+      <SectionLabel>В Telegram</SectionLabel>
       <FormCard>
         <ToggleRow
-          label="Напоминать о тренировке"
-          hint="В дни, когда по программе есть занятие"
-          value={cfg.workout}
-          onToggle={() => set('workout', !cfg.workout)}
-        />
-        {cfg.workout && (
-          <ChoiceRow
-            label="Когда напоминать" divider
-            options={TIME} value={cfg.time} onChange={(v) => set('time', v)}
-          />
-        )}
-      </FormCard>
-
-      <SectionLabel style={{ marginTop: 'var(--space-6)' }}>Прогресс</SectionLabel>
-      <FormCard>
-        <ToggleRow
-          label="Серия под угрозой"
-          hint="Если к вечеру недели ещё нет ни одной тренировки"
-          value={cfg.streak}
-          onToggle={() => set('streak', !cfg.streak)}
+          label="Итоги недели и месяца"
+          hint="Сводка в воскресенье вечером и первого числа"
+          value={cfg.digest}
+          onToggle={() => set('digest')}
         />
         <ToggleRow
-          label="Итоги недели" divider
-          hint="Короткая сводка в воскресенье вечером"
-          value={cfg.weekly}
-          onToggle={() => set('weekly', !cfg.weekly)}
+          label="Напоминания о пропусках" divider
+          hint="В понедельник, если за неделю не было тренировок"
+          value={cfg.nudge}
+          onToggle={() => set('nudge')}
         />
       </FormCard>
 
-      <SoonNote>
-        Настройки сохраняются, но рассылка ещё не включена — уведомления начнут
-        приходить, когда бот научится их отправлять.
-      </SoonNote>
+      <p style={styles.note}>
+        {allOff
+          ? 'Бот молчит. Ничего приходить не будет.'
+          : 'Не чаще одного сообщения в неделю.'}
+      </p>
     </div>
   )
 }
 
 const styles = {
-  page: { paddingTop: 'var(--tg-safe-top)', paddingBottom: 'var(--space-16)' }
+  page: { paddingTop: 'var(--tg-safe-top)', paddingBottom: 'var(--space-16)' },
+  // Тот же вид, что у SoonNote в остальных настройках: тихая подпись под
+  // карточкой. Отдельным стилем, а не компонентом — это не «скоро будет».
+  note: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
+    padding: 'var(--space-4) var(--space-5) 0', maxWidth: '320px', margin: '0 auto'
+  }
 }

@@ -5,6 +5,7 @@ import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
 import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
+import { EST_MIN_PER_EXERCISE } from '../features/programs/duration'
 import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
 import RocketToggle from '../components/RocketToggle'
@@ -110,11 +111,6 @@ const TIMER_COLORS = {
   ...WORKOUT_TIMER_COLORS
 }
 
-// Оценка длительности силовой тренировки: одно упражнение ≈ 3 рабочих подхода
-// (8–12 повторов) с ~2 мин отдыха между подходами + подход/переход к снаряду.
-// ~2 мин работы (3×~40с) + ~4 мин отдых (2×~120с) + ~1 мин переход ≈ 7 мин/упр.
-// Общая оценка дня = число упражнений × это значение (напр. 8 → ~56 мин, 10 → ~1 ч 10 мин).
-const EST_MIN_PER_EXERCISE = 7
 // Сколько висит поп-ап переключения режима. Короткий: это подтверждение тапа,
 // а не сообщение — на переключателях принято ~1.5-2с, чтобы частые нажатия
 // не упирались в предыдущий показ.

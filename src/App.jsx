@@ -46,6 +46,8 @@ import { getFriendsList } from './lib/friends-list'
 import { getFavoriteExercises } from './lib/favorite-exercises'
 import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
+import { getStartRoute } from './lib/deep-link'
+import { touchLastSeen } from './lib/notifications'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
@@ -209,6 +211,7 @@ export default function App() {
 
         <SettingsButtonController />
         <ShareImportController />
+        <StartRouteController />
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -285,6 +288,41 @@ function BottomTabBar() {
   // определяет сам по маршруту (виден только на /, /friends, /profile). Держим в
   // DOM, иначе на страницах без бара он бы размонтировался и анимации не было бы.
   return <TabBar />
+}
+
+/**
+ * Переход по ссылке из напоминания бота.
+ *
+ * Кнопка «Начать» в сообщении должна открывать саму тренировку, а не главную:
+ * иначе человек после тапа снова ищет, куда идти, и напоминание не срабатывает.
+ *
+ * Отрабатывает РОВНО ОДИН раз за запуск. start_param живёт в initDataUnsafe до
+ * конца сессии, и без этого замка любой возврат на главную утаскивал бы обратно
+ * в тренировку — из приложения стало бы невозможно выйти.
+ *
+ * Заодно отмечает заход: по нему бот понимает, что пинок сработал.
+ */
+function StartRouteController() {
+  const navigate = useNavigate()
+  const handled = useRef(false)
+
+  useEffect(() => {
+    if (handled.current) return
+    const route = getStartRoute()
+    if (!route) return
+    handled.current = true
+    navigate(route, { replace: true })
+  }, [navigate])
+
+  // Отметка захода — при каждом старте, независимо от того, по ссылке пришли
+  // или сами. Ошибку глушим: не смогли отметиться — не повод ломать запуск.
+  useEffect(() => {
+    const off = on(EVENTS.USER_READY, () => { touchLastSeen().catch(() => {}) })
+    if (getCurrentUser()) touchLastSeen().catch(() => {})
+    return off
+  }, [])
+
+  return null
 }
 
 /**
