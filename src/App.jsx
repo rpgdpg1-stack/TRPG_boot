@@ -36,6 +36,8 @@ import { ensureAuth, getCurrentUser } from './lib/auth'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
+import FriendInviteModal from './components/FriendInviteModal'
+import { acceptReferral } from './lib/friends'
 import AccountAccess from './pages/AccountAccess'
 import { getRecentWorkouts } from './lib/storage'
 import { HISTORY_FETCH_LIMIT } from './utils/history'
@@ -57,6 +59,8 @@ export default function App() {
   // входа по почте. Внутри Telegram сюда всегда приезжает человек, снаружи —
   // только если он уже входил раньше и сессия жива.
   const [user, setUser] = useState(() => getCurrentUser())
+  // Результат перехода по ссылке-приглашению: { name, already } либо null.
+  const [invite, setInvite] = useState(null)
 
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
@@ -82,6 +86,22 @@ export default function App() {
       // Настройки аккаунта (закрепы и прочее) — до отрисовки главной, чтобы
       // закреплённая программа не появлялась рывком вторым кадром.
       loadPrefs().catch(() => {})
+
+      // Пришли по ссылке-приглашению, УЖЕ имея аккаунт. Отдельный случай:
+      // у новичка приглашение обрабатывается при входе по коду из письма,
+      // а вошедшего приложение просто открывало на главной, молча заводя
+      // дружбу в базе. Молчание тут читается как «ссылка не сработала».
+      const refFromUrl = new URLSearchParams(window.location.search).get('ref')
+      if (refFromUrl) {
+        // Код убираем из адреса сразу: иначе он переживёт перезагрузку и
+        // приглашение всплывёт второй раз на пустом месте.
+        window.history.replaceState({}, '', window.location.pathname)
+        acceptReferral(refFromUrl).then(res => {
+          if (cancelled) return
+          if (res?.success) setInvite({ name: res.friend_name, already: res.already })
+          getFriendsList().catch(() => {})
+        }).catch(() => {})
+      }
       // Свои программы (своя + от друга) из БД → в реестр, ДО сборки избранного,
       await loadMyPrograms()
       if (cancelled) return
@@ -172,6 +192,7 @@ export default function App() {
         <ScrollToTopOnNavigate />
         <OfflineBanner />
         {!insideTelegram && <BrowserNavButton />}
+        {invite && <FriendInviteModal {...invite} onClose={() => setInvite(null)} />}
 
         <SettingsButtonController />
         <ShareImportController />

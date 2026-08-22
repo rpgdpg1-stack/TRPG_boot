@@ -54,7 +54,14 @@ export async function acceptReferral(referralCode) {
     }
 
     if (data?.success) {
-      return { success: true, friend_id: data.friend_id }
+      return {
+        success: true,
+        friend_id: data.friend_id,
+        friend_name: data.friend_name || null,
+        // true — дружба уже была: тогда это не новость, а подтверждение,
+        // и текст человеку нужен другой.
+        already: !!data.already
+      }
     }
 
     return { success: false, error: data?.error || 'unknown' }
