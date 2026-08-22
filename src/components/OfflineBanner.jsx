@@ -77,10 +77,13 @@ const styles = {
     // слева меньше, чем справа, потому что у иконки есть свои пустые поля
     // внутри её квадрата 16px и левый отступ кажется больше реального.
     padding: 'var(--space-15) var(--space-4) var(--space-15) var(--space-3)',
-    background: 'var(--color-surface-dim)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    border: '1px solid var(--color-border)',
+    // То же стекло, что у кнопок навигации и всплывающих меню: пилюля стоит
+    // в одной полосе с «Назад» и «⋯», и разной плотностью соседей быть не
+    // должно. Обводки нет по той же причине — у кнопок её тоже нет, и рамка
+    // делала пилюлю чужеродной в этой тройке.
+    background: 'var(--surface-glass)',
+    backdropFilter: 'var(--blur-glass)',
+    WebkitBackdropFilter: 'var(--blur-glass)',
     borderRadius: 'var(--radius-pill)',
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
     // Мягкое проявление ~350мс — в такт затуханию заголовка под ним.

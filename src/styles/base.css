@@ -95,9 +95,9 @@ img, button { -webkit-user-drag: none; }
 .app::before {
   top: 0;
   /* Чуть ниже линии системных кнопок: затемнение держится сквозь заголовок и
-     гаснет ~14px ниже него (текст под заголовком при скролле мутный/тёмный,
-     сам заголовок выше по z — резкий). Граница поднята на 2px. */
-  height: calc(var(--tg-safe-top) + 14px);
+     гаснет ~12px ниже него (текст под заголовком при скролле мутный/тёмный,
+     сам заголовок выше по z — резкий). */
+  height: calc(var(--tg-safe-top) + 12px);
   background: linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
@@ -106,9 +106,9 @@ img, button { -webkit-user-drag: none; }
    открытии из ярлыка; оказалось, не он, и скрим вернулся на место. */
 .app::after {
   bottom: 0;
-  /* В 2 раза ниже верхнего и ещё на 8px короче: начинался слишком высоко
-     и накрывал нижние карточки списка. Верхний не трогаем. */
-  height: calc(var(--tg-safe-top) / 2 - 8px);
+  /* В 2 раза ниже верхнего. Пробовали ещё на 8px короче — стало слишком низко,
+     затемнение переставало отделять таб-бар от списка. Верхний не трогаем. */
+  height: calc(var(--tg-safe-top) / 2);
   background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
   mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
@@ -132,14 +132,18 @@ body.keyboard-open .app::after { display: none; }
    <div className="dock-scrim" /> первым ребёнком дока. */
 .dock-scrim {
   position: absolute;
-  inset: 0;
+  /* На 6px ниже верхнего края дока: слой начинался слишком высоко и его
+     верхняя граница читалась отдельной полосой поперёк экрана. */
+  inset: 6px 0 0 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  /* Размытия здесь НЕТ — как и у нижнего краевого скрима: под доком контент
+     и так уходит за край, а мутная полоса бросалась в глаза.
+     Затухание растянуто (граница плотной части с 35% до 55%, маска с 45%
+     до 70%): прежний резкий переход было видно линией. */
+  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 55%, rgba(13, 12, 12, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 70%, transparent 100%);
 }
 
 .page {
