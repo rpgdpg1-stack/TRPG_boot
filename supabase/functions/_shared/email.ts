@@ -55,7 +55,16 @@ export async function sendCodeEmail(to: string, code: string, purpose: "login" |
   const logo = "https://trpg1.ru/icon-192.png";
 
   const html = `<!doctype html>
-<html lang="ru"><body style="margin:0;padding:24px 16px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Manrope подхватят Apple Mail и часть клиентов; Gmail веб-шрифты режет и
+       откатится на системный. Главное — это НЕ моноширинный шрифт: в нём ноль
+       перечёркнут по диагонали, и код читается чужеродно. -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&display=swap" rel="stylesheet" />
+</head>
+<body style="margin:0;padding:24px 16px;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;">
     <tr><td style="padding:32px 32px 28px;">
 
@@ -76,14 +85,14 @@ export async function sendCodeEmail(to: string, code: string, purpose: "login" |
       <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#4b5563;">${lead} Введите код в приложении:</p>
 
       <div style="background:#0A0A0B;border-radius:14px;padding:20px 16px;text-align:center;">
-        <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#9ED153;font-family:'SF Mono',Menlo,Consolas,monospace;">${code}</div>
+        <div style="font-size:34px;font-weight:700;letter-spacing:8px;color:#9ED153;font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">${code}</div>
       </div>
 
       <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#6b7280;">Код действует 10 минут. Если вы этого не запрашивали — просто удалите письмо, ничего не произойдёт.</p>
 
     </td></tr>
     <tr><td style="padding:16px 32px 20px;border-top:1px solid #f0f0f1;">
-      <div style="font-size:12px;color:#9ca3af;">trpg1.ru · письмо отправлено автоматически, отвечать на него не нужно</div>
+      <div style="font-size:12px;color:#9ca3af;">trpg1.ru&nbsp;&nbsp;письмо отправлено автоматически, отвечать на него не нужно</div>
     </td></tr>
   </table>
 </body></html>`;
