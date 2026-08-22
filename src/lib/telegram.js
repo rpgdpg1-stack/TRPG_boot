@@ -127,8 +127,29 @@ export function paintTelegramChrome() {
  * Если поля недоступны (старый клиент Telegram до Bot API 8.0) — переменную
  * не трогаем, и работает хардкод-фолбэк 108px из index.css.
  */
+/**
+ * Мы правда внутри Telegram?
+ *
+ * Проверять только наличие window.Telegram нельзя: его скрипт создаёт заглушку
+ * в любом браузере, и она бодро отвечает на вопросы про вырез экрана — нулями.
+ * Приложение этим нулям верило и прижимало шапку к самому краю.
+ *
+ * Признак двойной: подписанные данные ИЛИ параметры Telegram в адресе. Второе
+ * важно потому, что на плохой связи initData бывает пустым и внутри Telegram.
+ */
+export function isTelegramEnv() {
+  try {
+    if (tg?.initData) return true
+    return String(window.location.href || '').indexOf('tgWebApp') !== -1
+  } catch (e) {
+    return false
+  }
+}
+
 export function bindSafeArea() {
-  if (!tg) return
+  // В браузере величины шапки задаёт CSS (:root.in-browser в base.css) —
+  // здесь нельзя трогать их вовсе, иначе inline-стиль перебьёт правила.
+  if (!tg || !isTelegramEnv()) return
 
   const apply = () => {
     const sys = tg.safeAreaInset?.top ?? 0          // вырез / статус-бар устройства
@@ -213,25 +234,49 @@ export const haptic = {
  * Раньше offClick() без аргумента в новых версиях SDK не всегда удалял
  * обработчик, поэтому удаляем строго конкретную функцию.
  */
+/**
+ * Кто хочет знать о состоянии кнопки «Назад». Нужно браузерной версии: там
+ * системной кнопки Telegram нет, и её рисуем мы сами — но поведение должно
+ * быть ТЕМ ЖЕ. Экраны как ставили обработчик, так и ставят; отличается только
+ * то, кто показывает кнопку на экране.
+ */
+const backListeners = new Set()
+function notifyBack() {
+  backListeners.forEach(fn => { try { fn(backVisible) } catch (e) { /* ignore */ } })
+}
+
 export const backButton = {
   show: (onClick) => {
-    if (!tg?.BackButton) return
+    // Состояние запоминаем ВСЕГДА, даже когда Telegram недоступен: раньше
+    // функция выходила первой строкой, и в браузере приложение просто не знало,
+    // что кнопка должна быть.
     currentBackHandler = onClick
     backVisible = true
     applyBackButton()
+    notifyBack()
   },
   setHandler: (onClick) => {
-    if (!tg?.BackButton) return
     currentBackHandler = onClick
     backVisible = true
     applyBackButton()
+    notifyBack()
   },
   hide: () => {
-    if (!tg?.BackButton) return
     backVisible = false
     currentBackHandler = null
     applyBackButton() // снимет привязанный обработчик и спрячет кнопку
-  }
+    notifyBack()
+  },
+
+  /** Подписка для браузерной кнопки. Возвращает функцию отписки. */
+  subscribe: (fn) => {
+    backListeners.add(fn)
+    fn(backVisible)
+    return () => backListeners.delete(fn)
+  },
+
+  /** Нажатие браузерной кнопки — тот же обработчик, что у системной. */
+  trigger: () => { try { currentBackHandler?.() } catch (e) { console.error(e) } }
 }
 
 /**

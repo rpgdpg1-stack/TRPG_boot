@@ -47,6 +47,23 @@
     <link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin />
 
+    <!-- СРЕДА: Telegram или обычный браузер. Ставим класс ДО первого кадра,
+         иначе шапка успеет отрисоваться с телеграмными отступами и прыгнет.
+         Признак двойной: подписанные данные Telegram ИЛИ его параметры в адресе.
+         Одного initData мало — внутри Telegram он бывает пустым на плохой связи,
+         и мы бы приняли своего за чужого. -->
+    <script>
+      (function () {
+        try {
+          var tg = window.Telegram && window.Telegram.WebApp;
+          var byUrl = String(window.location.href || '').indexOf('tgWebApp') !== -1;
+          if (!(tg && tg.initData) && !byUrl) {
+            document.documentElement.classList.add('in-browser');
+          }
+        } catch (e) { /* ничего не делаем: без класса приложение просто работает как в Telegram */ }
+      })();
+    </script>
+
     <!-- Цвет фона страницы ставим из CSS-переменной сразу, до загрузки JS,
          чтобы при медленном интернете не было белой вспышки. -->
     <style>

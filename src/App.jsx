@@ -34,6 +34,8 @@ import QuickWorkout from './pages/QuickWorkout'
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
 import EmailLogin from './components/EmailLogin'
+import { loadPrefs } from './lib/prefs'
+import BrowserNavButton from './components/BrowserNavButton'
 import AccountAccess from './pages/AccountAccess'
 import { getRecentWorkouts } from './lib/storage'
 import { HISTORY_FETCH_LIMIT } from './utils/history'
@@ -77,6 +79,9 @@ export default function App() {
       // После авторизации — пробуем разгрести очередь (вдруг с прошлого
       // раза остались несинканутые операции и сеть уже есть).
       syncQueue()
+      // Настройки аккаунта (закрепы и прочее) — до отрисовки главной, чтобы
+      // закреплённая программа не появлялась рывком вторым кадром.
+      loadPrefs().catch(() => {})
       // Свои программы (своя + от друга) из БД → в реестр, ДО сборки избранного,
       await loadMyPrograms()
       if (cancelled) return
@@ -166,6 +171,7 @@ export default function App() {
       <div className="app">
         <ScrollToTopOnNavigate />
         <OfflineBanner />
+        {!insideTelegram && <BrowserNavButton />}
 
         <SettingsButtonController />
         <ShareImportController />

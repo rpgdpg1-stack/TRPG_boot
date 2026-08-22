@@ -5,8 +5,9 @@ import { useOutsideClose } from '../lib/use-outside-close'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
 import { onActiveWorkoutChange } from '../lib/active-workout'
-import { getActiveDaySync, toggleFavoriteProgram, getFavoritePrograms } from '../lib/storage'
+import { getActiveDaySync, toggleFavoriteProgram, getFavoritePrograms, getFavoriteProgramsSync } from '../lib/storage'
 import { localGet, localSet } from '../utils/storage'
+import { EVENTS, on } from '../lib/events'
 import { cloudGet, cloudSet } from '../lib/cloud-storage'
 import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
@@ -46,8 +47,11 @@ const HEAD_LIT_MS = 1200
 // мигала пустой. Настоящий источник правды — CloudStorage Telegram (см. эффект
 // ниже): localStorage привязан к домену и обнуляется при переезде приложения
 // на другой адрес, а закрепы должны это переживать.
+// Закрепы — настройка АККАУНТА (lib/prefs.js), а не устройства. Синхронное
+// чтение здесь нужно только для первого кадра: настоящее значение приезжает
+// из базы следом и приходит событием PREFS_CHANGED.
 function readPinnedMap() {
-  try { return JSON.parse(localGet('favorite_programs') || '{}') || {} } catch { return {} }
+  return getFavoriteProgramsSync()
 }
 
 export default function SectionCarousel() {
@@ -69,7 +73,11 @@ export default function SectionCarousel() {
   useEffect(() => {
     let cancelled = false
     getFavoritePrograms().then(() => { if (!cancelled) setPinnedTick(t => t + 1) })
-    return () => { cancelled = true }
+    // Настройки могли приехать и не по нашей просьбе (их тянет старт приложения) —
+    // тогда перерисовываемся по событию, иначе закреп появился бы только
+    // при следующем заходе на экран.
+    const offPrefs = on(EVENTS.PREFS_CHANGED, () => setPinnedTick(t => t + 1))
+    return () => { cancelled = true; offPrefs() }
   }, [])
 
   // Догоняем выбранный раздел из облака (кросс-девайс).

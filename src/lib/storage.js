@@ -4,6 +4,7 @@
  * полный сброс прогресса.
  */
 
+import { loadPrefs, getPrefSync, setPref } from './prefs'
 import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
@@ -250,12 +251,41 @@ const FAVORITES_KEY = 'favorite_programs'
  * восстановить закрепы, когда localStorage пуст, а облако помнит.
  */
 export async function getFavoritePrograms() {
-  const raw = await cloudGet(FAVORITES_KEY)
-  if (!raw) return {}
+  await loadPrefs()
+  const fromAccount = getFavoriteProgramsSync()
+  if (Object.keys(fromAccount).length > 0) return fromAccount
+
+  // РАЗОВЫЙ ПЕРЕНОС со старого места. До появления браузерной версии закрепы
+  // жили в CloudStorage Telegram; у тех, кто пользовался приложением раньше,
+  // они лежат именно там. Молча их потерять нельзя — забираем при первом
+  // запуске и кладём в аккаунт, дальше старое место больше не читается.
   try {
-    const parsed = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null ? parsed : {}
-  } catch { return {} }
+    const legacyRaw = await cloudGet(FAVORITES_KEY)
+    if (!legacyRaw) return {}
+    const legacy = JSON.parse(legacyRaw)
+    if (legacy && typeof legacy === 'object' && Object.keys(legacy).length > 0) {
+      await setPref(FAVORITES_KEY, legacy)
+      debug('[storage] закрепы перенесены из CloudStorage в аккаунт')
+      return legacy
+    }
+  } catch { /* старого нет или оно битое — не беда */ }
+
+  return {}
+}
+
+/**
+ * Закрепы СИНХРОННО — для первого кадра карусели.
+ *
+ * Раньше карта лежала в CloudStorage Telegram и в localStorage под общим
+ * ключом. В браузере CloudStorage нет вовсе, а общий ключ означал, что чужой
+ * аккаунт, открытый в том же браузере, видит ЧУЖИЕ закрепы — именно так
+ * у нового человека появилась чужая закреплённая программа. Теперь это
+ * настройка аккаунта (см. lib/prefs.js), и она следует за человеком, а не
+ * за устройством.
+ */
+export function getFavoriteProgramsSync() {
+  const value = getPrefSync(FAVORITES_KEY, null)
+  return (value && typeof value === 'object') ? value : {}
 }
 
 export async function getFavoriteProgramByCategory(categoryId) {
@@ -264,17 +294,14 @@ export async function getFavoriteProgramByCategory(categoryId) {
 }
 
 export async function toggleFavoriteProgram(categoryId, programSlug) {
-  const favorites = await getFavoritePrograms()
-  const current = favorites[categoryId]
-  if (current === programSlug) {
-    delete favorites[categoryId]
-    await cloudSet(FAVORITES_KEY, JSON.stringify(favorites))
-    return false
-  } else {
-    favorites[categoryId] = programSlug
-    await cloudSet(FAVORITES_KEY, JSON.stringify(favorites))
-    return true
-  }
+  const favorites = { ...getFavoriteProgramsSync() }
+  const wasPinned = favorites[categoryId] === programSlug
+
+  if (wasPinned) delete favorites[categoryId]
+  else favorites[categoryId] = programSlug
+
+  await setPref(FAVORITES_KEY, favorites)
+  return !wasPinned
 }
 
 
