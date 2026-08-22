@@ -161,8 +161,11 @@ const styles = {
     position: 'fixed',
     top: 'calc(var(--tg-nav-top, 56px) + (var(--tg-nav-height, 44px) - 32px) / 2)',
     right: 'var(--space-4)',
+    // Круг, а не пилюля: внутри три точки — фигура симметричная, и вытянутая
+    // подложка делала её визуально «съехавшей» вбок. Ширина равна высоте.
+    width: '32px',
     height: '32px',
-    minWidth: '44px',
+    padding: 0,
     zIndex: 'var(--z-nav, 60)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'var(--surface-glass)',
