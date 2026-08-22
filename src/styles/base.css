@@ -91,6 +91,13 @@ img, button { -webkit-user-drag: none; }
 .app::before {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
+  /* Собственный слой у размытия. Без него при возврате с вложенного экрана
+     (Профиль → Замеры → назад) полоса появлялась ЗАПАЗДЫВАЯ: страница въезжает
+     с анимацией, браузер пересобирает слои, и размытию на кадр нечего размывать —
+     под аватаркой мелькала резкая картинка. Обещание «этот слой будет меняться»
+     заставляет держать его отдельно и готовым. */
+  will-change: backdrop-filter;
+  transform: translateZ(0);
 }
 .app::before {
   top: 0;
@@ -106,12 +113,12 @@ img, button { -webkit-user-drag: none; }
    открытии из ярлыка; оказалось, не он, и скрим вернулся на место. */
 .app::after {
   bottom: 0;
-  /* В 2 раза ниже верхнего. Пробовали ещё на 8px короче — стало слишком низко,
-     затемнение переставало отделять таб-бар от списка. Верхний не трогаем. */
-  height: calc(var(--tg-safe-top) / 2);
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
+  /* Высота и градиент — из токенов: то же затемнение стоит под прибитыми
+     кнопками на других экранах, и разъезжаться им нельзя. */
+  height: var(--scrim-bottom-height);
+  background: var(--scrim-bottom-image);
+  -webkit-mask-image: var(--scrim-bottom-mask);
+  mask-image: var(--scrim-bottom-mask);
 }
 
 /* На конструкторе нижний таб-бар скрыт — этот fade-scrim не нужен, и именно
@@ -137,13 +144,13 @@ body.keyboard-open .app::after { display: none; }
   inset: 6px 0 0 0;
   z-index: -1;
   pointer-events: none;
-  /* Размытия здесь НЕТ — как и у нижнего краевого скрима: под доком контент
-     и так уходит за край, а мутная полоса бросалась в глаза.
-     Затухание растянуто (граница плотной части с 35% до 55%, маска с 45%
-     до 70%): прежний резкий переход было видно линией. */
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 55%, rgba(13, 12, 12, 0) 100%);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 70%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 70%, transparent 100%);
+  /* Размытия здесь НЕТ — как и у краевого: под доком контент и так уходит
+     за край, а мутная полоса бросалась в глаза. Градиент — тот же токен,
+     что у краевого скрима: два разных затемнения на соседних экранах читались
+     бы как рассогласование. */
+  background: var(--scrim-bottom-image);
+  -webkit-mask-image: var(--scrim-bottom-mask);
+  mask-image: var(--scrim-bottom-mask);
 }
 
 .page {
