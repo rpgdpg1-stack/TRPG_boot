@@ -91,7 +91,6 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   // Раньше подсветка гасла на первом же сдвиге пальца, и меню отвечало только
   // на отдельный тап. Отпускание мимо пунктов по-прежнему не выбирает ничего.
   const dragging = useRef(false)
-  const justPicked = useRef(false)
 
   // Какой пункт под этой точкой экрана. Ищем по разметке, а не по координатам
   // из состояния: пункты разной высоты, часть из них — разделители и вставки.
@@ -103,17 +102,19 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   const pick = (key) => {
     const it = items.find(i => i.key === key && !i.divider && !i.custom)
     if (!it) return
-    justPicked.current = true
     it.haptic === 'medium' ? haptic.medium() : haptic.light()
     requestClose()
     it.onClick?.()
   }
 
-  const onItem = (it) => (e) => {
+  // Клавиатура: касание целиком обрабатывается протяжкой (см. ниже), а обычного
+  // onClick у пунктов НЕТ намеренно. После жеста браузер всё равно шлёт click
+  // по элементу, НА КОТОРОМ палец опустился, — даже если увели его за пределы
+  // меню и отпустили в пустоте. Из-за этого «передумал» всё равно срабатывало.
+  const onItemKey = (it) => (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
     e.stopPropagation()
-    // Пункт уже выбран протяжкой — клик после того же касания игнорируем,
-    // иначе действие выполнится дважды.
-    if (justPicked.current) { justPicked.current = false; return }
     it.haptic === 'medium' ? haptic.medium() : haptic.light()
     requestClose()
     it.onClick?.()
@@ -125,7 +126,6 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   const menuDragProps = {
     onPointerDown: (e) => {
       dragging.current = true
-      justPicked.current = false
       setPressed(keyAtPoint(e.clientX, e.clientY))
     },
     onPointerMove: (e) => {
@@ -137,6 +137,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
       dragging.current = false
       const key = keyAtPoint(e.clientX, e.clientY)
       setPressed(null)
+      // Отпустили мимо пунктов (в том числе за пределами меню) — не выбираем.
       if (key) pick(key)
     },
     onPointerCancel: () => { dragging.current = false; setPressed(null) }
@@ -192,7 +193,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
           <button
             key={it.key}
             data-menu-key={it.key}
-            onClick={onItem(it)}
+            onKeyDown={onItemKey(it)}
             style={{
               ...styles.row,
               background: pressed === it.key ? 'var(--layer-2)' : 'transparent',

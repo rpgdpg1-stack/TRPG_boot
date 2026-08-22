@@ -58,7 +58,6 @@ export default function BrowserMenuButton() {
   const [pressed, setPressed] = useState(null)
   const [btnPressed, setBtnPressed] = useState(false)
   const dragging = useRef(false)
-  const justPicked = useRef(false)
 
   const keyAtPoint = (x, y) => {
     const el = document.elementFromPoint(x, y)
@@ -112,7 +111,6 @@ export default function BrowserMenuButton() {
             }}
             onPointerDown={(e) => {
               dragging.current = true
-              justPicked.current = false
               setPressed(keyAtPoint(e.clientX, e.clientY))
             }}
             onPointerMove={(e) => {
@@ -123,8 +121,8 @@ export default function BrowserMenuButton() {
               dragging.current = false
               const key = keyAtPoint(e.clientX, e.clientY)
               setPressed(null)
+              // Отпустили мимо пунктов — ничего не выбираем.
               if (!key) return
-              justPicked.current = true
               haptic.light()
               items.find(i => i.key === key)?.onClick()
             }}
@@ -135,9 +133,14 @@ export default function BrowserMenuButton() {
                 key={it.key}
                 type="button"
                 data-menu-key={it.key}
-                onClick={() => {
-                  if (justPicked.current) { justPicked.current = false; return }
-                  it.onClick()
+                /* Обычного onClick тут НЕТ намеренно. Касание уже обработано
+                   на панели (pointerup над пунктом), а браузер после жеста
+                   всё равно шлёт click по тому элементу, НА КОТОРОМ палец
+                   опустился, — даже если увели его за пределы меню и отпустили
+                   в пустоте. Из-за этого «передумал» всё равно срабатывало.
+                   Для клавиатуры остаётся onKeyDown. */
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); it.onClick() }
                 }}
                 style={{
                   ...styles.row,
