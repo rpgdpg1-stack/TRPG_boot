@@ -17,13 +17,32 @@ jobs:
       - name: Снять дамп
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        # pipefail обязателен: без него упавший pg_dump всё равно даёт нулевой
+        # код выхода (последним в конвейере стоит gzip, а он отработал успешно),
+        # шаг зеленеет и пустышка уезжает поверх хорошего бэкапа.
+        shell: bash
         run: |
+          set -euo pipefail
           DAY=$(date -u +%a | tr '[:upper:]' '[:lower:]')
           echo "DAY=$DAY" >> $GITHUB_ENV
           docker run --rm postgres:17 pg_dump \
             --no-owner --no-privileges --clean --if-exists \
             "$DB_URL" | gzip -9 > "backup-$DAY.sql.gz"
           ls -lh "backup-$DAY.sql.gz"
+
+      # Вторая страховка: дамп живой базы физически не может весить меньше
+      # десятка килобайт. Всё, что мельче, — признак обрыва, и такой файл
+      # заливать нельзя, иначе он затрёт рабочую копию недельной давности.
+      - name: Проверить, что дамп не пустой
+        shell: bash
+        run: |
+          set -euo pipefail
+          SIZE=$(stat -c%s "backup-$DAY.sql.gz")
+          echo "Размер дампа: $SIZE байт"
+          if [ "$SIZE" -lt 10000 ]; then
+            echo "::error::Дамп подозрительно мал ($SIZE байт) — заливка отменена"
+            exit 1
+          fi
 
       # Файл всегда называется по дню недели: понедельничный дамп перезаписывает
       # прошлый понедельничный. Итого ровно 7 файлов, место не растёт, а глубина
