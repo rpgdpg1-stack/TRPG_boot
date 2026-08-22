@@ -1,4 +1,4 @@
-import { localGet, localSet } from '../utils/storage'
+import { getPrefSync, setPref } from './prefs'
 
 /**
  * Период статистики — один на приложение.
@@ -15,11 +15,15 @@ const PERIODS = ['week', 'month', 'year', 'all']
  */
 const HOME_PERIOD_KEY = 'home-stats-period'
 
+// Настройка АККАУНТА, а не устройства. Раньше лежала в localStorage и потому
+// не доезжала никуда: ни в браузер, ни на второй телефон. Человек выбирал
+// «Месяц» в Telegram, открывал приложение в браузере — и видел «Год», как
+// будто выбор не сохранился.
 export function getHomeStatsPeriod() {
-  const v = localGet(HOME_PERIOD_KEY)
+  const v = getPrefSync(HOME_PERIOD_KEY, null)
   return PERIODS.includes(v) ? v : 'year'
 }
 
 export function setHomeStatsPeriod(period) {
-  if (PERIODS.includes(period)) localSet(HOME_PERIOD_KEY, period)
+  if (PERIODS.includes(period)) setPref(HOME_PERIOD_KEY, period)
 }

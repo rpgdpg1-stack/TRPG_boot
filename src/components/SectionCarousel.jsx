@@ -6,9 +6,9 @@ import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
 import { onActiveWorkoutChange } from '../lib/active-workout'
 import { getActiveDaySync, toggleFavoriteProgram, getFavoritePrograms, getFavoriteProgramsSync } from '../lib/storage'
-import { localGet, localSet } from '../utils/storage'
+import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
-import { cloudGet, cloudSet } from '../lib/cloud-storage'
+import { getPrefSync, setPref } from '../lib/prefs'
 import { formatRelative } from '../utils/history'
 import UiIcon from './UiIcon'
 import ChevronIcon from './ChevronIcon'
@@ -57,7 +57,7 @@ function readPinnedMap() {
 export default function SectionCarousel() {
   const navigate = useNavigate()
 
-  const [idx, setIdx] = useState(() => idxOfCat(localGet(LAST_CAT_KEY)))
+  const [idx, setIdx] = useState(() => idxOfCat(getPrefSync(LAST_CAT_KEY, null)))
   const [open, setOpen] = useState(false)          // выпадающий список разделов
   const [pinnedTick, setPinnedTick] = useState(0)  // ре-чтение закрепа/последней
   const selectorRef = useRef(null)
@@ -80,13 +80,17 @@ export default function SectionCarousel() {
     return () => { cancelled = true; offPrefs() }
   }, [])
 
-  // Догоняем выбранный раздел из облака (кросс-девайс).
+  // Догоняем выбранный раздел из настроек аккаунта: они приезжают из базы
+  // чуть позже первого кадра. Раньше раздел лежал в облаке Telegram, которого
+  // в браузере нет вовсе — и там всегда открывалась первая вкладка, чем бы
+  // человек ни пользовался в Telegram.
   useEffect(() => {
-    let alive = true
-    cloudGet(LAST_CAT_KEY).then(id => {
-      if (alive && id && CATEGORY_ORDER.includes(id)) setIdx(idxOfCat(id))
-    }).catch(() => {})
-    return () => { alive = false }
+    const applyFromPrefs = () => {
+      const id = getPrefSync(LAST_CAT_KEY, null)
+      if (id && CATEGORY_ORDER.includes(id)) setIdx(idxOfCat(id))
+    }
+    applyFromPrefs()
+    return on(EVENTS.PREFS_CHANGED, applyFromPrefs)
   }, [])
 
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
@@ -131,8 +135,7 @@ export default function SectionCarousel() {
       setIdx(next)
       setSettle(null)
       const id = CATEGORY_ORDER[next]
-      localSet(LAST_CAT_KEY, id)
-      cloudSet(LAST_CAT_KEY, id)
+      setPref(LAST_CAT_KEY, id)
     }, SETTLE_MS)
   }
 
@@ -147,8 +150,7 @@ export default function SectionCarousel() {
     setHeadDir(next > idx ? 'next' : 'prev')
     litUp()
     setIdx(next)
-    localSet(LAST_CAT_KEY, id)
-    cloudSet(LAST_CAT_KEY, id)
+    setPref(LAST_CAT_KEY, id)
   }
 
   const onTouchStart = (e) => {

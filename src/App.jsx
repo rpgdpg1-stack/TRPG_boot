@@ -130,6 +130,14 @@ export default function App() {
       }
     }
 
+    // Приглашение может прийти и из Telegram (там код лежит в параметрах
+    // запуска, а не в адресе страницы) — обрабатывает его авторизация,
+    // а показываем мы, одинаково в обеих версиях.
+    const offInvite = on(EVENTS.FRIEND_INVITE, (evt) => {
+      setInvite(evt.detail || { name: null, already: false })
+      getFriendsList().catch(() => {})
+    })
+
     // Когда сеть возвращается — запускаем синк очереди.
     const offNet = onNetworkChange((isOnline) => {
       if (isOnline) {
@@ -141,6 +149,7 @@ export default function App() {
     return () => {
       cancelled = true
       offNet()
+      offInvite()
       kbCleanup()
     }
   }, [])

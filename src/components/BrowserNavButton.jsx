@@ -43,9 +43,12 @@ export default function BrowserNavButton() {
 const styles = {
   button: {
     position: 'fixed',
-    top: 'var(--tg-nav-top, 56px)',
+    // Пилюля НИЖЕ полосы и по её центру: в Telegram кнопка тоже не растянута
+    // на всю высоту навигации, а сидит внутри с воздухом сверху и снизу.
+    // Растянутая на 44 выглядела грузной и не совпадала с телеграмной.
+    top: 'calc(var(--tg-nav-top, 56px) + (var(--tg-nav-height, 44px) - 32px) / 2)',
     left: 'var(--space-4)',
-    height: 'var(--tg-nav-height, 44px)',
+    height: '32px',
     zIndex: 'var(--z-nav, 60)',
     display: 'flex',
     alignItems: 'center',

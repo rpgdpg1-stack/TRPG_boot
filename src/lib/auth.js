@@ -124,6 +124,23 @@ export async function ensureAuth() {
       acceptReferral(refCode).then(result => {
         if (result.success) {
           debug('[auth] friend added via referral')
+
+          // Показываем «теперь вы друзья» только тому, у кого аккаунт УЖЕ был.
+          // Новичку это лишний экран поверх первого впечатления: он и так
+          // увидит друга в списке, а объяснять ему устройство приложения
+          // модалкой в первую секунду — плохой момент.
+          //
+          // «Новичок» = запись создана только что, в этом же входе. Минуты
+          // с запасом хватает: между созданием записи и этим кодом проходят
+          // доли секунды.
+          const createdAt = new Date(currentUser?.created_at || 0).getTime()
+          const justRegistered = Date.now() - createdAt < 60 * 1000
+          if (!justRegistered) {
+            emit(EVENTS.FRIEND_INVITE, {
+              name: result.friend_name || null,
+              already: !!result.already
+            })
+          }
           // Обновляем юзера и рассылаем USER_CHANGED чтобы UI обновил
           // серия за неделю на главной
           emit(EVENTS.USER_CHANGED, currentUser)

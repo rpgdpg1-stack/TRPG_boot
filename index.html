@@ -22,6 +22,14 @@
          там вкладок нет, а значок в списке чатов берётся из аватара бота. -->
     <link rel="icon" type="image/webp" href="/favicon.webp" />
 
+    <!-- Иконка для «Добавить на экран Домой». iOS берёт ТОЛЬКО apple-touch-icon
+         и только PNG: с webp-фавиконкой она рисовала серый квадрат с буквой.
+         Манифест — то же самое для Android и для окна приложения на компьютере;
+         из него же берутся имя и цвет фона, чтобы запуск не мигал белым. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="TRPG" />
+
     <title>TRPG</title>
 
     <!-- Telegram Web App SDK.
