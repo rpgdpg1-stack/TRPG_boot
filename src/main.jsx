@@ -14,6 +14,15 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     // Шлём ошибки только из боевой сборки (в dev отлаживаем по консоли).
     enabled: import.meta.env.PROD,
+    // Откуда прилетела ошибка. Оба хостинга шлют в один проект Sentry, но
+    // фильтруются по этому тегу: production — Timeweb (боевой trpg1.ru),
+    // vercel — запасной аэродром. Считается по адресу, настраивать нечего.
+    environment: window.location.hostname.endsWith('vercel.app')
+      ? 'vercel'
+      : 'production',
+    // Версия сборки. Совпадает с релизом, под которым уходят source maps
+    // (см. vite.config.js) — без этого Sentry не сопоставит карты со сборкой.
+    release: typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : undefined,
     // Доля трасс производительности. 0 — не собираем перформанс, только ошибки.
     tracesSampleRate: 0,
   })
