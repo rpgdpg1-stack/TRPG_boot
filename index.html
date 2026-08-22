@@ -169,31 +169,51 @@
           var f = el('boot-fallback');
           if (!f) return;
 
-          // Вне Telegram initData пустой — приложению нечем подтвердить, кто ты.
-          // Говорим об этом прямо и убираем «Перезапустить»: кнопка, которая
-          // заведомо не поможет, злит сильнее, чем её отсутствие.
+          // ПОЧЕМУ ЗДЕСЬ БОЛЬШЕ НЕТ «Откройте через Telegram».
           //
-          // ОДНОГО initData МАЛО. Внутри Telegram он тоже бывает пустым — если
-          // telegram-web-app.js не успел загрузиться на плохой связи. Тогда
-          // человек СИДИТ в Telegram, а мы бы отправили его «открыть через
-          // Telegram» и спрятали единственную рабочую кнопку. Поэтому вторым
-          // признаком смотрим адрес: открывая Mini App, Telegram дописывает
-          // в него tgWebApp-параметры, и они на месте даже когда скрипт не дошёл.
+          // Этот текст появился, когда вход был один. Теперь есть вход по почте,
+          // и отправлять человека в Telegram — прямая ложь: он мог быть уже
+          // авторизован в браузере, а приложение просто не достучалось до
+          // сервера. Кнопку «Перезапустить» тоже возвращаем: в отличие от
+          // прежнего случая, перезагрузка тут вполне может помочь.
+          //
+          // Вместо догадок — проверяем, отвечает ли сервер данных, и говорим
+          // человеку то, что выяснили. Это единственная диагностика, доступная
+          // ему без инструментов разработчика.
           var tg = window.Telegram && window.Telegram.WebApp;
-          var url = String(window.location.href || '');
-          var launchedByTelegram = url.indexOf('tgWebApp') !== -1;
-          if ((!tg || !tg.initData) && !launchedByTelegram) {
-            var t = el('boot-title');
-            var x = el('boot-text');
-            var r = el('boot-restart');
-            var c = el('boot-close');
-            if (t) t.textContent = 'Откройте через Telegram';
-            if (x) x.textContent = 'Приложение работает внутри Telegram — там оно узнаёт вас без пароля. По прямой ссылке в браузере войти не получится.';
-            if (r) r.style.display = 'none';
-            if (c) c.style.display = 'none';
-          }
+          var inTelegram = (tg && tg.initData) ||
+            String(window.location.href || '').indexOf('tgWebApp') !== -1;
+          var c = el('boot-close');
+          if (c && !inTelegram) c.style.display = 'none';   // в браузере закрывать нечего
 
           f.style.display = 'flex';
+
+          var apiUrl = '%VITE_SUPABASE_URL%';
+          if (apiUrl && apiUrl.indexOf('http') === 0) {
+            var done = false;
+            var giveUp = setTimeout(function () {
+              if (done) return;
+              done = true;
+              var x = el('boot-text');
+              if (x) x.textContent = 'Сервер данных не отвечает. Похоже, до него не доходит соединение — проверьте интернет, а если он в порядке, доступ может ограничивать провайдер.';
+            }, 6000);
+
+            try {
+              fetch(apiUrl + '/auth/v1/health', { cache: 'no-store' })
+                .then(function () {
+                  if (done) return;
+                  done = true; clearTimeout(giveUp);
+                  var x = el('boot-text');
+                  if (x) x.textContent = 'Сервер данных отвечает, а приложение не запустилось. Нажмите «Перезапустить» — обычно этого хватает.';
+                })
+                .catch(function () {
+                  if (done) return;
+                  done = true; clearTimeout(giveUp);
+                  var x = el('boot-text');
+                  if (x) x.textContent = 'Сервер данных недоступен. Соединение до него не проходит — проверьте интернет, а если он в порядке, доступ может ограничивать провайдер.';
+                });
+            } catch (e) { /* fetch недоступен — остаётся текст по таймауту */ }
+          }
         }, BOOT_TIMEOUT_MS);
 
         // Если приложение поднялось уже ПОСЛЕ показа спасателя (медленная сеть) —
