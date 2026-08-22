@@ -36,6 +36,7 @@ import { ensureAuth, getCurrentUser } from './lib/auth'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
+import BrowserMenuButton from './components/BrowserMenuButton'
 import FriendInviteModal from './components/FriendInviteModal'
 import { acceptReferral } from './lib/friends'
 import AccountAccess from './pages/AccountAccess'
@@ -203,6 +204,7 @@ export default function App() {
         <ScrollToTopOnNavigate />
         <OfflineBanner />
         {!insideTelegram && <BrowserNavButton />}
+        {!insideTelegram && <BrowserMenuButton />}
         {invite && <FriendInviteModal {...invite} onClose={() => setInvite(null)} />}
 
         <SettingsButtonController />

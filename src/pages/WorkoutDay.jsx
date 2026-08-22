@@ -1675,9 +1675,9 @@ const styles = {
     padding: 'var(--space-4) var(--space-4)',
     // Матовое стекло (как таб-бар / кнопка с блюром): контент скроллится под шапкой
     // и просвечивает размытым. Полупрозрачный фон + backdrop-blur + бордер + тень.
-    background: 'rgba(28, 28, 30, 0.55)',
-    backdropFilter: 'blur(16px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+    background: 'var(--surface-glass)',
+    backdropFilter: 'var(--blur-glass)',
+    WebkitBackdropFilter: 'var(--blur-glass)',
     border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-card)',
     boxShadow: '0 6px 24px rgba(0, 0, 0, 0.28)'

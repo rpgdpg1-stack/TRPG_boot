@@ -31,6 +31,7 @@ export default function HomeCards() {
   const [favCount, setFavCount] = useState(() => (getFavoritesSync() || []).length)
   // Период статистики: по умолчанию год.
   const [period, setPeriod] = useState(getHomeStatsPeriod)
+  const [selectorPressed, setSelectorPressed] = useState(false)
   const [open, setOpen] = useState(false)   // раскрыт список периодов
   useEffect(() => {
     let alive = true
@@ -82,11 +83,21 @@ export default function HomeCards() {
           <span ref={selectorRef} style={styles.selectorWrap}>
             <button
               style={styles.selector}
-              className="press-tile"
               onClick={(e) => { e.stopPropagation(); haptic.light(); setOpen(o => !o) }}
+              onPointerDown={() => setSelectorPressed(true)}
+              onPointerUp={() => setSelectorPressed(false)}
+              onPointerCancel={() => setSelectorPressed(false)}
+              onPointerLeave={() => setSelectorPressed(false)}
               aria-label="Период статистики"
             >
-              <span style={styles.selectorText}>{periodLabel}</span>
+              {/* Отклик только на самом слове: пока палец на нём — светлее
+                  и чуть крупнее, отпустил — вернулось. Открытое меню слово
+                  не подсвечивает: подсветка означает «сейчас касаюсь», а не
+                  «здесь что-то открыто». */}
+              <span style={{
+                ...styles.selectorText,
+                ...(selectorPressed ? styles.selectorTextPressed : null)
+              }}>{periodLabel}</span>
               <span style={{
                 ...styles.selectorChev,
                 transform: open ? 'rotate(180deg)' : 'rotate(0deg)'
@@ -158,7 +169,11 @@ function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', s
       role="button"
       tabIndex={0}
       style={{ ...styles.card, flex: square ? '0 0 auto' : flex, ...(square ? styles.cardSquare : null) }}
-      className="press-tile"
+      /* Тихий отклик, а не press-tile: внутри карточки живёт своя кнопка
+         (выбор периода). У браузера состояние «нажато» поднимается по дереву,
+         поэтому тап по «Месяц» сжимал заодно всю карточку — два отклика на
+         одно касание, и непонятно, что именно нажалось. */
+      className="press-dim"
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.() } }}
     >
@@ -225,7 +240,13 @@ const styles = {
   },
   selectorText: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap',
+    display: 'inline-block',
+    transition: 'color 0.12s ease, transform var(--press-duration) var(--press-ease)'
+  },
+  selectorTextPressed: {
+    color: 'var(--color-text)',
+    transform: 'scale(1.06)'
   },
   selectorChev: {
     display: 'inline-flex', lineHeight: 0, color: 'var(--color-text-secondary)',
@@ -236,7 +257,11 @@ const styles = {
     position: 'absolute', top: 'calc(100% + var(--space-15))', right: 0,
     zIndex: 60, minWidth: '116px',
     padding: 'var(--space-15)',
-    background: 'var(--surface-raised)',
+    // То же стекло, что у меню долгого нажатия и кнопок навигации: всплывающие
+    // панели по всему приложению должны быть одной плотности.
+    background: 'var(--surface-glass)',
+    backdropFilter: 'var(--blur-glass)',
+    WebkitBackdropFilter: 'var(--blur-glass)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',

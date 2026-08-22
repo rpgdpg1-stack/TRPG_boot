@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
+import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
@@ -359,4 +360,29 @@ export async function clearAllData() {
     setCurrentUser(data)
     emit(EVENTS.USER_CHANGED, data)
   }
+}
+
+/**
+ * Когда по этой программе тренировались в последний раз.
+ *
+ * Источник — история тренировок из базы, а НЕ настройка «последний день».
+ * Настройка пишется только когда тренировку завершили через приложение, и
+ * у неё другая задача — не засчитать два дня цикла за одни сутки. Карточка
+ * же должна отвечать на вопрос «когда я этим занимался», и ответ на него
+ * есть в базе всегда: у человека была девятка заплывов, а карточка писала
+ * «Ещё не начинали», потому что смотрела не туда.
+ *
+ * В базе программа записана своим идентификатором (prog_001, swim_001), а
+ * в адресах и на карточках живёт короткое имя (split, swim) — переводим одно
+ * в другое через реестр. У своих программ идентификатор и имя совпадают.
+ */
+export function getLastWorkoutDateBySlug(slug) {
+  if (!slug) return null
+  const prog = getProgramBySlug(slug)
+  const programId = prog?.dbId || slug
+  const list = getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || []
+  // Список уже отсортирован от свежих к старым — первое совпадение и есть
+  // последняя тренировка по этой программе.
+  const found = list.find(w => w.program_id === programId)
+  return found?.finished_at || null
 }

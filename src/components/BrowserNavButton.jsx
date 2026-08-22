@@ -54,11 +54,11 @@ const styles = {
     alignItems: 'center',
     gap: '2px',
     padding: '0 var(--space-3) 0 var(--space-2)',
-    // Пилюля-подложка, как у системной кнопки Telegram: на светлых картинках
-    // под шапкой белая стрелка иначе теряется.
-    background: 'var(--surface-raised)',
-    backdropFilter: 'blur(var(--blur-md))',
-    WebkitBackdropFilter: 'blur(var(--blur-md))',
+    // То же стекло, что у всплывающих меню: кнопки навигации и панели —
+    // один слой интерфейса, и разной плотности у них быть не должно.
+    background: 'var(--surface-glass)',
+    backdropFilter: 'var(--blur-glass)',
+    WebkitBackdropFilter: 'var(--blur-glass)',
     border: 'none',
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',

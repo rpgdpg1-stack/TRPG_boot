@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getPrefSync } from '../lib/prefs'
+import { getLastWorkoutDateBySlug } from '../lib/storage'
 import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
@@ -186,7 +186,7 @@ export default function ProgramCard({
 
   // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
-  const lastDate = lastTrained && available ? getPrefSync(`program:${prog.slug}:last_day_date`, null) : null
+  const lastDate = lastTrained && available ? getLastWorkoutDateBySlug(prog.slug) : null
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
