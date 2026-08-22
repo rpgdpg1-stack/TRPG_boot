@@ -33,7 +33,6 @@ import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser } from './lib/auth'
-import { isTelegramEnv } from './lib/telegram'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
@@ -115,34 +114,6 @@ export default function App() {
       getFriendsList().catch(() => {})
       getFavoriteExercises().catch(() => {})
     })
-
-    // ПЕРВЫЙ КАДР В БРАУЗЕРЕ: заставляем Safari пересчитать высоту экрана.
-    //
-    // Открытое из ярлыка на домашнем экране приложение показывает таб-бар
-    // приподнятым — Safari при первом кадре считает высоту по «свёрнутому»
-    // состоянию, будто снизу есть его панель, и прижатые к низу элементы
-    // встают выше. Пересчитывает он это только после первого касания, отчего
-    // таб-бар на глазах опускается на место.
-    //
-    // Прокруткой это не лечится: на главной она и так в нуле, а сдвиг ВНИЗ
-    // (единственный доступный оттуда) Safari за повод пересчитать не считает —
-    // помогает противоположный жест, которого из кода не изобразить.
-    //
-    // Зато пересчёт вызывает изменение самой раскладки. Подрастив страницу на
-    // пиксель и вернув обратно в следующем кадре, получаем тот же результат
-    // без всякой прокрутки: Safari пересобирает геометрию и прижатые к низу
-    // элементы встают на настоящий край.
-    //
-    // Только в браузере: в Telegram высоту сообщает сам Telegram, и трогать
-    // раскладку там незачем.
-    if (!isTelegramEnv()) {
-      requestAnimationFrame(() => {
-        const el = document.documentElement
-        const prev = el.style.minHeight
-        el.style.minHeight = 'calc(100dvh + 1px)'
-        requestAnimationFrame(() => { el.style.minHeight = prev })
-      })
-    }
 
     // Глобальный детектор клавиатуры: вешаем body.keyboard-open пока она открыта.
     // По нему CSS гасит нижний fade-scrim (.app::after), который на iOS иначе

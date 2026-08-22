@@ -75,8 +75,7 @@ img, button { -webkit-user-drag: none; }
    Одинаковая высота сверху и снизу (= var(--tg-safe-top)). Fixed, не прыгает при
    скролле. pointer-events:none — тапы проходят сквозь. z ниже таб-бара (100) и
    навбара (95), но выше контента. Маска гасит скрим к внутреннему краю без линии. */
-.app::before,
-.app::after {
+.app::before {
   content: '';
   position: fixed;
   left: 0;
@@ -84,12 +83,6 @@ img, button { -webkit-user-drag: none; }
   height: var(--tg-safe-top);
   pointer-events: none;
   z-index: 90;
-}
-/* Размытие — только у ВЕРХНЕГО скрима. Внизу оно не нужно: под таб-баром
-   контент и так уходит за край, а мутная полоса поперёк экрана читалась
-   как грязь на стекле. Затемнение внизу остаётся — оно и отделяет таб-бар
-   от списка. */
-.app::before {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
 }
@@ -103,15 +96,11 @@ img, button { -webkit-user-drag: none; }
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%);
 }
-.app::after {
-  bottom: 0;
-  /* Нижний скрим в 2 раза ниже верхнего — и ещё на 8px короче: он начинался
-     слишком высоко и накрывал нижние карточки списка. Верхний не трогаем. */
-  height: calc(var(--tg-safe-top) / 2 - 8px);
-  background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
-}
+/* НИЖНЕГО СКРИМА НЕТ — снят намеренно, проверяем гипотезу: не он ли поднимал
+   таб-бар при первом открытии из ярлыка. Он был fixed-элементом высотой от
+   --tg-safe-top, то есть зависел от той самой высоты экрана, которую Safari
+   в первый кадр считает неверно. Если таб-бар встанет ровно — причина была
+   в нём; если нет — скрим вернём. */
 
 /* На конструкторе нижний таб-бар скрыт — этот fade-scrim не нужен, и именно
    он ложился поверх кнопок и прилипал к клавиатуре на iOS. Гасим его, пока
