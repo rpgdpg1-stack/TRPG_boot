@@ -23,6 +23,8 @@ export default function ProfileHeader({
   user,
   streak = null,
   lastWorkout = null,
+  // Тренируется прямо сейчас — заменяет строку «когда тренировался».
+  isTraining = false,
   statsLoading = false,
   showLastWorkout = true,
   interactiveStreak = false,   // поп-ап серии по тапу — только в СВОЁМ профиле
@@ -61,7 +63,9 @@ export default function ProfileHeader({
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
               ) : (
-                <span style={styles.lastWhen}>{lastWhen || 'Ещё не тренировался'}</span>
+                <span style={isTraining ? styles.trainingNow : styles.lastWhen}>
+                  {isTraining ? 'Тренируется сейчас' : (lastWhen || 'Ещё не тренировался')}
+                </span>
               )}
             </div>
           )}
@@ -149,6 +153,14 @@ const styles = {
   lastWhen: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  },
+  // Тот же кегль и место, что у «3 дня назад», но акцентным цветом: карточка
+  // друга не должна противоречить списку, из которого её открыли.
+  trainingNow: {
+    fontFamily: 'var(--font-manrope)',
+    fontSize: 'var(--text-label-size)',
+    fontWeight: 700,
+    color: 'var(--color-primary)'
   },
   // Огонёк серии: пространство справа от аватара делим пополам — имя в левой
   // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).

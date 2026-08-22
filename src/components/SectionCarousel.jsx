@@ -6,7 +6,6 @@ import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramBySlug } from '../features/programs/registry'
 import { onActiveWorkoutChange } from '../lib/active-workout'
 import { getActiveDaySync, toggleFavoriteProgram, getFavoritePrograms, getFavoriteProgramsSync } from '../lib/storage'
-import { localGet } from '../utils/storage'
 import { EVENTS, on } from '../lib/events'
 import { getPrefSync, setPref } from '../lib/prefs'
 import { formatRelative } from '../utils/history'
@@ -318,7 +317,7 @@ export default function SectionCarousel() {
             const c = cats[i]
             const slug = pinnedMap[c.id] || null
             const prog = slug ? getProgramBySlug(slug) : null
-            const lastDate = slug ? localGet(`program:${slug}:last_day_date`) : null
+            const lastDate = slug ? getPrefSync(`program:${slug}:last_day_date`, null) : null
             return (
               <div key={c.id} style={styles.slide}>
                 {prog ? (

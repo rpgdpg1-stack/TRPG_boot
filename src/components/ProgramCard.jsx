@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { getPrefSync } from '../lib/prefs'
 import { useNavigate } from 'react-router-dom'
 import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
 import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin, workoutTimerColor } from '../lib/active-workout'
 import { loadWorkoutProgress } from '../utils/workout-progress'
 import { getProgramDaySlots } from '../features/programs/registry'
-import { localGet } from '../utils/storage'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { formatRelative } from '../utils/history'
@@ -186,7 +186,7 @@ export default function ProgramCard({
 
   // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
-  const lastDate = lastTrained && available ? localGet(`program:${prog.slug}:last_day_date`) : null
+  const lastDate = lastTrained && available ? getPrefSync(`program:${prog.slug}:last_day_date`, null) : null
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
   const showCta = cta && available
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))

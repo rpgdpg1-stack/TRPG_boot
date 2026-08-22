@@ -114,8 +114,9 @@ export default function Profile() {
         // узнаёт человека по подписи Telegram при каждом запуске, и кнопка
         // означала бы «выйти и тут же зайти обратно».
         ...(insideTelegram ? [] : [{
-          id: 'logout', icon: 'ui:power', iconColor: 'var(--color-error)',
-          title: 'Выйти', subtitle: 'Из этого браузера', action: 'logout', danger: true
+          id: 'logout', icon: 'ui:logout', iconColor: 'var(--color-error)',
+          title: 'Выйти', subtitle: 'Вход снова — по коду из письма',
+          action: 'logout', danger: true
         }])
       ]
     }

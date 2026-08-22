@@ -99,6 +99,7 @@ export default function PlayerProfileModal({ row, onClose }) {
           user={userObj}
           streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
           lastWorkout={pub?.last_workout || null}
+          isTraining={!!pub?.is_training}
           showLastWorkout={pub?.show_last_workout ?? true}
           statsLoading={pub === null && !failed}
           sections={friendSections}
