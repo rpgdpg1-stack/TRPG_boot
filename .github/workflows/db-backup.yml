@@ -1,0 +1,48 @@
+name: Бэкап базы
+
+# Раз в сутки в 02:00 UTC = 05:00 МСК — ночью, когда никто не тренируется.
+# Плюс кнопка ручного запуска.
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      # pg_dump берём из докер-образа Postgres той же мажорной версии, что и
+      # база. Свой pg_dump на раннере отстаёт по версии и отказывается снимать
+      # дамп с более новой базы.
+      - name: Снять дамп
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          DAY=$(date -u +%a | tr '[:upper:]' '[:lower:]')
+          echo "DAY=$DAY" >> $GITHUB_ENV
+          docker run --rm postgres:17 pg_dump \
+            --no-owner --no-privileges --clean --if-exists \
+            "$DB_URL" | gzip -9 > "backup-$DAY.sql.gz"
+          ls -lh "backup-$DAY.sql.gz"
+
+      # Файл всегда называется по дню недели: понедельничный дамп перезаписывает
+      # прошлый понедельничный. Итого ровно 7 файлов, место не растёт, а глубина
+      # отката — неделя.
+      - name: Положить в Yandex Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ru-central1
+          BUCKET: ${{ secrets.YC_BUCKET }}
+        run: |
+          aws s3 cp "backup-$DAY.sql.gz" "s3://$BUCKET/db/backup-$DAY.sql.gz" \
+            --endpoint-url https://storage.yandexcloud.net
+
+      - name: Что лежит в хранилище
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ru-central1
+          BUCKET: ${{ secrets.YC_BUCKET }}
+        run: |
+          aws s3 ls "s3://$BUCKET/db/" --endpoint-url https://storage.yandexcloud.net --human-readable
