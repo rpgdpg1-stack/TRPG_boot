@@ -32,6 +32,21 @@ export default function BrowserMenuButton() {
     requestAnimationFrame(() => setShown(true))
   }
 
+  // Пока панель открыта, страница под ней не двигается. Без этого палец,
+  // ведущий по пунктам, заодно тащил вниз весь экран — и выбрать что-либо
+  // протяжкой было нельзя. Метка на корне заодно останавливает ленту разделов
+  // (её слушает SectionCarousel), а класс на body гасит прокрутку.
+  useEffect(() => {
+    if (!open) return
+    document.documentElement.classList.add('menu-open')
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.classList.remove('menu-open')
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open])
+
   const closeMenu = () => {
     setShown(false)
     clearTimeout(closeTimer.current)
@@ -41,6 +56,7 @@ export default function BrowserMenuButton() {
   // Выбор протяжкой — как в меню долгого нажатия: палец опустился на панель
   // и ведёт по пунктам, подсветка идёт за ним, отпустил над нужным = выбрал.
   const [pressed, setPressed] = useState(null)
+  const [btnPressed, setBtnPressed] = useState(false)
   const dragging = useRef(false)
   const justPicked = useRef(false)
 
@@ -66,7 +82,16 @@ export default function BrowserMenuButton() {
 
   return (
     <>
-      <button type="button" onClick={openMenu} style={styles.button} aria-label="Меню">
+      <button
+        type="button"
+        onClick={openMenu}
+        onPointerDown={() => setBtnPressed(true)}
+        onPointerUp={() => setBtnPressed(false)}
+        onPointerCancel={() => setBtnPressed(false)}
+        onPointerLeave={() => setBtnPressed(false)}
+        style={{ ...styles.button, ...(btnPressed ? styles.buttonPressed : null) }}
+        aria-label="Меню"
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <circle cx="5" cy="12" r="1.8" />
           <circle cx="12" cy="12" r="1.8" />
@@ -146,10 +171,22 @@ const styles = {
     border: 'none',
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',
-    WebkitTapHighlightColor: 'transparent'
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'transform var(--press-duration) var(--press-ease), background 0.12s ease'
+  },
+  // Отклик на касание: пилюля чуть подрастает и светлеет — как крестик
+  // в меню упражнения. Без него кнопка кажется неживой: она маленькая,
+  // и подсветки текста, как у строк списка, тут нет.
+  buttonPressed: {
+    transform: 'scale(1.08)',
+    background: 'var(--layer-2)'
   },
   backdrop: {
-    position: 'fixed', inset: 0, zIndex: 'var(--z-nav, 60)', background: 'transparent'
+    position: 'fixed', inset: 0, zIndex: 'var(--z-nav, 60)', background: 'transparent',
+    // Гасим жесты фона: иначе движение пальца мимо панели прокручивало
+    // страницу под открытым меню.
+    touchAction: 'none',
+    overscrollBehavior: 'contain'
   },
   menu: {
     position: 'fixed',

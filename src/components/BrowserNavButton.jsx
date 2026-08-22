@@ -19,6 +19,7 @@ import { backButton } from '../lib/telegram'
  */
 export default function BrowserNavButton() {
   const [visible, setVisible] = useState(false)
+  const [pressed, setPressed] = useState(false)
 
   useEffect(() => backButton.subscribe(setVisible), [])
 
@@ -28,7 +29,11 @@ export default function BrowserNavButton() {
     <button
       type="button"
       onClick={() => backButton.trigger()}
-      style={styles.button}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{ ...styles.button, ...(pressed ? styles.buttonPressed : null) }}
       aria-label="Назад"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -65,7 +70,14 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
-    WebkitTapHighlightColor: 'transparent'
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'transform var(--press-duration) var(--press-ease), background 0.12s ease'
+  },
+  // Тот же отклик, что у кнопки «⋯»: обе — одна пара, и вести себя должны
+  // одинаково, иначе одна кажется живой, а вторая сломанной.
+  buttonPressed: {
+    transform: 'scale(1.08)',
+    background: 'var(--layer-2)'
   },
   label: { lineHeight: 1 }
 }

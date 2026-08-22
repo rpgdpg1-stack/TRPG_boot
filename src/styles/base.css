@@ -84,6 +84,12 @@ img, button { -webkit-user-drag: none; }
   height: var(--tg-safe-top);
   pointer-events: none;
   z-index: 90;
+}
+/* Размытие — только у ВЕРХНЕГО скрима. Внизу оно не нужно: под таб-баром
+   контент и так уходит за край, а мутная полоса поперёк экрана читалась
+   как грязь на стекле. Затемнение внизу остаётся — оно и отделяет таб-бар
+   от списка. */
+.app::before {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
 }
@@ -99,8 +105,9 @@ img, button { -webkit-user-drag: none; }
 }
 .app::after {
   bottom: 0;
-  /* Нижний скрим в 2 раза ниже верхнего (по просьбе) — верхний не трогаем. */
-  height: calc(var(--tg-safe-top) / 2);
+  /* Нижний скрим в 2 раза ниже верхнего — и ещё на 8px короче: он начинался
+     слишком высоко и накрывал нижние карточки списка. Верхний не трогаем. */
+  height: calc(var(--tg-safe-top) / 2 - 8px);
   background: linear-gradient(to top, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%);
   -webkit-mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
   mask-image: linear-gradient(to top, #000 0%, #000 45%, transparent 100%);
