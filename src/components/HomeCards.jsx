@@ -90,10 +90,10 @@ export default function HomeCards() {
               onPointerLeave={() => setSelectorPressed(false)}
               aria-label="Период статистики"
             >
-              {/* Отклик только на самом слове: пока палец на нём — светлее
-                  и чуть крупнее, отпустил — вернулось. Открытое меню слово
-                  не подсвечивает: подсветка означает «сейчас касаюсь», а не
-                  «здесь что-то открыто». */}
+              {/* Пока палец на слове — оно чуть крупнее. Отклик карточки при
+                  этом остаётся: состояние «нажато» у браузера поднимается по
+                  дереву, и убрать его у родителя, не ломая отклик в остальных
+                  местах карточки, нельзя. */}
               <span style={{
                 ...styles.selectorText,
                 ...(selectorPressed ? styles.selectorTextPressed : null)
@@ -169,11 +169,7 @@ function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', s
       role="button"
       tabIndex={0}
       style={{ ...styles.card, flex: square ? '0 0 auto' : flex, ...(square ? styles.cardSquare : null) }}
-      /* Тихий отклик, а не press-tile: внутри карточки живёт своя кнопка
-         (выбор периода). У браузера состояние «нажато» поднимается по дереву,
-         поэтому тап по «Месяц» сжимал заодно всю карточку — два отклика на
-         одно касание, и непонятно, что именно нажалось. */
-      className="press-dim"
+      className="press-tile"
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.() } }}
     >
@@ -244,8 +240,10 @@ const styles = {
     display: 'inline-block',
     transition: 'color 0.12s ease, transform var(--press-duration) var(--press-ease)'
   },
+  // Слово периода на касании только чуть подрастает. Белым не красим: цвет
+  // здесь несёт смысл («это второстепенная подпись»), а не состояние, и
+  // подсветка спорила бы с соседними серыми подписями.
   selectorTextPressed: {
-    color: 'var(--color-text)',
     transform: 'scale(1.06)'
   },
   selectorChev: {

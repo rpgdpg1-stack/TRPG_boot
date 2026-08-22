@@ -152,9 +152,13 @@ export default function SectionCarousel() {
     setPref(LAST_CAT_KEY, id)
   }
 
+  // Поверх открыто меню (долгое нажатие по карточке) — лента замирает.
+  const menuIsOpen = () => document.documentElement.classList.contains('menu-open')
+
   const onTouchStart = (e) => {
-    // Открыт дропдаун или идёт доводка — жест ленты не начинаем (w:0 глушит move).
-    if (open || settle) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
+    // Открыт дропдаун, идёт доводка или поверх висит меню — жест не начинаем
+    // (w:0 глушит move).
+    if (open || settle || menuIsOpen()) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
     const t = e.touches[0]
     drag.current = { x: t.clientX, y: t.clientY, axis: null, w: viewportRef.current?.offsetWidth || 1, t0: Date.now(), dx: 0 }
   }
@@ -162,6 +166,12 @@ export default function SectionCarousel() {
   const onTouchMove = (e) => {
     const d = drag.current
     if (!d.w) return
+    // Меню открылось уже ПОСЛЕ начала жеста — обрываем и возвращаем ленту.
+    if (menuIsOpen()) {
+      d.w = 0; d.axis = null; d.dx = 0
+      setDx(0)
+      return
+    }
     const t = e.touches[0]
     const mx = t.clientX - d.x
     const my = t.clientY - d.y

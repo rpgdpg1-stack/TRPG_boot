@@ -38,6 +38,17 @@ export default function BrowserMenuButton() {
     closeTimer.current = setTimeout(() => setOpen(false), 170)
   }
 
+  // Выбор протяжкой — как в меню долгого нажатия: палец опустился на панель
+  // и ведёт по пунктам, подсветка идёт за ним, отпустил над нужным = выбрал.
+  const [pressed, setPressed] = useState(null)
+  const dragging = useRef(false)
+  const justPicked = useRef(false)
+
+  const keyAtPoint = (x, y) => {
+    const el = document.elementFromPoint(x, y)
+    return el?.closest?.('[data-menu-key]')?.getAttribute('data-menu-key') || null
+  }
+
   const items = [
     {
       key: 'reload',
@@ -74,14 +85,39 @@ export default function BrowserMenuButton() {
               opacity: shown ? 1 : 0,
               transform: shown ? 'scale(1)' : 'scale(0.9)'
             }}
+            onPointerDown={(e) => {
+              dragging.current = true
+              justPicked.current = false
+              setPressed(keyAtPoint(e.clientX, e.clientY))
+            }}
+            onPointerMove={(e) => {
+              if (dragging.current) setPressed(keyAtPoint(e.clientX, e.clientY))
+            }}
+            onPointerUp={(e) => {
+              if (!dragging.current) return
+              dragging.current = false
+              const key = keyAtPoint(e.clientX, e.clientY)
+              setPressed(null)
+              if (!key) return
+              justPicked.current = true
+              haptic.light()
+              items.find(i => i.key === key)?.onClick()
+            }}
+            onPointerCancel={() => { dragging.current = false; setPressed(null) }}
           >
             {items.map(it => (
               <button
                 key={it.key}
                 type="button"
-                onClick={it.onClick}
-                style={styles.row}
-                className="tg-row"
+                data-menu-key={it.key}
+                onClick={() => {
+                  if (justPicked.current) { justPicked.current = false; return }
+                  it.onClick()
+                }}
+                style={{
+                  ...styles.row,
+                  background: pressed === it.key ? 'var(--layer-2)' : 'transparent'
+                }}
               >
                 <UiIcon name={it.icon.slice(3)} size={20} color="var(--color-text-secondary)" />
                 <span style={styles.rowTitle}>{it.title}</span>

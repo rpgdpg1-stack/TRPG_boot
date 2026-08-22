@@ -82,35 +82,75 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
     return () => clearTimeout(t)
   }, [])
 
-  // Драг/скролл по пункту отменяет тап: подсветка снимается и действие НЕ
-  // выполняется (как обычная кнопка — потянул пальцем мимо = не нажал).
-  const pressStart = useRef(null)
-  const pressMoved = useRef(false)
+  // ВЫБОР ПРОТЯЖКОЙ. Палец опускается на меню и, не отрываясь, ведёт по
+  // пунктам — подсветка идёт за ним, отпустил над нужным = выбрал. Так же
+  // ведут себя контекстные меню в iOS, и так же человек привык после долгого
+  // нажатия: палец УЖЕ на экране, отрывать его, чтобы потом ткнуть заново, —
+  // лишнее движение.
+  //
+  // Раньше подсветка гасла на первом же сдвиге пальца, и меню отвечало только
+  // на отдельный тап. Отпускание мимо пунктов по-прежнему не выбирает ничего.
+  const dragging = useRef(false)
+  const justPicked = useRef(false)
 
-  const onItem = (it) => (e) => {
-    e.stopPropagation()
-    if (pressMoved.current) { pressMoved.current = false; return }
+  // Какой пункт под этой точкой экрана. Ищем по разметке, а не по координатам
+  // из состояния: пункты разной высоты, часть из них — разделители и вставки.
+  const keyAtPoint = (x, y) => {
+    const el = document.elementFromPoint(x, y)
+    return el?.closest?.('[data-menu-key]')?.getAttribute('data-menu-key') || null
+  }
+
+  const pick = (key) => {
+    const it = items.find(i => i.key === key && !i.divider && !i.custom)
+    if (!it) return
+    justPicked.current = true
     it.haptic === 'medium' ? haptic.medium() : haptic.light()
     requestClose()
     it.onClick?.()
   }
-  const rowProps = (key) => ({
+
+  const onItem = (it) => (e) => {
+    e.stopPropagation()
+    // Пункт уже выбран протяжкой — клик после того же касания игнорируем,
+    // иначе действие выполнится дважды.
+    if (justPicked.current) { justPicked.current = false; return }
+    it.haptic === 'medium' ? haptic.medium() : haptic.light()
+    requestClose()
+    it.onClick?.()
+  }
+
+  // Обработчики висят на КОНТЕЙНЕРЕ меню, а не на каждом пункте: палец должен
+  // переходить между пунктами, а событие при этом принадлежит тому элементу,
+  // на котором касание началось.
+  const menuDragProps = {
     onPointerDown: (e) => {
-      setPressed(key)
-      pressStart.current = { x: e.clientX, y: e.clientY }
-      pressMoved.current = false
+      dragging.current = true
+      justPicked.current = false
+      setPressed(keyAtPoint(e.clientX, e.clientY))
     },
     onPointerMove: (e) => {
-      if (!pressStart.current) return
-      if (Math.abs(e.clientX - pressStart.current.x) > 8 || Math.abs(e.clientY - pressStart.current.y) > 8) {
-        pressMoved.current = true
-        setPressed(null)
-      }
+      if (!dragging.current) return
+      setPressed(keyAtPoint(e.clientX, e.clientY))
     },
-    onPointerUp: () => setPressed(null),
-    onPointerLeave: () => setPressed(null),
-    onPointerCancel: () => setPressed(null)
-  })
+    onPointerUp: (e) => {
+      if (!dragging.current) return
+      dragging.current = false
+      const key = keyAtPoint(e.clientX, e.clientY)
+      setPressed(null)
+      if (key) pick(key)
+    },
+    onPointerCancel: () => { dragging.current = false; setPressed(null) }
+  }
+
+  // ПРИЗНАК «ПОВЕРХ ЧТО-ТО ОТКРЫТО» для жестовых компонентов под меню.
+  // Подложка ловит касания, но жест мог начаться РАНЬШЕ неё: меню открывается
+  // долгим нажатием, палец уже лежит на карусели и она успела начать свайп.
+  // Дальше карусель получает движения напрямую и едет под открытым меню.
+  // Метка на корне даёт ей возможность это заметить и прерваться.
+  useEffect(() => {
+    document.documentElement.classList.add('menu-open')
+    return () => document.documentElement.classList.remove('menu-open')
+  }, [])
 
   const visible = pos && !closing
 
@@ -142,6 +182,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
           ...(drop ? { transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' } : null)
         }}
         onClick={(e) => e.stopPropagation()}
+        {...menuDragProps}
       >
         {items.map((it, i) => it.divider ? (
           <div key={`d${i}`} style={styles.divider} />
@@ -150,7 +191,7 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
         ) : (
           <button
             key={it.key}
-            {...rowProps(it.key)}
+            data-menu-key={it.key}
             onClick={onItem(it)}
             style={{
               ...styles.row,
