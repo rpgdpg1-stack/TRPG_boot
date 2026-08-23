@@ -107,22 +107,21 @@ async function send(chatId, text, buttons, photo) {
   // 1024 символа против 4096 у обычного сообщения; наши тексты втрое короче,
   // но проверку оставляем: длинный текст лучше отправить без картинки,
   // чем не отправить вовсе.
-  const usePhoto = !!photo && text.length <= 1024
-  const method = usePhoto ? 'sendPhoto' : 'sendMessage'
+  const blob = photo && text.length <= 1024 ? await loadPhoto(photo) : null
+  const usePhoto = !!blob
   const body = {
     chat_id: chatId,
     parse_mode: 'HTML',
     reply_markup: { inline_keyboard: keyboard }
   }
   if (usePhoto) {
-    body.photo = photo
     body.caption = text
   } else {
     body.text = text
     body.disable_web_page_preview = true
   }
 
-  let data = await post(method, body)
+  let data = usePhoto ? await postPhoto(body, blob) : await post('sendMessage', body)
 
   // Цвет кнопок появился только в Bot API 9.4. Если сервер его не принял —
   // отправляем то же самое без стилей: сообщение важнее оформления.
@@ -135,7 +134,7 @@ async function send(chatId, text, buttons, photo) {
         return plain
       }))
     }
-    data = await post(method, body)
+    data = usePhoto ? await postPhoto(body, blob) : await post('sendMessage', body)
   }
 
   // Картинка недоступна (ссылка закрыта, файл удалён) — шлём текстом.
@@ -155,6 +154,60 @@ async function send(chatId, text, buttons, photo) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Скачанные картинки — по одной на адрес за весь прогон.
+ *
+ * Десять образцов тянут три-четыре разных файла, и качать их по кругу
+ * незачем.
+ */
+const photoCache = new Map()
+
+async function loadPhoto(url) {
+  if (photoCache.has(url)) return photoCache.get(url)
+  const res = await fetch(url)
+  if (!res.ok) {
+    console.warn(`  картинку не скачать: ${url} → ${res.status}`)
+    photoCache.set(url, null)
+    return null
+  }
+  const bytes = await res.arrayBuffer()
+  const blob = new Blob([bytes], { type: res.headers.get('content-type') || 'image/jpeg' })
+  photoCache.set(url, blob)
+  return blob
+}
+
+/**
+ * Отправка фото ФАЙЛОМ, а не ссылкой.
+ *
+ * По ссылке Telegram идёт за картинкой сам, со своих серверов, и если
+ * не достучался или не уложился в свой таймаут — просто отказывает, ничего
+ * не объясняя. Так девять из десяти образцов и приходили без картинок,
+ * хотя ссылки открывались откуда угодно.
+ *
+ * Скачиваем сами и передаём байтами: тогда Telegram ни за чем не ходит,
+ * и остаётся только его собственная проверка формата.
+ */
+async function postPhoto(body, blob) {
+  const form = new FormData()
+  form.append('chat_id', String(body.chat_id))
+  form.append('caption', body.caption)
+  form.append('parse_mode', 'HTML')
+  form.append('reply_markup', JSON.stringify(body.reply_markup))
+  form.append('photo', blob, 'photo.jpg')
+
+  const res = await fetch(api('sendPhoto'), { method: 'POST', body: form })
+  const data = await res.json()
+
+  if (!data.ok && data.error_code === 429) {
+    const wait = (data.parameters?.retry_after || 2) + 1
+    console.warn(`  лимит частоты, жду ${wait} с`)
+    await sleep(wait * 1000)
+    const retry = await fetch(api('sendPhoto'), { method: 'POST', body: form })
+    return retry.json()
+  }
+  return data
+}
 
 /**
  * Запрос к Telegram с уважением к ограничению частоты.
@@ -281,10 +334,11 @@ async function main() {
       if (DRY_RUN) {
         console.log(`\n──────── ${OWNER_CHAT_ID} ────────\n${text}`)
       } else {
-        const data = IMAGES.owner
-          ? await post('sendPhoto', {
-            chat_id: OWNER_CHAT_ID, photo: IMAGES.owner, caption: text, parse_mode: 'HTML'
-          })
+        const blob = IMAGES.owner ? await loadPhoto(IMAGES.owner) : null
+        const data = blob
+          ? await postPhoto({
+            chat_id: OWNER_CHAT_ID, caption: text, reply_markup: { inline_keyboard: [] }
+          }, blob)
           : await post('sendMessage', {
             chat_id: OWNER_CHAT_ID, text, parse_mode: 'HTML', disable_web_page_preview: true
           })
