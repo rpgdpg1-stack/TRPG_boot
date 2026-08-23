@@ -135,7 +135,7 @@ async function sendSamples(bot) {
        bestMonth: 5, bestMonthCount: 14,
        recExercise: 'Тяга верхнего блока нейтральным хватом',
        recWeight: '105.00', recSwimM: 750 }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-all') }]]
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-year') }]]
   ]
 
   for (const [label, text, buttons] of samples) {
@@ -205,10 +205,8 @@ async function main() {
         // человек увидит на экране не те цифры, что были в сообщении.
         const result = await send(r.telegram_id, text, [{
           text: 'Открыть статистику',
-          // Годовая ведёт на общий свод: отдельного «года» в переключателе
-          // статистики нет, ближайшее по смыслу — «Всё время».
           url: appLink(bot, KIND === 'weekly' ? 'stats-week'
-            : KIND === 'yearly' ? 'stats-all' : 'stats-month')
+            : KIND === 'yearly' ? 'stats-year' : 'stats-month')
         }])
         stats[result]++
       }

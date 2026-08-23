@@ -12,7 +12,7 @@
  *   s-<slug>        → плавание
  *   stats-week      → статистика, переключатель на неделе
  *   stats-month     → статистика, переключатель на месяце
- *   stats-all       → статистика, переключатель на «Всё»
+ *   stats-year      → статистика, переключатель на годе
  *   stats           → статистика как есть
  *   open            → просто главная
  *
@@ -38,8 +38,7 @@ export function routeFromStartParam(param) {
   if (param === 'stats') return { path: '/history' }
   if (param === 'stats-week') return { path: '/history', state: { period: 'week' } }
   if (param === 'stats-month') return { path: '/history', state: { period: 'month' } }
-  // Отдельного «года» в переключателе нет — годовая сводка ведёт на «Всё».
-  if (param === 'stats-all') return { path: '/history', state: { period: 'all' } }
+  if (param === 'stats-year') return { path: '/history', state: { period: 'year' } }
 
   // 'open' — «просто открой приложение»: бот шлёт его, когда вести некуда
   // (закреплённой программы нет или пауза больше месяца). Никуда не уводим,
