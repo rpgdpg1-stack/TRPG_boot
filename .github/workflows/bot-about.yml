@@ -1,10 +1,8 @@
-name: Счётчик в описании бота
+name: Описание бота
 
-# Раз в сутки в 04:00 UTC = 07:00 МСК. Описание — статичный текст, само оно
-# не обновляется; чаще раза в день смысла нет, число так быстро не меняется.
+# Только вручную. Расписания нет намеренно: текст статичный, счётчика в нём
+# больше нет — обновлять по таймеру нечего. Запускается, когда текст правили.
 on:
-  schedule:
-    - cron: '0 4 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -20,11 +18,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
       - name: Обновить описание
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           ABOUT_DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: node scripts/bot-about.mjs
