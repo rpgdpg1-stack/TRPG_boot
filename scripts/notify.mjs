@@ -5,7 +5,9 @@
  * (функции srv_weekly_digest / srv_monthly_digest / srv_nudge_candidates),
  * здесь только сборка сообщения и отправка.
  *
- *   node scripts/notify.mjs weekly|monthly|yearly|nudge|test
+ *   node scripts/notify.mjs weekly|monthly|yearly|nudge|owner|test
+ *
+ * owner — отчёт по всему проекту, уходит одному владельцу (OWNER_CHAT_ID).
  *
  * Переменные окружения:
  *   SUPABASE_DB_URL  — строка подключения (та же, что у бэкапа)
@@ -19,16 +21,17 @@
  */
 
 import pg from 'pg'
-import { weeklyDigest, monthlyDigest, yearlyDigest, nudge, nudgeButtons } from './notify-text.mjs'
+import { weeklyDigest, monthlyDigest, yearlyDigest, ownerReport, nudge, nudgeButtons } from './notify-text.mjs'
 
 const KIND = process.argv[2]
 const DRY_RUN = process.env.NOTIFY_DRY_RUN === '1'
 const ONLY = process.env.NOTIFY_ONLY ? String(process.env.NOTIFY_ONLY) : null
 const BOT_TOKEN = process.env.BOT_TOKEN
+const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID
 const DB_URL = process.env.SUPABASE_DB_URL
 
-if (!['weekly', 'monthly', 'yearly', 'nudge', 'test'].includes(KIND)) {
-  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | test')
+if (!['weekly', 'monthly', 'yearly', 'nudge', 'owner', 'test'].includes(KIND)) {
+  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | owner | test')
   process.exit(1)
 }
 // Образцам база не нужна — данные в них выдуманные.
@@ -159,6 +162,34 @@ async function main() {
   const stats = { sent: 0, blocked: 0, error: 0, dry: 0, skipped: 0 }
 
   try {
+    // Владельческий отчёт: один получатель, кнопок нет — вести из него некуда,
+    // цифры и есть содержание.
+    if (KIND === 'owner') {
+      if (!OWNER_CHAT_ID) {
+        console.error('Нет OWNER_CHAT_ID — некому слать отчёт')
+        process.exit(1)
+      }
+      const { rows } = await client.query('SELECT public.srv_owner_report() AS r')
+      const text = ownerReport(rows[0].r)
+
+      if (DRY_RUN) {
+        console.log(`\n──────── ${OWNER_CHAT_ID} ────────\n${text}`)
+      } else {
+        const res = await fetch(api('sendMessage'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: OWNER_CHAT_ID, text, parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        })
+        const data = await res.json()
+        if (!data.ok) throw new Error(`Отчёт не ушёл: ${JSON.stringify(data)}`)
+        console.log('Отчёт отправлен')
+      }
+      return
+    }
+
     if (KIND === 'weekly' || KIND === 'monthly' || KIND === 'yearly') {
       const fn = KIND === 'weekly' ? 'srv_weekly_digest'
         : KIND === 'monthly' ? 'srv_monthly_digest'

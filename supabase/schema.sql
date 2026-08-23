@@ -1755,6 +1755,66 @@ AS $$
          OR u.last_nudge_at < now() - interval '30 days');
 $$;
 
+-- Владельческий отчёт за месяц: про весь проект, а не про одного человека.
+-- Метрики «на пользователя», удержание и возвраты после пинка Яндекс Метрика
+-- строить не умеет — она про визиты, а не про людей, поэтому считает база.
+-- Доли доведённых тренировок здесь нет: брошенная тренировка живёт только
+-- на устройстве и до базы не доходит, это видно в Метрике по целям.
+CREATE OR REPLACE FUNCTION public.srv_owner_report()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH b AS (
+    SELECT timezone('Europe/Moscow', date_trunc('month', timezone('Europe/Moscow', now())) - interval '1 month') AS from_ts,
+           timezone('Europe/Moscow', date_trunc('month', timezone('Europe/Moscow', now()))) AS to_ts,
+           EXTRACT(MONTH FROM date_trunc('month', timezone('Europe/Moscow', now())) - interval '1 month')::int - 1 AS month_idx
+  ),
+  w AS (
+    SELECT wk.user_id, wk.finished_at, wk.program_id
+    FROM public.workouts wk CROSS JOIN b
+    WHERE wk.finished_at IS NOT NULL AND wk.finished_at >= b.from_ts AND wk.finished_at < b.to_ts
+  ),
+  weeks AS (
+    SELECT to_char(date_trunc('week', timezone('Europe/Moscow', finished_at)), 'DD.MM') AS week_start,
+           count(*)::int AS workouts, count(DISTINCT user_id)::int AS people
+    FROM w GROUP BY 1 ORDER BY min(finished_at)
+  ),
+  -- Оценка снизу: в базе хранится только ПОСЛЕДНИЙ пинок, возвраты после
+  -- более ранних сюда не попадут.
+  reactivated AS (
+    SELECT count(DISTINCT u.id)::int AS n FROM public.users u CROSS JOIN b
+    WHERE u.last_nudge_at IS NOT NULL AND u.last_nudge_at >= b.from_ts AND u.last_nudge_at < b.to_ts
+      AND EXISTS (SELECT 1 FROM public.workouts k WHERE k.user_id = u.id
+        AND k.finished_at IS NOT NULL AND k.finished_at > u.last_nudge_at
+        AND k.finished_at < u.last_nudge_at + interval '3 days')
+  ),
+  nudged AS (
+    SELECT count(*)::int AS n FROM public.users u CROSS JOIN b
+    WHERE u.last_nudge_at IS NOT NULL AND u.last_nudge_at >= b.from_ts AND u.last_nudge_at < b.to_ts
+  )
+  SELECT jsonb_build_object(
+    'monthIndex', (SELECT month_idx FROM b),
+    'people',     (SELECT count(*)::int FROM public.users),
+    'newPeople',  (SELECT count(*)::int FROM public.users u CROSS JOIN b
+                    WHERE u.created_at >= b.from_ts AND u.created_at < b.to_ts),
+    'active',     (SELECT count(DISTINCT user_id)::int FROM w),
+    'workouts',   (SELECT count(*)::int FROM w),
+    'perActiveWeek', (SELECT CASE WHEN count(DISTINCT user_id) = 0 THEN 0
+                       ELSE round(count(*)::numeric / count(DISTINCT user_id)
+                            / (EXTRACT(DAY FROM (SELECT to_ts - from_ts FROM b)) / 7), 1) END FROM w),
+    'byType',     (SELECT COALESCE(jsonb_object_agg(cat, n), '{}'::jsonb)
+                   FROM (SELECT public.srv_workout_category(program_id) AS cat, count(*)::int AS n
+                         FROM w GROUP BY 1) g),
+    'weeks',      (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                            'from', week_start, 'workouts', workouts, 'people', people)), '[]'::jsonb) FROM weeks),
+    'nudged',     (SELECT n FROM nudged),
+    'reactivated',(SELECT n FROM reactivated),
+    'notifyOff',  (SELECT count(*)::int FROM public.users
+                    WHERE telegram_id IS NOT NULL AND NOT notify_nudge AND NOT notify_digest),
+    'sleeping',   (SELECT count(*)::int FROM public.users u
+                    WHERE NOT EXISTS (SELECT 1 FROM w WHERE w.user_id = u.id))
+  );
+$$;
+
 -- Отметка отправленного пинка. Счётчик обнулит заход (api_touch_last_seen).
 CREATE OR REPLACE FUNCTION public.srv_mark_nudge_sent(p_user_id bigint)
 RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO 'public'
@@ -2203,6 +2263,7 @@ REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authentica
 REVOKE ALL ON FUNCTION public.srv_yearly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_nudge_candidates() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_mark_nudge_sent(bigint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_owner_report() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_attach(bigint, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_login_user(text, uuid) FROM PUBLIC, anon, authenticated;

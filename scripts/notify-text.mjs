@@ -180,6 +180,68 @@ export function yearlyDigest({
   return lines.join('\n')
 }
 
+/** «5 человек» / «21 человек» / «22 человека». */
+function pluralPeople(n) {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  if (mod100 >= 11 && mod100 <= 14) return `${n} человек`
+  if (mod10 === 1) return `${n} человек`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} человека`
+  return `${n} человек`
+}
+
+/**
+ * Владельческий отчёт за месяц. Приходит только владельцу, пользователи его
+ * не видят.
+ *
+ * Раз в месяц, а не в неделю: на наших объёмах недельные числа скачут от одного
+ * человека, и в них видно шум, а не тенденцию. Разбивка по неделям внутри
+ * месяца показывает ровность, и её достаточно.
+ */
+export function ownerReport(r) {
+  const CATEGORY_TITLE_LOCAL = { strength: 'силовых', pool: 'плавание', cardio: 'кардио', stretch: 'растяжка' }
+
+  const lines = [`<b>Отчёт · ${MONTHS_NOMINATIVE[r.monthIndex]}</b>`, '']
+
+  // Северный показатель первым: всё остальное — расшифровка к нему.
+  // Дробное число по-русски пишется через запятую.
+  const perWeek = String(r.perActiveWeek).replace('.', ',')
+  lines.push(`<b>${perWeek}</b> тренировки на активного в неделю`)
+  lines.push('')
+
+  lines.push(`Людей всего: ${r.people}` + (r.newPeople ? ` (+${r.newPeople} за месяц)` : ''))
+  lines.push(`Тренировались: ${pluralPeople(r.active)}`)
+  lines.push(`Спят: ${pluralPeople(r.sleeping)}`)
+  lines.push('')
+
+  const types = Object.entries(r.byType || {})
+    .map(([k, n]) => `${CATEGORY_TITLE_LOCAL[k] || k} ${n}`)
+    .join(' · ')
+  lines.push(`Тренировок: ${r.workouts}` + (types ? ` — ${types}` : ''))
+
+  if (r.weeks?.length) {
+    lines.push('')
+    lines.push('<b>По неделям</b>')
+    for (const w of r.weeks) {
+      lines.push(`${w.from} — ${w.workouts} трен., ${w.people} чел.`)
+    }
+  }
+
+  // Пинки показываем, только если они вообще уходили: строка «0 из 0»
+  // в отчёте — мусор, а не информация.
+  if (r.nudged > 0) {
+    lines.push('')
+    lines.push('<b>Пинки</b>')
+    lines.push(`Отправлено: ${r.nudged}, вернулись: ${r.reactivated}`)
+  }
+
+  if (r.notifyOff > 0) {
+    lines.push(`Отключили уведомления: ${r.notifyOff}`)
+  }
+
+  return lines.join('\n')
+}
+
 /**
  * «Неделя» / «Две недели» / «Три недели» / «Месяц».
  *
