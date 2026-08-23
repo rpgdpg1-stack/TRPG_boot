@@ -61,9 +61,9 @@ const IMAGES = {
   // текста на ней нет, и «неделя / две / три» отличаются только заголовком
   // сообщения. Три файла вместо семи — и ни одного шанса, что картинка
   // разойдётся с текстом.
-  nudgeWeek: `${BASE}/notify-nudge-week.png`,   // неделя, две, три
-  nudgeMonth: `${BASE}/notify-nudge-month.png`, // месяц, два, три месяца
-  nudgeLong: `${BASE}/notify-nudge-long.png`    // давно
+  nudgeWeek: `${BASE}/notify-nudge-week.jpeg`,   // неделя, две, три
+  nudgeMonth: `${BASE}/notify-nudge-month.jpeg`, // месяц, два, три месяца
+  nudgeLong: `${BASE}/notify-nudge-long.jpeg`    // давно
 }
 
 /** Картинка пинка по масштабу паузы: недели → месяцы → давно. */
