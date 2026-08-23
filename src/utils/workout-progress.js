@@ -5,13 +5,20 @@
  * нажал назад — при возврате прогресс восстанавливается. Сбрасывается только
  * при явном завершении тренировки (кнопка "Завершить тренировку").
  *
- * Хранится в localStorage по ключу 'workout-progress:{slug}:{place}:{day}',
+ * Локально хранится по ключу 'workout-progress:{slug}:{place}:{day}', и тот же
+ * набор уезжает в базу вместе с активной сессией — чтобы отмеченное в Telegram
+ * было видно в браузере и наоборот.
+ *
+ * Локальный ключ включает место, а серверная запись — нет: на сервере сессия
+ * одна, и место лежит в ней самой.
  * значение — JSON-массив order_num отжатых упражнений: [1, 3, 5].
  * Место (Зал/Дом/Улица) в ключе — у каждого места свой набор упражнений, значит
  * и свой прогресс/полоса заполнения.
  */
 
 import { localGet, localSet, localRemove } from './storage'
+import { pushSession } from '../lib/session-sync'
+import { getActiveWorkout } from '../lib/active-workout'
 
 /**
  * Внутренний хелпер — собирает ключ из slug программы, места и дня.
@@ -47,10 +54,23 @@ export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
 
   if (!activeOrderNums || activeOrderNums.length === 0) {
     localRemove(key)
-    return
+  } else {
+    localSet(key, JSON.stringify(activeOrderNums))
   }
 
-  localSet(key, JSON.stringify(activeOrderNums))
+  // На сервер уходит прогресс ТОЛЬКО активной тренировки: галочки на других
+  // днях — это черновик, который человек оставил на потом, и подменять им
+  // общую сессию нельзя. Отправка придержана внутри pushSession.
+  const active = getActiveWorkout()
+  if (active && active.programId === programSlug && active.day === day) {
+    pushSession({
+      programId: programSlug,
+      day,
+      place: place || 'gym',
+      startedAt: active.startedAt,
+      done: activeOrderNums || []
+    })
+  }
 }
 
 /**

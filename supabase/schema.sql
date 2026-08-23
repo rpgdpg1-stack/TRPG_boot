@@ -245,6 +245,20 @@ CREATE TABLE IF NOT EXISTS public.shared_programs (
 );
 
 -- Служебная таблица-пульс (одна строка). Приложением не используется.
+-- Активная тренировка, общая для всех устройств человека. Раньше сессия жила
+-- только в localStorage; с входом по почте один аккаунт стали открывать
+-- и из Telegram, и из браузера, и начатая там тренировка обязана быть видна тут.
+-- Одна строка на человека: тренировка может быть только одна за раз.
+CREATE TABLE IF NOT EXISTS public.active_sessions (
+  user_id bigint NOT NULL,
+  program_id text NOT NULL,
+  day text NOT NULL,
+  place text DEFAULT 'gym'::text NOT NULL,
+  started_at timestamp with time zone NOT NULL,
+  done integer[] DEFAULT '{}'::integer[] NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS public.heartbeat (
   id integer DEFAULT 1 NOT NULL,
   last_ping timestamp with time zone DEFAULT now() NOT NULL

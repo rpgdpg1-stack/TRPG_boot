@@ -49,6 +49,9 @@ import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStar
 import { getStartRoute, getNotificationType } from './lib/deep-link'
 import { touchLastSeen } from './lib/notifications'
 import { hit as metrikaHit, goal, GOALS } from './lib/metrika'
+import { fetchSession, mergeSessions, pushSession } from './lib/session-sync'
+import { getActiveWorkout, adoptActiveWorkout } from './lib/active-workout'
+import { loadWorkoutProgress, saveWorkoutProgress } from './utils/workout-progress'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
@@ -108,6 +111,10 @@ export default function App() {
           getFriendsList().catch(() => {})
         }).catch(() => {})
       }
+      // Активная тренировка: могла быть начата на другом устройстве.
+      // Сводим до прогрева кешей — экран дня должен открыться уже с ней.
+      await syncActiveSession()
+
       // Свои программы (своя + от друга) из БД → в реестр, ДО сборки избранного,
       await loadMyPrograms()
       if (cancelled) return
@@ -270,6 +277,41 @@ export default function App() {
  * Первый экран пропускаем: его Метрика засчитала сама при загрузке, и второй
  * отчёт о том же адресе удвоил бы просмотры.
  */
+/**
+ * Свести активную тренировку с сервером.
+ *
+ * Человек начал тренировку в Telegram и открыл приложение в браузере — там
+ * не было ни таймера, ни отмеченных упражнений: сессия жила только на первом
+ * устройстве. Теперь при запуске состояние сводится, и продолжить можно там,
+ * где удобнее.
+ */
+async function syncActiveSession() {
+  try {
+    const remote = await fetchSession()
+    const localSession = getActiveWorkout()
+    const local = localSession
+      ? { ...localSession, done: loadWorkoutProgress(localSession.programId, localSession.day, localSession.place) }
+      : null
+
+    const merged = mergeSessions(local, remote)
+    if (!merged) return
+
+    const { session, done, from } = merged
+    if (from !== 'local') {
+      adoptActiveWorkout(session)
+      saveWorkoutProgress(session.programId, session.day, session.place, done)
+    }
+    // Своё и объединённое отдаём обратно: сервер должен знать итог сведения,
+    // иначе второе устройство при следующем заходе увидит устаревшее.
+    if (from !== 'remote') {
+      pushSession({ ...session, done })
+    }
+  } catch (e) {
+    // Сессия — не то, ради чего стоит ронять запуск приложения.
+    console.warn('[session] не свелась:', e?.message)
+  }
+}
+
 function MetrikaRouteTracker() {
   const { pathname, search } = useLocation()
   const first = useRef(true)

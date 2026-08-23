@@ -2,8 +2,11 @@
  * Активная тренировочная сессия — одна на всё приложение.
  *
  * Сессия = { programId, day, place, startedAt }. Появляется по тапу «Начать
- * тренировку» в дне, живёт пока не нажмёшь «Завершить» (или сброс). Хранится в
- * localStorage (живой сеанс привязан к устройству, не нужен кросс-девайс).
+ * тренировку» в дне, живёт пока не нажмёшь «Завершить» (или сброс).
+ *
+ * Рабочая копия — в localStorage: так быстро и работает без сети. Общая копия —
+ * в базе (lib/session-sync.js): один аккаунт открывают и из Telegram, и из
+ * браузера по почте, и начатая там тренировка обязана быть видна тут.
  *
  * Пока сессия активна:
  *  - таймер дня тикает (elapsed = now − startedAt), переживает уход/возврат;
@@ -17,6 +20,7 @@
 
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { setTrainingState } from './training-state'
+import { pushSession, clearSession } from './session-sync'
 import { goal, GOALS } from './metrika'
 
 const KEY = 'active-workout'
@@ -34,7 +38,11 @@ export function getActiveWorkout() {
 }
 
 export function startActiveWorkout(programId, day, place = 'gym') {
-  const data = { programId, day, place: place || 'gym', startedAt: new Date().toISOString() }
+  const data = {
+    programId, day, place: place || 'gym',
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
   localSet(KEY, JSON.stringify(data))
   // Цель ставится здесь, а не на кнопке: точек входа в тренировку несколько
   // (экран дня, заплыв, быстрая тренировка), а сессия заводится одна.
@@ -43,13 +51,25 @@ export function startActiveWorkout(programId, day, place = 'gym') {
   // иначе друзья не увидят «сейчас тренируется». Ошибка сети не критична:
   // статус протухает сам через 3 часа.
   setTrainingState(true)
+  pushSession({ ...data, done: [] })
   emitChange()
   return data
+}
+
+/**
+ * Заменить активную сессию целиком — используется при сведении с сервером,
+ * когда тренировка была начата на другом устройстве.
+ */
+export function adoptActiveWorkout(session) {
+  if (!session?.programId) return
+  localSet(KEY, JSON.stringify({ ...session, updatedAt: new Date().toISOString() }))
+  emitChange()
 }
 
 export function clearActiveWorkout() {
   localRemove(KEY)
   setTrainingState(false)
+  clearSession()
   emitChange()
 }
 
