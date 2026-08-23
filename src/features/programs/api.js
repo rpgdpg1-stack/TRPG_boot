@@ -22,6 +22,7 @@ import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
 import { loadMyExercises, loadExercisesByIds, isCustomExercise } from './userExercises'
 import { debug } from '../../lib/debug'
+import { goal, GOALS } from '../../lib/metrika'
 
 // Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
 // оффлайн-очередь. Supabase-клиент сам не таймаутит, а в зале Wi-Fi часто
@@ -394,6 +395,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
     }
 
     debug('[programs] workout finished:', result)
+
+    // Цель ставится только на успешном сохранении. Оффлайн-очередь сюда
+    // не попадает намеренно: тренировка ещё не в базе, и считать её
+    // завершённой — врать себе в статистике.
+    goal(GOALS.WORKOUT_FINISH, { program: programSlug, day })
 
     setCurrentUser({
       ...user,

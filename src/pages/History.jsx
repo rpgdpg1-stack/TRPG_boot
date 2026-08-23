@@ -14,6 +14,7 @@ import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats, { Distance, MetricValue } from '../components/HistoryStats'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
+import { goal, GOALS } from '../lib/metrika'
 
 /**
  * История тренировок — единственное место с детальной аналитикой:
@@ -47,6 +48,10 @@ export default function History() {
   // Личные рекорды: старт из кеша (мгновенно), сервер догоняет.
   const [records, setRecords] = useState(() => getRecordsSync())
   useEffect(() => { getRecords().then(setRecords) }, [])
+
+  // Открытие статистики — цель: по ней видно, интересуют ли людей цифры
+  // вообще, или экран существует только для нас.
+  useEffect(() => { goal(GOALS.STATS_OPEN) }, [])
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))

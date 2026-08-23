@@ -48,6 +48,7 @@ import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
 import { getStartRoute } from './lib/deep-link'
 import { touchLastSeen } from './lib/notifications'
+import { hit as metrikaHit } from './lib/metrika'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
@@ -212,6 +213,7 @@ export default function App() {
         <SettingsButtonController />
         <ShareImportController />
         <StartRouteController />
+        <MetrikaRouteTracker />
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -258,6 +260,28 @@ export default function App() {
  * управляет скроллом (восстановление позиции при возврате со «Сменить»/«Инфо»,
  * скролл-на-верх при смене дня).
  */
+/**
+ * Сообщает Метрике о переходах между экранами.
+ *
+ * Приложение одностраничное: адрес меняется без перезагрузки, и счётчик сам
+ * этого не замечает — без такой отправки вся статистика свелась бы к одному
+ * заходу на главную.
+ *
+ * Первый экран пропускаем: его Метрика засчитала сама при загрузке, и второй
+ * отчёт о том же адресе удвоил бы просмотры.
+ */
+function MetrikaRouteTracker() {
+  const { pathname, search } = useLocation()
+  const first = useRef(true)
+
+  useEffect(() => {
+    if (first.current) { first.current = false; return }
+    metrikaHit(pathname + search)
+  }, [pathname, search])
+
+  return null
+}
+
 function ScrollToTopOnNavigate() {
   const { pathname } = useLocation()
   useLayoutEffect(() => {

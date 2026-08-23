@@ -17,6 +17,7 @@
 
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { setTrainingState } from './training-state'
+import { goal, GOALS } from './metrika'
 
 const KEY = 'active-workout'
 const EVT = 'active-workout-changed'
@@ -35,6 +36,9 @@ export function getActiveWorkout() {
 export function startActiveWorkout(programId, day, place = 'gym') {
   const data = { programId, day, place: place || 'gym', startedAt: new Date().toISOString() }
   localSet(KEY, JSON.stringify(data))
+  // Цель ставится здесь, а не на кнопке: точек входа в тренировку несколько
+  // (экран дня, заплыв, быстрая тренировка), а сессия заводится одна.
+  goal(GOALS.WORKOUT_START, { program: programId, place: data.place })
   // Сессия живёт на устройстве, поэтому о старте отдельно сообщаем серверу —
   // иначе друзья не увидят «сейчас тренируется». Ошибка сети не критична:
   // статус протухает сам через 3 часа.

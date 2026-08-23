@@ -9,6 +9,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
+import { goal, GOALS } from '../lib/metrika'
 
 /**
  * Полноэкранная страница замены упражнения.
@@ -147,6 +148,7 @@ export default function SwapExercise() {
       const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId, place)
       if (ok) {
         haptic.success()
+        goal(GOALS.EXERCISE_SWAP, { program: programId, place })
         // Передаём в state информацию для WorkoutDay:
         //   returnedFromOrderNum — к какой карточке проскроллить
         //   wasSwapped: true — играть анимацию "стрелки змейкой" + press + glow
