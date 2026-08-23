@@ -230,7 +230,10 @@ export function nudge({ daysSince, programs = [] }) {
       lines.push(`~${formatMinutes(p.estMinutes)}`)
     }
   } else {
-    for (const p of programs) lines.push(programLine(p))
+    // Несколько закрепов — названия уходят на кнопки, в тексте их нет.
+    // Раньше они стояли и там и там: человек читал «Сплит 2» дважды подряд,
+    // и сообщение выглядело так, будто в нём сбой.
+    lines.push('Начать:')
   }
 
   return lines.join('\n').trimEnd()
@@ -247,11 +250,13 @@ export function nudge({ daysSince, programs = [] }) {
  * Возвращает [{ label, param }], где param — start_param для ссылки.
  */
 export function nudgeButtons({ daysSince, programs = [] }) {
-  if (daysSince >= 28) return [{ label: 'Открыть приложение', param: 'open' }]
-  // Две-три недели: ведём на главную. Мы предложили выбрать тренировку —
-  // значит и открыть надо место, где выбирают, а не готовый день.
-  if (daysSince >= 14) return [{ label: 'Начать', param: 'open' }]
-  if (programs.length === 0) return [{ label: 'Начать', param: 'open' }]
+  // Везде, где кнопка ведёт на главную, она и подписана «Открыть приложение».
+  // «Начать» обещает готовую тренировку по нажатию — а там ещё выбирать.
+  const toApp = [{ label: 'Открыть приложение', param: 'open' }]
+
+  if (daysSince >= 28) return toApp
+  if (daysSince >= 14) return toApp
+  if (programs.length === 0) return toApp
 
   const paramFor = (p) => p.category === 'pool'
     ? `s-${p.slug}`
