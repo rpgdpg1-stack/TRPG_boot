@@ -5,7 +5,7 @@
  * (функции srv_weekly_digest / srv_monthly_digest / srv_nudge_candidates),
  * здесь только сборка сообщения и отправка.
  *
- *   node scripts/notify.mjs weekly|monthly|nudge
+ *   node scripts/notify.mjs weekly|monthly|yearly|nudge|test
  *
  * Переменные окружения:
  *   SUPABASE_DB_URL  — строка подключения (та же, что у бэкапа)
@@ -19,7 +19,7 @@
  */
 
 import pg from 'pg'
-import { weeklyDigest, monthlyDigest, nudge, nudgeButtons } from './notify-text.mjs'
+import { weeklyDigest, monthlyDigest, yearlyDigest, nudge, nudgeButtons } from './notify-text.mjs'
 
 const KIND = process.argv[2]
 const DRY_RUN = process.env.NOTIFY_DRY_RUN === '1'
@@ -27,8 +27,8 @@ const ONLY = process.env.NOTIFY_ONLY ? String(process.env.NOTIFY_ONLY) : null
 const BOT_TOKEN = process.env.BOT_TOKEN
 const DB_URL = process.env.SUPABASE_DB_URL
 
-if (!['weekly', 'monthly', 'nudge', 'test'].includes(KIND)) {
-  console.error('Укажи вид рассылки: weekly | monthly | nudge | test')
+if (!['weekly', 'monthly', 'yearly', 'nudge', 'test'].includes(KIND)) {
+  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | test')
   process.exit(1)
 }
 // Образцам база не нужна — данные в них выдуманные.
@@ -127,7 +127,15 @@ async function sendSamples(bot) {
     nudgeSample('пинок: неделя, только плавание', { daysSince: 8, programs: [pool] }),
     nudgeSample('пинок: неделя, закрепов нет', { daysSince: 8, programs: [] }),
     nudgeSample('пинок: две недели', { daysSince: 15, programs: [gym, pool] }),
-    nudgeSample('пинок: месяц', { daysSince: 40, programs: [gym, pool] })
+    nudgeSample('пинок: месяц', { daysSince: 40, programs: [gym, pool] }),
+
+    ['итоги года',
+     yearlyDigest({ year: 2026, totalCount: 30, totalMinutes: 375,
+       breakdown: { strength: { count: 21, meters: 0 }, pool: { count: 9, meters: 3000 } },
+       bestMonth: 5, bestMonthCount: 14,
+       recExercise: 'Тяга верхнего блока нейтральным хватом',
+       recWeight: '105.00', recSwimM: 750 }),
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-all') }]]
   ]
 
   for (const [label, text, buttons] of samples) {
@@ -151,8 +159,10 @@ async function main() {
   const stats = { sent: 0, blocked: 0, error: 0, dry: 0, skipped: 0 }
 
   try {
-    if (KIND === 'weekly' || KIND === 'monthly') {
-      const fn = KIND === 'weekly' ? 'srv_weekly_digest' : 'srv_monthly_digest'
+    if (KIND === 'weekly' || KIND === 'monthly' || KIND === 'yearly') {
+      const fn = KIND === 'weekly' ? 'srv_weekly_digest'
+        : KIND === 'monthly' ? 'srv_monthly_digest'
+          : 'srv_yearly_digest'
       const { rows } = await client.query(`SELECT * FROM public.${fn}()`)
       console.log(`Получателей: ${rows.length}`)
 
@@ -165,6 +175,18 @@ async function main() {
             totalCount: r.total_count,
             totalMinutes: r.total_minutes,
             breakdown: r.breakdown
+          })
+        } else if (KIND === 'yearly') {
+          text = yearlyDigest({
+            year: r.year,
+            totalCount: r.total_count,
+            totalMinutes: r.total_minutes,
+            breakdown: r.breakdown,
+            bestMonth: r.best_month,
+            bestMonthCount: r.best_month_count,
+            recExercise: r.rec_exercise,
+            recWeight: r.rec_weight,
+            recSwimM: r.rec_swim_m
           })
         } else {
           const start = new Date(r.month_start)
@@ -183,7 +205,10 @@ async function main() {
         // человек увидит на экране не те цифры, что были в сообщении.
         const result = await send(r.telegram_id, text, [{
           text: 'Открыть статистику',
-          url: appLink(bot, KIND === 'weekly' ? 'stats-week' : 'stats-month')
+          // Годовая ведёт на общий свод: отдельного «года» в переключателе
+          // статистики нет, ближайшее по смыслу — «Всё время».
+          url: appLink(bot, KIND === 'weekly' ? 'stats-week'
+            : KIND === 'yearly' ? 'stats-all' : 'stats-month')
         }])
         stats[result]++
       }

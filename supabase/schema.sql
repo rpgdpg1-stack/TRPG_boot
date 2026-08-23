@@ -1632,6 +1632,57 @@ AS $$
   WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
 $$;
 
+-- Итоги года (1 января). Кроме счётчиков — лучший месяц и рекорды, всё
+-- строго за прошедший год: «рекорд года» с достижением трёхлетней давности
+-- был бы обманом. Силовой рекорд берётся из истории весов (у неё есть дата),
+-- а не из текущих весов, где даты нет.
+CREATE OR REPLACE FUNCTION public.srv_yearly_digest()
+RETURNS TABLE (user_id bigint, telegram_id bigint, year integer,
+               total_count integer, total_minutes integer, breakdown jsonb,
+               best_month integer, best_month_count integer,
+               rec_exercise text, rec_weight numeric, rec_swim_m integer)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  WITH bounds AS (
+    SELECT date_trunc('year', timezone('Europe/Moscow', now())) - interval '1 year' AS y_start
+  ),
+  b AS (
+    SELECT timezone('Europe/Moscow', y_start) AS from_ts,
+           timezone('Europe/Moscow', y_start + interval '1 year') AS to_ts,
+           EXTRACT(YEAR FROM y_start)::int AS y
+    FROM bounds
+  )
+  SELECT u.id, u.telegram_id, b.y, s.total_count, s.total_minutes, s.breakdown,
+         bm.month_idx, bm.cnt, rs.name, rs.weight_kg, rw.distance_m
+  FROM public.users u CROSS JOIN b
+  CROSS JOIN LATERAL public.srv_period_summary(u.id, b.from_ts, b.to_ts) s
+  LEFT JOIN LATERAL (
+    SELECT EXTRACT(MONTH FROM timezone('Europe/Moscow', w.finished_at))::int - 1 AS month_idx,
+           count(*)::int AS cnt
+    FROM public.workouts w
+    WHERE w.user_id = u.id AND w.finished_at IS NOT NULL
+      AND w.finished_at >= b.from_ts AND w.finished_at < b.to_ts
+    GROUP BY 1 ORDER BY cnt DESC, month_idx DESC LIMIT 1
+  ) bm ON true
+  LEFT JOIN LATERAL (
+    SELECT e.name, h.weight_kg
+    FROM public.user_exercise_weight_history h
+    JOIN public.exercises e ON e.id = h.exercise_id
+    WHERE h.user_id = u.id AND COALESCE(e.counts_reps, false) = false
+      AND COALESCE(h.weight_kg, 0) > 0
+      AND h.day >= (b.from_ts)::date AND h.day < (b.to_ts)::date
+    ORDER BY h.weight_kg DESC LIMIT 1
+  ) rs ON true
+  LEFT JOIN LATERAL (
+    SELECT k.distance_m FROM public.workouts k
+    WHERE k.user_id = u.id AND k.finished_at IS NOT NULL
+      AND COALESCE(k.distance_m, 0) > 0
+      AND k.finished_at >= b.from_ts AND k.finished_at < b.to_ts
+    ORDER BY k.distance_m DESC LIMIT 1
+  ) rw ON true
+  WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
+$$;
+
 -- Кому слать пинок (понедельник днём). Условие «пустая прошлая неделя» строже,
 -- чем «7 дней тишины»: отзанимавшийся в воскресенье укора не получит.
 -- Никогда не тренировавшимся не пишем вовсе — новичку это упрёк на ровном месте.
@@ -2149,6 +2200,7 @@ REVOKE ALL ON FUNCTION public.srv_workout_category(text) FROM PUBLIC, anon, auth
 REVOKE ALL ON FUNCTION public.srv_period_summary(bigint, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_weekly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_yearly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_nudge_candidates() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_mark_nudge_sent(bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;

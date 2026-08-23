@@ -4,18 +4,21 @@ name: Напоминания
 #   воскресенье 19:00 МСК → 16:00 UTC вс
 #   понедельник 12:00 МСК → 09:00 UTC пн
 #   1-е число  12:00 МСК → 09:00 UTC 1-го
+#   1 января   13:00 МСК → 10:00 UTC (часом позже месячной, чтобы годовая
+#              не пришла впритык к декабрьской и читалась отдельно)
 on:
   schedule:
     - cron: '0 16 * * 0'   # итоги недели
     - cron: '0 9 * * 1'    # пинки
     - cron: '0 9 1 * *'    # итоги месяца
+    - cron: '0 10 1 1 *'   # итоги года — 1 января, 13:00 МСК
   workflow_dispatch:
     inputs:
       kind:
         description: 'Что разослать (test — образцы всех сообщений себе)'
         required: true
         type: choice
-        options: [test, weekly, nudge, monthly]
+        options: [test, weekly, nudge, monthly, yearly]
       dry_run:
         description: Только показать в логе, ничего не отправлять
         type: boolean
@@ -47,6 +50,7 @@ jobs:
             '0 16 * * 0') echo "kind=weekly"  >> $GITHUB_OUTPUT ;;
             '0 9 * * 1')  echo "kind=nudge"   >> $GITHUB_OUTPUT ;;
             '0 9 1 * *')  echo "kind=monthly" >> $GITHUB_OUTPUT ;;
+            '0 10 1 1 *') echo "kind=yearly"  >> $GITHUB_OUTPUT ;;
             *)            echo "kind=${{ inputs.kind }}" >> $GITHUB_OUTPUT ;;
           esac
 

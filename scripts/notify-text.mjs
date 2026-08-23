@@ -128,6 +128,58 @@ export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown,
   return lines.join('\n')
 }
 
+/** «Тяга блока — 105 кг»: вес без лишних нулей. */
+function formatWeight(kg) {
+  const n = Number(kg)
+  if (!n) return null
+  return `${Number.isInteger(n) ? n : n.toFixed(1).replace('.', ',')} кг`
+}
+
+/**
+ * Итоги года. Шлётся 1 января — единственное сообщение, которое человек может
+ * захотеть перечитать, поэтому кроме счётчиков в нём лучший месяц и рекорды.
+ *
+ * Всё за прошедший год, а не за всё время: «рекорд года» с достижением
+ * трёхлетней давности был бы обманом.
+ */
+export function yearlyDigest({
+  year, totalCount, totalMinutes, breakdown,
+  bestMonth, bestMonthCount, recExercise, recWeight, recSwimM
+}) {
+  const time = formatMinutes(totalMinutes)
+  const head = time
+    ? `${pluralWorkouts(totalCount)} · ${time}`
+    : pluralWorkouts(totalCount)
+
+  const lines = [`<b>${year} год</b>`, '', head]
+  const detail = breakdownLine(breakdown, totalCount)
+  if (detail) lines.push(detail)
+
+  // Лучший месяц называем, только если он и правда выделяется. Когда весь год
+  // уместился в один-два раза, «лучший месяц — март, 1 тренировка» звучит
+  // насмешкой.
+  if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
+    lines.push('')
+    // Именительный падеж, а не предложный: «Лучший месяц — июнь», не «июне».
+    // MONTHS_GENITIVE здесь не годится, он для оборота «больше, чем в июне».
+    const monthName = MONTHS_NOMINATIVE[bestMonth].toLowerCase()
+    lines.push(`Лучший месяц — ${monthName}, ${pluralWorkouts(bestMonthCount)}.`)
+  }
+
+  const records = []
+  const weight = formatWeight(recWeight)
+  if (recExercise && weight) records.push(`${recExercise} — ${weight}`)
+  if (recSwimM) records.push(`Заплыв — ${formatDistance(recSwimM)}`)
+
+  if (records.length) {
+    lines.push('')
+    lines.push('<b>Лучшие результаты</b>')
+    for (const r of records) lines.push(r)
+  }
+
+  return lines.join('\n')
+}
+
 /**
  * «Неделя» / «Две недели» / «Три недели» / «Месяц».
  *
@@ -256,7 +308,9 @@ export function nudgeButtons({ daysSince, programs = [] }) {
 
   if (daysSince >= 28) return toApp
   if (daysSince >= 14) return toApp
-  if (programs.length === 0) return toApp
+  // Закрепов нет — на главной человека ждёт именно выбор программы,
+  // так кнопку и подписываем: она обещает ровно то, что произойдёт.
+  if (programs.length === 0) return [{ label: 'Выбрать программу', param: 'open' }]
 
   const paramFor = (p) => p.category === 'pool'
     ? `s-${p.slug}`
