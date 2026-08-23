@@ -27,8 +27,8 @@ const ONLY = process.env.NOTIFY_ONLY ? String(process.env.NOTIFY_ONLY) : null
 const BOT_TOKEN = process.env.BOT_TOKEN
 const DB_URL = process.env.SUPABASE_DB_URL
 
-if (!['weekly', 'monthly', 'nudge'].includes(KIND)) {
-  console.error('Укажи вид рассылки: weekly | monthly | nudge')
+if (!['weekly', 'monthly', 'nudge', 'test'].includes(KIND)) {
+  console.error('Укажи вид рассылки: weekly | monthly | nudge | test')
   process.exit(1)
 }
 if (!DB_URL) { console.error('Нет SUPABASE_DB_URL'); process.exit(1) }
@@ -78,7 +78,64 @@ async function send(chatId, text, button) {
 /** Ссылка на конкретный экран приложения (разбирается в lib/deep-link.js). */
 const appLink = (bot, param) => `https://t.me/${bot}?startapp=${param}`
 
+/**
+ * Показательная рассылка на один адрес: по одному сообщению каждого вида,
+ * на выдуманных данных.
+ *
+ * Нужна потому, что боевые выборки показывают только то, что подходит СЕЙЧАС:
+ * человек, тренировавшийся вчера, в пинки не попадает по определению — и
+ * проверить на себе, как выглядит пинок и работает ли его кнопка, иначе
+ * невозможно.
+ */
+async function sendSamples(bot) {
+  if (!ONLY) {
+    console.error('Для test обязателен NOTIFY_ONLY — иначе некому слать')
+    process.exit(1)
+  }
+
+  const samples = [
+    ['итоги недели',
+     weeklyDigest({ totalCount: 3, totalMinutes: 135,
+       breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }),
+     { text: 'Открыть статистику', url: appLink(bot, 'stats') }],
+
+    ['итоги месяца',
+     monthlyDigest({ monthIndex: 6, totalCount: 12, totalMinutes: 580,
+       breakdown: { strength: { count: 8, meters: 0 }, pool: { count: 4, meters: 9000 } },
+       prevCount: 9, daysInMonth: 31 }),
+     { text: 'Открыть статистику', url: appLink(bot, 'stats') }],
+
+    ['пинок: неделя',
+     nudge({ daysSince: 8, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
+     { text: nudgeButtonLabel(8), url: appLink(bot, 'w-split-B') }],
+
+    ['пинок: две недели',
+     nudge({ daysSince: 15, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
+     { text: nudgeButtonLabel(15), url: appLink(bot, 'w-split-B') }],
+
+    ['пинок: месяц',
+     nudge({ daysSince: 40, programName: null, category: null, lastDay: null, estMinutes: null }),
+     { text: nudgeButtonLabel(40), url: appLink(bot, 'open') }],
+
+    ['пинок: плавание',
+     nudge({ daysSince: 8, programName: 'ЗАПЛЫВ 45', category: 'pool', lastDay: null, estMinutes: null }),
+     { text: nudgeButtonLabel(8), url: appLink(bot, 's-swim') }]
+  ]
+
+  for (const [label, text, button] of samples) {
+    console.log(`→ ${label}`)
+    await send(ONLY, text, button)
+  }
+  console.log(`\nОтправлено образцов: ${samples.length}`)
+}
+
 async function main() {
+  // Образцы базу не трогают: данные в них выдуманные.
+  if (KIND === 'test') {
+    await sendSamples(await getBotUsername())
+    return
+  }
+
   const client = new pg.Client({ connectionString: DB_URL })
   await client.connect()
 

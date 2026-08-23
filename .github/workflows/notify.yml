@@ -12,10 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       kind:
-        description: Что разослать
+        description: 'Что разослать (test — образцы всех сообщений себе)'
         required: true
         type: choice
-        options: [weekly, nudge, monthly]
+        options: [test, weekly, nudge, monthly]
       dry_run:
         description: Только показать в логе, ничего не отправлять
         type: boolean
@@ -29,11 +29,11 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - run: npm ci
