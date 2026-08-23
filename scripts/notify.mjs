@@ -49,19 +49,21 @@ const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
  * Пусто — сообщение уйдёт обычным текстом. Так что незаполненная строчка
  * ничего не ломает, просто картинки не будет.
  */
+const BASE = 'https://55ee17b6-d242-49cb-92d3-e97297fb7934.selstorage.ru/TRPG/images/notify'
+
 const IMAGES = {
-  weekly: '',       // notify-weekly    — итоги недели
-  monthly: '',      // notify-monthly   — итоги месяца
-  yearly: '',       // notify-yearly    — итоги года
-  owner: '',        // notify-owner     — отчёт владельцу
+  weekly: `${BASE}/notify-weekly.jpeg`,    // итоги недели
+  monthly: `${BASE}/notify-monthly.jpeg`,  // итоги месяца
+  yearly: `${BASE}/notify-yearly.jpeg`,    // итоги года
+  owner: `${BASE}/notify-owner.jpeg`,      // отчёт владельцу
 
   // У пинков картинка привязана к МАСШТАБУ паузы, а не к точному сроку:
   // текста на ней нет, и «неделя / две / три» отличаются только заголовком
   // сообщения. Три файла вместо семи — и ни одного шанса, что картинка
   // разойдётся с текстом.
-  nudgeWeek: '',    // notify-nudge-week  — неделя, две, три
-  nudgeMonth: '',   // notify-nudge-month — месяц, два, три месяца
-  nudgeLong: ''     // notify-nudge-long  — давно
+  nudgeWeek: `${BASE}/notify-nudge-week.png`,   // неделя, две, три
+  nudgeMonth: `${BASE}/notify-nudge-month.png`, // месяц, два, три месяца
+  nudgeLong: `${BASE}/notify-nudge-long.png`    // давно
 }
 
 /** Картинка пинка по масштабу паузы: недели → месяцы → давно. */
