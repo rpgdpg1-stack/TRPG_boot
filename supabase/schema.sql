@@ -1635,10 +1635,14 @@ $$;
 -- Кому слать пинок (понедельник днём). Условие «пустая прошлая неделя» строже,
 -- чем «7 дней тишины»: отзанимавшийся в воскресенье укора не получит.
 -- Никогда не тренировавшимся не пишем вовсе — новичку это упрёк на ровном месте.
--- est_minutes — та же формула, что в features/programs/duration.js.
+--
+-- Закрепы хранятся по slug ('split', 'my', 'swim'), а программы в базе лежат
+-- под своими id ('prog_001', 'usr_2', 'swim_001') — slug сначала переводится
+-- в id, иначе совпадений нет ни у кого. Возвращаем СПИСОК: силовая и плавание
+-- закрепляются независимо, и выбирать за человека одну из них незачем.
 CREATE OR REPLACE FUNCTION public.srv_nudge_candidates()
-RETURNS TABLE (user_id bigint, telegram_id bigint, days_since integer, nudge_ignored integer,
-               program_id text, program_name text, category text, last_day text, est_minutes integer)
+RETURNS TABLE (user_id bigint, telegram_id bigint, days_since integer,
+               nudge_ignored integer, programs jsonb)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $$
   WITH bounds AS (SELECT date_trunc('week', timezone('Europe/Moscow', now())) AS this_week),
@@ -1651,39 +1655,53 @@ AS $$
     FROM public.user_prefs p CROSS JOIN LATERAL jsonb_each(p.value) e
     WHERE p.key = 'favorite_programs'
   ),
-  last_cat AS (
-    SELECT DISTINCT ON (w.user_id) w.user_id,
-           CASE (SELECT pr.category FROM public.programs pr WHERE pr.id = w.program_id)
-             WHEN 'pool' THEN 'pool' ELSE 'gym' END AS category
-    FROM public.workouts w WHERE w.finished_at IS NOT NULL
-    ORDER BY w.user_id, w.finished_at DESC
+  resolved AS (
+    SELECT pn.user_id, pn.category, pn.slug,
+           (SELECT pr.id FROM public.programs pr
+             WHERE (pn.slug = 'split'    AND pr.id = 'prog_001')
+                OR (pn.slug = 'fullbody' AND pr.id = 'prog_002')
+                OR (pn.slug = 'swim'     AND pr.id = 'swim_001')
+                OR (pn.slug = 'my'     AND pr.owner_id = pn.user_id AND pr.source = 'custom')
+                OR (pn.slug = 'friend' AND pr.owner_id = pn.user_id AND pr.source = 'shared')
+             LIMIT 1) AS db_id
+    FROM pinned pn
   ),
-  base AS (
-    SELECT u.id AS uid, u.telegram_id AS tg,
-           EXTRACT(DAY FROM (now() - lw.last_at))::int AS days_since,
-           u.nudge_ignored AS ignored, pn.slug AS slug, pr.name AS pname, pn.category AS cat,
+  detailed AS (
+    SELECT r.user_id, r.category, r.slug, pr.name,
            (SELECT up.value #>> '{}' FROM public.user_prefs up
-             WHERE up.user_id = u.id AND up.key = 'program:' || pn.slug || ':last_day') AS lday
-    FROM public.users u CROSS JOIN bounds b
-    JOIN last_w lw ON lw.user_id = u.id
-    LEFT JOIN last_cat lc ON lc.user_id = u.id
-    LEFT JOIN pinned pn ON pn.user_id = u.id AND pn.category = COALESCE(lc.category, 'gym')
-    LEFT JOIN public.programs pr ON pr.id = pn.slug
-    WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
-      AND NOT EXISTS (SELECT 1 FROM public.workouts w2 WHERE w2.user_id = u.id
-        AND w2.finished_at >= timezone('Europe/Moscow', b.this_week - interval '7 days')
-        AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
-      AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
-        AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
-      AND (u.nudge_ignored < 3 OR u.last_nudge_at IS NULL
-           OR u.last_nudge_at < now() - interval '30 days')
+             WHERE up.user_id = r.user_id
+               AND up.key = 'program:' || r.slug || ':last_day') AS last_day
+    FROM resolved r JOIN public.programs pr ON pr.id = r.db_id
+  ),
+  with_est AS (
+    SELECT d.*, NULLIF((SELECT count(*)::int * 7 FROM public.program_days pd
+                        JOIN resolved r2 ON r2.user_id = d.user_id AND r2.slug = d.slug
+                        WHERE pd.program_id = r2.db_id
+                          AND pd.day = COALESCE(d.last_day, 'A')
+                          AND pd.location = 'gym'), 0) AS est_minutes
+    FROM detailed d
+  ),
+  grouped AS (
+    SELECT user_id, jsonb_agg(jsonb_build_object(
+             'slug', slug, 'name', name, 'category', category,
+             'lastDay', last_day, 'estMinutes', est_minutes
+           ) ORDER BY CASE category WHEN 'gym' THEN 1 WHEN 'pool' THEN 2
+                                    WHEN 'cardio' THEN 3 ELSE 4 END) AS programs
+    FROM with_est GROUP BY user_id
   )
-  SELECT base.uid, base.tg, base.days_since, base.ignored,
-         base.slug, base.pname, base.cat, base.lday,
-         NULLIF((SELECT count(*)::int * 7 FROM public.program_days pd
-                 WHERE pd.program_id = base.slug AND pd.day = COALESCE(base.lday, 'A')
-                   AND pd.location = 'gym'), 0)
-  FROM base;
+  SELECT u.id, u.telegram_id, EXTRACT(DAY FROM (now() - lw.last_at))::int,
+         u.nudge_ignored, COALESCE(g.programs, '[]'::jsonb)
+  FROM public.users u CROSS JOIN bounds b
+  JOIN last_w lw ON lw.user_id = u.id
+  LEFT JOIN grouped g ON g.user_id = u.id
+  WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
+    AND NOT EXISTS (SELECT 1 FROM public.workouts w2 WHERE w2.user_id = u.id
+      AND w2.finished_at >= timezone('Europe/Moscow', b.this_week - interval '7 days')
+      AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
+    AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
+      AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
+    AND (u.nudge_ignored < 3 OR u.last_nudge_at IS NULL
+         OR u.last_nudge_at < now() - interval '30 days');
 $$;
 
 -- Отметка отправленного пинка. Счётчик обнулит заход (api_touch_last_seen).

@@ -19,7 +19,7 @@
  */
 
 import pg from 'pg'
-import { weeklyDigest, monthlyDigest, nudge, nudgeButtonLabel } from './notify-text.mjs'
+import { weeklyDigest, monthlyDigest, nudge, nudgeButtons } from './notify-text.mjs'
 
 const KIND = process.argv[2]
 const DRY_RUN = process.env.NOTIFY_DRY_RUN === '1'
@@ -52,9 +52,14 @@ async function getBotUsername() {
  * сбоем: человек имеет право закрыть дверь, и падать из-за этого вся рассылка
  * не должна.
  */
-async function send(chatId, text, button) {
+async function send(chatId, text, buttons) {
+  // Каждая кнопка — своей строкой: названия программ бывают длинными, и в один
+  // ряд они превращаются в обрезанную кашу.
+  const keyboard = buttons.map((b) => [b])
+
   if (DRY_RUN) {
-    console.log(`\n──────── ${chatId} ────────\n${text}\n[ ${button.text} ] → ${button.url}`)
+    const preview = buttons.map((b) => `[ ${b.text} ] → ${b.url}`).join('\n')
+    console.log(`\n──────── ${chatId} ────────\n${text}\n${preview}`)
     return 'dry'
   }
   const res = await fetch(api('sendMessage'), {
@@ -65,7 +70,7 @@ async function send(chatId, text, button) {
       text,
       parse_mode: 'HTML',
       disable_web_page_preview: true,
-      reply_markup: { inline_keyboard: [[button]] }
+      reply_markup: { inline_keyboard: keyboard }
     })
   })
   const data = await res.json()
@@ -94,42 +99,40 @@ async function sendSamples(bot) {
     process.exit(1)
   }
 
+  // Программы для образцов взяты как у настоящего закрепа: своя силовая
+  // с днём и встроенное плавание. На выдуманном «Сплите» из каталога
+  // не видно главного — что в сообщение попадает ИМЕННО твоя программа.
+  const gym = { slug: 'my', name: 'Сплит 2', category: 'gym', lastDay: 'A', estMinutes: 70 }
+  const pool = { slug: 'swim', name: 'Заплыв', category: 'pool', lastDay: null, estMinutes: null }
+
+  const nudgeSample = (label, payload) =>
+    [label, nudge(payload), nudgeButtons(payload).map((b) => ({
+      text: b.label, url: appLink(bot, b.param)
+    }))]
+
   const samples = [
     ['итоги недели',
      weeklyDigest({ totalCount: 3, totalMinutes: 135,
        breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }),
-     { text: 'Открыть статистику', url: appLink(bot, 'stats-week') }],
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-week') }]],
 
     ['итоги месяца',
      monthlyDigest({ monthIndex: 6, totalCount: 12, totalMinutes: 580,
        breakdown: { strength: { count: 8, meters: 0 }, pool: { count: 4, meters: 9000 } },
        prevCount: 9, daysInMonth: 31 }),
-     { text: 'Открыть статистику', url: appLink(bot, 'stats-month') }],
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-month') }]],
 
-    ['пинок: неделя',
-     nudge({ daysSince: 8, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
-     { text: nudgeButtonLabel(8), url: appLink(bot, 'w-split-B') }],
-
-    ['пинок: две недели',
-     nudge({ daysSince: 15, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
-     { text: nudgeButtonLabel(15), url: appLink(bot, 'w-split-B') }],
-
-    ['пинок: нет закреплённой программы',
-     nudge({ daysSince: 8, programName: null, category: null, lastDay: null, estMinutes: null }),
-     { text: nudgeButtonLabel(8), url: appLink(bot, 'open') }],
-
-    ['пинок: месяц',
-     nudge({ daysSince: 40, programName: null, category: null, lastDay: null, estMinutes: null }),
-     { text: nudgeButtonLabel(40), url: appLink(bot, 'open') }],
-
-    ['пинок: плавание',
-     nudge({ daysSince: 8, programName: 'ЗАПЛЫВ 45', category: 'pool', lastDay: null, estMinutes: null }),
-     { text: nudgeButtonLabel(8), url: appLink(bot, 's-swim') }]
+    nudgeSample('пинок: неделя, два закрепа', { daysSince: 8, programs: [gym, pool] }),
+    nudgeSample('пинок: неделя, только силовая', { daysSince: 8, programs: [gym] }),
+    nudgeSample('пинок: неделя, только плавание', { daysSince: 8, programs: [pool] }),
+    nudgeSample('пинок: неделя, закрепов нет', { daysSince: 8, programs: [] }),
+    nudgeSample('пинок: две недели', { daysSince: 15, programs: [gym, pool] }),
+    nudgeSample('пинок: месяц', { daysSince: 40, programs: [gym, pool] })
   ]
 
-  for (const [label, text, button] of samples) {
+  for (const [label, text, buttons] of samples) {
     console.log(`→ ${label}`)
-    await send(ONLY, text, button)
+    await send(ONLY, text, buttons)
   }
   console.log(`\nОтправлено образцов: ${samples.length}`)
 }
@@ -178,10 +181,10 @@ async function main() {
 
         // Период в ссылке: сводка за неделю обязана открыть неделю, иначе
         // человек увидит на экране не те цифры, что были в сообщении.
-        const result = await send(r.telegram_id, text, {
+        const result = await send(r.telegram_id, text, [{
           text: 'Открыть статистику',
           url: appLink(bot, KIND === 'weekly' ? 'stats-week' : 'stats-month')
-        })
+        }])
         stats[result]++
       }
     }
@@ -193,29 +196,14 @@ async function main() {
       for (const r of rows) {
         if (ONLY && String(r.telegram_id) !== ONLY) { stats.skipped++; continue }
 
-        const text = nudge({
-          daysSince: r.days_since,
-          programName: r.program_name,
-          category: r.category,
-          lastDay: r.last_day,
-          estMinutes: r.est_minutes
-        })
+        const payload = { daysSince: r.days_since, programs: r.programs || [] }
+        const text = nudge(payload)
+        const buttons = nudgeButtons(payload).map((b) => ({
+          text: b.label,
+          url: appLink(bot, b.param)
+        }))
 
-        // Куда ведёт кнопка: плавание — на свою страницу, силовая — на день,
-        // а после месяца тишины и без закрепа — просто в приложение.
-        let param = 'stats'
-        if (r.days_since < 28 && r.program_id) {
-          param = r.category === 'pool'
-            ? `s-${r.program_id}`
-            : `w-${r.program_id}-${r.last_day || 'A'}`
-        } else if (r.days_since >= 28 || !r.program_id) {
-          param = 'open'
-        }
-
-        const result = await send(r.telegram_id, text, {
-          text: nudgeButtonLabel(r.days_since),
-          url: appLink(bot, param)
-        })
+        const result = await send(r.telegram_id, text, buttons)
         stats[result]++
 
         // Счётчик тишины растёт только у реально отправленных: пропущенные
