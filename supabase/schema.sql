@@ -467,7 +467,10 @@ AS $$
   WHERE id = current_user_id();
 $$;
 
--- Отметка захода в приложение: обнуляет счётчик тишины.
+-- Отметка захода в приложение. Счётчик пинков НЕ обнуляет: частота пинков
+-- считается от последней завершённой тренировки, а не от факта захода —
+-- иначе тот, кто заходит смотреть историю и не тренируется, получал бы
+-- напоминание каждый понедельник бесконечно.
 CREATE OR REPLACE FUNCTION public.api_touch_last_seen()
 RETURNS void
 LANGUAGE sql
@@ -475,8 +478,7 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
   UPDATE public.users
-  SET last_seen_at  = now(),
-      nudge_ignored = 0
+  SET last_seen_at = now()
   WHERE id = current_user_id();
 $$;
 
@@ -1769,8 +1771,15 @@ AS $$
       AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
     AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
       AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
-    AND (u.nudge_ignored < 3 OR u.last_nudge_at IS NULL
-         OR u.last_nudge_at < now() - interval '30 days');
+    -- Частота зависит от длины паузы: первый месяц — еженедельно,
+    -- до четырёх месяцев — раз в месяц, дальше — раз в три месяца.
+    AND (u.last_nudge_at IS NULL
+         OR u.last_nudge_at < now() - (
+              CASE
+                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int < 28  THEN interval '6 days'
+                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int < 112 THEN interval '27 days'
+                ELSE interval '89 days'
+              END));
 $$;
 
 -- Владельческий отчёт за месяц: про весь проект, а не про одного человека.
