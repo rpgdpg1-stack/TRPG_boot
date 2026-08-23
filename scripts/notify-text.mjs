@@ -375,6 +375,20 @@ export function nudge({ daysSince, programs = [] }) {
 }
 
 /**
+ * Цвет кнопки.
+ *
+ * Telegram даёт ровно три готовых стиля (появились в Bot API 9.4, февраль
+ * 2026) — свой #9ED153 туда не подставить. Но раскладка ложится на наши
+ * цвета почти один в один: зелёный совпадает с акцентом, синий — с цветом
+ * плавания. Красный не используем нигде: он означает опасное действие,
+ * а у нас все кнопки зовут тренироваться.
+ */
+export const BTN_STYLE = {
+  ACCENT: 'success',  // зелёный — акцент приложения
+  POOL: 'primary'     // синий — цвет плавания
+}
+
+/**
  * Кнопки под пинком.
  *
  * Одна программа — одна кнопка «Начать»: выбирать не из чего, и называть
@@ -389,21 +403,27 @@ export function nudgeButtons({ daysSince, programs = [] }) {
   // «Начать» обещает готовую тренировку по нажатию — а там ещё выбирать.
   // Хвост у параметра разный, хотя ведут все три на главную: по нему потом
   // видно, КАКОЕ напоминание вернуло человека. Без этого пинки неразличимы.
-  if (daysSince >= 28) return [{ label: 'Открыть приложение', param: 'open-m' }]
-  if (daysSince >= 14) return [{ label: 'Открыть приложение', param: 'open-w2' }]
+  const toApp = (param) => [{ label: 'Открыть приложение', param, style: BTN_STYLE.ACCENT }]
+
+  if (daysSince >= 28) return toApp('open-m')
+  if (daysSince >= 14) return toApp('open-w2')
   // Закрепов нет — на главной человека ждёт именно выбор программы,
   // так кнопку и подписываем: она обещает ровно то, что произойдёт.
-  if (programs.length === 0) return [{ label: 'Выбрать программу', param: 'open-np' }]
+  if (programs.length === 0) {
+    return [{ label: 'Выбрать программу', param: 'open-np', style: BTN_STYLE.ACCENT }]
+  }
 
   const paramFor = (p) => p.category === 'pool'
     ? `s-${p.slug}`
     : `w-${p.slug}-${p.lastDay || 'A'}`
+  const styleFor = (p) => p.category === 'pool' ? BTN_STYLE.POOL : BTN_STYLE.ACCENT
 
   if (programs.length === 1) {
-    return [{ label: 'Начать', param: paramFor(programs[0]) }]
+    return [{ label: 'Начать', param: paramFor(programs[0]), style: styleFor(programs[0]) }]
   }
   return programs.map((p) => ({
     label: prettyName(p.name, p.slug),
-    param: paramFor(p)
+    param: paramFor(p),
+    style: styleFor(p)
   }))
 }

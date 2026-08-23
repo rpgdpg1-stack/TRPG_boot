@@ -21,7 +21,7 @@
  */
 
 import pg from 'pg'
-import { weeklyDigest, monthlyDigest, yearlyDigest, ownerReport, nudge, nudgeButtons } from './notify-text.mjs'
+import { weeklyDigest, monthlyDigest, yearlyDigest, ownerReport, nudge, nudgeButtons, BTN_STYLE } from './notify-text.mjs'
 
 const KIND = process.argv[2]
 const DRY_RUN = process.env.NOTIFY_DRY_RUN === '1'
@@ -40,6 +40,34 @@ if (!BOT_TOKEN && !DRY_RUN) { console.error('Нет BOT_TOKEN'); process.exit(1)
 
 const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
 
+/**
+ * Картинки к сообщениям.
+ *
+ * Лежат в Selectel и должны быть доступны БЕЗ авторизации: Telegram скачивает
+ * их сам по ссылке, и закрытый доступ он просто не увидит.
+ *
+ * Пусто — сообщение уйдёт обычным текстом. Так что незаполненная строчка
+ * ничего не ломает, просто картинки не будет.
+ */
+const IMAGES = {
+  weekly: '',       // notify-weekly.png
+  monthly: '',      // notify-monthly.png
+  yearly: '',       // notify-yearly.png
+  owner: '',        // notify-owner.png
+  nudgeWeek: '',    // notify-nudge-week.png    — неделя
+  nudge2w: '',      // notify-nudge-2w.png      — две и три недели
+  nudgeMonth: '',   // notify-nudge-month.png   — месяц, два, три месяца
+  nudgeLong: ''     // notify-nudge-long.png    — давно
+}
+
+/** Какая картинка полагается пинку по длине паузы. */
+function nudgeImage(daysSince) {
+  if (daysSince >= 112) return IMAGES.nudgeLong
+  if (daysSince >= 28) return IMAGES.nudgeMonth
+  if (daysSince >= 14) return IMAGES.nudge2w
+  return IMAGES.nudgeWeek
+}
+
 /** Имя бота нужно для ссылок вида t.me/<bot>?startapp=... Берём у самого
  *  Telegram, чтобы не заводить ради него ещё один секрет. */
 async function getBotUsername() {
@@ -55,33 +83,79 @@ async function getBotUsername() {
  * сбоем: человек имеет право закрыть дверь, и падать из-за этого вся рассылка
  * не должна.
  */
-async function send(chatId, text, buttons) {
+async function send(chatId, text, buttons, photo) {
   // Каждая кнопка — своей строкой: названия программ бывают длинными, и в один
   // ряд они превращаются в обрезанную кашу.
   const keyboard = buttons.map((b) => [b])
 
   if (DRY_RUN) {
-    const preview = buttons.map((b) => `[ ${b.text} ] → ${b.url}`).join('\n')
-    console.log(`\n──────── ${chatId} ────────\n${text}\n${preview}`)
+    const preview = buttons
+      .map((b) => `[ ${b.text} ]${b.style ? ` (${b.style})` : ''} → ${b.url}`)
+      .join('\n')
+    console.log(`\n──────── ${chatId} ────────`
+      + (photo ? `\n🖼 ${photo}` : '')
+      + `\n${text}\n${preview}`)
     return 'dry'
   }
-  const res = await fetch(api('sendMessage'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true,
-      reply_markup: { inline_keyboard: keyboard }
+
+  // С картинкой — sendPhoto, текст уходит подписью. Ограничение подписи
+  // 1024 символа против 4096 у обычного сообщения; наши тексты втрое короче,
+  // но проверку оставляем: длинный текст лучше отправить без картинки,
+  // чем не отправить вовсе.
+  const usePhoto = !!photo && text.length <= 1024
+  const method = usePhoto ? 'sendPhoto' : 'sendMessage'
+  const body = {
+    chat_id: chatId,
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: keyboard }
+  }
+  if (usePhoto) {
+    body.photo = photo
+    body.caption = text
+  } else {
+    body.text = text
+    body.disable_web_page_preview = true
+  }
+
+  let data = await post(method, body)
+
+  // Цвет кнопок появился только в Bot API 9.4. Если сервер его не принял —
+  // отправляем то же самое без стилей: сообщение важнее оформления.
+  if (!data.ok && JSON.stringify(data).includes('style')) {
+    console.warn('  цвет кнопок не поддержан — шлю без него')
+    body.reply_markup = {
+      inline_keyboard: keyboard.map((row) => row.map((b) => {
+        const plain = { ...b }
+        delete plain.style
+        return plain
+      }))
+    }
+    data = await post(method, body)
+  }
+
+  // Картинка недоступна (ссылка закрыта, файл удалён) — шлём текстом.
+  if (!data.ok && usePhoto) {
+    console.warn('  картинка не принята — шлю текстом')
+    data = await post('sendMessage', {
+      chat_id: chatId, text, parse_mode: 'HTML',
+      disable_web_page_preview: true, reply_markup: body.reply_markup
     })
-  })
-  const data = await res.json()
+  }
+
   if (data.ok) return 'sent'
 
   const blocked = data.error_code === 403
   console.warn(`  ${chatId}: ${blocked ? 'бот заблокирован' : JSON.stringify(data)}`)
   return blocked ? 'blocked' : 'error'
+}
+
+async function post(method, body) {
+  const res = await fetch(api(method), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  return res.json()
 }
 
 /** Ссылка на конкретный экран приложения (разбирается в lib/deep-link.js). */
@@ -110,20 +184,22 @@ async function sendSamples(bot) {
 
   const nudgeSample = (label, payload) =>
     [label, nudge(payload), nudgeButtons(payload).map((b) => ({
-      text: b.label, url: appLink(bot, b.param)
-    }))]
+      text: b.label, url: appLink(bot, b.param), style: b.style
+    })), nudgeImage(payload.daysSince)]
 
   const samples = [
     ['итоги недели',
      weeklyDigest({ totalCount: 3, totalMinutes: 135,
        breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-week') }]],
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-week'), style: BTN_STYLE.ACCENT }],
+     IMAGES.weekly],
 
     ['итоги месяца',
      monthlyDigest({ monthIndex: 6, totalCount: 12, totalMinutes: 580,
        breakdown: { strength: { count: 8, meters: 0 }, pool: { count: 4, meters: 9000 } },
        prevCount: 9, daysInMonth: 31 }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-month') }]],
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-month'), style: BTN_STYLE.ACCENT }],
+     IMAGES.monthly],
 
     nudgeSample('пинок: неделя, два закрепа', { daysSince: 8, programs: [gym, pool] }),
     nudgeSample('пинок: неделя, только силовая', { daysSince: 8, programs: [gym] }),
@@ -131,6 +207,7 @@ async function sendSamples(bot) {
     nudgeSample('пинок: неделя, закрепов нет', { daysSince: 8, programs: [] }),
     nudgeSample('пинок: две недели', { daysSince: 15, programs: [gym, pool] }),
     nudgeSample('пинок: месяц', { daysSince: 40, programs: [gym, pool] }),
+    nudgeSample('пинок: давно', { daysSince: 200, programs: [] }),
 
     ['итоги года',
      yearlyDigest({ year: 2026, totalCount: 30, totalMinutes: 375,
@@ -138,12 +215,13 @@ async function sendSamples(bot) {
        bestMonth: 5, bestMonthCount: 14,
        recExercise: 'Тяга верхнего блока нейтральным хватом',
        recWeight: '105.00', recSwimM: 750 }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-year') }]]
+     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-year'), style: BTN_STYLE.ACCENT }],
+     IMAGES.yearly]
   ]
 
-  for (const [label, text, buttons] of samples) {
+  for (const [label, text, buttons, photo] of samples) {
     console.log(`→ ${label}`)
-    await send(ONLY, text, buttons)
+    await send(ONLY, text, buttons, photo)
   }
   console.log(`\nОтправлено образцов: ${samples.length}`)
 }
@@ -175,15 +253,13 @@ async function main() {
       if (DRY_RUN) {
         console.log(`\n──────── ${OWNER_CHAT_ID} ────────\n${text}`)
       } else {
-        const res = await fetch(api('sendMessage'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: OWNER_CHAT_ID, text, parse_mode: 'HTML',
-            disable_web_page_preview: true
+        const data = IMAGES.owner
+          ? await post('sendPhoto', {
+            chat_id: OWNER_CHAT_ID, photo: IMAGES.owner, caption: text, parse_mode: 'HTML'
           })
-        })
-        const data = await res.json()
+          : await post('sendMessage', {
+            chat_id: OWNER_CHAT_ID, text, parse_mode: 'HTML', disable_web_page_preview: true
+          })
         if (!data.ok) throw new Error(`Отчёт не ушёл: ${JSON.stringify(data)}`)
         console.log('Отчёт отправлен')
       }
@@ -237,8 +313,9 @@ async function main() {
         const result = await send(r.telegram_id, text, [{
           text: 'Открыть статистику',
           url: appLink(bot, KIND === 'weekly' ? 'stats-week'
-            : KIND === 'yearly' ? 'stats-year' : 'stats-month')
-        }])
+            : KIND === 'yearly' ? 'stats-year' : 'stats-month'),
+          style: BTN_STYLE.ACCENT
+        }], IMAGES[KIND])
         stats[result]++
       }
     }
@@ -254,10 +331,11 @@ async function main() {
         const text = nudge(payload)
         const buttons = nudgeButtons(payload).map((b) => ({
           text: b.label,
-          url: appLink(bot, b.param)
+          url: appLink(bot, b.param),
+          style: b.style
         }))
 
-        const result = await send(r.telegram_id, text, buttons)
+        const result = await send(r.telegram_id, text, buttons, nudgeImage(r.days_since))
         stats[result]++
 
         // Счётчик тишины растёт только у реально отправленных: пропущенные
