@@ -14,7 +14,7 @@ import {
   workoutTimerColor
 } from '../lib/active-workout'
 import { localGet, localSet } from '../utils/storage'
-import { cloudGet, cloudSet } from '../lib/cloud-storage'
+import { cloudGet } from '../lib/cloud-storage'
 import {
   SWIM_PROGRAM,
   SWIM_STROKES,
@@ -35,6 +35,7 @@ import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { PlayGlyph } from '../components/PlayButton'
 import { goal, GOALS } from '../lib/metrika'
+import { getPrefSync, setPref } from '../lib/prefs'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -155,7 +156,10 @@ export default function SwimWorkout() {
   const program = useMemo(() => getProgramBySlug(programId), [programId])
 
   const [pool, setPool] = useState(() => {
-    const saved = parseInt(localGet(POOL_KEY(programId)), 10)
+    const fromAccount = getPrefSync(POOL_KEY(programId), null)
+    const saved = fromAccount != null
+      ? Number(fromAccount)
+      : parseInt(localGet(POOL_KEY(programId)), 10)
     return SWIM_PROGRAM.pools.includes(saved) ? saved : SWIM_PROGRAM.defaultPool
   })
 
@@ -241,13 +245,20 @@ export default function SwimWorkout() {
   // Число повторов основы — единственное редактируемое поле. Стартуем мгновенно
   // из localStorage, догоняем кросс-девайс из CloudStorage; пишем в оба (как вес).
   const [mainReps, setMainReps] = useState(() => {
-    const saved = parseInt(localGet(REPS_KEY(programId)), 10)
+    const fromAccountInit = getPrefSync(REPS_KEY(programId), null)
+    const saved = fromAccountInit != null
+      ? parseInt(fromAccountInit, 10)
+      : parseInt(localGet(REPS_KEY(programId)), 10)
     const def = SWIM_PROGRAM.blocks.find(b => b.id === MAIN_ID)?.repeat || 1
     return Number.isFinite(saved) && saved >= MIN_REPS && saved <= MAX_REPS ? saved : def
   })
 
   useEffect(() => {
     let cancelled = false
+    const fromAccount = getPrefSync(REPS_KEY(programId), null)
+    const n0 = parseInt(fromAccount, 10)
+    if (Number.isFinite(n0) && n0 >= MIN_REPS && n0 <= MAX_REPS) { setMainReps(n0); return }
+    // Разовый добор со старого места — Telegram CloudStorage.
     cloudGet(REPS_KEY(programId)).then(v => {
       const n = parseInt(v, 10)
       if (!cancelled && Number.isFinite(n) && n >= MIN_REPS && n <= MAX_REPS) setMainReps(n)
@@ -272,7 +283,7 @@ export default function SwimWorkout() {
       if (next !== prev) {
         haptic.selection()
         localSet(REPS_KEY(programId), String(next))
-        cloudSet(REPS_KEY(programId), String(next))
+        setPref(REPS_KEY(programId), next)
       }
       return next
     })
@@ -334,6 +345,9 @@ export default function SwimWorkout() {
     haptic.light()
     setPool(len)
     localSet(POOL_KEY(programId), String(len))
+    // Длина бассейна — свойство человека, а не устройства: в браузере
+    // она сбрасывалась на умолчание.
+    setPref(POOL_KEY(programId), len)
   }
 
   const runFinish = async () => {

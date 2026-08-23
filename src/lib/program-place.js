@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { cloudGet, cloudSet } from './cloud-storage'
+import { cloudGet } from './cloud-storage'
 import { localGet, localSet } from '../utils/storage'
+import { getPrefSync, setPref } from './prefs'
 
 /**
  * Выбранное место программы (Зал/Дом/Улица) с запоминанием между сессиями и
@@ -27,12 +28,22 @@ export function useProgramPlace(slug, places) {
     return (saved && places.includes(saved)) ? saved : (places[0] || 'gym')
   })
 
-  // Догоняем из облака (другое устройство).
+  // Догоняем из настроек аккаунта, затем — разово из старого места
+  // (Telegram CloudStorage: он виден только внутри Telegram, и в браузере
+  // выбранное место терялось).
   useEffect(() => {
     let alive = true
-    cloudGet(key).then(v => {
-      if (alive && v && places.includes(v)) setPlaceState(v)
-    })
+    const fromAccount = getPrefSync(key, null)
+    if (fromAccount && places.includes(fromAccount)) {
+      setPlaceState(fromAccount)
+    } else {
+      cloudGet(key).then(v => {
+        if (alive && v && places.includes(v)) {
+          setPlaceState(v)
+          setPref(key, v)
+        }
+      })
+    }
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, placesKey])
@@ -45,7 +56,7 @@ export function useProgramPlace(slug, places) {
   const setPlace = (loc) => {
     setPlaceState(loc)
     localSet(key, loc)
-    cloudSet(key, loc)
+    setPref(key, loc)
   }
 
   return [place, setPlace]

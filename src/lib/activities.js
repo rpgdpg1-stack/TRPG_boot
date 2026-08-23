@@ -19,7 +19,8 @@
  */
 
 import { localGet, localSet } from '../utils/storage'
-import { cloudGet, cloudSet } from './cloud-storage'
+import { cloudGet } from './cloud-storage'
+import { getPrefSync, setPref } from './prefs'
 import { getTodayKey } from '../utils/dates'
 
 export const ACTIVITY_TITLE_MAX = 40
@@ -79,23 +80,39 @@ export function getActivitiesConfigSync() {
   } catch { return { ...DEFAULT_CONFIG } }
 }
 
-/** Догнать из облака (другое устройство). Возвращает конфиг или null. */
+/**
+ * Догнать из настроек аккаунта (другое устройство).
+ *
+ * Раньше конфиг жил в Telegram CloudStorage. Оно выглядит как облако, но
+ * доступно ТОЛЬКО внутри Telegram: в браузерной версии по почте настроек
+ * активностей просто не было. Теперь они в настройках аккаунта, общих для
+ * обоих входов; из CloudStorage забираем разово тех, у кого он остался.
+ */
 export async function fetchActivitiesConfig() {
   try {
+    const fromAccount = getPrefSync(CONFIG_KEY, null)
+    if (fromAccount) {
+      const cfg = normalize(typeof fromAccount === 'string' ? JSON.parse(fromAccount) : fromAccount)
+      localSet(CONFIG_KEY, JSON.stringify(cfg))
+      return cfg
+    }
+
+    // Разовый перенос со старого места.
     const raw = await cloudGet(CONFIG_KEY)
     if (!raw) return null
     const cfg = normalize(typeof raw === 'string' ? JSON.parse(raw) : raw)
     localSet(CONFIG_KEY, JSON.stringify(cfg))
+    setPref(CONFIG_KEY, cfg)
     return cfg
   } catch { return null }
 }
 
-/** Сохранить конфиг локально + в облако. */
+/** Сохранить конфиг локально + в настройки аккаунта. */
 export function saveActivitiesConfig(cfg) {
   const norm = normalize(cfg)
   const json = JSON.stringify(norm)
   localSet(CONFIG_KEY, json)
-  cloudSet(CONFIG_KEY, json)
+  setPref(CONFIG_KEY, norm)
   // Уведомляем виджет на главной, чтобы он перечитал конфиг (SPA — Home не размонтируется).
   try { window.dispatchEvent(new Event('activities-changed')) } catch { /* ignore */ }
   return norm
@@ -180,6 +197,9 @@ export function getRecommendedForWindow(windowId, dayKey = getTodayKey()) {
 function customDoneKey() { return CUSTOM_DONE_PREFIX + getTodayKey() }
 
 export function getCustomDone() {
+  // Аккаунт важнее устройства: в нём отметки со всех входов.
+  const fromAccount = getPrefSync(customDoneKey(), null)
+  if (fromAccount && typeof fromAccount === 'object') return fromAccount
   try {
     const raw = localGet(customDoneKey())
     return raw ? JSON.parse(raw) : {}
@@ -191,5 +211,8 @@ export function setCustomDone(windowId, done) {
   if (done) cur[windowId] = true
   else delete cur[windowId]
   try { localSet(customDoneKey(), JSON.stringify(cur)) } catch { /* ignore */ }
+  // Отметки дня — в аккаунт: закрыл активность в Telegram, открыл браузер,
+  // а она снова не выполнена — это выглядит как потеря данных.
+  setPref(customDoneKey(), cur)
   return cur
 }
