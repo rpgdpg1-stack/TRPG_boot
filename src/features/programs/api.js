@@ -399,7 +399,13 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
     // Цель ставится только на успешном сохранении. Оффлайн-очередь сюда
     // не попадает намеренно: тренировка ещё не в базе, и считать её
     // завершённой — врать себе в статистике.
-    goal(GOALS.WORKOUT_FINISH, { program: programSlug, day })
+    goal(GOALS.WORKOUT_FINISH, {
+      program: programSlug,
+      day,
+      // Столько упражнений отмечено. В паре с тем же числом у брошенных
+      // тренировок даёт кривую отвала: на каком упражнении люди сдаются.
+      done: exerciseIds?.length || 0
+    })
 
     setCurrentUser({
       ...user,

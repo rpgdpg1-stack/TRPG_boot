@@ -304,13 +304,13 @@ export function nudge({ daysSince, programs = [] }) {
 export function nudgeButtons({ daysSince, programs = [] }) {
   // Везде, где кнопка ведёт на главную, она и подписана «Открыть приложение».
   // «Начать» обещает готовую тренировку по нажатию — а там ещё выбирать.
-  const toApp = [{ label: 'Открыть приложение', param: 'open' }]
-
-  if (daysSince >= 28) return toApp
-  if (daysSince >= 14) return toApp
+  // Хвост у параметра разный, хотя ведут все три на главную: по нему потом
+  // видно, КАКОЕ напоминание вернуло человека. Без этого пинки неразличимы.
+  if (daysSince >= 28) return [{ label: 'Открыть приложение', param: 'open-m' }]
+  if (daysSince >= 14) return [{ label: 'Открыть приложение', param: 'open-w2' }]
   // Закрепов нет — на главной человека ждёт именно выбор программы,
   // так кнопку и подписываем: она обещает ровно то, что произойдёт.
-  if (programs.length === 0) return [{ label: 'Выбрать программу', param: 'open' }]
+  if (programs.length === 0) return [{ label: 'Выбрать программу', param: 'open-np' }]
 
   const paramFor = (p) => p.category === 'pool'
     ? `s-${p.slug}`

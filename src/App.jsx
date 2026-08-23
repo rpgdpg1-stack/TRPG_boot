@@ -46,9 +46,9 @@ import { getFriendsList } from './lib/friends-list'
 import { getFavoriteExercises } from './lib/favorite-exercises'
 import { getProgramBySlug } from './features/programs/registry'
 import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
-import { getStartRoute } from './lib/deep-link'
+import { getStartRoute, getNotificationType } from './lib/deep-link'
 import { touchLastSeen } from './lib/notifications'
-import { hit as metrikaHit } from './lib/metrika'
+import { hit as metrikaHit, goal, GOALS } from './lib/metrika'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
 import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
@@ -332,8 +332,15 @@ function StartRouteController() {
 
   useEffect(() => {
     if (handled.current) return
+
+    // Заход из напоминания считаем ДО проверки маршрута: часть сообщений ведёт
+    // просто на главную, маршрута у них нет, но факт возврата человека — есть,
+    // и он тут самое ценное.
+    const notification = getNotificationType()
+    if (notification) goal(GOALS.NOTIFICATION_OPEN, { type: notification })
+
     const route = getStartRoute()
-    if (!route) return
+    if (!route) { handled.current = true; return }
     handled.current = true
     // Переход ОБЫЧНЫЙ, не replace: иначе в истории браузера остаётся один
     // экран, и кнопке «Назад» некуда возвращаться — со статистики, открытой

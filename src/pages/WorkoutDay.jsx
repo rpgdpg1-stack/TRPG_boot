@@ -52,6 +52,7 @@ import SkeletonCard from '../components/workout/SkeletonCard'
 import DayPicker from '../components/workout/DayPicker'
 import { getRealScrollY, groupByMuscleGroup } from '../utils/workout-day'
 import PlayIcon from '../components/PlayIcon'
+import { goal, GOALS } from '../lib/metrika'
 
 /**
  * Экран дня тренировки.
@@ -956,6 +957,9 @@ export default function WorkoutDay() {
   const handleCancelTap = () => { haptic.light(); setShowCancelConfirm(true) }
   const handleCancelConfirm = () => {
     haptic.medium()
+    // Сколько упражнений успел отметить до отказа — по этому числу и видно,
+    // где ломается сценарий: на входе или к середине тренировки.
+    goal(GOALS.WORKOUT_ABANDON, { program: programId, done: activeOrderNums.size })
     clearWorkoutProgress(programId, day, place)
     clearActiveScroll(programId, day, place)
     setActiveOrderNums(new Set())

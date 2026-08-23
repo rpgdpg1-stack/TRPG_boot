@@ -14,6 +14,8 @@
  *   stats-month     → статистика, переключатель на месяце
  *   stats-year      → статистика, переключатель на годе
  *   stats           → статистика как есть
+ *   open-w2 / open-m / open-np → главная; хвост говорит, какое именно
+ *                     напоминание сработало (две недели, месяц, нет закрепов)
  *   open            → просто главная
  *
  * Экран только ОТКРЫВАЕТСЯ. Тренировка не стартует: решение начать человек
@@ -40,10 +42,11 @@ export function routeFromStartParam(param) {
   if (param === 'stats-month') return { path: '/history', state: { period: 'month' } }
   if (param === 'stats-year') return { path: '/history', state: { period: 'year' } }
 
-  // 'open' — «просто открой приложение»: бот шлёт его, когда вести некуда
+  // 'open*' — «просто открой приложение»: бот шлёт это, когда вести некуда
   // (закреплённой программы нет или пауза больше месяца). Никуда не уводим,
-  // человек остаётся на главной — это и есть нужное поведение.
-  if (param === 'open') return null
+  // человек остаётся на главной — это и есть нужное поведение. Хвост после
+  // дефиса нужен только аналитике, маршрут от него не зависит.
+  if (param === 'open' || param.startsWith('open-')) return null
 
   const parts = param.split('-')
 
@@ -65,4 +68,39 @@ export function routeFromStartParam(param) {
 /** Переход для текущего запуска приложения, либо null. */
 export function getStartRoute() {
   return routeFromStartParam(tg?.initDataUnsafe?.start_param)
+}
+
+/**
+ * Какое напоминание привело человека в приложение.
+ *
+ * Отправку считает сам бот, но дошёл ли человек до приложения — видно только
+ * отсюда. Без этого невозможно понять, работают ли пинки вообще и какой из них
+ * работает лучше.
+ *
+ * Тип выводится из самого параметра: у каждого сообщения он свой, и заводить
+ * ради этого второй механизм не понадобилось.
+ */
+export function notificationTypeFromStartParam(param) {
+  if (!param) return null
+
+  const MAP = {
+    'stats-week': 'weekly',
+    'stats-month': 'monthly',
+    'stats-year': 'yearly',
+    'open-w2': 'nudge_2w',
+    'open-m': 'nudge_month',
+    'open-np': 'nudge_nopin'
+  }
+  if (MAP[param]) return MAP[param]
+
+  // Ссылка прямо в программу бывает только у недельного пинка.
+  if (param.startsWith('w-') || param.startsWith('s-')) return 'nudge_week'
+  if (param === 'open') return 'nudge'
+
+  return null
+}
+
+/** Тип напоминания для текущего запуска, либо null. */
+export function getNotificationType() {
+  return notificationTypeFromStartParam(tg?.initDataUnsafe?.start_param)
 }

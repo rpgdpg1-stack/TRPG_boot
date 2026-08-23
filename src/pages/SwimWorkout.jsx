@@ -34,6 +34,7 @@ import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { PlayGlyph } from '../components/PlayButton'
+import { goal, GOALS } from '../lib/metrika'
 
 /**
  * Экран «Заплыв» — ОЗНАКОМИТЕЛЬНАЯ памятка перед бассейном, по структуре как день
@@ -675,7 +676,12 @@ export default function SwimWorkout() {
             {
               label: 'Да, отменить',
               danger: true,
-              onClick: () => { haptic.medium(); clearActiveWorkout(); setShowCancelConfirm(false) }
+              onClick: () => {
+                haptic.medium()
+                goal(GOALS.WORKOUT_ABANDON, { program: programId })
+                clearActiveWorkout()
+                setShowCancelConfirm(false)
+              }
             }
           ]}
         />
