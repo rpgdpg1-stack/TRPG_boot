@@ -140,7 +140,7 @@ async function send(chatId, text, buttons, photo) {
 
   // Картинка недоступна (ссылка закрыта, файл удалён) — шлём текстом.
   if (!data.ok && usePhoto) {
-    console.warn('  картинка не принята — шлю текстом')
+    console.warn(`  картинка не принята (${JSON.stringify(data)}) — шлю текстом`)
     data = await post('sendMessage', {
       chat_id: chatId, text, parse_mode: 'HTML',
       disable_web_page_preview: true, reply_markup: body.reply_markup
@@ -154,13 +154,33 @@ async function send(chatId, text, buttons, photo) {
   return blocked ? 'blocked' : 'error'
 }
 
-async function post(method, body) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Запрос к Telegram с уважением к ограничению частоты.
+ *
+ * В один чат Telegram пропускает примерно одно сообщение в секунду. Десять
+ * образцов подряд превышали лимит: сервер отвечал 429, отправка фото падала,
+ * и срабатывал запасной путь — сообщение приходило текстом, без картинки.
+ * Выглядело так, будто картинки «не работают».
+ *
+ * На 429 Telegram сам говорит, сколько ждать (retry_after) — ждём и повторяем.
+ */
+async function post(method, body, retry = true) {
   const res = await fetch(api(method), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   })
-  return res.json()
+  const data = await res.json()
+
+  if (!data.ok && data.error_code === 429 && retry) {
+    const wait = (data.parameters?.retry_after || 2) + 1
+    console.warn(`  лимит частоты, жду ${wait} с`)
+    await sleep(wait * 1000)
+    return post(method, body, false)
+  }
+  return data
 }
 
 /** Ссылка на конкретный экран приложения (разбирается в lib/deep-link.js). */
@@ -227,6 +247,9 @@ async function sendSamples(bot) {
   for (const [label, text, buttons, photo] of samples) {
     console.log(`→ ${label}`)
     await send(ONLY, text, buttons, photo)
+    // Секунда с запасом: всё это летит в ОДИН чат, а туда Telegram пропускает
+    // примерно одно сообщение в секунду.
+    await sleep(1300)
   }
   console.log(`\nОтправлено образцов: ${samples.length}`)
 }
@@ -315,6 +338,9 @@ async function main() {
 
         // Период в ссылке: сводка за неделю обязана открыть неделю, иначе
         // человек увидит на экране не те цифры, что были в сообщении.
+        // Разным людям можно чаще, но не безлимитно: общий потолок около
+        // тридцати сообщений в секунду на бота.
+        await sleep(120)
         const result = await send(r.telegram_id, text, [{
           text: 'Открыть статистику',
           url: appLink(bot, KIND === 'weekly' ? 'stats-week'
@@ -340,6 +366,7 @@ async function main() {
           style: b.style
         }))
 
+        await sleep(120)
         const result = await send(r.telegram_id, text, buttons, nudgeImage(r.days_since))
         stats[result]++
 
