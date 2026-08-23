@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import { initMetrika } from './lib/metrika'
+import { captureShareToken } from './features/programs/customProgram'
 import App from './App.jsx'
 import './index.css'
 
@@ -31,6 +32,12 @@ if (SENTRY_DSN) {
 
 // Метрика — до рендера, чтобы первый заход не потерялся.
 initMetrika()
+
+// Токен программы из адреса — тоже до рендера. По ссылке приходят обычно
+// БЕЗ аккаунта, а на экране входа приложение ещё не смонтировано целиком:
+// поймать параметр где-то внутри дерева не выйдет, он потеряется, пока
+// человек вводит код из письма.
+captureShareToken()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

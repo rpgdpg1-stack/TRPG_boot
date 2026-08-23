@@ -17,6 +17,8 @@ import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet } from '../../utils/storage'
 import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 
+import { isTelegramEnv } from '../../lib/telegram'
+
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
 const CACHE_KEY = 'user-programs'
@@ -159,8 +161,17 @@ export async function shareMyProgram(programId) {
 }
 
 /**
- * Поделиться программой: получаем токен, формируем deep-link и открываем
- * нативный share-диалог Telegram. Fallback (dev в браузере) — копия в буфер.
+ * Поделиться программой.
+ *
+ * Ссылка зависит от того, ОТКУДА делятся. Из Telegram — telegram-ссылка
+ * на мини-приложение. Из браузера — обычная ссылка на сайт: человек, сидящий
+ * в браузере, шлёт её кому угодно, и получатель не обязан открывать Telegram,
+ * чтобы посмотреть программу.
+ *
+ * Раньше проверка была `tg && tg.openTelegramLink` — и она врала: SDK Telegram
+ * подключён на странице всегда, в браузере тоже, поэтому браузерная ветка
+ * не срабатывала никогда и наружу всегда уходила telegram-ссылка.
+ * Правильный признак — подписанный initData, он есть только внутри Telegram.
  */
 export async function shareProgramLink(programId) {
   const token = await shareMyProgram(programId)
@@ -169,23 +180,37 @@ export async function shareProgramLink(programId) {
     return false
   }
 
-  const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
-  const appName = import.meta.env.VITE_APP_NAME || 'app'
-  const link = `https://t.me/${botUsername}/${appName}?startapp=share_${token}`
-  const text = `💪🏻 Попробуй мою программу тренировок в TRPG`
+  const text = '💪🏻 Попробуй мою программу тренировок в TRPG'
 
-  if (tg && typeof tg.openTelegramLink === 'function') {
+  if (isTelegramEnv() && typeof tg?.openTelegramLink === 'function') {
+    const botUsername = import.meta.env.VITE_BOT_USERNAME || 'YourBot'
+    const appName = import.meta.env.VITE_APP_NAME || 'app'
+    const link = `https://t.me/${botUsername}/${appName}?startapp=share_${token}`
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
     tg.openTelegramLink(shareUrl)
     return true
   }
 
+  const webLink = `${window.location.origin}/?share=${encodeURIComponent(token)}`
+
+  // Родное меню «Поделиться» есть почти на всех телефонах — оно удобнее
+  // буфера, потому что сразу предлагает мессенджеры.
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'TRPG', text, url: webLink })
+      return true
+    } catch (e) {
+      // Человек закрыл меню — это не ошибка, молча уходим в копирование.
+      if (e?.name === 'AbortError') return false
+    }
+  }
+
   try {
-    await navigator.clipboard.writeText(link)
-    window.alert(`Ссылка скопирована:\n${link}`)
+    await navigator.clipboard.writeText(webLink)
+    window.alert(`Ссылка скопирована:\n${webLink}`)
     return true
   } catch {
-    window.alert(`Скопируй ссылку:\n${link}`)
+    window.alert(`Скопируй ссылку:\n${webLink}`)
     return false
   }
 }
@@ -202,14 +227,37 @@ export async function getSharedProgram(token) {
   return data
 }
 
+const PENDING_SHARE_KEY = 'pending-share-token'
+
 /**
- * Достать токен программы из start_param Telegram (префикс 'share_').
- * Возвращает чистый токен или null, если параметр не про шеринг.
+ * Забрать токен из адреса и запомнить. Вызывается ОДИН раз при старте
+ * приложения, до авторизации.
+ *
+ * Почему до: по ссылке приходят чаще всего БЕЗ аккаунта, и до модалки
+ * сохранения человек доберётся только после входа по почте. Если ждать
+ * авторизации, токен потеряется по дороге. А из адреса его убираем сразу,
+ * иначе ссылка сработает второй раз при обновлении страницы.
+ */
+export function captureShareToken() {
+  const fromUrl = new URLSearchParams(window.location.search).get('share')
+  if (!fromUrl) return
+  try { sessionStorage.setItem(PENDING_SHARE_KEY, fromUrl) } catch { /* приватный режим */ }
+  window.history.replaceState({}, '', window.location.pathname)
+}
+
+/**
+ * Токен программы, по ссылке которой пришли: из start_param Telegram
+ * (префикс 'share_') или из запомненного браузерного (см. captureShareToken).
  */
 export function getStartParamShareToken() {
   const param = tg?.initDataUnsafe?.start_param
-  if (!param || !param.startsWith('share_')) return null
-  return param.slice('share_'.length)
+  if (param && param.startsWith('share_')) return param.slice('share_'.length)
+  try { return sessionStorage.getItem(PENDING_SHARE_KEY) } catch { return null }
+}
+
+/** Забыть токен — программа сохранена или человек отказался. */
+export function clearPendingShareToken() {
+  try { sessionStorage.removeItem(PENDING_SHARE_KEY) } catch { /* ignore */ }
 }
 
 /**

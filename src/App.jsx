@@ -45,7 +45,7 @@ import { HISTORY_FETCH_LIMIT } from './utils/history'
 import { getFriendsList } from './lib/friends-list'
 import { getFavoriteExercises } from './lib/favorite-exercises'
 import { getProgramBySlug } from './features/programs/registry'
-import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken } from './features/programs/customProgram'
+import { loadMyPrograms, hydrateUserProgramsFromCache, getSharedProgram, getStartParamShareToken, clearPendingShareToken } from './features/programs/customProgram'
 import { getStartRoute, getNotificationType } from './lib/deep-link'
 import { touchLastSeen } from './lib/notifications'
 import { hit as metrikaHit, goal, GOALS } from './lib/metrika'
@@ -410,8 +410,9 @@ function StartRouteController() {
 }
 
 /**
- * Приём программы по ссылке. Читает start_param ('share_<токен>'), тянет снимок
- * и показывает модалку сохранения. Если автор — сам пользователь, не предлагаем.
+ * Приём программы по ссылке — из Telegram (start_param) или из браузера
+ * (?share=). Тянет снимок и показывает модалку сохранения. Если автор —
+ * сам пользователь, не предлагаем.
  */
 function ShareImportController() {
   const navigate = useNavigate()
@@ -427,7 +428,8 @@ function ShareImportController() {
       if (!user) return
       const snap = await getSharedProgram(token)
       if (cancelled || !snap) return
-      if (snap.author_id === user.id) return // своя же программа
+      // Своя же программа — предлагать нечего, и токен больше не нужен.
+      if (snap.author_id === user.id) { clearPendingShareToken(); return }
       setSnapshot({ ...snap, token })
     }
 
@@ -444,8 +446,8 @@ function ShareImportController() {
     <SaveFriendProgramModal
       snapshot={snapshot}
       replacing={replacing}
-      onClose={() => setSnapshot(null)}
-      onSaved={() => { setSnapshot(null); navigate('/category/gym') }}
+      onClose={() => { clearPendingShareToken(); setSnapshot(null) }}
+      onSaved={() => { clearPendingShareToken(); setSnapshot(null); navigate('/category/gym') }}
     />
   )
 }
