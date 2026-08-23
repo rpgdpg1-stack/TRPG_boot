@@ -311,7 +311,10 @@ function StartRouteController() {
     const route = getStartRoute()
     if (!route) return
     handled.current = true
-    navigate(route, { replace: true })
+    // Переход ОБЫЧНЫЙ, не replace: иначе в истории браузера остаётся один
+    // экран, и кнопке «Назад» некуда возвращаться — со статистики, открытой
+    // из бота, выйти было невозможно. Повторный заход исключает handled.
+    navigate(route.path, { state: route.state })
   }, [navigate])
 
   // Отметка захода — при каждом старте, независимо от того, по ссылке пришли

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
@@ -29,7 +29,12 @@ export default function History() {
   // правды. Внутри экрана период можно листать сколько угодно, но обратно на
   // главную это не пишется и в следующий заход не переживает — иначе на главной
   // стояла бы «Неделя», а экран открывался бы с тем, что накликали в прошлый раз.
-  const [period, setPeriod] = useState(getHomeStatsPeriod)
+  //
+  // Исключение — заход из напоминания: сводка за неделю обязана открыть неделю,
+  // иначе человек увидит не те цифры, что были в сообщении. Период приходит
+  // в state перехода и на выбор с главной не влияет.
+  const location = useLocation()
+  const [period, setPeriod] = useState(() => location.state?.period || getHomeStatsPeriod())
 
   // Календарь всегда открывается на СВЕЖЕМ месяце/годе. Долистал до мая, вышел,
   // вернулся — снова август: «где я сейчас» важнее, чем «где был в прошлый раз».

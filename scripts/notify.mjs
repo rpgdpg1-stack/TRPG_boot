@@ -31,7 +31,8 @@ if (!['weekly', 'monthly', 'nudge', 'test'].includes(KIND)) {
   console.error('Укажи вид рассылки: weekly | monthly | nudge | test')
   process.exit(1)
 }
-if (!DB_URL) { console.error('Нет SUPABASE_DB_URL'); process.exit(1) }
+// Образцам база не нужна — данные в них выдуманные.
+if (!DB_URL && KIND !== 'test') { console.error('Нет SUPABASE_DB_URL'); process.exit(1) }
 if (!BOT_TOKEN && !DRY_RUN) { console.error('Нет BOT_TOKEN'); process.exit(1) }
 
 const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
@@ -97,13 +98,13 @@ async function sendSamples(bot) {
     ['итоги недели',
      weeklyDigest({ totalCount: 3, totalMinutes: 135,
        breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }),
-     { text: 'Открыть статистику', url: appLink(bot, 'stats') }],
+     { text: 'Открыть статистику', url: appLink(bot, 'stats-week') }],
 
     ['итоги месяца',
      monthlyDigest({ monthIndex: 6, totalCount: 12, totalMinutes: 580,
        breakdown: { strength: { count: 8, meters: 0 }, pool: { count: 4, meters: 9000 } },
        prevCount: 9, daysInMonth: 31 }),
-     { text: 'Открыть статистику', url: appLink(bot, 'stats') }],
+     { text: 'Открыть статистику', url: appLink(bot, 'stats-month') }],
 
     ['пинок: неделя',
      nudge({ daysSince: 8, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
@@ -112,6 +113,10 @@ async function sendSamples(bot) {
     ['пинок: две недели',
      nudge({ daysSince: 15, programName: 'СПЛИТ', category: 'gym', lastDay: 'B', estMinutes: 63 }),
      { text: nudgeButtonLabel(15), url: appLink(bot, 'w-split-B') }],
+
+    ['пинок: нет закреплённой программы',
+     nudge({ daysSince: 8, programName: null, category: null, lastDay: null, estMinutes: null }),
+     { text: nudgeButtonLabel(8), url: appLink(bot, 'open') }],
 
     ['пинок: месяц',
      nudge({ daysSince: 40, programName: null, category: null, lastDay: null, estMinutes: null }),
@@ -171,9 +176,11 @@ async function main() {
           })
         }
 
+        // Период в ссылке: сводка за неделю обязана открыть неделю, иначе
+        // человек увидит на экране не те цифры, что были в сообщении.
         const result = await send(r.telegram_id, text, {
           text: 'Открыть статистику',
-          url: appLink(bot, 'stats')
+          url: appLink(bot, KIND === 'weekly' ? 'stats-week' : 'stats-month')
         })
         stats[result]++
       }
