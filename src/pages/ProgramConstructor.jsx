@@ -21,6 +21,7 @@ import EmptyState from '../components/EmptyState'
 import { getQuickSet, getQuickSetSync, setQuickSet } from '../lib/quick-workout'
 import RocketIcon from '../components/RocketIcon'
 import QuickPickList from '../components/QuickPickList'
+import { goal, GOALS } from '../lib/metrika'
 
 const LETTERS = ['A', 'B', 'C']
 // Лимит упражнений на день. Поднят с 10 до 12: последние позиции дня — мелочь
@@ -305,6 +306,7 @@ export default function ProgramConstructor() {
         if ((byLoc[loc] || []).some(d => d.length > 0)) payload[loc] = byLoc[loc]
       }
       await saveMyProgram(name.trim(), dayCount, payload)
+      goal(GOALS.PROGRAM_CREATE, { days: dayCount })
       initialSnapshot.current = JSON.stringify({ name, dayCount, byLoc }) // зафиксировали как сохранённое
       haptic.success()
       goBack()

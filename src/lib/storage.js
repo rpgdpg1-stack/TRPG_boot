@@ -17,6 +17,7 @@ import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 import { clearQueue } from './offline-queue'
 import { pcacheClear } from './persistent-cache'
 import { debug } from './debug'
+import { goal, GOALS } from './metrika'
 
 function getUserId() {
   return getCurrentUser()?.id || null
@@ -310,6 +311,9 @@ export async function toggleFavoriteProgram(categoryId, programSlug) {
   else favorites[categoryId] = programSlug
 
   await setPref(FAVORITES_KEY, favorites)
+  // Считаем только закрепление. Открепление — это не действие «пользуюсь»,
+  // а отказ, и в одной цели с закрепом оно бы обнулило смысл цифры.
+  if (!wasPinned) goal(GOALS.PROGRAM_PIN, { category: categoryId, program: programSlug })
   return !wasPinned
 }
 

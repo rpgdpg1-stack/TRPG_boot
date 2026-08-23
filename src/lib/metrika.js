@@ -62,8 +62,22 @@ export function goal(name, params) {
 }
 
 export const GOALS = {
-  WORKOUT_START: 'workout_start',    // нажал «Начать тренировку»
-  WORKOUT_FINISH: 'workout_finish',  // довёл до конца
-  EXERCISE_SWAP: 'exercise_swap',    // заменил упражнение
-  STATS_OPEN: 'stats_open'           // открыл статистику
+  // Ядро продукта: начал → довёл до конца. Разница между этими двумя целями
+  // и есть доля брошенных тренировок — главная продуктовая цифра, которую
+  // не увидеть никаким другим способом.
+  WORKOUT_START: 'workout_start',
+  WORKOUT_FINISH: 'workout_finish',
+
+  // Механики внутри тренировки: пользуются ли ими вообще.
+  EXERCISE_SWAP: 'exercise_swap',      // заменил упражнение
+  WEIGHT_CHANGE: 'weight_change',      // поменял рабочий вес
+
+  // Разделы, про которые нужно понять, нужны ли они.
+  STATS_OPEN: 'stats_open',
+  FRIENDS_OPEN: 'friends_open',
+  FRIEND_INVITE: 'friend_invite',      // поделился ссылкой-приглашением
+
+  // Дорогие в разработке фичи: окупаются ли.
+  PROGRAM_PIN: 'program_pin',          // закрепил программу в разделе
+  PROGRAM_CREATE: 'program_create'     // собрал свою в конструкторе
 }

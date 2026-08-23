@@ -19,6 +19,7 @@ import {
   weightDedupKey,
   swapDedupKey
 } from '../../lib/offline-queue'
+import { goal, GOALS } from '../../lib/metrika'
 
 export async function getExercisesForSubgroup(subGroup, type) {
   try {
@@ -156,6 +157,11 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, p
 export async function saveExerciseWeight(exerciseId, weightKg) {
   const user = getCurrentUser()
   if (!user) return false
+
+  // Цель ставится до ветвления онлайн/оффлайн: вес человек ввёл в любом
+  // случае, а дойдёт он до базы сейчас или после синка — вопрос связи,
+  // а не поведения. Здесь мы меряем именно поведение.
+  goal(GOALS.WEIGHT_CHANGE)
 
   // ОФФЛАЙН: в очередь и выходим. Инвалидируем кеш весов и дней чтобы
   // при пересборке дня вес взялся из свежих данных (после синка).

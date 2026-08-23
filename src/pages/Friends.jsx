@@ -15,6 +15,7 @@ import PlayerProfileModal from '../components/PlayerProfileModal'
 import UiIcon from '../components/UiIcon'
 import PinIcon from '../components/PinIcon'
 import AnchorMenu from '../components/AnchorMenu'
+import { goal, GOALS } from '../lib/metrika'
 
 /**
  * Страница «Друзья» (вкладка таб-бара).
@@ -27,6 +28,9 @@ import AnchorMenu from '../components/AnchorMenu'
  */
 export default function Friends() {
   const navigate = useNavigate()
+
+  // Открытие раздела — цель: по ней и станет видно, нужен ли он вообще.
+  useEffect(() => { goal(GOALS.FRIENDS_OPEN) }, [])
 
   const [friends, setFriends] = useState(() => getFriendsListSync() || [])
   const [loading, setLoading] = useState(() => getFriendsListSync() === null)
@@ -117,6 +121,7 @@ export default function Friends() {
 
   const handleInviteTap = async () => {
     haptic.medium()
+    goal(GOALS.FRIEND_INVITE)
     await shareReferralLink()
   }
 
