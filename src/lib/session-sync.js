@@ -63,7 +63,10 @@ export async function fetchSession() {
     place: row.place,
     startedAt: row.started_at,
     done: row.done || [],
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    // false — надгробие: тренировку отменили или завершили на другом
+    // устройстве. Строка остаётся именно ради этого признака.
+    active: row.active !== false
   }
 }
 
@@ -71,6 +74,9 @@ export async function fetchSession() {
  * Свести локальное и серверное состояние.
  *
  * Правила по убыванию очевидности:
+ *  • на сервере надгробие (тренировку отменили или завершили на другом
+ *    устройстве) — гасим и у себя, если только не начали новую уже ПОСЛЕ
+ *    отмены;
  *  • есть только на сервере — забираем его;
  *  • есть только локально — отдаём своё;
  *  • одна и та же тренировка — объединяем галочки. Внутри одной сессии они
@@ -78,10 +84,24 @@ export async function fetchSession() {
  *    потерять галочку обиднее, чем увидеть лишнюю;
  *  • разные тренировки — берём ту, что тронули позже.
  *
- * Возвращает, что должно стать текущим: { session, done } либо null.
+ * Возвращает { session, done, from } либо null. from === 'cleared' означает
+ * «тренировки больше нет, убрать и локально».
  */
 export function mergeSessions(local, remote) {
   if (!local && !remote) return null
+
+  // Надгробие разбираем первым: пока оно не учтено, любое сравнение «кто
+  // свежее» сравнивает живую сессию с несуществующей и всегда её воскрешает.
+  if (remote && remote.active === false) {
+    if (!local) return null
+    // Новую начали уже после отмены — она главнее надгробия.
+    const localTime = local.updatedAt || local.startedAt
+    if (localTime > remote.updatedAt) {
+      return { session: local, done: local.done, from: 'local' }
+    }
+    return { from: 'cleared' }
+  }
+
   if (!local) return { session: remote, done: remote.done, from: 'remote' }
   if (!remote) return { session: local, done: local.done, from: 'local' }
 

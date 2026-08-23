@@ -18,7 +18,7 @@
 
 import { localGet, localSet, localRemove } from './storage'
 import { pushSession } from '../lib/session-sync'
-import { getActiveWorkout } from '../lib/active-workout'
+import { getActiveWorkout, touchActiveWorkout } from '../lib/active-workout'
 
 /**
  * Внутренний хелпер — собирает ключ из slug программы, места и дня.
@@ -63,6 +63,7 @@ export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
   // общую сессию нельзя. Отправка придержана внутри pushSession.
   const active = getActiveWorkout()
   if (active && active.programId === programSlug && active.day === day) {
+    touchActiveWorkout()
     pushSession({
       programId: programSlug,
       day,

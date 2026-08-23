@@ -50,7 +50,7 @@ import { getStartRoute, getNotificationType } from './lib/deep-link'
 import { touchLastSeen } from './lib/notifications'
 import { hit as metrikaHit, goal, GOALS } from './lib/metrika'
 import { fetchSession, mergeSessions, pushSession } from './lib/session-sync'
-import { getActiveWorkout, adoptActiveWorkout } from './lib/active-workout'
+import { getActiveWorkout, adoptActiveWorkout, clearActiveWorkout } from './lib/active-workout'
 import { loadWorkoutProgress, saveWorkoutProgress } from './utils/workout-progress'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
@@ -297,6 +297,14 @@ async function syncActiveSession() {
     if (!merged) return
 
     const { session, done, from } = merged
+
+    // Отменили или завершили на другом устройстве — гасим и здесь.
+    // clearActiveWorkout сам погасит и на сервере: надгробие уже стоит,
+    // повторная отметка ничего не портит.
+    if (from === 'cleared') {
+      clearActiveWorkout()
+      return
+    }
     if (from !== 'local') {
       adoptActiveWorkout(session)
       saveWorkoutProgress(session.programId, session.day, session.place, done)

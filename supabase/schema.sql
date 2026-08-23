@@ -256,6 +256,10 @@ CREATE TABLE IF NOT EXISTS public.active_sessions (
   place text DEFAULT 'gym'::text NOT NULL,
   started_at timestamp with time zone NOT NULL,
   done integer[] DEFAULT '{}'::integer[] NOT NULL,
+  -- false — надгробие: тренировку отменили или завершили. Строку НЕ удаляем:
+  -- пустота на сервере неотличима от «тут никогда ничего не было», и второе
+  -- устройство заливало свою локальную копию обратно, воскрешая отменённое.
+  active boolean DEFAULT true NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 

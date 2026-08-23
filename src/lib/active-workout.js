@@ -57,6 +57,19 @@ export function startActiveWorkout(programId, day, place = 'gym') {
 }
 
 /**
+ * Обновить отметку времени локальной сессии.
+ *
+ * Нужна для сведения: сервер сравнивает «когда тронули здесь» с «когда
+ * отменили там». Без обновления на каждой галочке отметка застывала в момент
+ * старта, и свежая работа проигрывала старому надгробию.
+ */
+export function touchActiveWorkout() {
+  const cur = getActiveWorkout()
+  if (!cur) return
+  localSet(KEY, JSON.stringify({ ...cur, updatedAt: new Date().toISOString() }))
+}
+
+/**
  * Заменить активную сессию целиком — используется при сведении с сервером,
  * когда тренировка была начата на другом устройстве.
  */
