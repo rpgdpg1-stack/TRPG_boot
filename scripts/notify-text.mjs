@@ -20,8 +20,12 @@ const CATEGORY_ORDER = ['strength', 'pool', 'cardio', 'stretch']
 
 const MONTHS_NOMINATIVE = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-const MONTHS_GENITIVE = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
+// Предложный — для оборота «больше, чем в июле».
+const MONTHS_PREP = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
   'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре']
+// Родительный — для заголовка «Итоги августа».
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
 /** «1 тренировка» / «3 тренировки» / «12 тренировок». */
 export function pluralWorkouts(n) {
@@ -83,7 +87,7 @@ export function weeklyDigest({ totalCount, totalMinutes, breakdown }) {
   const head = time
     ? `${pluralWorkouts(totalCount)} · ${time}`
     : pluralWorkouts(totalCount)
-  const lines = ['<b>Неделя закрыта</b>', '', head]
+  const lines = ['<b>Итоги недели</b>', '', head]
   const detail = breakdownLine(breakdown, totalCount)
   if (detail) lines.push(detail)
   return lines.join('\n')
@@ -110,7 +114,9 @@ export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown,
     ? `${pluralWorkouts(totalCount)} · ${time}`
     : pluralWorkouts(totalCount)
 
-  const lines = [`<b>${MONTHS_NOMINATIVE[monthIndex]}</b>`, '', head]
+  // «Итоги августа», а не просто «Август»: все три сводки построены одинаково,
+  // и в ленте они читаются как один ряд, а не как три разные рассылки.
+  const lines = [`<b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '', head]
   const detail = breakdownLine(breakdown, totalCount)
   if (detail) lines.push(detail)
 
@@ -121,7 +127,7 @@ export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown,
   const prevMonthIndex = (monthIndex + 11) % 12
   lines.push('')
   if (prevCount > 0 && diff > 0) {
-    lines.push(`На ${pluralWorkouts(diff)} больше, чем в ${MONTHS_GENITIVE[prevMonthIndex]}.`)
+    lines.push(`На ${pluralWorkouts(diff)} больше, чем в ${MONTHS_PREP[prevMonthIndex]}.`)
   } else {
     lines.push(averageLine(totalCount, daysInMonth))
   }
@@ -151,7 +157,7 @@ export function yearlyDigest({
     ? `${pluralWorkouts(totalCount)} · ${time}`
     : pluralWorkouts(totalCount)
 
-  const lines = [`<b>${year} год</b>`, '', head]
+  const lines = [`<b>Итоги ${year} года</b>`, '', head]
   const detail = breakdownLine(breakdown, totalCount)
   if (detail) lines.push(detail)
 

@@ -54,16 +54,32 @@ const IMAGES = {
   monthly: '',      // notify-monthly.png
   yearly: '',       // notify-yearly.png
   owner: '',        // notify-owner.png
-  nudgeWeek: '',    // notify-nudge-week.png    — неделя
-  nudge2w: '',      // notify-nudge-2w.png      — две и три недели
-  nudgeMonth: '',   // notify-nudge-month.png   — месяц, два, три месяца
-  nudgeLong: ''     // notify-nudge-long.png    — давно
+
+  // У пинков заголовок написан на самой картинке, поэтому файл нужен под
+  // КАЖДЫЙ срок. Иллюстрация при этом переиспользуется: кроссовки, диван,
+  // дверь и чехол — четыре рисунка на семь файлов, меняется только надпись.
+  nudgeWeek: '',    // notify-nudge-week.png   — Неделя без тренировок
+  nudge2w: '',      // notify-nudge-2w.png     — Две недели
+  nudge3w: '',      // notify-nudge-3w.png     — Три недели
+  nudgeMonth: '',   // notify-nudge-month.png  — Месяц
+  nudge2m: '',      // notify-nudge-2m.png     — Два месяца
+  nudge3m: '',      // notify-nudge-3m.png     — Три месяца
+  nudgeLong: ''     // notify-nudge-long.png   — Давно
 }
 
-/** Какая картинка полагается пинку по длине паузы. */
+/**
+ * Картинка пинка по длине паузы.
+ *
+ * Пороги ровно те же, что у заголовков в notify-text.mjs. Разъедутся —
+ * человек получит «Два месяца без тренировок» с картинкой, на которой
+ * написано «Месяц», и это будет выглядеть как брак.
+ */
 function nudgeImage(daysSince) {
   if (daysSince >= 112) return IMAGES.nudgeLong
+  if (daysSince >= 84) return IMAGES.nudge3m
+  if (daysSince >= 56) return IMAGES.nudge2m
   if (daysSince >= 28) return IMAGES.nudgeMonth
+  if (daysSince >= 21) return IMAGES.nudge3w
   if (daysSince >= 14) return IMAGES.nudge2w
   return IMAGES.nudgeWeek
 }
