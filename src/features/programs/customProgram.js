@@ -15,6 +15,7 @@ import { getCurrentUser } from '../../lib/auth'
 import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet } from '../../utils/storage'
+import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
@@ -237,8 +238,20 @@ export async function saveFriendProgram(token) {
  * Кэшируем в памяти модуля на время сессии.
  */
 let _catalog = null
+const CATALOG_PCACHE_KEY = 'constructor-catalog'
+
 export async function loadExerciseCatalog() {
   if (_catalog) return _catalog
+
+  // Раньше каталог жил только в переменной модуля и пропадал при каждой
+  // перезагрузке: конструктор открывался с пустым списком и подгружал всё
+  // заново. Каталог меняется редко — диску его можно доверить.
+  const fromDisk = pcacheGet(CATALOG_PCACHE_KEY)
+  if (fromDisk?.length) {
+    _catalog = fromDisk
+    return _catalog
+  }
+
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, muscle_group, sub_group, type, preview_url, priority')
@@ -248,5 +261,6 @@ export async function loadExerciseCatalog() {
     return []
   }
   _catalog = data || []
+  if (_catalog.length) pcacheSet(CATALOG_PCACHE_KEY, _catalog)
   return _catalog
 }

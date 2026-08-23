@@ -12,6 +12,7 @@ import { isCustomExercise, loadExercisesByIds } from '../programs/userExercises'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
+import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
 import { isOnline } from '../../lib/network-status'
 import { debug } from '../../lib/debug'
 import {
@@ -21,13 +22,30 @@ import {
 } from '../../lib/offline-queue'
 import { goal, GOALS } from '../../lib/metrika'
 
+/**
+ * Упражнения подгруппы — для экрана замены.
+ *
+ * Сервер отдаёт каталог целиком, фильтр на клиенте, и раньше это повторялось
+ * на КАЖДЫЙ заход в замену. Теперь каталог кешируется: в памяти на час и на
+ * диске на неделю. Каталог меняется редко, а замену чаще всего открывают
+ * в зале, где сети может не быть вовсе.
+ */
+const CATALOG_KEY = 'exercises:all'
+
 export async function getExercisesForSubgroup(subGroup, type) {
+  const cached = cacheGet(CATALOG_KEY) || pcacheGet(CATALOG_KEY)
+  if (cached) {
+    return cached.filter(e => e.sub_group === subGroup && e.type === type)
+  }
+
   try {
     const { data, error } = await supabase.rpc('api_get_all_exercises')
     if (!error && data) {
+      cacheSet(CATALOG_KEY, data, TTL.LONG)
+      pcacheSet(CATALOG_KEY, data)
       return data.filter(e => e.sub_group === subGroup && e.type === type)
     }
-  } catch (e) {}
+  } catch (e) { /* падаем на прямой запрос ниже */ }
 
   const { data, error } = await supabase
     .from('exercises')
