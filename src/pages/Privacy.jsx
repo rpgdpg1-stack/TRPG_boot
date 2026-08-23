@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { haptic, backButton, lockVerticalSwipes } from '../lib/telegram'
+import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getPrivacy, savePrivacy } from '../lib/privacy'
 import { FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import ScreenTitle from '../components/ScreenTitle'
+import { FormCard, ToggleRow } from '../components/FormControls'
 
 /**
  * Страница «Приватность» — что видишь ты и твои друзья. Настроил один раз и вышел
@@ -20,7 +21,7 @@ export default function Privacy() {
   }, [navigate])
 
   const toggle = (key) => {
-    haptic.selection()
+    // Отклик даёт сам ToggleRow — второй вызов здесь бил бы дважды.
     const next = { ...privacy, [key]: !privacy[key] }
     setPrivacy(next)
     savePrivacy(next)
@@ -32,7 +33,7 @@ export default function Privacy() {
 
       <p style={styles.intro}>Выбери, что видно в твоём профиле — тебе и друзьям.</p>
 
-      <div style={styles.groupCard}>
+      <FormCard>
         <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
         <ToggleRow label="Статистика" hint="Тренировки и часы за текущий месяц" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
         <ToggleRow label="Любимые упражнения" hint={`Твой топ-${FAVORITE_LIMIT}`} value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
@@ -41,30 +42,7 @@ export default function Privacy() {
         {privacy.showFavorites && (
           <ToggleRow label="Показывать веса" hint="Рабочие веса в списке любимых" value={privacy.showWeights} onToggle={() => toggle('showWeights')} divider nested />
         )}
-      </div>
-    </div>
-  )
-}
-
-function ToggleRow({ label, hint, value, onToggle, divider = false, nested = false }) {
-  return (
-    <div style={{
-      ...styles.toggleRow,
-      borderTop: divider ? '1px solid var(--border-hairline)' : 'none',
-      // Вложенный под-тумблер (веса под «Любимыми») — левый отступ + приглушённый фон.
-      ...(nested ? { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' } : {})
-    }}>
-      <div style={styles.rowContent}>
-        <div style={{ ...styles.rowTitle, ...(nested ? { fontSize: 'var(--text-button-size)' } : {}) }}>{label}</div>
-        <div style={styles.rowSubtitle}>{hint}</div>
-      </div>
-      <button
-        onClick={onToggle}
-        aria-label={label}
-        style={{ ...styles.switch, background: value ? 'var(--color-primary)' : 'var(--layer-3)' }}
-      >
-        <span style={{ ...styles.knob, transform: value ? 'translateX(18px)' : 'translateX(0)' }} />
-      </button>
+      </FormCard>
     </div>
   )
 }
@@ -75,21 +53,5 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
     margin: '0 auto var(--space-5)', maxWidth: '300px'
-  },
-  groupCard: {
-    display: 'flex', flexDirection: 'column', background: 'var(--color-card)',
-    borderRadius: 'var(--radius-card)', overflow: 'hidden'
-  },
-  toggleRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', minHeight: '64px' },
-  rowContent: { flex: 1, minWidth: 0 },
-  rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-05)' },
-  rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
-  switch: {
-    position: 'relative', flexShrink: 0, width: '42px', height: '24px', borderRadius: 'var(--radius-small)',
-    border: 'none', padding: 0, cursor: 'pointer', transition: 'background 0.2s ease', WebkitTapHighlightColor: 'transparent'
-  },
-  knob: {
-    position: 'absolute', top: '2px', left: '2px', width: '20px', height: '20px', borderRadius: '50%',
-    background: 'var(--color-text)', transition: 'transform 0.2s var(--ease-ios)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
   }
 }

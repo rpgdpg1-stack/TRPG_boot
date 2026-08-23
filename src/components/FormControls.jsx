@@ -19,11 +19,11 @@ export function FormCard({ children, style }) {
 }
 
 /** Строка с переключателем. */
-export function ToggleRow({ label, hint, value, onToggle, divider }) {
+export function ToggleRow({ label, hint, value, onToggle, divider, nested = false }) {
   return (
-    <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
+    <div style={{ ...s.row, ...(divider ? s.divider : null), ...(nested ? s.rowNested : null) }}>
       <div style={s.rowContent}>
-        <div style={s.rowTitle}>{label}</div>
+        <div style={{ ...s.rowTitle, ...(nested ? s.rowTitleNested : null) }}>{label}</div>
         {hint && <div style={s.rowHint}>{hint}</div>}
       </div>
       <button
@@ -131,6 +131,10 @@ const s = {
     padding: 'var(--space-4)', width: '100%'
   },
   rowButton: { cursor: 'pointer', WebkitTapHighlightColor: 'transparent' },
+  // Вложенный под-тумблер (например, «веса» под «Любимыми упражнениями»):
+  // сдвиг вправо и чуть приглушённый фон показывают подчинённость.
+  rowNested: { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' },
+  rowTitleNested: { fontSize: 'var(--text-button-size)' },
   divider: { borderTop: '1px solid var(--color-border)' },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: {
