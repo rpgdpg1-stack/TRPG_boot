@@ -50,37 +50,24 @@ const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
  * ничего не ломает, просто картинки не будет.
  */
 const IMAGES = {
-  weekly: '',       // notify-weekly.png
-  monthly: '',      // notify-monthly.png
-  yearly: '',       // notify-yearly.png
-  owner: '',        // notify-owner.png
+  weekly: '',       // notify-weekly    — итоги недели
+  monthly: '',      // notify-monthly   — итоги месяца
+  yearly: '',       // notify-yearly    — итоги года
+  owner: '',        // notify-owner     — отчёт владельцу
 
-  // У пинков заголовок написан на самой картинке, поэтому файл нужен под
-  // КАЖДЫЙ срок. Иллюстрация при этом переиспользуется: кроссовки, диван,
-  // дверь и чехол — четыре рисунка на семь файлов, меняется только надпись.
-  nudgeWeek: '',    // notify-nudge-week.png   — Неделя без тренировок
-  nudge2w: '',      // notify-nudge-2w.png     — Две недели
-  nudge3w: '',      // notify-nudge-3w.png     — Три недели
-  nudgeMonth: '',   // notify-nudge-month.png  — Месяц
-  nudge2m: '',      // notify-nudge-2m.png     — Два месяца
-  nudge3m: '',      // notify-nudge-3m.png     — Три месяца
-  nudgeLong: ''     // notify-nudge-long.png   — Давно
+  // У пинков картинка привязана к МАСШТАБУ паузы, а не к точному сроку:
+  // текста на ней нет, и «неделя / две / три» отличаются только заголовком
+  // сообщения. Три файла вместо семи — и ни одного шанса, что картинка
+  // разойдётся с текстом.
+  nudgeWeek: '',    // notify-nudge-week  — неделя, две, три
+  nudgeMonth: '',   // notify-nudge-month — месяц, два, три месяца
+  nudgeLong: ''     // notify-nudge-long  — давно
 }
 
-/**
- * Картинка пинка по длине паузы.
- *
- * Пороги ровно те же, что у заголовков в notify-text.mjs. Разъедутся —
- * человек получит «Два месяца без тренировок» с картинкой, на которой
- * написано «Месяц», и это будет выглядеть как брак.
- */
+/** Картинка пинка по масштабу паузы: недели → месяцы → давно. */
 function nudgeImage(daysSince) {
   if (daysSince >= 112) return IMAGES.nudgeLong
-  if (daysSince >= 84) return IMAGES.nudge3m
-  if (daysSince >= 56) return IMAGES.nudge2m
   if (daysSince >= 28) return IMAGES.nudgeMonth
-  if (daysSince >= 21) return IMAGES.nudge3w
-  if (daysSince >= 14) return IMAGES.nudge2w
   return IMAGES.nudgeWeek
 }
 
