@@ -1,14 +1,13 @@
-import UiIcon from './UiIcon'
-import ClockIcon from './ClockIcon'
-import { formatHours, formatMeters, CATEGORY_ORDER } from '../utils/history'
+import MuscleIcon from './MuscleIcon'
+import { formatStatTime, formatMeters, CATEGORY_ORDER } from '../utils/history'
 import SectionBadge from './SectionBadge'
 
-// Иконки показателей — одного размера (мускул / часы).
+// Бицепс главного показателя.
 const ICON = 20
 
 /**
  * Сводка тренировок за период.
- *   Сверху — общие показатели (Тренировок · Время) по ВСЕМ типам.
+ *   Сверху — главный показатель (`WorkoutsTotal`) по ВСЕМ типам.
  *   Тонкий разделитель.
  *   Ниже — список видов активности, которые БЫЛИ в периоде: прямоугольный бейдж
  *   (чёрная иконка на цветном фоне, единый вид с календарём) + название + число
@@ -33,7 +32,6 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
       <div>
         <div style={styles.totals}>
           <span style={styles.skTotal} />
-          <span style={styles.skTotal} />
         </div>
         <div style={styles.divider} aria-hidden="true" />
         <div style={styles.list}>
@@ -56,19 +54,9 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
           отрезок» читается один раз сверху. */}
       {periodLabel && <div style={styles.periodLabel}>{periodLabel}</div>}
 
-      {/* Общие показатели периода. Единицы («трен», «ч») стоят рядом с числом —
-          тот же вид, что в карточке на главной. */}
+      {/* Главный показатель периода — тот же, что в карточке на главной. */}
       <div style={styles.totals}>
-        <Total
-          icon={<UiIcon name="muscles-line" size={ICON} color="var(--color-text-secondary)" />}
-          value={String(summary.count)}
-          unit="трен"
-        />
-        <Total
-          icon={<span style={styles.clock}><ClockIcon size={ICON} /></span>}
-          value={formatHours(summary.minutes)}
-          splitUnit
-        />
+        <WorkoutsTotal count={summary.count} minutes={summary.minutes} iconSize={ICON} />
       </div>
 
       <div style={styles.divider} aria-hidden="true" />
@@ -138,21 +126,25 @@ export function Distance({ meters, color, inherit = false }) {
 }
 
 /**
- * Показатель: иконка + цифра, снизу подпись словом.
- * `splitUnit` — у значения есть единица («3,7 ч»): цифра акцентом, единица серая
- * и тоньше (единицы вообще никогда не красим акцентом).
+ * Главный показатель статистики — ОДИН на все места, где она показана: карточка
+ * на главной, экран Истории, модалка статистики в своём профиле и в профиле друга.
+ *
+ * Вид: залитый бежевый бицепс + число тренировок + слово «Тренировок» белым, и
+ * следом время в скобках серым. Отдельной иконки часов больше нет: время — не
+ * второй показатель наравне, а уточнение к тренировкам, поэтому оно и стоит в
+ * скобках тихим серым сразу за словом.
+ *
+ * `flexWrap` — предохранитель для больших периодов («Всё»): длинная строка
+ * («150 Тренировок (200 ч 00 мин)») в узкой карточке главной переносит скобки на
+ * вторую строку, а не вылезает за край.
  */
-// Показатель: иконка + число акцентом + тихая единица. Подписи снизу
-// («Тренировок»/«Время») убраны — единица рядом с числом говорит то же самое
-// и совпадает с карточкой на главной.
-function Total({ icon, value, unit, splitUnit = false }) {
-  const i = splitUnit ? String(value).lastIndexOf(' ') : -1
-  const num = i > 0 ? String(value).slice(0, i) : value
-  const u = i > 0 ? String(value).slice(i + 1) : unit
+export function WorkoutsTotal({ count, minutes, iconSize = ICON }) {
   return (
     <span style={styles.totalTop}>
-      {icon}
-      <MetricValue num={num} unit={u} />
+      <MuscleIcon size={iconSize} filled />
+      <span style={styles.totalValue}>{count}</span>
+      <span style={styles.totalWord}>Тренировок</span>
+      <span style={styles.totalTime}>({formatStatTime(minutes)})</span>
     </span>
   )
 }
@@ -165,8 +157,20 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center',
     marginBottom: 'var(--space-2)'
   },
-  totalTop: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)' },
-  clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
+  totalTop: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    flexWrap: 'wrap', gap: 'var(--space-1)', rowGap: 'var(--space-05)', minWidth: 0
+  },
+  // Слово «Тренировок» — белым: это подпись главного показателя, а не единица.
+  totalWord: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text)', whiteSpace: 'nowrap'
+  },
+  // Время в скобках — целиком серое (и скобки, и цифры, и «ч»/«мин»): доп. инфа.
+  totalTime: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  },
   // Цифра — акцентная зелёная (главное в показателе).
   totalValue: {
     fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)',
@@ -204,6 +208,6 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--space-1) 0', lineHeight: 1.4
   },
   // Скелетоны (первый заход без кеша).
-  skTotal: { width: '64px', height: '34px', borderRadius: 'var(--radius-xs)', background: 'var(--highlight-recent)' },
+  skTotal: { width: '180px', height: '34px', borderRadius: 'var(--radius-xs)', background: 'var(--highlight-recent)' },
   skRow: { height: '22px', borderRadius: 'var(--radius-xs)', background: 'var(--layer-1)' }
 }

@@ -2,21 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
-import { summarizeWorkouts, formatHours, periodShortLabel, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { summarizeWorkouts, periodShortLabel, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getFavoritesSync, getFavoriteExercises, FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { EVENTS, on } from '../lib/events'
 import { getHomeStatsPeriod, setHomeStatsPeriod } from '../lib/history-view'
 import { periodOptions } from './PeriodSwitcher'
-import ClockIcon from './ClockIcon'
-import UiIcon from './UiIcon'
+import { WorkoutsTotal } from './HistoryStats'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
 import ChevronIcon from './ChevronIcon'
 import { useOutsideClose } from '../lib/use-outside-close'
 
 /**
- * Две карточки-входа на главной: **Статистика** (два показателя — тренировки и
- * время за выбранный период) и **Любимые**.
+ * Две карточки-входа на главной: **Статистика** (главный показатель — тренировки
+ * за выбранный период, время к ним в скобках) и **Любимые**.
  *
  * Период («Неделя · Месяц · Год · Всё») по умолчанию ГОД, выбор помнится локально.
  * Меняется ВИДИМЫМ селектором справа в строке заголовка: «Год ▾», тап раскрывает
@@ -129,15 +128,7 @@ export default function HomeCards() {
             )}
           </span>
         }
-        value={
-          <>
-            <span style={styles.statIcon}><UiIcon name="muscles-line" size={16} color="var(--color-text-secondary)" /></span>
-            <Value num={sum.count} unit="трен" />
-            <span style={styles.valueGap} />
-            <span style={styles.clock}><ClockIcon size={16} /></span>
-            <Value num={formatHours(sum.minutes).replace(' ч', '')} unit="ч" />
-          </>
-        }
+        value={<WorkoutsTotal count={sum.count} minutes={sum.minutes} iconSize={18} />}
         onClick={openStats}
       />
       <Card
@@ -278,10 +269,6 @@ const styles = {
   valueMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)', minWidth: 0 },
   valueNum: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-title-size)', fontWeight: 800, lineHeight: 1, color: 'var(--color-primary)' },
   valueUnit: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)' },
-  // Зазор между двумя показателями статистики; серые иконки перед каждым.
-  valueGap: { width: '12px', display: 'inline-block' },
-  statIcon: { display: 'inline-flex' },
-  clock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   // Строка периода: подпись слева, селектор справа.
   periodRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   // Подпись периода — тем же тихим серым, что иконки.
