@@ -33,12 +33,14 @@ const BOT_TOKEN = process.env.BOT_TOKEN
 const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID
 const DB_URL = process.env.SUPABASE_DB_URL
 
-if (!['weekly', 'monthly', 'yearly', 'nudge', 'owner', 'test'].includes(KIND)) {
-  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | owner | test')
+if (!['weekly', 'monthly', 'yearly', 'nudge', 'owner', 'test', 'rich-probe'].includes(KIND)) {
+  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | owner | test | rich-probe')
   process.exit(1)
 }
 // Образцам база не нужна — данные в них выдуманные.
-if (!DB_URL && KIND !== 'test') { console.error('Нет SUPABASE_DB_URL'); process.exit(1) }
+if (!DB_URL && KIND !== 'test' && KIND !== 'rich-probe') {
+  console.error('Нет SUPABASE_DB_URL'); process.exit(1)
+}
 if (!BOT_TOKEN && !DRY_RUN) { console.error('Нет BOT_TOKEN'); process.exit(1) }
 
 const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
@@ -366,7 +368,62 @@ async function sendSamples(bot) {
   console.log(`\nОтправлено образцов: ${samples.length}`)
 }
 
+/**
+ * Пробник структурных сообщений.
+ *
+ * Документация не описывает, как выглядит простой текст внутри блока, и
+ * гадать вслепую — терять по прогону на догадку. Пробник шлёт несколько
+ * правдоподобных форм подряд и показывает, что Telegram ответил на каждую.
+ * Одного запуска хватает, чтобы узнать правду и больше не угадывать.
+ */
+async function richProbe() {
+  if (!ONLY) {
+    console.error('Для rich-probe обязателен NOTIFY_ONLY')
+    process.exit(1)
+  }
+
+  const variants = [
+    ['1. блок с текстом-объектом {type:plain}',
+      { blocks: [{ type: 'paragraph', text: { type: 'plain', text: 'Проба 1' } }] }],
+
+    ['2. блок с текстом-строкой',
+      { blocks: [{ type: 'paragraph', text: 'Проба 2' }] }],
+
+    ['3. только text, без блоков',
+      { text: 'Проба 3', parse_mode: 'HTML' }],
+
+    ['4. заголовок + разделитель',
+      { blocks: [
+        { type: 'section_heading', text: { type: 'plain', text: 'Проба 4' } },
+        { type: 'divider' }
+      ] }],
+
+    ['5. текст полем content',
+      { blocks: [{ type: 'paragraph', content: { type: 'plain', text: 'Проба 5' } }] }],
+
+    ['6. текст массивом',
+      { blocks: [{ type: 'paragraph', text: [{ type: 'plain', text: 'Проба 6' }] }] }]
+  ]
+
+  for (const [label, richMessage] of variants) {
+    const res = await fetch(api('sendRichMessage'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: ONLY, rich_message: richMessage })
+    })
+    const data = await res.json()
+    console.log(`${data.ok ? '✅' : '❌'} ${label}`)
+    if (!data.ok) console.log(`   ${data.description || JSON.stringify(data)}`)
+    await sleep(1300)
+  }
+}
+
 async function main() {
+  if (KIND === 'rich-probe') {
+    await richProbe()
+    return
+  }
+
   // Образцы базу не трогают: данные в них выдуманные.
   if (KIND === 'test') {
     await sendSamples(await getBotUsername())
