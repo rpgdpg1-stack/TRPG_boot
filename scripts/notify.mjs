@@ -382,27 +382,26 @@ async function richProbe() {
     process.exit(1)
   }
 
+  // Первый пробник выяснил главное: текст внутри блока — ПРОСТАЯ СТРОКА,
+  // а не объект. И что имена типов блоков у меня были выдуманные:
+  // «section_heading» Telegram не знает. Теперь щупаем сами имена.
+  const P = (t) => ({ type: 'paragraph', text: t })
+
   const variants = [
-    ['1. блок с текстом-объектом {type:plain}',
-      { blocks: [{ type: 'paragraph', text: { type: 'plain', text: 'Проба 1' } }] }],
-
-    ['2. блок с текстом-строкой',
-      { blocks: [{ type: 'paragraph', text: 'Проба 2' }] }],
-
-    ['3. только text, без блоков',
-      { text: 'Проба 3', parse_mode: 'HTML' }],
-
-    ['4. заголовок + разделитель',
-      { blocks: [
-        { type: 'section_heading', text: { type: 'plain', text: 'Проба 4' } },
-        { type: 'divider' }
-      ] }],
-
-    ['5. текст полем content',
-      { blocks: [{ type: 'paragraph', content: { type: 'plain', text: 'Проба 5' } }] }],
-
-    ['6. текст массивом',
-      { blocks: [{ type: 'paragraph', text: [{ type: 'plain', text: 'Проба 6' }] }] }]
+    ['heading',        { blocks: [{ type: 'heading', text: 'Заголовок' }] }],
+    ['header',         { blocks: [{ type: 'header', text: 'Заголовок' }] }],
+    ['title',          { blocks: [{ type: 'title', text: 'Заголовок' }] }],
+    ['divider',        { blocks: [P('до'), { type: 'divider' }, P('после')] }],
+    ['separator',      { blocks: [P('до'), { type: 'separator' }, P('после')] }],
+    ['details',        { blocks: [{ type: 'details', title: 'Подробнее', blocks: [P('внутри')] }] }],
+    ['collapsible',    { blocks: [{ type: 'collapsible', title: 'Подробнее', blocks: [P('внутри')] }] }],
+    ['list',           { blocks: [{ type: 'list', items: [{ text: 'раз' }, { text: 'два' }] }] }],
+    ['blockquote',     { blocks: [{ type: 'blockquote', text: 'цитата' }] }],
+    ['preformatted',   { blocks: [{ type: 'preformatted', text: 'моно' }] }],
+    ['footer',         { blocks: [{ type: 'footer', text: 'подпись' }] }],
+    ['текст: bold',    { blocks: [P({ type: 'bold', text: 'жирный' })] }],
+    ['текст: spoiler', { blocks: [P({ type: 'spoiler', text: 'секрет' })] }],
+    ['текст: массив',  { blocks: [P(['обычный ', { type: 'bold', text: 'жирный' }])] }]
   ]
 
   for (const [label, richMessage] of variants) {
