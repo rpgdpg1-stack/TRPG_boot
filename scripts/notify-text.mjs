@@ -22,6 +22,17 @@ const CATEGORY_FORMS = {
   stretch: ['Растяжка', 'Растяжки', 'Растяжек']
 }
 
+/**
+ * Слово «Тренировка» при ДРОБНОМ числе: «1,6 Тренировки», «2,4 Тренировки».
+ *
+ * Дробное всегда требует родительного единственного — «1,6 Тренировки»,
+ * а не «Тренировок». Целое отдаём обычному склонению.
+ */
+function categoryFreeWord(n) {
+  if (Number.isInteger(Number(n))) return pluralWorkouts(Number(n)).replace(/^\d+\s/, '')
+  return 'Тренировки'
+}
+
 function categoryWord(key, count) {
   const forms = CATEGORY_FORMS[key]
   if (!forms) return ''
@@ -270,41 +281,47 @@ function pluralPeople(n) {
  * Владельческий отчёт за месяц. Приходит только владельцу, пользователи его
  * не видят.
  *
- * Раз в месяц, а не в неделю: на наших объёмах недельные числа скачут от одного
- * человека, и в них видно шум, а не тенденцию. Разбивка по неделям внутри
+ * Собран по тем же правилам, что и пользовательские сводки: заголовок «Отчёт
+ * за июль» в один ряд с «Итоги июля», числа с заглавной, виды склоняются.
+ * Отчёт читают вперемешку со сводками, и разнобой в цифрах заставлял бы
+ * каждый раз перестраиваться.
+ *
+ * Раз в месяц, а не в неделю: на наших объёмах недельные числа скачут от
+ * одного человека — виден шум, а не тенденция. Разбивка по неделям внутри
  * месяца показывает ровность, и её достаточно.
  */
 export function ownerReport(r) {
-  const CATEGORY_TITLE_LOCAL = { strength: 'силовых', pool: 'плавание', cardio: 'кардио', stretch: 'растяжка' }
-
-  const lines = [`<b>Отчёт · ${MONTHS_NOMINATIVE[r.monthIndex]}</b>`, '']
+  // «за июль», а не «за июля»: после предлога «за» винительный падеж.
+  // Родительный (MONTHS_GEN) годится только для «Итоги июля».
+  const month = MONTHS_NOMINATIVE[r.monthIndex].toLowerCase()
+  const lines = [`<b>Отчёт за ${month}</b>`, '']
 
   // Северный показатель первым: всё остальное — расшифровка к нему.
-  // Дробное число по-русски пишется через запятую.
   const perWeek = String(r.perActiveWeek).replace('.', ',')
-  lines.push(`<b>${perWeek}</b> тренировки на активного в неделю`)
+  lines.push(`${E.workouts} <b>${perWeek} ${categoryFreeWord(r.perActiveWeek)}</b> на активного в неделю`)
   lines.push('')
 
-  lines.push(`Людей всего: ${r.people}` + (r.newPeople ? ` (+${r.newPeople} за месяц)` : ''))
+  lines.push(`Людей: ${r.people}` + (r.newPeople ? ` (+${r.newPeople} за месяц)` : ''))
   lines.push(`Тренировались: ${pluralPeople(r.active)}`)
   lines.push(`Спят: ${pluralPeople(r.sleeping)}`)
   lines.push('')
 
-  const types = Object.entries(r.byType || {})
-    .map(([k, n]) => `${CATEGORY_TITLE_LOCAL[k] || k} ${n}`)
-    .join(' · ')
-  lines.push(`Тренировок: ${r.workouts}` + (types ? ` — ${types}` : ''))
+  lines.push(`${E.workouts} <b>${pluralWorkouts(r.workouts)}</b> за месяц`)
+  for (const [key, n] of Object.entries(r.byType || {})) {
+    if (!CATEGORY_FORMS[key]) continue
+    lines.push(`${CATEGORY_EMOJI[key]} ${n} ${categoryWord(key, n)}`)
+  }
 
   if (r.weeks?.length) {
     lines.push('')
     lines.push('<b>По неделям</b>')
     for (const w of r.weeks) {
-      lines.push(`${w.from} — ${w.workouts} трен., ${w.people} чел.`)
+      lines.push(`${w.from} — ${pluralWorkouts(w.workouts)}, ${pluralPeople(w.people)}`)
     }
   }
 
-  // Пинки показываем, только если они вообще уходили: строка «0 из 0»
-  // в отчёте — мусор, а не информация.
+  // Пинки показываем, только если они вообще уходили: строка «0 из 0» —
+  // мусор, а не информация.
   if (r.nudged > 0) {
     lines.push('')
     lines.push('<b>Пинки</b>')

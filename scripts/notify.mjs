@@ -91,7 +91,21 @@ async function getBotUsername() {
  * сбоем: человек имеет право закрыть дверь, и падать из-за этого вся рассылка
  * не должна.
  */
+/**
+ * Отправка с общей страховкой: любое исключение внутри превращается в отказ
+ * ОДНОГО сообщения, а не в падение всей рассылки. Пятьсот человек не должны
+ * остаться без напоминания из-за одного споткнувшегося запроса.
+ */
 async function send(chatId, text, buttons, photo) {
+  try {
+    return await sendInner(chatId, text, buttons, photo)
+  } catch (e) {
+    console.warn(`  ${chatId}: сбой отправки — ${e?.cause?.code || e?.message}`)
+    return 'error'
+  }
+}
+
+async function sendInner(chatId, text, buttons, photo) {
   // Каждая кнопка — своей строкой: названия программ бывают длинными, и в один
   // ряд они превращаются в обрезанную кашу.
   const keyboard = buttons.map((b) => [b])
@@ -166,18 +180,38 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
  */
 const photoCache = new Map()
 
+/**
+ * Скачать картинку. Не докачалась — вернуть null, но НЕ бросить исключение.
+ *
+ * Хранилище иногда отвечает не сразу, и один такой случай уронил всю рассылку:
+ * fetch бросил ConnectTimeoutError, исключение прошло насквозь, и два
+ * последних сообщения из девяти не ушли вовсе. Картинка — украшение,
+ * из-за которого нельзя терять сообщение.
+ */
 async function loadPhoto(url) {
   if (photoCache.has(url)) return photoCache.get(url)
-  const res = await fetch(url)
-  if (!res.ok) {
-    console.warn(`  картинку не скачать: ${url} → ${res.status}`)
-    photoCache.set(url, null)
-    return null
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      // Свой таймаут короче стандартного: ждать десять секунд ради картинки
+      // незачем, а вторая попытка обычно проходит.
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
+      if (!res.ok) {
+        console.warn(`  картинку не скачать: ${res.status}`)
+        break
+      }
+      const bytes = await res.arrayBuffer()
+      const blob = new Blob([bytes], { type: res.headers.get('content-type') || 'image/jpeg' })
+      photoCache.set(url, blob)
+      return blob
+    } catch (e) {
+      console.warn(`  картинка не докачалась (попытка ${attempt}): ${e?.cause?.code || e?.message}`)
+      if (attempt === 1) await sleep(800)
+    }
   }
-  const bytes = await res.arrayBuffer()
-  const blob = new Blob([bytes], { type: res.headers.get('content-type') || 'image/jpeg' })
-  photoCache.set(url, blob)
-  return blob
+
+  photoCache.set(url, null)
+  return null
 }
 
 /**
