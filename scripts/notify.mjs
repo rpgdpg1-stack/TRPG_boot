@@ -165,9 +165,17 @@ async function sendInner(chatId, text, buttons, photo) {
 
   if (data.ok) return 'sent'
 
-  const blocked = data.error_code === 403
-  console.warn(`  ${chatId}: ${blocked ? 'бот заблокирован' : JSON.stringify(data)}`)
-  return blocked ? 'blocked' : 'error'
+  // «Заблокировал» и «чата нет» — нормальные исходы, а не поломка. Человек
+  // вправе закрыть дверь, а несуществующий чат бывает у служебных записей
+  // (тестовый аккаунт с выдуманным telegram_id). Считать это ошибкой значит
+  // красить ежедневную задачу в красное на ровном месте — и однажды перестать
+  // обращать внимание на настоящую поломку.
+  const desc = String(data.description || '')
+  const unreachable = data.error_code === 403
+    || (data.error_code === 400 && /chat not found|user not found/i.test(desc))
+
+  console.warn(`  ${chatId}: ${unreachable ? `недоступен (${desc})` : JSON.stringify(data)}`)
+  return unreachable ? 'blocked' : 'error'
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -498,7 +506,7 @@ async function main() {
     await client.end()
   }
 
-  console.log(`\nИтог: отправлено ${stats.sent}, заблокировали ${stats.blocked}, ` +
+  console.log(`\nИтог: отправлено ${stats.sent}, недоступны ${stats.blocked}, ` +
               `ошибок ${stats.error}, пропущено ${stats.skipped}` +
               (DRY_RUN ? `, показано вхолостую ${stats.dry}` : ''))
 

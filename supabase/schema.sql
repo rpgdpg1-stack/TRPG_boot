@@ -1880,11 +1880,10 @@ AS $$
   JOIN last_w lw ON lw.user_id = u.id
   LEFT JOIN grouped g ON g.user_id = u.id
   WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
-    AND NOT EXISTS (SELECT 1 FROM public.workouts w2 WHERE w2.user_id = u.id
-      AND w2.finished_at >= timezone('Europe/Moscow', b.this_week - interval '7 days')
-      AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
-    AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
-      AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
+    -- Проверок про календарную неделю тут НЕТ намеренно: days_since >= 7 само
+    -- по себе означает, что тренировок не было ни вчера, ни на этой неделе.
+    -- Прежние две проверки имели смысл только в понедельник и в остальные дни
+    -- молча сужали выборку.
     -- Ступени: неделя → месяц → три месяца, дальше тишина навсегда. Каждая
     -- срабатывает ровно один раз: берём самый большой перешагнутый порог и
     -- шлём, только если после него ещё не писали. Отсчёт от последней
