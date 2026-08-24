@@ -19,6 +19,7 @@ import BodyMeasurements from './pages/BodyMeasurements'
 import Goal from './pages/Goal'
 import Notifications from './pages/Notifications'
 import About from './pages/About'
+import ModalDemo from './pages/ModalDemo'
 import Support from './pages/Support'
 import Feedback from './pages/Feedback'
 import Gift from './pages/Gift'
@@ -173,6 +174,16 @@ export default function App() {
   useEffect(() => {
     if (!loading) window.__APP_BOOTED__ = true
   }, [loading])
+
+  // Витрина модалок — только в разработке. Стоит раньше загрузки и входа:
+  // модалку смотрят по вёрстке, и гонять ради этого настоящий аккаунт незачем.
+  // В боевой сборке ветка вырезается сборщиком вместе с импортом.
+  if (import.meta.env.DEV && window.location.pathname === '/modal-demo') {
+    // Отметиться загруженным обязательно: иначе через 15 секунд сработает
+    // загрузочный сторож из index.html и накроет витрину экраном «Перезапустить».
+    window.__APP_BOOTED__ = true
+    return <ModalDemo />
+  }
 
   if (loading) {
     return (

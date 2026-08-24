@@ -26,6 +26,16 @@ import UiIcon from './UiIcon'
  */
 const CLOSE_MS = 260
 
+/** «32 дня» / «31 день» / «35 дней». */
+function daysWord(n) {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  if (mod100 >= 11 && mod100 <= 14) return 'дней'
+  if (mod10 === 1) return 'день'
+  if (mod10 >= 2 && mod10 <= 4) return 'дня'
+  return 'дней'
+}
+
 export default function WorkoutFinishedModal({
   durationLabel = '',
   durationColor = 'var(--color-timer)',
@@ -35,6 +45,12 @@ export default function WorkoutFinishedModal({
   errorMsg = '',
   offline = false,
   alreadyToday = false,
+  // Пауза перед этой тренировкой, в днях. Заполнена только когда она длинная
+  // (порог — 30 дней): возвращение после месяца тишины стоит отметить.
+  comebackDays = null,
+  // Что выросло по итогам тренировки: [{ name, value, delta }]. Пусто —
+  // блока нет вовсе. Уменьшения сюда не попадают: рекорд — это только рост.
+  records = [],
   onConfirm
 }) {
   const overlayRef = useRef(null)
@@ -117,6 +133,39 @@ export default function WorkoutFinishedModal({
                     <Duration label={durationLabel} color={durationColor} />
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Возвращение — эмоциональный контекст всей тренировки, поэтому
+                стоит сразу под показателями, до конкретных цифр рекордов.
+                Только в успешном исходе: поздравлять с возвращением, когда
+                тренировка не сохранилась, — издевательство. */}
+            {celebratory && comebackDays > 0 && (
+              <div style={styles.comeback}>
+                <UiIcon name="celebration" size={26} />
+                <span>
+                  <b>{comebackDays}</b> {daysWord(comebackDays)} без тренировок —
+                  <br />и ты снова здесь
+                </span>
+              </div>
+            )}
+
+            {/* Рекорды: только рост. Каждая строка — что выросло и насколько. */}
+            {celebratory && records.length > 0 && (
+              <div style={styles.records}>
+                <div style={styles.recordsTitle}>
+                  <UiIcon name="trophy" size={18} color="var(--color-primary)" />
+                  <span>Новые результаты</span>
+                </div>
+                {records.map((r) => (
+                  <div key={r.name} style={styles.recordRow}>
+                    <span style={styles.recordName}>{r.name}</span>
+                    <span style={styles.recordValue}>
+                      {r.value}
+                      {r.delta ? <span style={styles.recordDelta}> (+{r.delta})</span> : null}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -235,6 +284,40 @@ const styles = {
     letterSpacing: '0.5px', textAlign: 'center',
     minHeight: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
+  // Возвращение. Мягкая плашка на приглушённой поверхности — праздник, но
+  // не второй заголовок: главным в модалке остаётся «Тренировка завершена».
+  comeback: {
+    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+    padding: 'var(--space-3) var(--space-4)',
+    background: 'var(--surface-tonal)', borderRadius: 'var(--radius-small)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    lineHeight: 1.35, color: 'var(--color-text)', textAlign: 'left'
+  },
+  // Рекорды — список, а не абзац: их бывает несколько, и глаз должен
+  // пробегать по ним столбиком.
+  records: {
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+    width: '100%', textAlign: 'left'
+  },
+  recordsTitle: {
+    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700,
+    fontSize: 'var(--text-label-size)', color: 'var(--color-primary)'
+  },
+  recordRow: {
+    display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+    gap: 'var(--space-3)'
+  },
+  recordName: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
+    color: 'var(--text-info)', flex: 1, minWidth: 0
+  },
+  recordValue: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 700,
+    fontSize: 'var(--text-label-size)', color: 'var(--color-text)', whiteSpace: 'nowrap'
+  },
+  // Прирост — тише самого значения: главное «стало», а не «насколько».
+  recordDelta: { fontWeight: 500, color: 'var(--color-primary)' },
   // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
   statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-5)' },
   stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
