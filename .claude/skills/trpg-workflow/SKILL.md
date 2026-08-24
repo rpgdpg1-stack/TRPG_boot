@@ -311,6 +311,7 @@ src/
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
 ├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity cardio change check
+│                   + celebration.svg — ЕДИНСТВЕННАЯ цветная (фанфары): цвет там и есть смысл
 │                   cloud_done cloud_sync friends gift goal heart idea info invite-friend leaderboard
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile recovery reset_days reset_progress
@@ -339,6 +340,7 @@ src/
 │                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
 │                   version-check weight-editing-state
 ├── pages/          AccountAccess (/account — способы входа: Telegram и почта)
+│                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)
 │                   Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
 │                   Profile ProgramConstructor QuickWorkout Recovery Settings SwapExercise SwimWorkout WorkoutDay
 │                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
