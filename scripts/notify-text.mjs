@@ -478,3 +478,122 @@ export function nudgeButtons({ daysSince, programs = [] }) {
     style: styleFor(p)
   }))
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RICH — структурные блоки (Bot API 10.1+)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Заголовок, разделитель, сворачиваемое «Подробнее» и спойлер. Всё это
+   надстройка: если Telegram не примет формат, отправка откатится на обычное
+   сообщение из функций выше, и человек не заметит разницы, кроме оформления.
+
+   Точная форма простого текста внутри блока в документации не расписана —
+   взята по образцу остальных типов (объект с полем type). Ошиблись — узнаем
+   из первого же теста, и цена ошибки нулевая.
+*/
+
+const rt = (text) => ({ type: 'plain', text })
+const rtSpoiler = (text) => ({ type: 'spoiler', text: rt(text) })
+const rtJoin = (...texts) => ({ type: 'concatenation', texts })
+
+const bHeading = (text) => ({ type: 'section_heading', text: rt(text) })
+const bDivider = () => ({ type: 'divider' })
+const bPara = (text) => ({ type: 'paragraph', text: typeof text === 'string' ? rt(text) : text })
+const bDetails = (title, blocks) => ({ type: 'details', title: rt(title), blocks })
+
+/** Итоги недели блоками. */
+export function weeklyRich({ totalCount, totalMinutes, breakdown }) {
+  return [
+    bHeading('Итоги недели'),
+    bDivider(),
+    bPara(headLine(E.streak, totalCount, totalMinutes)),
+    bDetails('Подробнее', breakdownLines(breakdown).map(bPara))
+  ]
+}
+
+/** Итоги месяца блоками. */
+export function monthlyRich({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
+  const blocks = [bHeading(`Итоги ${MONTHS_GEN[monthIndex]}`), bDivider()]
+  if (isRecord) blocks.push(bPara(`${E.record} Новый лучший месяц!`))
+  blocks.push(bPara(headLine(E.workouts, totalCount, totalMinutes)))
+  blocks.push(bDetails('Подробнее', breakdownLines(breakdown).map(bPara)))
+  blocks.push(bPara(comparisonLine(monthIndex, totalCount, prevCount)
+    || averageLine(totalCount, daysInMonth)))
+  return blocks
+}
+
+/** Итоги года блоками. */
+export function yearlyRich({
+  year, totalCount, totalMinutes, breakdown,
+  bestMonth, bestMonthCount, bestMonthMinutes, recExercise, recWeight, recSwimM
+}) {
+  const blocks = [
+    bHeading(`Итоги ${year} года`),
+    bDivider(),
+    bPara(headLine(E.workouts, totalCount, totalMinutes)),
+    bDetails('Подробнее', breakdownLines(breakdown).map(bPara))
+  ]
+
+  if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
+    const time = formatMinutes(bestMonthMinutes)
+    blocks.push(bPara(`${E.record} Лучший месяц`))
+    blocks.push(bPara(`${MONTHS_NOMINATIVE[bestMonth]}, ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
+      + (time ? ` (${time})` : '')))
+  }
+
+  const weight = formatWeight(recWeight)
+  if ((recExercise && weight) || recSwimM) {
+    blocks.push(bPara(`${E.record} Лучшие результаты`))
+    if (recExercise && weight) {
+      blocks.push(bPara('Силовая — самый большой рабочий вес'))
+      blocks.push(bPara(`${recExercise} — ${weight}`))
+    }
+    if (recSwimM) {
+      blocks.push(bPara('Плавание — самая длинная дистанция'))
+      blocks.push(bPara(`Заплыв — ${formatDistance(recSwimM)}`))
+    }
+  }
+  return blocks
+}
+
+/**
+ * Пинок блоками.
+ *
+ * Разделителя тут нет намеренно: он расчерчивает отчёт, а пинок — короткая
+ * реплика, и линия делала бы из неё бланк.
+ *
+ * Лучший результат уходит под спойлер: раскрыть его тапом приятнее, чем
+ * прочитать сразу, и это единственное место, где уместна маленькая интрига.
+ */
+export function nudgeRich({ daysSince, programs = [], bestCount, bestMinutes }) {
+  const title = pauseTitle(daysSince)
+  const blocks = [bHeading(title)]
+
+  if (daysSince >= 28) {
+    if (daysSince >= 112) {
+      blocks.push(bPara('Программы, рабочие веса и вся история на месте — ничего не пропало. Возвращайся, когда захочешь.'))
+    } else {
+      blocks.push(bPara('Программы тренировок на месте. Возвращайся и продолжи любую свою тренировку.'))
+    }
+    const best = bestMonthLine(bestCount, bestMinutes)
+    if (best) {
+      blocks.push(bPara(rtJoin(rt(`${E.record} Твой лучший результат за месяц: `), rtSpoiler(best))))
+    }
+    return blocks
+  }
+
+  blocks.push(bPara('Продолжим?'))
+
+  if (programs.length === 0) {
+    blocks.push(bPara('Выбери программу и начни с одной тренировки.'))
+  } else if (programs.length === 1) {
+    const p = programs[0]
+    blocks.push(bPara(programLine(p)))
+    if (p.estMinutes && showEstimate(p.category)) {
+      blocks.push(bPara(`${E.time} ~${formatMinutes(p.estMinutes)}`))
+    }
+  } else {
+    blocks.push(bPara('Начни любую свою тренировку:'))
+  }
+  return blocks
+}
