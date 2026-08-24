@@ -1272,9 +1272,17 @@ $function$;
 -- api_finish_workout: сохранение тренировки — критический путь, и подсчёт
 -- украшений не должен иметь ни единого шанса его уронить.
 --
--- Первый в жизни вес рекордом не считается: сравнивать не с чем, а «рекорд»
--- за то, что человек впервые ввёл цифру, обесценивает слово. Упражнения
--- на повторы исключены — килограммы там ничего не значат.
+-- Точка отсчёта — вес на момент ПРЕДЫДУЩЕЙ завершённой тренировки, а не лучший
+-- до сегодняшнего дня. Вес правят где угодно: можно открыть программу,
+-- поднять цифру, неделю не заходить, а потом просто отметить упражнения
+-- и завершить. Для человека это прирост ЭТОЙ тренировки — между двумя
+-- завершениями он стал сильнее. Заодно чинится обратный случай: поднял
+-- и вернул обратно — прироста нет.
+--
+-- У плавания иначе: там сравнение с лучшим прежним. Дистанция зависит от
+-- самочувствия, и «больше, чем в прошлый раз» случалось бы через раз.
+--
+-- Упражнения на повторы исключены — килограммы там ничего не значат.
 CREATE OR REPLACE FUNCTION public.api_workout_highlights(p_workout_id bigint)
 RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
@@ -1283,8 +1291,8 @@ DECLARE
   v_uid bigint := current_user_id();
   v_finished timestamptz;
   v_distance integer;
-  v_day_start timestamptz;
   v_prev_at timestamptz;
+  v_prev_day date;
   v_comeback integer := NULL;
   v_records jsonb := '[]'::jsonb;
   v_prev_distance integer;
@@ -1298,15 +1306,17 @@ BEGIN
     RETURN jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
   END IF;
 
-  v_day_start := date_trunc('day', timezone('Europe/Moscow', v_finished));
-
   SELECT max(finished_at) INTO v_prev_at
   FROM workouts
   WHERE user_id = v_uid AND finished_at IS NOT NULL AND finished_at < v_finished;
 
-  IF v_prev_at IS NOT NULL THEN
-    v_comeback := EXTRACT(DAY FROM (v_finished - v_prev_at))::int;
+  -- Первая тренировка в жизни: сравнивать не с чем ни по паузе, ни по весам.
+  IF v_prev_at IS NULL THEN
+    RETURN jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
   END IF;
+
+  v_comeback := EXTRACT(DAY FROM (v_finished - v_prev_at))::int;
+  v_prev_day := date_trunc('day', timezone('Europe/Moscow', v_prev_at))::date;
 
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'kind', 'strength', 'name', name, 'value', cur, 'delta', cur - prev
@@ -1314,9 +1324,10 @@ BEGIN
     INTO v_records
   FROM (
     SELECT e.name, w.weight_kg AS cur,
-           (SELECT max(h.weight_kg) FROM user_exercise_weight_history h
+           (SELECT h.weight_kg FROM user_exercise_weight_history h
              WHERE h.user_id = v_uid AND h.exercise_id = es.exercise_id
-               AND h.day < v_day_start::date) AS prev
+               AND h.day <= v_prev_day
+             ORDER BY h.day DESC LIMIT 1) AS prev
     FROM exercise_sets es
     JOIN exercises e ON e.id = es.exercise_id
     JOIN user_exercise_weights w ON w.user_id = v_uid AND w.exercise_id = es.exercise_id
