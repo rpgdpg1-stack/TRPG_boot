@@ -305,14 +305,24 @@ async function sendSamples(bot) {
     })()
   ]
 
+  // Итог по каждому образцу отдельной строкой. Раньше отказ был виден только
+  // предупреждением где-то в середине лога, и «одно сообщение не пришло»
+  // приходилось искать глазами среди девяти.
+  const results = []
   for (const [label, text, buttons, photo] of samples) {
-    console.log(`→ ${label}`)
-    await send(ONLY, text, buttons, photo)
+    const r = await send(ONLY, text, buttons, photo)
+    results.push([label, r])
+    console.log(`${r === 'sent' || r === 'dry' ? '✅' : '❌'} ${label} (${r}, ${text.length} симв.)`)
     // Секунда с запасом: всё это летит в ОДИН чат, а туда Telegram пропускает
     // примерно одно сообщение в секунду.
     await sleep(1300)
   }
-  console.log(`\nОтправлено образцов: ${samples.length}`)
+
+  const failed = results.filter(([, r]) => r !== 'sent' && r !== 'dry')
+  console.log(`\nИтого: ${results.length - failed.length} из ${results.length}`)
+  if (failed.length) {
+    console.log('Не ушли: ' + failed.map(([l, r]) => `${l} → ${r}`).join(', '))
+  }
 }
 
 async function main() {
