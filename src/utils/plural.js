@@ -48,3 +48,36 @@ export function pluralizeFriends(count) {
   if (n1 === 1) return 'друг'
   return 'друзей'
 }
+
+/**
+ * Названия видов активности по числу: «1 силовая», «2 силовые», «5 силовых».
+ *
+ * Раньше подпись была одна на любое число («Силовая 5»), потому что число
+ * стояло ОТДЕЛЬНО от слова и в глаза не бросалось. Как только строка стала
+ * читаться слитно — «5 Силовая» полезло наружу.
+ *
+ * Кардио не склоняется: слово несклоняемое, и это не упущение.
+ */
+const CATEGORY_FORMS = {
+  strength: ['силовая', 'силовые', 'силовых'],
+  pool: ['плавание', 'плавания', 'плаваний'],
+  cardio: ['кардио', 'кардио', 'кардио'],
+  stretch: ['растяжка', 'растяжки', 'растяжек']
+}
+
+export function pluralizeCategory(key, count) {
+  const forms = CATEGORY_FORMS[key]
+  if (!forms) return ''
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return forms[2]
+  if (n1 > 1 && n1 < 5) return forms[1]
+  if (n1 === 1) return forms[0]
+  return forms[2]
+}
+
+/** То же с заглавной: «5 Силовых» — строка счётчика, а не середина фразы. */
+export function pluralizeCategoryCap(key, count) {
+  const w = pluralizeCategory(key, count)
+  return w ? w.charAt(0).toUpperCase() + w.slice(1) : ''
+}

@@ -1,6 +1,6 @@
 import MuscleIcon from './MuscleIcon'
 import { formatStatTime, formatMeters, CATEGORY_ORDER } from '../utils/history'
-import { pluralizeWorkouts } from '../utils/plural'
+import { pluralizeWorkouts, pluralizeCategoryCap } from '../utils/plural'
 import SectionBadge from './SectionBadge'
 
 // Бицепс главного показателя.
@@ -19,11 +19,13 @@ const ICON = 20
  */
 
 // Вид активности: иконка/цвет/название + какая метрика (счёт или дистанция).
+// Название склоняется по числу (pluralizeCategoryCap): в строке «5 Силовых»
+// число и слово читаются слитно, и несклоняемая подпись сразу режет глаз.
 const TYPE_META = {
-  strength: { icon: 'power', color: 'var(--cat-gym)', label: 'Силовая', metric: 'count' },
-  pool: { icon: 'swimming', color: 'var(--cat-pool)', label: 'Плавание', metric: 'distance' },
-  cardio: { icon: 'cardio', color: 'var(--cat-cardio)', label: 'Бег', metric: 'distance' },
-  stretch: { icon: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка', metric: 'count' }
+  strength: { icon: 'power', color: 'var(--cat-gym)', metric: 'count' },
+  pool: { icon: 'swimming', color: 'var(--cat-pool)', metric: 'distance' },
+  cardio: { icon: 'cardio', color: 'var(--cat-cardio)', metric: 'distance' },
+  stretch: { icon: 'stretching', color: 'var(--cat-stretch)', metric: 'count' }
 }
 
 export default function HistoryStats({ summary, loading = false, periodLabel = '', emptyText = 'Заверши первую тренировку, чтобы увидеть статистику.' }) {
@@ -71,7 +73,7 @@ export default function HistoryStats({ summary, loading = false, periodLabel = '
             <div key={k} style={styles.row}>
               <SectionBadge iconName={m.icon} color={m.color} />
               <span style={{ ...styles.rowCount, color: m.color }}>{b.count}</span>
-              <span style={styles.rowLabel}>{m.label}</span>
+              <span style={styles.rowLabel}>{pluralizeCategoryCap(k, b.count)}</span>
               {showDist && (
                 <span style={styles.rowDist}>
                   (<Distance meters={b.distance} color={m.color} inherit />)

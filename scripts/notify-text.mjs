@@ -8,11 +8,29 @@
  * приложение, которое его этим корит, выключают вместе с уведомлениями.
  */
 
-const CATEGORY_TITLE = {
-  strength: 'Силовые',
-  pool: 'Плавание',
-  cardio: 'Кардио',
-  stretch: 'Растяжка'
+/**
+ * Названия видов по числу: «1 Силовая», «2 Силовые», «5 Силовых».
+ *
+ * Те же формы, что в приложении (utils/plural.js). Число стоит вплотную
+ * к слову, и несклоняемая подпись сразу режет глаз. Кардио не склоняется —
+ * слово несклоняемое, это не упущение.
+ */
+const CATEGORY_FORMS = {
+  strength: ['Силовая', 'Силовые', 'Силовых'],
+  pool: ['Плавание', 'Плавания', 'Плаваний'],
+  cardio: ['Кардио', 'Кардио', 'Кардио'],
+  stretch: ['Растяжка', 'Растяжки', 'Растяжек']
+}
+
+function categoryWord(key, count) {
+  const forms = CATEGORY_FORMS[key]
+  if (!forms) return ''
+  const mod100 = count % 100
+  const mod10 = count % 10
+  if (mod100 >= 11 && mod100 <= 14) return forms[2]
+  if (mod10 >= 2 && mod10 <= 4) return forms[1]
+  if (mod10 === 1) return forms[0]
+  return forms[2]
 }
 
 /**
@@ -54,24 +72,36 @@ const MONTHS_PREP = ['январе', 'феврале', 'марте', 'апрел
 const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
-/** «1 тренировка» / «3 тренировки» / «12 тренировок». */
+/**
+ * «1 Тренировка» / «3 Тренировки» / «12 Тренировок».
+ *
+ * С заглавной намеренно: это главный показатель во всех сводках, и заглавная
+ * буква поднимает его над остальным текстом так же, как это делает жирность.
+ */
 export function pluralWorkouts(n) {
   const mod100 = n % 100
   const mod10 = n % 10
-  if (mod100 >= 11 && mod100 <= 14) return `${n} тренировок`
-  if (mod10 === 1) return `${n} тренировка`
-  if (mod10 >= 2 && mod10 <= 4) return `${n} тренировки`
-  return `${n} тренировок`
+  if (mod100 >= 11 && mod100 <= 14) return `${n} Тренировок`
+  if (mod10 === 1) return `${n} Тренировка`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} Тренировки`
+  return `${n} Тренировок`
 }
 
-/** «48 мин» / «2 ч 15 мин» / «2 ч». */
+/**
+ * «46 мин» · «1 ч 20 мин» · «2 ч 06 мин» · «3 ч 00 мин».
+ *
+ * Один в один с formatStatTime из utils/history.js: цифра в сообщении обязана
+ * совпасть с цифрой на экране статистики, иначе человек решит, что где-то
+ * ошибка. При часах минуты двузначные и не пропадают — так столбик времён
+ * читается как на секундомере.
+ */
 export function formatMinutes(min) {
-  if (!min || min < 1) return null
-  const h = Math.floor(min / 60)
-  const m = min % 60
+  const total = Math.max(0, Math.round(min || 0))
+  if (total < 1) return null
+  const h = Math.floor(total / 60)
+  const m = total % 60
   if (!h) return `${m} мин`
-  if (!m) return `${h} ч`
-  return `${h} ч ${m} мин`
+  return `${h} ч ${String(m).padStart(2, '0')} мин`
 }
 
 /** «2,25 км» — как в статистике: километры через запятую, метры целыми. */
@@ -93,7 +123,7 @@ export function breakdownLines(breakdown) {
     .map((key) => {
       const { count, meters } = breakdown[key]
       const distance = key === 'pool' ? formatDistance(meters) : null
-      return `${CATEGORY_EMOJI[key]} ${count} ${CATEGORY_TITLE[key]}`
+      return `${CATEGORY_EMOJI[key]} ${count} ${categoryWord(key, count)}`
         + (distance ? ` (${distance})` : '')
     })
 }
@@ -203,13 +233,18 @@ export function yearlyDigest({
 
   // Каждый рекорд с подписью, ЧТО именно рекорд: «105 кг» само по себе
   // ничего не говорит, а «самый большой рабочий вес» — говорит.
+  // Сначала ЧТО за результат, потом сам результат. Голое «105 кг» ничего
+  // не говорит, а «самый большой рабочий вес» — говорит, и подпись стоит
+  // впереди, потому что читают её первой.
   const records = []
   const weight = formatWeight(recWeight)
   if (recExercise && weight) {
-    records.push('Силовая — самый большой рабочий вес', `${recExercise} — ${weight}`)
+    records.push('Самый большой рабочий вес в силовых тренировках:',
+      `${recExercise} — ${weight}`)
   }
   if (recSwimM) {
-    records.push('Плавание — самая длинная дистанция', `Заплыв — ${formatDistance(recSwimM)}`)
+    records.push('Самая длинная дистанция в плавании:',
+      `Заплыв — ${formatDistance(recSwimM)}`)
   }
 
   if (records.length) {
