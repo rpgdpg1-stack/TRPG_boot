@@ -1267,6 +1267,84 @@ BEGIN
 END;
 $function$;
 
+-- Что примечательного в только что завершённой тренировке: возвращение после
+-- долгой паузы и выросшие результаты. Отдельной функцией, а НЕ внутри
+-- api_finish_workout: сохранение тренировки — критический путь, и подсчёт
+-- украшений не должен иметь ни единого шанса его уронить.
+--
+-- Первый в жизни вес рекордом не считается: сравнивать не с чем, а «рекорд»
+-- за то, что человек впервые ввёл цифру, обесценивает слово. Упражнения
+-- на повторы исключены — килограммы там ничего не значат.
+CREATE OR REPLACE FUNCTION public.api_workout_highlights(p_workout_id bigint)
+RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+DECLARE
+  v_uid bigint := current_user_id();
+  v_finished timestamptz;
+  v_distance integer;
+  v_day_start timestamptz;
+  v_prev_at timestamptz;
+  v_comeback integer := NULL;
+  v_records jsonb := '[]'::jsonb;
+  v_prev_distance integer;
+BEGIN
+  IF v_uid IS NULL THEN RETURN jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb); END IF;
+
+  SELECT finished_at, distance_m INTO v_finished, v_distance
+  FROM workouts WHERE id = p_workout_id AND user_id = v_uid AND finished_at IS NOT NULL;
+
+  IF v_finished IS NULL THEN
+    RETURN jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
+  END IF;
+
+  v_day_start := date_trunc('day', timezone('Europe/Moscow', v_finished));
+
+  SELECT max(finished_at) INTO v_prev_at
+  FROM workouts
+  WHERE user_id = v_uid AND finished_at IS NOT NULL AND finished_at < v_finished;
+
+  IF v_prev_at IS NOT NULL THEN
+    v_comeback := EXTRACT(DAY FROM (v_finished - v_prev_at))::int;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'kind', 'strength', 'name', name, 'value', cur, 'delta', cur - prev
+         ) ORDER BY cur - prev DESC), '[]'::jsonb)
+    INTO v_records
+  FROM (
+    SELECT e.name, w.weight_kg AS cur,
+           (SELECT max(h.weight_kg) FROM user_exercise_weight_history h
+             WHERE h.user_id = v_uid AND h.exercise_id = es.exercise_id
+               AND h.day < v_day_start::date) AS prev
+    FROM exercise_sets es
+    JOIN exercises e ON e.id = es.exercise_id
+    JOIN user_exercise_weights w ON w.user_id = v_uid AND w.exercise_id = es.exercise_id
+    WHERE es.workout_id = p_workout_id
+      AND COALESCE(e.counts_reps, false) = false
+      AND COALESCE(w.weight_kg, 0) > 0
+    GROUP BY e.name, w.weight_kg, es.exercise_id
+  ) g
+  WHERE prev IS NOT NULL AND cur > prev;
+
+  IF COALESCE(v_distance, 0) > 0 THEN
+    SELECT max(distance_m) INTO v_prev_distance
+    FROM workouts
+    WHERE user_id = v_uid AND finished_at IS NOT NULL
+      AND finished_at < v_finished AND COALESCE(distance_m, 0) > 0;
+
+    IF v_prev_distance IS NOT NULL AND v_distance > v_prev_distance THEN
+      v_records := v_records || jsonb_build_array(jsonb_build_object(
+        'kind', 'swim', 'name', 'Дистанция заплыва',
+        'value', v_distance, 'delta', v_distance - v_prev_distance
+      ));
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object('comebackDays', v_comeback, 'records', v_records);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.api_get_personal_records()
  RETURNS jsonb
  LANGUAGE plpgsql

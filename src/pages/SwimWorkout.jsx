@@ -25,6 +25,7 @@ import {
 } from '../data/programs/swim'
 import ConfirmModal from '../components/ConfirmModal'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
+import { getWorkoutHighlights } from '../lib/workout-highlights'
 import ScreenTitle from '../components/ScreenTitle'
 import CloseCross from '../components/CloseCross'
 import UiIcon from '../components/UiIcon'
@@ -164,6 +165,9 @@ export default function SwimWorkout() {
   })
 
   const [modal, setModal] = useState(null)
+  // Возвращение после долгой паузы и выросшая дистанция — догружаются после
+  // сохранения, модалку не задерживают.
+  const [highlights, setHighlights] = useState({ comebackDays: null, records: [] })
   const [finishStatus, setFinishStatus] = useState('idle')
   const [compact, setCompact] = useState(false)
 
@@ -364,6 +368,7 @@ export default function SwimWorkout() {
 
     setFinishStatus('saving')
     setModal({ kind: 'pending', ...stats })
+    setHighlights({ comebackDays: null, records: [] })
 
     try {
       const startedAt = isThisActive
@@ -397,6 +402,12 @@ export default function SwimWorkout() {
       haptic.success()
       setFinishStatus('idle')
       setModal({ kind: 'reward', ...stats })
+
+      // Возвращение и выросшая дистанция — отдельным запросом, без ожидания:
+      // модалка уже на экране, плашки доезжают следом.
+      if (result.workoutId) {
+        getWorkoutHighlights(result.workoutId).then(setHighlights)
+      }
     } catch (e) {
       console.error('[SwimWorkout] finish error:', e)
       setFinishStatus('error')
@@ -712,6 +723,8 @@ export default function SwimWorkout() {
           status={finishStatus === 'error' ? 'error' : finishStatus}
           offline={modal.kind === 'offline'}
           alreadyToday={modal.kind === 'limit'}
+          comebackDays={highlights.comebackDays}
+          records={highlights.records}
           onConfirm={handleModalConfirm}
         />
       )}

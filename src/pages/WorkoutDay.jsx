@@ -39,6 +39,7 @@ import CloseCross from '../components/CloseCross'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
+import { getWorkoutHighlights } from '../lib/workout-highlights'
 import FinishConfirmModal, { CONFIRM_EXIT_MS } from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
@@ -206,6 +207,10 @@ export default function WorkoutDay() {
   // true, если за сегодня награда уже была (лимит 1 тренировка/день) — тогда
   // модалка поздравляет, но +150 не показывает.
   const [alreadyToday, setAlreadyToday] = useState(false)
+  // Возвращение после долгой паузы и выросшие веса. Догружаются ПОСЛЕ
+  // сохранения: модалка уже на экране, и человек видит её без задержки,
+  // а плашки доезжают через мгновение.
+  const [highlights, setHighlights] = useState({ comebackDays: null, records: [] })
 
   const [actionSlot, setActionSlot] = useState(null)
   // Момент закрытия модалки заметки — гасим «призрачный» тап по упражнению под ней.
@@ -1040,6 +1045,7 @@ export default function WorkoutDay() {
     setFinishErrorMsg('')
     setFinishedOffline(false)
     setAlreadyToday(false)
+    setHighlights({ comebackDays: null, records: [] })
 
     try {
       // ВАЖНО: из allSlots, а не из slots. «Быстрая» — режим ПОКАЗА: если
@@ -1080,6 +1086,12 @@ export default function WorkoutDay() {
       setAlreadyToday(!!result.alreadyCompletedToday)
       haptic.success()
       setFinishStatus('idle')
+
+      // Украшения — отдельным запросом и без await в общем потоке: они не
+      // должны задерживать модалку. Не ответил — просто не появятся.
+      if (result.workoutId && !result.alreadyCompletedToday) {
+        getWorkoutHighlights(result.workoutId).then(setHighlights)
+      }
 
     } catch (e) {
       console.error('[WorkoutDay] runFinish error:', e)
@@ -1602,6 +1614,8 @@ export default function WorkoutDay() {
           errorMsg={finishErrorMsg}
           offline={finishedOffline}
           alreadyToday={alreadyToday}
+          comebackDays={highlights.comebackDays}
+          records={highlights.records}
           onConfirm={() => {
             // Ошибка → повторить сохранение. Иначе (награда / лимит / оффлайн) —
             // закрыть модалку и уйти на главную.
