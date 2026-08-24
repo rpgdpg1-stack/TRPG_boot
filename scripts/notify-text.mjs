@@ -492,14 +492,29 @@ export function nudgeButtons({ daysSince, programs = [] }) {
    из первого же теста, и цена ошибки нулевая.
 */
 
-const rt = (text) => ({ type: 'plain', text })
-const rtSpoiler = (text) => ({ type: 'spoiler', text: rt(text) })
-const rtJoin = (...texts) => ({ type: 'concatenation', texts })
+/*
+   Формы проверены пробником на живом Telegram, а не взяты из документации —
+   там определения классов недоступны, страница обрезается при чтении.
+   Что выяснилось:
 
-const bHeading = (text) => ({ type: 'section_heading', text: rt(text) })
+     • простой текст внутри блока — ПРОСТАЯ СТРОКА, не объект;
+     • жирный и спойлер — объекты { type, text };
+     • несколько кусков — обычный массив;
+     • типы блоков: paragraph, divider, details, footer, heading;
+     • heading требует поле size — без него Telegram отвечает
+       «Can't find field "size"».
+*/
+
+/** Размер заголовка. Нужен чуть крупнее системного текста, но не баннер. */
+const HEADING_SIZE = 2
+
+const rtBold = (text) => ({ type: 'bold', text })
+const rtSpoiler = (text) => ({ type: 'spoiler', text })
+
+const bHeading = (text) => ({ type: 'heading', size: HEADING_SIZE, text })
 const bDivider = () => ({ type: 'divider' })
-const bPara = (text) => ({ type: 'paragraph', text: typeof text === 'string' ? rt(text) : text })
-const bDetails = (title, blocks) => ({ type: 'details', title: rt(title), blocks })
+const bPara = (text) => ({ type: 'paragraph', text })
+const bDetails = (title, blocks) => ({ type: 'details', title, blocks })
 
 /** Итоги недели блоками. */
 export function weeklyRich({ totalCount, totalMinutes, breakdown }) {
@@ -514,7 +529,7 @@ export function weeklyRich({ totalCount, totalMinutes, breakdown }) {
 /** Итоги месяца блоками. */
 export function monthlyRich({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
   const blocks = [bHeading(`Итоги ${MONTHS_GEN[monthIndex]}`), bDivider()]
-  if (isRecord) blocks.push(bPara(`${E.record} Новый лучший месяц!`))
+  if (isRecord) blocks.push(bPara([`${E.record} `, rtBold('Новый лучший месяц!')]))
   blocks.push(bPara(headLine(E.workouts, totalCount, totalMinutes)))
   blocks.push(bDetails('Подробнее', breakdownLines(breakdown).map(bPara)))
   blocks.push(bPara(comparisonLine(monthIndex, totalCount, prevCount)
@@ -536,14 +551,14 @@ export function yearlyRich({
 
   if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
     const time = formatMinutes(bestMonthMinutes)
-    blocks.push(bPara(`${E.record} Лучший месяц`))
+    blocks.push(bPara([`${E.record} `, rtBold('Лучший месяц')]))
     blocks.push(bPara(`${MONTHS_NOMINATIVE[bestMonth]}, ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
       + (time ? ` (${time})` : '')))
   }
 
   const weight = formatWeight(recWeight)
   if ((recExercise && weight) || recSwimM) {
-    blocks.push(bPara(`${E.record} Лучшие результаты`))
+    blocks.push(bPara([`${E.record} `, rtBold('Лучшие результаты')]))
     if (recExercise && weight) {
       blocks.push(bPara('Силовая — самый большой рабочий вес'))
       blocks.push(bPara(`${recExercise} — ${weight}`))
@@ -577,7 +592,7 @@ export function nudgeRich({ daysSince, programs = [], bestCount, bestMinutes }) 
     }
     const best = bestMonthLine(bestCount, bestMinutes)
     if (best) {
-      blocks.push(bPara(rtJoin(rt(`${E.record} Твой лучший результат за месяц: `), rtSpoiler(best))))
+      blocks.push(bPara([`${E.record} Твой лучший результат за месяц: `, rtSpoiler(best)]))
     }
     return blocks
   }

@@ -382,26 +382,18 @@ async function richProbe() {
     process.exit(1)
   }
 
-  // Первый пробник выяснил главное: текст внутри блока — ПРОСТАЯ СТРОКА,
-  // а не объект. И что имена типов блоков у меня были выдуманные:
-  // «section_heading» Telegram не знает. Теперь щупаем сами имена.
-  const P = (t) => ({ type: 'paragraph', text: t })
+  // Осталось выяснить одно: какое значение ждёт поле size у заголовка.
+  // Telegram ответил «Can't find field "size"» — значит тип heading верный,
+  // не хватает только размера. Щупаем правдоподобные значения.
+  const H = (size) => ({ blocks: [{ type: 'heading', size, text: `Заголовок ${size}` }] })
 
   const variants = [
-    ['heading',        { blocks: [{ type: 'heading', text: 'Заголовок' }] }],
-    ['header',         { blocks: [{ type: 'header', text: 'Заголовок' }] }],
-    ['title',          { blocks: [{ type: 'title', text: 'Заголовок' }] }],
-    ['divider',        { blocks: [P('до'), { type: 'divider' }, P('после')] }],
-    ['separator',      { blocks: [P('до'), { type: 'separator' }, P('после')] }],
-    ['details',        { blocks: [{ type: 'details', title: 'Подробнее', blocks: [P('внутри')] }] }],
-    ['collapsible',    { blocks: [{ type: 'collapsible', title: 'Подробнее', blocks: [P('внутри')] }] }],
-    ['list',           { blocks: [{ type: 'list', items: [{ text: 'раз' }, { text: 'два' }] }] }],
-    ['blockquote',     { blocks: [{ type: 'blockquote', text: 'цитата' }] }],
-    ['preformatted',   { blocks: [{ type: 'preformatted', text: 'моно' }] }],
-    ['footer',         { blocks: [{ type: 'footer', text: 'подпись' }] }],
-    ['текст: bold',    { blocks: [P({ type: 'bold', text: 'жирный' })] }],
-    ['текст: spoiler', { blocks: [P({ type: 'spoiler', text: 'секрет' })] }],
-    ['текст: массив',  { blocks: [P(['обычный ', { type: 'bold', text: 'жирный' }])] }]
+    ['size: 1', H(1)],
+    ['size: 2', H(2)],
+    ['size: 3', H(3)],
+    ['size: "small"', H('small')],
+    ['size: "medium"', H('medium')],
+    ['size: "large"', H('large')]
   ]
 
   for (const [label, richMessage] of variants) {
