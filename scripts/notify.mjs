@@ -22,8 +22,7 @@
 
 import pg from 'pg'
 import {
-  weeklyDigest, monthlyDigest, yearlyDigest, ownerReport, nudge, nudgeButtons, BTN_STYLE,
-  weeklyRich, monthlyRich, yearlyRich, nudgeRich
+  weeklyDigest, monthlyDigest, yearlyDigest, ownerReport, nudge, nudgeButtons, BTN_STYLE
 } from './notify-text.mjs'
 
 const KIND = process.argv[2]
@@ -33,14 +32,13 @@ const BOT_TOKEN = process.env.BOT_TOKEN
 const OWNER_CHAT_ID = process.env.OWNER_CHAT_ID
 const DB_URL = process.env.SUPABASE_DB_URL
 
-if (!['weekly', 'monthly', 'yearly', 'nudge', 'owner', 'test', 'rich-probe'].includes(KIND)) {
-  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | owner | test | rich-probe')
+if (!['weekly', 'monthly', 'yearly', 'nudge', 'owner', 'test'].includes(KIND)) {
+  console.error('Укажи вид рассылки: weekly | monthly | yearly | nudge | owner | test')
   process.exit(1)
 }
 // Образцам база не нужна — данные в них выдуманные.
-if (!DB_URL && KIND !== 'test' && KIND !== 'rich-probe') {
-  console.error('Нет SUPABASE_DB_URL'); process.exit(1)
-}
+// Образцам база не нужна — данные в них выдуманные.
+if (!DB_URL && KIND !== 'test') { console.error('Нет SUPABASE_DB_URL'); process.exit(1) }
 if (!BOT_TOKEN && !DRY_RUN) { console.error('Нет BOT_TOKEN'); process.exit(1) }
 
 const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
@@ -93,7 +91,7 @@ async function getBotUsername() {
  * сбоем: человек имеет право закрыть дверь, и падать из-за этого вся рассылка
  * не должна.
  */
-async function send(chatId, text, buttons, photo, blocks) {
+async function send(chatId, text, buttons, photo) {
   // Каждая кнопка — своей строкой: названия программ бывают длинными, и в один
   // ряд они превращаются в обрезанную кашу.
   const keyboard = buttons.map((b) => [b])
@@ -102,12 +100,8 @@ async function send(chatId, text, buttons, photo, blocks) {
     const preview = buttons
       .map((b) => `[ ${b.text} ]${b.style ? ` (${b.style})` : ''} → ${b.url}`)
       .join('\n')
-    const rich = blocks?.length
-      ? '\n· блоки: ' + blocks.map((b) => b.type).join(' → ')
-      : ''
     console.log(`\n──────── ${chatId} ────────`
       + (photo ? `\n🖼 ${photo}` : '')
-      + rich
       + `\n${text}\n${preview}`)
     return 'dry'
   }
@@ -130,26 +124,7 @@ async function send(chatId, text, buttons, photo, blocks) {
     body.disable_web_page_preview = true
   }
 
-  let data = null
-
-  // Сначала пробуем структурное сообщение — ради него всё и затевалось.
-  // Не вышло с картинкой — пробуем без неё: блоки ценнее фото. Не вышло
-  // вовсе — уходим на обычный путь, он проверен и работает.
-  if (blocks?.length) {
-    data = await postRich(chatId, blocks, keyboard, blob)
-    if (!data.ok && blob) {
-      console.warn('  структурное с картинкой не прошло — пробую без неё')
-      data = await postRich(chatId, blocks, keyboard, null)
-    }
-    if (!data.ok) {
-      console.warn(`  структурное не прошло (${JSON.stringify(data)}) — обычным сообщением`)
-      data = null
-    }
-  }
-
-  if (!data) {
-    data = usePhoto ? await postPhoto(body, blob) : await post('sendMessage', body)
-  }
+  let data = usePhoto ? await postPhoto(body, blob) : await post('sendMessage', body)
 
   // Цвет кнопок появился только в Bot API 9.4. Если сервер его не принял —
   // отправляем то же самое без стилей: сообщение важнее оформления.
@@ -216,33 +191,6 @@ async function loadPhoto(url) {
  * Скачиваем сами и передаём байтами: тогда Telegram ни за чем не ходит,
  * и остаётся только его собственная проверка формата.
  */
-/**
- * Отправка структурным сообщением (Bot API 10.1+).
- *
- * Заголовок, разделитель, сворачиваемое «Подробнее», спойлер — всё то, чего
- * не выразить обычным текстом. Картинка прикладывается тем же способом, что
- * и в остальных методах Telegram: файлом в форме, а в теле — ссылка на него.
- *
- * Возвращает ответ Telegram как есть. Решение откатываться принимает
- * вызывающий: сообщение важнее оформления, и терять его из-за нового
- * формата нельзя.
- */
-async function postRich(chatId, blocks, keyboard, blob) {
-  const form = new FormData()
-  form.append('chat_id', String(chatId))
-  form.append('reply_markup', JSON.stringify({ inline_keyboard: keyboard }))
-
-  const richMessage = { blocks }
-  if (blob) {
-    richMessage.media = { type: 'photo', media: 'attach://photo' }
-    form.append('photo', blob, 'photo.jpg')
-  }
-  form.append('rich_message', JSON.stringify(richMessage))
-
-  const res = await fetch(api('sendRichMessage'), { method: 'POST', body: form })
-  return res.json()
-}
-
 async function postPhoto(body, blob) {
   const form = new FormData()
   form.append('chat_id', String(body.chat_id))
@@ -313,12 +261,12 @@ async function sendSamples(bot) {
   // с днём и встроенное плавание. На выдуманном «Сплите» из каталога
   // не видно главного — что в сообщение попадает ИМЕННО твоя программа.
   const gym = { slug: 'my', name: 'Сплит 2', category: 'gym', lastDay: 'A', estMinutes: 70 }
-  const pool = { slug: 'swim', name: 'Заплыв', category: 'pool', lastDay: null, estMinutes: null }
+  const pool = { slug: 'swim', name: 'Заплыв', category: 'pool', lastDay: null, estMinutes: 45, meters: 750 }
 
   const nudgeSample = (label, payload) =>
     [label, nudge(payload), nudgeButtons(payload).map((b) => ({
       text: b.label, url: appLink(bot, b.param), style: b.style
-    })), nudgeImage(payload.daysSince), nudgeRich(payload)]
+    })), nudgeImage(payload.daysSince)]
 
   const samples = [
     (() => {
@@ -326,7 +274,7 @@ async function sendSamples(bot) {
         breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }
       return ['итоги недели', weeklyDigest(d),
         [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-week'), style: BTN_STYLE.ACCENT }],
-        IMAGES.weekly, weeklyRich(d)]
+        IMAGES.weekly]
     })(),
 
     (() => {
@@ -335,7 +283,7 @@ async function sendSamples(bot) {
         prevCount: 9, daysInMonth: 31, isRecord: true }
       return ['итоги месяца', monthlyDigest(d),
         [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-month'), style: BTN_STYLE.ACCENT }],
-        IMAGES.monthly, monthlyRich(d)]
+        IMAGES.monthly]
     })(),
 
     nudgeSample('пинок: неделя, два закрепа', { daysSince: 8, programs: [gym, pool] }),
@@ -354,13 +302,13 @@ async function sendSamples(bot) {
         recWeight: '105.00', recSwimM: 750 }
       return ['итоги года', yearlyDigest(d),
         [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-year'), style: BTN_STYLE.ACCENT }],
-        IMAGES.yearly, yearlyRich(d)]
+        IMAGES.yearly]
     })()
   ]
 
-  for (const [label, text, buttons, photo, blocks] of samples) {
+  for (const [label, text, buttons, photo] of samples) {
     console.log(`→ ${label}`)
-    await send(ONLY, text, buttons, photo, blocks)
+    await send(ONLY, text, buttons, photo)
     // Секунда с запасом: всё это летит в ОДИН чат, а туда Telegram пропускает
     // примерно одно сообщение в секунду.
     await sleep(1300)
@@ -368,53 +316,7 @@ async function sendSamples(bot) {
   console.log(`\nОтправлено образцов: ${samples.length}`)
 }
 
-/**
- * Пробник структурных сообщений.
- *
- * Документация не описывает, как выглядит простой текст внутри блока, и
- * гадать вслепую — терять по прогону на догадку. Пробник шлёт несколько
- * правдоподобных форм подряд и показывает, что Telegram ответил на каждую.
- * Одного запуска хватает, чтобы узнать правду и больше не угадывать.
- */
-async function richProbe() {
-  if (!ONLY) {
-    console.error('Для rich-probe обязателен NOTIFY_ONLY')
-    process.exit(1)
-  }
-
-  // Осталось выяснить одно: какое значение ждёт поле size у заголовка.
-  // Telegram ответил «Can't find field "size"» — значит тип heading верный,
-  // не хватает только размера. Щупаем правдоподобные значения.
-  const H = (size) => ({ blocks: [{ type: 'heading', size, text: `Заголовок ${size}` }] })
-
-  const variants = [
-    ['size: 1', H(1)],
-    ['size: 2', H(2)],
-    ['size: 3', H(3)],
-    ['size: "small"', H('small')],
-    ['size: "medium"', H('medium')],
-    ['size: "large"', H('large')]
-  ]
-
-  for (const [label, richMessage] of variants) {
-    const res = await fetch(api('sendRichMessage'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: ONLY, rich_message: richMessage })
-    })
-    const data = await res.json()
-    console.log(`${data.ok ? '✅' : '❌'} ${label}`)
-    if (!data.ok) console.log(`   ${data.description || JSON.stringify(data)}`)
-    await sleep(1300)
-  }
-}
-
 async function main() {
-  if (KIND === 'rich-probe') {
-    await richProbe()
-    return
-  }
-
   // Образцы базу не трогают: данные в них выдуманные.
   if (KIND === 'test') {
     await sendSamples(await getBotUsername())
@@ -466,7 +368,6 @@ async function main() {
         if (ONLY && String(r.telegram_id) !== ONLY) { stats.skipped++; continue }
 
         let text
-        let blocks
         if (KIND === 'weekly') {
           const data = {
             totalCount: r.total_count,
@@ -474,7 +375,6 @@ async function main() {
             breakdown: r.breakdown
           }
           text = weeklyDigest(data)
-          blocks = weeklyRich(data)
         } else if (KIND === 'yearly') {
           const yearData = {
             year: r.year,
@@ -489,7 +389,6 @@ async function main() {
             recSwimM: r.rec_swim_m
           }
           text = yearlyDigest(yearData)
-          blocks = yearlyRich(yearData)
         } else {
           const start = new Date(r.month_start)
           const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
@@ -503,7 +402,6 @@ async function main() {
             daysInMonth
           }
           text = monthlyDigest(monthData)
-          blocks = monthlyRich(monthData)
         }
 
         // Период в ссылке: сводка за неделю обязана открыть неделю, иначе
@@ -516,7 +414,7 @@ async function main() {
           url: appLink(bot, KIND === 'weekly' ? 'stats-week'
             : KIND === 'yearly' ? 'stats-year' : 'stats-month'),
           style: BTN_STYLE.ACCENT
-        }], IMAGES[KIND], blocks)
+        }], IMAGES[KIND])
         stats[result]++
       }
     }
@@ -535,7 +433,6 @@ async function main() {
           bestMinutes: r.best_minutes
         }
         const text = nudge(payload)
-        const blocks = nudgeRich(payload)
         const buttons = nudgeButtons(payload).map((b) => ({
           text: b.label,
           url: appLink(bot, b.param),
@@ -543,7 +440,7 @@ async function main() {
         }))
 
         await sleep(120)
-        const result = await send(r.telegram_id, text, buttons, nudgeImage(r.days_since), blocks)
+        const result = await send(r.telegram_id, text, buttons, nudgeImage(r.days_since))
         stats[result]++
 
         // Счётчик тишины растёт только у реально отправленных: пропущенные

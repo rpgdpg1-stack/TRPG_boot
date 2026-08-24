@@ -19,7 +19,7 @@ on:
         description: 'Что разослать (test — образцы всех сообщений себе)'
         required: true
         type: choice
-        options: [test, rich-probe, weekly, nudge, monthly, yearly, owner]
+        options: [test, weekly, nudge, monthly, yearly, owner]
       dry_run:
         description: Только показать в логе, ничего не отправлять
         type: boolean

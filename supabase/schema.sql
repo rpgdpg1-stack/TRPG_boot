@@ -1760,18 +1760,27 @@ AS $$
                AND up.key = 'program:' || r.slug || ':last_day') AS last_day
     FROM resolved r JOIN public.programs pr ON pr.id = r.db_id
   ),
+  -- У плавания метраж складывается из разминки, основы и заминки (формула
+  -- повторяет data/programs/swim.js), число кругов человек выставляет сам.
+  -- Время оценивается по метражу: заложенные 45 минут приходятся на 750 м.
   with_est AS (
-    SELECT d.*, NULLIF((SELECT count(*)::int * 7 FROM public.program_days pd
-                        JOIN resolved r2 ON r2.user_id = d.user_id AND r2.slug = d.slug
-                        WHERE pd.program_id = r2.db_id
-                          AND pd.day = COALESCE(d.last_day, 'A')
-                          AND pd.location = 'gym'), 0) AS est_minutes
+    SELECT d.user_id, d.category, d.slug, d.name, d.last_day,
+           CASE WHEN d.category = 'pool' THEN 250 + 100 * d.swim_reps END AS meters,
+           CASE
+             WHEN d.category = 'pool'
+               THEN ROUND((250 + 100 * d.swim_reps) * 45.0 / 750)::int
+             ELSE NULLIF((SELECT count(*)::int * 7 FROM public.program_days pd
+                          JOIN resolved r2 ON r2.user_id = d.user_id AND r2.slug = d.slug
+                          WHERE pd.program_id = r2.db_id
+                            AND pd.day = COALESCE(d.last_day, 'A')
+                            AND pd.location = 'gym'), 0)
+           END AS est_minutes
     FROM detailed d
   ),
   grouped AS (
     SELECT user_id, jsonb_agg(jsonb_build_object(
              'slug', slug, 'name', name, 'category', category,
-             'lastDay', last_day, 'estMinutes', est_minutes
+             'lastDay', last_day, 'estMinutes', est_minutes, 'meters', meters
            ) ORDER BY CASE category WHEN 'gym' THEN 1 WHEN 'pool' THEN 2
                                     WHEN 'cardio' THEN 3 ELSE 4 END) AS programs
     FROM with_est GROUP BY user_id

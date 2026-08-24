@@ -106,7 +106,10 @@ export function breakdownLines(breakdown) {
  */
 function headLine(emoji, count, minutes) {
   const time = formatMinutes(minutes)
-  return `${emoji} ${pluralWorkouts(count)}` + (time ? ` (${time})` : '')
+  // Жирным — только число тренировок: это главное в сводке. Время в скобках
+  // остаётся обычным, иначе жирными окажется вся строка и выделять станет
+  // нечего.
+  return `${emoji} <b>${pluralWorkouts(count)}</b>` + (time ? ` (${time})` : '')
 }
 
 /**
@@ -306,17 +309,14 @@ function pauseTitle(days) {
 }
 
 /**
- * Показывать ли оценку времени.
+ * Оценку времени показываем везде, где её есть откуда взять.
  *
- * Только для силовых. У плавания длительность заложена в само название
- * («Заплыв 45»), и вторая цифра рядом читается как разнобой.
- *
- * Первая версия правила смотрела на любую цифру в названии — и молча съедала
- * оценку у «Сплита 2»: цифра там есть, но она про номер программы, а не про
- * минуты. Категория надёжнее догадок по тексту.
+ * Раньше плавание исключалось: считалось, что «45» в названии и есть время.
+ * Но человек сам выставляет число кругов, и настоящее время от названия
+ * отличается — показать его честнее, чем прятать за старым числом в имени.
  */
-function showEstimate(category) {
-  return category !== 'pool'
+function showEstimate() {
+  return true
 }
 
 /**
@@ -335,16 +335,21 @@ function prettyName(name, slug) {
 }
 
 /** Строка одной программы: «Сплит 2  день A» либо просто «Заплыв 45». */
+/**
+ * Строка программы: «🏋️ Сплит 2 (день A)» или «🏊 Заплыв 45 (750 м)».
+ *
+ * В скобках — то, что уточняет: у силовой день цикла, у плавания метраж,
+ * который человек выставил себе сам. Название жирным, уточнение обычным.
+ */
 export function programLine(p) {
   const name = prettyName(p.name, p.slug)
   if (!name) return null
-  // У плавания дней нет, у силовой день обязателен. Разделитель — двойной
-  // пробел: точка или запятая в такой короткой строке читались как сокращение.
   const isPool = p.category === 'pool'
   const emoji = CATEGORY_EMOJI[isPool ? 'pool' : 'strength']
-  return isPool || !p.lastDay
-    ? `${emoji} ${name}`
-    : `${emoji} ${name}  день ${p.lastDay}`
+  const detail = isPool
+    ? (p.meters ? formatDistance(p.meters) : null)
+    : (p.lastDay ? `день ${p.lastDay}` : null)
+  return `${emoji} <b>${name}</b>` + (detail ? ` (${detail})` : '')
 }
 
 /**
@@ -365,7 +370,7 @@ export function programLine(p) {
 export function bestMonthLine(bestCount, bestMinutes) {
   if (!bestCount) return null
   const time = formatMinutes(bestMinutes)
-  return `${E.workouts} ${pluralWorkouts(bestCount)}` + (time ? ` (${time})` : '')
+  return `${E.workouts} <b>${pluralWorkouts(bestCount)}</b>` + (time ? ` (${time})` : '')
 }
 
 export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
@@ -413,7 +418,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
     lines.push('', programLine(p))
     // Оценка времени — только когда программа одна. Со списком сообщение
     // работает как меню: там важен выбор, а не план на ближайший час.
-    if (p.estMinutes && showEstimate(p.category)) {
+    if (p.estMinutes && showEstimate()) {
       lines.push(`${E.time} ~${formatMinutes(p.estMinutes)}`)
     }
   } else {
@@ -477,138 +482,4 @@ export function nudgeButtons({ daysSince, programs = [] }) {
     param: paramFor(p),
     style: styleFor(p)
   }))
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   RICH — структурные блоки (Bot API 10.1+)
-   ═══════════════════════════════════════════════════════════════════════════
-
-   Заголовок, разделитель, сворачиваемое «Подробнее» и спойлер. Всё это
-   надстройка: если Telegram не примет формат, отправка откатится на обычное
-   сообщение из функций выше, и человек не заметит разницы, кроме оформления.
-
-   Точная форма простого текста внутри блока в документации не расписана —
-   взята по образцу остальных типов (объект с полем type). Ошиблись — узнаем
-   из первого же теста, и цена ошибки нулевая.
-*/
-
-/*
-   Формы проверены пробником на живом Telegram, а не взяты из документации —
-   там определения классов недоступны, страница обрезается при чтении.
-   Что выяснилось:
-
-     • простой текст внутри блока — ПРОСТАЯ СТРОКА, не объект;
-     • жирный и спойлер — объекты { type, text };
-     • несколько кусков — обычный массив;
-     • типы блоков: paragraph, divider, details, footer, heading;
-     • heading требует поле size — без него Telegram отвечает
-       «Can't find field "size"».
-*/
-
-/** Размер заголовка. Нужен чуть крупнее системного текста, но не баннер. */
-const HEADING_SIZE = 2
-
-const rtBold = (text) => ({ type: 'bold', text })
-const rtSpoiler = (text) => ({ type: 'spoiler', text })
-
-const bHeading = (text) => ({ type: 'heading', size: HEADING_SIZE, text })
-const bDivider = () => ({ type: 'divider' })
-const bPara = (text) => ({ type: 'paragraph', text })
-const bDetails = (title, blocks) => ({ type: 'details', title, blocks })
-
-/** Итоги недели блоками. */
-export function weeklyRich({ totalCount, totalMinutes, breakdown }) {
-  return [
-    bHeading('Итоги недели'),
-    bDivider(),
-    bPara(headLine(E.streak, totalCount, totalMinutes)),
-    bDetails('Подробнее', breakdownLines(breakdown).map(bPara))
-  ]
-}
-
-/** Итоги месяца блоками. */
-export function monthlyRich({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
-  const blocks = [bHeading(`Итоги ${MONTHS_GEN[monthIndex]}`), bDivider()]
-  if (isRecord) blocks.push(bPara([`${E.record} `, rtBold('Новый лучший месяц!')]))
-  blocks.push(bPara(headLine(E.workouts, totalCount, totalMinutes)))
-  blocks.push(bDetails('Подробнее', breakdownLines(breakdown).map(bPara)))
-  blocks.push(bPara(comparisonLine(monthIndex, totalCount, prevCount)
-    || averageLine(totalCount, daysInMonth)))
-  return blocks
-}
-
-/** Итоги года блоками. */
-export function yearlyRich({
-  year, totalCount, totalMinutes, breakdown,
-  bestMonth, bestMonthCount, bestMonthMinutes, recExercise, recWeight, recSwimM
-}) {
-  const blocks = [
-    bHeading(`Итоги ${year} года`),
-    bDivider(),
-    bPara(headLine(E.workouts, totalCount, totalMinutes)),
-    bDetails('Подробнее', breakdownLines(breakdown).map(bPara))
-  ]
-
-  if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
-    const time = formatMinutes(bestMonthMinutes)
-    blocks.push(bPara([`${E.record} `, rtBold('Лучший месяц')]))
-    blocks.push(bPara(`${MONTHS_NOMINATIVE[bestMonth]}, ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
-      + (time ? ` (${time})` : '')))
-  }
-
-  const weight = formatWeight(recWeight)
-  if ((recExercise && weight) || recSwimM) {
-    blocks.push(bPara([`${E.record} `, rtBold('Лучшие результаты')]))
-    if (recExercise && weight) {
-      blocks.push(bPara('Силовая — самый большой рабочий вес'))
-      blocks.push(bPara(`${recExercise} — ${weight}`))
-    }
-    if (recSwimM) {
-      blocks.push(bPara('Плавание — самая длинная дистанция'))
-      blocks.push(bPara(`Заплыв — ${formatDistance(recSwimM)}`))
-    }
-  }
-  return blocks
-}
-
-/**
- * Пинок блоками.
- *
- * Разделителя тут нет намеренно: он расчерчивает отчёт, а пинок — короткая
- * реплика, и линия делала бы из неё бланк.
- *
- * Лучший результат уходит под спойлер: раскрыть его тапом приятнее, чем
- * прочитать сразу, и это единственное место, где уместна маленькая интрига.
- */
-export function nudgeRich({ daysSince, programs = [], bestCount, bestMinutes }) {
-  const title = pauseTitle(daysSince)
-  const blocks = [bHeading(title)]
-
-  if (daysSince >= 28) {
-    if (daysSince >= 112) {
-      blocks.push(bPara('Программы, рабочие веса и вся история на месте — ничего не пропало. Возвращайся, когда захочешь.'))
-    } else {
-      blocks.push(bPara('Программы тренировок на месте. Возвращайся и продолжи любую свою тренировку.'))
-    }
-    const best = bestMonthLine(bestCount, bestMinutes)
-    if (best) {
-      blocks.push(bPara([`${E.record} Твой лучший результат за месяц: `, rtSpoiler(best)]))
-    }
-    return blocks
-  }
-
-  blocks.push(bPara('Продолжим?'))
-
-  if (programs.length === 0) {
-    blocks.push(bPara('Выбери программу и начни с одной тренировки.'))
-  } else if (programs.length === 1) {
-    const p = programs[0]
-    blocks.push(bPara(programLine(p)))
-    if (p.estMinutes && showEstimate(p.category)) {
-      blocks.push(bPara(`${E.time} ~${formatMinutes(p.estMinutes)}`))
-    }
-  } else {
-    blocks.push(bPara('Начни любую свою тренировку:'))
-  }
-  return blocks
 }
