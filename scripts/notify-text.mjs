@@ -15,6 +15,33 @@ const CATEGORY_TITLE = {
   stretch: 'Растяжка'
 }
 
+/**
+ * Эмодзи. Собраны в одном месте намеренно: разбросанные по коду, они
+ * незаметно расползаются, и в соседних сообщениях одна и та же вещь
+ * оказывается помечена по-разному.
+ *
+ * Правило: эмодзи ставится там, где он РАЗЛИЧАЕТ (силовая против плавания)
+ * или НАЗЫВАЕТ (рекорд, время). Украшать им уже понятную строку — шум.
+ */
+const E = {
+  streak: '🔥',      // серия — она у нас недельная, отсюда и место: перед числом недели
+  workouts: '💪',    // тренировки за месяц и год
+  time: '🕓',        // оценка длительности
+  strength: '🏋️',   // силовая
+  pool: '🏊',        // плавание
+  cardio: '🏃',
+  stretch: '🤸',
+  record: '🏆',      // рекорд, лучший результат
+  stats: '📈',       // кнопка статистики
+  start: '▶️',       // кнопка старта
+  choose: '👆',      // кнопка выбора программы
+  back: '↩️'         // кнопка возврата на главную
+}
+
+const CATEGORY_EMOJI = {
+  strength: E.strength, pool: E.pool, cardio: E.cardio, stretch: E.stretch
+}
+
 // Порядок разделов — как в статистике приложения.
 const CATEGORY_ORDER = ['strength', 'pool', 'cardio', 'stretch']
 
@@ -55,42 +82,42 @@ export function formatDistance(meters) {
 }
 
 /**
- * Строка разбивки по видам: «Силовые 2 · Плавание 1 (2,25 км)».
+ * Разбивка по видам — отдельными строками под «Подробнее».
  *
- * Возвращает null, когда разбивка ничего не добавляет: один-единственный вид
- * уже назван общим числом строкой выше, и повторять его — шум.
+ * Число стоит ПЕРЕД названием: глаз читает сводку по цифрам, и они должны
+ * выстраиваться в столбик, а не прятаться в конце разной длины строк.
  */
-export function breakdownLine(breakdown, totalCount) {
-  const entries = CATEGORY_ORDER
+export function breakdownLines(breakdown) {
+  return CATEGORY_ORDER
     .filter((key) => breakdown?.[key]?.count > 0)
     .map((key) => {
       const { count, meters } = breakdown[key]
       const distance = key === 'pool' ? formatDistance(meters) : null
-      return `${CATEGORY_TITLE[key]} ${count}` + (distance ? ` (${distance})` : '')
+      return `${CATEGORY_EMOJI[key]} ${count} ${CATEGORY_TITLE[key]}`
+        + (distance ? ` (${distance})` : '')
     })
-
-  if (entries.length === 0) return null
-
-  // Единственный вид, и он же весь итог — строка была бы пересказом строки
-  // выше. Исключение — плавание: ради метража в скобках её оставляем.
-  if (entries.length === 1) {
-    const onlyKey = CATEGORY_ORDER.find((k) => breakdown?.[k]?.count > 0)
-    if (onlyKey !== 'pool' && breakdown[onlyKey].count === totalCount) return null
-  }
-
-  return entries.join(' · ')
 }
 
-/** Итоги недели. */
+/**
+ * Главная строка сводки: «🔥 3 тренировки (2 ч 15 мин)».
+ *
+ * Время в скобках, а не через точку: скобки читаются как уточнение, точка —
+ * как второй равноправный показатель. Число тренировок тут главное.
+ */
+function headLine(emoji, count, minutes) {
+  const time = formatMinutes(minutes)
+  return `${emoji} ${pluralWorkouts(count)}` + (time ? ` (${time})` : '')
+}
+
+/**
+ * Итоги недели.
+ *
+ * Огонёк перед числом — это серия: у нас она недельная, и «сколько раз
+ * за неделю» и есть её значение. Отдельной строки про серию не нужно.
+ */
 export function weeklyDigest({ totalCount, totalMinutes, breakdown }) {
-  const time = formatMinutes(totalMinutes)
-  const head = time
-    ? `${pluralWorkouts(totalCount)} · ${time}`
-    : pluralWorkouts(totalCount)
-  const lines = ['<b>Итоги недели</b>', '', head]
-  const detail = breakdownLine(breakdown, totalCount)
-  if (detail) lines.push(detail)
-  return lines.join('\n')
+  const lines = ['<b>Итоги недели</b>', '', headLine(E.streak, totalCount, totalMinutes), '']
+  return lines.concat(breakdownLines(breakdown)).join('\n').trimEnd()
 }
 
 /**
@@ -107,30 +134,32 @@ export function averageLine(totalCount, daysInMonth) {
   return `В среднем ${pluralWorkouts(rounded)} в неделю.`
 }
 
-/** Итоги месяца. */
-export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth }) {
-  const time = formatMinutes(totalMinutes)
-  const head = time
-    ? `${pluralWorkouts(totalCount)} · ${time}`
-    : pluralWorkouts(totalCount)
-
-  // «Итоги августа», а не просто «Август»: все три сводки построены одинаково,
-  // и в ленте они читаются как один ряд, а не как три разные рассылки.
-  const lines = [`<b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '', head]
-  const detail = breakdownLine(breakdown, totalCount)
-  if (detail) lines.push(detail)
-
-  // Сравнение — только когда в плюс. «На 5 меньше, чем в июле» — тот самый
-  // укор, ради отсутствия которого всё и затевалось. Стало хуже — молчим
-  // и показываем средний режим.
+/** Строка сравнения с прошлым месяцем — только когда в плюс, иначе null. */
+export function comparisonLine(monthIndex, totalCount, prevCount) {
   const diff = totalCount - (prevCount || 0)
+  if (!(prevCount > 0 && diff > 0)) return null
   const prevMonthIndex = (monthIndex + 11) % 12
+  return `На ${E.workouts} ${pluralWorkouts(diff)} больше, чем в ${MONTHS_PREP[prevMonthIndex]}.`
+}
+
+/**
+ * Итоги месяца.
+ *
+ * «Итоги августа», а не просто «Август»: все три сводки построены одинаково,
+ * и в ленте читаются как один ряд, а не как три разные рассылки.
+ *
+ * Сравнение показываем только когда в плюс. «На 5 меньше, чем в июле» — тот
+ * самый укор, ради отсутствия которого всё и затевалось; когда хуже, вместо
+ * него идёт спокойный средний режим.
+ */
+export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
+  const lines = [`<b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '']
+  if (isRecord) lines.push(`${E.record} <b>Новый лучший месяц!</b>`, '')
+  lines.push(headLine(E.workouts, totalCount, totalMinutes), '')
+  lines.push(...breakdownLines(breakdown))
   lines.push('')
-  if (prevCount > 0 && diff > 0) {
-    lines.push(`На ${pluralWorkouts(diff)} больше, чем в ${MONTHS_PREP[prevMonthIndex]}.`)
-  } else {
-    lines.push(averageLine(totalCount, daysInMonth))
-  }
+  lines.push(comparisonLine(monthIndex, totalCount, prevCount)
+    || averageLine(totalCount, daysInMonth))
   return lines.join('\n')
 }
 
@@ -150,36 +179,39 @@ function formatWeight(kg) {
  */
 export function yearlyDigest({
   year, totalCount, totalMinutes, breakdown,
-  bestMonth, bestMonthCount, recExercise, recWeight, recSwimM
+  bestMonth, bestMonthCount, bestMonthMinutes, recExercise, recWeight, recSwimM
 }) {
-  const time = formatMinutes(totalMinutes)
-  const head = time
-    ? `${pluralWorkouts(totalCount)} · ${time}`
-    : pluralWorkouts(totalCount)
+  const head = headLine(E.workouts, totalCount, totalMinutes)
 
-  const lines = [`<b>Итоги ${year} года</b>`, '', head]
-  const detail = breakdownLine(breakdown, totalCount)
-  if (detail) lines.push(detail)
+  const lines = [`<b>Итоги ${year} года</b>`, '', head, '']
+  lines.push(...breakdownLines(breakdown))
 
   // Лучший месяц называем, только если он и правда выделяется. Когда весь год
   // уместился в один-два раза, «лучший месяц — март, 1 тренировка» звучит
   // насмешкой.
   if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
     lines.push('')
-    // Именительный падеж, а не предложный: «Лучший месяц — июнь», не «июне».
-    // MONTHS_GENITIVE здесь не годится, он для оборота «больше, чем в июне».
-    const monthName = MONTHS_NOMINATIVE[bestMonth].toLowerCase()
-    lines.push(`Лучший месяц — ${monthName}, ${pluralWorkouts(bestMonthCount)}.`)
+    lines.push(`${E.record} <b>Лучший месяц</b>`)
+    // Именительный падеж: «Июнь», не «июне» — это подпись, а не оборот.
+    const monthName = MONTHS_NOMINATIVE[bestMonth]
+    lines.push(`${monthName}, ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
+      + (bestMonthMinutes ? ` (${formatMinutes(bestMonthMinutes)})` : ''))
   }
 
+  // Каждый рекорд с подписью, ЧТО именно рекорд: «105 кг» само по себе
+  // ничего не говорит, а «самый большой рабочий вес» — говорит.
   const records = []
   const weight = formatWeight(recWeight)
-  if (recExercise && weight) records.push(`${recExercise} — ${weight}`)
-  if (recSwimM) records.push(`Заплыв — ${formatDistance(recSwimM)}`)
+  if (recExercise && weight) {
+    records.push('Силовая — самый большой рабочий вес', `${recExercise} — ${weight}`)
+  }
+  if (recSwimM) {
+    records.push('Плавание — самая длинная дистанция', `Заплыв — ${formatDistance(recSwimM)}`)
+  }
 
   if (records.length) {
     lines.push('')
-    lines.push('<b>Лучшие результаты</b>')
+    lines.push(`${E.record} <b>Лучшие результаты</b>`)
     for (const r of records) lines.push(r)
   }
 
@@ -309,7 +341,10 @@ export function programLine(p) {
   // У плавания дней нет, у силовой день обязателен. Разделитель — двойной
   // пробел: точка или запятая в такой короткой строке читались как сокращение.
   const isPool = p.category === 'pool'
-  return isPool || !p.lastDay ? name : `${name}  день ${p.lastDay}`
+  const emoji = CATEGORY_EMOJI[isPool ? 'pool' : 'strength']
+  return isPool || !p.lastDay
+    ? `${emoji} ${name}`
+    : `${emoji} ${name}  день ${p.lastDay}`
 }
 
 /**
@@ -320,42 +355,53 @@ export function programLine(p) {
  * `programs` — закреплённые программы человека (может быть пусто, одна или
  * несколько: силовая и плавание закрепляются независимо).
  */
-export function nudge({ daysSince, programs = [] }) {
+/**
+ * Строка «лучший результат за месяц» — для длинных пауз.
+ *
+ * Напоминание о том, на что человек способен, работает лучше уговоров:
+ * это его собственный результат, а не обещание. В rich-варианте цифры
+ * спрятаны под спойлер — раскрыть их тапом приятнее, чем прочитать сразу.
+ */
+export function bestMonthLine(bestCount, bestMinutes) {
+  if (!bestCount) return null
+  const time = formatMinutes(bestMinutes)
+  return `${E.workouts} ${pluralWorkouts(bestCount)}` + (time ? ` (${time})` : '')
+}
+
+export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
   const title = pauseTitle(daysSince)
 
   // Очень долгая пауза. Здесь важно только одно: человек боится, что за это
   // время всё обнулилось. Поэтому перечисляем именно то, что цело.
   if (daysSince >= 112) {
-    return [
+    const lines = [
       `<b>${title}</b>`, '',
       'Программы, рабочие веса и вся история на месте —',
       'ничего не пропало. Возвращайся, когда захочешь.'
-    ].join('\n')
+    ]
+    const best = bestMonthLine(bestCount, bestMinutes)
+    if (best) lines.push('', `${E.record} Твой лучший результат за месяц: ${best}`)
+    return lines.join('\n')
   }
 
   // Месяц и больше: ни программ, ни дней, ни минут. Всё это давит на того,
   // кто уже считает, что бросил. Формулировка нарочно не про «дни»: у плавания
   // дней нет, и «вернись с любого дня» для него бессмысленно.
   if (daysSince >= 28) {
-    return [
+    const lines = [
       `<b>${title}</b>`, '',
       'Программы тренировок на месте.',
       'Возвращайся и продолжи любую свою тренировку.'
-    ].join('\n')
+    ]
+    const best = bestMonthLine(bestCount, bestMinutes)
+    if (best) lines.push('', `${E.record} Твой лучший результат за месяц: ${best}`)
+    return lines.join('\n')
   }
 
-  // Две-три недели: планка входа снижается, программы не называются. Выпавшему
-  // нужен маленький шаг, а конкретный день с конкретным временем — это снова
-  // полный объём. Про «одно упражнение» тут не говорим: тренировкой может быть
-  // и заплыв, где упражнений нет.
-  if (daysSince >= 14) {
-    return [
-      `<b>${title}</b>`, '',
-      'Выбери любую свою тренировку и продолжай.'
-    ].join('\n')
-  }
-
-  const lines = [`<b>${title}</b>`, '']
+  // Недели: две и три отличаются от одной только заголовком. Форма одна —
+  // вопрос, программа, кнопка: человек, пропустивший две недели, знает свою
+  // программу не хуже того, кто пропустил одну.
+  const lines = [`<b>${title}</b>`, '', 'Продолжим?']
 
   if (programs.length === 0) {
     // Закреплённых программ нет — вести некуда. Выбирать за человека мы
@@ -364,17 +410,17 @@ export function nudge({ daysSince, programs = [] }) {
     lines.push('Выбери программу и начни с одной тренировки.')
   } else if (programs.length === 1) {
     const p = programs[0]
-    lines.push(programLine(p))
+    lines.push('', programLine(p))
     // Оценка времени — только когда программа одна. Со списком сообщение
     // работает как меню: там важен выбор, а не план на ближайший час.
     if (p.estMinutes && showEstimate(p.category)) {
-      lines.push(`~${formatMinutes(p.estMinutes)}`)
+      lines.push(`${E.time} ~${formatMinutes(p.estMinutes)}`)
     }
   } else {
     // Несколько закрепов — названия уходят на кнопки, в тексте их нет.
     // Раньше они стояли и там и там: человек читал «Сплит 2» дважды подряд,
     // и сообщение выглядело так, будто в нём сбой.
-    lines.push('Начать:')
+    lines.push('Начни любую свою тренировку:')
   }
 
   return lines.join('\n').trimEnd()
@@ -409,14 +455,13 @@ export function nudgeButtons({ daysSince, programs = [] }) {
   // «Начать» обещает готовую тренировку по нажатию — а там ещё выбирать.
   // Хвост у параметра разный, хотя ведут все три на главную: по нему потом
   // видно, КАКОЕ напоминание вернуло человека. Без этого пинки неразличимы.
-  const toApp = (param) => [{ label: 'Открыть приложение', param, style: BTN_STYLE.ACCENT }]
+  const toApp = (param) => [{ label: `${E.back} Вернуться к тренировкам`, param, style: BTN_STYLE.ACCENT }]
 
   if (daysSince >= 28) return toApp('open-m')
-  if (daysSince >= 14) return toApp('open-w2')
   // Закрепов нет — на главной человека ждёт именно выбор программы,
   // так кнопку и подписываем: она обещает ровно то, что произойдёт.
   if (programs.length === 0) {
-    return [{ label: 'Выбрать программу', param: 'open-np', style: BTN_STYLE.ACCENT }]
+    return [{ label: `${E.choose} Выбрать программу`, param: 'open-np', style: BTN_STYLE.ACCENT }]
   }
 
   const paramFor = (p) => p.category === 'pool'
@@ -425,10 +470,10 @@ export function nudgeButtons({ daysSince, programs = [] }) {
   const styleFor = (p) => p.category === 'pool' ? BTN_STYLE.POOL : BTN_STYLE.ACCENT
 
   if (programs.length === 1) {
-    return [{ label: 'Начать', param: paramFor(programs[0]), style: styleFor(programs[0]) }]
+    return [{ label: `${E.start} Начать`, param: paramFor(programs[0]), style: styleFor(programs[0]) }]
   }
   return programs.map((p) => ({
-    label: prettyName(p.name, p.slug),
+    label: `${CATEGORY_EMOJI[p.category === 'pool' ? 'pool' : 'strength']} ${prettyName(p.name, p.slug)}`,
     param: paramFor(p),
     style: styleFor(p)
   }))

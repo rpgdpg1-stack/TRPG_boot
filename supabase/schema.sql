@@ -1633,6 +1633,22 @@ AS $$
   WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
 $$;
 
+-- Лучший месяц человека за всё время. Нужен месячной сводке (плашка
+-- «новый рекорд») и пинкам за месяц и дольше: напоминание о том, на что
+-- человек способен, работает лучше уговоров.
+CREATE OR REPLACE FUNCTION public.srv_best_month(p_user_id bigint, p_before timestamptz DEFAULT NULL)
+RETURNS TABLE (cnt integer, minutes integer)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
+AS $$
+  SELECT count(*)::int,
+         COALESCE(sum(GREATEST(0, ROUND(EXTRACT(EPOCH FROM (finished_at - started_at)) / 60)::int)), 0)::int
+  FROM public.workouts
+  WHERE user_id = p_user_id AND finished_at IS NOT NULL
+    AND (p_before IS NULL OR finished_at < p_before)
+  GROUP BY date_trunc('month', timezone('Europe/Moscow', finished_at))
+  ORDER BY count(*) DESC LIMIT 1;
+$$;
+
 -- Итоги месяца (1-го числа). prev_count отдаём сырым: сравнение показывается
 -- только когда оно в плюс, и решает это бот.
 CREATE OR REPLACE FUNCTION public.srv_monthly_digest()

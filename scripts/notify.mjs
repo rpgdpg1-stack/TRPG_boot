@@ -269,14 +269,14 @@ async function sendSamples(bot) {
     ['итоги недели',
      weeklyDigest({ totalCount: 3, totalMinutes: 135,
        breakdown: { strength: { count: 2, meters: 0 }, pool: { count: 1, meters: 2250 } } }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-week'), style: BTN_STYLE.ACCENT }],
+     [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-week'), style: BTN_STYLE.ACCENT }],
      IMAGES.weekly],
 
     ['итоги месяца',
      monthlyDigest({ monthIndex: 6, totalCount: 12, totalMinutes: 580,
        breakdown: { strength: { count: 8, meters: 0 }, pool: { count: 4, meters: 9000 } },
        prevCount: 9, daysInMonth: 31 }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-month'), style: BTN_STYLE.ACCENT }],
+     [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-month'), style: BTN_STYLE.ACCENT }],
      IMAGES.monthly],
 
     nudgeSample('пинок: неделя, два закрепа', { daysSince: 8, programs: [gym, pool] }),
@@ -293,7 +293,7 @@ async function sendSamples(bot) {
        bestMonth: 5, bestMonthCount: 14,
        recExercise: 'Тяга верхнего блока нейтральным хватом',
        recWeight: '105.00', recSwimM: 750 }),
-     [{ text: 'Открыть статистику', url: appLink(bot, 'stats-year'), style: BTN_STYLE.ACCENT }],
+     [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-year'), style: BTN_STYLE.ACCENT }],
      IMAGES.yearly]
   ]
 
@@ -373,6 +373,7 @@ async function main() {
             breakdown: r.breakdown,
             bestMonth: r.best_month,
             bestMonthCount: r.best_month_count,
+            bestMonthMinutes: r.best_month_minutes,
             recExercise: r.rec_exercise,
             recWeight: r.rec_weight,
             recSwimM: r.rec_swim_m
@@ -386,6 +387,7 @@ async function main() {
             totalMinutes: r.total_minutes,
             breakdown: r.breakdown,
             prevCount: r.prev_count,
+            isRecord: r.is_record,
             daysInMonth
           })
         }
@@ -396,7 +398,7 @@ async function main() {
         // тридцати сообщений в секунду на бота.
         await sleep(120)
         const result = await send(r.telegram_id, text, [{
-          text: 'Открыть статистику',
+          text: '📈 Открыть статистику',
           url: appLink(bot, KIND === 'weekly' ? 'stats-week'
             : KIND === 'yearly' ? 'stats-year' : 'stats-month'),
           style: BTN_STYLE.ACCENT
@@ -412,7 +414,12 @@ async function main() {
       for (const r of rows) {
         if (ONLY && String(r.telegram_id) !== ONLY) { stats.skipped++; continue }
 
-        const payload = { daysSince: r.days_since, programs: r.programs || [] }
+        const payload = {
+          daysSince: r.days_since,
+          programs: r.programs || [],
+          bestCount: r.best_count,
+          bestMinutes: r.best_minutes
+        }
         const text = nudge(payload)
         const buttons = nudgeButtons(payload).map((b) => ({
           text: b.label,
