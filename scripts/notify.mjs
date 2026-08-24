@@ -71,8 +71,8 @@ const IMAGES = {
 
 /** Картинка пинка по масштабу паузы: недели → месяцы → давно. */
 function nudgeImage(daysSince) {
-  if (daysSince >= 112) return IMAGES.nudgeLong
-  if (daysSince >= 28) return IMAGES.nudgeMonth
+  if (daysSince >= 90) return IMAGES.nudgeLong
+  if (daysSince >= 30) return IMAGES.nudgeMonth
   return IMAGES.nudgeWeek
 }
 
@@ -290,9 +290,8 @@ async function sendSamples(bot) {
     nudgeSample('пинок: неделя, только силовая', { daysSince: 8, programs: [gym] }),
     nudgeSample('пинок: неделя, только плавание', { daysSince: 8, programs: [pool] }),
     nudgeSample('пинок: неделя, закрепов нет', { daysSince: 8, programs: [] }),
-    nudgeSample('пинок: две недели', { daysSince: 15, programs: [gym, pool] }),
-    nudgeSample('пинок: месяц', { daysSince: 40, programs: [gym, pool], bestCount: 14, bestMinutes: 810 }),
-    nudgeSample('пинок: давно', { daysSince: 200, programs: [], bestCount: 14, bestMinutes: 810 }),
+    nudgeSample('пинок: месяц', { daysSince: 35, programs: [gym, pool], bestCount: 14, bestMinutes: 810 }),
+    nudgeSample('пинок: давно', { daysSince: 95, programs: [], bestCount: 14, bestMinutes: 810 }),
 
     (() => {
       const d = { year: 2026, totalCount: 30, totalMinutes: 375,

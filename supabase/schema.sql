@@ -1796,14 +1796,17 @@ AS $$
       AND w2.finished_at <  timezone('Europe/Moscow', b.this_week))
     AND NOT EXISTS (SELECT 1 FROM public.workouts w3 WHERE w3.user_id = u.id
       AND w3.finished_at >= timezone('Europe/Moscow', b.this_week))
-    -- Частота зависит от длины паузы: первый месяц — еженедельно,
-    -- до четырёх месяцев — раз в месяц, дальше — раз в три месяца.
+    -- Ступени: неделя → месяц → три месяца, дальше тишина навсегда. Каждая
+    -- срабатывает ровно один раз: берём самый большой перешагнутый порог и
+    -- шлём, только если после него ещё не писали. Отсчёт от последней
+    -- ТРЕНИРОВКИ — тогда пропущенный запуск не сдвигает всю лестницу.
+    AND EXTRACT(DAY FROM (now() - lw.last_at))::int >= 7
     AND (u.last_nudge_at IS NULL
-         OR u.last_nudge_at < now() - (
+         OR u.last_nudge_at < lw.last_at + (
               CASE
-                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int < 28  THEN interval '6 days'
-                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int < 112 THEN interval '27 days'
-                ELSE interval '89 days'
+                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int >= 90 THEN interval '90 days'
+                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int >= 30 THEN interval '30 days'
+                ELSE interval '7 days'
               END));
 $$;
 
