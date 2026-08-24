@@ -1,5 +1,6 @@
 import MuscleIcon from './MuscleIcon'
 import { formatStatTime, formatMeters, CATEGORY_ORDER } from '../utils/history'
+import { pluralizeWorkouts } from '../utils/plural'
 import SectionBadge from './SectionBadge'
 
 // Бицепс главного показателя.
@@ -125,12 +126,17 @@ export function Distance({ meters, color, inherit = false }) {
   )
 }
 
+// Слово показателя пишем с большой буквы («50 Тренировок»), а склоняем общей
+// утилитой — своих правил счёта тут не заводим.
+const capitalize = (w) => w.charAt(0).toUpperCase() + w.slice(1)
+
 /**
  * Главный показатель статистики — ОДИН на все места, где она показана: карточка
  * на главной, экран Истории, модалка статистики в своём профиле и в профиле друга.
  *
- * Вид: залитый бежевый бицепс + число тренировок + слово «Тренировок» белым, и
- * следом время в скобках серым. Отдельной иконки часов больше нет: время — не
+ * Вид: залитый бежевый бицепс + число тренировок + слово белым (склоняется по
+ * числу: «1 Тренировка» · «3 Тренировки» · «50 Тренировок»), и следом время в
+ * скобках серым. Отдельной иконки часов больше нет: время — не
  * второй показатель наравне, а уточнение к тренировкам, поэтому оно и стоит в
  * скобках тихим серым сразу за словом.
  *
@@ -143,7 +149,7 @@ export function WorkoutsTotal({ count, minutes, iconSize = ICON }) {
     <span style={styles.totalTop}>
       <MuscleIcon size={iconSize} filled />
       <span style={styles.totalValue}>{count}</span>
-      <span style={styles.totalWord}>Тренировок</span>
+      <span style={styles.totalWord}>{capitalize(pluralizeWorkouts(count))}</span>
       <span style={styles.totalTime}>({formatStatTime(minutes)})</span>
     </span>
   )
@@ -161,7 +167,8 @@ const styles = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     flexWrap: 'wrap', gap: 'var(--space-1)', rowGap: 'var(--space-05)', minWidth: 0
   },
-  // Слово «Тренировок» — белым: это подпись главного показателя, а не единица.
+  // Слово «Тренировка/Тренировки/Тренировок» — белым: это подпись главного
+  // показателя, а не единица измерения.
   totalWord: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text)', whiteSpace: 'nowrap'

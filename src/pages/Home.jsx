@@ -3,6 +3,7 @@ import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { EVENTS, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
+import { pluralizeWorkouts } from '../utils/plural'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
@@ -12,13 +13,6 @@ import StreakInfoPopup from '../components/StreakInfoPopup'
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
 // строка-информер, не карточка.
 const capitalize = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t)
-
-function pluralTraining(n) {
-  const d = n % 10, dd = n % 100
-  if (d === 1 && dd !== 11) return 'тренировка'
-  if (d >= 2 && d <= 4 && (dd < 10 || dd >= 20)) return 'тренировки'
-  return 'тренировок'
-}
 
 function WeekStrip() {
   const [streak, setStreak] = useState(() => {
@@ -57,7 +51,7 @@ function WeekStrip() {
             {streak}
           </span>
         </span>
-        <span style={stripStyles.label}>{capitalize(pluralTraining(streak))} на этой неделе</span>
+        <span style={stripStyles.label}>{capitalize(pluralizeWorkouts(streak))} на этой неделе</span>
       </button>
 
       <StreakInfoPopup
