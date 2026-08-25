@@ -11,12 +11,25 @@ import UiIcon from './UiIcon'
 
 /**
  * Модалка завершения тренировки — с фирменным жестом «+1 мускул».
+ * ОДНА на все разделы: силовая (`WorkoutDay`), заплыв (`SwimWorkout`) и любой
+ * будущий (бег, растяжка). Раздел не рисует свою модалку и не меняет её вид —
+ * он только передаёт свои показатели пропсами (`durationLabel`, `distanceLabel`).
  *
  * Сценарий (зачёт/лимит):
- *   1) Модалка появляется СРАЗУ (микроанимация scale+fade) — со всем текстом.
+ *   1) Модалка появляется СРАЗУ (микроанимация scale+fade) — панель, жест, заголовок
+ *      и кнопка стоят на своих местах с первого кадра.
  *   2) Жест играет ВНУТРИ неё: бицепс качается один раз и застывает, «+1» улетает
  *      вверх и гаснет (как на лоадере), искры продолжают лететь.
- *   3) «ОК» — модалка уходит обратной микроанимацией, затем `onConfirm`.
+ *   3) Блоки с данными встают ОЧЕРЕДЬЮ (`blockPopIn`: увеличились и сели на место):
+ *      строка показателей → возвращение → рекорды. Следующий ждёт, пока отыграет
+ *      предыдущий, — модалка не «доливается» кусками в случайном порядке.
+ *   4) «ОК» — модалка уходит обратной микроанимацией, затем `onConfirm`.
+ *
+ * Почему очередь, а не «показать всё сразу»: показатели зависят от ответа сервера
+ * (серия за неделю — от `api_finish_workout`), рекорды и возвращение — от второго
+ * запроса (`api_workout_highlights`). Раньше они молча подменяли уже показанные
+ * цифры (огонёк прыгал 2→3) и вываливались в панель, когда доедут. Теперь место под
+ * строку показателей зарезервировано, а каждый блок ВПЕРВЫЕ появляется уже готовым.
  *
  * Никакие мускулы/очки НЕ копятся — «+1» = «+1 тренировка» (идёт в недельный стрик
  * и счётчики статистики), лимит силовой — 1 в сутки.
@@ -25,6 +38,37 @@ import UiIcon from './UiIcon'
  * При error/offline — обычная иконка (⚠️/📵), без жеста и без задержки.
  */
 const CLOSE_MS = 260
+// Первый блок очереди ждёт, пока улетит «+1» жеста: цифры не должны вставать
+// в кадр, где ещё всё движется.
+const FIRST_REVEAL_MS = 620
+// Шаг очереди — столько длится само «увеличение и посадка» блока.
+const REVEAL_STEP_MS = 520
+// Сколько ждём сервер молча. Дольше — в зарезервированной строке проступает
+// скелетон, чтобы пустое место не читалось как «всё, больше ничего не будет».
+const SKELETON_AFTER_MS = 450
+const REVEAL_ANIM = `blockPopIn ${REVEAL_STEP_MS}ms var(--ease-ios) both`
+
+/**
+ * Очередь появления блоков. `ready` — сколько блоков С НАЧАЛА очереди уже
+ * готовы (данные пришли); возвращает, сколько из них уже показано.
+ *
+ * Блок встаёт не раньше, чем (а) пришли его данные и (б) отыграл предыдущий.
+ * Пришли все разом — очередь всё равно разложит их по шагам; пришли с
+ * опозданием — блок появится сразу, но той же анимацией, а не «мигнёт».
+ */
+function useRevealQueue(ready, firstDelay = FIRST_REVEAL_MS) {
+  const [shown, setShown] = useState(0)
+  const nextAt = useRef(Date.now() + firstDelay)
+  useEffect(() => {
+    if (shown >= ready) return
+    const t = setTimeout(() => {
+      nextAt.current = Date.now() + REVEAL_STEP_MS
+      setShown(n => n + 1)
+    }, Math.max(0, nextAt.current - Date.now()))
+    return () => clearTimeout(t)
+  }, [shown, ready])
+  return shown
+}
 
 /** «32 дня» / «31 день» / «35 дней». */
 function daysWord(n) {
@@ -77,6 +121,26 @@ export default function WorkoutFinishedModal({
     return () => { off(); off2() }
   }, [])
 
+  // Что вообще будет в очереди. Блок с данными сервера попадает в неё только
+  // когда данные ПРИШЛИ, поэтому очередь не «зависает» на том, чего не будет.
+  const statsReady = !isSaving && !isError
+  const hasComeback = celebratory && comebackDays > 0
+  const hasRecords = celebratory && records.length > 0
+  const readyCount = statsReady ? 1 + (hasComeback ? 1 : 0) + (hasRecords ? 1 : 0) : 0
+  // Оффлайн/ошибку ждать нечего: жеста с улетающим «+1» там нет.
+  const shown = useRevealQueue(readyCount, celebratory ? FIRST_REVEAL_MS : 0)
+  const statsShown = shown >= 1
+  const comebackShown = hasComeback && shown >= 2
+  const recordsShown = hasRecords && shown >= (hasComeback ? 3 : 2)
+
+  // Сервер думает дольше обычного — показываем скелетон вместо пустого места.
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (statsShown) return
+    const t = setTimeout(() => setSlow(true), SKELETON_AFTER_MS)
+    return () => clearTimeout(t)
+  }, [statsShown])
+
   const titleText = isError ? 'Не удалось сохранить' : offline ? 'Сохранено локально' : 'Тренировка завершена'
   const buttonText = isSaving ? 'Сохранение…' : isError ? 'Повторить' : 'Готово'
 
@@ -106,32 +170,39 @@ export default function WorkoutFinishedModal({
               {titleText}
             </div>
 
-            {/* Одна строка показателей: серия (огонёк + цифра) и время. Оба —
-                тем же кеглем/шрифтом, что счётчик серии на главной и в профиле.
-                Пульс — синхронно с улетающим «+1» (тот же timerPulse, что у
-                цифр шапки дня на старте тренировки). */}
+            {/* Одна строка показателей: серия (огонёк + цифра), дистанция и время.
+                Все — тем же кеглем/шрифтом, что счётчик серии на главной и в профиле.
+                Место под строку держится ВСЕГДА (`statsSlot`), даже пока идёт
+                сохранение: панель не должна прыгать, когда ответит сервер. */}
             {!isError && (
-              <div style={{
-                ...styles.statsRow,
-                ...(celebratory ? { animation: 'timerPulse 700ms var(--ease-ios) 620ms both' } : null)
-              }}>
-                <span style={styles.stat}>
-                  <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
-                  <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
-                </span>
-                {/* Дистанция — только у плавания. Обычная метрика: число
-                    акцентом, единица серым. Иконки вида тут НЕТ — строка и так
-                    читается, а лишний значок делал её пёстрой. */}
-                {distanceLabel && <Metric label={distanceLabel} />}
-                {durationLabel && (
-                  <span style={styles.stat}>
-                    {/* Время — СИГНАЛ (уложился / затянул / перебрал), поэтому
-                        вся группа целиком в цвет зоны: часы, число и единица.
-                        Покрась тут одну цифру — читалось бы как «важное число»,
-                        а не как предупреждение. */}
-                    <span style={{ ...styles.statClock, color: durationColor }}><ClockIcon size={18} /></span>
-                    <Duration label={durationLabel} color={durationColor} />
-                  </span>
+              <div style={styles.statsSlot}>
+                {!statsShown && (
+                  <div style={{ ...styles.statsRow, opacity: slow ? 1 : 0, transition: 'opacity 200ms ease' }} aria-hidden="true">
+                    <span style={{ ...styles.skPill, width: '54px' }} />
+                    <span style={{ ...styles.skPill, width: '72px' }} />
+                  </div>
+                )}
+                {statsShown && (
+                  <div style={{ ...styles.statsRow, animation: REVEAL_ANIM }}>
+                    <span style={styles.stat}>
+                      <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
+                      <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
+                    </span>
+                    {/* Дистанция — только у плавания. Обычная метрика: число
+                        акцентом, единица серым. Иконки вида тут НЕТ — строка и так
+                        читается, а лишний значок делал её пёстрой. */}
+                    {distanceLabel && <Metric label={distanceLabel} />}
+                    {durationLabel && (
+                      <span style={styles.stat}>
+                        {/* Время — СИГНАЛ (уложился / затянул / перебрал), поэтому
+                            вся группа целиком в цвет зоны: часы, число и единица.
+                            Покрась тут одну цифру — читалось бы как «важное число»,
+                            а не как предупреждение. */}
+                        <span style={{ ...styles.statClock, color: durationColor }}><ClockIcon size={18} /></span>
+                        <Duration label={durationLabel} color={durationColor} />
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -140,8 +211,8 @@ export default function WorkoutFinishedModal({
                 стоит сразу под показателями, до конкретных цифр рекордов.
                 Только в успешном исходе: поздравлять с возвращением, когда
                 тренировка не сохранилась, — издевательство. */}
-            {celebratory && comebackDays > 0 && (
-              <div style={styles.comeback}>
+            {comebackShown && (
+              <div style={{ ...styles.comeback, animation: REVEAL_ANIM }}>
                 <UiIcon name="celebration" size={26} />
                 <span>
                   <b>{comebackDays}</b> {daysWord(comebackDays)} без тренировок —
@@ -151,8 +222,8 @@ export default function WorkoutFinishedModal({
             )}
 
             {/* Рекорды: только рост. Каждая строка — что выросло и насколько. */}
-            {celebratory && records.length > 0 && (
-              <div style={styles.records}>
+            {recordsShown && (
+              <div style={{ ...styles.records, animation: REVEAL_ANIM }}>
                 <div style={styles.recordsTitle}>
                   <UiIcon name="trophy" size={18} color="var(--color-primary)" />
                   <span>Новые результаты</span>
@@ -169,16 +240,22 @@ export default function WorkoutFinishedModal({
               </div>
             )}
 
+            {/* Похвала / заметка о лимите ждут ответа сервера и встают ВМЕСТЕ со
+                строкой показателей: иначе «Отличная работа!» успевало моргнуть и
+                смениться на «достигнут лимит» прямо на глазах. Высота слота
+                фиксирована — панель от подмены не прыгает. */}
             {isError ? (
               <div style={styles.errorMessage}>{errorMsg || 'Проверь подключение к интернету и попробуй ещё раз.'}</div>
+            ) : !statsShown ? (
+              <div style={styles.praise} aria-hidden="true" />
             ) : offline ? (
               <div style={styles.errorMessage}>Тренировка сохранена на телефоне.<br />Данные обновятся, как только появится интернет.</div>
             ) : alreadyToday ? (
               // Лимит занимает МЕСТО похвалы (не добавляется под ней) — иначе
               // панель прыгала, когда сервер отвечал «уже засчитано».
-              <div style={styles.limitNote}>{limitNote || <>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</>}</div>
+              <div style={{ ...styles.limitNote, animation: REVEAL_ANIM }}>{limitNote || <>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</>}</div>
             ) : (
-              <div style={styles.praise}>Отличная работа!</div>
+              <div style={{ ...styles.praise, animation: REVEAL_ANIM }}>Отличная работа!</div>
             )}
 
             {/* Кнопка — крупная (md), как «Начать» в дне: это главное действие
@@ -318,8 +395,13 @@ const styles = {
   },
   // Прирост — тише самого значения: главное «стало», а не «насколько».
   recordDelta: { fontWeight: 500, color: 'var(--color-primary)' },
-  // Строка показателей: [огонёк N] [часы N мин] — в линию, одинаковым кеглем.
+  // Место под строку показателей держится с первого кадра — панель не прыгает,
+  // когда придёт ответ сервера и строка встанет.
+  statsSlot: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '26px', width: '100%' },
+  // Строка показателей: [огонёк N] [750 м] [часы N мин] — в линию, одинаковым кеглем.
   statsRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-5)' },
+  // Скелетон строки — проступает, только если сервер думает дольше обычного.
+  skPill: { height: '20px', borderRadius: 'var(--radius-xs)', background: 'var(--layer-1)' },
   stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
   statNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },

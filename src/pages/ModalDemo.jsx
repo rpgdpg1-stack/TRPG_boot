@@ -6,7 +6,7 @@
  * проходя каждый раз настоящую тренировку: возвращение и рекорды случаются
  * редко, и дожидаться их ради проверки вёрстки нельзя.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 
 const CASES = {
@@ -34,6 +34,20 @@ const CASES = {
 
 export default function ModalDemo() {
   const [name, setName] = useState('Возвращение + рекорды')
+  // «Как в жизни» — с настоящими задержками: сохранение (900 мс), потом ответ
+  // сервера, потом вторым запросом украшения (ещё 900 мс). Ради этого режима
+  // витрина и нужна: очередь появления блоков проверяется только на задержках.
+  const [live, setLive] = useState(false)
+  const [phase, setPhase] = useState(2)
+  useEffect(() => {
+    if (!live) { setPhase(2); return }
+    setPhase(0)
+    const a = setTimeout(() => setPhase(1), 900)
+    const b = setTimeout(() => setPhase(2), 1800)
+    return () => { clearTimeout(a); clearTimeout(b) }
+  }, [live, name])
+  const c = CASES[name]
+  const props = phase >= 2 ? c : { distanceLabel: c.distanceLabel }
 
   return (
     <div style={{ padding: 'var(--space-4)', paddingTop: 'var(--tg-safe-top)' }}>
@@ -50,12 +64,22 @@ export default function ModalDemo() {
             }}
           >{k}</button>
         ))}
+        <button
+          onClick={() => setLive(v => !v)}
+          style={{
+            padding: '8px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--layer-2)',
+            background: live ? 'var(--color-surface-active)' : 'transparent',
+            color: live ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+            fontFamily: 'var(--font-manrope)', fontSize: 13, fontWeight: 700
+          }}
+        >Как в жизни (задержки)</button>
       </div>
 
       <WorkoutFinishedModal
-        key={name}
+        key={`${name}-${live}`}
         durationLabel="48 мин"
-        {...CASES[name]}
+        status={phase === 0 ? 'saving' : 'idle'}
+        {...props}
         onConfirm={() => {}}
       />
     </div>
