@@ -23,11 +23,11 @@ import MuscleIcon from './MuscleIcon'
  * работала, а не был мгновенный показ/скрытие.
  */
 // Отклик иконки на тап по своему табу. Длительность и кривая — 1:1 с жестом
-// бицепса (`muscleFlexOnce 0.7s ease-in-out` в MuscleIcon): все три таба
+// бицепса (`muscleFlexOnce 0.5s ease-in-out` в MuscleIcon): все три таба
 // отвечают на тап одинаково, иначе «Профиль» и «Друзья» щёлкали заметно
 // быстрее, чем разминался бицепс, и таб-бар читался как собранный из разных
 // деталей. Меняешь тут — меняй и в MuscleIcon.
-const ICON_POP = 'tabIconPop 0.7s ease-in-out'
+const ICON_POP = 'tabIconPop 0.5s ease-in-out'
 
 export default function TabBar() {
   const location = useLocation()

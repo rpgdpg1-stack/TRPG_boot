@@ -32,7 +32,7 @@ export default function MuscleIcon({ size = 16, color, earned = true, flex = fal
         // Вращение вокруг плеча (низ-лево) — плечо на месте, локоть/кулак вверх.
         transformOrigin: '20% 90%',
         animation: flexTrigger
-          ? 'muscleFlexOnce 0.7s ease-in-out'
+          ? 'muscleFlexOnce 0.5s ease-in-out'
           : flex
             ? 'muscleFlexLoop 15s ease-in-out infinite'
             : 'none',
