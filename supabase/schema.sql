@@ -711,8 +711,14 @@ $function$;
 
 -- Завершение тренировки. Лимит «одна засчитанная в сутки (Москва)» — здесь,
 -- а не на клиенте: оффлайн-очередь может прислать повтор.
+--
+-- Отдаёт и УКРАШЕНИЯ (возвращение + выросшие результаты) тем же ответом: вторым
+-- запросом с клиента они приезжали на полсекунды-секунду позже, и блок «Новые
+-- результаты» доезжал в уже открытую модалку завершения. Логика не продублирована —
+-- зовём ту же api_workout_highlights, а вызов обёрнут в EXCEPTION-блок: сохранение
+-- тренировки важнее украшений и не должно падать из-за них.
 CREATE OR REPLACE FUNCTION public.api_finish_workout(p_user_id bigint, p_program_id text, p_day text, p_exercise_ids text[], p_finished_at timestamp with time zone DEFAULT now(), p_started_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_distance_m integer DEFAULT NULL::integer)
- RETURNS TABLE(workout_id bigint, new_weekly_streak integer, already_completed_today boolean)
+ RETURNS TABLE(workout_id bigint, new_weekly_streak integer, already_completed_today boolean, highlights jsonb)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
@@ -726,6 +732,8 @@ DECLARE
   v_last_week_key text;
   v_exercise_id text;
   v_set_order integer := 1;
+  v_empty_highlights jsonb := jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
+  v_highlights jsonb;
 BEGIN
   p_user_id := current_user_id();
   IF p_user_id IS NULL THEN
@@ -746,7 +754,8 @@ BEGIN
 
   IF v_existing_workout_id IS NOT NULL THEN
     SELECT weekly_streak INTO v_new_weekly_streak FROM users WHERE id = p_user_id;
-    RETURN QUERY SELECT v_existing_workout_id, v_new_weekly_streak, true;
+    -- Повтор за день не засчитан — украшать нечего.
+    RETURN QUERY SELECT v_existing_workout_id, v_new_weekly_streak, true, v_empty_highlights;
     RETURN;
   END IF;
 
@@ -772,7 +781,16 @@ BEGIN
     WHERE id = p_user_id RETURNING weekly_streak INTO v_new_weekly_streak;
   END IF;
 
-  RETURN QUERY SELECT v_workout_id, v_new_weekly_streak, false;
+  -- Украшения — тем же ответом. Считаются ПОСЛЕ вставки подходов: рекорды
+  -- смотрят на упражнения этой тренировки. Своя запись сравнению не мешает —
+  -- прошлое ищется строго по finished_at < текущей.
+  BEGIN
+    v_highlights := api_workout_highlights(v_workout_id);
+  EXCEPTION WHEN OTHERS THEN
+    v_highlights := v_empty_highlights;
+  END;
+
+  RETURN QUERY SELECT v_workout_id, v_new_weekly_streak, false, COALESCE(v_highlights, v_empty_highlights);
 END;
 $function$;
 
@@ -1268,9 +1286,10 @@ END;
 $function$;
 
 -- Что примечательного в только что завершённой тренировке: возвращение после
--- долгой паузы и выросшие результаты. Отдельной функцией, а НЕ внутри
--- api_finish_workout: сохранение тренировки — критический путь, и подсчёт
--- украшений не должен иметь ни единого шанса его уронить.
+-- долгой паузы и выросшие результаты. Зовётся ИЗНУТРИ api_finish_workout (ответ
+-- один, без второго круга к серверу) — но остаётся отдельной функцией: клиент
+-- ходит в неё запасным путём, а внутри сохранения её вызов закрыт EXCEPTION-блоком,
+-- чтобы подсчёт украшений не имел ни единого шанса уронить критический путь.
 --
 -- Точка отсчёта — вес на момент ПРЕДЫДУЩЕЙ завершённой тренировки, а не лучший
 -- до сегодняшнего дня. Вес правят где угодно: можно открыть программу,

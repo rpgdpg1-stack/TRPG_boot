@@ -39,7 +39,7 @@ import CloseCross from '../components/CloseCross'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { getExerciseNote, getExerciseNoteCached } from '../lib/notes'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
-import { getWorkoutHighlights } from '../lib/workout-highlights'
+import { getWorkoutHighlights, normalizeHighlights } from '../lib/workout-highlights'
 import FinishConfirmModal, { CONFIRM_EXIT_MS } from '../components/FinishConfirmModal'
 import ActionButton from '../components/ActionButton'
 import ScreenTitle from '../components/ScreenTitle'
@@ -1087,9 +1087,13 @@ export default function WorkoutDay() {
       haptic.success()
       setFinishStatus('idle')
 
-      // Украшения — отдельным запросом и без await в общем потоке: они не
-      // должны задерживать модалку. Не ответил — просто не появятся.
-      if (result.workoutId && !result.alreadyCompletedToday) {
+      // Украшения приходят ТЕМ ЖЕ ответом — блок «Новые результаты» встаёт в
+      // модалку вместе с показателями, без второго круга к серверу. Их нет в
+      // ответе (старая версия функции на сервере) — сходим отдельным запросом,
+      // без await: задерживать модалку они не должны.
+      if (result.highlights) {
+        setHighlights(normalizeHighlights(result.highlights))
+      } else if (result.workoutId && !result.alreadyCompletedToday) {
         getWorkoutHighlights(result.workoutId).then(setHighlights)
       }
 

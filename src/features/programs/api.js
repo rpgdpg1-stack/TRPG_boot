@@ -422,7 +422,12 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
       offline: false,
       workoutId: result.workout_id,
       newWeeklyStreak: result.new_weekly_streak,
-      alreadyCompletedToday: result.already_completed_today || false
+      alreadyCompletedToday: result.already_completed_today || false,
+      // Украшения (возвращение + выросшие результаты) приходят ТЕМ ЖЕ ответом —
+      // отдельный запрос за ними больше не нужен, блок «Новые результаты»
+      // встаёт в модалку вместе с остальными показателями. `null` — старая
+      // версия функции на сервере, экран сходит за ними вторым запросом.
+      highlights: result.highlights || null
     }
   } catch (e) {
     // Сетевой сбой во время запроса — тоже в очередь как оффлайн.

@@ -218,7 +218,16 @@ Telegram для привязки, лимиты для входа. Секреты
   **distance_m** = метраж заплыва (плавание).
 - `api_finish_workout(p_user_id, p_program_id, p_day, p_exercise_ids,
   p_finished_at DEFAULT now(), p_started_at DEFAULT NULL, p_distance_m DEFAULT NULL)`
-  → `(workout_id, new_weekly_streak, already_completed_today)`.
+  → `(workout_id, new_weekly_streak, already_completed_today, **highlights jsonb**)`.
+  **Украшения идут тем же ответом** (`{comebackDays, records:[{kind,name,value,delta}]}`):
+  вторым запросом с клиента они приезжали позже остальных показателей, и блок «Новые
+  результаты» доезжал в уже открытую модалку. Логика НЕ продублирована — внутри зовётся та же
+  `api_workout_highlights`, и её вызов обёрнут в `BEGIN/EXCEPTION WHEN OTHERS`: сохранение
+  тренировки важнее украшений и не должно падать из-за них. Считается ПОСЛЕ вставки подходов
+  (рекорды смотрят на упражнения этой тренировки); при `already_completed_today` — пусто.
+  Отдельная `api_workout_highlights` жива: клиент ходит в неё запасным путём (`getWorkoutHighlights`).
+  **Нагрузка от объединения не выросла** — те же запросы, но один поход к серверу вместо двух
+  (одно соединение, одна проверка прав).
   `started_at := COALESCE(p_started_at, p_finished_at)` (силовая шлёт реальный старт из
   активной сессии; заплыв — null → длительность 0, меряется метрами). При добавлении
   параметра — **DROP старого оверлоуда + CREATE** (иначе PostgREST не выберет функцию из

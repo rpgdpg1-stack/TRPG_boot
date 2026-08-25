@@ -25,7 +25,7 @@ import {
 } from '../data/programs/swim'
 import ConfirmModal from '../components/ConfirmModal'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
-import { getWorkoutHighlights } from '../lib/workout-highlights'
+import { getWorkoutHighlights, normalizeHighlights } from '../lib/workout-highlights'
 import ScreenTitle from '../components/ScreenTitle'
 import CloseCross from '../components/CloseCross'
 import UiIcon from '../components/UiIcon'
@@ -403,9 +403,12 @@ export default function SwimWorkout() {
       setFinishStatus('idle')
       setModal({ kind: 'reward', ...stats })
 
-      // Возвращение и выросшая дистанция — отдельным запросом, без ожидания:
-      // модалка уже на экране, плашки доезжают следом.
-      if (result.workoutId) {
+      // Возвращение и выросшая дистанция приходят ТЕМ ЖЕ ответом — плашки
+      // встают в модалку вместе с показателями. Нет их в ответе (старая версия
+      // функции на сервере) — доезжают отдельным запросом, без ожидания.
+      if (result.highlights) {
+        setHighlights(normalizeHighlights(result.highlights))
+      } else if (result.workoutId) {
         getWorkoutHighlights(result.workoutId).then(setHighlights)
       }
     } catch (e) {
