@@ -3,9 +3,9 @@ import { exerciseTagLabel } from '../features/programs/labels'
 import { getProgramBySlug } from '../features/programs/registry'
 import { MONTHS_RU } from '../utils/history'
 import { pluralizeWorkouts } from '../utils/plural'
+import { formatMeters } from '../utils/history'
 import UiIcon from './UiIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
-import { Distance, MetricValue } from './HistoryStats'
 
 /**
  * **Рекорды** — по одному лучшему достижению на вид активности. ОДИН блок на
@@ -37,6 +37,11 @@ export const RECORD_GOLD = '#FFC83D'
  * Тот же порог держат сводки бота.
  */
 const BEST_MONTH_MIN = 2
+
+// Ширина колонки значения. Фиксированная, а не по содержимому: только так числа
+// разных строк начинаются с одной вертикали. Считана по самому широкому —
+// «тренировок» (63px) и «112,5» (40px).
+const RECORD_VALUE_W = '68px'
 
 /**
  * Подпись метрики — полная фраза с двоеточием.
@@ -107,7 +112,7 @@ export default function PersonalRecords({ records, bare = false }) {
           kind="month"
           divider={next()}
           title={monthLabel(month.month)}
-          value={<MetricValue num={month.count} unit={pluralizeWorkouts(month.count)} color={RECORD_GOLD} />}
+          value={<RecordValue num={month.count} unit={pluralizeWorkouts(month.count)} />}
         />
       )}
 
@@ -127,9 +132,7 @@ export default function PersonalRecords({ records, bare = false }) {
                 </span>
               )}
             </span>
-            <span style={styles.recValue}>
-              <MetricValue num={kgText} unit="кг" color={RECORD_GOLD} />
-            </span>
+            <RecordValue num={kgText} unit="кг" />
           </div>
         </RecordBlock>
       )}
@@ -139,10 +142,37 @@ export default function PersonalRecords({ records, bare = false }) {
           kind="swim"
           divider={next()}
           title={swimTitle}
-          value={<Distance meters={swim.distance_m} color={RECORD_GOLD} />}
+          value={<RecordValue {...splitMetric(formatMeters(swim.distance_m))} />}
         />
       )}
     </div>
+  )
+}
+
+/** «2,25 км» → `{num: '2,25', unit: 'км'}`: единица у нас всегда после пробела. */
+function splitMetric(text) {
+  const i = String(text).lastIndexOf(' ')
+  return i > 0 ? { num: String(text).slice(0, i), unit: String(text).slice(i + 1) } : { num: text, unit: '' }
+}
+
+/**
+ * Значение рекорда: число сверху, единица ПОД ним.
+ *
+ * Колонка фиксированной ширины (`RECORD_VALUE_W`), прижата к правому краю, а
+ * содержимое в ней выровнено по левому. Так все числа блока начинаются с одной
+ * вертикали: «14», «105» и «850» читаются столбиком, как в таблице. Если
+ * единицу оставить в строке с числом (как в остальных метриках проекта), числа
+ * разъезжаются — «тренировок» шире «кг» почти втрое и утаскивает цифру влево.
+ *
+ * Ширина считана по самому широкому содержимому: «тренировок» 63px (caption 11)
+ * и «112,5» 40px (title 18/800).
+ */
+function RecordValue({ num, unit }) {
+  return (
+    <span style={styles.recValue}>
+      <span style={styles.recValueNum}>{num}</span>
+      {unit && <span style={styles.recValueUnit}>{unit}</span>}
+    </span>
   )
 }
 
@@ -161,7 +191,7 @@ function RecordBlock({ kind, divider = false, title = null, value = null, childr
       {(title || value) && (
         <div style={styles.recPlainRow}>
           <span style={styles.recItemName}>{title}</span>
-          {value && <span style={styles.recValue}>{value}</span>}
+          {value}
         </div>
       )}
       {children}
@@ -222,5 +252,18 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 600,
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
-  recValue: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' }
+  recValue: {
+    flexShrink: 0, width: RECORD_VALUE_W,
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1px'
+  },
+  // Число — золотое и крупное: в блоке рекордов оно и есть содержание.
+  recValueNum: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)',
+    lineHeight: 1, letterSpacing: '0.2px', color: RECORD_GOLD, whiteSpace: 'nowrap'
+  },
+  // Единица — строкой ниже, тише и мельче (единицы вообще никогда не красим акцентом).
+  recValueUnit: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 500, fontSize: 'var(--text-caption-size)',
+    lineHeight: 1.2, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  }
 }
