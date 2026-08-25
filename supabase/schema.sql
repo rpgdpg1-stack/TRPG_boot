@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   show_stats boolean DEFAULT false NOT NULL,
   show_favorites boolean DEFAULT false NOT NULL,
   show_weights boolean DEFAULT true NOT NULL,
+  show_records boolean DEFAULT true NOT NULL,
   training_since timestamp with time zone,
   -- Второй способ входа. Хранится только нормализованным (нижний регистр,
   -- без пробелов) — этим занимается normalize_email.
@@ -1234,7 +1235,7 @@ begin
 end;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.api_update_privacy(p_show_last_workout boolean, p_show_stats boolean, p_show_favorites boolean, p_show_weights boolean)
+CREATE OR REPLACE FUNCTION public.api_update_privacy(p_show_last_workout boolean, p_show_stats boolean, p_show_favorites boolean, p_show_weights boolean, p_show_records boolean DEFAULT NULL::boolean)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -1249,6 +1250,7 @@ BEGIN
          show_stats        = COALESCE(p_show_stats, show_stats),
          show_favorites    = COALESCE(p_show_favorites, show_favorites),
          show_weights      = COALESCE(p_show_weights, show_weights),
+         show_records      = COALESCE(p_show_records, show_records),
          updated_at = now()
    WHERE id = uid;
 END;
@@ -1381,7 +1383,7 @@ $$;
 -- по разным правилам в двух местах. p_with_weights=false прячет силовой рекорд
 -- целиком: он и есть рабочий вес, а «вес скрыт» в подписи звучит издёвкой.
 -- Порог «месяц считается рекордом» решает КЛИЕНТ, там же, где текст.
-CREATE OR REPLACE FUNCTION public.srv_user_records(p_user_id bigint, p_with_weights boolean DEFAULT true)
+CREATE OR REPLACE FUNCTION public.srv_user_records(p_user_id bigint)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -1396,27 +1398,25 @@ BEGIN
     RETURN jsonb_build_object('best_month', NULL, 'strength', NULL, 'swim', NULL);
   END IF;
 
-  IF p_with_weights THEN
-    -- Группа и подгруппа идут сразу: под названием рекорда стоит тег
-    -- «Ноги — Квадрицепс», как на карточках упражнений, и добирать его
-    -- вторым запросом с клиента незачем.
-    SELECT jsonb_build_object(
-             'exercise_id', w.exercise_id,
-             'name', e.name,
-             'preview_url', e.preview_url,
-             'muscle_group', e.muscle_group,
-             'sub_group', e.sub_group,
-             'weight_kg', w.weight_kg
-           )
-      INTO v_strength
-    FROM public.user_exercise_weights w
-    JOIN public.exercises e ON e.id = w.exercise_id
-    WHERE w.user_id = p_user_id
-      AND COALESCE(e.counts_reps, false) = false
-      AND COALESCE(w.weight_kg, 0) > 0
-    ORDER BY w.weight_kg DESC
-    LIMIT 1;
-  END IF;
+  -- Группа и подгруппа идут сразу: под названием рекорда стоит тег
+  -- «Ноги — Квадрицепс», как на карточках упражнений, и добирать его
+  -- вторым запросом с клиента незачем.
+  SELECT jsonb_build_object(
+           'exercise_id', w.exercise_id,
+           'name', e.name,
+           'preview_url', e.preview_url,
+           'muscle_group', e.muscle_group,
+           'sub_group', e.sub_group,
+           'weight_kg', w.weight_kg
+         )
+    INTO v_strength
+  FROM public.user_exercise_weights w
+  JOIN public.exercises e ON e.id = w.exercise_id
+  WHERE w.user_id = p_user_id
+    AND COALESCE(e.counts_reps, false) = false
+    AND COALESCE(w.weight_kg, 0) > 0
+  ORDER BY w.weight_kg DESC
+  LIMIT 1;
 
   SELECT jsonb_build_object('distance_m', k.distance_m, 'finished_at', k.finished_at)
     INTO v_swim
@@ -1447,7 +1447,7 @@ BEGIN
   IF uid IS NULL THEN
     RETURN jsonb_build_object('best_month', NULL, 'strength', NULL, 'swim', NULL);
   END IF;
-  RETURN public.srv_user_records(uid, true);
+  RETURN public.srv_user_records(uid);
 END;
 $function$;
 
@@ -1462,6 +1462,7 @@ AS $function$
 DECLARE
   v_last record; v_streak integer; v_week text; v_total integer; v_minutes integer;
   v_show_last boolean; v_show_stats boolean; v_show_fav boolean; v_show_weights boolean;
+  v_show_records boolean;
   v_favorites jsonb := NULL;
   v_month jsonb := NULL; v_year jsonb := NULL;
   v_records jsonb := NULL;
@@ -1469,9 +1470,9 @@ DECLARE
   v_msk_now timestamptz := now() AT TIME ZONE 'UTC' + interval '3 hours';
   v_month_start timestamptz; v_year_start timestamptz;
 BEGIN
-  SELECT weekly_streak, weekly_streak_week, show_last_workout, show_stats, show_favorites, show_weights,
+  SELECT weekly_streak, weekly_streak_week, show_last_workout, show_stats, show_favorites, show_weights, show_records,
          (training_since IS NOT NULL AND training_since > now() - interval '3 hours')
-    INTO v_streak, v_week, v_show_last, v_show_stats, v_show_fav, v_show_weights, v_is_training
+    INTO v_streak, v_week, v_show_last, v_show_stats, v_show_fav, v_show_weights, v_show_records, v_is_training
   FROM public.users WHERE id = p_user_id;
 
   IF v_show_last THEN
@@ -1505,10 +1506,13 @@ BEGIN
       INTO v_year
     FROM public.workouts
     WHERE user_id = p_user_id AND finished_at IS NOT NULL AND finished_at >= v_year_start;
+  END IF;
 
-    -- Тем же сборщиком, что и свои: «лучшее» не должно считаться по разным
-    -- правилам в двух местах.
-    v_records := public.srv_user_records(p_user_id, COALESCE(v_show_weights, false));
+  -- Рекорды — отдельный тумблер и отдельный от статистики раздел. Тем же
+  -- сборщиком, что и свои: «лучшее» не должно считаться по разным правилам
+  -- в двух местах.
+  IF v_show_records THEN
+    v_records := public.srv_user_records(p_user_id);
   END IF;
 
   IF v_show_fav THEN
@@ -1539,6 +1543,7 @@ BEGIN
     'show_last_workout', COALESCE(v_show_last, true),
     'show_stats', COALESCE(v_show_stats, false),
     'show_favorites', COALESCE(v_show_fav, false),
+    'show_records', COALESCE(v_show_records, true),
     'favorites', v_favorites
   );
 END;
@@ -2522,7 +2527,7 @@ REVOKE ALL ON FUNCTION public.srv_email_issue_code(text, text, text, int, bigint
 REVOKE ALL ON FUNCTION public.srv_workout_category(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_period_summary(bigint, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_best_month(bigint, timestamptz) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.srv_user_records(bigint, boolean) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_user_records(bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_weekly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_yearly_digest() FROM PUBLIC, anon, authenticated;

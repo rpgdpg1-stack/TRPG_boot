@@ -62,9 +62,9 @@ export default function PlayerProfileModal({ row, onClose }) {
       friendStats = { all: { count: pub.total_workouts || 0, minutes: pub.total_minutes || 0 } }
     }
   }
-  // Рекорды друга приходят тем же ответом и под тем же флагом приватности, что
-  // статистика (силовой рекорд — ещё и под «показывать веса»: его считает сервер).
-  const friendRecords = pub?.show_stats ? (pub.records || null) : null
+  // Рекорды друга приходят тем же ответом. Отдельный тумблер приватности держит
+  // сервер: выключил — в ответе `records: null`, и раздела просто нет.
+  const friendRecords = pub?.records || null
   if (friendStats || friendFavs || hasRecords(friendRecords)) {
     friendSections.push(
       <ProfileMetrics

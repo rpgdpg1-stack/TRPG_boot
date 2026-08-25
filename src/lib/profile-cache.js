@@ -50,8 +50,13 @@ export function setCachedProfile(userId, data) {
     stats_month: data.stats_month ?? null,
     stats_year: data.stats_year ?? null,
     favorites: data.favorites ?? null,
+    // Рекорды кладём целиком: сервер их уже отфильтровал по приватности
+    // (тумблер выключен — приходит null). Без них плитка «Рекорды» не
+    // появлялась бы на старте из кеша — та же болезнь, что была у статистики.
+    records: data.records ?? null,
     show_last_workout: data.show_last_workout ?? true,
     show_stats: data.show_stats ?? false,
-    show_favorites: data.show_favorites ?? false
+    show_favorites: data.show_favorites ?? false,
+    show_records: data.show_records ?? true
   }, TTL_MS)
 }

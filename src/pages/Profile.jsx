@@ -10,6 +10,7 @@ import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
 import { getRecords, getRecordsSync } from '../lib/records'
+import { hasRecords } from '../components/PersonalRecords'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
@@ -155,7 +156,8 @@ export default function Profile() {
   const showFav = privacy.showFavorites && favorites.length > 0
   // Скрыл и статистику, и любимые — показываем ту же опорную строку, что у друга:
   // пустая карточка читалась бы как поломка.
-  const nothingToShow = !privacy.showStats && !showFav
+  const showRec = privacy.showRecords && hasRecords(records)
+  const nothingToShow = !privacy.showStats && !showFav && !showRec
   const sections = [
     nothingToShow
       ? <div key="hidden" style={styles.hiddenNote}>Инфо скрыто</div>
@@ -163,7 +165,7 @@ export default function Profile() {
         <ProfileMetrics
           key="metrics"
           stats={privacy.showStats ? stats : null}
-          records={privacy.showStats ? records : null}
+          records={showRec ? records : null}
           favorites={showFav ? favorites : []}
           showWeights={privacy.showWeights}
         />

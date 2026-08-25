@@ -87,6 +87,11 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 
 ## RLS
 
+- Флаги приватности профиля: `show_last_workout` (true), `show_stats` (false),
+  `show_favorites` (false), `show_weights` (true, только про любимые), `show_records` (true).
+  Пишет `api_update_privacy(...)`. **Новый параметр туда добавлять с `DEFAULT NULL`**: старый
+  бандл в кеше Telegram шлёт прежний набор аргументов, и без дефолта его вызов перестанет
+  находиться (а `COALESCE` в теле и так оставит прежнее значение).
 - Все таблицы защищены реальными политиками через `auth.uid()`.
 - Хелпер `current_user_id()` мапит `auth.uid()` → внутренний `users.id`.
 - DEFINER-функция `api_reset_my_progress()` для сброса прогресса.
@@ -156,9 +161,13 @@ Telegram для привязки, лимиты для входа. Секреты
 `{ best_month: {month,count,minutes}, strength: {exercise_id,name,preview_url,muscle_group,sub_group,weight_kg}, swim: {distance_m,finished_at} }`.
 Его зовут обе точки входа, чтобы «лучшее» не считалось по разным правилам в двух местах:
 - `api_get_personal_records()` — свои (личность из `current_user_id()`);
-- `api_get_user_public_profile()` — рекорды друга, полем `records`, под флагом `show_stats`;
-  силовой рекорд ещё и под `show_weights` (`p_with_weights=false` прячет его целиком — он и
-  есть рабочий вес, «вес скрыт» в подписи звучит издёвкой).
+- `api_get_user_public_profile()` — рекорды друга, полем `records`, под СВОИМ флагом
+  `users.show_records` (дефолт true). Выключен — в ответе `records: null`, раздела нет ни у
+  друга, ни в своей карточке.
+
+**`show_weights` относится ТОЛЬКО к списку любимых.** В рекордах цифры показываются всегда:
+«самый большой рабочий вес» без веса — не рекорд, а загадка. Прятать рекорд целиком —
+работа тумблера `show_records`, а не весов.
 
 - **Лучший месяц** — `srv_best_month(user, before)` → `(cnt, minutes, month_start)`, месяц с
   наибольшим числом тренировок по Москве; при равенстве берём поздний. Тот же хелпер сравнивает

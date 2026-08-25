@@ -36,9 +36,12 @@ export default function Privacy() {
       <FormCard>
         <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
         <ToggleRow label="Статистика" hint="Тренировки и часы за текущий месяц" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
+        <ToggleRow label="Рекорды" hint="Лучший месяц, рабочий вес, дистанция" value={privacy.showRecords} onToggle={() => toggle('showRecords')} divider />
         <ToggleRow label="Любимые упражнения" hint={`Твой топ-${FAVORITE_LIMIT}`} value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
         {/* Веса — вложены в «Любимые»: видны только когда любимые включены. Выключил
-            любимые — веса и сам пункт «Показывать веса» прячутся. */}
+            любимые — веса и сам пункт «Показывать веса» прячутся.
+            На рекорды этот тумблер НЕ влияет: там вес — сам результат, и прячется
+            он вместе со всем разделом отдельным тумблером «Рекорды». */}
         {privacy.showFavorites && (
           <ToggleRow label="Показывать веса" hint="Рабочие веса в списке любимых" value={privacy.showWeights} onToggle={() => toggle('showWeights')} divider nested />
         )}
