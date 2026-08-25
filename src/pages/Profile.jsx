@@ -9,6 +9,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
+import { getRecords, getRecordsSync } from '../lib/records'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
@@ -37,6 +38,9 @@ export default function Profile() {
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
   const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
+  // Рекорды — тот же блок, что внизу экрана статистики. Старт из кеша
+  // (мгновенно), сервер догоняет.
+  const [records, setRecords] = useState(() => getRecordsSync())
   const [friendsCount, setFriendsCount] = useState(() => {
     try {
       const raw = localStorage.getItem('profile-friends-count')
@@ -58,6 +62,7 @@ export default function Profile() {
     const load = () => {
       setPrivacy(getPrivacy())
       getFavoriteExercises().then(list => setFavorites(list))
+      getRecords().then(setRecords)
       Promise.all([
         getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -158,6 +163,7 @@ export default function Profile() {
         <ProfileMetrics
           key="metrics"
           stats={privacy.showStats ? stats : null}
+          records={privacy.showStats ? records : null}
           favorites={showFav ? favorites : []}
           showWeights={privacy.showWeights}
         />

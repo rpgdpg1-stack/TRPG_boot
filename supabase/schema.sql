@@ -1375,6 +1375,66 @@ BEGIN
 END;
 $$;
 
+-- Сборщик рекордов одного человека: лучший месяц, самый большой рабочий вес,
+-- самый длинный заплыв. ОБЩИЙ для своего профиля (api_get_personal_records) и
+-- для профиля друга (api_get_user_public_profile) — «лучшее» не должно считаться
+-- по разным правилам в двух местах. p_with_weights=false прячет силовой рекорд
+-- целиком: он и есть рабочий вес, а «вес скрыт» в подписи звучит издёвкой.
+-- Порог «месяц считается рекордом» решает КЛИЕНТ, там же, где текст.
+CREATE OR REPLACE FUNCTION public.srv_user_records(p_user_id bigint, p_with_weights boolean DEFAULT true)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_strength jsonb := NULL;
+  v_swim jsonb := NULL;
+  v_month jsonb := NULL;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RETURN jsonb_build_object('best_month', NULL, 'strength', NULL, 'swim', NULL);
+  END IF;
+
+  IF p_with_weights THEN
+    -- Группа и подгруппа идут сразу: под названием рекорда стоит тег
+    -- «Ноги — Квадрицепс», как на карточках упражнений, и добирать его
+    -- вторым запросом с клиента незачем.
+    SELECT jsonb_build_object(
+             'exercise_id', w.exercise_id,
+             'name', e.name,
+             'preview_url', e.preview_url,
+             'muscle_group', e.muscle_group,
+             'sub_group', e.sub_group,
+             'weight_kg', w.weight_kg
+           )
+      INTO v_strength
+    FROM public.user_exercise_weights w
+    JOIN public.exercises e ON e.id = w.exercise_id
+    WHERE w.user_id = p_user_id
+      AND COALESCE(e.counts_reps, false) = false
+      AND COALESCE(w.weight_kg, 0) > 0
+    ORDER BY w.weight_kg DESC
+    LIMIT 1;
+  END IF;
+
+  SELECT jsonb_build_object('distance_m', k.distance_m, 'finished_at', k.finished_at)
+    INTO v_swim
+  FROM public.workouts k
+  WHERE k.user_id = p_user_id
+    AND k.finished_at IS NOT NULL
+    AND COALESCE(k.distance_m, 0) > 0
+  ORDER BY k.distance_m DESC
+  LIMIT 1;
+
+  SELECT jsonb_build_object('month', b.month_start, 'count', b.cnt, 'minutes', b.minutes)
+    INTO v_month
+  FROM public.srv_best_month(p_user_id) b;
+
+  RETURN jsonb_build_object('best_month', v_month, 'strength', v_strength, 'swim', v_swim);
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.api_get_personal_records()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -1383,36 +1443,11 @@ CREATE OR REPLACE FUNCTION public.api_get_personal_records()
 AS $function$
 DECLARE
   uid bigint := public.current_user_id();
-  v_strength jsonb := NULL;
-  v_swim jsonb := NULL;
 BEGIN
-  IF uid IS NULL THEN RETURN jsonb_build_object('strength', NULL, 'swim', NULL); END IF;
-
-  SELECT jsonb_build_object(
-           'exercise_id', w.exercise_id,
-           'name', e.name,
-           'preview_url', e.preview_url,
-           'weight_kg', w.weight_kg
-         )
-    INTO v_strength
-  FROM public.user_exercise_weights w
-  JOIN public.exercises e ON e.id = w.exercise_id
-  WHERE w.user_id = uid
-    AND COALESCE(e.counts_reps, false) = false
-    AND COALESCE(w.weight_kg, 0) > 0
-  ORDER BY w.weight_kg DESC
-  LIMIT 1;
-
-  SELECT jsonb_build_object('distance_m', k.distance_m, 'finished_at', k.finished_at)
-    INTO v_swim
-  FROM public.workouts k
-  WHERE k.user_id = uid
-    AND k.finished_at IS NOT NULL
-    AND COALESCE(k.distance_m, 0) > 0
-  ORDER BY k.distance_m DESC
-  LIMIT 1;
-
-  RETURN jsonb_build_object('strength', v_strength, 'swim', v_swim);
+  IF uid IS NULL THEN
+    RETURN jsonb_build_object('best_month', NULL, 'strength', NULL, 'swim', NULL);
+  END IF;
+  RETURN public.srv_user_records(uid, true);
 END;
 $function$;
 
@@ -1429,11 +1464,14 @@ DECLARE
   v_show_last boolean; v_show_stats boolean; v_show_fav boolean; v_show_weights boolean;
   v_favorites jsonb := NULL;
   v_month jsonb := NULL; v_year jsonb := NULL;
+  v_records jsonb := NULL;
+  v_is_training boolean := false;
   v_msk_now timestamptz := now() AT TIME ZONE 'UTC' + interval '3 hours';
   v_month_start timestamptz; v_year_start timestamptz;
 BEGIN
-  SELECT weekly_streak, weekly_streak_week, show_last_workout, show_stats, show_favorites, show_weights
-    INTO v_streak, v_week, v_show_last, v_show_stats, v_show_fav, v_show_weights
+  SELECT weekly_streak, weekly_streak_week, show_last_workout, show_stats, show_favorites, show_weights,
+         (training_since IS NOT NULL AND training_since > now() - interval '3 hours')
+    INTO v_streak, v_week, v_show_last, v_show_stats, v_show_fav, v_show_weights, v_is_training
   FROM public.users WHERE id = p_user_id;
 
   IF v_show_last THEN
@@ -1467,6 +1505,10 @@ BEGIN
       INTO v_year
     FROM public.workouts
     WHERE user_id = p_user_id AND finished_at IS NOT NULL AND finished_at >= v_year_start;
+
+    -- Тем же сборщиком, что и свои: «лучшее» не должно считаться по разным
+    -- правилам в двух местах.
+    v_records := public.srv_user_records(p_user_id, COALESCE(v_show_weights, false));
   END IF;
 
   IF v_show_fav THEN
@@ -1486,12 +1528,14 @@ BEGIN
   RETURN jsonb_build_object(
     'last_workout', CASE WHEN NOT v_show_last OR v_last.finished_at IS NULL THEN NULL ELSE jsonb_build_object(
       'finished_at', v_last.finished_at, 'program_id', v_last.program_id, 'day', v_last.day) END,
+    'is_training', COALESCE(v_is_training, false),
     'weekly_streak', COALESCE(v_streak, 0),
     'weekly_streak_week', v_week,
     'total_workouts', CASE WHEN v_show_stats THEN COALESCE(v_total, 0) ELSE NULL END,
     'total_minutes', CASE WHEN v_show_stats THEN COALESCE(v_minutes, 0) ELSE NULL END,
     'stats_month', v_month,
     'stats_year', v_year,
+    'records', v_records,
     'show_last_workout', COALESCE(v_show_last, true),
     'show_stats', COALESCE(v_show_stats, false),
     'show_favorites', COALESCE(v_show_fav, false),
@@ -1744,18 +1788,24 @@ $$;
 -- Лучший месяц человека за всё время. Нужен месячной сводке (плашка
 -- «новый рекорд») и пинкам за месяц и дольше: напоминание о том, на что
 -- человек способен, работает лучше уговоров.
-CREATE OR REPLACE FUNCTION public.srv_best_month(p_user_id bigint, p_before timestamptz DEFAULT NULL)
-RETURNS TABLE (cnt integer, minutes integer)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
-AS $$
+CREATE OR REPLACE FUNCTION public.srv_best_month(p_user_id bigint, p_before timestamp with time zone DEFAULT NULL::timestamp with time zone)
+ RETURNS TABLE(cnt integer, minutes integer, month_start date)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
   SELECT count(*)::int,
-         COALESCE(sum(GREATEST(0, ROUND(EXTRACT(EPOCH FROM (finished_at - started_at)) / 60)::int)), 0)::int
+         COALESCE(sum(GREATEST(0, ROUND(EXTRACT(EPOCH FROM (finished_at - started_at)) / 60)::int)), 0)::int,
+         date_trunc('month', timezone('Europe/Moscow', finished_at))::date
   FROM public.workouts
-  WHERE user_id = p_user_id AND finished_at IS NOT NULL
+  WHERE user_id = p_user_id
+    AND finished_at IS NOT NULL
     AND (p_before IS NULL OR finished_at < p_before)
   GROUP BY date_trunc('month', timezone('Europe/Moscow', finished_at))
-  ORDER BY count(*) DESC LIMIT 1;
-$$;
+  -- При равенстве берём поздний месяц: он ближе и лучше помнится.
+  ORDER BY count(*) DESC, 3 DESC
+  LIMIT 1;
+$function$;
 
 -- Итоги месяца (1-го числа). prev_count отдаём сырым: сравнение показывается
 -- только когда оно в плюс, и решает это бот.
@@ -1781,12 +1831,11 @@ $$;
 -- был бы обманом. Силовой рекорд берётся из истории весов (у неё есть дата),
 -- а не из текущих весов, где даты нет.
 CREATE OR REPLACE FUNCTION public.srv_yearly_digest()
-RETURNS TABLE (user_id bigint, telegram_id bigint, year integer,
-               total_count integer, total_minutes integer, breakdown jsonb,
-               best_month integer, best_month_count integer,
-               rec_exercise text, rec_weight numeric, rec_swim_m integer)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
-AS $$
+ RETURNS TABLE(user_id bigint, telegram_id bigint, year integer, total_count integer, total_minutes integer, breakdown jsonb, best_month integer, best_month_count integer, best_month_minutes integer, best_month_is_new boolean, rec_exercise text, rec_weight numeric, rec_weight_is_new boolean, rec_swim_m integer, rec_swim_is_new boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
   WITH bounds AS (
     SELECT date_trunc('year', timezone('Europe/Moscow', now())) - interval '1 year' AS y_start
   ),
@@ -1796,36 +1845,88 @@ AS $$
            EXTRACT(YEAR FROM y_start)::int AS y
     FROM bounds
   )
-  SELECT u.id, u.telegram_id, b.y, s.total_count, s.total_minutes, s.breakdown,
-         bm.month_idx, bm.cnt, rs.name, rs.weight_kg, rw.distance_m
-  FROM public.users u CROSS JOIN b
+  SELECT u.id,
+         u.telegram_id,
+         b.y,
+         s.total_count,
+         s.total_minutes,
+         s.breakdown,
+         bm.month_idx,
+         bm.cnt,
+         bm.mins,
+         (prev.cnt IS NOT NULL AND bm.cnt > prev.cnt),
+         rs.name,
+         rs.weight_kg,
+         (prev_w.weight_kg IS NOT NULL AND rs.weight_kg > prev_w.weight_kg),
+         rw.distance_m,
+         (prev_s.distance_m IS NOT NULL AND rw.distance_m > prev_s.distance_m)
+  FROM public.users u
+  CROSS JOIN b
   CROSS JOIN LATERAL public.srv_period_summary(u.id, b.from_ts, b.to_ts) s
+  -- Лучший месяц года по числу тренировок. При равенстве берём поздний: он
+  -- ближе и лучше помнится.
   LEFT JOIN LATERAL (
     SELECT EXTRACT(MONTH FROM timezone('Europe/Moscow', w.finished_at))::int - 1 AS month_idx,
-           count(*)::int AS cnt
+           count(*)::int AS cnt,
+           COALESCE(sum(GREATEST(0, ROUND(EXTRACT(EPOCH FROM (w.finished_at - w.started_at)) / 60)::int)), 0)::int AS mins
     FROM public.workouts w
     WHERE w.user_id = u.id AND w.finished_at IS NOT NULL
       AND w.finished_at >= b.from_ts AND w.finished_at < b.to_ts
-    GROUP BY 1 ORDER BY cnt DESC, month_idx DESC LIMIT 1
+    GROUP BY 1
+    ORDER BY cnt DESC, month_idx DESC
+    LIMIT 1
   ) bm ON true
+  -- Лучший месяц ДО этого года — с ним и сравниваем.
+  LEFT JOIN LATERAL public.srv_best_month(u.id, b.from_ts) prev ON true
+  -- Силовой рекорд года: самый тяжёлый вес, зафиксированный за год.
+  -- Упражнения на количество повторов (counts_reps) исключены — там килограммы
+  -- ничего не значат.
   LEFT JOIN LATERAL (
     SELECT e.name, h.weight_kg
     FROM public.user_exercise_weight_history h
     JOIN public.exercises e ON e.id = h.exercise_id
-    WHERE h.user_id = u.id AND COALESCE(e.counts_reps, false) = false
+    WHERE h.user_id = u.id
+      AND COALESCE(e.counts_reps, false) = false
       AND COALESCE(h.weight_kg, 0) > 0
       AND h.day >= (b.from_ts)::date AND h.day < (b.to_ts)::date
-    ORDER BY h.weight_kg DESC LIMIT 1
+    ORDER BY h.weight_kg DESC
+    LIMIT 1
   ) rs ON true
+  -- Тот же вес, но до начала года.
   LEFT JOIN LATERAL (
-    SELECT k.distance_m FROM public.workouts k
+    SELECT h.weight_kg
+    FROM public.user_exercise_weight_history h
+    JOIN public.exercises e ON e.id = h.exercise_id
+    WHERE h.user_id = u.id
+      AND COALESCE(e.counts_reps, false) = false
+      AND COALESCE(h.weight_kg, 0) > 0
+      AND h.day < (b.from_ts)::date
+    ORDER BY h.weight_kg DESC
+    LIMIT 1
+  ) prev_w ON true
+  -- Самый длинный заплыв года и лучший до него.
+  LEFT JOIN LATERAL (
+    SELECT k.distance_m
+    FROM public.workouts k
     WHERE k.user_id = u.id AND k.finished_at IS NOT NULL
       AND COALESCE(k.distance_m, 0) > 0
       AND k.finished_at >= b.from_ts AND k.finished_at < b.to_ts
-    ORDER BY k.distance_m DESC LIMIT 1
+    ORDER BY k.distance_m DESC
+    LIMIT 1
   ) rw ON true
-  WHERE u.telegram_id IS NOT NULL AND u.notify_digest AND s.total_count > 0;
-$$;
+  LEFT JOIN LATERAL (
+    SELECT k.distance_m
+    FROM public.workouts k
+    WHERE k.user_id = u.id AND k.finished_at IS NOT NULL
+      AND COALESCE(k.distance_m, 0) > 0
+      AND k.finished_at < b.from_ts
+    ORDER BY k.distance_m DESC
+    LIMIT 1
+  ) prev_s ON true
+  WHERE u.telegram_id IS NOT NULL
+    AND u.notify_digest
+    AND s.total_count > 0;
+$function$;
 
 -- Кому слать пинок (понедельник днём). Условие «пустая прошлая неделя» строже,
 -- чем «7 дней тишины»: отзанимавшийся в воскресенье укора не получит.
@@ -2420,6 +2521,8 @@ GRANT EXECUTE ON FUNCTION public.current_user_id() TO anon, authenticated, servi
 REVOKE ALL ON FUNCTION public.srv_email_issue_code(text, text, text, int, bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_workout_category(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_period_summary(bigint, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_best_month(bigint, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_user_records(bigint, boolean) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_weekly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_yearly_digest() FROM PUBLIC, anon, authenticated;

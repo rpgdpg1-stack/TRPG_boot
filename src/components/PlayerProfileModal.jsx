@@ -6,6 +6,7 @@ import { resolveWeeklyStreak } from '../utils/dates'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ProfileHeader from './ProfileHeader'
 import ProfileMetrics from './ProfileMetrics'
+import { hasRecords } from './PersonalRecords'
 import CloseCross from './CloseCross'
 
 /**
@@ -61,11 +62,15 @@ export default function PlayerProfileModal({ row, onClose }) {
       friendStats = { all: { count: pub.total_workouts || 0, minutes: pub.total_minutes || 0 } }
     }
   }
-  if (friendStats || friendFavs) {
+  // Рекорды друга приходят тем же ответом и под тем же флагом приватности, что
+  // статистика (силовой рекорд — ещё и под «показывать веса»: его считает сервер).
+  const friendRecords = pub?.show_stats ? (pub.records || null) : null
+  if (friendStats || friendFavs || hasRecords(friendRecords)) {
     friendSections.push(
       <ProfileMetrics
         key="metrics"
         stats={friendStats}
+        records={friendRecords}
         favorites={friendFavs || []}
       />
     )

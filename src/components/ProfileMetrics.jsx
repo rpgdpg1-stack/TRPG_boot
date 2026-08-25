@@ -8,14 +8,16 @@ import { exerciseTagLabel } from '../features/programs/labels'
 import { periodShortLabel, periodHintSuffix } from '../utils/history'
 import HeartIcon from './HeartIcon'
 import TrendingUpIcon from './TrendingUpIcon'
+import UiIcon from './UiIcon'
 import HistoryStats from './HistoryStats'
+import PersonalRecords, { hasRecords, RECORD_GOLD } from './PersonalRecords'
 import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
 import CloseCross from './CloseCross'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import MarqueeTag from './MarqueeTag'
 
 /**
- * Две плитки-входа в карточке профиля (своей и друга) — визуально те же, что
+ * Плитки-входы в карточке профиля (своей и друга) — визуально те же, что
  * карточки на главной: иконка сверху, подпись снизу, фон `--surface`, radius-card.
  * Цифр НЕТ (они внутри модалок), плитки только открывают детали.
  *
@@ -23,36 +25,56 @@ import MarqueeTag from './MarqueeTag'
  *   • «Статистика» — переключатель Месяц/Год (по умолчанию ГОД) + тоталы и разбивка
  *     по видам за выбранный период; плитка доступна ВСЕГДА, даже без тренировок —
  *     внутри тогда честная заглушка;
+ *   • «Рекорды» — тот же блок, что внизу экрана статистики (`PersonalRecords`):
+ *     лучший месяц, самый большой рабочий вес, самый длинный заплыв. У друга —
+ *     его рекорды, если он не закрыл статистику;
  *   • «Любимые упражнения» — список с рабочим весом.
  *
  * Пропсы: `stats` — сводки по периодам (`{ week, month, year, all }`, любые из них),
- * favorites, showWeights.
+ * `records` (`{best_month, strength, swim}` — свои или друга), favorites, showWeights.
  */
 // Периоды и их подписи — те же, что на главной («7 дней · Август · 2026 · Всё»).
 // Показываем только те, по которым есть данные: свой профиль считает все четыре,
 // друг — что отдал сервер.
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function ProfileMetrics({ stats, favorites = [], showWeights = true }) {
-  const [open, setOpen] = useState(null)   // 'stats' | 'favorites' | null
+export default function ProfileMetrics({ stats, records = null, favorites = [], showWeights = true }) {
+  const [open, setOpen] = useState(null)   // 'stats' | 'records' | 'favorites' | null
 
   const favCount = favorites?.length || 0
   const hasFav = favCount > 0
   // Статистика доступна всегда: пустой период честнее показать текстом, чем
   // прятать вход (иначе непонятно, есть ли раздел вообще).
   const hasStats = !!stats
+  // Рекорды — наоборот: пока рекордов нет, плитка молчит. Обещать раздел,
+  // внутри которого «пока пусто», незачем — он появится сам с первым рекордом.
+  const hasRec = hasRecords(records)
 
   const show = (key) => { haptic.light(); setOpen(key) }
 
-  if (!hasStats && !hasFav) return null
+  if (!hasStats && !hasFav && !hasRec) return null
+
+  // Три плитки в ряд на узком экране (375) не помещаются с большим зазором —
+  // 92px минимум у каждой плюс два раза по 24 дают 324 при доступных 311.
+  // Поэтому с третьей плитки зазор ужимается до 12: ряд остаётся одной строкой,
+  // а плитки не начинают переносить подписи.
+  const tiles = (hasStats ? 1 : 0) + (hasRec ? 1 : 0) + (hasFav ? 1 : 0)
 
   return (
     <>
-      <div style={styles.row}>
+      <div style={{ ...styles.row, ...(tiles >= 3 ? styles.rowTight : null) }}>
         {hasStats && (
           <button style={styles.tile} className="press-tile" onClick={() => show('stats')}>
             <span style={styles.tileIcon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>
             <span style={styles.tileTitle}>Статистика</span>
+          </button>
+        )}
+        {hasRec && (
+          <button style={styles.tile} className="press-tile" onClick={() => show('records')}>
+            {/* Кубок золотой, а не зелёный: золото — язык рекордов во всём
+                приложении (блок на экране статистики, эмодзи в сводках бота). */}
+            <span style={styles.tileIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
+            <span style={styles.tileTitle}>Рекорды</span>
           </button>
         )}
         {hasFav && (
@@ -67,6 +89,7 @@ export default function ProfileMetrics({ stats, favorites = [], showWeights = tr
         <MetricModal
           kind={open}
           stats={stats}
+          records={records}
           favorites={favorites}
           showWeights={showWeights}
           onClose={() => setOpen(null)}
@@ -78,9 +101,10 @@ export default function ProfileMetrics({ stats, favorites = [], showWeights = tr
 }
 
 /** Модалка метрики: шапка + переключатель периода (у статистики) + содержимое. */
-function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
+function MetricModal({ kind, stats, records, favorites, showWeights, onClose }) {
   const isStats = kind === 'stats'
-  const available = periodOptions().filter(p => stats && p.id in stats)
+  const isRecords = kind === 'records'
+  const available = isStats ? periodOptions().filter(p => stats && p.id in stats) : []
   // «Всё» по умолчанию: карточка профиля — про общий итог, а не про текущий
   // отрезок; сузить до года/месяца человек может сам. Если «Всё» недоступно
   // (у друга сервер отдал только разбивку) — первый доступный.
@@ -105,9 +129,11 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
           <span style={m.headLeft}>
             {isStats
               ? <TrendingUpIcon size={18} color="var(--color-primary)" />
-              : <HeartIcon filled size={18} color="var(--color-primary)" />}
-            <span style={m.title}>{isStats ? 'Статистика' : 'Любимые упражнения'}</span>
-            {!isStats && <span style={m.count}>{favorites.length}</span>}
+              : isRecords
+                ? <UiIcon name="trophy" size={18} color={RECORD_GOLD} />
+                : <HeartIcon filled size={18} color="var(--color-primary)" />}
+            <span style={m.title}>{isStats ? 'Статистика' : isRecords ? 'Рекорды' : 'Любимые упражнения'}</span>
+            {!isStats && !isRecords && <span style={m.count}>{favorites.length}</span>}
           </span>
         </div>
 
@@ -118,7 +144,9 @@ function MetricModal({ kind, stats, favorites, showWeights, onClose }) {
 
         {isStats
           ? <HistoryStats summary={summary} periodLabel={periodShortLabel(period)} emptyText={emptyText} />
-          : <FavoritesList items={favorites} showWeights={showWeights} />}
+          : isRecords
+            ? <PersonalRecords records={records} bare />
+            : <FavoritesList items={favorites} showWeights={showWeights} />}
       </div>
 
       <CloseCross onClose={onClose} style={{ marginTop: 'var(--space-4)' }} />
@@ -176,6 +204,7 @@ const styles = {
   // и «подпись → низ карточки» равны паддингам самой карточки профиля (16),
   // как расстояние от аватара до линии. Кликабельность даёт press-эффект.
   row: { display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 'var(--space-6)' },
+  rowTight: { gap: 'var(--space-3)' },
   tile: {
     minWidth: '92px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',

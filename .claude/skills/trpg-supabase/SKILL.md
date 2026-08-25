@@ -150,13 +150,41 @@ Telegram для привязки, лимиты для входа. Секреты
 - ISO-неделя: формат `IYYY-IW` (НЕ `YYYY-WW`) — для совместимости с `to_char`.
 - Стрики кэпнуты на 7 естественно структурой БД (one-workout-per-day), `LEAST()` не нужен.
 
-## Личные рекорды
+## Рекорды (раздел назывался «Лучшие результаты»)
 
-- `api_get_personal_records()` → `{ strength: {exercise_id,name,weight_kg}, swim: {distance_m,finished_at} }`.
+**Один сборщик на всех — `srv_user_records(p_user_id, p_with_weights)`** →
+`{ best_month: {month,count,minutes}, strength: {exercise_id,name,preview_url,muscle_group,sub_group,weight_kg}, swim: {distance_m,finished_at} }`.
+Его зовут обе точки входа, чтобы «лучшее» не считалось по разным правилам в двух местах:
+- `api_get_personal_records()` — свои (личность из `current_user_id()`);
+- `api_get_user_public_profile()` — рекорды друга, полем `records`, под флагом `show_stats`;
+  силовой рекорд ещё и под `show_weights` (`p_with_weights=false` прячет его целиком — он и
+  есть рабочий вес, «вес скрыт» в подписи звучит издёвкой).
+
+- **Лучший месяц** — `srv_best_month(user, before)` → `(cnt, minutes, month_start)`, месяц с
+  наибольшим числом тренировок по Москве; при равенстве берём поздний. Тот же хелпер сравнивает
+  «до этого периода» в сводках бота.
 - Силовой рекорд — МАКСИМУМ по `user_exercise_weight_history` (+ текущие `user_exercise_weights`),
   а не текущий вес: снизил вес после перерыва — рекорд остаётся. Отдельной колонки-рекорда НЕ заводим,
   история уже источник правды (иначе два состояния надо синхронизировать).
 - Плавание — максимальная `workouts.distance_m` за одну завершённую тренировку. Кардио/растяжка — позже.
+- **Порог «месяц считается рекордом» (≥2 тренировки) живёт на КЛИЕНТЕ** — там же, где текст
+  (`PersonalRecords`, `notify-text.mjs`). База отдаёт сырое, продуктовое правило рядом с формулировкой.
+- `srv_yearly_digest` отдаёт ещё и `best_month_minutes` + признаки `best_month_is_new`,
+  `rec_weight_is_new`, `rec_swim_is_new` — «это НОВЫЙ рекорд, а не просто лучшее за год».
+  Признак строго БОЛЬШЕ прежнего и требует, чтобы прежнее вообще было: «рекорд» в первый же
+  год/месяц обесценивает пометку.
+
+### ГРАБЛЯ ПРАВ: `REVOKE ALL FROM PUBLIC` НЕ снимает права у anon
+
+Supabase выдаёт EXECUTE на КАЖДУЮ новую функцию в `public` ролям anon/authenticated
+(default privileges), а `PUBLIC` в SQL — это не «все роли», а отдельная псевдороль. Поэтому
+шаблон `REVOKE ALL ... FROM PUBLIC` оставлял свежую `srv_`-функцию открытой: `srv_user_records`
+отдавала бы рекорды ЛЮБОГО человека мимо приватности, а `srv_yearly_digest` — telegram_id всех
+сразу. **Для `srv_*` всегда писать `REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon, authenticated;`
+и явный `GRANT ... TO service_role`.** Проверять после миграции:
+`SELECT proname, proacl FROM pg_proc WHERE proname LIKE 'srv\_%';` — там должен быть только
+postgres + service_role. Вызову из `api_*` это не мешает: SECURITY DEFINER исполняется от
+владельца, а не от anon.
 
 ## Любимые упражнения
 

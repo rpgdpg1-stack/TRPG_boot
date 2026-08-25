@@ -6,21 +6,18 @@ import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, periodShortLabel, periodHintSuffix, mskParts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getHomeStatsPeriod } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
-import { exerciseTagLabel } from '../features/programs/labels'
-import { getMuscleGroupColors } from '../features/programs/colors'
-import { getProgramBySlug } from '../features/programs/registry'
-import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
-import HistoryStats, { Distance, MetricValue } from '../components/HistoryStats'
-import ExercisePlaceholder from '../components/ExercisePlaceholder'
+import HistoryStats from '../components/HistoryStats'
+import PersonalRecords from '../components/PersonalRecords'
 import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
 import { goal, GOALS } from '../lib/metrika'
 
 /**
  * История тренировок — единственное место с детальной аналитикой:
  * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь →
- * личные рекорды (силовая: максимальный рабочий вес; плавание: лучший заплыв).
+ * рекорды (лучший месяц; силовая: максимальный рабочий вес; плавание: лучший
+ * заплыв) общим компонентом `PersonalRecords` — он же в модалке профиля.
  *
  * «Месяц»/«Год» считаются за месяц/год, который сейчас ОТКРЫТ в календаре ниже:
  * листнул календарь на июнь → статистика за месяц пересчиталась на июнь.
@@ -120,122 +117,9 @@ export default function History() {
         />
       </div>
 
-      {/* Личные рекорды — лучший результат по каждому виду. Кардио/растяжка
-          появятся, когда появятся сами программы. */}
-      <Records records={records} />
-    </div>
-  )
-}
-
-/**
- * «Лучшие результаты» — по одному лучшему достижению на вид активности.
- *
- * Метрики описаны для ВСЕХ видов сразу (RECORD_META), а рисуются только те, по
- * которым уже есть данные. Как только появится первая завершённая пробежка или
- * растяжка, её строка встанет сюда сама — правок здесь не потребуется.
- *
- * У силовой есть конкретное упражнение, поэтому под метрикой идёт строка с его
- * миниатюрой и названием (как в списке любимых). У остальных видов упражнения
- * нет — значение стоит прямо в строке метрики.
- *
- * Значение — золотое: это рекорд, а не текущее число. Цвет вида остаётся на
- * бейдже, чтобы два акцента не спорили.
- */
-const RECORD_GOLD = '#FFC83D'
-
-/**
- * Подпись метрики — полная фраза с двоеточием.
- *
- * Бейджа вида и отдельного названия («Силовая», «Плавание») здесь больше нет:
- * вид назван в самой подписи, а иконка с заголовком дублировали её и делали
- * блок пёстрым. Осталось одно тихое пояснение и под ним сам результат.
- */
-const RECORD_META = {
-  strength: { metric: 'Самый большой рабочий вес в силовой тренировке:' },
-  swim: { metric: 'Самая длинная дистанция в плавании:' },
-  // Появятся вместе со своими программами — метрики уже зафиксированы.
-  cardio: { metric: 'Самая длинная дистанция в беге:' },
-  stretch: { metric: 'Самая длинная тренировка в растяжке:' }
-}
-
-function Records({ records }) {
-  const strength = records?.strength || null
-  const swim = records?.swim || null
-  if (!strength && !swim) return null
-
-  const cap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : '')
-  // Тег принадлежности — тот же формат, что на карточках упражнений.
-  const strengthTag = strength ? exerciseTagLabel(strength.muscle_group, strength.sub_group) : ''
-  const kg = strength ? Number(strength.weight_kg) : 0
-  const kgText = kg % 1 === 0 ? String(kg) : kg.toFixed(1).replace('.', ',')
-  // Название программы заплыва — из реестра, тем же регистром, что на карточках.
-  const swimProgram = getProgramBySlug('swim')
-  const swimTitle = swimProgram ? cap(swimProgram.title) : 'Заплыв'
-
-  return (
-    <div style={styles.recGroup}>
-      {/* Шапка блока как у карточек главной: иконка сверху, заголовок под ней.
-          Кубок золотой — тем же цветом, что и сами рекорды ниже, поэтому блок
-          читается одним смысловым куском. */}
-      <div style={styles.recHeadWrap}>
-        <span style={styles.recHeadIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
-        <div style={styles.recHead}>Лучшие результаты</div>
-      </div>
-
-      {strength && (
-        <RecordBlock kind="strength">
-          <div style={styles.recItem}>
-            <span style={styles.recThumb}>
-              {strength.preview_url
-                ? <img src={strength.preview_url} alt="" style={styles.recThumbImg} draggable={false} />
-                : <ExercisePlaceholder size={20} />}
-            </span>
-            <span style={styles.recItemCol}>
-              <span style={styles.recItemName}>{cap(strength.name)}</span>
-              {strengthTag && (
-                <span style={{ ...styles.recItemTag, background: getMuscleGroupColors(strength.muscle_group).tag }}>
-                  {strengthTag}
-                </span>
-              )}
-            </span>
-            <span style={styles.recValue}>
-              <MetricValue num={kgText} unit="кг" color={RECORD_GOLD} />
-            </span>
-          </div>
-        </RecordBlock>
-      )}
-
-      {swim && (
-        <RecordBlock
-          kind="swim"
-          divider={!!strength}
-          title={swimTitle}
-          value={<Distance meters={swim.distance_m} color={RECORD_GOLD} />}
-        />
-      )}
-    </div>
-  )
-}
-
-/**
- * Одна запись: шапка вида (бейдж + название), под ней подпись метрики.
- * `value` — значение прямо в строке метрики (виды без упражнения);
- * `children` — строка результата под метрикой (силовая с миниатюрой).
- */
-function RecordBlock({ kind, divider = false, title = null, value = null, children = null }) {
-  const m = RECORD_META[kind]
-  return (
-    <div style={{ ...styles.recBlock, ...(divider ? styles.recDivider : null) }}>
-      <div style={styles.recMetric}>{m.metric}</div>
-      {/* Виды без упражнения (плавание, бег) — название программы слева,
-          результат справа: та же раскладка, что у силовой строкой ниже. */}
-      {(title || value) && (
-        <div style={styles.recPlainRow}>
-          <span style={styles.recItemName}>{title}</span>
-          {value && <span style={styles.recValue}>{value}</span>}
-        </div>
-      )}
-      {children}
+      {/* Рекорды — лучший результат по каждому виду плюс лучший месяц.
+          Кардио/растяжка появятся, когда появятся сами программы. */}
+      <PersonalRecords records={records} />
     </div>
   )
 }
@@ -247,54 +131,5 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4)',
     marginBottom: 'var(--space-5)'
-  },
-  // Личные рекорды — блок-карточка со строками по видам активности.
-  recGroup: {
-    display: 'flex', flexDirection: 'column',
-    background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-4) var(--space-4) var(--space-2)'
-  },
-  recHeadWrap: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', marginBottom: 'var(--space-2)' },
-  recHeadIcon: { display: 'inline-flex', height: '22px' },
-  recHead: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
-    color: 'var(--color-text)', letterSpacing: '0.2px'
-  },
-  recBlock: { display: 'flex', flexDirection: 'column', gap: 'var(--space-15)', padding: 'var(--space-3) 0' },
-  recDivider: { borderTop: '1px solid var(--border-hairline)', marginTop: 'var(--space-1)', paddingTop: 'var(--space-4)' },
-  // Шапка вида: цветной бейдж + название раздела.
-  // Строка результата без миниатюры (плавание, бег): название слева, значение
-  // справа — ровно как у силовой, только вместо картинки упражнения название
-  // программы.
-  recPlainRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 'var(--space-3)', marginTop: 'var(--space-05)'
-  },
-  recMetric: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)'
-  },
-  // Строка результата с миниатюрой — как в списке любимых упражнений.
-  recItem: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-05)' },
-  recThumb: {
-    flexShrink: 0, width: '32px', height: '32px', borderRadius: 'var(--radius-small)', overflow: 'hidden',
-    background: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-  },
-  recThumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  // Название и тег — колонкой: тег встаёт второй строкой под названием.
-  recItemCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-1)' },
-  recItemTag: {
-    padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
-    opacity: 0.7, whiteSpace: 'nowrap'
-  },
-  recItemName: {
-    flex: 1, minWidth: 0,
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 600,
-    color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-  },
-  // Бейдж вида — как в сводке и календаре: чёрная иконка на цветном квадрате.
-  recValue: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)', whiteSpace: 'nowrap' },
+  }
 }

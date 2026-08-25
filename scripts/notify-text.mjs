@@ -198,7 +198,10 @@ export function comparisonLine(monthIndex, totalCount, prevCount) {
  */
 export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
   const lines = [`<b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '']
-  if (isRecord) lines.push(`${E.record} <b>Новый лучший месяц!</b>`, '')
+  // «Новый рекорд» — тем же словом, что раздел «Рекорды» в приложении: у
+  // человека должно быть одно название для лучших результатов, а не два.
+  // Числа не повторяем — они идут строкой ниже, в итоге месяца.
+  if (isRecord) lines.push(`${E.record} <b>Новый рекорд</b> — лучший месяц`, '')
   lines.push(headLine(E.workouts, totalCount, totalMinutes), '')
   lines.push(...breakdownLines(breakdown))
   lines.push('')
@@ -223,48 +226,71 @@ function formatWeight(kg) {
  */
 export function yearlyDigest({
   year, totalCount, totalMinutes, breakdown,
-  bestMonth, bestMonthCount, bestMonthMinutes, recExercise, recWeight, recSwimM
+  bestMonth, bestMonthCount, bestMonthMinutes, bestMonthIsNew,
+  recExercise, recWeight, recWeightIsNew, recSwimM, recSwimIsNew
 }) {
   const head = headLine(E.workouts, totalCount, totalMinutes)
 
   const lines = [`<b>Итоги ${year} года</b>`, '', head, '']
   lines.push(...breakdownLines(breakdown))
 
+  // Один блок «Рекорды» вместо двух («Лучший месяц» + «Лучшие результаты»):
+  // так же, как раздел называется в приложении. Лучший месяц идёт ПЕРВЫМ — он
+  // про тренировки вообще, а не про один вид.
+  //
+  // Каждая запись — подпись, ЧТО именно рекорд, и под ней сам результат. Голое
+  // «105 кг» ничего не говорит, а «самый большой рабочий вес» — говорит, и
+  // подпись стоит впереди, потому что читают её первой.
+  const records = []
+
   // Лучший месяц называем, только если он и правда выделяется. Когда весь год
   // уместился в один-два раза, «лучший месяц — март, 1 тренировка» звучит
-  // насмешкой.
+  // насмешкой. Тот же порог держит блок рекордов в приложении.
   if (bestMonthCount >= 2 && bestMonth !== null && bestMonth !== undefined) {
-    lines.push('')
-    lines.push(`${E.record} <b>Лучший месяц</b>`)
     // Именительный падеж: «Июнь», не «июне» — это подпись, а не оборот.
     const monthName = MONTHS_NOMINATIVE[bestMonth]
-    lines.push(`${monthName}, ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
-      + (bestMonthMinutes ? ` (${formatMinutes(bestMonthMinutes)})` : ''))
+    records.push([
+      recordLabel('Больше всего тренировок за месяц:', bestMonthIsNew),
+      `${monthName} — ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
+        + (bestMonthMinutes ? ` (${formatMinutes(bestMonthMinutes)})` : '')
+    ])
   }
 
-  // Каждый рекорд с подписью, ЧТО именно рекорд: «105 кг» само по себе
-  // ничего не говорит, а «самый большой рабочий вес» — говорит.
-  // Сначала ЧТО за результат, потом сам результат. Голое «105 кг» ничего
-  // не говорит, а «самый большой рабочий вес» — говорит, и подпись стоит
-  // впереди, потому что читают её первой.
-  const records = []
   const weight = formatWeight(recWeight)
   if (recExercise && weight) {
-    records.push('Самый большой рабочий вес в силовых тренировках:',
-      `${recExercise} — ${weight}`)
+    records.push([
+      recordLabel('Самый большой рабочий вес в силовых тренировках:', recWeightIsNew),
+      `${recExercise} — ${weight}`
+    ])
   }
   if (recSwimM) {
-    records.push('Самая длинная дистанция в плавании:',
-      `Заплыв — ${formatDistance(recSwimM)}`)
+    records.push([
+      recordLabel('Самая длинная дистанция в плавании:', recSwimIsNew),
+      `Заплыв — ${formatDistance(recSwimM)}`
+    ])
   }
 
   if (records.length) {
     lines.push('')
-    lines.push(`${E.record} <b>Лучшие результаты</b>`)
-    for (const r of records) lines.push(r)
+    lines.push(`${E.record} <b>Рекорды</b>`)
+    // Между записями — пустая строка: три подписи с результатами подряд
+    // читаются сплошной стеной, а это самая перечитываемая часть сообщения.
+    for (const [label, value] of records) lines.push('', label, value)
   }
 
   return lines.join('\n')
+}
+
+/**
+ * Подпись рекорда. Побил прежний — говорим об этом прямо и сразу, потому что
+ * это главная новость строки; иначе «105 кг» читается как справка.
+ *
+ * Первая буква подписи после приставки уходит в строчную: «Новый рекорд —
+ * самый большой рабочий вес», а не «— Самый».
+ */
+function recordLabel(text, isNew) {
+  if (!isNew) return text
+  return `<b>Новый рекорд</b> — ${text.charAt(0).toLowerCase()}${text.slice(1)}`
 }
 
 /** «5 человек» / «21 человек» / «22 человека». */
@@ -405,7 +431,7 @@ export function programLine(p) {
  * несколько: силовая и плавание закрепляются независимо).
  */
 /**
- * Строка «лучший результат за месяц» — для длинных пауз.
+ * Строка «рекорд за месяц» — для длинных пауз.
  *
  * Напоминание о том, на что человек способен, работает лучше уговоров:
  * это его собственный результат, а не обещание. В rich-варианте цифры
@@ -429,7 +455,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
       'ничего не пропало. Возвращайся, когда захочешь.'
     ]
     const best = bestMonthLine(bestCount, bestMinutes)
-    if (best) lines.push('', `${E.record} Твой лучший результат за месяц: ${best}`)
+    if (best) lines.push('', `${E.record} Твой рекорд за месяц: ${best}`)
     return lines.join('\n')
   }
 
@@ -443,7 +469,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
       'Возвращайся и продолжи любую свою тренировку.'
     ]
     const best = bestMonthLine(bestCount, bestMinutes)
-    if (best) lines.push('', `${E.record} Твой лучший результат за месяц: ${best}`)
+    if (best) lines.push('', `${E.record} Твой рекорд за месяц: ${best}`)
     return lines.join('\n')
   }
 

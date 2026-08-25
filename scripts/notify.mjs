@@ -338,9 +338,9 @@ async function sendSamples(bot) {
     (() => {
       const d = { year: 2026, totalCount: 30, totalMinutes: 375,
         breakdown: { strength: { count: 21, meters: 0 }, pool: { count: 9, meters: 3000 } },
-        bestMonth: 5, bestMonthCount: 14, bestMonthMinutes: 810,
+        bestMonth: 5, bestMonthCount: 14, bestMonthMinutes: 810, bestMonthIsNew: true,
         recExercise: 'Тяга верхнего блока нейтральным хватом',
-        recWeight: '105.00', recSwimM: 750 }
+        recWeight: '105.00', recWeightIsNew: true, recSwimM: 750, recSwimIsNew: false }
       return ['итоги года', yearlyDigest(d),
         [{ text: '📈 Открыть статистику', url: appLink(bot, 'stats-year'), style: BTN_STYLE.ACCENT }],
         IMAGES.yearly]
@@ -435,9 +435,12 @@ async function main() {
             bestMonth: r.best_month,
             bestMonthCount: r.best_month_count,
             bestMonthMinutes: r.best_month_minutes,
+            bestMonthIsNew: r.best_month_is_new,
             recExercise: r.rec_exercise,
             recWeight: r.rec_weight,
-            recSwimM: r.rec_swim_m
+            recWeightIsNew: r.rec_weight_is_new,
+            recSwimM: r.rec_swim_m,
+            recSwimIsNew: r.rec_swim_is_new
           }
           text = yearlyDigest(yearData)
         } else {

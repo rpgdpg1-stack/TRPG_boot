@@ -322,6 +322,7 @@ src/
 │                   ExerciseVideo FavCardBody FinishConfirmModal FormControls FriendRow
 │                   GroupLabel HeartButton HeartIcon HistoryCalendar HistoryStats HomeCards
 │                   MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows PencilIcon
+│                   PersonalRecords (блок «Рекорды»: /history + модалка профиля и друга)
 │                   PeriodSwitcher PinIcon PlaceSwitcher PlayButton PlayIcon PlayerProfileModal
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
 │                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
