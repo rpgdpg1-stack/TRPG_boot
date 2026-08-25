@@ -165,7 +165,9 @@ function FavoritesList({ items, showWeights }) {
       {items.map((f, i) => {
         const n = Number(f.weight_kg)
         const has = showWeights && Number.isFinite(n) && n > 0
-        const num = has ? (n % 1 === 0 ? n : n.toFixed(1)) : null
+        // Дробный вес — через ЗАПЯТУЮ: в русской типографике это десятичный
+        // разделитель, и так же он пишется в рекордах и на карточках упражнений.
+        const num = has ? (n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',')) : null
         const colors = getMuscleGroupColors(f.muscle_group, isCustomExercise(f.exercise_id))
         const tag = exerciseTagLabel(f.muscle_group, f.sub_group)
         return (
@@ -186,10 +188,13 @@ function FavoritesList({ items, showWeights }) {
               )}
             </div>
             {has && (
+              // Тот же приём, что в «Рекордах»: число в строке с названием,
+              // единица под ним, всё прижато к правому краю. Значения списка
+              // встают ровным столбиком, а не пляшут вслед за длиной единицы.
               <span style={m.favVal}>
                 {/* Вес — белым, как в дне тренировки; цвет группы несёт тег. */}
-                <span style={{ color: 'var(--color-text)', fontWeight: 800 }}>{num}</span>
-                <span style={m.favUnit}> {f.counts_reps ? 'раз' : 'кг'}</span>
+                <span style={m.favNum}>{num}</span>
+                <span style={m.favUnit}>{f.counts_reps ? 'раз' : 'кг'}</span>
               </span>
             )}
           </div>
@@ -262,6 +267,18 @@ const m = {
   },
   // Форма пилюли — в MarqueeTag; здесь только приглушение.
   favTag: { alignSelf: 'flex-start', opacity: 0.7 },
-  favVal: { flexShrink: 0, fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)', whiteSpace: 'nowrap' },
-  favUnit: { color: 'var(--color-text-secondary)', fontWeight: 700, fontSize: 'var(--text-label-size)' }
+  // Колонка значения — как в «Рекордах»: число сверху, единица под ним, оба по
+  // правому краю. Ширина фиксирована, чтобы название не пляcало от строки к строке.
+  favVal: {
+    flexShrink: 0, width: '52px',
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px'
+  },
+  favNum: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-button-size)',
+    lineHeight: 1.2, color: 'var(--color-text)', whiteSpace: 'nowrap'
+  },
+  favUnit: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 500, fontSize: 'var(--text-caption-size)',
+    lineHeight: 1.2, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+  }
 }
