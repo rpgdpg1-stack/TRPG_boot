@@ -22,6 +22,13 @@ import MuscleIcon from './MuscleIcon'
  * микро-анимация перехода. Всегда смонтирован (App/BottomTabBar), чтобы анимация
  * работала, а не был мгновенный показ/скрытие.
  */
+// Отклик иконки на тап по своему табу. Длительность и кривая — 1:1 с жестом
+// бицепса (`muscleFlexOnce 0.7s ease-in-out` в MuscleIcon): все три таба
+// отвечают на тап одинаково, иначе «Профиль» и «Друзья» щёлкали заметно
+// быстрее, чем разминался бицепс, и таб-бар читался как собранный из разных
+// деталей. Меняешь тут — меняй и в MuscleIcon.
+const ICON_POP = 'tabIconPop 0.7s ease-in-out'
+
 export default function TabBar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -132,7 +139,7 @@ export default function TabBar() {
                 style={{
                   display: 'inline-flex',
                   transformOrigin: 'center center',
-                  animation: (profilePopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
+                  animation: (profilePopTick && tab.isActive) ? ICON_POP : 'none'
                 }}
               >
                 <UiIcon
@@ -147,7 +154,7 @@ export default function TabBar() {
                 style={{
                   display: 'inline-flex',
                   transformOrigin: 'center center',
-                  animation: (friendsPopTick && tab.isActive) ? 'tabIconPop 0.4s ease-out' : 'none'
+                  animation: (friendsPopTick && tab.isActive) ? ICON_POP : 'none'
                 }}
               >
                 <UiIcon

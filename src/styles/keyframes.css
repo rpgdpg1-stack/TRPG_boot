@@ -116,10 +116,13 @@
   0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+/* Отклик иконки таба на тап. Ритм повторяет жест бицепса (muscleFlexOnce):
+   подъём к 45%, короткая задержка на пике до 55%, возврат. Без задержки та же
+   длительность 0.7s читалась как вялость, а не как отклик. */
 @keyframes tabIconPop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.28); }
-  100% { transform: scale(1); }
+  0%        { transform: scale(1); }
+  45%, 55%  { transform: scale(1.28); }
+  100%      { transform: scale(1); }
 }
 
 /* Ракета «быстрой тренировки»: включение — короткий взлёт вправо-вверх с лёгким
