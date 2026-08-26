@@ -344,8 +344,6 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
         .github/workflows/{ci,db-backup,notify,keepalive}.yml
         scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs}
 
-design/muscle-icons/  body-torso.svg · body-legs.svg (исходники силуэта для Figma;
-
 src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
