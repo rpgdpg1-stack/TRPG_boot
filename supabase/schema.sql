@@ -399,6 +399,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key
 CREATE INDEX IF NOT EXISTS email_codes_email_created_idx
   ON public.email_codes (email, created_at DESC);
 
+-- Внешний ключ email_codes.user_id: по нему идёт каскад при удалении аккаунта,
+-- без индекса Postgres перечитывает таблицу целиком.
+CREATE INDEX IF NOT EXISTS idx_email_codes_user_id ON public.email_codes (user_id);
+
 
 -- ── ФУНКЦИИ ────────────────────────────────────────────────────────────────
 -- Все api_* — SECURITY DEFINER с явным search_path. У приложения нет своей
@@ -1713,8 +1717,29 @@ CREATE OR REPLACE FUNCTION public.normalize_email(p_email text)
  RETURNS text
  LANGUAGE sql
  IMMUTABLE
+ SET search_path TO 'public'
 AS $function$
   SELECT NULLIF(lower(btrim(COALESCE(p_email, ''))), '');
+$function$;
+
+-- Имя по адресу почты: «rpgdpg1@gmail.com» → «Rpgdpg». Нужна при регистрации
+-- через почту, когда имени взять больше неоткуда (в Telegram оно приходит само).
+CREATE OR REPLACE FUNCTION public.name_from_email(p_email text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+  SELECT NULLIF(
+    initcap(
+      btrim(
+        regexp_replace(
+          regexp_replace(split_part(lower(COALESCE(p_email, '')), '@', 1), '[._\-+]+', ' ', 'g'),
+          '\s*\d+\s*$', '', 'g'
+        )
+      )
+    ),
+  '');
 $function$;
 
 -- Пустой ли аккаунт — вопрос ровно один: потеряет ли человек что-нибудь, если
@@ -2539,6 +2564,7 @@ REVOKE ALL ON FUNCTION public.srv_email_attach(bigint, text) FROM PUBLIC, anon, 
 REVOKE ALL ON FUNCTION public.srv_email_login_user(text, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.account_is_empty(bigint) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.normalize_email(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.name_from_email(text) TO anon, authenticated, service_role;
 
 -- Таблица пользователей: клиенту доступно только чтение (и то — своей записи,
 -- см. политику выше). Записи заводит и правит сервер: Edge Function под

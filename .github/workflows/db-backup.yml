@@ -11,6 +11,9 @@ jobs:
   dump:
     runs-on: ubuntu-latest
     steps:
+      # Нужен только ради scripts/notify-failure.mjs — сама задача файлов не читает.
+      - uses: actions/checkout@v5
+
       # pg_dump берём из докер-образа Postgres той же мажорной версии, что и
       # база. Свой pg_dump на раннере отстаёт по версии и отказывается снимать
       # дамп с более новой базы.
@@ -65,3 +68,12 @@ jobs:
           BUCKET: ${{ secrets.YC_BUCKET }}
         run: |
           aws s3 ls "s3://$BUCKET/db/" --endpoint-url https://storage.yandexcloud.net --human-readable
+
+      # Упало — сообщение в Telegram (см. scripts/notify-failure.mjs).
+      # Успешные прогоны молчат: тишина в чате и значит «всё хорошо».
+      - name: Сообщить о падении
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          OWNER_CHAT_ID: ${{ secrets.OWNER_CHAT_ID }}
+        run: node scripts/notify-failure.mjs "Бэкап базы"

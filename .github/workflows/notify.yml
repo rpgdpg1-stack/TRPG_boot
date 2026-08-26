@@ -68,3 +68,12 @@ jobs:
           NOTIFY_ONLY: ${{ inputs.only }}
           OWNER_CHAT_ID: ${{ secrets.OWNER_CHAT_ID }}
         run: node scripts/notify.mjs ${{ steps.kind.outputs.kind }}
+
+      # Упало — сообщение в Telegram (см. scripts/notify-failure.mjs).
+      # Успешные прогоны молчат: тишина в чате и значит «всё хорошо».
+      - name: Сообщить о падении
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          OWNER_CHAT_ID: ${{ secrets.OWNER_CHAT_ID }}
+        run: node scripts/notify-failure.mjs "Напоминания"

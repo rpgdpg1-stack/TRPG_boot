@@ -1,0 +1,44 @@
+name: Проверка сборки
+
+# Сторож на входе в main. Локально перед коммитом гоняются те же две команды,
+# но правка может прилететь мимо: из другой сессии, с сайта GitHub, с телефона.
+# Тогда единственная проверка перед выкладкой — эта.
+#
+# Ничего не деплоит и не коммитит: только читает код и говорит «зелено/красно».
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      # npm ci (а не install): ставит РОВНО то, что записано в package-lock,
+      # без «а вдруг вышла версия посвежее». Сборка на раннере обязана быть
+      # той же, что локальная, иначе проверка ничего не доказывает.
+      - run: npm ci
+
+      - name: Линт
+        run: npm run lint
+
+      - name: Сборка
+        run: npm run build
+
+      # Упало — сообщение в Telegram тем же ботом, что шлёт напоминания.
+      # Без этого красный крестик надо ходить и высматривать на сайте.
+      - name: Сообщить о падении
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          OWNER_CHAT_ID: ${{ secrets.OWNER_CHAT_ID }}
+        run: node scripts/notify-failure.mjs "Проверка сборки"

@@ -39,6 +39,24 @@ description: "Входной скил для ЛЮБОГО запроса по п
   своя (`source: 'custom'`) и от друга (`source: 'shared'`) — грузятся в реестр в рантайме.
   Упражнения — в Supabase.
 
+## Посмотреть экран глазами локально (dev-вход)
+
+`npm run dev` + браузерный MCP упирались в форму входа: в браузере приложение
+просит код с почты. Поэтому в `.env.local` есть `VITE_DEV_REFRESH_TOKEN` — токен
+живой сессии, по которому dev-сборка входит сама (`lib/dev-auth.js`). Дальше
+приложение работает как в бою: те же RPC, та же приватность, тот же пользователь,
+и любой экран можно открыть, кликать и снимать скриншоты.
+
+- в боевом бандле этой ветки нет вовсе — вырезается по `import.meta.env.DEV`
+  (проверено: в `dist` ни одного упоминания);
+- токен протух → приложение просто покажет обычную форму почты. Лечится одним
+  ручным входом в браузере, дальше токен читается из localStorage
+  (`...auth-token` → `refresh_token`) и кладётся в `.env.local`;
+- **что проверять на живой сети, а что нет.** Вёрстку, состояния, тексты,
+  переходы — локально. Всё, что зависит от Telegram (хаптика, кнопка «Назад»,
+  тема, `initData`, поведение WebView и его кеша) — только в самом Telegram:
+  локальный вход даёт настоящие ДАННЫЕ, но не даёт Telegram.
+
 ## Старт задачи (в Claude Code)
 
 Файлы читаю **сам** из репозитория — не прошу Дмитрия их прикладывать. Перед правкой:
@@ -95,6 +113,27 @@ description: "Входной скил для ЛЮБОГО запроса по п
 > 🛠 Обновил скил **trpg-ui**: добавил 2 пункта — токен `--radius-pill` и правило для сегмент-контролов.
 
 Не расписывать подробно, не молчать.
+
+## Что сторожит проект само (GitHub Actions)
+
+Четыре задачи в `.github/workflows/`. Все, кроме проверки сборки, работают по
+расписанию и без присмотра:
+
+| Задача | Когда | Что делает |
+|---|---|---|
+| `ci.yml` — Проверка сборки | каждый push и PR в `main` | `npm ci` → `lint` → `build`. Ничего не деплоит |
+| `db-backup.yml` — Бэкап базы | ежедневно 05:00 МСК | `pg_dump` → Yandex Object Storage, 7 файлов по дням недели |
+| `notify.yml` — Напоминания | 5 расписаний | сводки и пинки в Telegram |
+| `keepalive.yml` | пн и чт | пинг Supabase, чтобы free-tier не уснул |
+
+**Падение любой из них приходит в Telegram** — шаг `if: failure()` зовёт
+`scripts/notify-failure.mjs` (тот же бот, тот же `OWNER_CHAT_ID`, ссылка на лог
+прогона). Успешные прогоны молчат: тишина в чате и есть «всё хорошо», иначе
+сообщения перестанут читать через неделю. **Заводишь новый workflow — добавь этот
+шаг сразу**, иначе задача будет падать в тишине. Шагу нужен `actions/checkout`
+(скрипт лежит в репозитории), node на раннере уже есть.
+
+Смотреть прогоны из терминала: `gh run list`, `gh run view <id> --log-failed`.
 
 ## Чеклист перед коммитом
 
@@ -301,8 +340,9 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
 ```
 Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · eslint.config.js
         index.html · package.json · vercel.json · vite.config.js
-        .github/workflows/keepalive.yml
         .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md
+        .github/workflows/{ci,db-backup,notify,keepalive}.yml
+        scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs}
 
 design/muscle-icons/  body-torso.svg · body-legs.svg (исходники силуэта для Figma;
 
@@ -333,7 +373,8 @@ src/
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            accent active-workout activities auth cache cloud-storage email-auth events favorite-exercises friends
+├── lib/            accent active-workout activities auth cache cloud-storage dev-auth (вход в dev-сборке)
+│                   email-auth events favorite-exercises friends
 │                   quick-workout (быстрая тренировка: набор + вкл/выкл)
 │                   use-scroll-lock (заморозка фона под модалками)
 │                   records (личные рекорды)

@@ -10,6 +10,9 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      # Нужен только ради scripts/notify-failure.mjs — сама задача файлов не читает.
+      - uses: actions/checkout@v5
+
       - name: Ping Supabase
         env:
           URL: ${{ secrets.SUPABASE_URL }}
@@ -21,3 +24,12 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Prefer: return=minimal" \
             -d "{\"last_ping\": \"$(date -u +%FT%TZ)\"}"
+
+      # Упало — сообщение в Telegram (см. scripts/notify-failure.mjs).
+      # Успешные прогоны молчат: тишина в чате и значит «всё хорошо».
+      - name: Сообщить о падении
+        if: failure()
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          OWNER_CHAT_ID: ${{ secrets.OWNER_CHAT_ID }}
+        run: node scripts/notify-failure.mjs "Supabase keepalive"
