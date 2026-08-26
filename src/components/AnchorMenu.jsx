@@ -9,6 +9,9 @@ import { useScrollLock } from '../lib/use-scroll-lock'
  * - Само меню «стекло» (блюр фона под ним), весь экран НЕ затемняется.
  * - Без «Закрыть» — тап мимо закрывает.
  * - Нажатие на пункт — серая пилюля-подсветка (держишь — есть, убрал — нет).
+ * - Выбор протяжкой: палец ведёт по пунктам, подсветка идёт за ним, и КАЖДЫЙ
+ *   переход отзывается микро-вибрацией (`haptic.selection`) — как в нативных
+ *   меню iOS и в Telegram.
  *
  * Два режима подачи:
  *  - `align='right' + motion='scale'` (по умолчанию) — раскрытие из угла кнопки «⋯».
@@ -91,6 +94,27 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   // Раньше подсветка гасла на первом же сдвиге пальца, и меню отвечало только
   // на отдельный тап. Отпускание мимо пунктов по-прежнему не выбирает ничего.
   const dragging = useRef(false)
+  // Что сейчас под пальцем. Держим В REF, а не сверяемся с состоянием: отклик
+  // должен сработать РОВНО один раз на переход, а setState — асинхронный и в
+  // dev-режиме прогоняется дважды.
+  const hovered = useRef(null)
+
+  /**
+   * Подсветить пункт под пальцем и дать МИКРО-ОТКЛИК на каждом переходе.
+   *
+   * Палец ведёт по меню, подсветка прыгает с пункта на пункт — и каждая граница
+   * должна чувствоваться, как в нативных меню iOS и в самом Telegram. Без этого
+   * выбор протяжкой приходится контролировать глазами.
+   *
+   * Уход в пустоту (мимо пунктов) молчит: вибрация означает «под пальцем есть
+   * что выбрать», и на пустом месте она сбивала бы с толку.
+   */
+  const hoverTo = (key) => {
+    if (hovered.current === key) return
+    hovered.current = key
+    if (key) haptic.selection()
+    setPressed(key)
+  }
 
   // Какой пункт под этой точкой экрана. Ищем по разметке, а не по координатам
   // из состояния: пункты разной высоты, часть из них — разделители и вставки.
@@ -126,21 +150,22 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
   const menuDragProps = {
     onPointerDown: (e) => {
       dragging.current = true
-      setPressed(keyAtPoint(e.clientX, e.clientY))
+      hoverTo(keyAtPoint(e.clientX, e.clientY))
     },
     onPointerMove: (e) => {
       if (!dragging.current) return
-      setPressed(keyAtPoint(e.clientX, e.clientY))
+      hoverTo(keyAtPoint(e.clientX, e.clientY))
     },
     onPointerUp: (e) => {
       if (!dragging.current) return
       dragging.current = false
       const key = keyAtPoint(e.clientX, e.clientY)
+      hovered.current = null
       setPressed(null)
       // Отпустили мимо пунктов (в том числе за пределами меню) — не выбираем.
       if (key) pick(key)
     },
-    onPointerCancel: () => { dragging.current = false; setPressed(null) }
+    onPointerCancel: () => { dragging.current = false; hovered.current = null; setPressed(null) }
   }
 
   // ПРИЗНАК «ПОВЕРХ ЧТО-ТО ОТКРЫТО» для жестовых компонентов под меню.
