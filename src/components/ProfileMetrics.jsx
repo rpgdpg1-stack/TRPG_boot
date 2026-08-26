@@ -52,6 +52,14 @@ export default function ProfileMetrics({ stats, records = null, favorites = [], 
 
   const show = (key) => { haptic.light(); setOpen(key) }
 
+  // Разделы модалки в одном порядке с плитками. Отсюда же строится переключатель
+  // ВНУТРИ модалки: список один, разъехаться нечему.
+  const tabs = [
+    hasStats && { id: 'stats', title: 'Статистика' },
+    hasRec && { id: 'records', title: 'Рекорды' },
+    hasFav && { id: 'favorites', title: 'Любимые упражнения' }
+  ].filter(Boolean)
+
   if (!hasStats && !hasFav && !hasRec) return null
 
   // Три плитки в ряд на узком экране (375) не помещаются с большим зазором —
@@ -88,6 +96,7 @@ export default function ProfileMetrics({ stats, records = null, favorites = [], 
       {open && createPortal(
         <MetricModal
           kind={open}
+          tabs={tabs}
           stats={stats}
           records={records}
           favorites={favorites}
@@ -100,58 +109,107 @@ export default function ProfileMetrics({ stats, records = null, favorites = [], 
   )
 }
 
-/** Модалка метрики: шапка + переключатель периода (у статистики) + содержимое. */
-function MetricModal({ kind, stats, records, favorites, showWeights, onClose }) {
-  const isStats = kind === 'stats'
-  const isRecords = kind === 'records'
-  const available = isStats ? periodOptions().filter(p => stats && p.id in stats) : []
+/**
+ * Модалка метрики: переключатель разделов + содержимое активного.
+ *
+ * Разделы переключаются ВНУТРИ модалки, без возврата в карточку профиля:
+ * человек открыл чужой профиль, чтобы посмотреть достижения, и не должен
+ * закрывать-открывать окно ради соседнего раздела.
+ *
+ * Переключатель — только иконки, без подписей: те же три иконки уже стоят
+ * плитками в карточке профиля, и повторить их там ещё раз с текстом значило бы
+ * показать одну навигацию дважды. Название несёт заголовок активного раздела
+ * под иконками.
+ *
+ * Свайпов между разделами НЕТ: разделов всего три, тап понятнее и не спорит
+ * с прокруткой длинного содержимого. Кнопки «назад» тоже нет — выход один,
+ * крестик снизу.
+ */
+function MetricModal({ kind, tabs, stats, records, favorites, showWeights, onClose }) {
+  const [active, setActive] = useState(kind)
+  const isStats = active === 'stats'
+  const isRecords = active === 'records'
+
+  // Периоды считаем всегда, а не только на вкладке статистики: в неё можно
+  // прийти переключателем, и к этому моменту список должен быть готов.
+  const available = periodOptions().filter(p => stats && p.id in stats)
   // «Всё» по умолчанию: карточка профиля — про общий итог, а не про текущий
   // отрезок; сузить до года/месяца человек может сам. Если «Всё» недоступно
   // (у друга сервер отдал только разбивку) — первый доступный.
-  const [period, setPeriod] = useState(() => (available.some(p => p.id === 'all') ? 'all' : available[0]?.id) || 'all')
+  const [period, setPeriod] = useState('all')
+  const activePeriod = available.some(p => p.id === period) ? period : (available[0]?.id || 'all')
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
 
-  const summary = isStats ? stats?.[period] : null
+  const pick = (id) => {
+    if (id === active) return
+    haptic.selection()
+    setActive(id)
+  }
+
+  const summary = isStats ? stats?.[activePeriod] : null
   // Заглушка честно называет период и адресата (свой профиль / профиль друга).
   // Заглушка одинаковая для своего профиля и для друга — это карточка профиля,
   // а не экран статистики: тут достаточно факта.
-  const hint = periodHintSuffix(period)
-  const emptyText = period === 'month' ? `Не тренировался в этом месяце${hint}`
-    : period === 'year' ? `Не тренировался в этом году${hint}`
-      : period === 'week' ? `Не тренировался на этой неделе${hint}`
+  const hint = periodHintSuffix(activePeriod)
+  const emptyText = activePeriod === 'month' ? `Не тренировался в этом месяце${hint}`
+    : activePeriod === 'year' ? `Не тренировался в этом году${hint}`
+      : activePeriod === 'week' ? `Не тренировался на этой неделе${hint}`
         : 'Тренировок пока нет'
 
   return (
     <div ref={overlayRef} style={m.overlay} onClick={(e) => { e.stopPropagation(); onClose() }}>
       <div style={m.panel} onClick={(e) => e.stopPropagation()}>
         <div style={m.head}>
-          <span style={m.headLeft}>
-            {isStats
-              ? <TrendingUpIcon size={18} color="var(--color-primary)" />
-              : isRecords
-                ? <UiIcon name="trophy" size={18} color={RECORD_GOLD} />
-                : <HeartIcon filled size={18} color="var(--color-primary)" />}
-            <span style={m.title}>{isStats ? 'Статистика' : isRecords ? 'Рекорды' : 'Любимые упражнения'}</span>
-            {!isStats && !isRecords && <span style={m.count}>{favorites.length}</span>}
+          {/* Переключатель нужен, только когда есть куда переключаться. */}
+          {tabs.length > 1 && (
+            <div style={m.tabs}>
+              {tabs.map(t => (
+                <button
+                  key={t.id}
+                  style={{ ...m.tab, ...(t.id === active ? m.tabOn : null) }}
+                  onClick={() => pick(t.id)}
+                  aria-label={t.title}
+                  aria-current={t.id === active}
+                >
+                  <TabIcon id={t.id} on={t.id === active} />
+                </button>
+              ))}
+            </div>
+          )}
+          <span style={m.headTitle}>
+            <span style={m.title}>{tabs.find(t => t.id === active)?.title}</span>
+            {active === 'favorites' && <span style={m.count}>{favorites.length}</span>}
           </span>
         </div>
 
-        {/* Переключатель только когда периодов больше одного. */}
+        {/* Переключатель периода только у статистики и только когда периодов больше одного. */}
         {isStats && available.length > 1 && (
-          <PeriodSwitcher items={available} value={period} onChange={setPeriod} />
+          <PeriodSwitcher items={available} value={activePeriod} onChange={setPeriod} />
         )}
 
-        {isStats
-          ? <HistoryStats summary={summary} periodLabel={periodShortLabel(period)} emptyText={emptyText} />
-          : isRecords
-            ? <PersonalRecords records={records} bare />
-            : <FavoritesList items={favorites} showWeights={showWeights} />}
+        {/* key — чтобы содержимое ПОЯВЛЯЛОСЬ при смене раздела, а не подменялось
+            на месте: без этого переключение читается как рывок вёрстки. */}
+        <div key={active} style={m.body}>
+          {isStats
+            ? <HistoryStats summary={summary} periodLabel={periodShortLabel(activePeriod)} emptyText={emptyText} />
+            : isRecords
+              ? <PersonalRecords records={records} bare />
+              : <FavoritesList items={favorites} showWeights={showWeights} />}
+        </div>
       </div>
 
       <CloseCross onClose={onClose} style={{ marginTop: 'var(--space-4)' }} />
     </div>
   )
+}
+
+/** Иконка раздела: активная — своим цветом, спящая — приглушённо-серой (как в таб-баре). */
+function TabIcon({ id, on }) {
+  const off = 'var(--color-text-inactive)'
+  if (id === 'stats') return <TrendingUpIcon size={20} color={on ? 'var(--color-primary)' : off} />
+  if (id === 'records') return <UiIcon name="trophy" size={20} color={on ? RECORD_GOLD : off} />
+  return <HeartIcon filled size={20} color={on ? 'var(--color-primary)' : off} />
 }
 
 /**
@@ -238,7 +296,10 @@ const m = {
   panel: {
     position: 'relative', width: '100%', maxWidth: '360px',
     // Длинный список прокручивается внутри панели, а не тянет за собой страницу.
-    maxHeight: '100%', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
+    // Высота — по содержимому: у рекордов его больше, у любимых меньше, и
+    // растягивать все разделы под один рост незачем. Предел 85% экрана, дальше
+    // прокрутка внутри панели, а не «модалка во весь экран».
+    maxHeight: 'min(100%, 85vh)', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
     background: 'rgba(34, 34, 34, 0.98)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
@@ -247,8 +308,22 @@ const m = {
     boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
-  head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', paddingLeft: 'var(--space-1)' },
-  headLeft: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  // Шапка колонкой: сверху иконки-переключатель, под ними — название активного.
+  head: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' },
+  tabs: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  tab: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '40px', height: '32px', padding: 0,
+    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
+    cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+    opacity: 0.45,
+    transition: 'opacity 0.16s ease, background 0.16s ease'
+  },
+  // Активная — тот же залитый фон, что у активного таба внизу экрана.
+  tabOn: { opacity: 1, background: 'var(--color-surface-active)' },
+  headTitle: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },
+  // Содержимое раздела появляется тем же тихим движением, что группы в списках.
+  body: { animation: 'groupPillIn 0.22s var(--ease-ios) both' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)' },
   count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', color: 'var(--color-primary)' },
 
