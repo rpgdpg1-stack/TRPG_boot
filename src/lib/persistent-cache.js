@@ -87,8 +87,10 @@ export function pcacheClear() {
  * v2 — 27 августа 2026: +55 упражнений из лицензионного пакета, новые превью.
  * v3 — 27 августа 2026: +11 упражнений из остатков архива, 4 замены превью,
  *      ex_062 удалено, ex_034 и ex_078 убраны в архив.
+ * v4 — 27 августа 2026: содержимое ex_135 и ex_139 перенесено в ex_034 и ex_078
+ *      (история подходов остаётся на своём упражнении), дубли удалены.
  */
-export const CATALOG_VERSION = 3
+export const CATALOG_VERSION = 4
 
 /** Ключ кеша каталога (данные RPC api_get_all_exercises). */
 export const CATALOG_CACHE_KEY = `exercises:all:v${CATALOG_VERSION}`
