@@ -71,6 +71,7 @@ async function refreshAllExercises() {
       const { data, error } = await supabase
         .from('exercises')
         .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority, counts_reps')
+        .is('archived_at', null)   // убранные из каталога в выбор не попадают
         .order('priority', { ascending: true })
       if (!error && data?.length) {
         exercises = data

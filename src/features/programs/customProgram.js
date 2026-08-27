@@ -318,6 +318,7 @@ async function fetchCatalog() {
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, muscle_group, sub_group, type, preview_url, priority')
+    .is('archived_at', null)   // убранные из каталога в конструкторе не показываем
     .order('id', { ascending: true })
   if (error) {
     console.error('[customProgram] loadExerciseCatalog error:', error)

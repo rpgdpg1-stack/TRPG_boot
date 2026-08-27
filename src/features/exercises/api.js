@@ -55,6 +55,7 @@ export async function getExercisesForSubgroup(subGroup, type) {
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, meta_info, preview_url, video_url, priority')
+    .is('archived_at', null)   // убранные из каталога в замену не предлагаем
     .eq('sub_group', subGroup)
     .eq('type', type)
     .order('priority', { ascending: true })
