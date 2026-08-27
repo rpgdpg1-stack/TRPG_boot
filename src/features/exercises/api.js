@@ -12,7 +12,7 @@ import { isCustomExercise, loadExercisesByIds } from '../programs/userExercises'
 import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
-import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
+import { pcacheGet, pcacheSet, CATALOG_CACHE_KEY } from '../../lib/persistent-cache'
 import { isOnline } from '../../lib/network-status'
 import { debug } from '../../lib/debug'
 import {
@@ -30,11 +30,16 @@ import { goal, GOALS } from '../../lib/metrika'
  * диске на неделю. Каталог меняется редко, а замену чаще всего открывают
  * в зале, где сети может не быть вовсе.
  */
-const CATALOG_KEY = 'exercises:all'
+// Ключ общий с programs/api.js — каталог один, кеш один. Версия задана
+// в persistent-cache.js: поднять её там, чтобы старый кеш перестали читать.
+const CATALOG_KEY = CATALOG_CACHE_KEY
 
 export async function getExercisesForSubgroup(subGroup, type) {
   const cached = cacheGet(CATALOG_KEY) || pcacheGet(CATALOG_KEY)
   if (cached) {
+    // Отдаём кеш сразу (замену открывают в зале, где сети может не быть),
+    // а свежий каталог подтягиваем в фоне — к следующему заходу.
+    refreshAllExercisesInBackground()
     return cached.filter(e => e.sub_group === subGroup && e.type === type)
   }
 
@@ -59,6 +64,22 @@ export async function getExercisesForSubgroup(subGroup, type) {
     return []
   }
   return data || []
+}
+
+// Фоновое обновление каталога: молча, ошибки глушим — на кеше уже работаем.
+let _refreshingAll = false
+function refreshAllExercisesInBackground() {
+  if (_refreshingAll) return
+  _refreshingAll = true
+  supabase.rpc('api_get_all_exercises')
+    .then(({ data, error }) => {
+      if (!error && data?.length) {
+        cacheSet(CATALOG_KEY, data, TTL.LONG)
+        pcacheSet(CATALOG_KEY, data)
+      }
+    })
+    .catch(() => { /* нет сети — остаёмся на кеше */ })
+    .finally(() => { _refreshingAll = false })
 }
 
 export async function getExerciseById(exerciseId) {

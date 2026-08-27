@@ -75,3 +75,45 @@ export function pcacheClear() {
     /* localStorage недоступен — ничего не делаем */
   }
 }
+/**
+ * Версия каталога упражнений — общая для всех кешей, где он лежит.
+ *
+ * Каталог живёт на диске 7 дней ради оффлайна в зале. Без версии правки в базе
+ * (новые упражнения, заменённые превью) доезжали бы до пользователя только
+ * когда кеш протухнет сам. Номер в ключе решает: поднял — прежний кеш никто
+ * больше не читает, данные перечитываются из сети при первом же открытии.
+ *
+ * ПОДНИМАТЬ при каждом изменении состава каталога или ссылок на медиа.
+ * v2 — 27 августа 2026: +55 упражнений из лицензионного пакета, новые превью.
+ */
+export const CATALOG_VERSION = 2
+
+/** Ключ кеша каталога (данные RPC api_get_all_exercises). */
+export const CATALOG_CACHE_KEY = `exercises:all:v${CATALOG_VERSION}`
+
+/**
+ * Выбросить кеши каталога прошлых версий.
+ *
+ * Версия в ключе делает старый кеш невидимым для чтения, но сама запись
+ * остаётся лежать в localStorage до истечения своих 7 дней. Места немного,
+ * но каталог — самая крупная запись, и держать её мёртвой неделю ни к чему.
+ */
+export function pcacheDropOldCatalogs() {
+  const live = [CATALOG_CACHE_KEY, `constructor-catalog-v${CATALOG_VERSION}`]
+  const isCatalogKey = (name) =>
+    name === 'exercises:all' || name.startsWith('exercises:all:v') ||
+    name === 'constructor-catalog' || name.startsWith('constructor-catalog-v')
+
+  try {
+    const stale = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k || !k.startsWith(PREFIX)) continue
+      const name = k.slice(PREFIX.length)
+      if (isCatalogKey(name) && !live.includes(name)) stale.push(k)
+    }
+    stale.forEach(k => { try { localStorage.removeItem(k) } catch { /* ignore */ } })
+  } catch {
+    /* localStorage недоступен — не страшно, кеш протухнет сам */
+  }
+}

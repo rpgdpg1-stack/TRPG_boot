@@ -60,6 +60,7 @@ import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
 import { debug } from './lib/debug'
+import { pcacheDropOldCatalogs } from './lib/persistent-cache'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -81,6 +82,10 @@ export default function App() {
       return null
     })
   }
+
+  // Кеши каталога прошлых версий читать уже некому — убираем, чтобы самая
+  // крупная запись не лежала мёртвым грузом до конца своих 7 дней.
+  useEffect(() => { pcacheDropOldCatalogs() }, [])
 
   useEffect(() => {
     let cancelled = false

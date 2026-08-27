@@ -16,7 +16,7 @@ import { EVENTS, emit } from '../../lib/events'
 import { getCurrentWeekKey } from '../../utils/dates'
 import { getProgramBySlug, getProgramDaySlots } from './registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib/cache'
-import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
+import { pcacheGet, pcacheSet, CATALOG_CACHE_KEY } from '../../lib/persistent-cache'
 import { isOnline, checkNow } from '../../lib/network-status'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
@@ -31,7 +31,7 @@ import { goal, GOALS } from '../../lib/metrika'
 const FINISH_TIMEOUT_MS = 7000
 
 async function loadAllExercises() {
-  const cacheKey = 'exercises:all'
+  const cacheKey = CATALOG_CACHE_KEY
   const cached = cacheGet(cacheKey)
   if (cached) return cached
 
@@ -54,7 +54,7 @@ async function loadAllExercises() {
  * Вынесено отдельно чтобы звать и напрямую, и из фонового обновления.
  */
 async function refreshAllExercises() {
-  const cacheKey = 'exercises:all'
+  const cacheKey = CATALOG_CACHE_KEY
   let exercises = []
 
   try {

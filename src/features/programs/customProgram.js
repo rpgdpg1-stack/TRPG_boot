@@ -15,7 +15,7 @@ import { getCurrentUser } from '../../lib/auth'
 import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet } from '../../utils/storage'
-import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
+import { pcacheGet, pcacheSet, CATALOG_VERSION } from '../../lib/persistent-cache'
 
 import { isTelegramEnv } from '../../lib/telegram'
 
@@ -286,7 +286,9 @@ export async function saveFriendProgram(token) {
  * Кэшируем в памяти модуля на время сессии.
  */
 let _catalog = null
-const CATALOG_PCACHE_KEY = 'constructor-catalog'
+// Свой набор полей (нужен muscle_group), поэтому и кеш свой — но версия общая
+// с остальным каталогом: поднимается один раз в persistent-cache.js.
+const CATALOG_PCACHE_KEY = `constructor-catalog-v${CATALOG_VERSION}`
 
 export async function loadExerciseCatalog() {
   if (_catalog) return _catalog
@@ -297,9 +299,22 @@ export async function loadExerciseCatalog() {
   const fromDisk = pcacheGet(CATALOG_PCACHE_KEY)
   if (fromDisk?.length) {
     _catalog = fromDisk
+    // Кеш отдали сразу — экран открывается мгновенно и работает без сети.
+    // Параллельно тихо ходим за свежим: новые упражнения и заменённые
+    // картинки подхватятся к следующему открытию, а не через неделю.
+    refreshCatalogInBackground()
     return _catalog
   }
 
+  const fresh = await fetchCatalog()
+  if (fresh.length) {
+    _catalog = fresh
+    pcacheSet(CATALOG_PCACHE_KEY, _catalog)
+  }
+  return _catalog || []
+}
+
+async function fetchCatalog() {
   const { data, error } = await supabase
     .from('exercises')
     .select('id, name, muscle_group, sub_group, type, preview_url, priority')
@@ -308,7 +323,21 @@ export async function loadExerciseCatalog() {
     console.error('[customProgram] loadExerciseCatalog error:', error)
     return []
   }
-  _catalog = data || []
-  if (_catalog.length) pcacheSet(CATALOG_PCACHE_KEY, _catalog)
-  return _catalog
+  return data || []
+}
+
+// Обновление в фоне: ошибки глушим — офлайн это норма, у нас уже есть кеш.
+let _refreshing = false
+function refreshCatalogInBackground() {
+  if (_refreshing) return
+  _refreshing = true
+  fetchCatalog()
+    .then(fresh => {
+      if (fresh.length) {
+        _catalog = fresh
+        pcacheSet(CATALOG_PCACHE_KEY, fresh)
+      }
+    })
+    .catch(() => { /* нет сети — остаёмся на кеше */ })
+    .finally(() => { _refreshing = false })
 }
