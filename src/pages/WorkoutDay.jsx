@@ -12,7 +12,7 @@ import RocketToggle from '../components/RocketToggle'
 import RocketIcon from '../components/RocketIcon'
 import { getQuickSet, getQuickSetSync, isQuickOn, setQuickOn, syncQuickOn, applyQuickSet } from '../lib/quick-workout'
 
-import { hasWorkoutTodayOfType, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { hasWorkoutTodayOfType, programCategoryKey, categoryMetaByKey, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
 import {
   getActiveWorkout,
@@ -845,16 +845,19 @@ export default function WorkoutDay() {
 
   // «Начать тренировку»: стартуем сессию для этого дня/места, обнуляем галочки
   // (свежий старт), таймер пойдёт от startedAt (через эффект).
-  // Вторая силовая за день: сервер её не засчитает (лимит 1/сутки). Предупреждаем
-  // ДО старта, чтобы человек решал осознанно, а не узнавал после тренировки.
-  const strengthDoneToday = () => {
-    if (program?.kind === 'swim') return false
+  // Вторая тренировка В ЭТОМ РАЗДЕЛЕ за день: сервер её не засчитает (лимит
+  // 1/сутки на раздел). Предупреждаем ДО старта, чтобы человек решал осознанно,
+  // а не узнавал после тренировки. Раздел берём у программы, а не считаем всё
+  // силовой: у кардио и растяжки свои лимиты и свои фразы.
+  const catKey = programCategoryKey(program)
+  const catMeta = categoryMetaByKey(catKey)
+  const sectionDoneToday = () => {
     const recent = getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || []
-    return hasWorkoutTodayOfType(recent, 'strength')
+    return hasWorkoutTodayOfType(recent, catKey)
   }
 
   const handleStartTap = () => {
-    if (strengthDoneToday()) {
+    if (sectionDoneToday()) {
       haptic.medium()
       setShowLimitWarn(true)
       return
@@ -1598,11 +1601,11 @@ export default function WorkoutDay() {
         />
       )}
 
-      {/* Предупреждение о лимите ДО старта второй силовой за день. */}
+      {/* Предупреждение о лимите ДО старта второй тренировки этого раздела за день. */}
       {showLimitWarn && (
         <ConfirmModal
-          title="Сегодня силовая уже была"
-          text="Лимит — 1 силовая в день. Вторая тренировка не попадёт в статистику и серию."
+          title={catMeta.limitTitle}
+          text={`Лимит — ${catMeta.limitUnit}. Вторая тренировка не попадёт в статистику и серию.`}
           onClose={() => setShowLimitWarn(false)}
           actions={[
             { label: 'Отмена', onClick: () => { haptic.light(); setShowLimitWarn(false) } },

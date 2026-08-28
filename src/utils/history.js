@@ -139,19 +139,51 @@ export function describeWorkout(workout) {
  * раздела и человекочитаемый лейбл. Силовая (gym и любая своя силовая) → power/зелёный,
  * плавание → swimming/pool, кардио/растяжка — свои цвета. Fallback — силовая.
  */
+const CATEGORY_META = {
+  pool: {
+    key: 'pool', iconName: 'swimming', color: 'var(--cat-pool)', label: 'Плавание',
+    // Роды у разделов разные («силовая была», «заплыв был»), поэтому фразы лежат
+    // готовыми, а не склеиваются из label на месте.
+    limitTitle: 'Сегодня заплыв уже был',
+    limitUnit: '1 заплыв в день'
+  },
+  cardio: {
+    key: 'cardio', iconName: 'cardio', color: 'var(--cat-cardio)', label: 'Кардио',
+    limitTitle: 'Сегодня кардио уже было',
+    limitUnit: '1 кардио в день'
+  },
+  stretch: {
+    key: 'stretch', iconName: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка',
+    limitTitle: 'Сегодня растяжка уже была',
+    limitUnit: '1 растяжка в день'
+  },
+  strength: {
+    key: 'strength', iconName: 'power', color: 'var(--cat-gym)', label: 'Силовая',
+    limitTitle: 'Сегодня силовая уже была',
+    limitUnit: '1 силовая в день'
+  }
+}
+
+/**
+ * Ключ раздела по самой ПРОГРАММЕ — там, где тренировки ещё нет.
+ *
+ * Нужен, чтобы предупредить о лимите ДО старта: лимит держится по разделу
+ * (одна тренировка в сутки в каждом), и знать раздел надо заранее.
+ */
+export function programCategoryKey(prog) {
+  if (prog?.kind === 'swim' || prog?.category === 'pool') return 'pool'
+  if (prog?.category === 'cardio') return 'cardio'
+  if (prog?.category === 'stretch') return 'stretch'
+  return 'strength'
+}
+
+/** Описание раздела по ключу (иконка, цвет, подпись, тексты лимита). */
+export function categoryMetaByKey(key) {
+  return CATEGORY_META[key] || CATEGORY_META.strength
+}
+
 export function workoutCategoryMeta(workout) {
-  const prog = getProgramByDbId(workout.program_id)
-  const cat = prog?.category
-  if (prog?.kind === 'swim' || cat === 'pool') {
-    return { key: 'pool', iconName: 'swimming', color: 'var(--cat-pool)', label: 'Плавание' }
-  }
-  if (cat === 'cardio') {
-    return { key: 'cardio', iconName: 'cardio', color: 'var(--cat-cardio)', label: 'Кардио' }
-  }
-  if (cat === 'stretch') {
-    return { key: 'stretch', iconName: 'stretching', color: 'var(--cat-stretch)', label: 'Растяжка' }
-  }
-  return { key: 'strength', iconName: 'power', color: 'var(--cat-gym)', label: 'Силовая' }
+  return categoryMetaByKey(programCategoryKey(getProgramByDbId(workout.program_id)))
 }
 
 // Порядок разделов в сводке месяца.

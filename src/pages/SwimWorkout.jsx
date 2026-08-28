@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
 import { getProgramBySlug } from '../features/programs/registry'
-import { setLastCompletedDay } from '../lib/storage'
+import { setLastCompletedDay, getRecentWorkoutsSync } from '../lib/storage'
 import {
   getActiveWorkout,
   onActiveWorkoutChange,
@@ -35,6 +35,7 @@ import ActionButton from '../components/ActionButton'
 import WaterChrome from '../components/WaterChrome'
 import ScrollTopButton from '../components/ScrollTopButton'
 import { PlayGlyph } from '../components/PlayButton'
+import { hasWorkoutTodayOfType, categoryMetaByKey, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { goal, GOALS } from '../lib/metrika'
 import { getPrefSync, setPref } from '../lib/prefs'
 
@@ -188,6 +189,8 @@ export default function SwimWorkout() {
   const [startBlocked, setStartBlocked] = useState(false)
   const startBlockTimer = useRef(null)
   const autoStartedRef = useRef(false)
+  // Предупреждение о лимите ДО старта второго заплыва за день.
+  const [showLimitWarn, setShowLimitWarn] = useState(false)
   useEffect(() => () => { if (startBlockTimer.current) clearTimeout(startBlockTimer.current) }, [])
 
   // Шапка складывается в пилюлю на скролле ИЛИ когда заплыв начат — та же
@@ -329,8 +332,10 @@ export default function SwimWorkout() {
     if (!program || sessionBlocked || isThisActive) return
     autoStartedRef.current = true
     navigate(location.pathname, { replace: true, state: { ...location.state, autoStart: false } })
-    haptic.success()
-    startActiveWorkout(programId, 'main', 'pool')
+    // Заход по кружку Play тоже упирается в лимит: молча стартовать нельзя,
+    // иначе человек проплывёт впустую, ни о чём не спросив.
+    if (poolDoneToday()) { haptic.medium(); setShowLimitWarn(true); return }
+    beginSession()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.autoStart, program, sessionBlocked, isThisActive])
 
@@ -424,6 +429,17 @@ export default function SwimWorkout() {
     runFinish()
   }
 
+  // Второй заплыв за день сервер не засчитает (лимит 1/сутки на раздел).
+  // Предупреждаем ДО старта — как в дне силовой, чтобы человек не узнавал
+  // об этом, уже проплыв дистанцию.
+  const poolDoneToday = () =>
+    hasWorkoutTodayOfType(getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [], 'pool')
+
+  const beginSession = () => {
+    haptic.success()
+    startActiveWorkout(programId, 'main', 'pool')
+  }
+
   // «Начать заплыв» — открывает сессию, дальше в шапке тикает таймер.
   // Пока идёт ДРУГАЯ тренировка, начинать нельзя (одна за раз, как в силовой).
   const handleStartTap = () => {
@@ -434,8 +450,12 @@ export default function SwimWorkout() {
       startBlockTimer.current = setTimeout(() => setStartBlocked(false), 2600)
       return
     }
-    haptic.success()
-    startActiveWorkout(programId, 'main', 'pool')
+    if (poolDoneToday()) {
+      haptic.medium()
+      setShowLimitWarn(true)
+      return
+    }
+    beginSession()
   }
 
   const handleModalConfirm = () => {
@@ -692,6 +712,19 @@ export default function SwimWorkout() {
 
       {/* Кнопка «наверх» — при скролле вниз (как в дне силовой). */}
       <ScrollTopButton />
+
+      {/* Предупреждение о лимите ДО старта второго заплыва за день. */}
+      {showLimitWarn && (
+        <ConfirmModal
+          title={categoryMetaByKey('pool').limitTitle}
+          text={`Лимит — ${categoryMetaByKey('pool').limitUnit}. Второй заплыв не попадёт в статистику и серию.`}
+          onClose={() => setShowLimitWarn(false)}
+          actions={[
+            { label: 'Отмена', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
+            { label: 'Всё равно начать', onClick: () => { setShowLimitWarn(false); beginSession() } }
+          ]}
+        />
+      )}
 
       {/* Подтверждение отмены — общая модалка, как в дне силовой. */}
       {showCancelConfirm && (
