@@ -1081,8 +1081,9 @@ export default function WorkoutDay() {
         return
       }
 
-      // Онлайн: лимит «1 тренировка в день» держит сервер. already_completed_today
-      // → баллы за сегодня уже были, +150 не показываем (поздравляем без баллов).
+      // Онлайн: лимит «1 тренировка в день В ЭТОМ РАЗДЕЛЕ» держит сервер.
+      // already_completed_today → силовая за сегодня уже была, +150 не показываем
+      // (поздравляем без баллов). Заплыв в тот же день лимиту не мешает.
       setAlreadyToday(!!result.alreadyCompletedToday)
       haptic.success()
       setFinishStatus('idle')

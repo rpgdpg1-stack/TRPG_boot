@@ -88,7 +88,7 @@ export function enqueue(type, payload, dedupKey) {
     // createdAt для finish сохраняем ИСХОДНЫЙ (момент реального завершения),
     // для остальных обновляем — не критично.
     if (type === 'finish') {
-      // finish обычно не дублируется (одна тренировка в день), но если вдруг —
+      // finish обычно не дублируется (одна тренировка в день на раздел), но если вдруг —
       // оставляем первую (исходный момент завершения важнее)
       debug('[queue] finish уже в очереди для', dedupKey, '— оставляем исходную')
       return
@@ -136,7 +136,9 @@ export function swapDedupKey(programId, day, orderNum, place = 'gym') {
 }
 
 export function finishDedupKey(programId, day, finishedAtISO) {
-  // Дата (без времени) от момента завершения — одна тренировка на день
+  // Дата (без времени) от момента завершения. Программа и день в ключе
+  // обязательны: за сутки разрешена одна тренировка НА РАЗДЕЛ, и зал с
+  // бассейном не должны схлопнуться в одну операцию.
   const dateOnly = finishedAtISO.split('T')[0]
   return `${programId}|${day}|${dateOnly}`
 }

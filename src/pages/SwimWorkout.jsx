@@ -722,7 +722,7 @@ export default function SwimWorkout() {
           distanceLabel={formatDistance(modal.distance ?? totalMeters)}
           durationLabel={formatWorkoutMin(modal.seconds ?? 0)}
           durationColor={workoutTimerColor(modal.seconds ?? 0)}
-          limitNote={<>Достигнут лимит — 1 тренировка в день.<br />Этот заплыв в статистику не войдёт.</>}
+          limitNote={<>Достигнут лимит — 1 заплыв в день.<br />Этот заплыв в статистику не войдёт.</>}
           status={finishStatus === 'error' ? 'error' : finishStatus}
           offline={modal.kind === 'offline'}
           alreadyToday={modal.kind === 'limit'}

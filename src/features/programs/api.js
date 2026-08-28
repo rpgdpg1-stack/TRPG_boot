@@ -334,7 +334,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
   // Положить завершение в оффлайн-очередь и вернуть флаг offline. Зовём и когда
   // сети заведомо нет, и когда онлайн-запрос завис/упал (мёртвый Wi-Fi): иначе
   // экран «Сохранение…» висел бы вечно. Безопасно — RPC при синке схлопнётся по
-  // лимиту «1 тренировка в день» (already_completed_today), повтора начислений нет.
+  // лимиту «1 тренировка в день в этом разделе» (already_completed_today),
+  // повтора начислений нет.
   const queueOfflineFinish = () => {
     const finishedAt = new Date().toISOString()
     enqueue('finish', {
