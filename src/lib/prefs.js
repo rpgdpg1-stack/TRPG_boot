@@ -22,6 +22,14 @@ import { EVENTS, emit } from './events'
 
 let memory = null
 let loadedForUser = null
+// Загружено ИЗ БАЗЫ для этого человека. Отдельно от loadedForUser: тот
+// выставляется и при чтении с диска, а диск — ещё не правда.
+let fetchedForUser = null
+// Активная загрузка: параллельные вызовы обслуживает один запрос.
+let inflight = null
+// Ключи, чья запись ещё летит в базу. Ответ на чтение может обогнать запись
+// и вернуть старое значение — эти ключи кладём поверх ответа.
+const pending = new Map()
 
 function diskKey(userId) {
   return `prefs:${userId}`
@@ -59,24 +67,44 @@ export function getPrefSync(key, fallback = null) {
 }
 
 /**
- * Подтянуть настройки из базы. Зовётся один раз после входа; результат
- * оседает и в памяти, и на диске.
+ * Подтянуть настройки из базы.
+ *
+ * Ходит в базу ОДИН раз на человека: дальше отдаёт то, что уже знает.
+ * Раньше запрос слал каждый вызов, а зовёт его любая карточка программы при
+ * появлении — при листании разделов запросы и записи шли вперемешку, ответы
+ * возвращались не в том порядке, и карусель отбрасывало на прошлый раздел.
+ * `force: true` — когда обновление правда нужно.
  */
-export async function loadPrefs() {
+export async function loadPrefs({ force = false } = {}) {
   const user = getCurrentUser()
   if (!user) return {}
 
+  if (!force && fetchedForUser === user.id) return memory || {}
+  if (inflight) return inflight
+
+  inflight = fetchPrefs(user.id).finally(() => { inflight = null })
+  return inflight
+}
+
+async function fetchPrefs(userId) {
   try {
     const { data, error } = await supabase.rpc('api_get_my_prefs')
     if (error) {
       console.warn('[prefs] не смогли прочитать из базы:', error)
       return getPrefsSync()
     }
-    const all = (data && typeof data === 'object') ? data : {}
+    const fromDb = (data && typeof data === 'object') ? data : {}
+    // Свои ещё не подтверждённые правки — поверх ответа: пока запись летит,
+    // база честно отдаёт старое значение, и без этого слоя интерфейс откатывался.
+    const all = pending.size ? { ...fromDb, ...Object.fromEntries(pending) } : fromDb
+    const changed = JSON.stringify(all) !== JSON.stringify(memory)
     memory = all
-    loadedForUser = user.id
-    writeDisk(user.id, all)
-    emit(EVENTS.PREFS_CHANGED, all)
+    loadedForUser = userId
+    fetchedForUser = userId
+    writeDisk(userId, all)
+    // Событие — только на реальное изменение: холостые рассылки заставляли
+    // экраны перечитываться и перерисовываться на ровном месте.
+    if (changed) emit(EVENTS.PREFS_CHANGED, all)
     return all
   } catch (e) {
     console.warn('[prefs] исключение при чтении:', e)
@@ -100,6 +128,7 @@ export async function setPref(key, value) {
   writeDisk(user.id, all)
   emit(EVENTS.PREFS_CHANGED, all)
 
+  pending.set(key, value)
   try {
     const { error } = await supabase.rpc('api_set_my_pref', { p_key: key, p_value: value })
     if (error) { console.warn('[prefs] не сохранилось в базе:', error); return false }
@@ -107,6 +136,9 @@ export async function setPref(key, value) {
   } catch (e) {
     console.warn('[prefs] исключение при записи:', e)
     return false
+  } finally {
+    // Снимаем пометку, только если поверх не легла более свежая правка того же ключа.
+    if (pending.get(key) === value) pending.delete(key)
   }
 }
 
@@ -114,6 +146,9 @@ export async function setPref(key, value) {
 export function resetPrefs() {
   memory = null
   loadedForUser = null
+  fetchedForUser = null
+  inflight = null
+  pending.clear()
 }
 
 /**

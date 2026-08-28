@@ -57,6 +57,8 @@ export default function SectionCarousel() {
   const navigate = useNavigate()
 
   const [idx, setIdx] = useState(() => idxOfCat(getPrefSync(LAST_CAT_KEY, null)))
+  // Человек уже переключал раздел руками — дальше настройки его не двигают.
+  const userPicked = useRef(false)
   const [open, setOpen] = useState(false)          // выпадающий список разделов
   const [pinnedTick, setPinnedTick] = useState(0)  // ре-чтение закрепа/последней
   const selectorRef = useRef(null)
@@ -83,8 +85,15 @@ export default function SectionCarousel() {
   // чуть позже первого кадра. Раньше раздел лежал в облаке Telegram, которого
   // в браузере нет вовсе — и там всегда открывалась первая вкладка, чем бы
   // человек ни пользовался в Telegram.
+  //
+  // ВАЖНО: применяем только ПОКА человек не переключился сам. Настройки летают
+  // событием на каждую запись любого ключа, а ответ базы может обогнать нашу
+  // запись и принести прошлый раздел — так карусель и «промаргивала»: встала
+  // на кардио, дёрнулась на плавание, вернулась обратно, хотя никто не нажимал.
+  // Как только человек выбрал раздел, источник правды — карусель.
   useEffect(() => {
     const applyFromPrefs = () => {
+      if (userPicked.current) return
       const id = getPrefSync(LAST_CAT_KEY, null)
       if (id && CATEGORY_ORDER.includes(id)) setIdx(idxOfCat(id))
     }
@@ -122,15 +131,34 @@ export default function SectionCarousel() {
 
   const wrapIdx = (i) => (i + cats.length) % cats.length
 
+  // Куда лента едет прямо сейчас: во время доводки это уже СОСЕД, а не idx.
+  // Все решения о переключении считаем от него, иначе тап «вернуться назад»
+  // сравнивался с ещё не сменившимся idx и молча пропадал.
+  const targetIdx = () => (settle ? wrapIdx(settle === 'next' ? idx + 1 : idx - 1) : idx)
+
+  // Встать на раздел без анимации (дальний сосед или обрыв доводки).
+  const jumpTo = (next) => {
+    userPicked.current = true
+    if (settleTimer.current) { clearTimeout(settleTimer.current); settleTimer.current = null }
+    haptic.light()
+    setHeadDir(next > idx ? 'next' : 'prev')
+    litUp()
+    setIdx(next)
+    setSettle(null)
+    setPref(LAST_CAT_KEY, CATEGORY_ORDER[next])
+  }
+
   // Доводка до соседа + фиксация нового раздела (память как раньше).
   const slideTo = (dir, withHaptic = true) => {
     if (settle) return
+    userPicked.current = true
     if (withHaptic) haptic.light()
     setSettle(dir)
     setHeadDir(dir)
     litUp()
     const next = wrapIdx(dir === 'next' ? idx + 1 : idx - 1)
     settleTimer.current = setTimeout(() => {
+      settleTimer.current = null
       setIdx(next)
       setSettle(null)
       const id = CATEGORY_ORDER[next]
@@ -141,15 +169,16 @@ export default function SectionCarousel() {
   const selectCat = (id) => {
     setOpen(false)
     const next = idxOfCat(id)
-    if (next === idx || settle) return
+    // Тап туда, где уже стоим (или куда едем) — ничего не делаем.
+    if (next === targetIdx()) return
+    // Доводка ещё идёт, а человек ткнул в другой раздел: обрываем её и встаём
+    // на выбранный сразу. Раньше такой тап игнорировался, лента доезжала до
+    // «своего» раздела — и выходило, что нажал кардио, а открылось плавание.
+    if (settle) { jumpTo(next); return }
     // Сосед — доезжаем анимацией, дальний раздел — переключаем сразу.
     if (next === wrapIdx(idx + 1)) { slideTo('next'); return }
     if (next === wrapIdx(idx - 1)) { slideTo('prev'); return }
-    haptic.light()
-    setHeadDir(next > idx ? 'next' : 'prev')
-    litUp()
-    setIdx(next)
-    setPref(LAST_CAT_KEY, id)
+    jumpTo(next)
   }
 
   // Поверх открыто меню (долгое нажатие по карточке) — лента замирает.
@@ -204,7 +233,7 @@ export default function SectionCarousel() {
 
   // Название раздела в шапке: во время доводки показываем УЖЕ целевой — так
   // заголовок и карточка встают на место одновременно, без «догоняния».
-  const headIdx = settle ? wrapIdx(settle === 'next' ? idx + 1 : idx - 1) : idx
+  const headIdx = targetIdx()
   const headCat = cats[headIdx]
 
   // ——— Данные закрепов по всем разделам (лента рендерит все четыре) ———
