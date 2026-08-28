@@ -54,19 +54,28 @@ const api = (method) => `https://api.telegram.org/bot${BOT_TOKEN}/${method}`
  */
 const BASE = 'https://55ee17b6-d242-49cb-92d3-e97297fb7934.selstorage.ru/TRPG/images/notify'
 
+/**
+ * Версия картинок. Telegram кеширует фото ПО ССЫЛКЕ, а хранилище отдаёт их с
+ * `immutable` на год: перезалил файл под тем же именем — и бот ещё долго слал бы
+ * старую картинку. Поднимаем число при КАЖДОЙ замене медиа, ссылка становится
+ * новой, и Telegram скачивает заново. Само хранилище query-параметр игнорирует.
+ */
+const V = 2
+const img = (name) => `${BASE}/${name}.jpeg?v=${V}`
+
 const IMAGES = {
-  weekly: `${BASE}/notify-weekly.jpeg`,    // итоги недели
-  monthly: `${BASE}/notify-monthly.jpeg`,  // итоги месяца
-  yearly: `${BASE}/notify-yearly.jpeg`,    // итоги года
-  owner: `${BASE}/notify-owner.jpeg`,      // отчёт владельцу
+  weekly: img('notify-weekly'),    // итоги недели
+  monthly: img('notify-monthly'),  // итоги месяца
+  yearly: img('notify-yearly'),    // итоги года
+  owner: img('notify-owner'),      // отчёт владельцу
 
   // У пинков картинка привязана к МАСШТАБУ паузы, а не к точному сроку:
   // текста на ней нет, и «неделя / две / три» отличаются только заголовком
   // сообщения. Три файла вместо семи — и ни одного шанса, что картинка
   // разойдётся с текстом.
-  nudgeWeek: `${BASE}/notify-nudge-week.jpeg`,   // неделя, две, три
-  nudgeMonth: `${BASE}/notify-nudge-month.jpeg`, // месяц, два, три месяца
-  nudgeLong: `${BASE}/notify-nudge-long.jpeg`    // давно
+  nudgeWeek: img('notify-nudge-week'),   // неделя, две, три
+  nudgeMonth: img('notify-nudge-month'), // месяц, два, три месяца
+  nudgeLong: img('notify-nudge-long')    // давно
 }
 
 /** Картинка пинка по масштабу паузы: недели → месяцы → давно. */
