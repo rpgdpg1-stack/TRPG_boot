@@ -226,8 +226,8 @@ function formatWeight(kg) {
  */
 export function yearlyDigest({
   year, totalCount, totalMinutes, breakdown,
-  bestMonth, bestMonthCount, bestMonthMinutes, bestMonthIsNew,
-  recExercise, recWeight, recWeightIsNew, recSwimM, recSwimIsNew
+  bestMonth, bestMonthCount, bestMonthMinutes,
+  recExercise, recWeight, recSwimM
 }) {
   const head = headLine(E.workouts, totalCount, totalMinutes)
 
@@ -241,6 +241,11 @@ export function yearlyDigest({
   // Каждая запись — подпись, ЧТО именно рекорд, и под ней сам результат. Голое
   // «105 кг» ничего не говорит, а «самый большой рабочий вес» — говорит, и
   // подпись стоит впереди, потому что читают её первой.
+  //
+  // Приставки «Новый рекорд» здесь НЕТ намеренно. Итоги года подводят факт за
+  // прошедший год, а не сообщают новость: к 1 января человек и так знает, что
+  // это его лучший результат. «Новый рекорд» живёт в итогах МЕСЯЦА, где он
+  // действительно новость.
   const records = []
 
   // Лучший месяц называем, только если он и правда выделяется. Когда весь год
@@ -250,7 +255,7 @@ export function yearlyDigest({
     // Именительный падеж: «Июнь», не «июне» — это подпись, а не оборот.
     const monthName = MONTHS_NOMINATIVE[bestMonth]
     records.push([
-      recordLabel('Больше всего тренировок за месяц:', bestMonthIsNew),
+      'Больше всего тренировок за месяц:',
       `${monthName} — ${E.workouts} ${pluralWorkouts(bestMonthCount)}`
         + (bestMonthMinutes ? ` (${formatMinutes(bestMonthMinutes)})` : '')
     ])
@@ -259,13 +264,13 @@ export function yearlyDigest({
   const weight = formatWeight(recWeight)
   if (recExercise && weight) {
     records.push([
-      recordLabel('Самый большой рабочий вес в силовых тренировках:', recWeightIsNew),
+      'Самый большой рабочий вес в силовых тренировках:',
       `${recExercise} — ${weight}`
     ])
   }
   if (recSwimM) {
     records.push([
-      recordLabel('Самая длинная дистанция в плавании:', recSwimIsNew),
+      'Самая длинная дистанция в плавании:',
       `Заплыв — ${formatDistance(recSwimM)}`
     ])
   }
@@ -279,18 +284,6 @@ export function yearlyDigest({
   }
 
   return lines.join('\n')
-}
-
-/**
- * Подпись рекорда. Побил прежний — говорим об этом прямо и сразу, потому что
- * это главная новость строки; иначе «105 кг» читается как справка.
- *
- * Первая буква подписи после приставки уходит в строчную: «Новый рекорд —
- * самый большой рабочий вес», а не «— Самый».
- */
-function recordLabel(text, isNew) {
-  if (!isNew) return text
-  return `<b>Новый рекорд</b> — ${text.charAt(0).toLowerCase()}${text.slice(1)}`
 }
 
 /** «5 человек» / «21 человек» / «22 человека». */
@@ -476,7 +469,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
   // Недели: две и три отличаются от одной только заголовком. Форма одна —
   // вопрос, программа, кнопка: человек, пропустивший две недели, знает свою
   // программу не хуже того, кто пропустил одну.
-  const lines = [`<b>${title}</b>`, '', 'Продолжим?']
+  const lines = [`<b>${title}</b>`, '', '<b>Продолжим?</b>']
 
   if (programs.length === 0) {
     // Закреплённых программ нет — вести некуда. Выбирать за человека мы
