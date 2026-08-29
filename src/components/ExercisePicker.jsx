@@ -19,6 +19,7 @@ import ExercisePlaceholder from './ExercisePlaceholder'
 import ScreenTitle from './ScreenTitle'
 import SearchIcon from './SearchIcon'
 import ScrollTopButton from './ScrollTopButton'
+import UiIcon from './UiIcon'
 import CloseCross from './CloseCross'
 
 const LONG_PRESS_MS = 500
@@ -626,6 +627,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             hug
             style={count >= max ? { color: 'var(--color-error)' } : null}
           >
+            {/* Плюс — только пока добавлять есть куда (см. конструктор). */}
+            {count < max && <UiIcon name="add" size={20} color="var(--color-primary)" />}
             {/* Без слова «упражнения»: оно уже стоит заголовком экрана. */}
             {count >= max ? `Достигнут лимит ${count}/${max}` : `Добавить ${count}/${max}`}
           </ActionButton>

@@ -71,7 +71,7 @@ export default function ProgramConstructor() {
 
   const [name, setName] = useState(existing?.title || '')
   const [dayCount, setDayCount] = useState(() => {
-    const n = existing?.days_count || (existing ? Object.keys(existing.data.days || {}).length : 1)
+    const n = existing?.days_count || (existing ? Object.keys(existing.data?.days || {}).length : 1)
     return Math.min(3, Math.max(1, n || 1))
   })
   // byLoc: { gym: [ [exId,...] /* день A */, ... ], home: [...], outdoor: [...] }
@@ -712,6 +712,9 @@ export default function ProgramConstructor() {
             hug
             style={atLimit ? { color: 'var(--color-error)' } : null}
           >
+            {/* Плюс — только у живого действия: при лимите добавлять нечего,
+                и знак «+» рядом со «стоп»-текстом противоречил бы сам себе. */}
+            {!atLimit && <UiIcon name="add" size={20} color="var(--color-primary)" />}
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
               : `Добавить ${currentDay.length}/${MAX_PER_DAY}`}
