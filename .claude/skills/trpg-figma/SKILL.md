@@ -78,7 +78,7 @@ description: "Перенос проекта TRPG в Figma и синк с ним:
    • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists ·
                  Feedback(Toast/Empty) · Modals(Dialog/BottomSheet/Modal/ActionSheet)
    • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar ·
-                      WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · DailyQuests · ProgramEmblem · WaterChrome
+                      WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · ProgramEmblem · WaterChrome
    (Ранги/лиги/XP/редкость/награды/рейтинг — ОТКАЗ, не переносим.)
 🏋️ Patterns:  композиции из компонентов (см. список выше).
 ```

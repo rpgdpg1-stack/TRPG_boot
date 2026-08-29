@@ -328,7 +328,6 @@ const USER_SCOPED_KEYS = [
   'user-programs',          // свои программы и программа от друга
   'active-workout',         // начатая тренировка
   'notification-settings',  // напоминания
-  'activities-config',      // настройки активностей
   'offline-operations-queue' // неотправленное: применить его к ЧУЖОМУ аккаунту хуже, чем потерять
 ]
 
@@ -338,7 +337,6 @@ const USER_SCOPED_PREFIXES = [
   'pcache:',
   'recent-workouts:',       // история тренировок
   'workout-progress:',      // галочки в дне
-  'activities-custom-done:',// отметки активностей за день
   'program:',               // цикл дней A/B/C, выбранное место
   'swim-pool:',
   'swim-reps:',

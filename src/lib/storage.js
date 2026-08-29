@@ -102,82 +102,6 @@ export function getRecentWorkoutsSync(limit = 3) {
 }
 
 /* ============================================ */
-/* DAILY QUESTS */
-/* ============================================ */
-
-function getDailyQuestsCacheKey() {
-  const userId = getUserId()
-  return userId ? `daily-quests-cache:${userId}:${getTodayKey()}` : null
-}
-
-export function getDailyQuestsSync() {
-  const key = getDailyQuestsCacheKey()
-  if (!key) return {}
-
-  const raw = localGet(key)
-  if (!raw) return {}
-
-  try {
-    const parsed = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-export async function getDailyQuests() {
-  const userId = getUserId()
-  if (!userId) return {}
-
-  if (!canReadServer()) return getDailyQuestsSync()
-
-  const { data, error } = await supabase
-    .from('daily_quests')
-    .select('quest_id')
-    .eq('user_id', userId)
-    .eq('day_key', getTodayKey())
-
-  if (!canTrust(error)) {
-    if (error) console.error('[storage] getDailyQuests error:', error)
-    return getDailyQuestsSync()
-  }
-
-  const result = {}
-  for (const row of data || []) result[row.quest_id] = true
-
-  const key = getDailyQuestsCacheKey()
-  if (key) localSet(key, JSON.stringify(result))
-
-  return result
-}
-
-/**
- * Отметить активность выполненной. Никакой награды за это не начисляется —
- * отметка нужна только самому дню (галочка + подсчёт «сколько закрыто»).
- * RPC отвечает одним признаком: засчиталась ли отметка впервые.
- */
-export async function completeQuest(questId) {
-  const userId = getUserId()
-  if (!userId) {
-    console.warn('[storage] completeQuest без авторизации')
-    return { completed: {}, wasNew: false }
-  }
-
-  const { data, error } = await supabase.rpc('complete_daily_quest', {
-    p_user_id: userId,
-    p_day_key: getTodayKey(),
-    p_quest_id: questId
-  })
-
-  if (error) {
-    console.error('[storage] completeQuest error:', error)
-    return { completed: await getDailyQuests(), wasNew: false }
-  }
-
-  return { completed: await getDailyQuests(), wasNew: !!data }
-}
-
-/* ============================================ */
 /* АКТИВНЫЙ ДЕНЬ ПРОГРАММЫ */
 /* ============================================ */
 
@@ -341,10 +265,7 @@ export async function clearAllData() {
     await cloudRemove(`program:${prog.slug}:last_day_date`)
   }
 
-  ;['daily_quests', 'weekly_streak', 'dev_telegram_id'].forEach(localRemove)
-
-  const questsKey = getDailyQuestsCacheKey()
-  if (questsKey) localRemove(questsKey)
+  ;['weekly_streak', 'dev_telegram_id'].forEach(localRemove)
 
   cacheInvalidate('')
 

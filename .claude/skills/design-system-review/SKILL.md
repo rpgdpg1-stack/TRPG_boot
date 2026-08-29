@@ -100,7 +100,7 @@ disabled · selected · loading · error · success`. Hover/focus на Telegram-
 **TRPG Product Components (уровень 2 — уникальные для продукта):**
 ✓ `ExerciseCard`, `ProgramCard`, `HistoryStats` (Metric/Statistic Card), `HistoryCalendar` +
 History Row, `StreakFlame` (Weekly Progress), `MuscleIcon`, `PlaceSwitcher` (Section/место-свитчер),
-`DailyQuests`, `ProgramEmblem`, `WaterChrome`, `FinishConfirmModal`/`WorkoutFinishedModal`.
+`ProgramEmblem`, `WaterChrome`, `FinishConfirmModal`/`WorkoutFinishedModal`.
 (Ранги/лиги/XP/награды/рейтинг — в отказе, удалены.) Держать их отдельным разделом — так устроены зрелые
 продуктовые ДС (Foundation+универсальные / Product).
 

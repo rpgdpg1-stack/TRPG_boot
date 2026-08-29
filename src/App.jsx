@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
 import ErrorBoundary from './components/layout/ErrorBoundary'
@@ -9,7 +9,6 @@ import Home from './pages/Home'
 import Category from './pages/Category'
 import WorkoutDay from './pages/WorkoutDay'
 import SwapExercise from './pages/SwapExercise'
-import Recovery from './pages/Recovery'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import FavoriteExercises from './pages/FavoriteExercises'
@@ -23,8 +22,6 @@ import ModalDemo from './pages/ModalDemo'
 import Support from './pages/Support'
 import Feedback from './pages/Feedback'
 import Gift from './pages/Gift'
-import DailyBoost from './pages/DailyBoost'
-import Activities from './pages/Activities'
 import Friends from './pages/Friends'
 import History from './pages/History'
 import ExerciseInfo from './pages/ExerciseInfo'
@@ -286,7 +283,6 @@ export default function App() {
           <Route path="/swap/:programId/:day/:orderNum" element={<SwapExercise />} />
           
           <Route path="/profile" element={<Profile />} />
-          <Route path="/recovery" element={<Recovery />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/account" element={<AccountAccess />} />
           <Route path="/friends" element={<Friends />} />
@@ -303,9 +299,12 @@ export default function App() {
           <Route path="/support" element={<Support />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/gift" element={<Gift />} />
-          <Route path="/daily-boost" element={<Activities />} />
-          <Route path="/daily-boost/edit" element={<DailyBoost />} />
           <Route path="/exercise/:id" element={<ExerciseInfo />} />
+          {/* Неизвестный адрес — на главную. Нужно не «на всякий случай»:
+              а из-за Telegram: он восстанавливает свёрнутое приложение по
+              РЕАЛЬНОМУ адресу, и удалённый экран (или старая ссылка)
+              открылся бы пустым чёрным полотном без таб-бара. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
         <BottomTabBar />

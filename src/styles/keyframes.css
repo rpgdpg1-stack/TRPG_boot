@@ -54,11 +54,6 @@
   10%  { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--burst-x, 0), var(--burst-y, -40px)) scale(0.4); }
 }
-@keyframes questFlash {
-  0%   { opacity: 0; transform: scale(0.4); }
-  30%  { opacity: 1; }
-  100% { opacity: 0; transform: scale(1.6); }
-}
 @keyframes errorShake {
   0%   { transform: translateX(0); }
   20%  { transform: translateX(-7px); }

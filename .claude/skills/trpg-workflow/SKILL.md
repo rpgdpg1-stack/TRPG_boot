@@ -29,10 +29,12 @@ description: "Входной скил для ЛЮБОГО запроса по п
 - **Стек:** Vite + React 18 + React Router 6 + Supabase + Telegram WebApp SDK.
   Деплой на Vercel. Медиа на Selectel S3, бакет `trpg`. Стили — CSS (НЕ Tailwind).
 - **Supabase Ref:** `jybwxbqmnommazjfucbq`. Бот: `@TrainingRPGbot`.
-- **Прогресс (ЛИЧНЫЙ, без соревновательности):** недельная серия, ежедневные активности,
-  история тренировок, рабочие веса, любимые упражнения, друзья + профиль на личном прогрессе
+- **Прогресс (ЛИЧНЫЙ, без соревновательности):** недельная серия, история тренировок,
+  рабочие веса, любимые упражнения, друзья + профиль на личном прогрессе
   (приватность). **Отказ (удалено из кода и БАЗЫ):** любая валюта — мускулы, XP, очки, награды;
-  лиги, сезоны, лидерборды/рейтинг, ранги/рамки, подстраховка. Не возвращать без явной просьбы.
+  лиги, сезоны, лидерборды/рейтинг, ранги/рамки, подстраховка; **Активности** (утро/день/вечер,
+  `DailyQuests`) и **Восстановление** (сон/питание/здоровье) — выпилены 29.08.2026, контент ушёл
+  в посты канала. Не возвращать без явной просьбы.
   См. память «соц-архитектура».
 - **Программы:** `split` (A/B/C силовой), `fullbody` (A/B, каждый день на всё тело — 2 дня × 12)
   и `swim` («Заплыв 45», дистанция). Плюс пользовательские:
@@ -389,14 +391,14 @@ src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
-├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity add cardio change check
+├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): add cardio change check
 │                   + celebration.svg — ЕДИНСТВЕННАЯ цветная (фанфары): цвет там и есть смысл
 │                   cloud_done cloud_sync friends gift goal heart idea info invite-friend leaderboard
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
-│                   place-home place-street power privacy profile recovery reset_days reset_progress
+│                   place-home place-street power privacy profile reset_days reset_progress
 │                   rewards settings stats stretching support swimming
 ├── components/     ActionButton AdoptExercisesModal AnchorMenu BicepGesture ChevronIcon ClockIcon CloseCross
-│                   ConfirmModal CustomExerciseForm DailyQuests EmptyState ExerciseActionMenu
+│                   ConfirmModal CustomExerciseForm EmptyState ExerciseActionMenu
 │                   ExerciseCard ExerciseHeaderCard ExercisePicker ExercisePlaceholder
 │                   ExerciseVideo FavCardBody FinishConfirmModal FormControls FriendRow
 │                   GroupLabel HeartButton HeartIcon HistoryCalendar HistoryStats HomeCards
@@ -406,13 +408,13 @@ src/
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
 │                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
 │                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon
-│                   StarIcon StreakFlame StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
+│                   StreakFlame StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
 │                   WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            accent active-workout activities auth cache cloud-storage dev-auth (вход в dev-сборке)
+├── lib/            accent active-workout auth cache cloud-storage dev-auth (вход в dev-сборке)
 │                   email-auth events favorite-exercises friends
 │                   media-cache (mp4/превью в Cache API — гифки играют офлайн)
 │                   session (страж сессии: canReadServer / canTrust)
@@ -425,9 +427,8 @@ src/
 │                   version-check weight-editing-state
 ├── pages/          AccountAccess (/account — способы входа: Telegram и почта)
 │                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)
-│                   Activities Category DailyBoost ExerciseInfo FavoriteExercises Friends History Home Privacy
-│                   Profile ProgramConstructor QuickWorkout Recovery Settings SwapExercise SwimWorkout WorkoutDay
-│                   (Активности: /daily-boost = Activities.jsx-виджет, /daily-boost/edit = DailyBoost.jsx-конструктор)
+│                   Category ExerciseInfo FavoriteExercises Friends History Home Privacy
+│                   Profile ProgramConstructor QuickWorkout Settings SwapExercise SwimWorkout WorkoutDay
 └── utils/          dates history plural storage workout-progress
 
 supabase/
