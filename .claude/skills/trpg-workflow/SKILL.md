@@ -389,7 +389,7 @@ src/
 ├── App.jsx · main.jsx (Sentry PROD)
 ├── index.css (только @import 4 модулей) → styles/{tokens,base,keyframes,utilities}.css
 │                   (tokens.css = :root все дизайн-токены; base = reset/каркас; keyframes; utilities = классы)
-├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity cardio change check
+├── assets/ui/      SVG-иконки (Material Symbols, fill=currentColor): activity add cardio change check
 │                   + celebration.svg — ЕДИНСТВЕННАЯ цветная (фанфары): цвет там и есть смысл
 │                   cloud_done cloud_sync friends gift goal heart idea info invite-friend leaderboard
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
