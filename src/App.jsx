@@ -33,7 +33,7 @@ import ProgramConstructor from './pages/ProgramConstructor'
 import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
-import { ensureAuth, getCurrentUser } from './lib/auth'
+import { ensureAuth, getCurrentUser, retryAuth } from './lib/auth'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
@@ -55,12 +55,15 @@ import { getActiveWorkout, adoptActiveWorkout, clearActiveWorkout } from './lib/
 import { loadWorkoutProgress, saveWorkoutProgress } from './utils/workout-progress'
 import SaveFriendProgramModal from './components/SaveFriendProgramModal'
 import { EVENTS, on } from './lib/events'
-import { startNetworkMonitor, onNetworkChange } from './lib/network-status'
+import { startNetworkMonitor, onNetworkChange, checkNow } from './lib/network-status'
+import { hasSession } from './lib/session'
+import { cacheInvalidate } from './lib/cache'
 import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
 import { debug } from './lib/debug'
 import { pcacheDropOldCatalogs } from './lib/persistent-cache'
+import { repairEmptyCaches } from './lib/cache-repair'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -73,6 +76,9 @@ export default function App() {
 
   const authPromiseRef = useRef(null)
   if (authPromiseRef.current === null) {
+    // ДО первых чтений: выбрасываем пустые записи кеша, доставшиеся от старой
+    // ошибки (данные без сессии затирали настоящие). Разово, см. cache-repair.
+    repairEmptyCaches()
     initTelegram()
     startNetworkMonitor() // запускаем детектор сети как можно раньше
     startVersionWatch()   // вахтёр версии: пробуждение из фона → сверка сборки с сервером
@@ -157,18 +163,50 @@ export default function App() {
       getFriendsList().catch(() => {})
     })
 
-    // Когда сеть возвращается — запускаем синк очереди.
+    // Данные читаются с сервера по подписи сессии: нет сессии — нет данных
+    // (пустые заметки, нулевые веса). Вход в Telegram делается один раз при
+    // запуске и на плохой связи может не дойти, поэтому его надо ПОВТОРЯТЬ:
+    // при возвращении сети и при выходе приложения из фона. После удачного
+    // повтора сбрасываем кеши в памяти и заново прогреваем данные — иначе
+    // экраны так и остались бы на том, что успели показать без сессии.
+    const recoverSession = async (why) => {
+      if (hasSession()) return
+      debug('[App] нет сессии, пробуем войти заново:', why)
+      const recovered = await retryAuth()
+      if (!recovered || cancelled) return
+      debug('[App] вход восстановлен, перечитываем данные')
+      cacheInvalidate('')
+      setUser(recovered)
+      loadPrefs({ force: true }).catch(() => {})
+      loadMyPrograms().catch(() => {})
+      getRecentWorkouts(HISTORY_FETCH_LIMIT).catch(() => {})
+      getFriendsList().catch(() => {})
+      getFavoriteExercises().catch(() => {})
+      syncQueue()
+    }
+
+    // Когда сеть возвращается — восстанавливаем вход и разгребаем очередь.
     const offNet = onNetworkChange((isOnline) => {
       if (isOnline) {
-        debug('[App] сеть вернулась → запускаем syncQueue')
-        syncQueue()
+        debug('[App] сеть вернулась → восстановление входа и syncQueue')
+        recoverSession('сеть вернулась').finally(() => syncQueue())
       }
     })
+
+    // Возврат из фона: Telegram держит мини-приложение свёрнутым часами, и
+    // за это время связь успевает и пропасть, и вернуться.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      checkNow()
+      recoverSession('вернулись из фона')
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       cancelled = true
       offNet()
       offInvite()
+      document.removeEventListener('visibilitychange', onVisible)
       kbCleanup()
     }
   }, [])

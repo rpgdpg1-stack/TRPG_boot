@@ -19,6 +19,7 @@ import { getCurrentUser } from './auth'
 import { localGet, localSet } from '../utils/storage'
 import { cloudGet, cloudKeys } from './cloud-storage'
 import { EVENTS, emit } from './events'
+import { canReadServer, canTrust } from './session'
 
 let memory = null
 let loadedForUser = null
@@ -87,10 +88,13 @@ export async function loadPrefs({ force = false } = {}) {
 }
 
 async function fetchPrefs(userId) {
+  // Без сети или без сессии база отдаёт пустые настройки (человека она узнаёт
+  // по подписи сессии) — и раньше эта пустота уезжала на диск, снося закрепы.
+  if (!canReadServer()) return getPrefsSync()
   try {
     const { data, error } = await supabase.rpc('api_get_my_prefs')
-    if (error) {
-      console.warn('[prefs] не смогли прочитать из базы:', error)
+    if (!canTrust(error)) {
+      if (error) console.warn('[prefs] не смогли прочитать из базы:', error)
       return getPrefsSync()
     }
     const fromDb = (data && typeof data === 'object') ? data : {}

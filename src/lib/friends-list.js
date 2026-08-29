@@ -15,6 +15,7 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
+import { canReadServer, canTrust } from './session'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
 import { localGet, localSet } from '../utils/storage'
 
@@ -59,13 +60,17 @@ export async function getFriendsList() {
   const cached = cacheGet(cacheKey)
   if (cached) return cached
 
+  // Нет сети или сессии — список друзей с сервера придёт пустым, а он
+  // перезаписал бы сохранённый. Отдаём то, что знаем.
+  if (!canReadServer()) return getFriendsListSync() || []
+
   try {
     const { data, error } = await supabase.rpc('api_get_friends_list', {
       p_user_id: user.id
     })
 
-    if (error) {
-      console.error('[friends-list] error:', error)
+    if (!canTrust(error)) {
+      if (error) console.error('[friends-list] error:', error)
       return getFriendsListSync() || []
     }
 

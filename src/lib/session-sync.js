@@ -12,7 +12,7 @@
 
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
-import { isOnline } from './network-status'
+import { canReadServer } from './session'
 import { debug } from './debug'
 
 /** Частые галочки не должны бить в базу на каждый тап. */
@@ -21,7 +21,7 @@ let pushTimer = null
 
 /** Отправить состояние сессии на сервер. */
 export function pushSession({ programId, day, place, startedAt, done }) {
-  if (!getCurrentUser() || !isOnline()) return
+  if (!getCurrentUser() || !canReadServer()) return
   clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
     supabase.rpc('api_set_active_session', {
@@ -39,7 +39,7 @@ export function pushSession({ programId, day, place, startedAt, done }) {
 /** Убрать сессию с сервера — завершение или отмена. */
 export function clearSession() {
   clearTimeout(pushTimer)
-  if (!getCurrentUser() || !isOnline()) return
+  if (!getCurrentUser() || !canReadServer()) return
   supabase.rpc('api_clear_active_session')
     .then(({ error }) => {
       if (error) console.warn('[session-sync] не удалилась:', error.message)
@@ -49,7 +49,7 @@ export function clearSession() {
 
 /** Что лежит на сервере. null — там пусто или не дотянулись. */
 export async function fetchSession() {
-  if (!getCurrentUser() || !isOnline()) return null
+  if (!getCurrentUser() || !canReadServer()) return null
   const { data, error } = await supabase.rpc('api_get_active_session')
   if (error) {
     console.warn('[session-sync] не прочиталась:', error.message)

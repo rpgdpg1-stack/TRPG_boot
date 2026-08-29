@@ -4,6 +4,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getCurrentUser } from '../lib/auth'
 import { getWorkoutDay, finishWorkout } from '../features/programs/api'
+import { prefetchMedia } from '../lib/media-cache'
+import { runWhenIdle } from '../lib/cache'
 import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
 import { EST_MIN_PER_EXERCISE } from '../features/programs/duration'
 import { useProgramPlace } from '../lib/program-place'
@@ -549,6 +551,16 @@ export default function WorkoutDay() {
         getExerciseNote(s.exercise_id).catch(() => {})
       }
     }
+  }, [loading, slots])
+
+  // Ролики упражнений дня — в кеш заранее, пока человек ещё смотрит список.
+  // Зал часто без связи: к моменту, когда он зажмёт карточку, mp4 уже лежит
+  // на диске и играется без сети. Тихо, в свободное время, по одному файлу.
+  useEffect(() => {
+    if (loading || !slots.length) return
+    const media = slots.flatMap(s => [s.video_url, s.preview_url]).filter(Boolean)
+    if (!media.length) return
+    runWhenIdle(() => { prefetchMedia(media) })
   }, [loading, slots])
 
   // При СМЕНЕ дня/места прячем пилюлю и раскрываем шапку (новый день открывается

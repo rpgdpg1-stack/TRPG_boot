@@ -18,6 +18,7 @@ import { getProgramBySlug, getProgramDaySlots } from './registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL, runWhenIdle } from '../../lib/cache'
 import { pcacheGet, pcacheSet, CATALOG_CACHE_KEY } from '../../lib/persistent-cache'
 import { isOnline, checkNow } from '../../lib/network-status'
+import { canReadServer, canTrust, hasSession } from '../../lib/session'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
 import { loadMyExercises, loadExercisesByIds, isCustomExercise } from './userExercises'
@@ -96,11 +97,12 @@ async function loadUserSwaps(userId, dbId, day, place = 'gym') {
   if (cached) return cached
 
   const pcached = pcacheGet(cacheKey)
-  if (pcached && !isOnline()) {
-    return pcached
-  }
+  // Нет сети ИЛИ нет сессии — на сервер не идём: он ответит пустотой,
+  // и она затёрла бы настоящие замены (см. lib/session.js).
+  if (!canReadServer()) return pcached || {}
 
   let swapsByOrder = {}
+  let trusted = false
   try {
     const { data: swaps, error } = await supabase.rpc('api_get_user_swaps', {
       p_user_id: userId,
@@ -108,14 +110,19 @@ async function loadUserSwaps(userId, dbId, day, place = 'gym') {
       p_day: day,
       p_location: place
     })
-    if (!error && swaps) {
+    if (canTrust(error) && swaps) {
       for (const s of swaps) swapsByOrder[s.order_num] = s.exercise_id
+      trusted = true
+    } else if (error) {
+      console.warn('[programs] swaps fetch error:', error.message)
     }
   } catch (e) {
     console.warn('[programs] swaps fetch failed:', e?.message)
-    // Сеть упала — пробуем persistent
-    if (pcached) return pcached
   }
+
+  // Ответу не верим (ошибка или сессия отвалилась в процессе) — отдаём то,
+  // что уже знаем, и кеш не трогаем.
+  if (!trusted) return pcached || {}
 
   cacheSet(cacheKey, swapsByOrder, TTL.LONG)
   pcacheSet(cacheKey, swapsByOrder)
@@ -128,22 +135,27 @@ async function loadUserWeights(userId) {
   if (cached) return cached
 
   const pcached = pcacheGet(cacheKey)
-  if (pcached && !isOnline()) {
-    return pcached
-  }
+  // То же правило, что у замен: без сессии сервер отдаёт пустой список весов,
+  // и раньше он ложился в кеш на неделю — так рабочие веса и обнулялись.
+  if (!canReadServer()) return pcached || {}
 
   let weightsByEx = {}
+  let trusted = false
   try {
     const { data: weights, error } = await supabase.rpc('api_get_user_weights', {
       p_user_id: userId
     })
-    if (!error && weights) {
+    if (canTrust(error) && weights) {
       for (const w of weights) weightsByEx[w.exercise_id] = w.weight_kg
+      trusted = true
+    } else if (error) {
+      console.warn('[programs] weights fetch error:', error.message)
     }
   } catch (e) {
     console.warn('[programs] weights fetch failed:', e?.message)
-    if (pcached) return pcached
   }
+
+  if (!trusted) return pcached || {}
 
   cacheSet(cacheKey, weightsByEx, TTL.LONG)
   pcacheSet(cacheKey, weightsByEx)
@@ -173,9 +185,11 @@ export async function getWorkoutDay(programSlug, day, place = null) {
     return cachedDay
   }
 
-  // Persistent-кеш собранного дня: без сети отдаём его сразу (зал, перезапуск)
+  // Persistent-кеш собранного дня: без сети (зал, перезапуск) или без сессии
+  // отдаём его сразу — собирать день из пустых ответов сервера нельзя, именно
+  // так в него попадали нулевые веса.
   const pcachedDay = pcacheGet(dayCacheKey)
-  if (pcachedDay && !isOnline()) {
+  if (pcachedDay && !canReadServer()) {
     cacheSet(dayCacheKey, pcachedDay, TTL.MEDIUM)
     return pcachedDay
   }
@@ -255,7 +269,9 @@ export async function getWorkoutDay(programSlug, day, place = null) {
   })
 
   cacheSet(dayCacheKey, result, TTL.MEDIUM)
-  pcacheSet(dayCacheKey, result) // переживает перезапуск для оффлайна
+  // На диск кладём только собранное при живой сессии: иначе день с чужими
+  // (пустыми) весами и без замен переживёт перезапуск и станет «правдой».
+  if (hasSession()) pcacheSet(dayCacheKey, result)
 
   schedulePrefetch(programSlug, day, user.id, place)
 

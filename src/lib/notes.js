@@ -15,7 +15,7 @@ import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { cacheGet, cacheSet, TTL } from './cache'
 import { pcacheGet, pcacheSet } from './persistent-cache'
-import { isOnline } from './network-status'
+import { canReadServer, canTrust } from './session'
 import { enqueue } from './offline-queue'
 
 export const NOTE_MAX_LENGTH = 280
@@ -64,6 +64,13 @@ export function getExerciseNoteCached(exerciseId) {
 /**
  * Получить заметку упражнения. Возвращает строку или '' если нет.
  * Без сети отдаём то, что в кеше — запрос не делаем.
+ *
+ * ВАЖНО про пустой ответ. `api_get_user_note` узнаёт человека по подписи
+ * сессии, а не по переданному id: без сессии он возвращает NULL — и это
+ * НЕ значит «заметки нет». Раньше такой ответ ложился в кеш пустой строкой
+ * на неделю, а дальше чтение брало её из кеша и в сеть уже не ходило —
+ * так заметки и «пропадали» в Telegram, где вход делается заново при каждом
+ * запуске и на плохой связи не доходит.
  */
 export async function getExerciseNote(exerciseId) {
   const user = getCurrentUser()
@@ -73,15 +80,17 @@ export async function getExerciseNote(exerciseId) {
   const cached = getExerciseNoteCached(exerciseId)
   if (cached !== null) return cached
 
-  if (!isOnline()) return ''
+  // Нет сети или нет сессии — отдаём пусто, но НИЧЕГО не запоминаем:
+  // при следующем открытии сходим за настоящей заметкой.
+  if (!canReadServer()) return ''
 
   try {
     const { data, error } = await supabase.rpc('api_get_user_note', {
       p_user_id: user.id,
       p_exercise_id: exerciseId
     })
-    if (error) {
-      console.warn('[notes] getExerciseNote error:', error)
+    if (!canTrust(error)) {
+      if (error) console.warn('[notes] getExerciseNote error:', error)
       return ''
     }
     const note = data || ''
@@ -113,7 +122,9 @@ export async function saveExerciseNote(exerciseId, note) {
     return true
   }
 
-  if (!isOnline()) return queueIt()
+  // Нет сети или нет сессии — правка идёт в очередь. Без сессии сервер
+  // отвечает «not authenticated», и раньше это выглядело как обычная ошибка.
+  if (!canReadServer()) return queueIt()
 
   try {
     const { error } = await supabase.rpc('api_save_user_note', {

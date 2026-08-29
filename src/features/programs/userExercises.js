@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabase'
 import { getCurrentUser } from '../../lib/auth'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
 import { pcacheGet, pcacheSet } from '../../lib/persistent-cache'
-import { isOnline } from '../../lib/network-status'
+import { canReadServer, canTrust } from '../../lib/session'
 
 /** Сколько своих упражнений можно завести. Второе место лимита — в RPC. */
 export const MY_EXERCISE_LIMIT = 12
@@ -67,11 +67,13 @@ export async function loadMyExercises() {
   if (cached) return cached
 
   const pcached = pcacheGet(k)
-  if (pcached && !isOnline()) return pcached
+  // Без сети или сессии свои упражнения приходят пустым списком (сервер узнаёт
+  // владельца по подписи сессии) — отдаём сохранённые, кеш не трогаем.
+  if (!canReadServer()) return pcached || []
 
   try {
     const { data, error } = await supabase.rpc('api_get_my_exercises', { p_user_id: user.id })
-    if (error) throw error
+    if (!canTrust(error)) throw (error || new Error('нет сессии'))
     const list = data || []
     cacheSet(k, list, TTL.LONG)
     pcacheSet(k, list)
@@ -105,7 +107,7 @@ function dropCaches(userId) {
 export async function createMyExercise({ name, group, subGroup, meta, countsReps }) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
-  if (!isOnline()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
+  if (!canReadServer()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
 
   const { data, error } = await supabase.rpc('api_create_my_exercise', {
     p_user_id: user.id,
@@ -132,7 +134,7 @@ export async function createMyExercise({ name, group, subGroup, meta, countsReps
 export async function updateMyExercise(exerciseId, { name, group, subGroup, meta, countsReps }) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
-  if (!isOnline()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
+  if (!canReadServer()) throw new Error('Нужен интернет — упражнение сохраняется на сервере')
 
   const { error } = await supabase.rpc('api_update_my_exercise', {
     p_user_id: user.id,
@@ -165,7 +167,7 @@ export async function updateMyExercise(exerciseId, { name, group, subGroup, meta
 export async function deleteMyExercise(exerciseId) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
-  if (!isOnline()) throw new Error('Нужен интернет')
+  if (!canReadServer()) throw new Error('Нужен интернет')
 
   const { data, error } = await supabase.rpc('api_delete_my_exercise', {
     p_user_id: user.id,
@@ -194,7 +196,7 @@ export async function deleteMyExercise(exerciseId) {
 export async function adoptProgramExercises(programDbId) {
   const user = getCurrentUser()
   if (!user) throw new Error('Нет авторизации')
-  if (!isOnline()) throw new Error('Нужен интернет')
+  if (!canReadServer()) throw new Error('Нужен интернет')
 
   const { data, error } = await supabase.rpc('api_adopt_program_exercises', {
     p_user_id: user.id,

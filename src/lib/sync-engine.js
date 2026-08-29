@@ -27,6 +27,7 @@ import { getCurrentUser, setCurrentUser } from './auth'
 import { emit } from './events'
 import { getQueue, dequeue } from './offline-queue'
 import { isOnline } from './network-status'
+import { hasSession } from './session'
 import { cacheInvalidate } from './cache'
 import { debug } from './debug'
 
@@ -59,6 +60,14 @@ export async function syncQueue() {
 
   if (!isOnline()) {
     debug('[sync] нет сети, синк отложен')
+    return
+  }
+
+  // Сессии нет — сервер отобьёт каждую операцию («not authenticated»), и
+  // очередь только зря помигает ошибкой. Ждём восстановления входа: App
+  // повторит его и снова позовёт синк.
+  if (!hasSession()) {
+    debug('[sync] нет сессии, синк отложен до восстановления входа')
     return
   }
 

@@ -18,6 +18,7 @@
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { localGet, localSet } from '../utils/storage'
+import { canReadServer, canTrust } from './session'
 
 const KEY = 'personal-records'
 const EMPTY = { best_month: null, strength: null, swim: null }
@@ -43,9 +44,15 @@ export function getRecordsSync() {
  */
 export async function getRecords() {
   if (!getCurrentUser()) return getRecordsSync() || EMPTY
+  // Без сети или без сессии на сервер не идём: рекорды считаются по подписи
+  // сессии, и пустой ответ затёр бы сохранённые (см. lib/session.js).
+  if (!canReadServer()) return getRecordsSync() || EMPTY
   try {
     const { data, error } = await supabase.rpc('api_get_personal_records')
-    if (error) { console.error('[records] error:', error); return getRecordsSync() || EMPTY }
+    if (!canTrust(error)) {
+      if (error) console.error('[records] error:', error)
+      return getRecordsSync() || EMPTY
+    }
     const value = data || EMPTY
     cache = value
     try { localSet(KEY, JSON.stringify(value)) } catch { /* ignore */ }

@@ -13,7 +13,7 @@ import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
 import { pcacheGet, pcacheSet, CATALOG_CACHE_KEY } from '../../lib/persistent-cache'
-import { isOnline } from '../../lib/network-status'
+import { canReadServer, canTrust } from '../../lib/session'
 import { debug } from '../../lib/debug'
 import {
   enqueue,
@@ -124,10 +124,10 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, p
   }
   const dbId = program.dbId
 
-  // ОФФЛАЙН: в очередь и выходим. Кеши дней инвалидируем чтобы при
-  // повторном открытии дня подтянулся новый свап (он уже в очереди,
-  // а отображение свапа фронт берёт из своего состояния).
-  if (!isOnline()) {
+  // Положить замену в очередь. Зовём и когда сети нет, и когда сеть есть,
+  // но сервер нас не узнаёт (сессия не поднялась) или запрос упал: замена —
+  // upsert «последний выигрывает», терять её из-за связи нельзя.
+  const queueSwap = () => {
     enqueue('swap', {
       program_id: dbId,
       day,
@@ -137,9 +137,11 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, p
     }, swapDedupKey(dbId, day, orderNum, place))
 
     cacheInvalidate(`workout-day:${user.id}:${programSlug}:`)
-    debug('[exercises] swap сохранён ОФФЛАЙН в очередь')
+    debug('[exercises] swap сохранён в очередь (нет связи или сессии)')
     return true
   }
+
+  if (!canReadServer()) return queueSwap()
 
   debug('[exercises] saveExerciseSwap:', { dbId, day, orderNum, exerciseId, userId: user.id })
 
@@ -176,7 +178,7 @@ export async function saveExerciseSwap(programSlug, day, orderNum, exerciseId, p
 
     if (error) {
       console.error('[exercises] saveExerciseSwap upsert error:', error)
-      return false
+      return queueSwap()
     }
     success = true
   }
@@ -203,9 +205,9 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
   // а не поведения. Здесь мы меряем именно поведение.
   goal(GOALS.WEIGHT_CHANGE)
 
-  // ОФФЛАЙН: в очередь и выходим. Инвалидируем кеш весов и дней чтобы
-  // при пересборке дня вес взялся из свежих данных (после синка).
-  if (!isOnline()) {
+  // Положить вес в очередь: нет сети, нет сессии (сервер ответит
+  // «not authenticated») или запрос упал. Вес — upsert, терять его нельзя.
+  const queueWeight = () => {
     enqueue('weight', {
       exercise_id: exerciseId,
       weight_kg: weightKg
@@ -214,9 +216,11 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
     cacheInvalidate(`user-weights:${user.id}`)
     cacheInvalidate(`workout-day:${user.id}:`)
     cacheInvalidate(`weight-history:${user.id}:${exerciseId}`)
-    debug('[exercises] вес сохранён ОФФЛАЙН в очередь:', exerciseId, weightKg)
+    debug('[exercises] вес сохранён в очередь:', exerciseId, weightKg)
     return true
   }
+
+  if (!canReadServer()) return queueWeight()
 
   let success = false
 
@@ -239,7 +243,7 @@ export async function saveExerciseWeight(exerciseId, weightKg) {
 
     if (error) {
       console.error('[exercises] saveExerciseWeight error:', error)
-      return false
+      return queueWeight()
     }
     success = true
   }
@@ -273,8 +277,10 @@ export async function getWeightHistory(exerciseId) {
       p_user_id: user.id,
       p_exercise_id: exerciseId
     })
-    if (error) {
-      console.warn('[exercises] getWeightHistory error:', error.message)
+    // Без сессии история приходит пустой (сервер не знает, чья она) —
+    // такой ответ в кеш не кладём, иначе график «обнулится» до перезахода.
+    if (!canTrust(error)) {
+      if (error) console.warn('[exercises] getWeightHistory error:', error.message)
       return []
     }
     const result = (data || []).map(r => ({ day: r.day, weight: Number(r.weight_kg) }))

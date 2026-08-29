@@ -43,7 +43,10 @@ export default class ErrorBoundary extends Component {
     // мог бы снова поднять тот же битый/старый бандл из кеша WebView.
     try {
       if (window.caches && window.caches.keys) {
-        window.caches.keys().then(ks => ks.forEach(k => window.caches.delete(k)))
+        // Кеш гифок (trpg-media) не трогаем — он не про сборку приложения.
+        window.caches.keys().then(ks => ks.forEach(k => {
+          if (!String(k).startsWith('trpg-media')) window.caches.delete(k)
+        }))
       }
     } catch (e) { /* ignore */ }
     window.location.replace(window.location.pathname + '?r=' + Date.now())

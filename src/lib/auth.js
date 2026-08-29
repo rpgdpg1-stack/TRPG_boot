@@ -21,8 +21,29 @@ import { getStartParamReferralCode, acceptReferral } from './friends'
 import { localGet, localSet, localRemove, localRemoveByPrefix } from '../utils/storage'
 import { debug } from './debug'
 import { resetPrefs } from './prefs'
+import { setSessionAlive, markAuthBroken, hasSession } from './session'
 
 const CACHED_USER_KEY = 'cached-user'
+
+// Сколько ждём каждый шаг входа, прежде чем счесть связь мёртвой. Ни
+// Edge Function, ни supabase-клиент сами не таймаутят: на плохой связи
+// (VPN, зал, метро) запрос висел молча, а приложение всё это время
+// считало, что входит — и открывалось с пустыми данными.
+const AUTH_STEP_TIMEOUT_MS = 12000
+
+/** Обернуть шаг входа таймаутом: не ответил вовремя — считаем сбоем связи. */
+function withTimeout(promise, ms = AUTH_STEP_TIMEOUT_MS) {
+  const TIMEOUT = Symbol('auth-timeout')
+  let timer = null
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise(resolve => { timer = setTimeout(() => resolve(TIMEOUT), ms) })
+  ]).then(res => {
+    clearTimeout(timer)
+    if (res === TIMEOUT) throw new Error('auth step timeout')
+    return res
+  })
+}
 
 // При старте сразу поднимаем последнего известного юзера из localStorage,
 // чтобы UI показал актуальные данные (стрик, имя) мгновенно, даже без
@@ -74,43 +95,64 @@ export async function ensureAuth() {
       return null
     }
 
-    // 1. Отправляем initData в Edge Function: она проверяет подпись,
-    //    находит/создаёт auth-пользователя и связывает его с записью в users.
-    const { data: authData, error: fnError } = await supabase.functions.invoke(
-      'telegram-auth',
-      { body: { initData } }
-    )
+    // Вход в Telegram делается заново при каждом запуске, и все три его шага
+    // ходят по сети. Любой из них может не дойти на плохой связи — тогда мы
+    // остаёмся без сессии, а сервер начинает отвечать пустотой вместо данных
+    // (пользовательские RPC узнают человека по подписи сессии, см. lib/session.js).
+    // Поэтому шаги обёрнуты таймаутом, а срыв входа — не «молча ноль», а
+    // осознанная развилка ниже: живая сессия прошлого запуска или честный сбой.
+    let userRecord = null
+    try {
+      // 1. Отправляем initData в Edge Function: она проверяет подпись,
+      //    находит/создаёт auth-пользователя и связывает его с записью в users.
+      const { data: authData, error: fnError } = await withTimeout(
+        supabase.functions.invoke('telegram-auth', { body: { initData } })
+      )
 
-    if (fnError || !authData?.success || !authData?.token_hash) {
-      console.error('[auth] telegram-auth failed:', fnError || authData)
-      authPromise = null
-      return null
-    }
+      if (fnError || !authData?.success || !authData?.token_hash) {
+        throw new Error('telegram-auth failed: ' + (fnError?.message || 'no token_hash'))
+      }
 
-    // 2. Обмениваем одноразовый token_hash на полноценную сессию.
-    //    После этого supabase работает от имени проверенного юзера (auth.uid()).
-    //    Если verifyOtp вернёт ошибку про невалидный/просроченный токен —
-    //    поменяй type: 'email' на type: 'magiclink' (одна строка ниже).
-    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-      token_hash: authData.token_hash,
-      type: 'email',
-    })
+      // 2. Обмениваем одноразовый token_hash на полноценную сессию.
+      //    После этого supabase работает от имени проверенного юзера (auth.uid()).
+      //    Если verifyOtp вернёт ошибку про невалидный/просроченный токен —
+      //    поменяй type: 'email' на type: 'magiclink' (одна строка ниже).
+      const { data: otpData, error: otpError } = await withTimeout(
+        supabase.auth.verifyOtp({ token_hash: authData.token_hash, type: 'email' })
+      )
 
-    if (otpError || !otpData?.user?.id) {
-      console.error('[auth] verifyOtp error:', otpError)
-      authPromise = null
-      return null
-    }
+      if (otpError || !otpData?.user?.id) {
+        throw new Error('verifyOtp failed: ' + (otpError?.message || 'no user'))
+      }
 
-    // 3. Тянем свою запись из public.users по связке auth_id.
-    const { data: userRecord, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('auth_id', otpData.user.id)
-      .single()
+      // 3. Тянем свою запись из public.users по связке auth_id.
+      const { data: record, error: userError } = await withTimeout(
+        supabase.from('users').select('*').eq('auth_id', otpData.user.id).single()
+      )
 
-    if (userError || !userRecord) {
-      console.error('[auth] user record not found by auth_id:', userError)
+      if (userError || !record) {
+        throw new Error('user record not found: ' + (userError?.message || 'empty'))
+      }
+
+      userRecord = record
+      setSessionAlive(true)
+    } catch (e) {
+      console.error('[auth] вход через Telegram не прошёл:', e?.message)
+
+      // ЗАПАСНОЙ ПУТЬ. Сессию мы храним (persistSession), и с прошлого удачного
+      // запуска она обычно ещё жива — клиент сам продлевает токен. Тогда сорвавшийся
+      // обмен подписи не повод сидеть без данных: входим по тому, что уже есть.
+      const fromSession = await loadUserFromSession().catch(() => null)
+      if (fromSession) {
+        debug('[auth] Telegram-вход не дошёл, работаем по сессии прошлого запуска')
+        authPromise = null   // связь плохая — дать шанс повторить вход позже
+        return fromSession
+      }
+
+      // Ни нового входа, ни старой сессии: данных с сервера не будет вовсе.
+      // Помечаем сбой — плашка покажет «Нет связи», а кеши не будут затёрты
+      // пустыми ответами (см. lib/session.js).
+      markAuthBroken()
       authPromise = null
       return null
     }
@@ -170,6 +212,25 @@ export async function ensureAuth() {
 }
 
 /**
+ * Повторить вход, если он сорвался.
+ *
+ * Нужен потому, что вход одноразовый: не дошёл при запуске — приложение так и
+ * работало бы без сессии до перезахода, показывая пустые заметки и нулевые веса
+ * (сервер без подписи отдаёт пустоту). Зовём при возвращении сети и при выходе
+ * приложения из фона (App.jsx).
+ *
+ * Возвращает пользователя или null. Ничего не делает, если сессия уже есть.
+ */
+export async function retryAuth() {
+  if (hasSession()) return currentUser
+  authPromise = null
+  debug('[auth] повторная попытка входа')
+  const user = await ensureAuth().catch(() => null)
+  if (user && hasSession()) emit(EVENTS.USER_READY, user)
+  return user
+}
+
+/**
  * Поднять пользователя по уже существующей сессии (вход по почте).
  *
  * Возвращает запись из users или null. Используется и при старте в браузере,
@@ -182,18 +243,31 @@ export async function loadUserFromSession() {
     const authId = sessionData?.session?.user?.id
     if (!authId) return null
 
-    const { data: userRecord, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('auth_id', authId)
-      .maybeSingle()
+    // Сессия на месте — значит сервер узнает человека. Отмечаем это ДО запроса:
+    // дальше чтение может не дойти по сети, но право читать у нас есть.
+    setSessionAlive(true)
 
-    if (error || !userRecord) {
-      // Сессия есть, а записи нет — например, аккаунт удалили с другого
-      // устройства. Держать мёртвую сессию незачем: она будет молча ломать
-      // каждый запрос, поэтому гасим её и просим войти заново.
-      console.warn('[auth] сессия без пользователя, выходим:', error)
+    const { data: userRecord, error } = await withTimeout(
+      supabase.from('users').select('*').eq('auth_id', authId).maybeSingle()
+    )
+
+    if (error) {
+      // ЗАПРОС НЕ ДОШЁЛ — это не повод выходить из аккаунта. Раньше здесь был
+      // signOut на любую ошибку, и на плохой связи человека выбрасывало на экран
+      // входа по почте: сессия была жива, а приложение её гасило само.
+      // Отдаём последнего известного человека (он лежит в localStorage) —
+      // приложение работает на кешах, данные догонят.
+      console.warn('[auth] не смогли прочитать запись пользователя:', error.message)
+      return currentUser || null
+    }
+
+    if (!userRecord) {
+      // Ответ ПРИШЁЛ и записи в нём нет — аккаунт правда удалён (например,
+      // с другого устройства). Мёртвая сессия будет молча ломать каждый
+      // запрос, поэтому гасим её и просим войти заново.
+      console.warn('[auth] сессия без пользователя, выходим')
       await supabase.auth.signOut()
+      setSessionAlive(false)
       return null
     }
 
@@ -291,6 +365,7 @@ export async function signOut() {
 
   currentUser = null
   authPromise = null
+  setSessionAlive(false)
   resetPrefs()
 
   try {

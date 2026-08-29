@@ -11,6 +11,7 @@ import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { localGet, localSet } from '../utils/storage'
+import { canReadServer, canTrust } from './session'
 
 export const FAVORITE_LIMIT = 5
 const LIST_KEY = 'fav-exercises-list'
@@ -53,9 +54,15 @@ export function isFavoriteCached(exerciseId) {
 export async function getFavoriteExercises() {
   const user = getCurrentUser()
   if (!user) return []
+  // Без сети/сессии отдаём последний известный список: сервер без подписи
+  // вернул бы пустой, и он записался бы поверх настоящего.
+  if (!canReadServer()) return getFavoritesSync() || []
   try {
     const { data, error } = await supabase.rpc('api_get_favorite_exercises')
-    if (error) { console.error('[fav-ex] get error:', error); return listCache || [] }
+    if (!canTrust(error)) {
+      if (error) console.error('[fav-ex] get error:', error)
+      return getFavoritesSync() || []
+    }
     const list = data || []
     setFromList(list)
     return list

@@ -3,6 +3,7 @@ import { isOnline, onNetworkChange } from './network-status'
 import { getQueueSize } from './offline-queue'
 import { SYNC_EVENTS, onSyncEvent } from './sync-engine'
 import { EVENTS, on } from './events'
+import { isAuthBroken } from './session'
 
 /**
  * Состояние плашки статуса сети — общий источник для ДВУХ компонентов:
@@ -17,13 +18,20 @@ import { EVENTS, on } from './events'
  * нечего (онлайн и очередь пуста).
  *
  * Приоритет состояний: синхронизация → только что синхронизировано (~2.5с) →
- * офлайн.
+ * офлайн → нет связи с сервером.
+ *
+ * Последнее состояние отдельное и важное: связь у телефона есть, а войти не
+ * получилось (Telegram не смог обменять подпись на сессию — VPN, слабый
+ * сигнал). Сервер тогда не узнаёт человека и на любой запрос отвечает
+ * пустотой, поэтому экраны показывают сохранённые данные. Без плашки это
+ * читалось как «заметки исчезли, вес обнулился».
  */
 export function useNetworkBadge() {
   const [online, setOnline] = useState(isOnline())
   const [syncing, setSyncing] = useState(false)
   const [justSyncedCount, setJustSyncedCount] = useState(null)
   const [pendingCount, setPendingCount] = useState(getQueueSize())
+  const [authBroken, setAuthBroken] = useState(isAuthBroken())
 
   const justSyncedTimer = useRef(null)
 
@@ -32,6 +40,9 @@ export function useNetworkBadge() {
       setOnline(isOn)
       setPendingCount(getQueueSize())
     })
+
+    // Состояние входа: сорвался — покажем «Нет связи», восстановился — уберём.
+    const offAuth = on(EVENTS.AUTH_STATE, () => setAuthBroken(isAuthBroken()))
 
     // Очередь пополнилась прямо сейчас (правка веса/заметки без сети).
     // Внимание: `on` из events.js отдаёт САМО событие, а `onSyncEvent` ниже —
@@ -61,6 +72,7 @@ export function useNetworkBadge() {
 
     return () => {
       offNet()
+      offAuth()
       offQueue()
       offStart()
       offDone()
@@ -80,6 +92,14 @@ export function useNetworkBadge() {
       iconName: 'network_off',
       iconColor: 'var(--color-error)',
       text: pendingCount > 0 ? `Офлайн · ${pendingCount} ${pluralChanges(pendingCount)}` : 'Офлайн',
+      spin: false
+    }
+  }
+  if (authBroken) {
+    return {
+      iconName: 'network_off',
+      iconColor: 'var(--color-error)',
+      text: pendingCount > 0 ? `Нет связи · ${pendingCount} ${pluralChanges(pendingCount)}` : 'Нет связи',
       spin: false
     }
   }

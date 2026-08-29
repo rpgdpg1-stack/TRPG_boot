@@ -39,7 +39,11 @@ function hardReload() {
   } catch (e) { /* ignore */ }
   try {
     if (window.caches && window.caches.keys) {
-      window.caches.keys().then(ks => ks.forEach(k => window.caches.delete(k)))
+      // Кеш гифок (trpg-media) щадим: он про упражнения, а не про сборку, и
+      // выбрасывать его при каждой перезагрузке — заново качать мегабайты.
+      window.caches.keys().then(ks => ks.forEach(k => {
+        if (!String(k).startsWith('trpg-media')) window.caches.delete(k)
+      }))
     }
   } catch (e) { /* ignore */ }
   // Адрес пересобираем ЦЕЛИКОМ, сохраняя query и hash. Раньше оставался голый

@@ -16,6 +16,7 @@ import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet } from '../../utils/storage'
 import { pcacheGet, pcacheSet, CATALOG_VERSION } from '../../lib/persistent-cache'
+import { canReadServer, canTrust } from '../../lib/session'
 
 import { isTelegramEnv } from '../../lib/telegram'
 
@@ -82,10 +83,13 @@ export function hydrateUserProgramsFromCache() {
 export async function loadMyPrograms() {
   const user = getCurrentUser()
   if (!user) return []
+  // Без сети или сессии база отдаёт пустой список своих программ — раньше он
+  // затирал кеш, и своя программа с программой друга просто исчезали.
+  if (!canReadServer()) return hydrateUserProgramsFromCache()
   try {
     const { data, error } = await supabase.rpc('api_get_my_programs', { p_user_id: user.id })
-    if (error) {
-      console.warn('[customProgram] loadMyPrograms RPC error:', error?.message)
+    if (!canTrust(error)) {
+      if (error) console.warn('[customProgram] loadMyPrograms RPC error:', error?.message)
       return hydrateUserProgramsFromCache()
     }
     const list = (data || []).map(mapToRegistry)

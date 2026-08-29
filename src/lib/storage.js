@@ -14,6 +14,7 @@ import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
+import { canReadServer, canTrust } from './session'
 import { clearQueue } from './offline-queue'
 import { pcacheClear } from './persistent-cache'
 import { debug } from './debug'
@@ -51,6 +52,10 @@ export async function getRecentWorkouts(limit = 3) {
   const cached = cacheGet(cacheKey)
   if (cached) return cached
 
+  // Без сети или сессии выборка вернётся пустой (RLS не отдаст чужому), и
+  // «история пропала» — отдаём сохранённую.
+  if (!canReadServer()) return getRecentWorkoutsSync(limit) || []
+
   const { data, error } = await supabase
     .from('workouts')
     .select('finished_at, started_at, program_id, day, distance_m')
@@ -58,8 +63,8 @@ export async function getRecentWorkouts(limit = 3) {
     .not('finished_at', 'is', null)
     .order('finished_at', { ascending: false })
     .limit(limit)
-  if (error) {
-    console.error('[storage] getRecentWorkouts error:', error)
+  if (!canTrust(error)) {
+    if (error) console.error('[storage] getRecentWorkouts error:', error)
     // Ошибка/оффлайн — отдаём персист-кеш (localStorage), чтобы не мигало пусто.
     return getRecentWorkoutsSync(limit) || []
   }
@@ -124,14 +129,16 @@ export async function getDailyQuests() {
   const userId = getUserId()
   if (!userId) return {}
 
+  if (!canReadServer()) return getDailyQuestsSync()
+
   const { data, error } = await supabase
     .from('daily_quests')
     .select('quest_id')
     .eq('user_id', userId)
     .eq('day_key', getTodayKey())
 
-  if (error) {
-    console.error('[storage] getDailyQuests error:', error)
+  if (!canTrust(error)) {
+    if (error) console.error('[storage] getDailyQuests error:', error)
     return getDailyQuestsSync()
   }
 
