@@ -421,6 +421,13 @@ postgres + service_role. Вызову из `api_*` это не мешает: SEC
 - параметр `p_reward` там же — он никогда никуда не записывался;
 - колонки `users.total_muscles`, `workouts.muscles_earned`, `daily_quests.reward`.
 
+**Активностей в базе больше нет (29.08.2026):** таблица `daily_quests` и
+`complete_daily_quest` удалены вместе с фичей (`migrations/drop_daily_quests.sql`).
+Порядок там показателен: сперва из `api_reset_my_progress` убрано обращение к
+таблице, и только потом DROP — иначе «Сброс прогресса» падал бы при каждом вызове.
+**Правило: перед сносом таблицы искать её по телам функций**
+(`select proname from pg_proc where prosrc ilike '%имя%'`), а не только по внешним ключам.
+
 Тогда же снесены три функции, которые не звал никто: `api_get_program_day`,
 `get_workout_day` (сборка дня переехала на клиент; вторая вдобавок была
 единственной без SECURITY DEFINER) и `upsert_user` (авторизация идёт через

@@ -37,7 +37,6 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA extensions;
 -- user_exercise_seq — сквозная нумерация СВОИХ упражнений (id вида ux_N).
 -- Именно последовательность, а не «первый свободный номер»: переиспользованный
 -- id прицепил бы к новому упражнению историю удалённого.
-CREATE SEQUENCE IF NOT EXISTS public.daily_quests_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.exercise_sets_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.friendships_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.program_days_id_seq;
@@ -207,13 +206,15 @@ CREATE TABLE IF NOT EXISTS public.user_favorite_exercises (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- Отметки дневных активностей.
-CREATE TABLE IF NOT EXISTS public.daily_quests (
-  id bigint DEFAULT nextval('daily_quests_id_seq'::regclass) NOT NULL,
+-- Личные настройки аккаунта: закреплённые программы, свёрнутость секций и
+-- прочие предпочтения, которые должны быть одинаковы в Telegram и в браузере.
+-- Пишутся через api_set_my_pref (вставки без DEFINER-функции нет — политики
+-- на INSERT намеренно отсутствуют).
+CREATE TABLE IF NOT EXISTS public.user_prefs (
   user_id bigint NOT NULL,
-  day_key text NOT NULL,
-  quest_id text NOT NULL,
-  completed_at timestamp with time zone DEFAULT now() NOT NULL
+  key text NOT NULL,
+  value jsonb NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 -- Друзья. Пара всегда хранится упорядоченной (user_a_id < user_b_id) —
@@ -292,7 +293,6 @@ ALTER TABLE public.user_exercise_notes ALTER COLUMN id ADD GENERATED ALWAYS AS I
 
 
 -- ── КЛЮЧИ И ОГРАНИЧЕНИЯ ────────────────────────────────────────────────────
-ALTER TABLE public.daily_quests ADD CONSTRAINT daily_quests_pkey PRIMARY KEY (id);
 ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_pkey PRIMARY KEY (id);
 ALTER TABLE public.exercises ADD CONSTRAINT exercises_pkey PRIMARY KEY (id);
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_pkey PRIMARY KEY (id);
@@ -309,7 +309,6 @@ ALTER TABLE public.user_favorite_exercises ADD CONSTRAINT user_favorite_exercise
 ALTER TABLE public.users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 ALTER TABLE public.workouts ADD CONSTRAINT workouts_pkey PRIMARY KEY (id);
 
-ALTER TABLE public.daily_quests ADD CONSTRAINT daily_quests_user_id_day_key_quest_id_key UNIQUE (user_id, day_key, quest_id);
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_owner_id_friend_id_key UNIQUE (owner_id, friend_id);
 ALTER TABLE public.friendships ADD CONSTRAINT unique_pair UNIQUE (user_a_id, user_b_id);
 ALTER TABLE public.program_days ADD CONSTRAINT program_days_program_location_day_order_key UNIQUE (program_id, location, day, order_num);
@@ -331,7 +330,6 @@ ALTER TABLE public.user_favorite_exercises ADD CONSTRAINT user_favorite_exercise
 -- Внешние ключи. exercise_sets → exercises стоит RESTRICT осознанно: удаление
 -- упражнения не должно молча стирать отработанные подходы. Свои упражнения
 -- удаляются через api_delete_my_exercise, которая чистит зависимости сама.
-ALTER TABLE public.daily_quests ADD CONSTRAINT daily_quests_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE RESTRICT;
 ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_workout_id_fkey FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE;
 ALTER TABLE public.exercises ADD CONSTRAINT exercises_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -353,6 +351,8 @@ ALTER TABLE public.user_exercise_weights ADD CONSTRAINT user_exercise_weights_ex
 ALTER TABLE public.user_exercise_weights ADD CONSTRAINT user_exercise_weights_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public.user_favorite_exercises ADD CONSTRAINT user_favorite_exercises_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES exercises(id);
 ALTER TABLE public.user_favorite_exercises ADD CONSTRAINT user_favorite_exercises_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE public.user_prefs ADD CONSTRAINT user_prefs_pkey PRIMARY KEY (user_id, key);
+ALTER TABLE public.user_prefs ADD CONSTRAINT user_prefs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public.workouts ADD CONSTRAINT workouts_program_id_fkey FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE SET NULL;
 ALTER TABLE public.workouts ADD CONSTRAINT workouts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
@@ -367,7 +367,6 @@ ALTER TABLE public.users ADD CONSTRAINT users_has_login_method
 -- ── ИНДЕКСЫ ────────────────────────────────────────────────────────────────
 -- Дубли неуникальных индексов рядом с UNIQUE тут не заводить: уникальный
 -- обслуживает те же запросы, а лишний обновляется на каждой записи.
-CREATE INDEX IF NOT EXISTS idx_daily_quests_user_day ON public.daily_quests USING btree (user_id, day_key);
 CREATE INDEX IF NOT EXISTS idx_sets_exercise ON public.exercise_sets USING btree (exercise_id, completed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sets_workout ON public.exercise_sets USING btree (workout_id, slot_order, set_number);
 CREATE INDEX IF NOT EXISTS idx_exercises_filter ON public.exercises USING btree (muscle_group, sub_group, type, priority);
@@ -933,8 +932,7 @@ begin
         updated_at              = now()
     where id = uid;
 
-  delete from public.workouts     where user_id = uid;  -- exercise_sets уйдут каскадом
-  delete from public.daily_quests where user_id = uid;
+  delete from public.workouts where user_id = uid;  -- exercise_sets уйдут каскадом
 end;
 $function$;
 
@@ -951,29 +949,6 @@ BEGIN
   UPDATE public.users
      SET training_since = CASE WHEN p_active THEN now() ELSE NULL END
    WHERE id = uid;
-END;
-$function$;
-
-CREATE OR REPLACE FUNCTION public.complete_daily_quest(p_user_id bigint, p_day_key text, p_quest_id text)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-DECLARE
-  v_inserted_count integer;
-BEGIN
-  p_user_id := current_user_id();
-  IF p_user_id IS NULL THEN
-    RAISE EXCEPTION 'not authenticated';
-  END IF;
-
-  INSERT INTO daily_quests (user_id, day_key, quest_id)
-  VALUES (p_user_id, p_day_key, p_quest_id)
-  ON CONFLICT (user_id, day_key, quest_id) DO NOTHING;
-
-  GET DIAGNOSTICS v_inserted_count = ROW_COUNT;
-  RETURN v_inserted_count > 0;
 END;
 $function$;
 
@@ -2403,7 +2378,6 @@ CREATE TRIGGER trg_record_weight_point
 --
 -- user_favorite_exercises намеренно БЕЗ политик: прямой доступ к ней закрыт
 -- полностью, работа идёт только через api_* функции.
-ALTER TABLE public.daily_quests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercise_sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friend_pins ENABLE ROW LEVEL SECURITY;
@@ -2417,6 +2391,7 @@ ALTER TABLE public.user_exercise_swaps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_exercise_weight_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_exercise_weights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_favorite_exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_prefs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
 
@@ -2495,11 +2470,6 @@ CREATE POLICY uen_update_own ON public.user_exercise_notes FOR UPDATE TO public
   USING ((user_id = current_user_id())) WITH CHECK ((user_id = current_user_id()));
 CREATE POLICY uen_delete_own ON public.user_exercise_notes FOR DELETE TO public USING ((user_id = current_user_id()));
 
-CREATE POLICY dq_select_own ON public.daily_quests FOR SELECT TO public USING ((user_id = current_user_id()));
-CREATE POLICY dq_insert_own ON public.daily_quests FOR INSERT TO public WITH CHECK ((user_id = current_user_id()));
-CREATE POLICY dq_update_own ON public.daily_quests FOR UPDATE TO public
-  USING ((user_id = current_user_id())) WITH CHECK ((user_id = current_user_id()));
-CREATE POLICY dq_delete_own ON public.daily_quests FOR DELETE TO public USING ((user_id = current_user_id()));
 
 CREATE POLICY fr_select_own ON public.friendships FOR SELECT TO public
   USING (((user_a_id = current_user_id()) OR (user_b_id = current_user_id())));
@@ -2516,6 +2486,15 @@ CREATE POLICY sp_select_own ON public.shared_programs FOR SELECT TO public
 
 CREATE POLICY "Allow all heartbeat" ON public.heartbeat FOR ALL TO public
   USING (true) WITH CHECK (true);
+
+-- Настройки аккаунта: читать/менять/удалять — только свои. Политики на INSERT
+-- нет намеренно: новая настройка заводится через DEFINER-функцию api_set_my_pref.
+CREATE POLICY prefs_select_own ON public.user_prefs FOR SELECT TO public
+  USING ((user_id = current_user_id()));
+CREATE POLICY prefs_update_own ON public.user_prefs FOR UPDATE TO public
+  USING ((user_id = current_user_id())) WITH CHECK ((user_id = current_user_id()));
+CREATE POLICY prefs_delete_own ON public.user_prefs FOR DELETE TO public
+  USING ((user_id = current_user_id()));
 
 
 -- Коды подтверждения: политик НЕТ намеренно. Ни anon, ни authenticated не
@@ -2542,7 +2521,6 @@ BEGIN
   END LOOP;
 END $$;
 
-GRANT EXECUTE ON FUNCTION public.complete_daily_quest(bigint, text, text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.current_user_id() TO anon, authenticated, service_role;
 
 -- Серверные функции входа по почте: только service_role. Общий блок выше их

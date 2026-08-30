@@ -437,7 +437,7 @@ supabase/
 │                   drop_leaderboard_index.sql (снят индекс под рейтинг — рейтингов нет)
 │                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
                    day_limit_per_category.sql (лимит 1 тренировка/сутки → на РАЗДЕЛ; применена 2026-08-29)
-│                   drop_daily_quests.sql (снос таблицы отметок активностей — НЕ ПРИМЕНЕНА)
+│                   drop_daily_quests.sql (снос таблицы отметок активностей; применена 2026-08-29)
 │                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
 │                   public_profile_favorites_subgroup.sql (sub_group в любимых у друга)
 │                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
