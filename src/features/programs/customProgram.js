@@ -16,6 +16,7 @@ import { setUserPrograms } from './registry'
 import { invalidateWorkoutDayCache } from './api'
 import { localGet, localSet } from '../../utils/storage'
 import { pcacheGet, pcacheSet, CATALOG_VERSION } from '../../lib/persistent-cache'
+import { applyGenderAll } from '../../lib/gender-media'
 import { canReadServer, canTrust } from '../../lib/session'
 
 import { isTelegramEnv } from '../../lib/telegram'
@@ -295,6 +296,10 @@ let _catalog = null
 const CATALOG_PCACHE_KEY = `constructor-catalog-v${CATALOG_VERSION}`
 
 export async function loadExerciseCatalog() {
+  return applyGenderAll(await loadExerciseCatalogRaw())
+}
+
+async function loadExerciseCatalogRaw() {
   if (_catalog) return _catalog
 
   // Раньше каталог жил только в переменной модуля и пропадал при каждой
@@ -321,7 +326,7 @@ export async function loadExerciseCatalog() {
 async function fetchCatalog() {
   const { data, error } = await supabase
     .from('exercises')
-    .select('id, name, muscle_group, sub_group, type, preview_url, priority')
+    .select('id, name, muscle_group, sub_group, type, preview_url, priority, preview_url_male, preview_url_female')
     .is('archived_at', null)   // убранные из каталога в конструкторе не показываем
     .order('id', { ascending: true })
   if (error) {

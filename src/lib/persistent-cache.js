@@ -89,8 +89,10 @@ export function pcacheClear() {
  *      ex_062 удалено, ex_034 и ex_078 убраны в архив.
  * v4 — 27 августа 2026: содержимое ex_135 и ex_139 перенесено в ex_034 и ex_078
  *      (история подходов остаётся на своём упражнении), дубли удалены.
+ * v5 — 30 августа 2026: каталог отдаёт оба варианта медиа (мужской и женский),
+ *      старый кеш их не содержит.
  */
-export const CATALOG_VERSION = 4
+export const CATALOG_VERSION = 5
 
 /** Ключ кеша каталога (данные RPC api_get_all_exercises). */
 export const CATALOG_CACHE_KEY = `exercises:all:v${CATALOG_VERSION}`

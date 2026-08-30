@@ -24,6 +24,7 @@ import { getActiveWorkout } from '../../lib/active-workout'
 import { loadMyExercises, loadExercisesByIds, isCustomExercise } from './userExercises'
 import { debug } from '../../lib/debug'
 import { goal, GOALS } from '../../lib/metrika'
+import { applyGenderAll } from '../../lib/gender-media'
 
 // Сколько ждём ответ RPC завершения, прежде чем счесть сеть мёртвой и уйти в
 // оффлайн-очередь. Supabase-клиент сам не таймаутит, а в зале Wi-Fi часто
@@ -31,7 +32,14 @@ import { goal, GOALS } from '../../lib/metrika'
 // этого экран «Сохранение…» висел бы бесконечно.
 const FINISH_TIMEOUT_MS = 7000
 
+// Каталог кешируется с обоими вариантами медиа, а наружу отдаётся уже под
+// выбранный пол — чтобы дальше по коду всё читалось из привычных
+// preview_url / video_url и ни один экран не пришлось переучивать.
 async function loadAllExercises() {
+  return applyGenderAll(await loadAllExercisesRaw())
+}
+
+async function loadAllExercisesRaw() {
   const cacheKey = CATALOG_CACHE_KEY
   const cached = cacheGet(cacheKey)
   if (cached) return cached
@@ -71,7 +79,7 @@ async function refreshAllExercises() {
     try {
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority, counts_reps')
+        .select('id, name, sub_group, type, meta_info, preview_url, video_url, priority, counts_reps, preview_url_male, video_url_male, preview_url_female, video_url_female')
         .is('archived_at', null)   // убранные из каталога в выбор не попадают
         .order('priority', { ascending: true })
       if (!error && data?.length) {
@@ -83,6 +91,8 @@ async function refreshAllExercises() {
   }
 
   if (exercises.length) {
+    // В кеш кладём как пришло, с обоими вариантами медиа: пол человек может
+    // сменить, а перекачивать каталог из-за этого незачем.
     cacheSet(cacheKey, exercises, TTL.SESSION)
     pcacheSet(cacheKey, exercises) // в persistent на 7 дней
   }

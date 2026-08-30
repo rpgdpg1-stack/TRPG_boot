@@ -13,6 +13,7 @@ import { getCurrentUser } from '../../lib/auth'
 import { getProgramBySlug } from '../programs/registry'
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '../../lib/cache'
 import { pcacheGet, pcacheSet, CATALOG_CACHE_KEY } from '../../lib/persistent-cache'
+import { applyGender, applyGenderAll } from '../../lib/gender-media'
 import { canReadServer, canTrust } from '../../lib/session'
 import { debug } from '../../lib/debug'
 import {
@@ -40,7 +41,7 @@ export async function getExercisesForSubgroup(subGroup, type) {
     // Отдаём кеш сразу (замену открывают в зале, где сети может не быть),
     // а свежий каталог подтягиваем в фоне — к следующему заходу.
     refreshAllExercisesInBackground()
-    return cached.filter(e => e.sub_group === subGroup && e.type === type)
+    return applyGenderAll(cached.filter(e => e.sub_group === subGroup && e.type === type))
   }
 
   try {
@@ -48,13 +49,13 @@ export async function getExercisesForSubgroup(subGroup, type) {
     if (!error && data) {
       cacheSet(CATALOG_KEY, data, TTL.LONG)
       pcacheSet(CATALOG_KEY, data)
-      return data.filter(e => e.sub_group === subGroup && e.type === type)
+      return applyGenderAll(data.filter(e => e.sub_group === subGroup && e.type === type))
     }
   } catch (e) { /* падаем на прямой запрос ниже */ }
 
   const { data, error } = await supabase
     .from('exercises')
-    .select('id, name, meta_info, preview_url, video_url, priority')
+    .select('id, name, meta_info, preview_url, video_url, priority, preview_url_male, video_url_male, preview_url_female, video_url_female')
     .is('archived_at', null)   // убранные из каталога в замену не предлагаем
     .eq('sub_group', subGroup)
     .eq('type', type)
@@ -64,7 +65,7 @@ export async function getExercisesForSubgroup(subGroup, type) {
     console.error('[exercises] getExercisesForSubgroup error:', error)
     return []
   }
-  return data || []
+  return applyGenderAll(data || [])
 }
 
 // Фоновое обновление каталога: молча, ошибки глушим — на кеше уже работаем.
@@ -102,7 +103,7 @@ export async function getExerciseById(exerciseId) {
     console.error('[exercises] getExerciseById error:', error)
     return null
   }
-  return data
+  return applyGender(data)
 }
 
 /**
