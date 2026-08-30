@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
 import { clearAllData, resetProgramDayCycle } from '../lib/storage'
@@ -7,7 +7,6 @@ import { PROGRAMS } from '../features/programs/registry'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { SectionLabel } from '../components/GroupLabel'
-import { currentGender, setGender } from '../lib/gender-media'
 
 /**
  * Экран настроек.
@@ -22,9 +21,6 @@ import { currentGender, setGender } from '../lib/gender-media'
  */
 export default function Settings() {
   const navigate = useNavigate()
-  // Пол решает, чью гифку показывать у упражнения. Нет варианта своего пола —
-  // покажется имеющийся, так что выбор ничего не прячет.
-  const [gender, setGenderState] = useState(currentGender)
 
   useEffect(() => {
     backButton.setHandler(() => navigate(-1))
@@ -35,7 +31,6 @@ export default function Settings() {
     {
       title: 'Основное',
       items: [
-        { id: 'gender',        icon: 'ui:privacy',       iconColor: 'var(--color-text-secondary)', title: 'Показывать упражнения', subtitle: gender === 'female' ? 'Женский вариант' : 'Мужской вариант', toggle: true },
         { id: 'privacy',       icon: 'ui:privacy',       iconColor: 'var(--color-text-secondary)', title: 'Приватность',  subtitle: 'Что видят друзья',           path: '/privacy' },
         { id: 'notifications', icon: 'ui:notifications', iconColor: 'var(--color-text-secondary)', title: 'Уведомления',  subtitle: 'Напоминания о тренировках', path: '/notifications' },
         { id: 'about',         icon: 'ui:info',          iconColor: 'var(--color-text-secondary)', title: 'О приложении', subtitle: 'Версия · Политика',          path: '/about' }
@@ -59,15 +54,8 @@ export default function Settings() {
   ]
 
   const handleSectionTap = async (item) => {
-    if (!item.path && !item.tone && !item.toggle) return
+    if (!item.path && !item.tone) return
     haptic.light()
-
-    if (item.id === 'gender') {
-      const next = gender === 'female' ? 'male' : 'female'
-      setGenderState(next)
-      try { await setGender(next) } catch (err) { console.error('[Settings] gender:', err) }
-      return
-    }
 
     if (item.path) { navigate(item.path); return }
 
@@ -135,8 +123,8 @@ export default function Settings() {
               <button
                 key={item.id}
                 onClick={() => handleSectionTap(item)}
-                className={item.path || item.tone || item.toggle ? 'tg-row' : undefined}
-                disabled={!item.path && !item.tone && !item.toggle}
+                className={item.path || item.tone ? 'tg-row' : undefined}
+                disabled={!item.path && !item.tone}
                 style={{
                   ...styles.row,
                   borderTop: idx === 0 ? 'none' : '1px solid var(--highlight-recent)'

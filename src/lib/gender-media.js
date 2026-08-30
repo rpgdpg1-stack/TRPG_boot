@@ -16,14 +16,16 @@
  * они заполнены у всех, кто попал в базу до разделения по полу.
  */
 
-import { getPrefSync, setPref } from './prefs'
+import { getPersonalSync, savePersonal } from './personal-data'
 import { cacheInvalidate } from './cache'
+import { dropCatalogMemory } from '../features/programs/customProgram'
 
-export const GENDER_KEY = 'gender'
-
-/** Пол из настроек. Не выбран — считаем мужским: так было до появления выбора. */
+/**
+ * Пол из личных данных. Не выбран — считаем мужским: так было до появления
+ * выбора, и мужские гифки есть почти у всех упражнений.
+ */
 export function currentGender() {
-  return getPrefSync(GENDER_KEY, 'male') === 'female' ? 'female' : 'male'
+  return getPersonalSync().sex === 'female' ? 'female' : 'male'
 }
 
 /**
@@ -67,8 +69,21 @@ export function applyGenderAll(list, gender = currentGender()) {
  */
 export async function setGender(gender) {
   const v = gender === 'female' ? 'female' : 'male'
-  await setPref(GENDER_KEY, v)
+  await savePersonal({ sex: v })
+  dropMediaCaches()
+  return v
+}
+
+/**
+ * Сбросить кеши, в которых лежат уже разложенные под пол ссылки.
+ *
+ * На диске и в сети хранятся оба варианта, перекачивать нечего — гасим только
+ * память, чтобы при следующем чтении ссылки собрались заново.
+ */
+export function dropMediaCaches() {
   cacheInvalidate('exercises:all')
   cacheInvalidate('workout-day')
-  return v
+  // Каталог конструктора живёт в переменной модуля, до неё cacheInvalidate
+  // не дотягивается — сбрасываем отдельно.
+  dropCatalogMemory()
 }

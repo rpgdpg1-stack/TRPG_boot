@@ -299,6 +299,11 @@ export async function loadExerciseCatalog() {
   return applyGenderAll(await loadExerciseCatalogRaw())
 }
 
+/** Забыть каталог в памяти — например при смене пола: ссылки собираются заново. */
+export function dropCatalogMemory() {
+  _catalog = null
+}
+
 async function loadExerciseCatalogRaw() {
   if (_catalog) return _catalog
 
