@@ -1,4 +1,5 @@
 import { getProgramByDbId } from '../features/programs/registry'
+import { mskParts, mskDayKey } from './dates'
 
 function pluralDays(n) {
   const last = n % 10
@@ -71,22 +72,9 @@ export function periodHintSuffix(period, refDate = new Date()) {
  * тренировка, считаем по Москве — сдвигаем на +3ч и читаем UTC-части.
  * Возвращает { y, m (0–11), d, hh, min }.
  */
-export function mskParts(iso) {
-  const shifted = new Date(new Date(iso).getTime() + 3 * 3600 * 1000)
-  return {
-    y: shifted.getUTCFullYear(),
-    m: shifted.getUTCMonth(),
-    d: shifted.getUTCDate(),
-    hh: shifted.getUTCHours(),
-    min: shifted.getUTCMinutes()
-  }
-}
-
-// Ключ дня по Москве: "2026-07-06".
-export function mskDayKey(iso) {
-  const { y, m, d } = mskParts(iso)
-  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-}
+// Московские компоненты даты и ключ дня живут в utils/dates.js (базовый слой
+// календаря) — здесь только реэкспорт, чтобы у экранов не менялся импорт.
+export { mskParts, mskDayKey }
 
 // Время по Москве: "10:05".
 export function formatTimeMsk(iso) {

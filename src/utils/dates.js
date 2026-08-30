@@ -1,71 +1,77 @@
 /**
- * Утилиты для работы с датами по московскому времени.
+ * Утилиты дат по МОСКОВСКОМУ времени.
  *
- * Используются в:
- *  - getTodayKey: для ключа дневных квестов (сброс в 03:00 МСК)
- *  - getCurrentWeekKey: для ключа недельного стрика (понедельник = новая неделя)
+ * Здесь базовый слой календаря: московские компоненты даты, ключ дня и ключ
+ * ISO-недели. `utils/history.js` берёт их отсюда, а не держит свои копии.
+ *
+ * ПОЧЕМУ НЕ `setHours(getHours() - 3)`. Так было раньше, и это вычитало три
+ * часа из времени УСТРОЙСТВА, а не переводило в Москву. У человека с
+ * московскими часами неделя и сутки менялись не в 00:00, а в 03:00 МСК: в час
+ * ночи понедельника статистика уже показывала новую неделю (она считается
+ * честно), а огонёк — ещё старую с прошлыми тренировками. Правильный перевод —
+ * прибавить смещение к UTC и читать UTC-компоненты (`mskParts`).
  *
  * ВАЖНО про формат ключа недели:
  * SQL-функция api_finish_workout пишет в users.weekly_streak_week значение
- * вида to_char(NOW() AT TIME ZONE 'Europe/Moscow', 'IYYY-IW') — это ISO-неделя
- * в формате '2026-22' (год + номер ISO-недели). Поэтому и на фронте мы тоже
- * формируем ISO-ключ, чтобы сравнение совпадало и стрик не сбрасывался.
- *
- * Раньше тут возвращался YYYY-MM-DD понедельника, и при сравнении с БД
- * (там был IYYY-IW) ключи никогда не совпадали — каждый перезаход юзера
- * сбрасывал отображение стрика в 0, хотя в БД он сохранялся правильно.
+ * вида to_char(NOW() AT TIME ZONE 'Europe/Moscow', 'IYYY-IW') — ISO-неделя
+ * в формате '2026-22' (ISO-год + номер недели). Фронт обязан давать РОВНО
+ * такой же ключ, иначе сравнение не совпадёт и стрик обнулится на ровном месте.
  */
 
+// Москва — UTC+3 круглый год, перехода на летнее время нет с 2014-го.
+const MSK_OFFSET_MS = 3 * 3600 * 1000
+
 /**
- * Ключ "сегодня" по МСК со сдвигом дня в 03:00.
- * Используется для daily_quests (сброс квестов в 3 утра).
- *
- * Пример возврата: "2026-05-12"
+ * Компоненты даты по Москве. Сдвигаем момент на +3 и читаем UTC-поля —
+ * тогда часовой пояс устройства ни на что не влияет.
  */
-export function getTodayKey() {
-  const now = new Date()
-  // Сдвиг на -3 часа: если сейчас 02:30 МСК, считаем что ещё "вчера"
-  now.setHours(now.getHours() - 3)
-  return now.toISOString().split('T')[0]
+export function mskParts(iso) {
+  const shifted = new Date(new Date(iso).getTime() + MSK_OFFSET_MS)
+  return {
+    y: shifted.getUTCFullYear(),
+    m: shifted.getUTCMonth(),
+    d: shifted.getUTCDate(),
+    hh: shifted.getUTCHours(),
+    min: shifted.getUTCMinutes()
+  }
+}
+
+/** Ключ дня по Москве: "2026-07-06". */
+export function mskDayKey(iso) {
+  const { y, m, d } = mskParts(iso)
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
 /**
- * ISO-номер недели для даты по МСК. Алгоритм стандартный (как Postgres IYYY-IW):
- *  - ISO-неделя начинается с понедельника
- *  - Неделя номер 1 — та, что содержит первый четверг года
- *  - У годового перехода неделя может относиться к соседнему году
- *
- * Возвращает строку формата "2026-22" (где 22 — номер недели от 01 до 53).
- *
- * Реализация: берём четверг той же недели и от него считаем номер,
- * потому что ISO-неделя определяется через четверг.
+ * Ключ "сегодня" по МСК. Сутки идут от 00:00 до 00:00 московского времени —
+ * так же, как их считает сервер в api_finish_workout. Прежний сдвиг на 3 часа
+ * (наследие дневных квестов, которых больше нет) убран.
  */
-export function getCurrentWeekKey() {
-  const now = new Date()
-  // Сдвиг в МСК — чтобы граница недели определялась по московскому времени
-  now.setHours(now.getHours() - 3)
-  now.setHours(0, 0, 0, 0)
+export function getTodayKey(now = new Date()) {
+  return mskDayKey(now.toISOString())
+}
 
-  // День недели: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  // Нам нужен четверг этой ISO-недели. Понедельник = 1, четверг = 4 → сдвиг +3 от пн.
-  // Формула: возьмём текущий день, найдём смещение до четверга.
-  const day = now.getDay() || 7 // воскресенье = 7 в ISO-логике
-  // Смещение от текущего дня до четверга ISO-недели:
-  //   пн (1) → +3, вт (2) → +2, ..., чт (4) → 0, ..., вс (7) → -3
-  const thursday = new Date(now)
-  thursday.setDate(now.getDate() + (4 - day))
+/**
+ * ISO-ключ недели по МСК — "2026-22". Совпадает с Postgres 'IYYY-IW'.
+ *
+ * ISO-неделя начинается в понедельник, а её номер и год определяет ЧЕТВЕРГ
+ * этой недели: неделя №1 — та, что содержит первый четверг года. Поэтому
+ * считаем от четверга нашей недели до четверга недели, содержащей 4 января.
+ */
+export function getCurrentWeekKey(now = new Date()) {
+  const { y, m, d } = mskParts(now.toISOString())
+  // Дальше работаем в UTC: компоненты уже московские, пояс устройства не влияет.
+  const thursday = new Date(Date.UTC(y, m, d))
+  const dayNum = (thursday.getUTCDay() + 6) % 7 // понедельник = 0
+  thursday.setUTCDate(thursday.getUTCDate() - dayNum + 3)
 
-  // ISO-год — это год того четверга
-  const isoYear = thursday.getFullYear()
+  const isoYear = thursday.getUTCFullYear()
+  const firstThursday = new Date(Date.UTC(isoYear, 0, 4))
+  const janDayNum = (firstThursday.getUTCDay() + 6) % 7
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - janDayNum + 3)
 
-  // Номер недели: количество дней от 1 января ISO-года до нашего четверга, делённое на 7
-  const yearStart = new Date(isoYear, 0, 1)
-  const daysSinceYearStart = Math.floor((thursday - yearStart) / (1000 * 60 * 60 * 24))
-  const weekNumber = Math.ceil((daysSinceYearStart + 1) / 7)
-
-  // Форматируем как "2026-22" с ведущим нулём у недели если < 10
-  const ww = String(weekNumber).padStart(2, '0')
-  return `${isoYear}-${ww}`
+  const week = 1 + Math.round((thursday - firstThursday) / (7 * 86400000))
+  return `${isoYear}-${String(week).padStart(2, '0')}`
 }
 
 /**
