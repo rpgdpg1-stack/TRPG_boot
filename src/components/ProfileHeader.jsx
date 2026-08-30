@@ -145,9 +145,13 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-hero-size)', color: 'var(--color-primary)'
   },
   infoColumn: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-15)' },
+  // lineHeight 1.3, а не 1.1: `overflow: hidden` нужен многоточию, но он режет
+  // всё, что вышло за строку, — при 1.1 хвосты «p», «g», «у», «д» упирались
+  // в край и обрезались («Rpgdpg» терял низ обеих g). Высота строки должна
+  // вмещать выносные элементы, иначе многоточие оплачивается обрезкой букв.
   name: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 700, color: 'var(--color-text)',
-    lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0
+    lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0
   },
   lastRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: '18px' },
   lastWhen: {
