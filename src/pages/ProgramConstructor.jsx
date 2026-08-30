@@ -12,6 +12,7 @@ import ActionButton from '../components/ActionButton'
 import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
+import SlotsCount from '../components/SlotsCount'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PencilIcon from '../components/PencilIcon'
@@ -715,9 +716,12 @@ export default function ProgramConstructor() {
             {/* Плюс — только у живого действия: при лимите добавлять нечего,
                 и знак «+» рядом со «стоп»-текстом противоречил бы сам себе. */}
             {!atLimit && <UiIcon name="add" size={20} color="var(--color-primary)" />}
+            {/* Счётчик — отдельным узлом: набранное красится акцентом, лимит
+                остаётся серым (SlotsCount). При достигнутом лимите текст цельно
+                красный — это состояние «стоп», делить его цветами незачем. */}
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
-              : `Добавить ${currentDay.length}/${MAX_PER_DAY}`}
+              : <>Добавить <SlotsCount value={currentDay.length} max={MAX_PER_DAY} /></>}
           </ActionButton>
         </div>
         )}

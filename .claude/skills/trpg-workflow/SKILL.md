@@ -407,7 +407,7 @@ src/
 │                   PeriodSwitcher PinIcon PlaceSwitcher PlayButton PlayIcon PlayerProfileModal
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
 │                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
-│                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon
+│                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon SlotsCount
 │                   StreakFlame StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
 │                   WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
