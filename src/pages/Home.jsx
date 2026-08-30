@@ -7,7 +7,7 @@ import { pluralizeWorkouts } from '../utils/plural'
 import SectionCarousel from '../components/SectionCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import HomeCards from '../components/HomeCards'
-import StreakFlame from '../components/StreakFlame'
+import WeeklyMuscle from '../components/WeeklyMuscle'
 import StreakInfoPopup from '../components/StreakInfoPopup'
 
 // Тонкая инфо-плашка под заголовком: недельный стрик. Лёгкий фон, без тени —
@@ -33,25 +33,27 @@ function WeekStrip() {
   }, [])
 
   // Порядок читается как фраза: огонёк → число → «Тренировок на этой неделе».
-  // Ноль — та же строка, только огонёк серый и цифра приглушена.
   const hasStreak = streak >= 1
 
   // Строка целиком — кнопка-пояснение. Именно здесь человек впервые видит
-  // огонёк и цифру, и именно здесь чаще всего непонятно, что они значат;
+  // значок и цифру, и именно здесь чаще всего непонятно, что они значат;
   // тапать он будет по всей фразе, а не прицельно в значок.
+  //
+  // Нуля цифрой НЕ пишем: серый бицепс и фраза «Тренировок на этой неделе ещё
+  // не было» говорят то же самое, а «0» рядом со значком читается как упрёк.
   return (
     <div style={stripStyles.wrap} ref={stripRef}>
-      <button style={stripStyles.strip} onClick={openInfo} aria-label="Что такое серия за неделю">
-        {/* Огонёк и число — одной группой, вплотную (счётчик принадлежит огоньку). */}
+      <button style={stripStyles.strip} onClick={openInfo} aria-label="Тренировки на этой неделе">
+        {/* Бицепс и число — одной группой, вплотную (счётчик принадлежит значку). */}
         <span style={stripStyles.flameGroup}>
-          <span style={hasStreak ? undefined : stripStyles.greyFlame}>
-            <StreakFlame streak={streak} />
-          </span>
-          <span style={{ ...stripStyles.count, ...(hasStreak ? null : stripStyles.countZero) }}>
-            {streak}
-          </span>
+          <WeeklyMuscle count={streak} size={22} />
+          {hasStreak && <span style={stripStyles.count}>{streak}</span>}
         </span>
-        <span style={stripStyles.label}>{capitalize(pluralizeWorkouts(streak))} на этой неделе</span>
+        <span style={stripStyles.label}>
+          {hasStreak
+            ? `${capitalize(pluralizeWorkouts(streak))} на этой неделе`
+            : 'Тренировок на этой неделе ещё не было'}
+        </span>
       </button>
 
       <StreakInfoPopup
@@ -77,13 +79,11 @@ const stripStyles = {
     WebkitTapHighlightColor: 'transparent'
   },
   label: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },
-  // Огонёк + цифра — вплотную (3px), как единый значок серии. Тот же вид в профиле.
-  // Крестика «×» нет — только цифра.
+  // Бицепс + цифра — вплотную, как единый значок недели. Тот же вид в профиле.
   flameGroup: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
-  count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-streak)', letterSpacing: '0.5px' },
-  // 0 — серым (как негорящий огонёк), ≥1 — оранжевым.
-  countZero: { color: 'rgba(255, 255, 255, 0.4)' },
-  greyFlame: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' }
+  // Цифра — акцентная зелёная, как остальные метрики проекта («цвет-важность»:
+  // красим только число, подпись рядом остаётся тихой).
+  count: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', color: 'var(--color-primary)', letterSpacing: '0.5px' }
 }
 
 /**

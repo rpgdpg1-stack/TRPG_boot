@@ -22,7 +22,7 @@
 
 import { memo, useRef, useState } from 'react'
 import { formatRelative, periodRange } from '../utils/history'
-import StreakFlame from './StreakFlame'
+import WeeklyMuscle from './WeeklyMuscle'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
@@ -33,7 +33,8 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
     is_training,
     photo_url,
     last_workout_at,
-    pinned_at
+    pinned_at,
+    week_workouts
   } = friend
 
   const displayName = first_name || 'Игрок'
@@ -145,10 +146,14 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
         </div>
       </div>
 
-      {/* Индикатор недели: 🔥 если тренировался на этой неделе, иначе пусто. */}
+      {/* Индикатор недели: бицепс в силе, набранной другом за эту неделю.
+          Не тренировался — не показываем вовсе: серый значок в списке читался
+          бы как укор, а строка под именем и так говорит, когда он был в зале.
+          Статистика у друга закрыта (week_workouts === null) — показываем
+          первую стадию: факт активности виден, точное число нет. */}
       {trainedThisWeek && (
         <div style={styles.weekFlame} aria-label="Тренировался на этой неделе">
-          <StreakFlame streak={1} />
+          <WeeklyMuscle count={week_workouts ?? 1} size={20} />
         </div>
       )}
     </div>

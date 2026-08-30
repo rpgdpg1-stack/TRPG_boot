@@ -199,7 +199,7 @@ camelCase — утилиты (`getTodayKey`).
 - Завершение квеста → `pointerUp` с порогом `TAP_THRESHOLD_PX = 8`.
 - Недельная серия = число ТРЕНИРОВОК с понедельника, не дней. Потолка 7 нет: за сутки
   засчитывается по одной тренировке НА РАЗДЕЛ (силовая + заплыв в один день — обе).
-  `StreakFlame` визуально замирает на x4, растёт только цифра.
+  Показывает её `WeeklyMuscle` (бицепс, 4 стадии) — огонёк 🔥 из проекта убран, см. trpg-ui.
 - Стрик: начальный `useState` гнать через `resolveWeeklyStreak(streak, week)` (utils/dates),
   а не показывать сырое `weekly_streak` — иначе вспышка прошлого значения при смене недели.
 - Имя программы в истории: кастомную (`source: 'custom'`) показывать как ввёл юзер (его регистр),
@@ -408,8 +408,8 @@ src/
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
 │                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
 │                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon SlotsCount
-│                   StreakFlame StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
-│                   WaterChrome WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
+│                   StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
+│                   WaterChrome WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   └── layout/     ErrorBoundary · Loader
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
@@ -437,6 +437,7 @@ supabase/
 │                   drop_leaderboard_index.sql (снят индекс под рейтинг — рейтингов нет)
 │                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
                    day_limit_per_category.sql (лимит 1 тренировка/сутки → на РАЗДЕЛ; применена 2026-08-29)
+                   friends_week_workouts.sql (week_workouts в списке друзей; применена 2026-08-31)
 │                   drop_daily_quests.sql (снос таблицы отметок активностей; применена 2026-08-29)
 │                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
 │                   public_profile_favorites_subgroup.sql (sub_group в любимых у друга)

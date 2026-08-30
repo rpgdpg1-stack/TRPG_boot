@@ -244,9 +244,14 @@ postgres + service_role. Вызову из `api_*` это не мешает: SEC
 - Дружба — таблица `friendships(user_a_id, user_b_id)`, **симметричная** (одна строка на
   пару, направление любое). Закрепы — `friend_pins(owner_id, friend_id)`, лимит **6**.
 - RPC: `api_get_friends_list(p_user_id)` (список без меня: `user_id, first_name, username,
-  photo_url, last_workout_at, pinned_at, is_training` — поля-заглушки прежней
-  соревновательной части из ответа УБРАНЫ,
-  миграция `drop_league_leftovers.sql`), `api_toggle_pin_friend`,
+  photo_url, last_workout_at, pinned_at, is_training, week_workouts` — поля-заглушки прежней
+  соревновательной части из ответа УБРАНЫ, миграция `drop_league_leftovers.sql`).
+  **`week_workouts`** — сколько тренировок у друга за текущую неделю (Москва, Пн–Вс) для стадии
+  бицепса в списке; уважает приватность: у закрывшего статистику (`show_stats = false`) приходит
+  `NULL`, и фронт рисует первую стадию. Границы недели — тем же приёмом, что в `srv_weekly_digest`
+  (`timezone('Europe/Moscow', date_trunc('week', timezone('Europe/Moscow', now())))`), иначе
+  сравнение зависело бы от пояса сессии. Менялся тип возврата → делали DROP + CREATE и заново
+  выдавали GRANT (`anon, authenticated, service_role`), `api_toggle_pin_friend`,
   `api_remove_friend(p_user_id, p_friend_id)` (удаляет дружбу в обе стороны + закрепы пары;
   `not_friend`/`bad_args`). Клиент — `removeFriend` в `lib/friends-list.js`, UI — «Убрать из
   друзей» в модалке долгого нажатия (Friends.jsx, рядом с «Закрепить», с подтверждением).

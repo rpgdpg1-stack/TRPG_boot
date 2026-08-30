@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import ActionButton from './ActionButton'
 import ClockIcon from './ClockIcon'
-import StreakFlame from './StreakFlame'
+import WeeklyMuscle from './WeeklyMuscle'
 import BicepGesture from './BicepGesture'
 import { getCurrentUser } from '../lib/auth'
 import { EVENTS, on } from '../lib/events'
@@ -185,7 +185,7 @@ export default function WorkoutFinishedModal({
                 {statsShown && (
                   <div style={{ ...styles.statsRow, animation: REVEAL_ANIM }}>
                     <span style={styles.stat}>
-                      <span style={streak >= 1 ? undefined : styles.flameGrey}><StreakFlame streak={streak} /></span>
+                      <WeeklyMuscle count={streak} size={22} />
                       <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
                     </span>
                     {/* Дистанция — только у плавания. Обычная метрика: число
@@ -405,7 +405,6 @@ const styles = {
   stat: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
   statNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
-  flameGrey: { display: 'inline-flex', opacity: 0.6, filter: 'grayscale(1)' },
   limitNote: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)',
     textAlign: 'center', lineHeight: 1.45, opacity: 0.85,

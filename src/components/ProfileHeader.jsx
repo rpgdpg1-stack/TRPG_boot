@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { formatRelative } from '../utils/history'
-import StreakFlame from './StreakFlame'
+import WeeklyMuscle from './WeeklyMuscle'
 import StreakInfoPopup from './StreakInfoPopup'
 
 /**
@@ -9,13 +9,13 @@ import StreakInfoPopup from './StreakInfoPopup'
  * Переиспользуется на странице Профиль и в модалке профиля друга.
  *
  * Состав (компактно):
- *   [ АВАТАР ]  Имя                          🔥 x2
+ *   [ АВАТАР ]  Имя                          💪 2
  *               вчера · [значок вида]
  *   [ bottomAction? ]
  *
- * Огонёк 🔥 справа — серия за неделю: при 0 просто серый огонёк без цифры
- * (место под цифру зарезервировано), при ≥1 — огонёк + xN, размер/анимация
- * растут с сериями. Тап по огоньку → поп-ап с пояснением.
+ * Бицепс справа — тренировки за неделю: при 0 просто серый значок без цифры
+ * (место под цифру зарезервировано), при ≥1 — значок + число, размер/обводка
+ * растут с числом тренировок. Тап по значку → поп-ап с пояснением.
  *
  * Пропсы: user, streak, lastWorkout, statsLoading, bottomAction.
  */
@@ -40,7 +40,7 @@ export default function ProfileHeader({
   const lastWhen = lastWorkout ? formatRelative(lastWorkout.finished_at) : null
 
   const toggleStreak = () => {
-    if (!interactiveStreak) return   // в профиле друга огонёк не тапается
+    if (!interactiveStreak) return   // в профиле друга значок не тапается
     haptic.light()
     setShowStreakInfo(v => !v)
   }
@@ -76,13 +76,13 @@ export default function ProfileHeader({
           <button
             style={{ ...styles.fireBtn, cursor: interactiveStreak ? 'pointer' : 'default' }}
             onClick={toggleStreak}
-            aria-label="Серия за неделю"
+            aria-label="Тренировки на этой неделе"
           >
             {statsLoading ? (
               <span style={styles.skeletonStat} />
             ) : (
               <>
-                <StreakFlame streak={s} />
+                <WeeklyMuscle count={s} size={22} />
                 <span style={styles.fireCount}>{s >= 1 ? `${s}` : ''}</span>
               </>
             )}
@@ -163,7 +163,7 @@ const styles = {
     color: 'var(--color-primary)'
   },
   // Огонёк серии: пространство справа от аватара делим пополам — имя в левой
-  // половине, огонёк по ЦЕНТРУ правой (не прижат к краю карточки).
+  // половине, бицепс по ЦЕНТРУ правой (не прижат к краю карточки).
   fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
   fireBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
@@ -171,11 +171,11 @@ const styles = {
     WebkitTapHighlightColor: 'transparent'
   },
   // 1:1 со строкой недели на главной: БЕЗ крестика, только цифра, display 800/17,
-  // вплотную к огоньку. Ширину НЕ резервируем — с ростом серии огонёк растёт,
+  // вплотную к значку. Ширину НЕ резервируем — с ростом недели значок крепнет,
   // цифра едет правее, и это нормально: пара всегда читается как одно целое.
   fireCount: {
     fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
-    lineHeight: 1, textAlign: 'left', color: 'var(--color-streak)'
+    lineHeight: 1, textAlign: 'left', color: 'var(--color-primary)'
   },
   skeletonStat: {
     width: '48px', height: '24px', borderRadius: 'var(--radius-small)',

@@ -226,3 +226,14 @@
 /* Таб-бар: поп иконки активной вкладки (TabBar.jsx) */
 
 ::-webkit-scrollbar { display: none; }
+
+/* Толщина контура бицепса-индикатора задаётся стадией (WeeklyMuscle):
+   значок не просто крупнее, а массивнее. Потолок 0.7 — как у залитого бицепса
+   в таб-баре, выше силуэт слипается. */
+.muscle-weight svg path { stroke-width: var(--muscle-stroke, 0.7); }
+
+/* Искры бесконечные — гасим их, как и прочий фоновый твинкл. Сам бицепс,
+   его размер и толщина остаются: это информация, а не движение. */
+@media (prefers-reduced-motion: reduce) {
+  .muscle-spark { animation: none !important; opacity: 0 !important; }
+}
