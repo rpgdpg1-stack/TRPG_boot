@@ -47,6 +47,7 @@ export function setCachedProfile(userId, data) {
     total_workouts: data.total_workouts ?? null,
     total_minutes: data.total_minutes ?? null,
     last_workout: data.last_workout ?? null,
+    stats_week: data.stats_week ?? null,
     stats_month: data.stats_month ?? null,
     stats_year: data.stats_year ?? null,
     favorites: data.favorites ?? null,

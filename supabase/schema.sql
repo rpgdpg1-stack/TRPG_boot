@@ -1443,11 +1443,11 @@ DECLARE
   v_show_last boolean; v_show_stats boolean; v_show_fav boolean; v_show_weights boolean;
   v_show_records boolean;
   v_favorites jsonb := NULL;
-  v_month jsonb := NULL; v_year jsonb := NULL;
+  v_week_stats jsonb := NULL; v_month jsonb := NULL; v_year jsonb := NULL;
   v_records jsonb := NULL;
   v_is_training boolean := false;
   v_msk_now timestamptz := now() AT TIME ZONE 'UTC' + interval '3 hours';
-  v_month_start timestamptz; v_year_start timestamptz;
+  v_week_start timestamptz; v_month_start timestamptz; v_year_start timestamptz;
 BEGIN
   SELECT weekly_streak, weekly_streak_week, show_last_workout, show_stats, show_favorites, show_weights, show_records,
          (training_since IS NOT NULL AND training_since > now() - interval '3 hours')
@@ -1467,8 +1467,19 @@ BEGIN
       INTO v_total, v_minutes
     FROM public.workouts WHERE user_id = p_user_id AND finished_at IS NOT NULL;
 
+    -- Неделя — с ПОНЕДЕЛЬНИКА по Москве, как своя в приложении (periodRange
+    -- в utils/history.js). date_trunc('week') в Postgres даёт понедельник.
+    v_week_start  := date_trunc('week',  v_msk_now) - interval '3 hours';
     v_month_start := date_trunc('month', v_msk_now) - interval '3 hours';
     v_year_start  := date_trunc('year',  v_msk_now) - interval '3 hours';
+
+    SELECT jsonb_build_object(
+             'count', COUNT(*),
+             'minutes', COALESCE(SUM(EXTRACT(EPOCH FROM (finished_at - started_at)) / 60)
+                          FILTER (WHERE started_at IS NOT NULL AND finished_at > started_at), 0)::int)
+      INTO v_week_stats
+    FROM public.workouts
+    WHERE user_id = p_user_id AND finished_at IS NOT NULL AND finished_at >= v_week_start;
 
     SELECT jsonb_build_object(
              'count', COUNT(*),
@@ -1516,6 +1527,7 @@ BEGIN
     'weekly_streak_week', v_week,
     'total_workouts', CASE WHEN v_show_stats THEN COALESCE(v_total, 0) ELSE NULL END,
     'total_minutes', CASE WHEN v_show_stats THEN COALESCE(v_minutes, 0) ELSE NULL END,
+    'stats_week', v_week_stats,
     'stats_month', v_month,
     'stats_year', v_year,
     'records', v_records,

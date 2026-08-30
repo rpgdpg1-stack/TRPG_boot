@@ -50,12 +50,14 @@ export default function PlayerProfileModal({ row, onClose }) {
   // время) + любимые. Показываем то, что друг разрешил в приватности.
   const friendSections = []
   const friendFavs = pub?.favorites?.length > 0 ? pub.favorites : null
-  // Периоды берём из ответа: если сервер уже отдаёт разбивку (stats_month/stats_year) —
-  // в модалке появится переключатель Месяц/Год; пока нет — один период «Всё время».
+  // Периоды берём из ответа: сервер отдаёт разбивку Неделя/Месяц/Год, и
+  // переключатель собирается из тех ключей, что пришли (порядок задаёт
+  // PERIOD_OPTIONS). Старый ответ без разбивки — один период «Всё время».
   let friendStats = null
   if (pub?.show_stats) {
-    if (pub.stats_year || pub.stats_month) {
+    if (pub.stats_year || pub.stats_month || pub.stats_week) {
       friendStats = {}
+      if (pub.stats_week) friendStats.week = pub.stats_week
       if (pub.stats_month) friendStats.month = pub.stats_month
       if (pub.stats_year) friendStats.year = pub.stats_year
     } else {
