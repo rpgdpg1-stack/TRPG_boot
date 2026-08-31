@@ -186,7 +186,9 @@ export default function WorkoutFinishedModal({
                   <div style={{ ...styles.statsRow, animation: REVEAL_ANIM }}>
                     <span style={styles.stat}>
                       <WeeklyMuscle count={streak} size={22} />
-                      <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-streak)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
+                      {/* Число — акцентный зелёный, как рядом с бицепсом везде.
+                          Оранжевый достался ему от огонька, которого больше нет. */}
+                      <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
                     </span>
                     {/* Дистанция — только у плавания. Обычная метрика: число
                         акцентом, единица серым. Иконки вида тут НЕТ — строка и так

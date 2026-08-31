@@ -103,5 +103,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)', lineHeight: 1.5
   },
-  num: { color: 'var(--color-streak)', fontWeight: 800 }
+  // Число — акцентный зелёный, как все метрики проекта. Оранжевый достался
+  // ему от огонька, которого больше нет.
+  num: { color: 'var(--color-primary)', fontWeight: 800 }
 }
