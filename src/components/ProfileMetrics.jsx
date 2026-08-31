@@ -159,10 +159,11 @@ function MetricModal({ kind, tabs, stats, records, favorites, showWeights, onClo
   // Периоды считаем всегда, а не только на вкладке статистики: в неё можно
   // прийти переключателем, и к этому моменту список должен быть готов.
   const available = periodOptions().filter(p => stats && p.id in stats)
-  // «Всё» по умолчанию: карточка профиля — про общий итог, а не про текущий
-  // отрезок; сузить до года/месяца человек может сам. Если «Всё» недоступно
-  // (у друга сервер отдал только разбивку) — первый доступный.
-  const [period, setPeriod] = useState('all')
+  // МЕСЯЦ по умолчанию — и в своём профиле, и у друга (компонент общий):
+  // «сколько сейчас» человека интересует чаще, чем итог за всё время, а
+  // расширить до года или «Всё» он может сам. Если месяца среди доступных нет
+  // (у друга сервер отдал не все периоды) — берётся первый доступный.
+  const [period, setPeriod] = useState('month')
   const activePeriod = available.some(p => p.id === period) ? period : (available[0]?.id || 'all')
   const overlayRef = useRef(null)
   const panelRef = useRef(null)

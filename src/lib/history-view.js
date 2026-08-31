@@ -19,9 +19,12 @@ const HOME_PERIOD_KEY = 'home-stats-period'
 // не доезжала никуда: ни в браузер, ни на второй телефон. Человек выбирал
 // «Месяц» в Telegram, открывал приложение в браузере — и видел «Год», как
 // будто выбор не сохранился.
+// Дефолт — МЕСЯЦ: на первом запуске он информативнее года (за год у нового
+// человека пусто) и короче недели, в которой ещё могло ничего не быть. Дальше
+// значение живёт в настройках аккаунта: что человек выбрал, то и открывается.
 export function getHomeStatsPeriod() {
   const v = getPrefSync(HOME_PERIOD_KEY, null)
-  return PERIODS.includes(v) ? v : 'year'
+  return PERIODS.includes(v) ? v : 'month'
 }
 
 export function setHomeStatsPeriod(period) {
