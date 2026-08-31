@@ -74,12 +74,15 @@ const styles = {
     // жёсткие 230px упирались в край и обрезались.
     width: 'max-content',
     maxWidth: 'min(260px, calc(100vw - var(--space-8)))',
-    background: 'var(--surface-raised)',
-    backdropFilter: 'blur(var(--blur-md))',
-    WebkitBackdropFilter: 'blur(var(--blur-md))',
-    // Обводка в цвет серии — поп-ап читается как продолжение огонька, а не как
-    // случайное окно. Раньше цвет был вписан числом мимо токенов.
-    border: '1px solid color-mix(in srgb, var(--color-streak) 35%, transparent)',
+    // Стекло — то же, что у меню долгого нажатия (AnchorMenu): всё, что
+    // всплывает над контентом, должно выглядеть одной поверхностью.
+    background: 'var(--surface-glass)',
+    backdropFilter: 'var(--blur-glass)',
+    WebkitBackdropFilter: 'var(--blur-glass)',
+    // Обводка — нейтральный волосок. Раньше была оранжевая, в цвет серии:
+    // она объясняла связь с огоньком, а огонька в проекте больше нет, и
+    // цветная рамка вокруг обычного пояснения осталась кричать без причины.
+    border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-3) var(--space-4)',
     boxShadow: 'var(--shadow-modal)',
