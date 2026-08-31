@@ -397,7 +397,7 @@ src/
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile reset_days reset_progress
 │                   rewards settings stats stretching support swimming
-├── components/     ActionButton AdoptExercisesModal AnchorMenu BicepGesture ChevronIcon ClockIcon CloseCross
+├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture ChevronIcon ClockIcon CloseCross
 │                   ConfirmModal CustomExerciseForm EmptyState ExerciseActionMenu
 │                   ExerciseCard ExerciseHeaderCard ExercisePicker ExercisePlaceholder
 │                   ExerciseVideo FavCardBody FinishConfirmModal FormControls FriendRow

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
 import { formatRelative } from '../utils/history'
 import WeeklyMuscle from './WeeklyMuscle'
+import Avatar from './Avatar'
 import StreakInfoPopup from './StreakInfoPopup'
 
 /**
@@ -48,13 +49,14 @@ export default function ProfileHeader({
   return (
     <div style={styles.card}>
       <div style={styles.topPanel}>
-        <div style={styles.avatar}>
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt="" style={styles.avatarImg} draggable={false} />
-          ) : (
-            <div style={styles.avatarPlaceholder}>{displayName.charAt(0).toUpperCase()}</div>
-          )}
-        </div>
+        <Avatar
+          src={user?.photo_url}
+          name={displayName}
+          size={AVATAR_SIZE}
+          radius="var(--radius-card)"
+          letterSize="var(--text-hero-size)"
+          letterWeight={800}
+        />
 
         <div style={styles.infoColumn}>
           <span style={styles.name}>{displayName}</span>
@@ -134,16 +136,6 @@ const styles = {
     borderTop: '1px solid var(--border-hairline)'
   },
   topPanel: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)' },
-  avatar: {
-    width: `${AVATAR_SIZE}px`, height: `${AVATAR_SIZE}px`, borderRadius: 'var(--radius-card)',
-    overflow: 'hidden', flexShrink: 0, background: 'var(--surface-raised)',
-    border: '1px solid var(--border-hairline)'
-  },
-  avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  avatarPlaceholder: {
-    width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-hero-size)', color: 'var(--color-primary)'
-  },
   infoColumn: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-15)' },
   // lineHeight 1.3, а не 1.1: `overflow: hidden` нужен многоточию, но он режет
   // всё, что вышло за строку, — при 1.1 хвосты «p», «g», «у», «д» упирались

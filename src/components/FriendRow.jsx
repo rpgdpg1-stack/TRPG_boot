@@ -23,6 +23,7 @@
 import { memo, useRef, useState } from 'react'
 import { formatRelative, periodRange } from '../utils/history'
 import WeeklyMuscle from './WeeklyMuscle'
+import Avatar from './Avatar'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
@@ -114,16 +115,8 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
           : (isPinned ? 'var(--highlight-recent)' : 'transparent')
       }}
     >
-      {/* Аватар — просто фото в скруглённом квадрате, без обрамления. */}
-      <div style={styles.avatar}>
-        {photo_url ? (
-          <img src={photo_url} alt="" style={styles.avatarImg} draggable={false} />
-        ) : (
-          <div style={styles.avatarPlaceholder}>
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
+      {/* Аватар — общий компонент: буква под фото, фото проявляется поверх. */}
+      <Avatar src={photo_url} name={displayName} size={52} />
 
       {/* Имя + последняя тренировка */}
       <div style={styles.nameBlock}>
@@ -171,27 +164,6 @@ const styles = {
     transition: 'background 0.2s ease',
     cursor: 'pointer',
     touchAction: 'pan-y'
-  },
-  avatar: {
-    width: '52px',
-    height: '52px',
-    borderRadius: 'var(--radius-medium)',
-    overflow: 'hidden',
-    flexShrink: 0,
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border-hairline)'
-  },
-  avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-heading-size)',
-    color: 'var(--color-primary)'
   },
   nameBlock: {
     flex: 1,
