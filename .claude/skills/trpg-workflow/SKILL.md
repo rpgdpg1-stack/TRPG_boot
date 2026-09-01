@@ -1,6 +1,8 @@
 ---
 name: trpg-workflow
-description: "Входной скил для ЛЮБОГО запроса по проекту TRPG (Telegram Mini App, фитнес-RPG на Vite+React+Supabase): правки кода, баги, обсуждение задач, добавление программ, ревью. Отсюда маршрутизация в trpg-ui (визуал/стили) и trpg-supabase (БД/SQL)."
+description: "Входная точка для ЛЮБОГО запроса по проекту TRPG (Telegram Mini App, фитнес-RPG на Vite+React+Supabase): правки кода, баги, обсуждение задач, добавление программ, ревью, коммиты. Отсюда маршрутизация в остальные скилы TRPG."
+when_to_use: "Любая задача по TRPG: «поправь», «добавь», «баг», «не работает», «сделай», «закоммить», «добавь программу», обсуждение фичи или архитектуры проекта."
+allowed-tools: Read, Grep, Glob
 ---
 
 # TRPG Workflow
@@ -15,12 +17,12 @@ description: "Входной скил для ЛЮБОГО запроса по п
 (можно несколько сразу) — Дмитрию явно говорить не нужно, определяю сам:
 - визуал, экран, стили, компонент, анимация, цвет, отступ, хаптика → **trpg-ui**;
 - целостность/архитектура дизайн-системы, токены, «не сломать ДС» при правке интерфейса →
-  **design-system-review** (страж: сначала существующее, новое — с обоснованием; звать ПЕРЕД правкой UI);
+  **trpg-ds-review** (страж: сначала существующее, новое — с обоснованием; звать ПЕРЕД правкой UI);
 - рисование/перенос/синк в Figma (мост TalkToFigma, портфолио) → **trpg-figma**;
 - БД, SQL, RPC, RLS, миграция, Edge Function, стрики на стороне БД → **trpg-supabase**;
 - процесс, баг в логике, новая программа, чистота кода, коммиты → остаюсь в **trpg-workflow**.
 
-**Правило качества:** любая правка интерфейса сверяется с **design-system-review** и приводит код
+**Правило качества:** любая правка интерфейса сверяется с **trpg-ds-review** и приводит код
 (и, если синкаем, Figma) к единому виду ДС — не плодить частные случаи. Не переделываем весь проект
 разом: приводим к идеалу то, что трогаем, и закрываем пробелы по ходу.
 
@@ -383,7 +385,7 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
 ```
 Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · eslint.config.js
         index.html · package.json · vercel.json · vite.config.js
-        .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui,trpg-figma,design-system-review}/SKILL.md
+        .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui,trpg-figma,trpg-ds-review}/SKILL.md
         .github/workflows/{ci,db-backup,notify,keepalive}.yml
         scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs}
 

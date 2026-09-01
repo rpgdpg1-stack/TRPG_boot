@@ -1,6 +1,8 @@
 ---
 name: trpg-supabase
-description: Конвенции базы данных проекта TRPG (Supabase Postgres). Применять при написании SQL, RPC, RLS-политик, миграций и Edge Functions для проекта TRPG.
+description: "Конвенции базы данных TRPG (Supabase Postgres): схема, RPC-функции, RLS-политики, миграции, Edge Functions. Применять при написании или правке любого SQL и серверной логики проекта."
+when_to_use: "SQL, таблица, миграция, RPC, RLS, политика доступа, Edge Function, «данные не сохраняются», «ошибка запроса», работа с Supabase."
+allowed-tools: Read, Grep, Glob
 ---
 
 # TRPG Supabase
