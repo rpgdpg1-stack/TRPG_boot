@@ -1,6 +1,7 @@
 # TRPG — гайд для Claude Code
 
-Геймифицированный фитнес-трекер, Telegram Mini App. Стек: Vite + React 18 +
+Фитнес-трекер, Telegram Mini App. Ставка на простоту и минимализм — игровые механики
+(XP, лиги, ранги, награды, рейтинг) намеренно выпилены. Стек: Vite + React 18 +
 React Router 6 + Supabase + Telegram WebApp SDK. Деплой — Vercel. Стили — CSS (НЕ Tailwind).
 Пользователь (Дмитрий) — нон-программист, общение на русском.
 
