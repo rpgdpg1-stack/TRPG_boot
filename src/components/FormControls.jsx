@@ -10,11 +10,19 @@ import UiIcon from './UiIcon'
  * Собраны из уже существовавшего паттерна экрана «Приватность» (карточка-группа
  * со строками и переключателем), чтобы новые экраны не изобретали свою вёрстку.
  *
- * Правила, зашитые сюда:
+ * ПРАВИЛО СТРОКИ НАСТРОЕК (одно на все экраны):
  *  · строка не ниже 56px — палец попадает без прицеливания;
- *  · подпись под заголовком объясняет последствие, а не повторяет заголовок;
- *  · разделитель — между строками, не по краям группы;
- *  · значение справа всегда тише заголовка (иерархия «что» → «сколько»).
+ *  · заголовок слева обычным весом, значение справа — ПО ПРАВОМУ КРАЮ и чуть
+ *    жирнее: так значения всех строк стоят на одной вертикали и читаются
+ *    сверху вниз одним движением глаза;
+ *  · значение-ДАННЫЕ белое, значение-ДЕЙСТВИЕ (строка ведёт куда-то) —
+ *    акцентное. Зелёный в системе означает «нажми/происходит», и красить им
+ *    рост с датой значит обесценить сам сигнал;
+ *  · производная величина (возраст рядом с датой) идёт `note` — приглушённой
+ *    приставкой к значению, без скобок: её нельзя редактировать отдельно;
+ *  · разделитель начинается от текста заголовка, а не от края карточки —
+ *    строки читаются как список, а не как таблица;
+ *  · подпись под заголовком объясняет последствие, а не повторяет заголовок.
  */
 
 /** Карточка-группа: строки внутри одного скруглённого блока. */
@@ -26,6 +34,7 @@ export function FormCard({ children, style }) {
 export function ToggleRow({ label, hint, value, onToggle, divider, nested = false }) {
   return (
     <div style={{ ...s.row, ...(divider ? s.divider : null), ...(nested ? s.rowNested : null) }}>
+      {divider && <span style={s.dividerLine} aria-hidden="true" />}
       <div style={s.rowContent}>
         <div style={{ ...s.rowTitle, ...(nested ? s.rowTitleNested : null) }}>{label}</div>
         {hint && <div style={s.rowHint}>{hint}</div>}
@@ -54,7 +63,13 @@ export function ValueRow({ label, hint, value, placeholder = '—', onClick, div
         <div style={s.rowTitle}>{label}</div>
         {hint && <div style={s.rowHint}>{hint}</div>}
       </div>
-      <span style={{ ...s.value, ...(value ? null : s.valueEmpty) }}>{value || placeholder}</span>
+      {divider && <span style={s.dividerLine} aria-hidden="true" />}
+      <span style={{
+        ...s.value,
+        // Строка-переход («Открыть») — это действие, оно и красится акцентом.
+        ...(onClick ? s.valueAction : null),
+        ...(value ? null : s.valueEmpty)
+      }}>{value || placeholder}</span>
     </Tag>
   )
 }
@@ -63,6 +78,7 @@ export function ValueRow({ label, hint, value, placeholder = '—', onClick, div
 export function TextField({ label, value, onChange, placeholder, unit, type = 'text', inputMode, divider }) {
   return (
     <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
+      {divider && <span style={s.dividerLine} aria-hidden="true" />}
       <label style={s.rowTitle} htmlFor={`f-${label}`}>{label}</label>
       <span style={s.fieldWrap}>
         <input
@@ -89,9 +105,10 @@ export function TextField({ label, value, onChange, placeholder, unit, type = 't
  * Ничего не выбрано — вместо значения приглашение («Выбрать»), тише заголовка:
  * пустой прочерк не подсказывает, что по строке нужно нажать.
  */
-export function PickerRow({ label, value, placeholder = 'Выбрать', onOpen, open = false, divider, innerRef, children }) {
+export function PickerRow({ label, value, note, placeholder = 'Выбрать', onOpen, open = false, divider, innerRef, children }) {
   return (
     <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
+      {divider && <span style={s.dividerLine} aria-hidden="true" />}
       <div style={s.rowContent}>
         <div style={s.rowTitle}>{label}</div>
       </div>
@@ -105,6 +122,9 @@ export function PickerRow({ label, value, placeholder = 'Выбрать', onOpen
         <span style={{ ...s.value, ...(value ? null : s.valueEmpty) }}>
           {value || placeholder}
         </span>
+        {/* Приставка к значению (возраст у даты): тише и мельче — её не
+            выбирают, она посчитана. */}
+        {value && note && <span style={s.valueNote}>{note}</span>}
         <span style={{ ...s.selectChev, transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
           <ChevronIcon size={16} color="var(--color-text-secondary)" />
         </span>
@@ -172,32 +192,42 @@ const s = {
     background: 'var(--color-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden'
   },
   row: {
+    position: 'relative',
     display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-    padding: 'var(--space-4)', minHeight: '56px', width: '100%',
+    padding: 'var(--space-3) var(--space-5)', minHeight: '56px', width: '100%',
     background: 'transparent', border: 'none', textAlign: 'left'
-  },
-  rowColumn: {
-    display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
-    padding: 'var(--space-4)', width: '100%'
   },
   rowButton: { cursor: 'pointer', WebkitTapHighlightColor: 'transparent' },
   // Вложенный под-тумблер (например, «веса» под «Любимыми упражнениями»):
   // сдвиг вправо и чуть приглушённый фон показывают подчинённость.
   rowNested: { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' },
   rowTitleNested: { fontSize: 'var(--text-button-size)' },
-  divider: { borderTop: '1px solid var(--color-border)' },
+  // Разделитель рисуем волоском ВНУТРИ строки, а не рамкой по её краю: он
+  // должен начинаться от текста заголовка (левый паддинг карточки) и доходить
+  // до правого края — так строки читаются списком.
+  divider: {},
+  dividerLine: {
+    position: 'absolute', top: 0, left: 'var(--space-5)', right: 0, height: '1px',
+    background: 'var(--layer-2)'
+  },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)',
-    fontWeight: 'var(--weight-label)', color: 'var(--color-text)'
+    fontWeight: 'var(--weight-text)', color: 'var(--color-text)'
   },
   rowHint: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
     color: 'var(--color-text-secondary)', marginTop: 'var(--space-05)', lineHeight: 1.35
   },
   value: {
-    flexShrink: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--text-body-size)',
-    fontWeight: 'var(--weight-value)', color: 'var(--color-primary)'
+    flexShrink: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)',
+    fontWeight: 'var(--weight-label)', color: 'var(--color-text)'
+  },
+  valueAction: { color: 'var(--color-primary)' },
+  valueNote: {
+    flexShrink: 0, fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
+    fontWeight: 'var(--weight-text)', color: 'var(--color-text-secondary)',
+    marginLeft: 'var(--space-2)'
   },
   valueEmpty: { color: 'var(--color-text-secondary)', fontWeight: 'var(--weight-text)' },
 
@@ -216,8 +246,8 @@ const s = {
   fieldWrap: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-15)', flexShrink: 0 },
   input: {
     width: '72px', textAlign: 'right', background: 'transparent', border: 'none', outline: 'none',
-    fontFamily: 'var(--font-display)', fontSize: 'var(--text-body-size)',
-    fontWeight: 'var(--weight-value)', color: 'var(--color-primary)'
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)',
+    fontWeight: 'var(--weight-label)', color: 'var(--color-text)'
   },
   unit: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',

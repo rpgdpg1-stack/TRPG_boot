@@ -6,12 +6,17 @@
  *
  * Кэш id-множества в памяти модуля: сердечко на карточке дня знает своё состояние
  * синхронно, без запроса. Событие FAVORITES_CHANGED уведомляет UI об изменении.
+ *
+ * МЕДИА ПОД ПОЛ. В кеше лежит СЫРОЙ ответ сервера (обе ссылки — мужская и
+ * женская), а нужную выбираем на выходе. Иначе смена пола в настройках
+ * оставила бы в любимых картинки от прежнего выбора до истечения кеша.
  */
 import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
 import { localGet, localSet } from '../utils/storage'
 import { canReadServer, canTrust } from './session'
+import { applyGenderAll } from './gender-media'
 
 export const FAVORITE_LIMIT = 5
 const LIST_KEY = 'fav-exercises-list'
@@ -31,12 +36,16 @@ function setFromList(list) {
  * (память → localStorage). null = ещё ни разу не грузили (показать скелетон).
  */
 export function getFavoritesSync() {
-  if (listCache !== null) return listCache
+  if (listCache !== null) return applyGenderAll(listCache)
   const raw = localGet(LIST_KEY)
   if (!raw) return null
   try {
     const arr = JSON.parse(raw)
-    if (Array.isArray(arr)) { listCache = arr; idsCache = new Set(arr.map(f => f.exercise_id)); return arr }
+    if (Array.isArray(arr)) {
+      listCache = arr
+      idsCache = new Set(arr.map(f => f.exercise_id))
+      return applyGenderAll(arr)
+    }
   } catch { /* ignore */ }
   return null
 }
@@ -65,7 +74,7 @@ export async function getFavoriteExercises() {
     }
     const list = data || []
     setFromList(list)
-    return list
+    return applyGenderAll(list)
   } catch (e) {
     console.error('[fav-ex] get exception:', e)
     return []

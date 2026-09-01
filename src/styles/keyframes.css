@@ -166,3 +166,11 @@
   20%  { opacity: 1; transform: translateY(-3px) scale(1); }
   100% { opacity: 0; transform: translateY(-11px) translateX(var(--spark-drift, 0px)) scale(0.45); }
 }
+
+/* Нижний лист (WheelSheet: барабаны даты рождения, роста) — приезжает снизу,
+   как нативные пикеры iOS и шиты Telegram. Уход отдельной анимацией не
+   отыгрываем: лист закрывают, чтобы вернуться к экрану, и ждать его не нужно. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}

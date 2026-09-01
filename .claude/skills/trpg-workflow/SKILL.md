@@ -400,9 +400,11 @@ src/
 ├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture
 │                   BirthDateModal (пикер даты рождения) BrowserMenuButton BrowserNavButton
 │                   ChevronIcon ClockIcon CloseCross ConfirmModal CustomExerciseForm EmailLogin
+│                   HeightModal (барабан роста) WheelSheet (общий нижний лист с барабанами)
 │                   EmptyState ExerciseActionMenu ExerciseCard ExerciseHeaderCard
 │                   ExercisePicker ExercisePlaceholder ExerciseVideo FavCardBody FinishConfirmModal
 │                   FormControls (FormCard/ToggleRow/ValueRow/TextField/PickerRow/SelectRow/SoonNote)
+│                   — общее правило «строки настроек», см. trpg-ui
 │                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
 │                   HistoryStats HomeCards MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
 │                   PencilIcon PeriodSwitcher PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon

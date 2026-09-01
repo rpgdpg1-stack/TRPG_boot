@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
@@ -7,6 +7,8 @@ import { useScrollLock } from '../lib/use-scroll-lock'
 import ProfileHeader from './ProfileHeader'
 import ProfileMetrics from './ProfileMetrics'
 import { hasRecords } from './PersonalRecords'
+import { applyGenderAll } from '../lib/gender-media'
+import { applyRecordsGender } from '../lib/records'
 import CloseCross from './CloseCross'
 
 /**
@@ -40,6 +42,18 @@ export default function PlayerProfileModal({ row, onClose }) {
     return () => { cancelled = true }
   }, [row.user_id])
 
+  // Картинки упражнений — под пол ВЛАДЕЛЬЦА профиля, а не смотрящего: у неё в
+  // любимых и рекордах женский вариант приседаний, кто бы их ни открыл.
+  // Пол приходит тем же ответом и больше нигде не показывается.
+  const данные = useMemo(() => {
+    if (!pub) return null
+    return {
+      ...pub,
+      favorites: applyGenderAll(pub.favorites || [], pub.sex === 'female' ? 'female' : 'male'),
+      records: applyRecordsGender(pub.records, pub.sex === 'female' ? 'female' : 'male')
+    }
+  }, [pub])
+
   const userObj = {
     first_name: row.first_name,
     username: row.username,
@@ -49,7 +63,7 @@ export default function PlayerProfileModal({ row, onClose }) {
   // Секции внутри карточки друга — как в своём профиле: статистика (тоталы за всё
   // время) + любимые. Показываем то, что друг разрешил в приватности.
   const friendSections = []
-  const friendFavs = pub?.favorites?.length > 0 ? pub.favorites : null
+  const friendFavs = данные?.favorites?.length > 0 ? данные.favorites : null
   // Периоды берём из ответа: сервер отдаёт разбивку Неделя/Месяц/Год, и
   // переключатель собирается из тех ключей, что пришли (порядок задаёт
   // PERIOD_OPTIONS). Старый ответ без разбивки — один период «Всё время».
@@ -66,7 +80,7 @@ export default function PlayerProfileModal({ row, onClose }) {
   }
   // Рекорды друга приходят тем же ответом. Отдельный тумблер приватности держит
   // сервер: выключил — в ответе `records: null`, и раздела просто нет.
-  const friendRecords = pub?.records || null
+  const friendRecords = данные?.records || null
   if (friendStats || friendFavs || hasRecords(friendRecords)) {
     friendSections.push(
       <ProfileMetrics
