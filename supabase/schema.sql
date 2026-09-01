@@ -84,7 +84,12 @@ CREATE TABLE IF NOT EXISTS public.users (
   nudge_ignored integer DEFAULT 0 NOT NULL,
   last_nudge_at timestamp with time zone,
   -- Последний заход в приложение: по нему видно, сработал ли пинок.
-  last_seen_at timestamp with time zone
+  last_seen_at timestamp with time zone,
+  -- Личные данные. Пол решает, чью гифку показывать у упражнения; рост идёт
+  -- в расчёт расхода. Возраста (birth_year) здесь НЕТ намеренно — колонка
+  -- снесена 01.09.2026 вместе с фичей: её никто не считал.
+  sex text,
+  height_cm smallint
 );
 
 -- Каталог упражнений. owner_id IS NULL — упражнение приложения, owner_id
@@ -363,6 +368,13 @@ ALTER TABLE public.workouts ADD CONSTRAINT workouts_user_id_fkey FOREIGN KEY (us
 ALTER TABLE public.users ADD CONSTRAINT users_has_login_method
   CHECK (telegram_id IS NOT NULL OR email IS NOT NULL);
 
+-- Личные данные: границы держит база, а не только экран, — правка мимо
+-- интерфейса не должна класть в рост «1000» или в пол произвольное слово.
+ALTER TABLE public.users ADD CONSTRAINT users_sex_check
+  CHECK (sex IS NULL OR sex = ANY (ARRAY['male'::text, 'female'::text]));
+ALTER TABLE public.users ADD CONSTRAINT users_height_cm_check
+  CHECK (height_cm IS NULL OR (height_cm >= 50 AND height_cm <= 250));
+
 
 -- ── ИНДЕКСЫ ────────────────────────────────────────────────────────────────
 -- Дубли неуникальных индексов рядом с UNIQUE тут не заводить: уникальный
@@ -475,6 +487,57 @@ $$;
 -- считается от последней завершённой тренировки, а не от факта захода —
 -- иначе тот, кто заходит смотреть историю и не тренируется, получал бы
 -- напоминание каждый понедельник бесконечно.
+-- Личные данные: пол и рост. Читаем и пишем только через функции — прямой
+-- UPDATE таблицы users роли приложения закрыт (см. блок прав в конце файла).
+CREATE OR REPLACE FUNCTION public.api_get_personal_data()
+RETURNS TABLE(sex text, height_cm smallint)
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  select u.sex, u.height_cm
+    from public.users u
+   where u.id = current_user_id();
+$function$;
+
+CREATE OR REPLACE FUNCTION public.api_set_personal_data(
+  p_sex text DEFAULT NULL::text,
+  p_height_cm smallint DEFAULT NULL::smallint
+)
+RETURNS TABLE(sex text, height_cm smallint)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+declare
+  uid bigint := current_user_id();
+begin
+  if uid is null then
+    raise exception 'not authenticated';
+  end if;
+
+  -- Проверяем здесь, а не только ограничениями таблицы: так клиент получает
+  -- внятную ошибку вместо сообщения про constraint.
+  if p_sex is not null and p_sex not in ('male','female') then
+    raise exception 'sex must be male or female';
+  end if;
+  if p_height_cm is not null and (p_height_cm < 50 or p_height_cm > 250) then
+    raise exception 'height_cm out of range';
+  end if;
+
+  -- null означает «очистить поле»: на экране это стёртый ввод.
+  update public.users u
+     set sex        = p_sex,
+         height_cm  = p_height_cm,
+         updated_at = now()
+   where u.id = uid;
+
+  return query
+    select u.sex, u.height_cm from public.users u where u.id = uid;
+end;
+$function$;
+
+
 CREATE OR REPLACE FUNCTION public.api_touch_last_seen()
 RETURNS void
 LANGUAGE sql

@@ -1,4 +1,8 @@
+import { useRef, useState } from 'react'
 import { haptic } from '../lib/telegram'
+import AnchorMenu from './AnchorMenu'
+import ChevronIcon from './ChevronIcon'
+import UiIcon from './UiIcon'
 
 /**
  * Контролы форм — общая база для экранов настроек и профиля.
@@ -77,32 +81,58 @@ export function TextField({ label, value, onChange, placeholder, unit, type = 't
 }
 
 /**
- * Выбор одного из нескольких — сегменты в строку.
- * Для 2–3 коротких вариантов; больше — это уже список, а не сегменты.
+ * Строка-селектор: значение выбирается из короткого списка.
+ *
+ * Почему список, а не сегменты в строку: сегменты выкладывают все варианты
+ * разом и занимают всю ширину строки — ради двух слов это шумно, а строка
+ * перестаёт быть похожей на соседние («Рост», «Версия»). Здесь справа стоит
+ * само значение, как в остальных строках формы, и раскрывается тем же
+ * выпадающим списком, что и селектор раздела на главной.
+ *
+ * Ничего не выбрано — вместо значения приглашение («Выбрать»), тише заголовка:
+ * пустой прочерк не подсказывает, что по строке нужно нажать.
  */
-export function ChoiceRow({ label, options, value, onChange, divider }) {
+export function SelectRow({ label, options, value, onChange, placeholder = 'Выбрать', divider }) {
+  const btnRef = useRef(null)
+  const [anchor, setAnchor] = useState(null)
+  const current = options.find(o => o.id === value)
+
   return (
-    <div style={{ ...s.rowColumn, ...(divider ? s.divider : null) }}>
-      {label && <div style={s.rowTitle}>{label}</div>}
-      <div style={s.segments}>
-        {options.map((o) => {
-          const active = o.id === value
-          return (
-            <button
-              key={o.id}
-              className="press-tile"
-              onClick={() => { if (!active) { haptic.selection(); onChange?.(o.id) } }}
-              style={{
-                ...s.segment,
-                ...(active ? s.segmentActive : null),
-                color: active ? 'var(--color-primary)' : 'var(--color-text-inactive)'
-              }}
-            >
-              {o.label}
-            </button>
-          )
-        })}
+    <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
+      <div style={s.rowContent}>
+        <div style={s.rowTitle}>{label}</div>
       </div>
+      <button
+        ref={btnRef}
+        className="press-tile"
+        onClick={() => { haptic.light(); setAnchor(btnRef.current?.getBoundingClientRect() || null) }}
+        aria-label={label}
+        style={s.select}
+      >
+        <span style={{ ...s.value, ...(current ? null : s.valueEmpty) }}>
+          {current ? current.label : placeholder}
+        </span>
+        <span style={{ ...s.selectChev, transform: anchor ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <ChevronIcon size={16} color="var(--color-text-secondary)" />
+        </span>
+      </button>
+
+      {anchor && (
+        <AnchorMenu
+          anchorRect={anchor}
+          align="right"
+          gap={8}
+          onClose={() => setAnchor(null)}
+          items={options.map(o => ({
+            key: o.id,
+            // Галочка у выбранного — иначе в списке из двух слов не видно,
+            // что одно из них уже стоит в строке.
+            icon: o.id === value ? <UiIcon name="check" size={18} color="var(--color-primary)" /> : null,
+            label: o.label,
+            onClick: () => { if (o.id !== value) onChange?.(o.id) }
+          }))}
+        />
+      )}
     </div>
   )
 }
@@ -174,20 +204,17 @@ const s = {
     color: 'var(--color-text-secondary)'
   },
 
-  segments: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)'
+  // Селектор: значение + шеврон. Отдельного фона нет — строка формы и так
+  // читается как кликабельная, а заливка спорила бы с полями ввода рядом.
+  select: {
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
+    flexShrink: 0, padding: 0, background: 'transparent', border: 'none',
+    cursor: 'pointer', WebkitTapHighlightColor: 'transparent'
   },
-  segment: {
-    flex: 1, minHeight: '32px', padding: '0 var(--space-3)',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)',
-    fontWeight: 'var(--weight-label)', cursor: 'pointer', whiteSpace: 'nowrap',
-    transition: 'background 0.18s ease, color 0.18s ease'
+  selectChev: {
+    display: 'inline-flex', lineHeight: 0,
+    transition: 'transform 0.18s var(--ease-ios)'
   },
-  segmentActive: { background: 'var(--color-surface-active)' },
 
   soon: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',

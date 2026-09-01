@@ -1,33 +1,33 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
-import { getPersonalSync, loadPersonal, savePersonal, ageFromBirthYear } from '../lib/personal-data'
+import { getPersonalSync, loadPersonal, savePersonal, PERSONAL_FIELDS } from '../lib/personal-data'
 import { dropMediaCaches } from '../lib/gender-media'
 import ScreenTitle from '../components/ScreenTitle'
 import { SectionLabel } from '../components/GroupLabel'
-import { FormCard, TextField, ChoiceRow } from '../components/FormControls'
+import { FormCard, TextField, SelectRow } from '../components/FormControls'
 import ActionButton from '../components/ActionButton'
 
 /**
- * Личные данные — пол, рост, год рождения.
+ * Личные данные — пол и рост.
  *
- * Зачем: по ним считаются норма калорий, расход за тренировку и рекомендованные
- * веса. Поэтому экран прямо это и объясняет — иначе просьба ввести год рождения
- * выглядит как сбор данных без причины.
+ * ПОРЯДОК СТРОК не случайный: пол — базовая характеристика, он решает, чью
+ * гифку показывать у упражнения; рост — стабильная величина, её вводят один
+ * раз. Ниже сюда же встанет вес, но он живёт в «Замерах тела»: вес меняется
+ * постоянно и его ведут историей, а не полем в анкете.
  *
- * ПОЛ здесь же решает, чью гифку показывать у упражнения. Веса, заметки и
- * история к полу не привязаны — меняется только картинка.
+ * ВОЗРАСТА ЗДЕСЬ НЕТ. Год рождения спрашивали ради точности расчётов, но ни
+ * один экран его так и не считал — а лишний вопрос в анкете выглядит сбором
+ * данных без причины. Понадобится — вернём вместе с тем, что его использует.
  *
- * СОХРАНЕНИЕ ПО КНОПКЕ, а не на каждую букву: пока человек набирает год, на
- * сервер улетело бы «1», «19», «199». Уходя с несохранёнными правками, экран
+ * СОХРАНЕНИЕ ПО КНОПКЕ, а не на каждую букву: пока человек набирает рост, на
+ * сервер улетело бы «1», «19», «193». Уходя с несохранёнными правками, экран
  * переспрашивает — иначе набранное молча пропадает.
  */
 const SEX = [
   { id: 'male', label: 'Мужской' },
   { id: 'female', label: 'Женский' }
 ]
-
-const ТЕКУЩИЙ_ГОД = new Date().getFullYear()
 
 export default function PersonalData() {
   const navigate = useNavigate()
@@ -42,7 +42,8 @@ export default function PersonalData() {
   dataRef.current = data
   savedRef.current = saved
 
-  const изменено = ['sex', 'height_cm', 'birth_year'].some(k => (data[k] ?? null) !== (saved[k] ?? null))
+  const грязно = () => PERSONAL_FIELDS.some(k => (dataRef.current[k] ?? null) !== (savedRef.current[k] ?? null))
+  const изменено = PERSONAL_FIELDS.some(k => (data[k] ?? null) !== (saved[k] ?? null))
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -50,9 +51,7 @@ export default function PersonalData() {
     // Свежие данные из базы: на другом устройстве могли поменять.
     loadPersonal().then(свежее => {
       // Не затираем то, что человек уже набрал руками.
-      const грязно = ['sex', 'height_cm', 'birth_year']
-        .some(k => (dataRef.current[k] ?? null) !== (savedRef.current[k] ?? null))
-      if (грязно) return
+      if (грязно()) return
       setData(свежее); setSaved(свежее)
     })
   }, [])
@@ -60,9 +59,7 @@ export default function PersonalData() {
   // Уход назад с несохранёнными правками — переспрашиваем.
   useEffect(() => {
     backButton.setHandler(async () => {
-      const грязно = ['sex', 'height_cm', 'birth_year']
-        .some(k => (dataRef.current[k] ?? null) !== (savedRef.current[k] ?? null))
-      if (!грязно) { navigate(-1); return }
+      if (!грязно()) { navigate(-1); return }
       const ок = await tgConfirm('Изменения не сохранены. Сохранить перед выходом?')
       if (ок) await сохранитьRef.current?.()
       navigate(-1)
@@ -94,25 +91,17 @@ export default function PersonalData() {
 
   сохранитьRef.current = сохранить
 
-  const возраст = ageFromBirthYear(data.birth_year)
-
   return (
     <div className="page page-fade" style={styles.page}>
       <ScreenTitle>Личные данные</ScreenTitle>
 
       <SectionLabel>Тело</SectionLabel>
       <FormCard>
-        <ChoiceRow label="Пол" options={SEX} value={data.sex} onChange={(v) => set('sex', v)} />
+        <SelectRow label="Пол" options={SEX} value={data.sex} onChange={(v) => set('sex', v)} />
         <TextField
           label="Рост" unit="см" inputMode="numeric" divider
           value={data.height_cm ?? ''} placeholder="—"
           onChange={(v) => set('height_cm', цифры(v, 250))}
-        />
-        <TextField
-          label="Год рождения" unit={возраст != null ? `${возраст} ${склонение(возраст)}` : 'год'}
-          inputMode="numeric" divider
-          value={data.birth_year ?? ''} placeholder="—"
-          onChange={(v) => set('birth_year', цифры(v, ТЕКУЩИЙ_ГОД, 4))}
         />
       </FormCard>
 
@@ -131,21 +120,11 @@ export default function PersonalData() {
         есть, иначе остаётся мужской. Веса, заметки и история к полу не привязаны.
       </p>
       <p style={styles.note}>
-        Рост и год рождения нужны, чтобы точнее считать расход за тренировку и
-        подсказывать рабочие веса. Возраст пересчитывается сам.
+        Рост нужен, чтобы точнее считать расход за тренировку. Вес и обхваты — в
+        «Замерах тела»: их ведут историей, а не одной цифрой в анкете.
       </p>
     </div>
   )
-}
-
-function склонение(n) {
-  const сотня = n % 100
-  if (сотня >= 11 && сотня <= 14) return 'лет'
-  switch (n % 10) {
-    case 1: return 'год'
-    case 2: case 3: case 4: return 'года'
-    default: return 'лет'
-  }
 }
 
 const styles = {

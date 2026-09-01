@@ -104,7 +104,7 @@ export default function Profile() {
     {
       title: 'Профиль',
       items: [
-        { id: 'personal',     icon: 'ui:personal', iconColor: 'var(--color-text-secondary)', title: 'Личные данные',  subtitle: 'Пол · Рост · Возраст', path: '/personal-data' },
+        { id: 'personal',     icon: 'ui:personal', iconColor: 'var(--color-text-secondary)', title: 'Личные данные',  subtitle: 'Пол · Рост', path: '/personal-data' },
         { id: 'measurements', icon: 'ui:measure',  iconColor: 'var(--color-text-secondary)', title: 'Замеры тела',    subtitle: 'Обхваты · История', path: '/measurements' },
         { id: 'goal',         icon: 'ui:goal',     iconColor: 'var(--color-text-secondary)', title: 'Цель',           subtitle: 'Что хочешь достичь', path: '/goal' }
       ]

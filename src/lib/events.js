@@ -17,10 +17,10 @@ export const EVENTS = {
   USER_CHANGED: 'user-changed',
 
   /**
-   * Личные данные изменились: пол, рост, год рождения.
+   * Личные данные изменились: пол, рост.
    * Пол влияет на то, чью гифку показывать, поэтому экраны с упражнениями
    * на это событие перечитывают каталог.
-   * Детали в evt.detail: { sex, height_cm, birth_year }.
+   * Детали в evt.detail: { sex, height_cm }.
    */
   PERSONAL_CHANGED: 'personal-changed',
 

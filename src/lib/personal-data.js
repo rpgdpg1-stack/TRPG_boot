@@ -1,14 +1,17 @@
 /**
- * Личные данные аккаунта: пол, рост, год рождения.
+ * Личные данные аккаунта: пол и рост.
  *
  * ГДЕ ЖИВУТ. Источник правды — таблица users, чтобы данные не терялись при
  * входе с другого устройства. Рядом лежит копия в localStorage под ключом
  * С ID ЧЕЛОВЕКА: она нужна, чтобы первый кадр рисовался мгновенно и чтобы
  * сосед, открывший свой аккаунт в том же браузере, не увидел чужое.
  *
- * ПОЧЕМУ ГОД РОЖДЕНИЯ, А НЕ ВОЗРАСТ. Возраст протухает в каждый день рождения:
- * записанные однажды «31» через год станут враньём. Год рождения не меняется
- * никогда, а сколько лет — считаем в момент показа.
+ * ВОЗРАСТА ЗДЕСЬ НЕТ (убран 01.09.2026). Год рождения хранился ради «точности
+ * расчётов», но ни один экран его не считал — а данные, которые ничего не
+ * делают, только просят себя ввести. Понадобится — вернём вместе с расчётом.
+ *
+ * ВЕС здесь тоже не живёт: он меняется постоянно и ведётся историей в
+ * «Замерах тела», а не одним полем анкеты.
  *
  * ПОЛ решает, чью гифку показывать у упражнения (см. gender-media.js).
  * Не выбран — показываем мужские, так было до появления выбора.
@@ -19,7 +22,8 @@ import { getCurrentUser } from './auth'
 import { localGet, localSet } from '../utils/storage'
 import { EVENTS, emit } from './events'
 
-const ПОЛЯ = ['sex', 'height_cm', 'birth_year']
+/** Что вообще хранится. Экран сверяет по нему «есть несохранённые правки». */
+export const PERSONAL_FIELDS = ['sex', 'height_cm']
 
 let memory = null
 let loadedFor = null
@@ -40,14 +44,14 @@ function writeDisk(userId, data) {
 
 function отобрать(row) {
   const out = {}
-  ПОЛЯ.forEach(k => { out[k] = row?.[k] ?? null })
+  PERSONAL_FIELDS.forEach(k => { out[k] = row?.[k] ?? null })
   return out
 }
 
 /** Синхронно — для первого кадра. Пусто, если ничего не известно. */
 export function getPersonalSync() {
   const user = getCurrentUser()
-  if (!user) return { sex: null, height_cm: null, birth_year: null }
+  if (!user) return { sex: null, height_cm: null }
   if (memory && loadedFor === user.id) return memory
   const disk = readDisk(user.id)
   if (disk) { memory = disk; loadedFor = user.id; return disk }
@@ -60,7 +64,7 @@ export function getPersonalSync() {
 /** Прочитать из базы и обновить копии. */
 export async function loadPersonal() {
   const user = getCurrentUser()
-  if (!user) return { sex: null, height_cm: null, birth_year: null }
+  if (!user) return { sex: null, height_cm: null }
   // Через функцию, а не прямым select: у роли authenticated на users только
   // чтение своей строки, и правила там же — пусть источник будет один.
   const { data, error } = await supabase.rpc('api_get_personal_data')
@@ -90,20 +94,8 @@ export async function savePersonal(patch) {
   // делают остальные настройки профиля.
   const { error } = await supabase.rpc('api_set_personal_data', {
     p_sex: следующее.sex,
-    p_height_cm: следующее.height_cm,
-    p_birth_year: следующее.birth_year
+    p_height_cm: следующее.height_cm
   })
   if (error) { console.error('[personal] save failed:', error.message); return false }
   return true
-}
-
-/**
- * Сколько лет — по году рождения. Точный день рождения не спрашиваем, поэтому
- * считаем по году: в год рождения человеку 0, дальше по разнице.
- */
-export function ageFromBirthYear(year) {
-  const y = Number(year)
-  if (!y || y < 1900) return null
-  const возраст = new Date().getFullYear() - y
-  return (возраст >= 0 && возраст <= 120) ? возраст : null
 }

@@ -376,14 +376,14 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
 
 ## Дерево проекта
 
-Актуально на 2026-06-16. **При создании нового файла — внести его сюда** (я редактирую этот скил
+Актуально на 2026-09-01. **При создании нового файла — внести его сюда** (я редактирую этот скил
 сам и коммичу). Регенерация:
 `find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' | sort`
 
 ```
 Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · eslint.config.js
         index.html · package.json · vercel.json · vite.config.js
-        .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui}/SKILL.md
+        .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui,trpg-figma,design-system-review}/SKILL.md
         .github/workflows/{ci,db-backup,notify,keepalive}.yml
         scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs}
 
@@ -397,55 +397,52 @@ src/
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile reset_days reset_progress
 │                   rewards settings stats stretching support swimming
-├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture ChevronIcon ClockIcon CloseCross
-│                   ConfirmModal CustomExerciseForm EmptyState ExerciseActionMenu
-│                   ExerciseCard ExerciseHeaderCard ExercisePicker ExercisePlaceholder
-│                   ExerciseVideo FavCardBody FinishConfirmModal FormControls FriendRow
-│                   GroupLabel HeartButton HeartIcon HistoryCalendar HistoryStats HomeCards
-│                   MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows PencilIcon
-│                   PersonalRecords (блок «Рекорды»: /history + модалка профиля и друга)
-│                   PeriodSwitcher PinIcon PlaceSwitcher PlayButton PlayIcon PlayerProfileModal
-│                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem PullToRefresh
-│                   QuickPickList RocketIcon RocketToggle SaveFriendProgramModal ScreenTitle
-│                   ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon SlotsCount
-│                   StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon
-│                   WaterChrome WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
-│   └── layout/     ErrorBoundary · Loader
+├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture BrowserMenuButton
+│                   BrowserNavButton ChevronIcon ClockIcon CloseCross ConfirmModal CustomExerciseForm
+│                   EmailLogin EmptyState ExerciseActionMenu ExerciseCard ExerciseHeaderCard
+│                   ExercisePicker ExercisePlaceholder ExerciseVideo FavCardBody FinishConfirmModal
+│                   FormControls (FormCard/ToggleRow/ValueRow/TextField/SelectRow/SoonNote)
+│                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
+│                   HistoryStats HomeCards MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
+│                   PencilIcon PeriodSwitcher PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
+│                   PlayerProfileModal ProfileHeader ProfileMetrics ProgramCard ProgramEmblem
+│                   PullToRefresh QuickPickList RocketIcon RocketToggle SaveFriendProgramModal
+│                   ScreenTitle ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon
+│                   SlotsCount StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon WaterChrome
+│                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
+│   ├── layout/     ErrorBoundary · Loader
+│   └── workout/    DayPicker · ReturnHighlight · SkeletonCard · SwapAnimationOverlay
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
-├── features/programs/   api.js · categories.js · colors.js · customProgram.js · labels.js · registry.js
-├── lib/            accent active-workout auth cache cloud-storage dev-auth (вход в dev-сборке)
-│                   email-auth events favorite-exercises friends
-│                   media-cache (mp4/превью в Cache API — гифки играют офлайн)
-│                   session (страж сессии: canReadServer / canTrust)
-│                   cache-repair (разовая чистка кешей, испорченных пустотой)
-│                   quick-workout (быстрая тренировка: набор + вкл/выкл)
-│                   use-scroll-lock (заморозка фона под модалками)
-│                   records (личные рекорды)
-│                   friends-list history-view network-status notes offline-queue persistent-cache privacy
-│                   profile-cache program-place storage supabase sync-engine telegram use-outside-close
-│                   version-check weight-editing-state
-├── pages/          AccountAccess (/account — способы входа: Telegram и почта)
+├── features/programs/   api.js · categories.js · colors.js · customProgram.js · duration.js
+│                        labels.js · registry.js · userExercises.js
+├── lib/            active-workout auth cache cache-repair cloud-storage debug deep-link
+│                   dev-auth (вход в dev-сборке) email-auth events favorite-exercises friends
+│                   friends-list gender-media (какого пола гифку показывать) history-view
+│                   media-cache (mp4/превью в Cache API — гифки играют офлайн) metrika
+│                   network-status notes notifications offline-queue persistent-cache
+│                   personal-data (пол + рост; возраста НЕТ) prefs privacy profile-cache
+│                   program-place quick-workout (быстрая тренировка) records
+│                   session (страж сессии: canReadServer / canTrust) session-sync storage
+│                   supabase sync-engine telegram training-state use-network-badge
+│                   use-outside-close use-scroll-lock version-check weight-editing-state
+│                   workout-highlights
+├── pages/          About AccountAccess (/account — способы входа) BodyMeasurements Category
+│                   ExerciseInfo FavoriteExercises Feedback Friends Gift Goal History Home
 │                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)
-│                   Category ExerciseInfo FavoriteExercises Friends History Home Privacy
-│                   Profile ProgramConstructor QuickWorkout Settings SwapExercise SwimWorkout WorkoutDay
-└── utils/          dates history plural storage workout-progress
+│                   Notifications PersonalData (пол + рост) Privacy Profile ProgramConstructor
+│                   QuickWorkout Settings Support SwapExercise SwimWorkout WorkoutDay
+└── utils/          dates history plural storage workout-day workout-progress
 
 supabase/
-├── config.toml
-├── migrations/     fk_indexes.sql (индексы под 10 внешних ключей; применена 2026-08-08)
-│                   drop_leaderboard_index.sql (снят индекс под рейтинг — рейтингов нет)
-│                   drop_league_leftovers.sql (дубли RPC + поля-заглушки лиг; применена 2026-08-11)
-                   day_limit_per_category.sql (лимит 1 тренировка/сутки → на РАЗДЕЛ; применена 2026-08-29)
-                   friends_week_workouts.sql (week_workouts в списке друзей; применена 2026-08-31)
-│                   drop_daily_quests.sql (снос таблицы отметок активностей; применена 2026-08-29)
-│                   limit_12_and_fullbody.sql (лимит 12 упр/день + запись prog_002)
-│                   public_profile_favorites_subgroup.sql (sub_group в любимых у друга)
-│                   weight_history.sql (история рабочего веса: таблица + триггер + RPC)
-│                   api_get_personal_records.sql (рекорды: макс. вес + лучший заплыв)
-│                   public_profile_period_stats.sql (статистика друга за месяц/год — НЕ ПРИМЕНЕНА)
-│                   favorite_exercises_limit_5.sql (лимит любимых 3→5: CHECK slot + RPC)
-└── functions/telegram-auth/  index.ts · deno.json · .npmrc
+├── config.toml · schema.sql (полный слепок базы) · seed.sql (каталог + встроенные программы)
+├── test-account.md
+├── migrations/     day_limit_per_category.sql (лимит 1 тренировка/сутки → на РАЗДЕЛ)
+│                   drop_daily_quests.sql (снос таблицы отметок активностей)
+│                   friends_week_workouts.sql (week_workouts в списке друзей)
+│                   public_profile_stats_week.sql
+└── functions/      _shared/ · telegram-auth/ (index.ts · deno.json · .npmrc)
+                    email-request-code/ · email-verify-code/ (вход по почте)
 ```
 
 ## Коммуникация
