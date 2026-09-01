@@ -2,6 +2,7 @@
 name: trpg-figma
 description: "Перенос TRPG в Figma и синк с ним: сборка дизайн-системы, компонентов-вариантов, экранов и модалок в файле Figma под портфолио Lead UX/UI. Работает через мост TalkToFigma."
 when_to_use: "«нарисуй в Figma», «перенеси в Figma», «обнови макет», «собери компонент», работа с файлом Figma по проекту TRPG."
+disable-model-invocation: true
 ---
 
 # TRPG → Figma (перенос проекта + портфолио)
