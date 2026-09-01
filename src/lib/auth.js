@@ -15,7 +15,7 @@
  */
 
 import { supabase } from './supabase'
-import { restoreDevSession } from './dev-auth'
+import { restoreDevSession, watchDevSession } from './dev-auth'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
 import { localGet, localSet, localRemove, localRemoveByPrefix } from '../utils/storage'
@@ -81,8 +81,11 @@ export async function ensureAuth() {
     const initData = window.Telegram?.WebApp?.initData
 
     if (!initData) {
-      // Дев-сборка: если в .env.local лежит токен сессии — входим по нему, без
-      // кода с почты. В боевом бандле этой ветки нет вовсе (см. dev-auth.js).
+      // Дев-сборка: входим по сохранённому токену сессии, без кода с почты.
+      // Слежение ставим ДО входа — тогда и ручной вход по почте отдаст свежий
+      // токен на диск, и следующий запуск обойдётся без письма.
+      // В боевом бандле этой ветки нет вовсе (см. dev-auth.js).
+      watchDevSession()
       await restoreDevSession()
 
       // Браузер. Telegram тут не при чём, но человек мог войти по почте раньше —

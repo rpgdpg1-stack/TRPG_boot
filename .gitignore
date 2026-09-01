@@ -35,5 +35,8 @@ lerna-debug.log*
 # Артефакты браузерных MCP-прогонов (скриншоты/логи) — локальные
 .playwright-mcp/
 
+# Токен локальной сессии для входа в dev-сборке (scripts/dev-session-plugin.mjs)
+.dev-session.json
+
 # Служебные файлы Supabase CLI (версии, ref проекта) — машинные, не для гита
 supabase/.temp/

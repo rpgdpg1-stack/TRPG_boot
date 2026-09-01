@@ -64,13 +64,17 @@ export function Wheel({ items, value, onChange, label, unit, flex = 1 }) {
   const ref = useRef(null)
   const list = items.map(it => (typeof it === 'object' ? it : { id: it, label: String(it) }))
   const index = Math.max(0, list.findIndex(it => it.id === value))
-  // Что сейчас под маркером — в ref: отклик обязан сработать РОВНО один раз на
-  // переход, а setState асинхронный.
+
+  // Что сейчас под маркером — в ref: и отклик, и отдача значения обязаны
+  // срабатывать РОВНО один раз на переход, а setState асинхронный.
   const текущий = useRef(index)
-  const таймер = useRef(null)
   // Когда в последний раз отзывались вибрацией. Барабан года пролетает сотню
   // делений за бросок пальца — тик на каждое превратился бы в дребезг.
   const последнийОтклик = useRef(0)
+  // Идёт ПРОГРАММНАЯ прокрутка (доводка к значению, поставленному снаружи).
+  // Её события скролла — не выбор человека: ни вибрации, ни onChange.
+  const своя = useRef(false)
+  const свояДо = useRef(null)
 
   // Встаём на выбранное: при открытии — сразу, при смене снаружи (день съехал
   // за короткий месяц) — плавно, чтобы движение было видно.
@@ -79,34 +83,54 @@ export function Wheel({ items, value, onChange, label, unit, flex = 1 }) {
     const el = ref.current
     if (!el) return
     const top = index * ITEM
-    if (Math.abs(el.scrollTop - top) < 2) { первыйКадр.current = false; return }
-    el.scrollTo({ top, behavior: первыйКадр.current ? 'auto' : 'smooth' })
     текущий.current = index
+    if (Math.abs(el.scrollTop - top) < 2) { первыйКадр.current = false; return }
+    своя.current = true
+    clearTimeout(свояДо.current)
+    // Доводка длится дольше одного кадра; окно на неё закрываем по таймеру —
+    // события scroll не сообщают, что прокрутка кончилась.
+    свояДо.current = setTimeout(() => { своя.current = false }, первыйКадр.current ? 60 : 420)
+    el.scrollTo({ top, behavior: первыйКадр.current ? 'auto' : 'smooth' })
     первыйКадр.current = false
   }, [index])
 
+  useEffect(() => () => clearTimeout(свояДо.current), [])
+
+  /**
+   * Значение отдаём СРАЗУ на переходе, а не по затиханию прокрутки: «Готово»
+   * читает состояние, и с задержкой быстрый тап сразу после броска сохранил бы
+   * предыдущее число.
+   */
   const onScroll = () => {
     const el = ref.current
-    if (!el) return
+    if (!el || своя.current) return
     const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / ITEM)))
-    if (i !== текущий.current) {
-      текущий.current = i
-      const сейчас = Date.now()
-      if (сейчас - последнийОтклик.current > 40) {
-        последнийОтклик.current = сейчас
-        haptic.selection()
-      }
+    if (i === текущий.current) return
+    текущий.current = i
+    const сейчас = Date.now()
+    if (сейчас - последнийОтклик.current > 40) {
+      последнийОтклик.current = сейчас
+      haptic.selection()
     }
-    // Значение отдаём, когда прокрутка успокоилась: на каждый кадр это
-    // перерисовывало бы соседние барабаны прямо под пальцем.
-    clearTimeout(таймер.current)
-    таймер.current = setTimeout(() => {
-      const it = list[i]
-      if (it && it.id !== value) onChange?.(it.id)
-    }, 90)
+    const it = list[i]
+    if (it && it.id !== value) onChange?.(it.id)
   }
 
-  useEffect(() => () => clearTimeout(таймер.current), [])
+  // Тап по соседнему значению подводит его под маркер — как в нативных
+  // барабанах. Без этого до дальнего значения приходится только крутить.
+  const тапПо = (i) => {
+    const el = ref.current
+    if (!el || i === текущий.current) return
+    const it = list[i]
+    if (!it) return
+    текущий.current = i
+    haptic.selection()
+    своя.current = true
+    clearTimeout(свояДо.current)
+    свояДо.current = setTimeout(() => { своя.current = false }, 420)
+    el.scrollTo({ top: i * ITEM, behavior: 'smooth' })
+    if (it.id !== value) onChange?.(it.id)
+  }
 
   return (
     <div style={{ ...styles.wheelCol, flex }}>
@@ -118,6 +142,7 @@ export function Wheel({ items, value, onChange, label, unit, flex = 1 }) {
         {list.map((it, i) => (
           <div
             key={it.id}
+            onClick={() => тапПо(i)}
             style={{
               ...styles.item,
               color: i === index ? 'var(--color-text)' : 'var(--color-text-secondary)',
@@ -141,7 +166,8 @@ const styles = {
     position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
     background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    animation: 'sheet-scrim 0.18s ease'
   },
   sheet: {
     width: '100%', maxWidth: '460px',
@@ -192,11 +218,17 @@ const styles = {
   wheel: {
     height: `${ITEM * VISIBLE}px`, overflowY: 'auto', overscrollBehavior: 'contain',
     scrollSnapType: 'y mandatory', scrollbarWidth: 'none',
-    WebkitOverflowScrolling: 'touch'
+    WebkitOverflowScrolling: 'touch',
+    // Края ленты гаснут — так барабан читается как цилиндр, а не как список
+    // с обрезанными строками. Маска, а не градиент поверх: под ней остаётся
+    // видна подсветка выбранной строки.
+    maskImage: 'linear-gradient(to bottom, transparent 0, #000 22%, #000 78%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 22%, #000 78%, transparent 100%)'
   },
   pad: { height: `${ITEM * Math.floor(VISIBLE / 2)}px` },
   item: {
-    height: `${ITEM}px`, scrollSnapAlign: 'center',
+    height: `${ITEM}px`, scrollSnapAlign: 'center', cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)',
     whiteSpace: 'nowrap',

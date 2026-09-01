@@ -174,3 +174,9 @@
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
+/* Затемнение под листом гаснет отдельно и чуть быстрее самого листа:
+   так лист «приезжает», а не «проявляется вместе с фоном». */
+@keyframes sheet-scrim {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

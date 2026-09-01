@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
+import devSessionPlugin from './scripts/dev-session-plugin.mjs'
 
 // ID сборки: вшивается в бандл (__BUILD_ID__) и кладётся рядом в version.json.
 // Рантайм сверяет их при пробуждении приложения (lib/version-check.js) — если
@@ -34,6 +35,8 @@ const sentryPlugin = sentryToken
 export default defineConfig({
   plugins: [
     react(),
+    // Хранилище токена локальной сессии (только dev-сервер, см. плагин).
+    devSessionPlugin(),
     {
       name: 'emit-version-json',
       apply: 'build',
