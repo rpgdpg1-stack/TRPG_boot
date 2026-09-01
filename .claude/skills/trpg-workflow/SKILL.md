@@ -397,11 +397,12 @@ src/
 │                   measure muscles muscles-line network_off notes notifications personal place-gym
 │                   place-home place-street power privacy profile reset_days reset_progress
 │                   rewards settings stats stretching support swimming
-├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture BrowserMenuButton
-│                   BrowserNavButton ChevronIcon ClockIcon CloseCross ConfirmModal CustomExerciseForm
-│                   EmailLogin EmptyState ExerciseActionMenu ExerciseCard ExerciseHeaderCard
+├── components/     ActionButton AdoptExercisesModal AnchorMenu Avatar BicepGesture
+│                   BirthDateModal (пикер даты рождения) BrowserMenuButton BrowserNavButton
+│                   ChevronIcon ClockIcon CloseCross ConfirmModal CustomExerciseForm EmailLogin
+│                   EmptyState ExerciseActionMenu ExerciseCard ExerciseHeaderCard
 │                   ExercisePicker ExercisePlaceholder ExerciseVideo FavCardBody FinishConfirmModal
-│                   FormControls (FormCard/ToggleRow/ValueRow/TextField/SelectRow/SoonNote)
+│                   FormControls (FormCard/ToggleRow/ValueRow/TextField/PickerRow/SelectRow/SoonNote)
 │                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
 │                   HistoryStats HomeCards MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
 │                   PencilIcon PeriodSwitcher PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
@@ -421,7 +422,7 @@ src/
 │                   friends-list gender-media (какого пола гифку показывать) history-view
 │                   media-cache (mp4/превью в Cache API — гифки играют офлайн) metrika
 │                   network-status notes notifications offline-queue persistent-cache
-│                   personal-data (пол + рост; возраста НЕТ) prefs privacy profile-cache
+│                   personal-data (пол + рост + дата рождения) prefs privacy profile-cache
 │                   program-place quick-workout (быстрая тренировка) records
 │                   session (страж сессии: canReadServer / canTrust) session-sync storage
 │                   supabase sync-engine telegram training-state use-network-badge
@@ -430,8 +431,9 @@ src/
 ├── pages/          About AccountAccess (/account — способы входа) BodyMeasurements Category
 │                   ExerciseInfo FavoriteExercises Feedback Friends Gift Goal History Home
 │                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)
-│                   Notifications PersonalData (пол + рост) Privacy Profile ProgramConstructor
-│                   QuickWorkout Settings Support SwapExercise SwimWorkout WorkoutDay
+│                   Notifications PersonalData (пол + рост + дата рождения) Privacy Profile
+│                   ProgramConstructor QuickWorkout Settings Support SwapExercise SwimWorkout
+│                   WorkoutDay
 └── utils/          dates history plural storage workout-day workout-progress
 
 supabase/

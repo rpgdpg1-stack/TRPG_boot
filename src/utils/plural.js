@@ -81,3 +81,15 @@ export function pluralizeCategoryCap(key, count) {
   const w = pluralizeCategory(key, count)
   return w ? w.charAt(0).toUpperCase() + w.slice(1) : ''
 }
+
+/**
+ * "1 год", "2 года", "5 лет" — возраст рядом с датой рождения.
+ */
+export function pluralizeYears(count) {
+  const n = Math.abs(count) % 100
+  const n1 = n % 10
+  if (n > 10 && n < 20) return 'лет'
+  if (n1 > 1 && n1 < 5) return 'года'
+  if (n1 === 1) return 'год'
+  return 'лет'
+}

@@ -81,16 +81,46 @@ export function TextField({ label, value, onChange, placeholder, unit, type = 't
 }
 
 /**
- * Строка-селектор: значение выбирается из короткого списка.
- *
- * Почему список, а не сегменты в строку: сегменты выкладывают все варианты
- * разом и занимают всю ширину строки — ради двух слов это шумно, а строка
- * перестаёт быть похожей на соседние («Рост», «Версия»). Здесь справа стоит
- * само значение, как в остальных строках формы, и раскрывается тем же
- * выпадающим списком, что и селектор раздела на главной.
+ * Строка, у которой значение не набирают, а ВЫБИРАЮТ: справа стоит само
+ * значение (акцентом, как в остальных строках формы) и шеврон, тап открывает
+ * выбор. Что именно открывается — решает вызывающий: короткий список
+ * (`SelectRow` ниже) или модалка-пикер (дата рождения).
  *
  * Ничего не выбрано — вместо значения приглашение («Выбрать»), тише заголовка:
  * пустой прочерк не подсказывает, что по строке нужно нажать.
+ */
+export function PickerRow({ label, value, placeholder = 'Выбрать', onOpen, open = false, divider, innerRef, children }) {
+  return (
+    <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
+      <div style={s.rowContent}>
+        <div style={s.rowTitle}>{label}</div>
+      </div>
+      <button
+        ref={innerRef}
+        className="press-tile"
+        onClick={() => { haptic.light(); onOpen?.() }}
+        aria-label={label}
+        style={s.select}
+      >
+        <span style={{ ...s.value, ...(value ? null : s.valueEmpty) }}>
+          {value || placeholder}
+        </span>
+        <span style={{ ...s.selectChev, transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <ChevronIcon size={16} color="var(--color-text-secondary)" />
+        </span>
+      </button>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Выбор одного из короткого списка: та же строка, а список раскрывается тем же
+ * `AnchorMenu`, что селектор раздела на главной (у выбранного — галочка).
+ *
+ * Почему список, а не сегменты в строку: сегменты выкладывают все варианты
+ * разом и занимают всю ширину строки — ради двух слов это шумно, а строка
+ * перестаёт быть похожей на соседние («Рост», «Версия»).
  */
 export function SelectRow({ label, options, value, onChange, placeholder = 'Выбрать', divider }) {
   const btnRef = useRef(null)
@@ -98,25 +128,15 @@ export function SelectRow({ label, options, value, onChange, placeholder = 'Вы
   const current = options.find(o => o.id === value)
 
   return (
-    <div style={{ ...s.row, ...(divider ? s.divider : null) }}>
-      <div style={s.rowContent}>
-        <div style={s.rowTitle}>{label}</div>
-      </div>
-      <button
-        ref={btnRef}
-        className="press-tile"
-        onClick={() => { haptic.light(); setAnchor(btnRef.current?.getBoundingClientRect() || null) }}
-        aria-label={label}
-        style={s.select}
-      >
-        <span style={{ ...s.value, ...(current ? null : s.valueEmpty) }}>
-          {current ? current.label : placeholder}
-        </span>
-        <span style={{ ...s.selectChev, transform: anchor ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-          <ChevronIcon size={16} color="var(--color-text-secondary)" />
-        </span>
-      </button>
-
+    <PickerRow
+      label={label}
+      value={current?.label}
+      placeholder={placeholder}
+      divider={divider}
+      innerRef={btnRef}
+      open={!!anchor}
+      onOpen={() => setAnchor(btnRef.current?.getBoundingClientRect() || null)}
+    >
       {anchor && (
         <AnchorMenu
           anchorRect={anchor}
@@ -133,7 +153,7 @@ export function SelectRow({ label, options, value, onChange, placeholder = 'Вы
           }))}
         />
       )}
-    </div>
+    </PickerRow>
   )
 }
 

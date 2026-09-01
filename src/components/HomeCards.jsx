@@ -138,9 +138,9 @@ export default function HomeCards() {
         square
         title="Любимые"
         // Своя строка на том же уровне, что «Август» у статистики: без неё
-        // карточки разъезжались по высоте и сердечко уезжало вниз. Заодно
-        // объясняет лимит — избранных ровно пять.
-        periodLabel={`Топ-${FAVORITE_LIMIT}`}
+        // карточки разъезжались по высоте и сердечко уезжало вниз. Число
+        // здесь не пишем — лимит виден ниже, в самой цифре («3 упр»).
+        periodLabel="Топ"
         periodRow={<span />}
         value={<Value num={Math.min(favCount, FAVORITE_LIMIT)} unit="упр" />}
         onClick={() => go('/favorite-exercises')}
@@ -206,7 +206,12 @@ const styles = {
     // что от этого значения квадратная карточка берёт ширину (aspect-ratio
     // считает от minHeight, а не от растянутой высоты соседа).
     minWidth: 0, minHeight: '110px',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    // Зазор от иконки до текста — ЯВНЫЙ, а не остаток от space-between.
+    // При space-between он зависел от высоты содержимого: у статистики строка
+    // показателей переносится на две строки и упирается в низ, а у «Любимых»
+    // она в одну — и сердечко отъезжало от заголовка на два десятка пикселей.
+    // Теперь обе карточки строятся одинаково и читаются как один ритм.
+    display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 'var(--space-2)',
     padding: 'var(--space-3)', textAlign: 'left',
     background: 'var(--surface)',
     borderRadius: 'var(--radius-card)', cursor: 'pointer'

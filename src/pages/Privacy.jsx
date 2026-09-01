@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getPrivacy, savePrivacy } from '../lib/privacy'
-import { FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import ScreenTitle from '../components/ScreenTitle'
 import { FormCard, ToggleRow } from '../components/FormControls'
 
@@ -37,7 +36,7 @@ export default function Privacy() {
         <ToggleRow label="Последняя тренировка" hint="Дата последней тренировки" value={privacy.showLastWorkout} onToggle={() => toggle('showLastWorkout')} />
         <ToggleRow label="Статистика" hint="Тренировки и часы за текущий месяц" value={privacy.showStats} onToggle={() => toggle('showStats')} divider />
         <ToggleRow label="Рекорды" hint="Лучший месяц, рабочий вес, дистанция" value={privacy.showRecords} onToggle={() => toggle('showRecords')} divider />
-        <ToggleRow label="Любимые упражнения" hint={`Твой топ-${FAVORITE_LIMIT}`} value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
+        <ToggleRow label="Любимые упражнения" hint="Твой топ упражнений" value={privacy.showFavorites} onToggle={() => toggle('showFavorites')} divider />
         {/* Веса — вложены в «Любимые»: видны только когда любимые включены. Выключил
             любимые — веса и сам пункт «Показывать веса» прячутся.
             На рекорды этот тумблер НЕ влияет: там вес — сам результат, и прячется

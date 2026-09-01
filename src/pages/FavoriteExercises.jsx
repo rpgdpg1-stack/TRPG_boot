@@ -124,9 +124,14 @@ export default function FavoriteExercises() {
       </header>
 
       <p style={styles.intro}>
-        Твой топ-{FAVORITE_LIMIT}. Открой любую силовую программу, зажми упражнение и поставь{' '}
+        Твой топ упражнений. Открой любую силовую программу, зажми упражнение и поставь{' '}
         <span style={styles.introHeart}><HeartIcon filled size={15} /></span>{' '}
         в открывшейся карточке.
+      </p>
+      {/* Лимит отдельной строкой и тише: это ограничение, а не инструкция —
+          читать его нужно после того, как понятно, ЧТО тут делают. */}
+      <p style={{ ...styles.intro, ...styles.introLimit }}>
+        В любимые помещается не больше {FAVORITE_LIMIT} упражнений — на то он и короткий список.
       </p>
 
       <div style={styles.list}>
@@ -237,6 +242,8 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
     margin: '0 auto var(--space-5)', maxWidth: '300px'
   },
+  // Строка лимита идёт сразу под инструкцией — своим отступом её не отрывать.
+  introLimit: { marginTop: 'calc(var(--space-3) * -1)' },
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
   // Карточка — 1:1 по размерам с карточкой упражнения в дне тренировки
   // (ExerciseCard: minHeight 132, padding/gap 16, превью 100, radius 33).
