@@ -250,7 +250,7 @@ const styles = {
     // и длинное название лезло на значение справа — в узкой модалке «Тяга
     // верхнего блока нейтральным хватом» наезжала на «105 кг».
     flex: 1, minWidth: 0, maxWidth: '100%',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 600,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 'var(--weight-label)',
     color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
   },
   recValue: {

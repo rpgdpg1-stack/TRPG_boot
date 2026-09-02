@@ -80,10 +80,10 @@ const styles = {
     transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease'
   },
   // Размеры (высота/скругление/типографика из токенов).
-  // Large — основной CTA. Высота 52, текст 16, паддинг 18.
+  // Large — основной CTA. Высота 52, текст 16, паддинг из шкалы (20).
   md: {
     height: 'var(--btn-height)',
-    padding: '0 18px',
+    padding: '0 var(--space-5)',
     borderRadius: 'var(--radius-pill)',
     fontSize: 'var(--text-button-lg-size)',
     fontWeight: 'var(--text-button-weight)',
@@ -98,11 +98,11 @@ const styles = {
     fontWeight: 'var(--text-button-weight)',
     letterSpacing: '0.3px'
   },
-  // Small — компактные (заметка/инлайн). Высота 30, текст 14, паддинг 10, gap 3.
+  // Small — компактные (заметка/инлайн). Высота 30, текст 14, паддинг из шкалы (8).
   xs: {
     height: 'var(--btn-height-xs)',
-    padding: '0 10px',
-    gap: '3px',
+    padding: '0 var(--space-2)',
+    gap: 'var(--space-1)',
     borderRadius: 'var(--radius-pill)',
     fontSize: 'var(--text-button-size)',
     fontWeight: 'var(--text-button-weight)',

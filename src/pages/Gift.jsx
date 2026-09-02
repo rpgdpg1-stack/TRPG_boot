@@ -135,7 +135,7 @@ const styles = {
   planActive: { borderColor: 'var(--color-primary)' },
   badge: {
     position: 'absolute', top: 'var(--space-15)', left: '50%', transform: 'translateX(-50%)',
-    fontFamily: 'var(--font-manrope)', fontSize: '9px', fontWeight: 'var(--weight-label)',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 'var(--weight-label)',
     color: 'var(--color-primary)', whiteSpace: 'nowrap', letterSpacing: '0.2px'
   },
   planTitle: {
