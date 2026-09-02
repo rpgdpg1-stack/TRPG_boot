@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { dayLimitNote } from '../utils/day-limit'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { finishWorkout } from '../features/programs/api'
 import { getProgramBySlug } from '../features/programs/registry'
@@ -756,7 +757,7 @@ export default function SwimWorkout() {
           distanceLabel={formatDistance(modal.distance ?? totalMeters)}
           durationLabel={formatWorkoutMin(modal.seconds ?? 0)}
           durationColor={workoutTimerColor(modal.seconds ?? 0)}
-          limitNote={<>Достигнут лимит — 1 заплыв в день.<br />Этот заплыв в статистику не войдёт.</>}
+          limitNote={dayLimitNote('pool')}
           status={finishStatus === 'error' ? 'error' : finishStatus}
           offline={modal.kind === 'offline'}
           alreadyToday={modal.kind === 'limit'}

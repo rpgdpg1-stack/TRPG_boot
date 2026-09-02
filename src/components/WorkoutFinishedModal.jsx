@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import ActionButton from './ActionButton'
+import { dayLimitNote } from '../utils/day-limit'
 import ClockIcon from './ClockIcon'
 import WeeklyMuscle from './WeeklyMuscle'
 import BicepGesture from './BicepGesture'
@@ -255,7 +256,7 @@ export default function WorkoutFinishedModal({
             ) : alreadyToday ? (
               // Лимит занимает МЕСТО похвалы (не добавляется под ней) — иначе
               // панель прыгала, когда сервер отвечал «уже засчитано».
-              <div style={{ ...styles.limitNote, animation: REVEAL_ANIM }}>{limitNote || <>Достигнут лимит — 1 силовая в день.<br />Эта тренировка в статистику не войдёт.</>}</div>
+              <div style={{ ...styles.limitNote, animation: REVEAL_ANIM }}>{limitNote || dayLimitNote('gym')}</div>
             ) : (
               <div style={{ ...styles.praise, animation: REVEAL_ANIM }}>Отличная работа!</div>
             )}
@@ -408,6 +409,7 @@ const styles = {
   statNum: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px' },
   statClock: { display: 'inline-flex', color: 'var(--color-text-secondary)' },
   limitNote: {
+    whiteSpace: 'pre-line',   // текст правила приходит с переносом строки
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500, color: 'var(--color-text-secondary)',
     textAlign: 'center', lineHeight: 1.45, opacity: 0.85,
     minHeight: '34px', display: 'flex', flexDirection: 'column', justifyContent: 'center'

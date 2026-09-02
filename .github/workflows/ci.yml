@@ -31,6 +31,9 @@ jobs:
       - name: Линт
         run: npm run lint
 
+      - name: Тесты счётных функций
+        run: npm test
+
       - name: Сборка
         run: npm run build
 
