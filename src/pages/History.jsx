@@ -9,7 +9,7 @@ import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats from '../components/HistoryStats'
 import PersonalRecords from '../components/PersonalRecords'
-import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
+import SegmentedControl, { periodOptions } from '../components/SegmentedControl'
 import { goal, GOALS } from '../lib/metrika'
 
 /**
@@ -100,7 +100,7 @@ export default function History() {
 
       {/* Блок статистики со свитчером периода */}
       <div style={styles.statsCard}>
-        <PeriodSwitcher items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: 'var(--space-4)' }} />
+        <SegmentedControl items={periodItems} value={period} onChange={pickPeriod} style={{ marginBottom: 'var(--space-4)' }} />
 
         <HistoryStats summary={sum} loading={!wkLoaded} periodLabel={periodShortLabel(period, refDate)} emptyText={emptyText} />
       </div>

@@ -24,6 +24,7 @@ import {
   swimMinutesForMeters
 } from '../data/programs/swim'
 import ConfirmModal from '../components/ConfirmModal'
+import Toast from '../components/Toast'
 import WorkoutFinishedModal from '../components/WorkoutFinishedModal'
 import { getWorkoutHighlights, normalizeHighlights } from '../lib/workout-highlights'
 import ScreenTitle from '../components/ScreenTitle'
@@ -686,9 +687,9 @@ export default function SwimWorkout() {
         <div className="dock-scrim" />
         {startBlocked && (
           <div style={styles.startBlockWrap}>
-            <div className="shake-error" style={styles.startBlockToast}>
+            <Toast tone="error" shake>
               Сначала заверши текущую тренировку
-            </div>
+            </Toast>
           </div>
         )}
         {/* Ровно те же две кнопки, что в дне силовой: «Начать» с треугольником
@@ -1236,18 +1237,6 @@ const styles = {
     position: 'absolute',
     left: 0, right: 0, bottom: 'calc(100% - var(--space-8))',
     display: 'flex', justifyContent: 'center', pointerEvents: 'none'
-  },
-  startBlockToast: {
-    maxWidth: '240px',
-    padding: 'var(--space-3) var(--space-4)',
-    background: 'var(--color-error-soft)',
-    border: '1px solid var(--color-error-strong)',
-    borderRadius: 'var(--radius-medium)',
-    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    fontWeight: 700, lineHeight: 1.35,
-    color: 'var(--color-error)', textAlign: 'center'
   },
 
   errorBlock: {

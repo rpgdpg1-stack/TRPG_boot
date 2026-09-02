@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import ModalShell from './ModalShell'
 import { useNavigate } from 'react-router-dom'
 import {
   loadMyExercises, adoptProgramExercises, MY_EXERCISE_LIMIT
@@ -69,9 +69,8 @@ export default function AdoptExercisesModal({ program, onClose, onAdopted }) {
     navigate('/constructor')
   }
 
-  return createPortal(
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+  return (
+    <ModalShell onClose={onClose} contentStyle={styles.modal}>
         <div style={styles.title}>Программа пока закрыта</div>
 
         <div style={styles.text}>
@@ -107,9 +106,7 @@ export default function AdoptExercisesModal({ program, onClose, onAdopted }) {
         <div style={styles.close}>
           <ModalButton onClick={onClose} style={{ width: '100%' }}>Позже</ModalButton>
         </div>
-      </div>
-    </div>,
-    document.body
+      </ModalShell>
   )
 }
 
@@ -121,13 +118,6 @@ function plural(n, one, few, many) {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
-    background: 'var(--overlay-scrim)',
-    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'calc(env(safe-area-inset-top) + 30px) var(--space-5) var(--space-5)'
-  },
   modal: {
     width: '100%', maxWidth: '360px',
     background: 'var(--surface-raised)',

@@ -889,7 +889,7 @@ const styles = {
   },
   section: { marginBottom: 'var(--space-5)' },
   // Контейнер-переключатель («Дней в программе», «Место», «Дни») — стеклянная
-  // пилюля с хайрлайном, как PeriodSwitcher и переключатель места в дне
+  // пилюля с хайрлайном, как SegmentedControl и переключатель места в дне
   // тренировки. Один язык переключателей на весь проект.
   segGroup: {
     display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: '100%',

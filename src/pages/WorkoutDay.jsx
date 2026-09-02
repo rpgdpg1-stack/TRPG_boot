@@ -34,6 +34,7 @@ import {
   clearWorkoutProgress
 } from '../utils/workout-progress'
 import ExerciseCard from '../components/ExerciseCard'
+import Toast from '../components/Toast'
 import EmptyState from '../components/EmptyState'
 import AdoptExercisesModal from '../components/AdoptExercisesModal'
 import ExerciseActionMenu from '../components/ExerciseActionMenu'
@@ -1502,9 +1503,9 @@ export default function WorkoutDay() {
               запущенного дня), сама прячется через пару секунд. */}
           {sessionBlocked && startBlockHint && (
             <div style={styles.startBlockWrap}>
-              <div key={startBlockNonce} className="shake-error" style={styles.startBlockToast}>
+              <Toast key={startBlockNonce} tone="error" shake>
                 Сначала заверши тренировку — день {active.day}
-              </div>
+              </Toast>
             </div>
           )}
 
@@ -2061,20 +2062,5 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none'
-  },
-  startBlockToast: {
-    maxWidth: '240px',
-    padding: 'var(--space-3) var(--space-4)',
-    background: 'var(--color-error-soft)',
-    border: '1px solid var(--color-error-strong)',
-    borderRadius: 'var(--radius-medium)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
-    fontWeight: 700,
-    lineHeight: 1.35,
-    color: 'var(--color-error)',
-    textAlign: 'center'
   },
 }

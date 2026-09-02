@@ -11,7 +11,7 @@ import TrendingUpIcon from './TrendingUpIcon'
 import UiIcon from './UiIcon'
 import HistoryStats from './HistoryStats'
 import PersonalRecords, { hasRecords, RECORD_GOLD } from './PersonalRecords'
-import PeriodSwitcher, { periodOptions } from './PeriodSwitcher'
+import SegmentedControl, { periodOptions } from './SegmentedControl'
 import CloseCross from './CloseCross'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import MarqueeTag from './MarqueeTag'
@@ -313,7 +313,7 @@ function MetricModal({ kind, tabs, stats, records, favorites, showWeights, onClo
             <div key={shown} style={{ ...m.body, opacity: active === shown ? 1 : 0 }}>
               {/* Переключатель периода только у статистики и только когда периодов больше одного. */}
               {isStats && available.length > 1 && (
-                <PeriodSwitcher items={available} value={activePeriod} onChange={setPeriod} style={{ marginBottom: 'var(--space-4)' }} />
+                <SegmentedControl items={available} value={activePeriod} onChange={setPeriod} style={{ marginBottom: 'var(--space-4)' }} />
               )}
 
               {isStats
