@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
@@ -8,26 +8,34 @@ import TabBar from './components/TabBar'
 import Home from './pages/Home'
 import Category from './pages/Category'
 import WorkoutDay from './pages/WorkoutDay'
-import SwapExercise from './pages/SwapExercise'
-import Profile from './pages/Profile'
-import Settings from './pages/Settings'
-import FavoriteExercises from './pages/FavoriteExercises'
-import Privacy from './pages/Privacy'
-import PersonalData from './pages/PersonalData'
-import BodyMeasurements from './pages/BodyMeasurements'
-import Goal from './pages/Goal'
-import Notifications from './pages/Notifications'
-import About from './pages/About'
 import ModalDemo from './pages/ModalDemo'
-import Support from './pages/Support'
-import Feedback from './pages/Feedback'
-import Gift from './pages/Gift'
-import Friends from './pages/Friends'
-import History from './pages/History'
+
+// ── Экраны по требованию (PERF-001) ─────────────────────────────────────────
+// Главная, раздел, день тренировки и карточка упражнения — это горячий путь,
+// они остаются в основном бандле и открываются мгновенно. Всё остальное
+// приезжает отдельным файлом в момент перехода: конструктор, заплыв, друзья,
+// история и подстраницы профиля открываются редко, а весят много, и держать
+// их в первой загрузке — платить за них при каждом заходе в зал.
+const About = lazy(() => import('./pages/About'))
+const AccountAccess = lazy(() => import('./pages/AccountAccess'))
+const BodyMeasurements = lazy(() => import('./pages/BodyMeasurements'))
+const FavoriteExercises = lazy(() => import('./pages/FavoriteExercises'))
+const Feedback = lazy(() => import('./pages/Feedback'))
+const Friends = lazy(() => import('./pages/Friends'))
+const Gift = lazy(() => import('./pages/Gift'))
+const Goal = lazy(() => import('./pages/Goal'))
+const History = lazy(() => import('./pages/History'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const PersonalData = lazy(() => import('./pages/PersonalData'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Profile = lazy(() => import('./pages/Profile'))
+const ProgramConstructor = lazy(() => import('./pages/ProgramConstructor'))
+const QuickWorkout = lazy(() => import('./pages/QuickWorkout'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Support = lazy(() => import('./pages/Support'))
+const SwapExercise = lazy(() => import('./pages/SwapExercise'))
+const SwimWorkout = lazy(() => import('./pages/SwimWorkout'))
 import ExerciseInfo from './pages/ExerciseInfo'
-import SwimWorkout from './pages/SwimWorkout'
-import ProgramConstructor from './pages/ProgramConstructor'
-import QuickWorkout from './pages/QuickWorkout'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, retryAuth } from './lib/auth'
@@ -37,7 +45,6 @@ import BrowserNavButton from './components/BrowserNavButton'
 import BrowserMenuButton from './components/BrowserMenuButton'
 import FriendInviteModal from './components/FriendInviteModal'
 import { acceptReferral } from './lib/friends'
-import AccountAccess from './pages/AccountAccess'
 import { getRecentWorkouts } from './lib/storage'
 import { HISTORY_FETCH_LIMIT } from './utils/history'
 import { getFriendsList } from './lib/friends-list'
@@ -273,6 +280,7 @@ export default function App() {
         <StartRouteController />
         <MetrikaRouteTracker />
 
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/category/:id" element={<Category />} />
@@ -306,6 +314,7 @@ export default function App() {
               открылся бы пустым чёрным полотном без таб-бара. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
 
         <BottomTabBar />
       </div>
