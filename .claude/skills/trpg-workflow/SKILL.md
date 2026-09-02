@@ -166,7 +166,8 @@ allowed-tools: Read, Grep, Glob
 ## Чеклист перед коммитом
 
 Импорты целы и нет ссылок на удалённое · новые файлы внесены в дерево (обновить этот скил) ·
-нет мёртвого кода от правки · при изменении БД — RPC протестирован · `lint` + `build` зелёные.
+нет мёртвого кода от правки · при изменении БД — RPC протестирован и прогнан запрос-сторож
+(см. `trpg-supabase`) · `lint` + **`test`** + `build` зелёные.
 
 ## Именование
 
@@ -374,6 +375,58 @@ A/B/C-гибрид · Google Sheets (миграция сделана) · кно�
 - собираешь справочник упражнений — подмешивай `loadMyExercises()` к каталогу,
   иначе вместо названия вылезет голый `ux_7`.
 
+## Новый экран — сразу через `lazy` (PERF-001)
+
+Всё, кроме горячего пути (главная, раздел, день тренировки, карточка
+упражнения), подключать в `App.jsx` через `React.lazy` — там уже стоит общий
+`Suspense`. Иначе продукт снова соберётся в один файл: до разделения бандл был
+281 КБ gzip на 25 маршрутов, и человек в зале грузил конструктор программ,
+чтобы отметить подход.
+
+## Экран разросся — выносить хук, а не терпеть (ARCH-001)
+
+Признак: за сотню строк и десяток эффектов, часть из них на одинаковых
+зависимостях. Тогда порядок их срабатывания определяется только порядком
+объявления в файле, и правка одного незаметно меняет условия другого.
+
+Выносить **по одному куску**, начиная с самого обособленного, и прокликивать
+сценарий после каждого. Разом такой файл не разбирают. Образец —
+`lib/use-workout-timer.js`: часы сессии и порог времени, а реакция на смену
+порога (пульс, поп-ап) осталась в экране, потому что это интерфейс.
+
+## Счётная функция — сразу с тестом (TEST-001)
+
+`npm test` (Vitest, `src/utils/__tests__/`) — на чистые функции: периоды, даты,
+границы недели и месяца, форматирование. Именно они ломаются **тихо**:
+приложение не падает, просто показывает не то число, а проверить руками нельзя
+— надо дождаться нужной даты.
+
+Тестировать только чистое. Функция, которая ходит в реестр программ или в сеть,
+вне приложения ведёт себя иначе — её проверяем в браузере, а тестами покрываем
+ту чистую часть, где логика на самом деле живёт (`programCategoryKey`, а не
+`hasWorkoutTodayOfType`).
+
+Пирамиду тестов не строим: ни E2E, ни компонентных — для проекта одного
+человека это не окупается.
+
+## Миграции — с датой в имени (ARCH-003)
+
+`ГГГГММДД_ЧЧММ_смысл.sql`. Без префикса порядок применения не восстановить, и
+развернуть базу с нуля нельзя — а `schema.sql` это слепок, а не история.
+
+## Перед правкой по аудиту — ПРОВЕРИТЬ, что она нужна
+
+Аудит 02.09.2026 дал две находки, которые при проверке оказались не проблемами:
+`ARCH-002` (прямые `select` из `exercises` — оказались запасным путём под
+каталог, свои упражнения и так идут через RPC) и `ARCH-005` (`ModalDemo` и так
+не попадает в сборку, Vite вырезает по `import.meta.env.DEV` — проверено
+поиском строк компонента в `dist`).
+
+Правило: перед правкой найти реальное место и убедиться, что оно ведёт себя как
+описано. Отчёт — гипотеза, код — факт. И наоборот: `SEC-001` при проверке
+оказался опаснее, чем выглядел, потому что грант висел на `PUBLIC`, а не на
+`anon`.
+
 ## Чистота кода
 
 После правок чистить: неиспользуемые файлы, мёртвый код, старые импорты.
@@ -417,14 +470,18 @@ src/
 │                   — общее правило «строки настроек», см. trpg-ui
 │                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
 │                   HistoryStats HomeCards MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
-│                   PencilIcon PeriodSwitcher PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
-│                   PlayerProfileModal ProfileHeader ProfileMetrics ProgramCard ProgramEmblem
+│                   PencilIcon PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
+│                   ModalShell (каркас окна: скрим + заморозка фона) PlayerProfileModal
+│                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem
 │                   PullToRefresh QuickPickList RocketIcon RocketToggle SaveFriendProgramModal
-│                   ScreenTitle ScrollTopButton SearchIcon SectionBadge SectionCarousel ShieldCheckIcon
-│                   SlotsCount StreakInfoPopup TabBar TrashIcon TrendingUpIcon UiIcon WaterChrome
+│                   ScreenTitle ScrollTopButton SearchIcon SectionBadge SectionCarousel
+│                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher) ShieldCheckIcon
+│                   SlotsCount StreakInfoPopup TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
 │                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── workout/    DayPicker · ReturnHighlight · SkeletonCard · SwapAnimationOverlay
+├── utils/          dates.js · history.js · day-limit.js (подпись правила суток)
+│                   workout-progress.js · __tests__/ (Vitest: dates, history)
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)
 ├── features/programs/   api.js · categories.js · colors.js · customProgram.js · duration.js

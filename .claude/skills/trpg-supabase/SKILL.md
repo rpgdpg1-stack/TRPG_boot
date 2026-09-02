@@ -47,9 +47,14 @@ allowed-tools: Read, Grep, Glob
 27.08.2026 нашёл две функции без `search_path` и FK без индекса — всё починено.
 
 Что в его выводе — НЕ проблема, а наше устройство (не «чинить» вслепую):
-- `anon/authenticated_security_definer_function_executable` (88 шт.) — приложение
-  ходит анонимным ключом, поэтому все `api_*` обязаны быть доступны anon;
-  личность внутри берётся из `current_user_id()`, а не из ключа;
+- `authenticated_security_definer_function_executable` — нормально: `api_*`
+  и обязаны быть `SECURITY DEFINER`, личность внутри берётся из
+  `current_user_id()`. ⚠️ А вот `anon_...` — **это надо проверять, а не
+  списывать**. Раньше здесь было записано «приложение ходит анонимным ключом,
+  поэтому все `api_*` обязаны быть доступны anon» — и именно эта фраза дала
+  дыре прожить до аудита 02.09.2026. Анонимный ключ нужен ТОЛЬКО чтобы дойти
+  до входа; после входа запрос несёт JWT сессии, и роль становится
+  `authenticated`. Функциям с личными данными `anon` не нужен вообще;
 - `rls_enabled_no_policy` у `email_codes` и `user_favorite_exercises` — RLS без
   политик означает «запрещено всё», и это ровно то, что нужно: обе таблицы
   читаются только через RPC. Прямой `.from(...)` по ним молча вернёт пусто;
@@ -65,6 +70,63 @@ allowed-tools: Read, Grep, Glob
 Проверять результат сразу же: `execute_sql` со счётчиками строк по затронутым
 таблицам. Данные пользователей терять нельзя даже на пустом проекте — привычка
 проверять важнее, чем цена конкретных данных.
+
+### Запрос-сторож после ЛЮБОЙ правки функций
+
+Должен вернуть два нуля. Ненулевое — это дыра, а не стилистика:
+
+```sql
+SELECT
+ (SELECT count(*) FROM pg_proc p WHERE p.pronamespace='public'::regnamespace
+    AND p.proname LIKE 'api\_%'
+    AND pg_get_function_identity_arguments(p.oid) ILIKE '%p_user_id%'
+    AND prosrc NOT ILIKE '%current_user_id()%')            AS верит_параметру,
+ (SELECT count(*) FROM pg_proc p WHERE p.pronamespace='public'::regnamespace
+    AND p.proname LIKE 'api\_%'
+    AND pg_get_function_identity_arguments(p.oid) ILIKE '%p_user_id%'
+    AND has_function_privilege('anon', p.oid, 'EXECUTE'))  AS открыта_анониму;
+```
+
+Перед миграцией, которая переписывает функции, — сохранить старые определения,
+чтобы откат был мгновенным:
+
+```sql
+CREATE TABLE public._rollback_<дата> AS
+SELECT proname, pg_get_functiondef(oid) AS def FROM pg_proc
+WHERE pronamespace='public'::regnamespace AND proname IN (...);
+```
+
+### REVOKE FROM anon НЕ снимает грант, выданный PUBLIC
+
+Самая коварная часть той же истории. У части функций `EXECUTE` висел на роли
+`PUBLIC` — в ACL это выглядит как `=X/postgres` (пустое имя роли слева от `=`).
+`REVOKE EXECUTE ... FROM anon` такой грант **не трогает**: аноним продолжает
+звать функцию через `PUBLIC`, а проверка `has_function_privilege('anon', ...)`
+по-прежнему отвечает `true`. Отзывать надо И у `PUBLIC`, И у `anon`, а
+`authenticated` выдавать явно — иначе после снятия `PUBLIC` функция станет
+недоступна вообще:
+
+```sql
+GRANT  EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.api_example(bigint) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.api_example(bigint) FROM anon;
+```
+
+Посмотреть, кому что выдано: `SELECT proacl FROM pg_proc WHERE proname = '…';`
+
+### ГРАБЛЯ: разрешающие политики RLS складываются через ИЛИ
+
+Две permissive-политики на одной таблице объединяются по ИЛИ, а не по И.
+Достаточно одной с `USING (true)` — и все соседние ограничения перестают
+что-либо ограничивать, оставаясь в списке и создавая видимость защиты.
+Так на `exercises` политика `public_read_exercises` отменяла правильную
+`exercises_public_reads_system_only` и открывала чужие упражнения всем.
+Заводя политику, смотреть, что уже висит на таблице:
+
+```sql
+SELECT polname, polcmd, pg_get_expr(polqual, polrelid)
+FROM pg_policy WHERE polrelid = 'public.exercises'::regclass;
+```
 
 ## Правила для RPC-функций
 
@@ -97,10 +159,26 @@ REVOKE ALL ON FUNCTION public.api_example(bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 ```
 
+### ГРАБЛЯ: «p_user_id декоративный» — это надо ОБЕСПЕЧИВАТЬ, а не предполагать
+
+Правило «личность из сессии» верно только для функций, где оно написано руками.
+Аудит 02.09.2026 нашёл **пятнадцать** функций, где его забыли: они брали
+человека прямо из `p_user_id` и были открыты роли `anon`. Публичный ключ лежит
+в бандле у каждого, идентификаторы идут подряд — посторонний мог читать, менять
+и удалять чужие данные **без входа вообще**. Правило при этом было записано и в
+коде фронта, и в этом скиле — и потому не проверялось.
+
+Мораль: это не свойство функций, а требование к каждой новой. Проверять, а не
+верить. Запрос-сторож (должен вернуть ДВА нуля) — в разделе «Применение правок».
+
+**Исключение, о котором надо помнить:** в `api_get_user_public_profile`
+параметр `p_user_id` — это ЧУЖОЙ профиль, который смотрят, и перезаписывать
+его нельзя. Из сессии там берётся `p_viewer_id`. Прежде чем «чинить» функцию
+с двумя идентификаторами — разобраться, кто из них кто.
+
 ### ГРАБЛЯ: без сессии читающая RPC отвечает ПУСТО И БЕЗ ОШИБКИ
 
-`p_user_id` в наших функциях декоративный — личность берётся из
-`current_user_id()`, то есть из подписи сессии. Значит запрос без живой сессии
+Личность берётся из `current_user_id()`, то есть из подписи сессии. Значит запрос без живой сессии
 возвращает не ошибку, а пустой результат (`NULL`, `[]`), и для клиента это
 неотличимо от честного «у человека ничего нет». Пишущие функции ведут себя
 иначе — они бросают `not authenticated`, и это как раз хорошо.
