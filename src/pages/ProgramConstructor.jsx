@@ -884,7 +884,7 @@ const styles = {
     borderRadius: 'var(--radius-pill)', color: 'var(--color-text)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+    boxShadow: 'var(--shadow-dock)',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, outline: 'none'
   },
   section: { marginBottom: 'var(--space-5)' },
@@ -896,7 +896,7 @@ const styles = {
     background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+    boxShadow: 'var(--shadow-dock)'
   },
   // Таб внутри контейнера: прозрачный (как неактивный таб), активный залит
   // (surface-active). Увеличивается только текст, не сам таб. Нахлёст -5 задаётся
@@ -933,7 +933,7 @@ const styles = {
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
   // Отметка «входит в быструю» — круглая, как икон-кнопки проекта (36px).
-  exCardDragging: { background: '#2A2A2A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' },
+  exCardDragging: { background: '#2A2A2A', boxShadow: 'var(--shadow-raised)' },
   // Переключатель режима — по содержимому, а не во всю ширину.
   modeRow: { display: 'flex', marginBottom: 'var(--space-3)' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },
@@ -965,8 +965,8 @@ const styles = {
   limitToast: {
     maxWidth: '200px',
     padding: 'var(--space-3) var(--space-4)',
-    background: 'rgba(232, 69, 69, 0.16)',
-    border: '1px solid rgba(232, 69, 69, 0.5)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-strong)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',

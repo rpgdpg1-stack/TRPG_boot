@@ -432,7 +432,7 @@ const m = {
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-4)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
+    boxShadow: 'var(--shadow-modal)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   // Шапка колонкой: сверху иконки-переключатель, под ними — название активного.

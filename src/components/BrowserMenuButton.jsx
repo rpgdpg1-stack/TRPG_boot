@@ -207,7 +207,7 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-2)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+    boxShadow: 'var(--shadow-raised)',
     // Растём из правого верхнего угла — оттуда, где кнопка.
     transformOrigin: 'top right',
     transition: 'opacity 0.16s ease, transform 0.17s cubic-bezier(0.2, 0.7, 0.3, 1)'

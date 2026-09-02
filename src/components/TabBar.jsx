@@ -198,7 +198,7 @@ const styles = {
     borderRadius: 'var(--radius-pill)',
     border: '1px solid var(--color-border)',
     // Тень как в iOS-доке: мягкая, X0 Y8 Blur40, чёрный 12%.
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+    boxShadow: 'var(--shadow-dock)',
     zIndex: 100
   },
   tab: {

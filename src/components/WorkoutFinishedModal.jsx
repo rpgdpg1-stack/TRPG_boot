@@ -327,7 +327,7 @@ const styles = {
     width: '100%', maxWidth: '320px',
     background: 'rgba(34, 34, 34, 0.98)',
     borderRadius: 'var(--radius-card)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
+    boxShadow: 'var(--shadow-modal)',
     // «+1» жеста улетает вверх и обрезается краями панели, не вылезая наружу.
     overflow: 'hidden',
     animation: `wfPanelIn 0.32s var(--ease-ios) forwards`,

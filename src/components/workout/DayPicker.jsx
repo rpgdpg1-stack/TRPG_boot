@@ -95,7 +95,7 @@ const pickerStyles = {
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
     border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 14px 44px rgba(0, 0, 0, 0.55)',
+    boxShadow: 'var(--shadow-modal)',
     transformOrigin: 'center',
     transition: 'opacity 0.16s ease, transform 0.19s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },

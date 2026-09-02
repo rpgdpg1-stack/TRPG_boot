@@ -85,7 +85,7 @@ const styles = {
     backdropFilter: 'var(--blur-glass)',
     WebkitBackdropFilter: 'var(--blur-glass)',
     borderRadius: 'var(--radius-pill)',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+    boxShadow: 'var(--shadow-raised)',
     // Мягкое проявление ~350мс — в такт затуханию заголовка под ним.
     animation: 'offlinePillIn 0.35s var(--ease-ios) forwards'
   },

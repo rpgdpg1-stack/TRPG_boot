@@ -56,7 +56,7 @@ export default function SwapAnimationOverlay() {
           vectorEffect="non-scaling-stroke"
           style={{
             strokeDasharray: `${SEGMENT} ${PERIMETER}`,
-            filter: 'drop-shadow(0 0 6px rgba(158, 209, 83, 0.7))',
+            filter: 'drop-shadow(0 0 6px var(--accent-strong))',
             animation: 'snakeRun 2.4s cubic-bezier(0.45, 0, 0.55, 1) forwards'
           }}
         />

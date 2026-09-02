@@ -137,8 +137,8 @@ const styles = {
   errorDetails: {
     width: '100%',
     maxWidth: '320px',
-    background: 'rgba(232, 69, 69, 0.08)',
-    border: '1px solid rgba(232, 69, 69, 0.2)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-soft)',
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-3) var(--space-4)',
     marginTop: 'var(--space-1)'
@@ -170,7 +170,7 @@ const styles = {
     borderRadius: 'var(--radius-medium)',
     border: 'none',
     cursor: 'pointer',
-    boxShadow: '0 4px 20px rgba(158, 209, 83, 0.3)'
+    boxShadow: '0 4px 20px var(--accent-strong)'
   },
   closeButton: {
     marginTop: 'var(--space-1)',

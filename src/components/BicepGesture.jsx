@@ -24,7 +24,7 @@ export default function BicepGesture({ size = 84 }) {
       p.style.cssText = `
         position:absolute; left:calc(50% + ${Math.random() * 40 - 20}px); top:56%;
         width:${dim}px; height:${dim}px; border-radius:50%;
-        background:var(--color-primary); box-shadow:0 0 6px rgba(158,209,83,0.7); filter:blur(0.4px);
+        background:var(--color-primary); box-shadow:0 0 6px var(--accent-strong); filter:blur(0.4px);
         --drift:${Math.random() * 30 - 15}px; pointer-events:none;
         animation: bgRise ${1 + Math.random() * 0.6}s ease-out forwards;`
       scene.appendChild(p)

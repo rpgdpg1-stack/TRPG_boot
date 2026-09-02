@@ -502,7 +502,7 @@ const rowStyles = {
     fontWeight: 700,
     fontSize: 'var(--text-caption-size)',
     color: 'var(--color-primary)',
-    background: 'rgba(158, 209, 83, 0.15)',
+    background: 'var(--accent-soft)',
     padding: 'var(--space-05) var(--space-15)',
     borderRadius: 'var(--radius-small)',
     letterSpacing: '1px',

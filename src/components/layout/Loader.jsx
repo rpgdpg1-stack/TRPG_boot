@@ -57,7 +57,7 @@ export default function Loader({ onFinish, readyPromise }) {
         height: ${dim}px;
         border-radius: 50%;
         background: var(--color-primary);
-        box-shadow: 0 0 6px rgba(158, 209, 83, 0.7);
+        box-shadow: 0 0 6px var(--accent-strong);
         filter: blur(0.4px);
         z-index: 1;
         pointer-events: none;

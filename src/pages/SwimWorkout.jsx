@@ -1240,8 +1240,8 @@ const styles = {
   startBlockToast: {
     maxWidth: '240px',
     padding: 'var(--space-3) var(--space-4)',
-    background: 'rgba(232, 69, 69, 0.16)',
-    border: '1px solid rgba(232, 69, 69, 0.5)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-strong)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     fontFamily: 'var(--font-manrope)',

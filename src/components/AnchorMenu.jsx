@@ -261,7 +261,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--space-05)',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+    boxShadow: 'var(--shadow-raised)',
     transition: 'opacity 0.16s ease, transform 0.17s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },
   row: {

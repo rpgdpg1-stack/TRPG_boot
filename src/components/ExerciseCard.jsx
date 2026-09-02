@@ -203,7 +203,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           p.style.cssText = `
             position:absolute; left:50%; top:50%; width:${dim}px; height:${dim}px;
             border-radius:50%; background:var(--color-primary);
-            box-shadow:0 0 5px rgba(158,209,83,0.7); pointer-events:none; z-index:8;
+            box-shadow:0 0 5px var(--accent-strong); pointer-events:none; z-index:8;
             --burst-x:${Math.random() * 30 - 15}px; --burst-y:${-(16 + Math.random() * 14)}px;
             animation: particleBurst ${0.45 + Math.random() * 0.2}s ease-out forwards;`
           el.appendChild(p)

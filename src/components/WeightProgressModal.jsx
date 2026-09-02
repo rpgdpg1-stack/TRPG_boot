@@ -417,7 +417,7 @@ const styles = {
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-5) var(--space-4) var(--space-4)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-4)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
+    boxShadow: 'var(--shadow-modal)',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards'
   },
   header: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' },

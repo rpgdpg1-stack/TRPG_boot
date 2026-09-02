@@ -373,7 +373,7 @@ const infoStyles = {
     padding: 'var(--space-6) var(--space-6) var(--space-5)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     animation: 'catInfoPanel 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+    boxShadow: 'var(--shadow-modal)'
   },
   icon: { lineHeight: 1, marginBottom: 'var(--space-3)' },
   title: {

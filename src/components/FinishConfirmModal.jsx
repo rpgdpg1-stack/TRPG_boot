@@ -85,7 +85,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: 'var(--space-15)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)',
+    boxShadow: 'var(--shadow-modal)',
     animation: 'finishConfirmIn 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     transition: `opacity ${CONFIRM_EXIT_MS}ms ease, transform ${CONFIRM_EXIT_MS}ms var(--ease-ios)`
   },

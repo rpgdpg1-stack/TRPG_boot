@@ -369,7 +369,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             className="press-tile"
             style={{
               ...styles.addBtn,
-              background: added ? 'rgba(158,209,83,0.15)' : 'var(--highlight-recent)',
+              background: added ? 'var(--accent-soft)' : 'var(--highlight-recent)',
               color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               opacity: disabled ? 0.45 : 1
             }}
@@ -748,7 +748,7 @@ const styles = {
     background: GLASS, border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-pill)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)', WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)'
+    boxShadow: 'var(--shadow-dock)'
   },
   segItem: {
     flex: 1, minWidth: 0, position: 'relative',
@@ -920,8 +920,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     padding: '0 var(--space-3)',
-    background: 'rgba(232, 69, 69, 0.16)',
-    border: '1px solid rgba(232, 69, 69, 0.5)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-strong)',
     borderRadius: 'var(--radius-small)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',

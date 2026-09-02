@@ -130,7 +130,7 @@ const styles = {
     border: '1px solid var(--color-border)',
     backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
     WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+    boxShadow: 'var(--shadow-raised)',
     transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
   }
 }

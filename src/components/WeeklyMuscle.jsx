@@ -90,7 +90,7 @@ export default function WeeklyMuscle({ count = 0, size = 22, style }) {
             height: s.d,
             borderRadius: '50%',
             background: 'var(--color-primary)',
-            boxShadow: '0 0 5px rgba(158, 209, 83, 0.8)',
+            boxShadow: '0 0 5px var(--accent-strong)',
             pointerEvents: 'none',
             opacity: 0,
             '--spark-drift': `${s.drift}px`,

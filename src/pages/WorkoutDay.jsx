@@ -1727,7 +1727,7 @@ const styles = {
     WebkitBackdropFilter: 'var(--blur-glass)',
     border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-card)',
-    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.28)'
+    boxShadow: 'var(--shadow-raised)'
   },
   // Заливка-прогресс: светло-серый фон растёт слева по мере отжатых упражнений
   // (весь прогресс дня). Плавно, за текстом (zIndex 0). Клипается overflow карточки.
@@ -1886,12 +1886,12 @@ const styles = {
     alignItems: 'center',
     gap: 'var(--space-2)',
     padding: 'var(--space-3) var(--space-3)',
-    background: 'rgba(232, 69, 69, 0.28)',
-    border: '1px solid rgba(232, 69, 69, 0.5)',
+    background: 'var(--color-error-strong)',
+    border: '1px solid var(--color-error-strong)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 26px rgba(0, 0, 0, 0.45)',
+    boxShadow: 'var(--shadow-raised)',
     animation: 'overloadPopIn 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)'
   },
   overloadText: {
@@ -2065,8 +2065,8 @@ const styles = {
   startBlockToast: {
     maxWidth: '240px',
     padding: 'var(--space-3) var(--space-4)',
-    background: 'rgba(232, 69, 69, 0.16)',
-    border: '1px solid rgba(232, 69, 69, 0.5)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-strong)',
     borderRadius: 'var(--radius-medium)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',

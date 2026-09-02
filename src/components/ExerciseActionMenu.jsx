@@ -503,15 +503,15 @@ const styles = {
     // Общий gap добавлял бы вторые 16 и отрывал заметку.
     gap: 0,
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards',
-    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.6)'
+    boxShadow: 'var(--shadow-modal)'
   },
   // Баннер лимита любимых.
   favLimit: {
     width: '100%',
     padding: 'var(--space-3) var(--space-4)',
     borderRadius: 'var(--radius-medium)',
-    background: 'rgba(232, 69, 69, 0.12)',
-    border: '1px solid rgba(232, 69, 69, 0.3)',
+    background: 'var(--color-error-soft)',
+    border: '1px solid var(--color-error-strong)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,

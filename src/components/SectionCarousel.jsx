@@ -456,7 +456,7 @@ const styles = {
     background: 'var(--surface-raised)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
-    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+    boxShadow: 'var(--shadow-modal)',
     display: 'flex', flexDirection: 'column', gap: 'var(--space-05)'
   },
   dropItem: {
