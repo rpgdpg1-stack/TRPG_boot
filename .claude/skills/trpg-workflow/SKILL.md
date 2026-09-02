@@ -431,7 +431,7 @@ src/
 │                        labels.js · registry.js · userExercises.js
 ├── lib/            active-workout auth cache cache-repair cloud-storage debug deep-link
 │                   dev-auth (вход в dev-сборке) email-auth events favorite-exercises friends
-│                   friends-list gender-media (какого пола гифку показывать) history-view
+│                   friends-list gender-media (какого пола гифку показывать)
 │                   media-cache (mp4/превью в Cache API — гифки играют офлайн) metrika
 │                   network-status notes notifications offline-queue persistent-cache
 │                   personal-data (пол + рост + дата рождения) prefs privacy profile-cache

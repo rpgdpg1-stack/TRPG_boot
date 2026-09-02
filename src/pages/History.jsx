@@ -4,7 +4,6 @@ import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, periodShortLabel, periodHintSuffix, mskParts, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { getHomeStatsPeriod } from '../lib/history-view'
 import { getRecords, getRecordsSync } from '../lib/records'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
@@ -14,8 +13,9 @@ import PeriodSwitcher, { periodOptions } from '../components/PeriodSwitcher'
 import { goal, GOALS } from '../lib/metrika'
 
 /**
- * История тренировок — единственное место с детальной аналитикой:
- * блок статистики (свитчер Неделя/Месяц/Год) → месячный календарь →
+ * История тренировок — единственное место с детальной аналитикой и
+ * единственное, где период вообще выбирается (на главной его нет):
+ * блок статистики (свитчер Неделя/Месяц/Год/Всё) → месячный календарь →
  * рекорды (лучший месяц; силовая: максимальный рабочий вес; плавание: лучший
  * заплыв) общим компонентом `PersonalRecords` — он же в модалке профиля.
  *
@@ -24,16 +24,16 @@ import { goal, GOALS } from '../lib/metrika'
  */
 export default function History() {
   const navigate = useNavigate()
-  // Период при ВХОДЕ всегда берём с главной: там селектор, и он — источник
-  // правды. Внутри экрана период можно листать сколько угодно, но обратно на
-  // главную это не пишется и в следующий заход не переживает — иначе на главной
-  // стояла бы «Неделя», а экран открывался бы с тем, что накликали в прошлый раз.
+  // Экран ВСЕГДА открывается на МЕСЯЦЕ, что бы ни листали в прошлый раз.
+  // Выбор периода здесь — инструмент разбора «прямо сейчас», а не настройка:
+  // вышел и вернулся — снова текущий месяц, как и на главной. Так цифры на
+  // главной и в статистике при входе совпадают, и не надо вспоминать,
+  // на чём остановился.
   //
   // Исключение — заход из напоминания: сводка за неделю обязана открыть неделю,
-  // иначе человек увидит не те цифры, что были в сообщении. Период приходит
-  // в state перехода и на выбор с главной не влияет.
+  // иначе человек увидит не те цифры, что были в сообщении.
   const location = useLocation()
-  const [period, setPeriod] = useState(() => location.state?.period || getHomeStatsPeriod())
+  const [period, setPeriod] = useState(() => location.state?.period || 'month')
 
   // Календарь всегда открывается на СВЕЖЕМ месяце/годе. Долистал до мая, вышел,
   // вернулся — снова август: «где я сейчас» важнее, чем «где был в прошлый раз».
