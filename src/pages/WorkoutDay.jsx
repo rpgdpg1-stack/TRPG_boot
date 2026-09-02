@@ -21,13 +21,11 @@ import {
   startActiveWorkout,
   clearActiveWorkout,
   onActiveWorkoutChange,
-  elapsedSecFrom,
   formatWorkoutMin,
-  TIMER_ORANGE_SEC,
-  TIMER_RED_SEC,
   WORKOUT_TIMER_COLORS,
   workoutTimerColor
 } from '../lib/active-workout'
+import { useWorkoutTimer } from '../lib/use-workout-timer'
 import {
   loadWorkoutProgress,
   saveWorkoutProgress,
@@ -224,7 +222,6 @@ export default function WorkoutDay() {
 
   // Таймер тренировки: тикает с захода на день, сбрасывается при смене дня.
   // finishedSec фиксирует длительность на момент «Завершить» — для модалки.
-  const [elapsedSec, setElapsedSec] = useState(0)
   const [finishedSec, setFinishedSec] = useState(0)
 
   // Пульсы (.pop-scale) — transient-флаги. На СТАРТЕ и при СВАЙПЕ на активный день
@@ -395,21 +392,9 @@ export default function WorkoutDay() {
     setActiveOrderNums(isThisActive ? new Set(loadWorkoutProgress(programId, day, place)) : new Set())
   }, [programId, day, place, isThisActive])
 
-  // Таймер — только пока этот день активная сессия: elapsed = now − startedAt
-  // (переживает уход/возврат и смену дня). Неактивный день → 0, без тика.
-  useEffect(() => {
-    if (!isThisActive) { setElapsedSec(0); return }
-    const tick = () => setElapsedSec(elapsedSecFrom(active.startedAt))
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [isThisActive, active?.startedAt])
-
-  // Тир таймера по порогам времени. Неактивный день — 'off' (серый, без пульса).
-  const timerTier = !isThisActive ? 'off'
-    : elapsedSec >= TIMER_RED_SEC ? 'red'
-    : elapsedSec >= TIMER_ORANGE_SEC ? 'orange'
-    : 'green'
+  // Часы сессии и порог времени — в хуке (ARCH-001): к остальному экрану
+  // они отношения не имеют, а секундный тик тянул за собой лишний эффект.
+  const { elapsedSec, timerTier } = useWorkoutTimer(isThisActive, active?.startedAt)
 
   // На СМЕНЕ тира — пульс таймера (увеличение+возврат); на 'red' (1ч30) — поп-ап
   // «пора завершать» (один раз за сессию). Первый рендер не пульсирует.
