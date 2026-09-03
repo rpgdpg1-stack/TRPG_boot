@@ -12,7 +12,8 @@ import { useProgramPlace } from '../lib/program-place'
 import PlaceSwitcher from '../components/PlaceSwitcher'
 import RocketToggle from '../components/RocketToggle'
 import RocketIcon from '../components/RocketIcon'
-import { getQuickSet, getQuickSetSync, isQuickOn, setQuickOn, syncQuickOn, applyQuickSet } from '../lib/quick-workout'
+import { setQuickOn, applyQuickSet } from '../lib/quick-workout'
+import { useQuickWorkout } from '../lib/use-quick-workout'
 
 import { hasWorkoutTodayOfType, programCategoryKey, categoryMetaByKey, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { setLastCompletedDay, getActiveDaySync, getRecentWorkoutsSync } from '../lib/storage'
@@ -143,8 +144,10 @@ export default function WorkoutDay() {
   const [allSlots, setAllSlots] = useState([])
   // «Быстрая тренировка»: набор — что входит в короткую версию (настраивается
   // в конструкторе), quickOn — горит ли ракета сейчас.
-  const [quickIds, setQuickIds] = useState(null)
-  const [quickOn, setQuickOnState] = useState(false)
+  // Быстрая версия дня (набор + включённость) — в хуке (FE-002): два эффекта
+  // на одних зависимостях, всегда менявшиеся вместе.
+  const { quickIds, quickOn, setQuickOn: setQuickOnState } =
+    useQuickWorkout(programId, place, day)
   const [quickPopup, setQuickPopup] = useState(null)   // null | { on, nonce }
   const [quickIntro, setQuickIntro] = useState(false)
   const quickPopupTimer = useRef(null)
@@ -451,23 +454,6 @@ export default function WorkoutDay() {
     onResize()
     return () => { vv.removeEventListener('resize', onResize); if (t) clearTimeout(t) }
   }, [])
-
-  // Набор быстрой версии — свой для каждой пары место+день; состояние ракеты —
-  // одно на программу. Оба стартуют мгновенно из localStorage, облако догоняет.
-  useEffect(() => {
-    setQuickIds(getQuickSetSync(programId, place, day))
-    let alive = true
-    getQuickSet(programId, place, day).then(v => { if (alive) setQuickIds(v) })
-    return () => { alive = false }
-  }, [programId, place, day])
-
-  // Ракета — на каждый день своя: включил в A, в B она серая, пока не нажмёшь там.
-  useEffect(() => {
-    setQuickOnState(isQuickOn(programId, place, day))
-    let alive = true
-    syncQuickOn(programId, place, day).then(v => { if (alive) setQuickOnState(v) })
-    return () => { alive = false }
-  }, [programId, place, day])
 
   // Префилл из памяти ДО отрисовки (на каждую смену дня/места): если слоты уже
   // загружались — показываем их сразу, без скелетона (возврат с Инфо/Смены,
