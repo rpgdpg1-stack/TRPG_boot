@@ -19,10 +19,11 @@
  */
 
 import { localGet, localSet } from '../utils/storage'
+import { EMPTY_CACHE_PURGE, RECENT_WORKOUTS_PREFIX } from './storage-keys'
 import { debug } from './debug'
 
 const DONE_KEY = 'cache-repair-done'
-const DONE_VALUE = 'empty-cache-purge-1'
+const DONE_VALUE = EMPTY_CACHE_PURGE
 
 // Что проверяем: persistent-кеши (с префиксом pcache:) и отдельные ключи,
 // куда пишутся списки, приходящие с сервера.
@@ -34,7 +35,7 @@ const PREFIXES = [
   'pcache:my-exercises:',
   'pcache:pubprofile:',
   'friends-list:',
-  'recent-workouts:',
+  RECENT_WORKOUTS_PREFIX,
   'prefs:'
 ]
 

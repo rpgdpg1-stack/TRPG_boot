@@ -25,6 +25,17 @@
 const cache = new Map()
 
 /**
+ * Запросы, которые сейчас в полёте: ключ → промис (FE-001 / PERF-003).
+ *
+ * Кеш выше отвечает на вопрос «данные уже пришли?», но не на вопрос «за ними
+ * уже пошли?». Пока ответа нет, `cacheGet` отдаёт null — и два компонента,
+ * смонтированные в одном кадре, оба уходят в сеть за одним и тем же.
+ * Так на `/history` история тренировок грузилась дважды: сам экран и
+ * вложенный календарь спрашивали её независимо.
+ */
+const inflight = new Map()
+
+/**
  * TTL пресеты в миллисекундах
  */
 export const TTL = {
@@ -61,6 +72,39 @@ export function cacheSet(key, data, ttlMs = TTL.MEDIUM) {
 }
 
 /**
+ * Один запрос на всех, кто спросил одновременно (FE-001 / PERF-003).
+ *
+ * Порядок: готовые данные → уже летящий запрос → новый запрос.
+ * Второй и последующие вызывающие получают ТОТ ЖЕ промис, а не свой запрос.
+ *
+ * Кеширование намеренно оставлено загрузчику: только он знает, можно ли
+ * доверять ответу (`canTrust` — пустой ответ без ошибки не должен затирать
+ * настоящие данные). Здесь мы объединяем вызовы, но не решаем за него.
+ *
+ *   const data = await cacheDedupe(key, async () => {
+ *     const { data, error } = await supabase.rpc(...)
+ *     if (canTrust(error)) cacheSet(key, data, TTL.LONG)
+ *     return data
+ *   })
+ */
+export function cacheDedupe(key, loader) {
+  const cached = cacheGet(key)
+  if (cached) return Promise.resolve(cached)
+
+  const flying = inflight.get(key)
+  if (flying) return flying
+
+  // Ошибку тоже снимаем с полёта: иначе следующий вызывающий получил бы
+  // навсегда упавший промис и экран залип бы на пустоте.
+  const promise = Promise.resolve()
+    .then(loader)
+    .finally(() => { inflight.delete(key) })
+
+  inflight.set(key, promise)
+  return promise
+}
+
+/**
  * Удалить все ключи начинающиеся с prefix.
  *
  * Пример: после сохранения свапа надо инвалидировать ВСЕ дни программы,
@@ -79,6 +123,11 @@ export function cacheInvalidate(prefix) {
   }
   for (const key of toDelete) {
     cache.delete(key)
+  }
+  // Летящие запросы с тем же префиксом тоже сбрасываем: они несут данные,
+  // снятые ДО изменения, и класть их в кеш после инвалидации нельзя.
+  for (const key of [...inflight.keys()]) {
+    if (key.startsWith(prefix)) inflight.delete(key)
   }
 }
 

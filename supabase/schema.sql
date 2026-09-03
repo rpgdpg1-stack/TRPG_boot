@@ -37,7 +37,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA extensions;
 -- user_exercise_seq — сквозная нумерация СВОИХ упражнений (id вида ux_N).
 -- Именно последовательность, а не «первый свободный номер»: переиспользованный
 -- id прицепил бы к новому упражнению историю удалённого.
-CREATE SEQUENCE IF NOT EXISTS public.exercise_sets_id_seq;
+CREATE SEQUENCE IF NOT EXISTS public.workout_exercises_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.friendships_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.program_days_id_seq;
 CREATE SEQUENCE IF NOT EXISTS public.user_exercise_seq;
@@ -154,17 +154,18 @@ CREATE TABLE IF NOT EXISTS public.workouts (
 );
 
 -- Отработанные упражнения тренировки (по одной строке на упражнение).
-CREATE TABLE IF NOT EXISTS public.exercise_sets (
+CREATE TABLE IF NOT EXISTS public.workout_exercises (
   id bigint DEFAULT nextval('exercise_sets_id_seq'::regclass) NOT NULL,
   workout_id bigint NOT NULL,
   exercise_id text NOT NULL,
   slot_order integer,
-  set_number integer NOT NULL,
-  weight_kg numeric(6,2),
-  reps integer,
-  duration_sec integer,
   completed_at timestamp with time zone DEFAULT now() NOT NULL
 );
+-- Состав завершённой тренировки, НЕ подходы: подетальный учёт (вес/повторы
+-- за подход) в продукте не ведётся. Колонки weight_kg / reps / duration_sec /
+-- set_number были всегда пусты и убраны 02.09.2026 (DB-002). Имя таблицы
+-- до этого было exercise_sets и вводило в заблуждение.
+-- Последовательность оставлена под старым именем — переименовывать её незачем.
 
 -- Текущий рабочий вес и его история по дням (историю пишет триггер).
 CREATE TABLE IF NOT EXISTS public.user_exercise_weights (
@@ -298,7 +299,7 @@ ALTER TABLE public.user_exercise_notes ALTER COLUMN id ADD GENERATED ALWAYS AS I
 
 
 -- ── КЛЮЧИ И ОГРАНИЧЕНИЯ ────────────────────────────────────────────────────
-ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_pkey PRIMARY KEY (id);
+ALTER TABLE public.workout_exercises ADD CONSTRAINT exercise_sets_pkey PRIMARY KEY (id);
 ALTER TABLE public.exercises ADD CONSTRAINT exercises_pkey PRIMARY KEY (id);
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_pkey PRIMARY KEY (id);
 ALTER TABLE public.friendships ADD CONSTRAINT friendships_pkey PRIMARY KEY (id);
@@ -332,11 +333,11 @@ ALTER TABLE public.programs ADD CONSTRAINT programs_source_check CHECK ((source 
 ALTER TABLE public.user_exercise_swaps ADD CONSTRAINT user_exercise_swaps_location_check CHECK ((location = ANY (ARRAY['gym'::text, 'home'::text, 'outdoor'::text])));
 ALTER TABLE public.user_favorite_exercises ADD CONSTRAINT user_favorite_exercises_slot_check CHECK (((slot >= 1) AND (slot <= 5)));
 
--- Внешние ключи. exercise_sets → exercises стоит RESTRICT осознанно: удаление
+-- Внешние ключи. workout_exercises → exercises стоит RESTRICT осознанно: удаление
 -- упражнения не должно молча стирать отработанные подходы. Свои упражнения
 -- удаляются через api_delete_my_exercise, которая чистит зависимости сама.
-ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE RESTRICT;
-ALTER TABLE public.exercise_sets ADD CONSTRAINT exercise_sets_workout_id_fkey FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE;
+ALTER TABLE public.workout_exercises ADD CONSTRAINT exercise_sets_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE RESTRICT;
+ALTER TABLE public.workout_exercises ADD CONSTRAINT exercise_sets_workout_id_fkey FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE;
 ALTER TABLE public.exercises ADD CONSTRAINT exercises_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_friend_id_fkey FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -379,13 +380,12 @@ ALTER TABLE public.users ADD CONSTRAINT users_height_cm_check
 -- ── ИНДЕКСЫ ────────────────────────────────────────────────────────────────
 -- Дубли неуникальных индексов рядом с UNIQUE тут не заводить: уникальный
 -- обслуживает те же запросы, а лишний обновляется на каждой записи.
-CREATE INDEX IF NOT EXISTS idx_sets_exercise ON public.exercise_sets USING btree (exercise_id, completed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_sets_workout ON public.exercise_sets USING btree (workout_id, slot_order, set_number);
+CREATE INDEX IF NOT EXISTS idx_sets_exercise ON public.workout_exercises USING btree (exercise_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_workout_exercises_workout ON public.workout_exercises USING btree (workout_id, slot_order);
 CREATE INDEX IF NOT EXISTS idx_exercises_filter ON public.exercises USING btree (muscle_group, sub_group, type, priority);
 CREATE INDEX IF NOT EXISTS idx_exercises_owner_id ON public.exercises USING btree (owner_id) WHERE (owner_id IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_friend_pins_friend_id ON public.friend_pins USING btree (friend_id);
 CREATE INDEX IF NOT EXISTS idx_friend_pins_owner ON public.friend_pins USING btree (owner_id);
-CREATE INDEX IF NOT EXISTS idx_friendships_a ON public.friendships USING btree (user_a_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_b ON public.friendships USING btree (user_b_id);
 CREATE INDEX IF NOT EXISTS idx_program_days_exercise_id ON public.program_days USING btree (exercise_id);
 CREATE INDEX IF NOT EXISTS idx_program_days_lookup ON public.program_days USING btree (program_id, day, order_num);
@@ -393,10 +393,8 @@ CREATE INDEX IF NOT EXISTS idx_programs_author_id ON public.programs USING btree
 CREATE INDEX IF NOT EXISTS idx_programs_category ON public.programs USING btree (category, available);
 CREATE UNIQUE INDEX IF NOT EXISTS programs_owner_source_unique ON public.programs USING btree (owner_id, source) WHERE (owner_id IS NOT NULL);
 CREATE INDEX IF NOT EXISTS shared_programs_author_idx ON public.shared_programs USING btree (author_id);
-CREATE INDEX IF NOT EXISTS idx_ues_user_prog ON public.user_exercise_swaps USING btree (user_id, program_id, day);
 CREATE INDEX IF NOT EXISTS idx_user_exercise_swaps_exercise_id ON public.user_exercise_swaps USING btree (exercise_id);
 CREATE INDEX IF NOT EXISTS idx_user_exercise_swaps_program_id ON public.user_exercise_swaps USING btree (program_id);
-CREATE INDEX IF NOT EXISTS idx_uew_user ON public.user_exercise_weights USING btree (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_exercise_weights_exercise_id ON public.user_exercise_weights USING btree (exercise_id);
 CREATE INDEX IF NOT EXISTS idx_user_favorite_exercises_exercise_id ON public.user_favorite_exercises USING btree (exercise_id);
 CREATE INDEX IF NOT EXISTS idx_workouts_program_id ON public.workouts USING btree (program_id);
@@ -727,7 +725,7 @@ begin
     return -1;
   end if;
 
-  delete from exercise_sets              where exercise_id = p_exercise_id;
+  delete from workout_exercises              where exercise_id = p_exercise_id;
   delete from user_exercise_notes        where exercise_id = p_exercise_id;
   delete from user_exercise_weight_history where exercise_id = p_exercise_id;
   delete from user_favorite_exercises    where exercise_id = p_exercise_id;
@@ -784,11 +782,16 @@ $function$;
 -- результаты» доезжал в уже открытую модалку завершения. Логика не продублирована —
 -- зовём ту же api_workout_highlights, а вызов обёрнут в EXCEPTION-блок: сохранение
 -- тренировки важнее украшений и не должно падать из-за них.
-CREATE OR REPLACE FUNCTION public.api_finish_workout(p_user_id bigint, p_program_id text, p_day text, p_exercise_ids text[], p_finished_at timestamp with time zone DEFAULT now(), p_started_at timestamp with time zone DEFAULT NULL::timestamp with time zone, p_distance_m integer DEFAULT NULL::integer)
- RETURNS TABLE(workout_id bigint, new_weekly_streak integer, already_completed_today boolean, highlights jsonb)
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
+CREATE OR REPLACE FUNCTION public.api_finish_workout(
+  p_user_id bigint, p_program_id text, p_day text, p_exercise_ids text[],
+  p_finished_at timestamp with time zone DEFAULT now(),
+  p_started_at timestamp with time zone DEFAULT NULL::timestamp with time zone,
+  p_distance_m integer DEFAULT NULL::integer)
+RETURNS TABLE(workout_id bigint, new_weekly_streak integer,
+              already_completed_today boolean, highlights jsonb)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
 AS $function$
 DECLARE
   v_workout_id bigint;
@@ -799,29 +802,63 @@ DECLARE
   v_last_week_key text;
   v_exercise_id text;
   v_set_order integer := 1;
+  v_category text;
+  v_limit_key text;
   v_empty_highlights jsonb := jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
   v_highlights jsonb;
 BEGIN
-  p_user_id := current_user_id();
+  -- SEC-001: личность берём ИЗ СЕССИИ, параметру от клиента не верим.
+  p_user_id := public.current_user_id();
   IF p_user_id IS NULL THEN
-    RAISE EXCEPTION 'not authenticated';
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = '28000';
   END IF;
+
+  -- SEC-006: время завершения приходит от клиента (так надо оффлайн-очереди,
+  -- она досылает настоящее время после возврата связи). Но доверять ему без
+  -- границ нельзя: лимит суток считается ОТ ЭТОГО значения, и произвольная
+  -- дата пускала бы мимо лимита сколько угодно записей.
+  -- Пять минут вперёд — на расхождение часов устройства; неделя назад —
+  -- с запасом на любой оффлайн.
+  IF p_finished_at IS NULL THEN
+    p_finished_at := now();
+  END IF;
+  IF p_finished_at > now() + interval '5 minutes'
+     OR p_finished_at < now() - interval '7 days' THEN
+    RAISE EXCEPTION 'finished_at out of range' USING ERRCODE = '22007';
+  END IF;
+  -- Длительность тоже задаёт клиент. Тренировка длиннее шести часов — это
+  -- забытая сессия, а не рекорд: подрезаем, чтобы не портить статистику времени.
+  IF p_started_at IS NOT NULL AND p_finished_at - p_started_at > interval '6 hours' THEN
+    p_started_at := p_finished_at - interval '6 hours';
+  END IF;
+  -- Старт позже финиша — мусор, длительность считаем нулевой.
+  IF p_started_at IS NOT NULL AND p_started_at > p_finished_at THEN
+    p_started_at := NULL;
+  END IF;
+
+  -- DB-001: выстраиваем завершения ОДНОГО человека в очередь. Без этого
+  -- проверка «была ли сегодня» и вставка расходились: два одновременных
+  -- вызова оба проходили проверку. На других пользователей блокировка
+  -- не влияет — строка своя у каждого.
+  PERFORM 1 FROM users WHERE id = p_user_id FOR UPDATE;
 
   v_current_week_key := to_char(p_finished_at AT TIME ZONE 'Europe/Moscow', 'IYYY-IW');
   v_today_start := date_trunc('day', p_finished_at AT TIME ZONE 'Europe/Moscow');
 
-  -- Лимит «одна тренировка в день»: вторая за сутки не создаёт запись и
-  -- не двигает серию.
-  SELECT id INTO v_existing_workout_id
-  FROM workouts
-  WHERE user_id = p_user_id AND finished_at IS NOT NULL
-    AND finished_at >= v_today_start
-    AND finished_at < v_today_start + interval '1 day'
+  SELECT category INTO v_category FROM programs WHERE id = p_program_id;
+  v_limit_key := COALESCE(v_category, p_program_id);
+
+  SELECT w.id INTO v_existing_workout_id
+  FROM workouts w
+  LEFT JOIN programs pr ON pr.id = w.program_id
+  WHERE w.user_id = p_user_id AND w.finished_at IS NOT NULL
+    AND w.finished_at >= v_today_start
+    AND w.finished_at < v_today_start + interval '1 day'
+    AND COALESCE(pr.category, w.program_id) IS NOT DISTINCT FROM v_limit_key
   LIMIT 1;
 
   IF v_existing_workout_id IS NOT NULL THEN
     SELECT weekly_streak INTO v_new_weekly_streak FROM users WHERE id = p_user_id;
-    -- Повтор за день не засчитан — украшать нечего.
     RETURN QUERY SELECT v_existing_workout_id, v_new_weekly_streak, true, v_empty_highlights;
     RETURN;
   END IF;
@@ -830,14 +867,13 @@ BEGIN
   VALUES (p_user_id, p_program_id, p_day, COALESCE(p_started_at, p_finished_at), p_finished_at, p_distance_m)
   RETURNING id INTO v_workout_id;
 
+  -- DB-002: таблица переименована, set_number убран (всегда была единица).
   FOREACH v_exercise_id IN ARRAY p_exercise_ids LOOP
-    INSERT INTO exercise_sets (workout_id, exercise_id, slot_order, set_number, completed_at)
-    VALUES (v_workout_id, v_exercise_id, v_set_order, 1, p_finished_at);
+    INSERT INTO workout_exercises (workout_id, exercise_id, slot_order, completed_at)
+    VALUES (v_workout_id, v_exercise_id, v_set_order, p_finished_at);
     v_set_order := v_set_order + 1;
   END LOOP;
 
-  -- Серия считается в пределах недели по Москве и начинается заново
-  -- с понедельника.
   SELECT weekly_streak_week INTO v_last_week_key FROM users WHERE id = p_user_id;
 
   IF v_last_week_key = v_current_week_key THEN
@@ -848,9 +884,6 @@ BEGIN
     WHERE id = p_user_id RETURNING weekly_streak INTO v_new_weekly_streak;
   END IF;
 
-  -- Украшения — тем же ответом. Считаются ПОСЛЕ вставки подходов: рекорды
-  -- смотрят на упражнения этой тренировки. Своя запись сравнению не мешает —
-  -- прошлое ищется строго по finished_at < текущей.
   BEGIN
     v_highlights := api_workout_highlights(v_workout_id);
   EXCEPTION WHEN OTHERS THEN
@@ -995,7 +1028,7 @@ begin
         updated_at              = now()
     where id = uid;
 
-  delete from public.workouts where user_id = uid;  -- exercise_sets уйдут каскадом
+  delete from public.workouts where user_id = uid;  -- workout_exercises уйдут каскадом
 end;
 $function$;
 
@@ -1391,7 +1424,7 @@ BEGIN
              WHERE h.user_id = v_uid AND h.exercise_id = es.exercise_id
                AND h.day <= v_prev_day
              ORDER BY h.day DESC LIMIT 1) AS prev
-    FROM exercise_sets es
+    FROM workout_exercises es
     JOIN exercises e ON e.id = es.exercise_id
     JOIN user_exercise_weights w ON w.user_id = v_uid AND w.exercise_id = es.exercise_id
     WHERE es.workout_id = p_workout_id
@@ -2453,7 +2486,7 @@ CREATE TRIGGER trg_record_weight_point
 --
 -- user_favorite_exercises намеренно БЕЗ политик: прямой доступ к ней закрыт
 -- полностью, работа идёт только через api_* функции.
-ALTER TABLE public.exercise_sets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friend_pins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;
@@ -2511,18 +2544,18 @@ CREATE POLICY wk_update_own ON public.workouts FOR UPDATE TO public
 CREATE POLICY wk_delete_own ON public.workouts FOR DELETE TO public USING ((user_id = current_user_id()));
 
 -- Подходы принадлежат тренировке — проверяем владельца через неё.
-CREATE POLICY es_select_own ON public.exercise_sets FOR SELECT TO public
+CREATE POLICY es_select_own ON public.workout_exercises FOR SELECT TO public
   USING ((EXISTS ( SELECT 1 FROM workouts w
-   WHERE ((w.id = exercise_sets.workout_id) AND (w.user_id = current_user_id())))));
-CREATE POLICY es_insert_own ON public.exercise_sets FOR INSERT TO public
+   WHERE ((w.id = workout_exercises.workout_id) AND (w.user_id = current_user_id())))));
+CREATE POLICY es_insert_own ON public.workout_exercises FOR INSERT TO public
   WITH CHECK ((EXISTS ( SELECT 1 FROM workouts w
-   WHERE ((w.id = exercise_sets.workout_id) AND (w.user_id = current_user_id())))));
-CREATE POLICY es_update_own ON public.exercise_sets FOR UPDATE TO public
+   WHERE ((w.id = workout_exercises.workout_id) AND (w.user_id = current_user_id())))));
+CREATE POLICY es_update_own ON public.workout_exercises FOR UPDATE TO public
   USING ((EXISTS ( SELECT 1 FROM workouts w
-   WHERE ((w.id = exercise_sets.workout_id) AND (w.user_id = current_user_id())))));
-CREATE POLICY es_delete_own ON public.exercise_sets FOR DELETE TO public
+   WHERE ((w.id = workout_exercises.workout_id) AND (w.user_id = current_user_id())))));
+CREATE POLICY es_delete_own ON public.workout_exercises FOR DELETE TO public
   USING ((EXISTS ( SELECT 1 FROM workouts w
-   WHERE ((w.id = exercise_sets.workout_id) AND (w.user_id = current_user_id())))));
+   WHERE ((w.id = workout_exercises.workout_id) AND (w.user_id = current_user_id())))));
 
 CREATE POLICY uew_select_own ON public.user_exercise_weights FOR SELECT TO public USING ((user_id = current_user_id()));
 CREATE POLICY uew_insert_own ON public.user_exercise_weights FOR INSERT TO public WITH CHECK ((user_id = current_user_id()));

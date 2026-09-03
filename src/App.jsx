@@ -39,6 +39,7 @@ import ExerciseInfo from './pages/ExerciseInfo'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, retryAuth } from './lib/auth'
+import { catchTo } from './lib/report-error'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'
@@ -110,7 +111,8 @@ export default function App() {
       // закреплённая программа не появлялась рывком вторым кадром.
       // Сначала разовый переезд старых данных из облака Telegram, потом чтение:
       // порядок важен, иначе первое чтение вернёт пусто и запишет пустоту в кеш.
-      migrateFromCloud().catch(() => {}).finally(() => { loadPrefs().catch(() => {}) })
+      migrateFromCloud().catch(catchTo('app.migrateFromCloud'))
+        .finally(() => { loadPrefs().catch(catchTo('app.loadPrefs')) })
 
       // Пришли по ссылке-приглашению, УЖЕ имея аккаунт. Отдельный случай:
       // у новичка приглашение обрабатывается при входе по коду из письма,
@@ -125,7 +127,7 @@ export default function App() {
           if (cancelled) return
           if (res?.success) setInvite({ name: res.friend_name, already: res.already })
           getFriendsList().catch(() => {})
-        }).catch(() => {})
+        }).catch(catchTo('app.acceptReferral'))
       }
       // Активная тренировка: могла быть начата на другом устройстве.
       // Сводим до прогрева кешей — экран дня должен открыться уже с ней.
@@ -181,8 +183,8 @@ export default function App() {
       debug('[App] вход восстановлен, перечитываем данные')
       cacheInvalidate('')
       setUser(recovered)
-      loadPrefs({ force: true }).catch(() => {})
-      loadMyPrograms().catch(() => {})
+      loadPrefs({ force: true }).catch(catchTo('app.loadPrefs.force'))
+      loadMyPrograms().catch(catchTo('app.loadMyPrograms'))
       getRecentWorkouts(HISTORY_FETCH_LIMIT).catch(() => {})
       getFriendsList().catch(() => {})
       getFavoriteExercises().catch(() => {})

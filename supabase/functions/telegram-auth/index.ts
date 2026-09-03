@@ -9,9 +9,13 @@
 //   5. Возвращаем сессию (access_token + refresh_token) фронту.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+// SB-001: проверка подписи и свежести initData — ОДНА на все функции входа.
+// Здесь лежала её копия: тот же HMAC, тот же порог в 24 часа. Две реализации
+// одного и того же означают, что правку (порог, найденный изъян) внесут
+// в одну и забудут про вторую.
+import { verifyTelegramInitData } from "../_shared/telegram.ts";
 
 // Секреты берутся из окружения функции (зададим их на Шаге 3.3, в код НЕ пишем).
-const BOT_TOKEN = Deno.env.get("BOT_TOKEN")!;
 const SUPABASE_URL = Deno.env.get("PROJECT_URL") ?? Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY")!;
 
@@ -22,48 +26,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// --- Проверка подписи Telegram initData (по официальному алгоритму) ---
-async function verifyTelegramInitData(initData: string): Promise<Record<string, string> | null> {
-  const params = new URLSearchParams(initData);
-  const hash = params.get("hash");
-  if (!hash) return null;
-
-  // Собираем data_check_string: все пары кроме hash, отсортированы по ключу, через \n
-  params.delete("hash");
-  const dataCheckArr: string[] = [];
-  for (const [key, value] of [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-    dataCheckArr.push(`${key}=${value}`);
-  }
-  const dataCheckString = dataCheckArr.join("\n");
-
-  // secret_key = HMAC_SHA256(bot_token, "WebAppData")
-  const enc = new TextEncoder();
-  const secretKey = await crypto.subtle.importKey(
-    "raw", enc.encode("WebAppData"),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
-  );
-  const secret = await crypto.subtle.sign("HMAC", secretKey, enc.encode(BOT_TOKEN));
-
-  // computed_hash = HMAC_SHA256(data_check_string, secret_key)
-  const signKey = await crypto.subtle.importKey(
-    "raw", secret,
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", signKey, enc.encode(dataCheckString));
-
-  // Переводим в hex и сравниваем с присланным hash
-  const computedHash = [...new Uint8Array(signature)]
-    .map((b) => b.toString(16).padStart(2, "0")).join("");
-
-  if (computedHash !== hash) return null;
-
-  // Проверка свежести: auth_date не старше 24 часов (защита от переигрывания старых данных)
-  const authDate = parseInt(params.get("auth_date") || "0", 10);
-  const nowSec = Math.floor(Date.now() / 1000);
-  if (nowSec - authDate > 86400) return null;
-
-  return Object.fromEntries(params.entries());
-}
 
 Deno.serve(async (req) => {
   // Предварительный CORS-запрос браузера

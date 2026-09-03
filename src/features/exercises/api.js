@@ -93,9 +93,13 @@ export async function getExerciseById(exerciseId) {
     return rows[0] || null
   }
 
+  // PERF-006: перечисляем поля явно, как в соседних запросах. С select('*')
+  // в выдачу автоматически попала бы любая новая колонка — включая тяжёлую.
   const { data, error } = await supabase
     .from('exercises')
-    .select('*')
+    .select('id, name, muscle_group, sub_group, type, equipment, meta_info, description, ' +
+            'priority, counts_reps, muscle_icon, preview_url, video_url, ' +
+            'preview_url_male, video_url_male, preview_url_female, video_url_female')
     .eq('id', exerciseId)
     .single()
 

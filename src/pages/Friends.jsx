@@ -53,8 +53,15 @@ export default function Friends() {
     lockVerticalSwipes()
   }, [navigate])
 
+  // FE-004: load() зовётся и при входе, и по событию обновления. Быстрый уход
+  // и возврат могли переставить ответы местами — свежий список затирался бы
+  // ответом на старый запрос. Флаг гасит всё, что пришло после размонтирования.
+  const aliveRef = useRef(true)
+  useEffect(() => () => { aliveRef.current = false }, [])
+
   const load = () => {
     getFriendsList().then(list => {
+      if (!aliveRef.current) return
       setFriends(list)
       setLoading(false)
     })

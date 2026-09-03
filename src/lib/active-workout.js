@@ -19,12 +19,13 @@
  */
 
 import { localGet, localSet, localRemove } from '../utils/storage'
+import { ACTIVE_WORKOUT, ACTIVE_WORKOUT_CHANGED } from './storage-keys'
 import { setTrainingState } from './training-state'
 import { pushSession, clearSession } from './session-sync'
 import { goal, GOALS } from './metrika'
 
-const KEY = 'active-workout'
-const EVT = 'active-workout-changed'
+const KEY = ACTIVE_WORKOUT
+const EVT = ACTIVE_WORKOUT_CHANGED
 
 export function getActiveWorkout() {
   const raw = localGet(KEY)

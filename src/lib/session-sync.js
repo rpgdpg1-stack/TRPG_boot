@@ -11,6 +11,7 @@
  */
 
 import { supabase } from './supabase'
+import { reportError, catchTo } from './report-error'
 import { getCurrentUser } from './auth'
 import { canReadServer } from './session'
 import { debug } from './debug'
@@ -31,8 +32,9 @@ export function pushSession({ programId, day, place, startedAt, done }) {
       p_started_at: startedAt,
       p_done: done || []
     }).then(({ error }) => {
-      if (error) console.warn('[session-sync] не сохранилась:', error.message)
-    }).catch(() => {})
+      // Сессия не доехала — на другом устройстве тренировка не подхватится.
+      if (error) reportError(error, 'session-sync.push')
+    }).catch(catchTo('session-sync.push'))
   }, PUSH_DEBOUNCE_MS)
 }
 
@@ -42,9 +44,10 @@ export function clearSession() {
   if (!getCurrentUser() || !canReadServer()) return
   supabase.rpc('api_clear_active_session')
     .then(({ error }) => {
-      if (error) console.warn('[session-sync] не удалилась:', error.message)
+      // Не убралась — на другом устройстве останется «идёт тренировка».
+      if (error) reportError(error, 'session-sync.clear')
     })
-    .catch(() => {})
+    .catch(catchTo('session-sync.clear'))
 }
 
 /** Что лежит на сервере. null — там пусто или не дотянулись. */

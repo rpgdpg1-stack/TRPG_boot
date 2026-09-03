@@ -13,7 +13,9 @@ import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudRemove } from './cloud-storage'
 import { localGet, localSet, localRemove } from '../utils/storage'
-import { cacheGet, cacheSet, cacheInvalidate, TTL } from './cache'
+import { cacheGet, cacheDedupe, cacheSet, cacheInvalidate, TTL } from './cache'
+import { reportError } from './report-error'
+import { recentWorkoutsKey } from './storage-keys'
 import { canReadServer, canTrust } from './session'
 import { clearQueue } from './offline-queue'
 import { pcacheClear } from './persistent-cache'
@@ -48,30 +50,34 @@ export async function getRecentWorkouts(limit = 3) {
   // Кеш в памяти — повторные заходы на Историю/Профиль/Главную мгновенные,
   // без мигания «Загрузка…». Инвалидируется при завершении тренировки
   // (cacheInvalidate('recent-workouts:') в api/sync-engine).
-  const cacheKey = `recent-workouts:${userId}:${limit}`
-  const cached = cacheGet(cacheKey)
-  if (cached) return cached
+  const cacheKey = recentWorkoutsKey(userId, limit)
 
   // Без сети или сессии выборка вернётся пустой (RLS не отдаст чужому), и
   // «история пропала» — отдаём сохранённую.
   if (!canReadServer()) return getRecentWorkoutsSync(limit) || []
 
-  const { data, error } = await supabase
-    .from('workouts')
-    .select('finished_at, started_at, program_id, day, distance_m')
-    .eq('user_id', userId)
-    .not('finished_at', 'is', null)
-    .order('finished_at', { ascending: false })
-    .limit(limit)
-  if (!canTrust(error)) {
-    if (error) console.error('[storage] getRecentWorkouts error:', error)
-    // Ошибка/оффлайн — отдаём персист-кеш (localStorage), чтобы не мигало пусто.
-    return getRecentWorkoutsSync(limit) || []
-  }
-  const result = data || []
-  cacheSet(cacheKey, result, TTL.MEDIUM)
-  try { localSet(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
-  return result
+  // FE-001: экран статистики и вложенный календарь спрашивают историю
+  // независимо и в одном кадре. Через cacheDedupe второй получает тот же
+  // запрос, а не свой.
+  return cacheDedupe(cacheKey, async () => {
+    const { data, error } = await supabase
+      .from('workouts')
+      .select('finished_at, started_at, program_id, day, distance_m')
+      .eq('user_id', userId)
+      .not('finished_at', 'is', null)
+      .order('finished_at', { ascending: false })
+      .limit(limit)
+    if (!canTrust(error)) {
+      // FE-007: в боевой сборке консоль никто не читает — отправляем в Sentry.
+      if (error) reportError(error, 'storage.getRecentWorkouts')
+      // Ошибка/оффлайн — отдаём персист-кеш (localStorage), чтобы не мигало пусто.
+      return getRecentWorkoutsSync(limit) || []
+    }
+    const result = data || []
+    cacheSet(cacheKey, result, TTL.MEDIUM)
+    try { localSet(cacheKey, JSON.stringify(result)) } catch { /* ignore */ }
+    return result
+  })
 }
 
 /**
@@ -89,7 +95,7 @@ export async function getRecentWorkouts(limit = 3) {
 export function getRecentWorkoutsSync(limit = 3) {
   const userId = getUserId()
   if (!userId) return null
-  const cacheKey = `recent-workouts:${userId}:${limit}`
+  const cacheKey = recentWorkoutsKey(userId, limit)
   const mem = cacheGet(cacheKey)
   if (mem) return mem
   const raw = localGet(cacheKey)
@@ -279,7 +285,7 @@ export async function clearAllData() {
   if (!userId) return
 
   // Сброс прогресса через DEFINER-функцию: обнуляет недельную серию, чистит
-  // отметки активностей и историю тренировок (workouts + exercise_sets
+  // отметки активностей и историю тренировок (workouts + workout_exercises
   // каскадом), плюс ставит метку last_progress_reset_at. Идём через RPC,
   // потому что политики RLS не дают клиенту править users напрямую.
   const { error: resetErr } = await supabase.rpc('api_reset_my_progress')

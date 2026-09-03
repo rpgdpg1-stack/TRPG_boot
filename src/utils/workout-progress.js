@@ -17,6 +17,7 @@
  */
 
 import { localGet, localSet, localRemove } from './storage'
+import { workoutProgressKey } from '../lib/storage-keys'
 import { pushSession } from '../lib/session-sync'
 import { getActiveWorkout, touchActiveWorkout } from '../lib/active-workout'
 
@@ -24,7 +25,7 @@ import { getActiveWorkout, touchActiveWorkout } from '../lib/active-workout'
  * Внутренний хелпер — собирает ключ из slug программы, места и дня.
  */
 function getKey(programSlug, day, place = 'gym') {
-  return `workout-progress:${programSlug}:${place}:${day}`
+  return workoutProgressKey(programSlug, place, day)
 }
 
 /**

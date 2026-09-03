@@ -15,6 +15,7 @@
  */
 
 import { supabase } from './supabase'
+import { USER_SCOPED_KEYS, USER_SCOPED_PREFIXES } from './storage-keys'
 import { restoreDevSession, watchDevSession } from './dev-auth'
 import { EVENTS, emit } from './events'
 import { getStartParamReferralCode, acceptReferral } from './friends'
@@ -325,27 +326,9 @@ export function setCurrentUser(user) {
  * там лежат и не наши ключи. Заводишь новое хранимое значение про человека —
  * дописывай сюда, иначе оно переживёт выход и достанется следующему.
  */
-const USER_SCOPED_KEYS = [
-  'personal-records',       // рекорды
-  'fav-exercises-list',     // любимые упражнения
-  'user-programs',          // свои программы и программа от друга
-  'active-workout',         // начатая тренировка
-  'notification-settings',  // напоминания
-  'offline-operations-queue' // неотправленное: применить его к ЧУЖОМУ аккаунту хуже, чем потерять
-]
-
-const USER_SCOPED_PREFIXES = [
-  'prefs:',
-  'friends-list:',
-  'pcache:',
-  'recent-workouts:',       // история тренировок
-  'workout-progress:',      // галочки в дне
-  'program:',               // цикл дней A/B/C, выбранное место
-  'swim-pool:',
-  'swim-reps:',
-  'quick-set:',             // наборы быстрой тренировки
-  'quick-on:'
-]
+// Списки живут в lib/storage-keys.js — там же, где сами ключи (FE-006).
+// Держать их рядом с объявлениями важнее, чем рядом с использованием:
+// забытый в списке ключ = чужие данные в своём аккаунте.
 
 /**
  * Выйти из аккаунта. Только для браузерной версии: в Telegram выходить некуда —
