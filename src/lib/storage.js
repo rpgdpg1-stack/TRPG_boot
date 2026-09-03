@@ -4,7 +4,7 @@
  * полный сброс прогресса.
  */
 
-import { loadPrefs, getPrefSync, setPref } from './prefs'
+import { loadPrefs, getPrefSync, setPref, resetPrefs } from './prefs'
 import { supabase } from './supabase'
 import { getCurrentUser, setCurrentUser } from './auth'
 import { EVENTS, emit } from './events'
@@ -12,9 +12,10 @@ import { getCurrentWeekKey, getTodayKey } from '../utils/dates'
 import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { getAllPrograms, getProgramBySlug } from '../features/programs/registry'
 import { cloudGet, cloudRemove } from './cloud-storage'
-import { localGet, localSet, localRemove } from '../utils/storage'
+import { localGet, localSet, localRemove, localRemoveByPrefix } from '../utils/storage'
 import { cacheGet, cacheDedupe, cacheSet, cacheInvalidate, TTL } from './cache'
 import { reportError } from './report-error'
+import { USER_SCOPED_KEYS, USER_SCOPED_PREFIXES } from './storage-keys'
 import { recentWorkoutsKey } from './storage-keys'
 import { canReadServer, canTrust } from './session'
 import { clearQueue } from './offline-queue'
@@ -175,14 +176,6 @@ export async function setLastCompletedDay(programId, day) {
   debug('[setLastCompletedDay] saved:', { lastDayKey: day, lastDayDateKey: today })
 }
 
-export async function resetProgramDayCycle(programId) {
-  // null, а не удаление строки: настройка снова становится «дня не было»,
-  // и цикл начинается с A. Отдельной операции удаления в настройках нет —
-  // и заводить её ради этого не стоит, разница только в лишней строке в базе.
-  await setPref(lastDayKeyOf(programId), null)
-  await setPref(lastDayDateKeyOf(programId), null)
-}
-
 /* ============================================ */
 /* ИЗБРАННЫЕ ПРОГРАММЫ (одна на категорию)      */
 /* ============================================ */
@@ -262,36 +255,49 @@ export async function toggleFavoriteProgram(categoryId, programSlug) {
 export async function clearAllData() {
   const userId = getUserId()
 
+  // ── Сервер. Сначала база, потом локальное: если сброс на сервере не прошёл,
+  // локальные данные ещё целы и человек не остался с пустым экраном при живой
+  // истории в базе.
+  if (userId) {
+    // Полный сброс аккаунта одной DEFINER-функцией: история, веса и их
+    // история, заметки, замены, любимые, настройки, свои упражнения и
+    // программы, идущая сессия, личные данные, приватность, уведомления.
+    // Дружбы намеренно НЕ трогает — связь двусторонняя.
+    const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
+    if (resetErr) {
+      reportError(resetErr, 'storage.clearAllData')
+      throw resetErr   // экран покажет «не удалось» и НЕ станет чистить локальное
+    }
+  }
+
+  // ── Локальное. Ровно те же ключи, что снимаются при входе другим аккаунтом
+  // (lib/storage-keys.js): один список на оба сценария — «пришёл другой
+  // человек» и «этот человек начинает с нуля». Раньше здесь был свой,
+  // более короткий перечень, и часть данных сброс переживала.
+  try {
+    for (const key of USER_SCOPED_KEYS) localRemove(key)
+    for (const prefix of USER_SCOPED_PREFIXES) localRemoveByPrefix(prefix)
+    localRemove('weekly_streak')
+  } catch (e) { /* хранилище недоступно — не критично */ }
+
+  // Старое место хранения (Telegram CloudStorage): часть настроек могла
+  // остаться там с прежних версий и вернулась бы при следующем переезде.
   await cloudRemove('pinned_programs')
   await cloudRemove(FAVORITES_KEY)
-  // Чистим ключи цикла дней для ВСЕХ программ (не только split) — иначе после
-  // добавления новой программы её last_day переживёт сброс прогресса.
   for (const prog of getAllPrograms()) {
     await cloudRemove(`program:${prog.slug}:last_day`)
     await cloudRemove(`program:${prog.slug}:last_day_date`)
   }
 
-  ;['weekly_streak', 'dev_telegram_id'].forEach(localRemove)
-
   cacheInvalidate('')
-
-
-  // Оффлайн-инфраструктура: чистим очередь несинканутых операций и
-  // persistent-кеш дней/весов/упражнений. Иначе после сброса прогресса
-  // старые операции могут уехать в БД при следующем синке.
+  // Очередь несинканутых операций: без чистки они уехали бы в базу при
+  // следующем синке и вернули часть сброшенного.
   clearQueue()
   pcacheClear()
+  // Настройки аккаунта в памяти — иначе экран покажет их до первого чтения.
+  resetPrefs()
 
   if (!userId) return
-
-  // Сброс прогресса через DEFINER-функцию: обнуляет недельную серию, чистит
-  // отметки активностей и историю тренировок (workouts + workout_exercises
-  // каскадом), плюс ставит метку last_progress_reset_at. Идём через RPC,
-  // потому что политики RLS не дают клиенту править users напрямую.
-  const { error: resetErr } = await supabase.rpc('api_reset_my_progress')
-  if (resetErr) {
-    console.error('[storage] api_reset_my_progress error:', resetErr)
-  }
 
   const { data } = await supabase.from('users').select('*').eq('id', userId).single()
   if (data) {

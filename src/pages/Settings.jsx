@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, confirm as tgConfirm } from '../lib/telegram'
-import { clearAllData, resetProgramDayCycle } from '../lib/storage'
+import { clearAllData } from '../lib/storage'
 import { refreshCurrentUser } from '../lib/auth'
-import { PROGRAMS } from '../features/programs/registry'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
 import { SectionLabel } from '../components/GroupLabel'
@@ -47,8 +46,7 @@ export default function Settings() {
     {
       title: 'Сброс',
       items: [
-        { id: 'debug-reset-days', icon: 'ui:reset_days',     iconColor: 'var(--color-warning)', title: 'Сбросить порядок дней', subtitle: 'Дни во всех программах станут серыми', tone: 'warning' },
-        { id: 'debug-reset',      icon: 'ui:reset_progress', iconColor: 'var(--color-error)', title: 'Сбросить прогресс',     subtitle: 'Полное обнуление — как с нуля',        tone: 'danger' }
+        { id: 'debug-reset', icon: 'ui:reset_progress', iconColor: 'var(--color-error)', title: 'Сбросить всё', subtitle: 'Аккаунт станет как новый', tone: 'danger' }
       ]
     }
   ]
@@ -59,32 +57,10 @@ export default function Settings() {
 
     if (item.path) { navigate(item.path); return }
 
-    if (item.id === 'debug-reset-days') {
-      const confirmed = await tgConfirm(
-        'Сбросить порядок дней?\n\nИстория тренировок и серия НЕ пострадают.\n\nПосле сброса все три буквы дней станут серыми — выберешь сам с какого дня хочешь начать.'
-      )
-      if (!confirmed) return
-
-      try {
-        // Сбрасываем цикл дней у всех программ, а не только у split —
-        // чтобы кнопка работала и для будущих программ без правок здесь.
-        for (const prog of PROGRAMS) {
-          await resetProgramDayCycle(prog.slug)
-        }
-        haptic.success()
-        window.alert('Порядок дней сброшен. Перезайди в приложение чтобы увидеть изменения.')
-      } catch (err) {
-        console.error('[Settings] reset days failed:', err)
-        haptic.error()
-        window.alert('Не удалось сбросить порядок дней. Проверь подключение.')
-      }
-      return
-    }
-
 
     if (item.id === 'debug-reset') {
       const confirmed = await tgConfirm(
-        'Сбросить весь прогресс?\n\nУдалятся: история тренировок, серия за неделю, отметки активностей, закреплённые программы и любимые упражнения.\n\nЭто действие нельзя отменить.'
+        'Сбросить всё?\n\nАккаунт станет как новый: уйдут история тренировок и серия, рабочие веса и их график, заметки, замены и любимые упражнения, свои упражнения и программы, закрепы, личные данные и настройки.\n\nОстанутся только вход и друзья.\n\nЭто действие нельзя отменить.'
       )
       if (!confirmed) return
 
@@ -92,11 +68,11 @@ export default function Settings() {
         await clearAllData()
         await refreshCurrentUser()
         haptic.success()
-        window.alert('Прогресс сброшен. Перезагрузи приложение чтобы увидеть изменения.')
+        window.alert('Готово. Аккаунт как новый — перезагрузи приложение.')
       } catch (err) {
         console.error('[Settings] reset failed:', err)
         haptic.error()
-        window.alert('Не удалось сбросить прогресс. Проверь подключение к интернету.')
+        window.alert('Не удалось сбросить. Данные на месте — проверь интернет и попробуй ещё раз.')
       }
       return
     }
