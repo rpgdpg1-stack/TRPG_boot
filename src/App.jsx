@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, lazy, Suspense } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 
 import Loader from './components/layout/Loader'
@@ -11,35 +11,38 @@ import WorkoutDay from './pages/WorkoutDay'
 import ModalDemo from './pages/ModalDemo'
 
 // ── Экраны по требованию (PERF-001) ─────────────────────────────────────────
+// Через lazyRoute, а не голый lazy: он переживает выкат новой сборки. Открытая
+// со старой версии вкладка иначе просит несуществующий файл чанка и падает.
 // Главная, раздел, день тренировки и карточка упражнения — это горячий путь,
 // они остаются в основном бандле и открываются мгновенно. Всё остальное
 // приезжает отдельным файлом в момент перехода: конструктор, заплыв, друзья,
 // история и подстраницы профиля открываются редко, а весят много, и держать
 // их в первой загрузке — платить за них при каждом заходе в зал.
-const About = lazy(() => import('./pages/About'))
-const AccountAccess = lazy(() => import('./pages/AccountAccess'))
-const BodyMeasurements = lazy(() => import('./pages/BodyMeasurements'))
-const FavoriteExercises = lazy(() => import('./pages/FavoriteExercises'))
-const Feedback = lazy(() => import('./pages/Feedback'))
-const Friends = lazy(() => import('./pages/Friends'))
-const Gift = lazy(() => import('./pages/Gift'))
-const Goal = lazy(() => import('./pages/Goal'))
-const History = lazy(() => import('./pages/History'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const PersonalData = lazy(() => import('./pages/PersonalData'))
-const Privacy = lazy(() => import('./pages/Privacy'))
-const Profile = lazy(() => import('./pages/Profile'))
-const ProgramConstructor = lazy(() => import('./pages/ProgramConstructor'))
-const QuickWorkout = lazy(() => import('./pages/QuickWorkout'))
-const Settings = lazy(() => import('./pages/Settings'))
-const Support = lazy(() => import('./pages/Support'))
-const SwapExercise = lazy(() => import('./pages/SwapExercise'))
-const SwimWorkout = lazy(() => import('./pages/SwimWorkout'))
+const About = lazyRoute(() => import('./pages/About'))
+const AccountAccess = lazyRoute(() => import('./pages/AccountAccess'))
+const BodyMeasurements = lazyRoute(() => import('./pages/BodyMeasurements'))
+const FavoriteExercises = lazyRoute(() => import('./pages/FavoriteExercises'))
+const Feedback = lazyRoute(() => import('./pages/Feedback'))
+const Friends = lazyRoute(() => import('./pages/Friends'))
+const Gift = lazyRoute(() => import('./pages/Gift'))
+const Goal = lazyRoute(() => import('./pages/Goal'))
+const History = lazyRoute(() => import('./pages/History'))
+const Notifications = lazyRoute(() => import('./pages/Notifications'))
+const PersonalData = lazyRoute(() => import('./pages/PersonalData'))
+const Privacy = lazyRoute(() => import('./pages/Privacy'))
+const Profile = lazyRoute(() => import('./pages/Profile'))
+const ProgramConstructor = lazyRoute(() => import('./pages/ProgramConstructor'))
+const QuickWorkout = lazyRoute(() => import('./pages/QuickWorkout'))
+const Settings = lazyRoute(() => import('./pages/Settings'))
+const Support = lazyRoute(() => import('./pages/Support'))
+const SwapExercise = lazyRoute(() => import('./pages/SwapExercise'))
+const SwimWorkout = lazyRoute(() => import('./pages/SwimWorkout'))
 import ExerciseInfo from './pages/ExerciseInfo'
 
 import { initTelegram, settingsButton } from './lib/telegram'
 import { ensureAuth, getCurrentUser, retryAuth } from './lib/auth'
 import { catchTo } from './lib/report-error'
+import { lazyRoute } from './lib/lazy-route'
 import EmailLogin from './components/EmailLogin'
 import { loadPrefs, migrateFromCloud } from './lib/prefs'
 import BrowserNavButton from './components/BrowserNavButton'

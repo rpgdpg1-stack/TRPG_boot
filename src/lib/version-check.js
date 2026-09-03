@@ -33,7 +33,7 @@ const RELOAD_MARK = 'version-reload-at'
 // молча выйдет (never реилоадим по ошибке сети).
 const MY_BUILD_ID = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : null
 
-function hardReload() {
+export function hardReload() {
   try {
     sessionStorage.setItem(RELOAD_MARK, String(Date.now()))
   } catch (e) { /* ignore */ }
@@ -60,7 +60,7 @@ function hardReload() {
   }
 }
 
-function recentlyReloaded() {
+export function recentlyReloaded() {
   try {
     const at = parseInt(sessionStorage.getItem(RELOAD_MARK) || '0', 10)
     return at && Date.now() - at < RELOAD_COOLDOWN_MS
