@@ -4,12 +4,16 @@ import { useState } from 'react'
  * Аватар человека — один вид и одно поведение везде: своя карточка профиля,
  * строка друга, модалка чужого профиля.
  *
- * ПОЧЕМУ БУКВА ВСЕГДА ПОД ФОТО, А НЕ ВМЕСТО НЕГО.
- * Раньше выбор был «или фото, или буква», и пока картинка летела по сети,
- * в квадрате не было ничего — пустая серая плитка, потом рывком фото. Теперь
- * буква нарисована ВСЕГДА, а фото лежит поверх и проявляется, когда загрузится:
- * пустого места не бывает ни в одном кадре, а если фото не доехало (нет сети,
- * ссылка протухла) — остаётся осмысленная буква, а не серый прямоугольник.
+ * ЧТО ПОКАЗЫВАЕМ, ПОКА ФОТО ЛЕТИТ.
+ * Буква — это ЗАМЕНА фото, а не подложка под него. Поэтому:
+ *   • фото есть (Telegram отдал ссылку) → пока грузится, видно тихую
+ *     пульсирующую плитку, затем проявляется фото. Буквы не бывает вовсе;
+ *   • фото нет (вход по почте) или не доехало → сразу буква имени.
+ *
+ * Раньше буква была нарисована ВСЕГДА, а фото ложилось поверх — и у человека
+ * с аватаркой на каждом заходе мелькала чужая по смыслу буква, потом рывком
+ * подменялась фотографией. Пульсация честнее: она означает «сейчас будет»,
+ * а буква означает «фото не будет». Разные вещи — разный вид.
  *
  * ПОЧЕМУ ФОТО НЕ КЕШИРУЕТСЯ В НАШ КЕШ (как ролики упражнений).
  * Аватарки Telegram отдаются с t.me / telegram.me БЕЗ заголовка
@@ -49,6 +53,10 @@ export default function Avatar({
 
   const letter = (name || '').trim().charAt(0).toUpperCase() || '?'
   const showImg = !!src && !failed
+  // Буква — только когда фотографии не будет: её нет или она не загрузилась.
+  const showLetter = !src || failed
+  // Ждём фото: показываем пульсацию вместо пустой плитки.
+  const loading = showImg && !ready
 
   return (
     <div
@@ -63,22 +71,35 @@ export default function Avatar({
         ...style
       }}
     >
-      {/* Буква — нижний слой. Видна, пока фото летит, и остаётся навсегда,
-          если фото нет вовсе (вход по почте) или не доехало. */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--font-display)',
-          fontWeight: letterWeight,
-          fontSize: letterSize,
-          color: 'var(--color-primary)',
-          userSelect: 'none'
-        }}
-      >
-        {letter}
-      </div>
+      {/* Пульсация — только пока летит фото. Показывает «сейчас будет». */}
+      {loading && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'var(--layer-2)',
+            animation: 'skeletonPulse 1.2s ease-in-out infinite'
+          }}
+        />
+      )}
+
+      {/* Буква — когда фотографии не будет: её нет или она не доехала. */}
+      {showLetter && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)',
+            fontWeight: letterWeight,
+            fontSize: letterSize,
+            color: 'var(--color-primary)',
+            userSelect: 'none'
+          }}
+        >
+          {letter}
+        </div>
+      )}
 
       {showImg && (
         <img

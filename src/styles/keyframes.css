@@ -88,6 +88,12 @@
   45%  { transform: scale(1.22); }
   100% { transform: scale(1); }
 }
+/* Пульсация «пока грузится»: аватар с фото, плашки статистики в шапке.
+   Не shimmer-градиент — на мелких элементах он читается как рябь. */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
 @keyframes skeletonShimmer {
   0%   { background-position: 100% 0; }
   100% { background-position: 0 0; }
