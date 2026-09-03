@@ -516,12 +516,28 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
             }}
           />
           {!editing && (
-            <div style={{ ...styles.weightValue, color: raise.colorFor('var(--color-text)'), transition: WEIGHT_COLOR_TRANSITION }}>
-              {localWeight}
+            // Ноль — это «вес ещё не задан», а не «поднимаю ноль». Раньше он
+            // выглядел ровно как настоящее значение, и человек в новой программе
+            // не понимал, что поле надо заполнить (UX-005). Показываем прочерк
+            // тем же кеглем, но тихим цветом: пустое место читается как
+            // приглашение, а не как результат.
+            <div style={{
+              ...styles.weightValue,
+              color: localWeight === 0
+                ? 'var(--color-text-secondary)'
+                : raise.colorFor('var(--color-text)'),
+              transition: WEIGHT_COLOR_TRANSITION
+            }}>
+              {localWeight === 0 ? '—' : localWeight}
             </div>
           )}
         </div>
-        <div style={styles.weightUnit}>{slot.counts_reps ? 'раз' : 'кг'}</div>
+        <div style={{
+          ...styles.weightUnit,
+          // При незаданном весе гасим и единицу: «— кг» ярче прочерка выглядело бы
+          // так, будто значение всё-таки есть.
+          opacity: localWeight === 0 && !editing ? 0.5 : 1
+        }}>{slot.counts_reps ? 'раз' : 'кг'}</div>
       </div>
 
       <div

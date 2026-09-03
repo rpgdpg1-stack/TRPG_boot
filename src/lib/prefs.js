@@ -182,7 +182,12 @@ export async function migrateFromCloud() {
     k === 'category-swiper-last' ||
     k.startsWith('program:') ||
     k.startsWith('quick-set:') ||
-    k.startsWith('quick-on:')
+    k.startsWith('quick-on:') ||
+    // Заплыв: число кругов и длина бассейна. Раньше в список не входили и
+    // оставались только в CloudStorage — то есть жили внутри Telegram и в
+    // браузер не доезжали (UX-007). Источник правды один: настройки аккаунта.
+    k.startsWith('swim-reps:') ||
+    k.startsWith('swim-pool:')
   )
   if (!wanted.length) return
 
@@ -194,6 +199,10 @@ export async function migrateFromCloud() {
     // Значения приезжают строками — приводим к тому виду, в котором их теперь
     // читает приложение, иначе «1» не станет включённой ракетой.
     if (key.startsWith('quick-on:')) collected[key] = raw === '1'
+    else if (key.startsWith('swim-reps:') || key.startsWith('swim-pool:')) {
+      const n = parseInt(raw, 10)
+      if (Number.isFinite(n)) collected[key] = n
+    }
     else if (key.startsWith('quick-set:') || key === 'favorite_programs') {
       try { collected[key] = JSON.parse(raw) } catch { /* битое — пропускаем */ }
     } else collected[key] = raw

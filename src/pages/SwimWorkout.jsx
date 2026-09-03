@@ -267,10 +267,17 @@ export default function SwimWorkout() {
     const fromAccount = getPrefSync(REPS_KEY(programId), null)
     const n0 = parseInt(fromAccount, 10)
     if (Number.isFinite(n0) && n0 >= MIN_REPS && n0 <= MAX_REPS) { setMainReps(n0); return }
-    // Разовый добор со старого места — Telegram CloudStorage.
+    // Разовый добор со старого места — Telegram CloudStorage. Найденное СРАЗУ
+    // переписываем в настройки аккаунта (UX-007): CloudStorage виден только
+    // внутри Telegram, и без этой строки значение так и осталось бы там —
+    // в браузере круги каждый раз возвращались бы к значению по умолчанию.
+    // Так же устроен переезд места тренировки в lib/program-place.js.
     cloudGet(REPS_KEY(programId)).then(v => {
       const n = parseInt(v, 10)
-      if (!cancelled && Number.isFinite(n) && n >= MIN_REPS && n <= MAX_REPS) setMainReps(n)
+      if (!cancelled && Number.isFinite(n) && n >= MIN_REPS && n <= MAX_REPS) {
+        setMainReps(n)
+        setPref(REPS_KEY(programId), n)
+      }
     })
     return () => { cancelled = true }
   }, [programId])
