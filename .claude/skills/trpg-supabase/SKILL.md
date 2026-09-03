@@ -308,8 +308,42 @@ GRANT EXECUTE ON FUNCTION public.api_example(bigint) TO authenticated;
 в репозитории, это нормально.
 
 Общий код лежит в `_shared/` и подтягивается относительным импортом
-(`../_shared/telegram.ts`) — отдельно его деплоить не надо, он уезжает вместе
-с функцией.
+(`../_shared/telegram.ts`). **Его надо передавать в деплой явно**, отдельным
+файлом в списке — сам он не подтянется.
+
+### Как деплоить через MCP-коннектор
+
+`deploy_edge_function` с полным набором файлов. Имена — С ПАПКОЙ, как в
+репозитории, иначе относительный импорт не разрешится:
+
+```
+name: telegram-auth
+entrypoint_path: telegram-auth/index.ts
+import_map_path: telegram-auth/deno.json
+verify_jwt: false          ← у ВСЕХ трёх функций входа: их зовут ДО авторизации
+files:
+  telegram-auth/index.ts
+  telegram-auth/deno.json
+  _shared/telegram.ts      ← общий код передаём явно
+```
+
+`verify_jwt` брать из текущих настроек (`list_edge_functions`), не выставлять
+наугад: включённая проверка на функции входа заблокирует сам вход.
+
+**Проверка сразу после деплоя, до похода в Telegram** — вызвать функцию с
+заведомо мусорной подписью:
+
+```bash
+curl -X POST "$URL/functions/v1/telegram-auth" \
+  -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"initData":"user=%7B%22id%22%3A1%7D&auth_date=1&hash=deadbeef"}'
+```
+
+Ждём `{"error":"invalid_signature"}` и 401 — значит модуль загрузился и HMAC
+считается. Если пришло 500 — не разрешился импорт, откатываться немедленно.
+
+История: версия 9 (03.09.2026) — убрана копия проверки подписи, подключён
+`_shared`. Проверено этим curl плюс реальным входом в Telegram.
 
 ## Аутентификация
 
