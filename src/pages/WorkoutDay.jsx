@@ -141,6 +141,14 @@ export default function WorkoutDay() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Программа и выбранное место (Зал/Дом/Улица) объявляются ЗДЕСЬ, а не ниже
+  // по файлу: их читает useQuickWorkout сразу под этим блоком. Обращение к
+  // `place` до его объявления роняло весь экран дня с
+  // «Cannot access before initialization» — const не поднимается.
+  const program = useMemo(() => getProgramBySlug(programId), [programId])
+  const places = useMemo(() => getProgramPlaces(program), [program])
+  const [place, setPlace] = useProgramPlace(programId, places)
+
   const [allSlots, setAllSlots] = useState([])
   // «Быстрая тренировка»: набор — что входит в короткую версию (настраивается
   // в конструкторе), quickOn — горит ли ракета сейчас.
@@ -311,7 +319,6 @@ export default function WorkoutDay() {
   const sectionsRef = useRef([])              // текущие секции
   const stickyHeaderRef = useRef(null)        // шапка дня — её низ = линия появления/смены
 
-  const program = useMemo(() => getProgramBySlug(programId), [programId])
   const days = useMemo(() => Object.keys(program?.data?.days || { A: 1 }), [program])
 
   // Плавание живёт на своей странице (/swim/:slug) — дней у него нет. По прямой
@@ -327,10 +334,6 @@ export default function WorkoutDay() {
         : program.title.charAt(0).toUpperCase() + program.title.slice(1).toLowerCase())
     : ''
 
-  // Выбранное место (Зал/Дом/Улица) — общий с карточками выбор. Упражнения дня
-  // грузятся под него.
-  const places = useMemo(() => getProgramPlaces(program), [program])
-  const [place, setPlace] = useProgramPlace(programId, places)
   // Актуальное место для сейва прогресса (без гонки при переключении места).
   const placeRef = useRef(place)
   placeRef.current = place
