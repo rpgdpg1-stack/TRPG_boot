@@ -2,7 +2,9 @@
 
 Фитнес-трекер, Telegram Mini App. Ставка на простоту и минимализм — игровые механики
 (XP, лиги, ранги, награды, рейтинг) намеренно выпилены. Стек: Vite + React 18 +
-React Router 6 + Supabase + Telegram WebApp SDK. Деплой — Vercel. Стили — CSS (НЕ Tailwind).
+React Router 6 + Supabase + Telegram WebApp SDK. Стили — CSS (НЕ Tailwind).
+**Боевой хостинг — Timeweb** (домен `trpg1.ru`, туда смотрит Mini App в Telegram);
+Vercel — запасной аэродром, а не основной.
 Пользователь (Дмитрий) — нон-программист, общение на русском.
 
 ## Скилы и агенты проекта
