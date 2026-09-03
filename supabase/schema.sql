@@ -300,6 +300,14 @@ ALTER TABLE public.user_exercise_notes ALTER COLUMN id ADD GENERATED ALWAYS AS I
 
 -- ── КЛЮЧИ И ОГРАНИЧЕНИЯ ────────────────────────────────────────────────────
 ALTER TABLE public.workout_exercises ADD CONSTRAINT exercise_sets_pkey PRIMARY KEY (id);
+
+-- Границы значений (SEC-007/008). Лимит заметки совпадает с NOTE_MAX_LENGTH
+-- во фронте; вес и дистанция ограничены, чтобы одна абсурдная точка
+-- не расплющила график весов.
+ALTER TABLE public.user_exercise_weights ADD CONSTRAINT user_exercise_weights_kg_range CHECK (weight_kg >= 0 AND weight_kg <= 500);
+ALTER TABLE public.user_exercise_weight_history ADD CONSTRAINT user_exercise_weight_history_kg_range CHECK (weight_kg >= 0 AND weight_kg <= 500);
+ALTER TABLE public.workouts ADD CONSTRAINT workouts_distance_range CHECK (distance_m IS NULL OR (distance_m >= 0 AND distance_m <= 100000));
+ALTER TABLE public.user_exercise_notes ADD CONSTRAINT user_exercise_notes_length CHECK (char_length(note) <= 280);
 ALTER TABLE public.exercises ADD CONSTRAINT exercises_pkey PRIMARY KEY (id);
 ALTER TABLE public.friend_pins ADD CONSTRAINT friend_pins_pkey PRIMARY KEY (id);
 ALTER TABLE public.friendships ADD CONSTRAINT friendships_pkey PRIMARY KEY (id);
