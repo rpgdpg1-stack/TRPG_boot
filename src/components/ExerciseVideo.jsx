@@ -39,6 +39,22 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  */
 const MAX_PLAYS = 1 // сколько раз проиграть перед остановкой на первом кадре
 
+/**
+ * Проиграть ролик с начала, не роняя приложение.
+ *
+ * `play()` возвращает промис, и Safari отклоняет его с AbortError, когда старт
+ * прервали: ушли с экрана, сменился источник, следом вызвали pause(). Синхронный
+ * try/catch такой отказ НЕ ловит — он улетал в Sentry необработанным падением
+ * (TRPG-REACT-4, 29.08.2026). Ловим сам промис: для человека это просто
+ * непроигравшаяся гифка, поломки тут нет.
+ */
+function restartPlay(v) {
+  try {
+    v.currentTime = 0
+    v.play()?.catch(() => { /* старт прервали — ничего страшного */ })
+  } catch { /* ignore */ }
+}
+
 export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),
   // 14px для compact (если когда-то понадобится в маленькой карточке).
@@ -95,7 +111,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
     const v = e.currentTarget
     playsRef.current += 1
     if (playsRef.current < MAX_PLAYS) {
-      try { v.currentTime = 0; v.play() } catch { /* ignore */ }
+      restartPlay(v)
     } else {
       try { v.pause(); v.currentTime = 0 } catch { /* ignore */ }
     }
@@ -116,7 +132,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
     if (!v) return
     haptic.light()
     playsRef.current = 0
-    try { v.currentTime = 0; v.play() } catch { /* ignore */ }
+    restartPlay(v)
   }
 
   // Интерактивна миниатюра с видео (есть что переигрывать) и неудавшаяся
