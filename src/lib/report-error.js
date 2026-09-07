@@ -23,8 +23,12 @@ import { debug } from './debug'
  * @param where — короткая метка места: «модуль.функция». Попадает в Sentry
  *                тегом `where`, по нему события группируются и фильтруются.
  * @param extra — необязательные детали (id, ключ, параметры вызова).
+ * @param level — важность в Sentry (по умолчанию `error`). Понижать до `info`
+ *                стоит для ОЖИДАЕМЫХ сбоев, которые мы уже обработали и
+ *                которые повторяются у всех: их надо видеть, но поднимать по
+ *                ним тревогу и звать чинить нечего.
  */
-export function reportError(error, where, extra) {
+export function reportError(error, where, extra, level) {
   // В разработке Sentry выключен (enabled: import.meta.env.PROD), поэтому
   // дублируем в консоль — иначе локально сбой останется незамеченным.
   debug('[error]', where, error)
@@ -32,7 +36,8 @@ export function reportError(error, where, extra) {
   try {
     Sentry.captureException(error, {
       tags: { where },
-      extra: extra || undefined
+      extra: extra || undefined,
+      level: level || undefined
     })
   } catch {
     // Sentry не инициализирован (нет DSN) — это не повод падать здесь.
@@ -45,4 +50,26 @@ export function reportError(error, where, extra) {
  */
 export function catchTo(where, extra) {
   return (error) => reportError(error, where, extra)
+}
+
+/**
+ * Кто словил ошибку — в события Sentry.
+ *
+ * Без этого в Sentry не было ни одного признака человека: только гео по IP,
+ * а «Users Impacted» всегда показывал ноль. Опознать, кого именно уронило,
+ * получалось лишь сверкой минут падения с активностью в базе.
+ *
+ * Шлём ТОЛЬКО числовой id из public.users. Ни почты, ни имени, ни telegram_id:
+ * id хватает, чтобы найти человека в базе, и он ничего не говорит о нём сам по
+ * себе — персональные данные в чужой сервис не уезжают.
+ *
+ * Вышел из аккаунта (или его ещё нет) — снимаем метку, иначе следующие ошибки
+ * приписались бы предыдущему.
+ */
+export function setSentryUser(user) {
+  try {
+    Sentry.setUser(user?.id ? { id: String(user.id) } : null)
+  } catch {
+    // Sentry не инициализирован (нет DSN) — не повод падать.
+  }
 }

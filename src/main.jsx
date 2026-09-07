@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import { initMetrika } from './lib/metrika'
+import { setSentryUser } from './lib/report-error'
+import { getCurrentUser } from './lib/auth'
+import { EVENTS, on } from './lib/events'
 import { captureShareToken } from './features/programs/customProgram'
 import App from './App.jsx'
 import './index.css'
@@ -28,6 +31,14 @@ if (SENTRY_DSN) {
     // Доля трасс производительности. 0 — не собираем перформанс, только ошибки.
     tracesSampleRate: 0,
   })
+
+  // Метка человека на событиях. Ставим сразу из кеша (он поднимается ещё до
+  // входа, чтобы UI не мигал) и обновляем на всех переходах: вход — USER_READY,
+  // смена данных и выход — USER_CHANGED (при выходе прилетает null и метка
+  // снимается). Внутри уезжает только числовой id, см. setSentryUser.
+  setSentryUser(getCurrentUser())
+  on(EVENTS.USER_READY, evt => setSentryUser(evt.detail))
+  on(EVENTS.USER_CHANGED, evt => setSentryUser(evt.detail))
 }
 
 // Метрика — до рендера, чтобы первый заход не потерялся.

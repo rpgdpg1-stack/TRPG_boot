@@ -37,7 +37,12 @@ export function lazyRoute(importer) {
         reportError(error, 'lazyRoute.failed-after-reload')
         throw error
       }
-      reportError(error, 'lazyRoute.stale-chunk')
+      // Уровень info, а не error: вкладка отстала от сервера — это ожидаемое
+      // следствие каждого выката, и мы его уже отработали перезагрузкой.
+      // Как «ошибка» оно засоряло сводку Sentry после КАЖДОГО деплоя, хотя
+      // чинить нечего. Видеть по-прежнему хотим: по нему считается, сколько
+      // человек застаёт выкат на руках.
+      reportError(error, 'lazyRoute.stale-chunk', undefined, 'info')
       hardReload()
       // Страница уже уходит на перезагрузку: возвращаем промис, который
       // никогда не разрешится, чтобы React не успел показать ошибку.
