@@ -2567,12 +2567,19 @@ ALTER TABLE public.user_prefs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workouts ENABLE ROW LEVEL SECURITY;
 
--- Каталог упражнений. Две политики работают ВМЕСТЕ: обычная разрешает чтение
--- всем, RESTRICTIVE поверх неё режет чужие личные упражнения. RESTRICTIVE
--- складывается с любой другой политикой через AND — поэтому прямой select
--- физически не может вернуть строку с owner_id.
-CREATE POLICY public_read_exercises ON public.exercises FOR SELECT TO public
-  USING (true);
+-- Каталог упражнений. Две политики работают ВМЕСТЕ, и роли у них разные.
+-- Разрешающая открывает каталожные строки; RESTRICTIVE поверх неё складывается
+-- через AND и страхует: строку с owner_id прямой select вернуть физически не
+-- может, личные упражнения идут только через api_get_my_exercises.
+--
+-- ВАЖНО про RESTRICTIVE: она только ОГРАНИЧИВАЕТ и сама не разрешает ничего.
+-- Останется одна, без разрешающей — чтение закрыто целиком, а select вернёт
+-- пустой список с кодом 200, без единой ошибки. Ровно так и вышло, когда
+-- SEC-002 убрала прежнюю public_read_exercises с USING (true): в конструкторе
+-- вместо названий появились сырые id. Убирать разрешающую, не заведя новую,
+-- нельзя.
+CREATE POLICY exercises_read_catalog ON public.exercises FOR SELECT TO anon, authenticated
+  USING ((owner_id IS NULL));
 
 CREATE POLICY exercises_public_reads_system_only ON public.exercises AS RESTRICTIVE FOR SELECT TO authenticated, anon
   USING ((owner_id IS NULL));
