@@ -87,13 +87,18 @@ SELECT
     AND has_function_privilege('anon', p.oid, 'EXECUTE'))  AS открыта_анониму;
 ```
 
-Перед миграцией, которая переписывает функции, — сохранить старые определения,
-чтобы откат был мгновенным:
+Перед миграцией, которая переписывает функции, откат должен быть под рукой —
+но **не таблицей-снимком в самой базе**. Так делали дважды (`_rollback_sec001`,
+`_rollback_db_integrity`), и обе оказались дырой: RLS на них не включали, и
+полный код серверных функций вместе с проверками доступа читался и правился
+публичным anon-ключом. 07.09.2026 обе удалены.
 
-```sql
-CREATE TABLE public._rollback_<дата> AS
-SELECT proname, pg_get_functiondef(oid) AS def FROM pg_proc
-WHERE pronamespace='public'::regnamespace AND proname IN (...);
+Откат берём из git: `supabase/schema.sql` версионируется и хранит определения
+всех функций. Состояние до нужной миграции достаётся так:
+
+```bash
+git log --oneline -S"<имя функции>" -- supabase   # коммит, где её правили
+git show <коммит>^:supabase/schema.sql            # схема ДО этой правки
 ```
 
 ### REVOKE FROM anon НЕ снимает грант, выданный PUBLIC
@@ -127,6 +132,51 @@ REVOKE EXECUTE ON FUNCTION public.api_example(bigint) FROM anon;
 SELECT polname, polcmd, pg_get_expr(polqual, polrelid)
 FROM pg_policy WHERE polrelid = 'public.exercises'::regclass;
 ```
+
+### ГРАБЛЯ: RESTRICTIVE-политика сама НИЧЕГО не разрешает
+
+Обратная сторона предыдущей граблы, и стоила она трёх дней сломанного экрана.
+
+`AS RESTRICTIVE` только ОГРАНИЧИВАЕТ: её условие приклеивается через `AND` к
+разрешающим (permissive) политикам. Не осталось ни одной разрешающей — читать
+нельзя вообще, сколько бы restrictive ни висело.
+
+Так и вышло: SEC-002 убрала `public_read_exercises` (ту самую, с `USING (true)`)
+и оставила на `exercises` одну `exercises_public_reads_system_only AS RESTRICTIVE`.
+Таблица закрылась целиком.
+
+Коварство в том, что **ошибки не будет**: `select` возвращает пустой список с
+кодом 200. Приложение молча показывает пустоту. В конструкторе программ вместо
+названий упражнений появились сырые id («ex_001») и заглушки вместо превью, а
+заметно это стало не сразу: почти везде каталог идёт через RPC
+`api_get_all_exercises` (она `SECURITY DEFINER`, RLS её не касается), да и на
+устройствах лежал прежний кеш каталога.
+
+Правило: **убираешь разрешающую политику — в той же миграции заводи новую**,
+суженную до того, что действительно можно отдавать наружу. Разрешающая на
+таблице должна остаться хотя бы одна.
+
+```sql
+-- polpermissive = false → это RESTRICTIVE: она режет, но не разрешает
+SELECT polname, polcmd, polpermissive, pg_get_expr(polqual, polrelid)
+FROM pg_policy WHERE polrelid = 'public.exercises'::regclass;
+```
+
+### Правку RLS проверять анонимным ключом, а не в SQL-редакторе
+
+Запросы из MCP-коннектора и SQL-редактора идут под служебной ролью, к которой
+RLS не применяется — наглухо закрытая таблица оттуда выглядит целой. Проверять
+надо тем же запросом, что шлёт приложение, и тем же публичным ключом (взять
+через `get_publishable_keys` коннектора или в панели Supabase):
+
+```bash
+KEY=<anon key>
+curl -s "https://<ref>.supabase.co/rest/v1/exercises?select=id,name&limit=3" \
+  -H "apikey: $KEY" -H "Authorization: Bearer $KEY"
+```
+
+Пустой `[]` в ответ на заведомо существующие строки = политика режет. Проверять
+обе стороны: что нужное ВИДНО и что закрытое по-прежнему НЕ отдаётся.
 
 ## Правила для RPC-функций
 
