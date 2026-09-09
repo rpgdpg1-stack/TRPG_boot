@@ -19,6 +19,10 @@ import PencilIcon from './PencilIcon'
 import PlayButton from './PlayButton'
 import PlayIcon from './PlayIcon'
 
+// Высота карточки на главной — фиксированная (см. minHeight ниже): контент в
+// двух состояниях разный, а прыгать карточка не должна.
+const HOME_CARD_MIN_H = '132px'
+
 // Долгое нажатие по карточке программы — те же пороги, что у карточки упражнения.
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 8
@@ -212,7 +216,11 @@ export default function ProgramCard({
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 0,
-    minHeight: showFooter ? '124px' : styles.card.minHeight,
+    // Высота на ГЛАВНОЙ (`meta`) одна и та же в обоих состояниях: не начато —
+    // метрики и «последняя тренировка», идёт тренировка — таймер и N/M на их
+    // месте. Иначе карточка подпрыгивала бы в момент старта, а рядом с ней
+    // ехала бы вся страница.
+    minHeight: meta ? HOME_CARD_MIN_H : (showFooter ? '124px' : styles.card.minHeight),
     opacity: available ? 1 : 0.55,
     cursor: available ? 'pointer' : 'default',
     // overflow hidden — клип заливки-прогресса по скруглению.

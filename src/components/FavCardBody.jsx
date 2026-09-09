@@ -1,7 +1,6 @@
 import { getProgramPlaces } from '../features/programs/registry'
 import { estimateMinutes } from '../features/programs/duration'
 import { formatDuration } from '../utils/history'
-import { pluralizeExercises } from '../utils/plural'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
@@ -106,6 +105,9 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
                 <span style={{ ...styles.activeStat, color: 'var(--color-text-secondary)' }}>{activeDone}/{activeTotal}</span>
               </div>
             ) : (
+              // Дни и метрики — ОДНОЙ строкой: это один уровень ответа на вопрос
+              // «что за тренировка». Разделителя «·» между метриками нет —
+              // достаточно воздуха: точка склеивала бы их в один показатель.
               <div style={styles.daysRow}>
                 <div style={styles.daysList}>
                   {allDays.map(d => {
@@ -122,24 +124,35 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
                     )
                   })}
                 </div>
+                {showMeta && (
+                  <>
+                    <span style={styles.metaStat}>~{formatDuration(metaMin)}</span>
+                    {/* «упр.», а не «упражнений»: замер на 390px — строке из
+                        дней, времени и полного слова не хватало 1px при двух днях
+                        и 14px при трёх (Сплит A/B/C), и слово срывалось на вторую
+                        строку. Сокращение общепринятое и не склоняется. */}
+                    <span style={styles.metaStat}>{metaCount} упр.</span>
+                  </>
+                )}
               </div>
             )}
           </>
         ))}
 
-        {showMeta && (
-          <div style={styles.metaLine}>
-            ~{formatDuration(metaMin)} · {metaCount} {pluralizeExercises(metaCount)}
-          </div>
-        )}
-
         {prog.source === 'shared' && prog.authorName && (
           <div style={styles.authorLine}>от {prog.authorName}</div>
         )}
 
-        {/* «Сегодня» / «5 дней назад» — в одной колонке с названием и днями,
-            тем же вертикальным шагом (не прижата к нижнему краю карточки). */}
-        {footer && <div style={styles.footerLine}>{footer}</div>}
+        {/* «Последняя тренировка» / «2 дня назад» — двумя строками, отдельной
+            группой. Подпись тише и мельче самого срока: важен срок, подпись лишь
+            объясняет, о чём он. Раньше строка была одна и «80 дней назад» не
+            говорило, о чём этот отсчёт. */}
+        {footer && (
+          <div style={styles.footerBlock}>
+            {footer.label && <span style={styles.footerLabel}>{footer.label}</span>}
+            <span style={styles.footerValue}>{footer.value ?? footer}</span>
+          </div>
+        )}
       </div>
     </>
   )
@@ -160,7 +173,13 @@ const styles = {
   },
   // Карандаш-индикатор сразу после названия (по центру строки текста).
   titleMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-1)', marginTop: '-2px', opacity: 0.7 },
-  daysRow: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
+  // Дни + метрики в одну строку. Зазор 12 (между буквами внутри daysList — 8):
+  // группы разделяет воздух, а не точка. wrap — страховка на узком экране:
+  // лучше метрика уедет на вторую строку, чем сломает карточку.
+  daysRow: {
+    display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)',
+    flexWrap: 'wrap', rowGap: 'var(--space-1)'
+  },
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
   activeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap' },
   activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
@@ -183,18 +202,28 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.3px'
   },
-  // «~1 ч 24 мин · 12 упражнений» — тише названия и дней: это справка о масштабе,
-  // а не то, ради чего смотрят на карточку.
-  metaLine: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+  // Метрики рядом с днями: тише букв дня — это справка о масштабе, а не то,
+  // ради чего смотрят на карточку. Числа Manrope, как все числа проекта.
+  // Кегль caption, а не label: на 390px строка «A B ~1 ч 24 мин 12 упражнений»
+  // в 13px не помещалась рядом с эмблемой и круглым плеем — «12 упражнений»
+  // срывалось на вторую строку. Метрики второстепенны, мельче им не вредит.
+  metaStat: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', lineHeight: 1, whiteSpace: 'nowrap'
   },
-  // «Последняя тренировка / 2 дня назад» — двумя строками, поэтому нужен свой
-  // межстрочный интервал (при lineHeight 1 строки слипались) и отступ сверху:
-  // это отдельная мысль, а не продолжение справки о времени над ней.
-  footerLine: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1.3, marginTop: 'var(--space-1)'
+  // Футер отдельной группой: свой отступ сверху, внутри строки вплотную.
+  footerBlock: {
+    display: 'flex', flexDirection: 'column', gap: '2px', marginTop: 'var(--space-1)'
+  },
+  // Подпись — мельче и тише: она лишь объясняет, о чём срок под ней.
+  footerLabel: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', lineHeight: 1.2
+  },
+  // Сам срок — заметнее подписи: это и есть ответ.
+  footerValue: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.2
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',

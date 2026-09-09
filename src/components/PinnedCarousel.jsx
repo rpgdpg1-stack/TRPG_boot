@@ -189,12 +189,11 @@ export default function PinnedCarousel() {
                     bordered={false}
                     press={false}
                     background="transparent"
-                    // Полной фразой, двумя строками: «80 дней назад» само по себе
-                    // не говорит, о чём этот срок. Так же подписано в профиле и в
-                    // карточке друга — одна формулировка на всё приложение.
+                    // Двумя строками: подпись объясняет, о чём срок, сам срок —
+                    // ответ. «80 дней назад» в одиночку не говорит ни о чём.
                     footer={lastDate
-                      ? <>Последняя тренировка<br />{formatRelative(lastDate)}</>
-                      : 'Ещё не начинали'}
+                      ? { label: 'Последняя тренировка', value: formatRelative(lastDate) }
+                      : { value: 'Ещё не начинали' }}
                     onToggleFav={() => onUnpin(slug)}
                     onOpen={() => guardedOpen(prog, slug)}
                     onDeleted={() => setSlugs(getPinnedProgramsSync())}
@@ -219,24 +218,13 @@ export default function PinnedCarousel() {
         )}
       </div>
 
-      {/* Точки — только когда есть что листать. Одна программа: точка сообщала бы
-          о выборе, которого нет. */}
-      {items.length > 1 && (
-        <div style={styles.dots}>
-          {items.map(({ slug }, i) => (
-            <span
-              key={slug}
-              style={{
-                ...styles.dot,
-                ...(i === idx ? styles.dotOn : null)
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Индикатора-точек НЕТ (сентябрь 2026): под карточкой он читался отдельным
+          декоративным уровнем «карточка → точки → Все программы» и уводил взгляд
+          с главного объекта. О том, что список листается, говорит сам жест.
 
-      {/* Единственный явный вход в каталог. Полным словом «Все программы»:
-          одно «Все» требовало расшифровки — все программы? тренировки? */}
+          Вход в каталог — СЛЕВА, по краю карточки, тихой текстовой ссылкой: это
+          редкое действие рядом с частым, и по центру оно спорило бы с карточкой
+          за внимание (и ловило случайные тапы). */}
       <button style={styles.allLink} className="press-tile" onClick={openCatalog}>
         Все программы
         <span style={styles.chevRight}><ChevronIcon size={14} color="var(--color-text-secondary)" /></span>
@@ -274,28 +262,17 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)',
     fontWeight: 700, color: 'var(--color-text-secondary)'
   },
-  // Точки-индикаторы под рамкой.
-  dots: {
-    display: 'flex', justifyContent: 'center', alignItems: 'center',
-    gap: 'var(--space-15)', marginTop: 'var(--space-3)'
-  },
-  // Неактивная страница — точка, активная — короткая пилюля (ниже `dotOn`).
-  // Пять одинаковых кружков на тёмном фоне читаются тяжелее: пилюля сразу
-  // отвечает «где я», а точки — «сколько всего».
-  dot: {
-    width: '6px', height: '6px', borderRadius: 'var(--radius-pill)',
-    background: 'var(--color-text-inactive)', opacity: 0.4,
-    transition: 'width 0.28s var(--ease-ios), opacity 0.22s var(--ease-ios), background 0.22s var(--ease-ios)'
-  },
-  dotOn: { width: '18px', background: 'var(--color-primary)', opacity: 1 },
-  // Вход в каталог — по центру под блоком, тем же тихим весом, что заголовки секций.
+  // Вход в каталог — слева, вровень с краем карточки. Горизонтальные паддинги
+  // съедены отрицательным margin: зона нажатия остаётся 44px, а текст стоит
+  // ровно по краю блока над ним.
   allLink: {
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
-    marginTop: 'var(--space-5)',
-    padding: 'var(--space-3) var(--space-4)',
+    marginTop: 'var(--space-4)',
+    marginLeft: 'calc(-1 * var(--space-3))',
+    padding: 'var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
   },
   chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)' }
