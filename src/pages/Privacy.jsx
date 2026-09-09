@@ -6,13 +6,11 @@ import { getCurrentUser } from '../lib/auth'
 import { getUser } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getRecords, getRecordsSync } from '../lib/records'
-import { resolveWeeklyStreak } from '../utils/dates'
 import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import ScreenTitle from '../components/ScreenTitle'
 import { FormCard, ToggleRow } from '../components/FormControls'
 import ProfileHeader from '../components/ProfileHeader'
 import ProfileMetrics from '../components/ProfileMetrics'
-import { hasRecords } from '../components/PersonalRecords'
 
 /**
  * «Приватность» — что друзья видят в твоём профиле.
@@ -33,8 +31,8 @@ import { hasRecords } from '../components/PersonalRecords'
  * подтверждением на сервер здесь нельзя, иначе между тапом и результатом висела
  * бы задержка ровно там, где человек проверяет причину и следствие. Собрана из
  * тех же `ProfileHeader` + `ProfileMetrics`, что и настоящая карточка друга, и
- * подчиняется тем же правилам: скрыл рекорды и последнюю тренировку — «Инфо
- * скрыто», тап по «Рекордам» открывает ту же модалку.
+ * подчиняется тем же правилам: скрыл последнюю тренировку — строка ушла, скрыл
+ * рекорды — исчез кубок. Никаких «Инфо скрыто»: пустота и есть ответ.
  */
 export default function Privacy() {
   const navigate = useNavigate()
@@ -65,17 +63,10 @@ export default function Privacy() {
     savePrivacy(next)
   }
 
-  const streak = resolveWeeklyStreak(user?.weekly_streak, user?.weekly_streak_week)
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
-  const showRec = privacy.showRecords && hasRecords(records)
-
-  // Ровно та же сборка, что в карточке друга: есть что показать — плитка
-  // «Рекорды», нечего — опорная строка. Пустая карточка читалась бы как поломка,
-  // а причину (приватность) раскрывать нельзя даже в своём превью: пусть
-  // выглядит так же, как увидит друг.
-  const previewSections = showRec
-    ? [<ProfileMetrics key="metrics" stats={null} records={records} favorites={[]} />]
-    : [<div key="note" style={styles.hiddenNote}>Инфо скрыто</div>]
+  // Ровно то же, что увидит друг: кубок в шапке, если рекорды открыты и есть.
+  // Закрыл — кубка просто нет, никаких «Инфо скрыто»: пустота и есть ответ.
+  const previewRecords = privacy.showRecords ? records : null
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -104,11 +95,9 @@ export default function Privacy() {
         <div style={styles.previewCard}>
           <ProfileHeader
             user={user}
-            streak={streak}
             lastWorkout={lastWorkout}
             showLastWorkout={privacy.showLastWorkout}
-            interactiveStreak={false}
-            sections={previewSections}
+            rightAction={<ProfileMetrics mode="icon" records={previewRecords} />}
           />
         </div>
       </div>
@@ -138,9 +127,5 @@ const styles = {
     background: 'var(--surface-raised)',
     borderRadius: 'var(--radius-card)',
     overflow: 'hidden'
-  },
-  hiddenNote: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--space-2) 0'
   }
 }

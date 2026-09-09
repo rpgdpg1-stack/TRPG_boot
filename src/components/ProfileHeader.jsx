@@ -1,53 +1,47 @@
-import { useRef, useState } from 'react'
-import { haptic } from '../lib/telegram'
 import { formatRelative } from '../utils/history'
-import WeeklyMuscle from './WeeklyMuscle'
 import Avatar from './Avatar'
-import StreakInfoPopup from './StreakInfoPopup'
 
 /**
  * Карточка-шапка профиля (соц-концепция без статусов — см. память проекта).
  * Переиспользуется на странице Профиль и в модалке профиля друга.
  *
  * Состав (компактно):
- *   [ АВАТАР ]  Имя                          💪 2
- *               вчера · [значок вида]
+ *   [ АВАТАР ]  Имя                          [ rightAction? ]
+ *               Последняя тренировка
+ *               9 дней назад
  *   [ bottomAction? ]
  *
- * Бицепс справа — тренировки за неделю: при 0 просто серый значок без цифры
- * (место под цифру зарезервировано), при ≥1 — значок + число, размер/обводка
- * растут с числом тренировок. Тап по значку → поп-ап с пояснением.
+ * **Бицепса со счётчиком недели здесь БОЛЬШЕ НЕТ** (сентябрь 2026). Он пытался
+ * быть сразу статусом активности и счётчиком, а расшифровать его состояния
+ * (серый / бежевый / с цифрой) человек был не обязан. Тот же вопрос «я
+ * тренируюсь на этой неделе?» уже закрыт строкой недели на главной, где счётчик
+ * и остался. Здесь достаточно строки «Последняя тренировка N дней назад» — это
+ * конкретный факт, одинаково понятный и себе, и другу.
  *
- * Пропсы: user, streak, lastWorkout, statsLoading, bottomAction.
+ * `rightAction` — что стоит справа вместо бицепса. В СВОЁМ профиле пусто, у
+ * ДРУГА — золотой кубок рекордов (`ProfileMetrics mode="icon"`). Когда он есть,
+ * строка «последняя тренировка» переносится на две строки, чтобы не налезать
+ * на иконку.
+ *
+ * Пропсы: user, lastWorkout, statsLoading, rightAction, sections, bottomAction.
  */
 export default function ProfileHeader({
   user,
-  streak = null,
   lastWorkout = null,
   // Тренируется прямо сейчас — заменяет строку «когда тренировался».
   isTraining = false,
   statsLoading = false,
   showLastWorkout = true,
-  interactiveStreak = false,   // поп-ап серии по тапу — только в СВОЁМ профиле
+  rightAction = null,          // справа от имени: кубок рекордов у друга
   sections = [],               // доп. секции внутри карточки (статистика, любимые) с разделителем
   bottomAction = null
 }) {
-  const [showStreakInfo, setShowStreakInfo] = useState(false)
-  const fireRef = useRef(null)
-
   const displayName = user?.first_name || 'ATHLETE'
-  const s = streak || 0
 
   // Полной фразой: «2 дня назад» под именем не говорит, о чём этот срок. В
   // СПИСКЕ друзей строка остаётся короткой — там она в ряду однотипных строк и
   // читается из контекста; здесь же это отдельная карточка про одного человека.
-  const lastWhen = lastWorkout ? `Последняя тренировка ${formatRelative(lastWorkout.finished_at)}` : null
-
-  const toggleStreak = () => {
-    if (!interactiveStreak) return   // в профиле друга значок не тапается
-    haptic.light()
-    setShowStreakInfo(v => !v)
-  }
+  const when = lastWorkout ? formatRelative(lastWorkout.finished_at) : null
 
   return (
     <div style={styles.card}>
@@ -68,40 +62,31 @@ export default function ProfileHeader({
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
               ) : (
-                <span style={isTraining ? styles.trainingNow : styles.lastWhen}>
-                  {isTraining ? 'Тренируется сейчас' : (lastWhen || 'Ещё не тренировался')}
+                <span style={{
+                  ...(isTraining ? styles.trainingNow : styles.lastWhen),
+                  // Рядом иконка — колонка узкая, и без запрета фраза рвётся по
+                  // словам («Последняя / тренировка / 9 дней назад»). Перенос там
+                  // задан явным <br/>, большего не нужно.
+                  ...(rightAction ? styles.lastWhenFixed : null)
+                }}>
+                  {isTraining
+                    ? 'Тренируется сейчас'
+                    : when
+                      // Рядом стоит иконка — переносим срок на вторую строку, иначе
+                      // длинная фраза («Последняя тренировка 10 дней назад») налезает
+                      // на неё. Свободна вся ширина — оставляем одной строкой.
+                      ? (rightAction
+                          ? <>Последняя тренировка<br />{when}</>
+                          : `Последняя тренировка ${when}`)
+                      : 'Ещё не тренировался'}
                 </span>
               )}
             </div>
           )}
         </div>
 
-        {/* Огонёк серии — справа, по центру строки. Тапабелен только в своём профиле. */}
-        <div style={styles.fireWrap} ref={fireRef}>
-          <button
-            style={{ ...styles.fireBtn, cursor: interactiveStreak ? 'pointer' : 'default' }}
-            onClick={toggleStreak}
-            aria-label="Тренировки на этой неделе"
-          >
-            {statsLoading ? (
-              <span style={styles.skeletonStat} />
-            ) : (
-              <>
-                <WeeklyMuscle count={s} size={22} />
-                <span style={styles.fireCount}>{s >= 1 ? `${s}` : ''}</span>
-              </>
-            )}
-          </button>
-
-          {interactiveStreak && (
-            <StreakInfoPopup
-              streak={s}
-              open={showStreakInfo}
-              onClose={() => setShowStreakInfo(false)}
-              anchorRef={fireRef}
-            />
-          )}
-        </div>
+        {/* Справа от имени — кубок рекордов (у друга) или ничего (свой профиль). */}
+        {rightAction}
       </div>
 
       {/* Доп. секции внутри карточки (статистика, любимые) — каждая с разделителем. */}
@@ -149,10 +134,14 @@ const styles = {
     lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0
   },
   lastRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: '18px' },
+  // Без nowrap: фраза стала длинной («Последняя тренировка 100 дней назад») и на
+  // узком экране обязана переноситься сама, а не вылезать за карточку. Явный
+  // перенос у друга (<br/>) от этого не зависит.
   lastWhen: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
+    color: 'var(--color-text-secondary)', lineHeight: 1.35
   },
+  lastWhenFixed: { whiteSpace: 'nowrap' },
   // Тот же кегль и место, что у «3 дня назад», но акцентным цветом: карточка
   // друга не должна противоречить списку, из которого её открыли.
   trainingNow: {
@@ -160,25 +149,6 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     color: 'var(--color-primary)'
-  },
-  // Огонёк серии: пространство справа от аватара делим пополам — имя в левой
-  // половине, бицепс по ЦЕНТРУ правой (не прижат к краю карточки).
-  fireWrap: { position: 'relative', flex: 1, display: 'flex', justifyContent: 'center' },
-  fireBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
-    background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-1)',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  // 1:1 со строкой недели на главной: БЕЗ крестика, только цифра, display 800/17,
-  // вплотную к значку. Ширину НЕ резервируем — с ростом недели значок крепнет,
-  // цифра едет правее, и это нормально: пара всегда читается как одно целое.
-  fireCount: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)', letterSpacing: '0.5px',
-    lineHeight: 1, textAlign: 'left', color: 'var(--color-primary)'
-  },
-  skeletonStat: {
-    width: '48px', height: '24px', borderRadius: 'var(--radius-small)',
-    background: 'var(--layer-2)', animation: 'headerSkeletonPulse 1.2s ease-in-out infinite'
   },
   skeletonLine: {
     display: 'inline-block', width: '110px', height: '10px', borderRadius: 'var(--radius-small)',

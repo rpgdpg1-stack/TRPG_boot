@@ -2,11 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getUserPublicProfile } from '../lib/friends-list'
 import { getCachedProfile, setCachedProfile } from '../lib/profile-cache'
-import { resolveWeeklyStreak } from '../utils/dates'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import ProfileHeader from './ProfileHeader'
 import ProfileMetrics from './ProfileMetrics'
-import { hasRecords } from './PersonalRecords'
 import { applyGenderAll } from '../lib/gender-media'
 import { applyRecordsGender } from '../lib/records'
 import CloseCross from './CloseCross'
@@ -60,38 +58,25 @@ export default function PlayerProfileModal({ row, onClose }) {
     photo_url: row.photo_url
   }
 
-  // Секции внутри карточки друга. Статистику и любимые сервер по-прежнему
-  // отдаёт (тумблеры приватности на них живые, и они нужны СВОЕМУ профилю),
-  // но здесь мы их не показываем — см. комментарий ниже.
-  const friendSections = []
   // Рекорды друга приходят тем же ответом. Отдельный тумблер приватности держит
-  // сервер: выключил — в ответе `records: null`, и раздела просто нет.
+  // сервер: выключил — в ответе `records: null`.
+  //
+  // У ДРУГА показываем ТОЛЬКО рекорды (сентябрь 2026): статистика и любимые
+  // превращали раздел «Друзья» в чужую аналитику, хотя заходят сюда посмотреть,
+  // кто чем живёт. Рекорд — единственная социально интересная единица: «жмёт
+  // 100 кг» вызывает интерес, «тренировался 7 раз за месяц» — нет.
+  //
+  // Живут они теперь КУБКОМ В ШАПКЕ, на месте бывшего бицепса, — поэтому секций
+  // под разделителем у друга не осталось. Нет рекордов (или закрыты) — кубка
+  // просто нет: строка «Инфо скрыто» убрана, она сообщала о пустоте вместо того
+  // чтобы молча её не показывать.
   const friendRecords = данные?.records || null
-  // У ДРУГА показываем ТОЛЬКО рекорды (сентябрь 2026). Раньше здесь были ещё
-  // статистика и любимые упражнения — и раздел «Друзья» превращался в чужую
-  // аналитику, хотя человек заходит сюда посмотреть, кто чем живёт. Рекорд —
-  // единственная socially интересная единица: «жмёт 100 кг» вызывает интерес,
-  // «тренировался 7 раз за месяц» — нет. Свои цифры остаются в профиле, там
-  // они на отдельных экранах.
-  if (hasRecords(friendRecords)) {
-    friendSections.push(
-      <ProfileMetrics key="metrics" stats={null} records={friendRecords} favorites={[]} />
-    )
-  }
-  // Друг ничего не открыл (или тренировок ещё нет) — нейтральная опорная строка,
-  // чтобы экран не читался как поломка. Приватность НЕ раскрываем (что скрыто).
-  if (pub && friendSections.length === 0) {
-    friendSections.push(
-      <div key="note" style={styles.friendNote}>Инфо скрыто</div>
-    )
-  }
-  // Сеть не ответила и показать нечего. Отдельная строка, а не «Инфо скрыто»:
-  // свалить сбой связи на приватность друга — прямая ложь.
-  if (!pub && failed) {
-    friendSections.push(
-      <div key="note" style={styles.friendNote}>Данные не загрузились</div>
-    )
-  }
+
+  // Сеть не ответила и показать нечего — единственная секция, которая осталась.
+  // Молчать здесь нельзя: сбой связи не должен выглядеть как «друг всё закрыл».
+  const friendSections = (!pub && failed)
+    ? [<div key="note" style={styles.friendNote}>Данные не загрузились</div>]
+    : []
 
   return createPortal(
     <div ref={overlayRef} style={styles.overlay} onClick={onClose}>
@@ -105,11 +90,13 @@ export default function PlayerProfileModal({ row, onClose }) {
         />
         <ProfileHeader
           user={userObj}
-          streak={pub ? resolveWeeklyStreak(pub.weekly_streak, pub.weekly_streak_week) : null}
           lastWorkout={pub?.last_workout || null}
           isTraining={!!pub?.is_training}
           showLastWorkout={pub?.show_last_workout ?? true}
           statsLoading={pub === null && !failed}
+          // Кубок справа — вместо бывшего бицепса. Рекордов нет или друг их
+          // закрыл → компонент не рисует ничего, и карточка просто короче.
+          rightAction={<ProfileMetrics mode="icon" records={friendRecords} />}
           sections={friendSections}
         />
       </div>

@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic, backButton, lockVerticalSwipes, getUser, isTelegramEnv, confirm as tgConfirm } from '../lib/telegram'
 import { signOut } from '../lib/auth'
-import { getWeeklyStreak, getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
+import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { getFriendsList } from '../lib/friends-list'
 import { getCurrentUser } from '../lib/auth'
-import { resolveWeeklyStreak } from '../utils/dates'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
@@ -38,10 +37,6 @@ export default function Profile() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState(() => getCurrentUser() || getUser())
-  const [streak, setStreak] = useState(() => {
-    const u = getCurrentUser()
-    return resolveWeeklyStreak(u?.weekly_streak, u?.weekly_streak_week)
-  })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
@@ -72,11 +67,9 @@ export default function Profile() {
       getFavoriteExercises().then(list => setFavorites(list))
       getRecords().then(setRecords)
       Promise.all([
-        getWeeklyStreak(),
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
         getFriendsList()
-      ]).then(([wkStreak, wk, friendsRows]) => {
-        setStreak(wkStreak)
+      ]).then(([wk, friendsRows]) => {
         setWorkouts(wk || [])
         setLoaded(true)
         const fCount = Array.isArray(friendsRows) ? friendsRows.length : null
@@ -187,10 +180,8 @@ export default function Profile() {
       <div style={styles.headerWrap}>
         <ProfileHeader
           user={user}
-          streak={streak}
           lastWorkout={lastWorkout}
           showLastWorkout={privacy.showLastWorkout}
-          interactiveStreak={true}
           sections={sections}
           statsLoading={!loaded}
         />

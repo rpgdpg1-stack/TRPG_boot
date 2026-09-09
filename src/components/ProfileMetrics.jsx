@@ -20,6 +20,11 @@ import MarqueeTag from './MarqueeTag'
  * Плитки-входы в карточке профиля (своей и друга): иконка сверху, подпись снизу,
  * фон `--surface`, radius-card. Цифр НЕТ — плитки только открывают детали.
  *
+ * Режим `icon` — ОДИН кубок без подписи, без плиток: так рекорды показываются в
+ * карточке друга. Подпись там не нужна — 🏆 в фитнесе читается как достижение
+ * сам по себе, а место справа в шапке освободилось от бицепса (счётчик недели
+ * остался только на главной, где он и отвечает на вопрос «я тренируюсь?»).
+ *
  * КУДА ведёт тап, зависит от того, чей это профиль (проп `mode`):
  *  - `page` (СВОЙ профиль) — на полноценный экран: `/history`, `/records`,
  *    `/favorite-exercises`. Свои данные разглядывают долго, и держать их в
@@ -61,6 +66,8 @@ export default function ProfileMetrics({
   //
   // У ДРУГА (`modal`) наоборот: показываем только то, где реально есть данные —
   // чужие пустые полки не сообщают ничего.
+  // Режим одной иконки: рекорды у друга. Плиток нет, подписи нет — только кубок.
+  const iconOnly = mode === 'icon'
   const always = mode === 'page'
   const hasFav = always || favCount > 0
   const hasStats = always || !!stats
@@ -81,6 +88,31 @@ export default function ProfileMetrics({
     hasFav && { id: 'favorites', title: 'Любимые упражнения' }
   ].filter(Boolean)
 
+  if (iconOnly) {
+    // Рекордов нет или друг их закрыл — не рисуем ничего. Пустого места в шапке
+    // не остаётся: колонка с именем просто занимает всю ширину.
+    if (!hasRecords(records)) return null
+    return (
+      <>
+        <button style={styles.iconBtn} className="press-tile" onClick={() => show('records')} aria-label="Рекорды">
+          <UiIcon name="trophy" size={26} color={RECORD_GOLD} />
+        </button>
+        {open && createPortal(
+          <MetricModal
+            kind="records"
+            tabs={[{ id: 'records', title: 'Рекорды' }]}
+            stats={null}
+            records={records}
+            favorites={[]}
+            showWeights={showWeights}
+            onClose={() => setOpen(null)}
+          />,
+          document.body
+        )}
+      </>
+    )
+  }
+
   if (!hasStats && !hasFav && !hasRec) return null
 
   // Три плитки в ряд на узком экране (375) не помещаются с большим зазором —
@@ -100,10 +132,11 @@ export default function ProfileMetrics({
         )}
         {hasRec && (
           <button style={styles.tile} className="press-tile" onClick={() => show('records')}>
-            {/* Кубок золотой, а не зелёный: золото — язык рекордов во всём
-                приложении (блок на экране статистики, эмодзи в сводках бота). */}
-            <span style={styles.tileIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
-            <span style={styles.tileTitle}>Рекорды</span>
+            {/* Кубок золотой, БЕЗ подписи: 🏆 в фитнесе читается как «достижения»
+                без слов, а золото среди двух зелёных иконок само притягивает
+                взгляд — из трёх входов этот и должен быть самым заметным.
+                Название «Рекорды» человек увидит на самой странице. */}
+            <span style={styles.tileIcon}><UiIcon name="trophy" size={26} color={RECORD_GOLD} /></span>
           </button>
         )}
         {hasFav && (
@@ -411,6 +444,13 @@ function FavoritesList({ items, showWeights }) {
 }
 
 const styles = {
+  // Кубок в шапке карточки друга: место бывшего бицепса, тач-зона 44px.
+  iconBtn: {
+    flexShrink: 0,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '44px', height: '44px',
+    background: 'transparent', border: 'none', cursor: 'pointer'
+  },
   // Два входа по центру карточки. Фона у плиток НЕТ: тогда отступ «линия → иконка»
   // и «подпись → низ карточки» равны паддингам самой карточки профиля (16),
   // как расстояние от аватара до линии. Кликабельность даёт press-эффект.
