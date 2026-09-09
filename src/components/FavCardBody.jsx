@@ -181,19 +181,18 @@ const styles = {
   footerBlock: {
     display: 'flex', flexDirection: 'column', gap: '2px', marginTop: 'var(--space-1)'
   },
-  // Обе строки ОДНОГО кегля (13px) — разделяет их только цвет, по «лестнице
-  // важности» из trpg-ui: срок `--text-info` (68% белого) заметнее, подпись
-  // `--color-text-secondary` (#888) приглушённее. Мельчить подпись не нужно:
-  // пара читается как одна мысль, а не как заголовок с примечанием.
-  // (`--color-text-inactive` тут не подходит — 50% белого почти неотличимы
-  // от #888, и разницы между строками не видно.)
+  // Обе строки — ОДИН кегль и ОДИН цвет `--color-text-secondary`. Тот же токен,
+  // что у срока в списке друзей и в профиле: «5 дней назад» везде выглядит
+  // одинаково, где бы ни стояло. Пробовали разводить строки по яркости
+  // (`--text-info` на срок) — пара распадалась на «заголовок и примечание»,
+  // хотя читается как одна мысль.
   footerLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', lineHeight: 1.25
   },
   footerValue: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--text-info)', lineHeight: 1.25
+    color: 'var(--color-text-secondary)', lineHeight: 1.25
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',

@@ -454,7 +454,12 @@ function FavoritesList({ items, showWeights }) {
 
 const styles = {
   // Друг закрыл рекорды (или их ещё нет) — нейтральная строка на месте плитки.
+  // Высота ТА ЖЕ, что у плитки (замер: 54px — иконка, gap, подпись, паддинги),
+  // и текст по центру: иначе карточка друга становилась заметно ниже, когда он
+  // что-то скрыл, — и сама её высота выдавала бы настройку приватности.
   hiddenNote: {
+    minHeight: '54px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', textAlign: 'center'
   },

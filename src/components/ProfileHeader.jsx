@@ -67,8 +67,7 @@ export default function ProfileHeader({
                 ) : when ? (
                   // ВСЕГДА две строки, даже когда фраза помещается в одну: пара
                   // «подпись / срок» так читается быстрее, а карточка не меняет
-                  // высоту от длины срока. Кегль у строк один, разделяет их
-                  // только цвет — «лестница важности» из trpg-ui.
+                  // высоту от длины срока.
                   <span style={styles.lastBlock}>
                     <span style={styles.lastLabel}>Последняя тренировка</span>
                     <span style={styles.lastValue}>{when}</span>
@@ -137,8 +136,8 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', lineHeight: 1.35
   },
-  // Пара «подпись / срок»: один кегль, разный цвет. Срок заметнее подписи —
-  // он и есть ответ, подпись лишь объясняет, о чём он.
+  // Пара «подпись / срок»: один кегль и один цвет `--color-text-secondary` —
+  // тот же, что у срока в списке друзей и на карточке главной.
   lastBlock: { display: 'flex', flexDirection: 'column', gap: '2px' },
   lastLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
@@ -146,7 +145,7 @@ const styles = {
   },
   lastValue: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'var(--text-info)', lineHeight: 1.25
+    color: 'var(--color-text-secondary)', lineHeight: 1.25
   },
   // Тот же кегль и место, что у «3 дня назад», но акцентным цветом: карточка
   // друга не должна противоречить списку, из которого её открыли.

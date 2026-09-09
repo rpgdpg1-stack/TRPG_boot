@@ -267,7 +267,10 @@ const styles = {
   allLink: {
     alignSelf: 'flex-start',
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
-    marginTop: 'var(--space-4)',
+    // Своего marginTop НЕТ: зазор до карточки задаёт padding самой кнопки — 12px,
+    // шаг «между связанными» по шкале. Раньше стояло ещё --space-4 сверху, и
+    // оптически между карточкой и ссылкой выходило 28px — пропасть. Паддинг
+    // при этом остаётся: он держит зону нажатия 44px.
     marginLeft: 'calc(-1 * var(--space-3))',
     padding: 'var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
