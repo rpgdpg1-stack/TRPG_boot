@@ -383,11 +383,10 @@ export default function WorkoutDay() {
       workoutEntryFromHome.set(programId, location.state?.fromHome === true)
       workoutEntryFromFav.set(programId, location.state?.from === '/favorite-exercises')
     }
-    const categoryId = program?.category || 'gym'
     backButton.setHandler(() => {
       if (workoutEntryFromHome.get(programId)) navigate('/')
       else if (workoutEntryFromFav.get(programId)) navigate(-1)  // шаг истории → на «Любимые»
-      else navigate(`/category/${categoryId}`)
+      else navigate('/programs')
     })
     lockVerticalSwipes()
   }, [navigate, program, location.state, programId])

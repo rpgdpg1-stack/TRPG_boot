@@ -6,7 +6,6 @@ import ErrorBoundary from './components/layout/ErrorBoundary'
 import TabBar from './components/TabBar'
 
 import Home from './pages/Home'
-import Category from './pages/Category'
 import WorkoutDay from './pages/WorkoutDay'
 import ModalDemo from './pages/ModalDemo'
 
@@ -32,6 +31,8 @@ const PersonalData = lazyRoute(() => import('./pages/PersonalData'))
 const Privacy = lazyRoute(() => import('./pages/Privacy'))
 const Profile = lazyRoute(() => import('./pages/Profile'))
 const ProgramConstructor = lazyRoute(() => import('./pages/ProgramConstructor'))
+const Programs = lazyRoute(() => import('./pages/Programs'))
+const Records = lazyRoute(() => import('./pages/Records'))
 const QuickWorkout = lazyRoute(() => import('./pages/QuickWorkout'))
 const Settings = lazyRoute(() => import('./pages/Settings'))
 const Support = lazyRoute(() => import('./pages/Support'))
@@ -288,7 +289,11 @@ export default function App() {
         <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/category/:id" element={<Category />} />
+          <Route path="/programs" element={<Programs />} />
+          {/* Старый адрес раздела. Ведёт в каталог: Telegram восстанавливает
+              свёрнутое приложение по РЕАЛЬНОМУ адресу, и ссылка из истории
+              не должна открывать чёрный экран. */}
+          <Route path="/category/:id" element={<Navigate to="/programs" replace />} />
           <Route path="/workout/:programId/:day" element={<WorkoutDay />} />
           <Route path="/swim/:programId" element={<SwimWorkout />} />
           <Route path="/constructor" element={<ProgramConstructor />} />
@@ -300,6 +305,7 @@ export default function App() {
           <Route path="/account" element={<AccountAccess />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/history" element={<History />} />
+          <Route path="/records" element={<Records />} />
           <Route path="/favorite-exercises" element={<FavoriteExercises />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* Профиль: тело и цель */}
@@ -514,7 +520,7 @@ function ShareImportController() {
       snapshot={snapshot}
       replacing={replacing}
       onClose={() => { clearPendingShareToken(); setSnapshot(null) }}
-      onSaved={() => { clearPendingShareToken(); setSnapshot(null); navigate('/category/gym') }}
+      onSaved={() => { clearPendingShareToken(); setSnapshot(null); navigate('/programs') }}
     />
   )
 }

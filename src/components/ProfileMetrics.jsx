@@ -17,11 +17,17 @@ import ExercisePlaceholder from './ExercisePlaceholder'
 import MarqueeTag from './MarqueeTag'
 
 /**
- * Плитки-входы в карточке профиля (своей и друга) — визуально те же, что
- * карточки на главной: иконка сверху, подпись снизу, фон `--surface`, radius-card.
- * Цифр НЕТ (они внутри модалок), плитки только открывают детали.
+ * Плитки-входы в карточке профиля (своей и друга): иконка сверху, подпись снизу,
+ * фон `--surface`, radius-card. Цифр НЕТ — плитки только открывают детали.
  *
- * Тап открывает модалку по центру (затемнение + крестик снизу):
+ * КУДА ведёт тап, зависит от того, чей это профиль (проп `mode`):
+ *  - `page` (СВОЙ профиль) — на полноценный экран: `/history`, `/records`,
+ *    `/favorite-exercises`. Свои данные разглядывают долго, и держать их в
+ *    модалке поверх профиля незачем.
+ *  - `modal` (профиль ДРУГА) — модалкой поверх, как раньше. На друга смотрят
+ *    мимоходом, и уходить ради этого из списка друзей человек не должен.
+ *
+ * Ниже — устройство модального режима (затемнение + крестик снизу):
  *   • «Статистика» — переключатель Месяц/Год (по умолчанию ГОД) + тоталы и разбивка
  *     по видам за выбранный период; плитка доступна ВСЕГДА, даже без тренировок —
  *     внутри тогда честная заглушка;
@@ -38,7 +44,14 @@ import MarqueeTag from './MarqueeTag'
 // друг — что отдал сервер.
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-export default function ProfileMetrics({ stats, records = null, favorites = [], showWeights = true }) {
+export default function ProfileMetrics({
+  stats,
+  records = null,
+  favorites = [],
+  showWeights = true,
+  mode = 'modal',
+  onOpenPage = null
+}) {
   const [open, setOpen] = useState(null)   // 'stats' | 'records' | 'favorites' | null
 
   const favCount = favorites?.length || 0
@@ -50,7 +63,12 @@ export default function ProfileMetrics({ stats, records = null, favorites = [], 
   // внутри которого «пока пусто», незачем — он появится сам с первым рекордом.
   const hasRec = hasRecords(records)
 
-  const show = (key) => { haptic.light(); setOpen(key) }
+  // Свой профиль уводит на отдельный экран, профиль друга — открывает модалку.
+  const show = (key) => {
+    haptic.light()
+    if (mode === 'page' && onOpenPage) { onOpenPage(key); return }
+    setOpen(key)
+  }
 
   // Разделы модалки в одном порядке с плитками. Отсюда же строится переключатель
   // ВНУТРИ модалки: список один, разъехаться нечему.

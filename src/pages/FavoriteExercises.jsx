@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getFavoriteExercises, getFavoritesSync, formatFavoriteValue, FAVORITE_LIMIT } from '../lib/favorite-exercises'
-import { getActiveDaySync, getFavoriteProgramsSync } from '../lib/storage'
+import { getActiveDaySync, getPinnedProgramsSync } from '../lib/storage'
 import { getProgramBySlug } from '../features/programs/registry'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { isCustomExercise } from '../features/programs/userExercises'
@@ -18,9 +18,17 @@ import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import MarqueeTag from '../components/MarqueeTag'
 
 const title = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '')
-// Закреплённая силовая программа — из настроек аккаунта. Прямое чтение
-// localStorage тут больше не работает: закрепы переехали в аккаунт.
-const readPinnedGym = () => getFavoriteProgramsSync().gym || null
+// Куда вести по «+»: в первую закреплённую СИЛОВУЮ программу — оттуда
+// упражнение и добавляют сердечком. Закрепов теперь список без лимита (раньше
+// была одна программа на раздел), поэтому берём первую подходящую по порядку:
+// он же порядок карусели на главной, то есть самая свежая.
+const readPinnedGym = () => {
+  for (const slug of getPinnedProgramsSync()) {
+    const prog = getProgramBySlug(slug)
+    if (prog && prog.category === 'gym') return slug
+  }
+  return null
+}
 
 /**
  * «Любимые упражнения» — до FAVORITE_LIMIT (5). Добавляются сердечком в мини-модалке дня
@@ -98,7 +106,7 @@ export default function FavoriteExercises() {
     if (!guard()) return   // не реагируем на призрачный тап сразу после закрытия модалки
     haptic.light()
     const slug = readPinnedGym()
-    if (!slug || !getProgramBySlug(slug)) { navigate('/category/gym', { state: { from: '/favorite-exercises' } }); return }
+    if (!slug) { navigate('/programs', { state: { from: '/favorite-exercises' } }); return }
     const prog = getProgramBySlug(slug)
     const day = getActiveDaySync(slug) || Object.keys(prog.data?.days || { A: 1 })[0] || 'A'
     navigate(`/workout/${slug}/${day}`, { state: { from: '/favorite-exercises' } })

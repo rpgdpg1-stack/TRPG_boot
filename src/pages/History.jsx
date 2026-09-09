@@ -4,20 +4,20 @@ import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { summarizeWorkouts, periodShortLabel, periodHintSuffix, mskParts, HISTORY_FETCH_LIMIT } from '../utils/history'
-import { getRecords, getRecordsSync } from '../lib/records'
 import ScreenTitle from '../components/ScreenTitle'
 import HistoryCalendar from '../components/HistoryCalendar'
 import HistoryStats from '../components/HistoryStats'
-import PersonalRecords from '../components/PersonalRecords'
 import SegmentedControl, { periodOptions } from '../components/SegmentedControl'
 import { goal, GOALS } from '../lib/metrika'
 
 /**
  * История тренировок — единственное место с детальной аналитикой и
  * единственное, где период вообще выбирается (на главной его нет):
- * блок статистики (свитчер Неделя/Месяц/Год/Всё) → месячный календарь →
- * рекорды (лучший месяц; силовая: максимальный рабочий вес; плавание: лучший
- * заплыв) общим компонентом `PersonalRecords` — он же в модалке профиля.
+ * блок статистики (свитчер Неделя/Месяц/Год/Всё) → месячный календарь.
+ *
+ * Рекордов здесь НЕТ (сентябрь 2026) — они переехали на свой экран `/records`.
+ * Статистика отвечает «как я тренировался», рекорды — «чего я достиг»: ради
+ * одной строки о лучшем весе не нужно пролистывать всю аналитику.
  *
  * «Месяц»/«Год» считаются за месяц/год, который сейчас ОТКРЫТ в календаре ниже:
  * листнул календарь на июнь → статистика за месяц пересчиталась на июнь.
@@ -43,9 +43,6 @@ export default function History() {
   const [view, setView] = useState({ year: currentView.current.year, month: currentView.current.month })
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [wkLoaded, setWkLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
-  // Личные рекорды: старт из кеша (мгновенно), сервер догоняет.
-  const [records, setRecords] = useState(() => getRecordsSync())
-  useEffect(() => { getRecords().then(setRecords) }, [])
 
   // Открытие статистики — цель: по ней видно, интересуют ли людей цифры
   // вообще, или экран существует только для нас.
@@ -117,9 +114,6 @@ export default function History() {
         />
       </div>
 
-      {/* Рекорды — лучший результат по каждому виду плюс лучший месяц.
-          Кардио/растяжка появятся, когда появятся сами программы. */}
-      <PersonalRecords records={records} />
     </div>
   )
 }

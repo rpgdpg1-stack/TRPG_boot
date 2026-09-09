@@ -4,9 +4,8 @@ import { EVENTS, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
-import SectionCarousel from '../components/SectionCarousel'
+import PinnedCarousel from '../components/PinnedCarousel'
 import ScreenTitle from '../components/ScreenTitle'
-import HomeCards from '../components/HomeCards'
 import WeeklyMuscle from '../components/WeeklyMuscle'
 import StreakInfoPopup from '../components/StreakInfoPopup'
 
@@ -89,9 +88,15 @@ const stripStyles = {
 /**
  * Главная — Тренировки.
  *
- * Максимально тихий экран под сценарий «открыл → начал тренировку»:
- * заголовок → карусель разделов с закреплённой программой (Начать/Продолжить) →
- * компактная карточка-кнопка «Статистика» (вся аналитика — на /history).
+ * Максимально тихий экран под один сценарий: «открыл → начал тренировку».
+ * Заголовок → строка недели → карусель ЗАКРЕПЛЁННЫХ программ (Начать/Продолжить)
+ * → единственный вход «Все программы».
+ *
+ * Статистики и любимых упражнений здесь НЕТ намеренно (сентябрь 2026): человек
+ * открывает этот экран, чтобы тренироваться, а не изучать себя. Всё, что про
+ * «посмотреть», живёт в профиле — статистика, рекорды, любимые. Карусель разделов
+ * с селектором «Силовая ▾» тоже убрана: категория — уровень каталога, а не
+ * стартового экрана, и решать «какой раздел» перед стартом не нужно.
  */
 export default function Home() {
   // Pull-to-refresh здесь НЕ нужен: свои тренировки меняет только сам пользователь
@@ -116,15 +121,9 @@ export default function Home() {
       <div style={styles.scrollSection}>
         <WeekStrip />
 
-        {/* Карусель разделов: свайп по разделам, внутри — закреплённая программа
-            (Начать/Продолжить) + Все программы / Создать. Заголовка секции нет. */}
-        <SectionCarousel />
-
-        {/* Второй план: карточки-входы. Заголовка-обёртки нет — карточки
-            подписаны сами, а заголовок только ел первый экран. */}
-        <div style={{ marginTop: 'var(--space-6)' }}>
-          <HomeCards />
-        </div>
+        {/* Закреплённые программы: свайп между ними, точки-индикаторы,
+            под блоком — вход в каталог. Заголовка секции нет. */}
+        <PinnedCarousel />
       </div>
     </div>
   )

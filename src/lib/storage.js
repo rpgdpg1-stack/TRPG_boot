@@ -177,75 +177,112 @@ export async function setLastCompletedDay(programId, day) {
 }
 
 /* ============================================ */
-/* ИЗБРАННЫЕ ПРОГРАММЫ (одна на категорию)      */
+/* ЗАКРЕПЛЁННЫЕ ПРОГРАММЫ (список, без лимита)  */
 /* ============================================ */
 
 const FAVORITES_KEY = 'favorite_programs'
 
 /**
- * Карта «категория → slug закреплённой программы».
+ * Список закреплённых программ — массив слагов, порядок = порядок показа.
  *
- * Читает через cloudGet: сперва localStorage (мгновенно), затем сверяет
- * с CloudStorage Telegram и подтягивает оттуда, если локально пусто.
- * Именно поэтому она ASYNC и экспортируется — главной нужен способ
- * восстановить закрепы, когда localStorage пуст, а облако помнит.
+ * Лимита НЕТ: закрепить можно сколько угодно и сколько угодно из одного
+ * раздела (раньше правило «одна программа на категорию» запрещало держать
+ * рядом Фулбади A и Фулбади B — это мешало, а не помогало). Ограничение
+ * осталось ровно одно, и оно про показ: карусель на главной берёт первые
+ * PINNED_VISIBLE штук.
+ *
+ * Свежее — впереди: только что закреплённая программа встаёт первой, и она же
+ * первой попадает в карусель. Руками порядок не двигают.
  */
-export async function getFavoritePrograms() {
-  await loadPrefs()
-  const fromAccount = getFavoriteProgramsSync()
-  if (Object.keys(fromAccount).length > 0) return fromAccount
+export const PINNED_VISIBLE = 5
 
-  // РАЗОВЫЙ ПЕРЕНОС со старого места. До появления браузерной версии закрепы
-  // жили в CloudStorage Telegram; у тех, кто пользовался приложением раньше,
-  // они лежат именно там. Молча их потерять нельзя — забираем при первом
-  // запуске и кладём в аккаунт, дальше старое место больше не читается.
+/**
+ * Привести к списку слагов, что бы ни лежало в настройке.
+ *
+ * До 09.2026 закрепы хранились картой `{категория: slug}` — по одной программе
+ * на раздел. У всех, кто пользовался приложением раньше, в аккаунте лежит
+ * именно она, и молча потерять её нельзя: читаем оба вида, наружу отдаём
+ * всегда список.
+ */
+function toPinnedList(value) {
+  if (Array.isArray(value)) return value.filter(v => typeof v === 'string' && v)
+  if (value && typeof value === 'object') {
+    // Старая карта: порядок разделов задаёт порядок списка — он привычен глазу.
+    return Object.values(value).filter(v => typeof v === 'string' && v)
+  }
+  return []
+}
+
+/**
+ * Закрепы СИНХРОННО — для первого кадра карусели.
+ *
+ * Настройка АККАУНТА (lib/prefs.js), а не устройства: раньше карта лежала в
+ * CloudStorage Telegram и в localStorage под общим ключом, и чужой аккаунт,
+ * открытый в том же браузере, видел ЧУЖИЕ закрепы.
+ */
+export function getPinnedProgramsSync() {
+  return toPinnedList(getPrefSync(FAVORITES_KEY, null))
+}
+
+/**
+ * Закрепы с догоном из аккаунта и разовым переносом со старого места.
+ */
+export async function getPinnedPrograms() {
+  await loadPrefs()
+  const fromAccount = getPinnedProgramsSync()
+  if (fromAccount.length > 0) return fromAccount
+
+  // РАЗОВЫЙ ПЕРЕНОС. До появления браузерной версии закрепы жили в CloudStorage
+  // Telegram; у тех, кто пользовался приложением раньше, они лежат там.
   try {
     const legacyRaw = await cloudGet(FAVORITES_KEY)
-    if (!legacyRaw) return {}
-    const legacy = JSON.parse(legacyRaw)
-    if (legacy && typeof legacy === 'object' && Object.keys(legacy).length > 0) {
+    if (!legacyRaw) return []
+    const legacy = toPinnedList(JSON.parse(legacyRaw))
+    if (legacy.length > 0) {
       await setPref(FAVORITES_KEY, legacy)
       debug('[storage] закрепы перенесены из CloudStorage в аккаунт')
       return legacy
     }
   } catch { /* старого нет или оно битое — не беда */ }
 
-  return {}
+  return []
+}
+
+/** Закреплена ли программа (синхронно, для первого кадра). */
+export function isPinnedSync(programSlug) {
+  return getPinnedProgramsSync().includes(programSlug)
 }
 
 /**
- * Закрепы СИНХРОННО — для первого кадра карусели.
- *
- * Раньше карта лежала в CloudStorage Telegram и в localStorage под общим
- * ключом. В браузере CloudStorage нет вовсе, а общий ключ означал, что чужой
- * аккаунт, открытый в том же браузере, видит ЧУЖИЕ закрепы — именно так
- * у нового человека появилась чужая закреплённая программа. Теперь это
- * настройка аккаунта (см. lib/prefs.js), и она следует за человеком, а не
- * за устройством.
+ * Закрепить или открепить программу. Возвращает новое состояние (true = закреплена).
+ * Закреплённая встаёт В НАЧАЛО списка — свежее впереди.
  */
-export function getFavoriteProgramsSync() {
-  const value = getPrefSync(FAVORITES_KEY, null)
-  return (value && typeof value === 'object') ? value : {}
-}
+export async function togglePinnedProgram(programSlug, categoryId = null) {
+  const list = getPinnedProgramsSync()
+  const wasPinned = list.includes(programSlug)
 
-export async function getFavoriteProgramByCategory(categoryId) {
-  const favorites = await getFavoritePrograms()
-  return favorites[categoryId] || null
-}
+  const next = wasPinned
+    ? list.filter(s => s !== programSlug)
+    : [programSlug, ...list]
 
-export async function toggleFavoriteProgram(categoryId, programSlug) {
-  const favorites = { ...getFavoriteProgramsSync() }
-  const wasPinned = favorites[categoryId] === programSlug
-
-  if (wasPinned) delete favorites[categoryId]
-  else favorites[categoryId] = programSlug
-
-  await setPref(FAVORITES_KEY, favorites)
+  await setPref(FAVORITES_KEY, next)
   // Считаем только закрепление. Открепление — это не действие «пользуюсь»,
   // а отказ, и в одной цели с закрепом оно бы обнулило смысл цифры.
   if (!wasPinned) goal(GOALS.PROGRAM_PIN, { category: categoryId, program: programSlug })
   return !wasPinned
 }
+
+/**
+ * Поднять программу наверх списка закреплённых — после того как по ней
+ * действительно тренировались. Не закрепляет: программу, которой в списке нет,
+ * не трогаем вовсе.
+ */
+export async function bumpPinnedProgram(programSlug) {
+  const list = getPinnedProgramsSync()
+  if (!list.includes(programSlug) || list[0] === programSlug) return
+  await setPref(FAVORITES_KEY, [programSlug, ...list.filter(s => s !== programSlug)])
+}
+
 
 
 /* ============================================ */

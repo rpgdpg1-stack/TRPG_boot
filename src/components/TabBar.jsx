@@ -44,7 +44,7 @@ export default function TabBar() {
     location.pathname === '/profile'
 
   const isWorkoutSection = location.pathname === '/' ||
-                           location.pathname.startsWith('/category')
+                           location.pathname.startsWith('/programs')
 
   const isExactHome = location.pathname === '/'
 

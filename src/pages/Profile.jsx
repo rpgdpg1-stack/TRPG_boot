@@ -27,6 +27,14 @@ const FRIENDS_INVITE_LIMIT = 3
  * приватность и настройки. Тренировочные РАЗДЕЛЫ-входы (Статистика/Любимые/
  * Активности) переехали на главную — в МЕНЮ профиля их нет.
  */
+// Куда ведут плитки своего профиля. Держим одной картой: порядок и адреса
+// иначе разъедутся с плитками внутри ProfileMetrics.
+const METRIC_PAGES = {
+  stats: '/history',
+  records: '/records',
+  favorites: '/favorite-exercises'
+}
+
 export default function Profile() {
   const navigate = useNavigate()
 
@@ -166,6 +174,10 @@ export default function Profile() {
           records={showRec ? records : null}
           favorites={showFav ? favorites : []}
           showWeights={privacy.showWeights}
+          // Свой профиль — полноценные экраны, а не модалки поверх: свои цифры
+          // разглядывают долго. Модалки остались там, где смотрят на друга.
+          mode="page"
+          onOpenPage={(key) => navigate(METRIC_PAGES[key], { state: { from: '/profile' } })}
         />
       )
   ]

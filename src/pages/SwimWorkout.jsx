@@ -307,10 +307,9 @@ export default function SwimWorkout() {
 
   useEffect(() => {
     const fromHome = location.state?.fromHome === true
-    const categoryId = program?.category || 'pool'
     backButton.setHandler(() => {
       if (fromHome) navigate('/')
-      else navigate(`/category/${categoryId}`)
+      else navigate('/programs')
     })
     lockVerticalSwipes()
     window.scrollTo(0, 0)

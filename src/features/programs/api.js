@@ -21,6 +21,7 @@ import { isOnline, checkNow } from '../../lib/network-status'
 import { canReadServer, canTrust, hasSession } from '../../lib/session'
 import { enqueue, finishDedupKey } from '../../lib/offline-queue'
 import { getActiveWorkout } from '../../lib/active-workout'
+import { bumpPinnedProgram } from '../../lib/storage'
 import { loadMyExercises, loadExercisesByIds, isCustomExercise } from './userExercises'
 import { debug } from '../../lib/debug'
 import { goal, GOALS } from '../../lib/metrika'
@@ -443,6 +444,11 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
 
     cacheInvalidate('workout-day:')
     cacheInvalidate(`recent-workouts:${user.id}`)
+
+    // Программа, по которой только что тренировались, — наверх карусели на
+    // главной. Так первой всегда лежит актуальная, и человеку не приходится
+    // листать до неё. Закреплённой не делает: чего нет в списке, не трогаем.
+    bumpPinnedProgram(programSlug).catch(() => { /* порядок карусели не критичен */ })
 
     emit(EVENTS.USER_CHANGED, getCurrentUser())
 

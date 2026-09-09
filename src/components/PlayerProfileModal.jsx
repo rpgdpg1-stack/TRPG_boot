@@ -60,35 +60,22 @@ export default function PlayerProfileModal({ row, onClose }) {
     photo_url: row.photo_url
   }
 
-  // Секции внутри карточки друга — как в своём профиле: статистика (тоталы за всё
-  // время) + любимые. Показываем то, что друг разрешил в приватности.
+  // Секции внутри карточки друга. Статистику и любимые сервер по-прежнему
+  // отдаёт (тумблеры приватности на них живые, и они нужны СВОЕМУ профилю),
+  // но здесь мы их не показываем — см. комментарий ниже.
   const friendSections = []
-  const friendFavs = данные?.favorites?.length > 0 ? данные.favorites : null
-  // Периоды берём из ответа: сервер отдаёт разбивку Неделя/Месяц/Год, и
-  // переключатель собирается из тех ключей, что пришли (порядок задаёт
-  // PERIOD_OPTIONS). Старый ответ без разбивки — один период «Всё время».
-  let friendStats = null
-  if (pub?.show_stats) {
-    if (pub.stats_year || pub.stats_month || pub.stats_week) {
-      friendStats = {}
-      if (pub.stats_week) friendStats.week = pub.stats_week
-      if (pub.stats_month) friendStats.month = pub.stats_month
-      if (pub.stats_year) friendStats.year = pub.stats_year
-    } else {
-      friendStats = { all: { count: pub.total_workouts || 0, minutes: pub.total_minutes || 0 } }
-    }
-  }
   // Рекорды друга приходят тем же ответом. Отдельный тумблер приватности держит
   // сервер: выключил — в ответе `records: null`, и раздела просто нет.
   const friendRecords = данные?.records || null
-  if (friendStats || friendFavs || hasRecords(friendRecords)) {
+  // У ДРУГА показываем ТОЛЬКО рекорды (сентябрь 2026). Раньше здесь были ещё
+  // статистика и любимые упражнения — и раздел «Друзья» превращался в чужую
+  // аналитику, хотя человек заходит сюда посмотреть, кто чем живёт. Рекорд —
+  // единственная socially интересная единица: «жмёт 100 кг» вызывает интерес,
+  // «тренировался 7 раз за месяц» — нет. Свои цифры остаются в профиле, там
+  // они на отдельных экранах.
+  if (hasRecords(friendRecords)) {
     friendSections.push(
-      <ProfileMetrics
-        key="metrics"
-        stats={friendStats}
-        records={friendRecords}
-        favorites={friendFavs || []}
-      />
+      <ProfileMetrics key="metrics" stats={null} records={friendRecords} favorites={[]} />
     )
   }
   // Друг ничего не открыл (или тренировок ещё нет) — нейтральная опорная строка,

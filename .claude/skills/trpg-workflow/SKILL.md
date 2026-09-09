@@ -607,12 +607,13 @@ src/
 │                   FormControls (FormCard/ToggleRow/ValueRow/TextField/PickerRow/SelectRow/SoonNote)
 │                   — общее правило «строки настроек», см. trpg-ui
 │                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
-│                   HistoryStats HomeCards MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
+│                   HistoryStats MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
 │                   PencilIcon PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
 │                   ModalShell (каркас окна: скрим + заморозка фона) PlayerProfileModal
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem
 │                   PullToRefresh QuickPickList RocketIcon RocketToggle SaveFriendProgramModal
-│                   ScreenTitle ScrollTopButton SearchIcon SectionBadge SectionCarousel
+│                   PinnedCarousel (закреплённые программы на главной)
+│                   ScreenTitle ScrollTopButton SearchIcon SectionBadge
 │                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher) ShieldCheckIcon
 │                   SlotsCount StreakInfoPopup TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
 │                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
@@ -638,8 +639,9 @@ src/
 │                   storage-keys (ЕДИНЫЙ список ключей localStorage, см. FE-006)
 │                   use-outside-close use-quick-workout use-scroll-lock use-workout-timer
 │                   version-check weight-editing-state workout-highlights
-├── pages/          About AccountAccess (/account — способы входа) BodyMeasurements Category
+├── pages/          About AccountAccess (/account — способы входа) BodyMeasurements
 │                   ExerciseInfo FavoriteExercises Feedback Friends Gift Goal History Home
+│                   Programs (каталог с табами разделов) Records (личные рекорды)
 │                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)
 │                   Notifications PersonalData (пол + рост + дата рождения) Privacy Profile
 │                   ProgramConstructor QuickWorkout Settings Support SwapExercise SwimWorkout
