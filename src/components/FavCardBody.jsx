@@ -1,6 +1,4 @@
 import { getProgramPlaces } from '../features/programs/registry'
-import { estimateMinutes } from '../features/programs/duration'
-import { formatDuration } from '../utils/history'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
@@ -15,16 +13,14 @@ import ShieldCheckIcon from './ShieldCheckIcon'
  * буква активного дня (крупнее/жирнее). Правый блок (время/прогресс/«последняя»)
  * и заливку-прогресс рисует вызывающий (`ProgramCard`).
  *
- * `meta` — показывать ли строку «~1 ч 24 мин · 12 упражнений» под днями (главная).
- * Она отвечает на вопрос «во что я ввязываюсь», который иначе виден только после
- * захода в день. При ИДУЩЕЙ тренировке строка не нужна — её место занимают живой
- * таймер и счётчик отжатых, то есть те же цифры, но уже настоящие. Заплыв её не
- * показывает: у него ровно та же информация уже стоит строкой «45 мин · 750 м`.
+ * Строки «≈ 1 ч 24 мин · N упр» под днями НЕТ (убрана 10.09.2026): на карточке
+ * достаточно того, из чего человек выбирает — названия и дня. Сколько займёт и
+ * сколько упражнений он видит в шапке самого дня, когда уже открыл его.
  *
  * `activeMin` — truthy, если идёт тренировка по этой программе (тогда показываем
  * ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null, meta = false }) {
+export default function FavCardBody({ entry, activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -35,13 +31,6 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
         : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const places = getProgramPlaces(prog)
-  // Во что ввязываешься: примерное время и сколько упражнений в дне, который
-  // сейчас рекомендован. Берём набор «Зал» (`data.days`) — тем же способом, что
-  // и оценка времени; место выбирается уже внутри тренировки.
-  const metaDay = activeDay || allDays[0]
-  const metaCount = (prog.data?.days?.[metaDay] || []).length
-  const metaMin = meta ? estimateMinutes(prog, metaDay) : null
-  const showMeta = meta && !activeMin && prog.kind !== 'swim' && metaMin && metaCount > 0
   // Буква дня — фирменный акцент, а не цвет первой группы мышц: цвет здесь
   // значит «рекомендованный/запущенный день», а не «какие мышцы» (см. WorkoutDay).
   const dayColor = () => 'var(--color-primary)'
@@ -105,9 +94,6 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
                 <span style={{ ...styles.activeStat, color: 'var(--color-text-secondary)' }}>{activeDone}/{activeTotal}</span>
               </div>
             ) : (
-              // Дни и метрики — ОДНОЙ строкой: это один уровень ответа на вопрос
-              // «что за тренировка». Разделителя «·» между метриками нет —
-              // достаточно воздуха: точка склеивала бы их в один показатель.
               <div style={styles.daysRow}>
                 <div style={styles.daysList}>
                   {allDays.map(d => {
@@ -124,19 +110,6 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
                     )
                   })}
                 </div>
-                {showMeta && (
-                  <>
-                    {/* 1:1 с пилюлей в шапке дня тренировки (`WorkoutDay.estimate`
-                        + `rowCount`): часы → «≈ N мин» → «N упр». Один и тот же
-                        показатель в двух местах обязан выглядеть одинаково,
-                        иначе читается как два разных. Точки после «упр» нет —
-                        как и там. */}
-                    <span style={styles.metaTime}>
-                      <ClockIcon size={13} /> ≈ {formatDuration(metaMin)}
-                    </span>
-                    <span style={styles.metaCount}>{metaCount} упр</span>
-                  </>
-                )}
               </div>
             )}
           </>
@@ -179,10 +152,7 @@ const styles = {
   // Дни + метрики в одну строку. Зазор 12 (между буквами внутри daysList — 8):
   // группы разделяет воздух, а не точка. wrap — страховка на узком экране:
   // лучше метрика уедет на вторую строку, чем сломает карточку.
-  daysRow: {
-    display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)',
-    flexWrap: 'wrap', rowGap: 'var(--space-1)'
-  },
+  daysRow: { display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' },
   // Активная строка: крупная буква дня + время + N/M в линию, по центру буквы.
   activeRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap' },
   activeStat: { fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-body-size)', letterSpacing: '0.3px', lineHeight: 1, whiteSpace: 'nowrap' },
@@ -207,19 +177,6 @@ const styles = {
   },
   // Метрики рядом с днями: тише букв дня — это справка о масштабе, а не то,
   // ради чего смотрят на карточку. Числа Manrope, как все числа проекта.
-  // Оценка времени — копия `estimate` из шапки дня: часы 13px, «≈», Manrope
-  // 700/13, secondary, трекинг 0.5. Меняешь там — меняй здесь.
-  metaTime: {
-    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap'
-  },
-  // Счётчик упражнений — копия `rowCount` оттуда же (в неактивном состоянии).
-  metaCount: {
-    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
-    color: 'var(--color-text-secondary)', lineHeight: 1, whiteSpace: 'nowrap',
-    fontVariantNumeric: 'tabular-nums'
-  },
   // Футер отдельной группой: свой отступ сверху, внутри строки вплотную.
   footerBlock: {
     display: 'flex', flexDirection: 'column', gap: '2px', marginTop: 'var(--space-1)'

@@ -183,7 +183,6 @@ export default function PinnedCarousel() {
                     menu
                     isFav
                     cta
-                    meta
                     // Фон и press-эффект живут на рамке блока — карточка внутри
                     // только содержимое, иначе при листании ехал бы и фон.
                     bordered={false}
