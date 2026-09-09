@@ -110,8 +110,9 @@ allowed-tools: Read, Grep, Glob
 ## Коммиты + пуш (разрешено самому, без спроса)
 
 Дмитрий разрешил коммитить **и пушить** правки самому, без отдельного спроса. Порядок:
-- После правки прогнать `npm run lint` (или eslint по изменённым файлам) и `npm run build`.
-  **Коммитить только если оба прошли.**
+- После правки прогнать `npm run lint` + `npm test` + `npm run build`.
+  **Коммитить только если все три зелёные.** Тесты быстрые (38 штук, ~0.3с) — пропускать
+  их незачем; раньше раздел требовал только lint и build, и они тихо не гонялись.
 - Коммит прямо в `main`, сообщение на русском в стиле conventional commits
   (`fix(...)`, `feat(...)`, `refactor(...)`).
 - Сразу после коммита — `git push`. Дмитрий проверяет на сайте GitHub; если что-то не так,
@@ -574,16 +575,18 @@ loadPrefs().catch(catchTo('app.loadPrefs'))
 
 ## Дерево проекта
 
-Актуально на 2026-09-01. **При создании нового файла — внести его сюда** (я редактирую этот скил
+Актуально на 2026-09-09. **При создании нового файла — внести его сюда** (я редактирую этот скил
 сам и коммичу). Регенерация:
 `find . -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' | sort`
 
 ```
-Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · eslint.config.js
+Корень: .env.example · .env.local · .gitignore · README.md · CLAUDE.md · PLAN.md
+        TRPG_PORTFOLIO_CONTEXT.md (контекст для портфолио-кейса) · eslint.config.js
         index.html · package.json · vercel.json · vite.config.js
         .claude/skills/{trpg-workflow,trpg-supabase,trpg-ui,trpg-figma,trpg-ds-review}/SKILL.md
         .github/workflows/{ci,db-backup,notify,keepalive}.yml
-        scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs}
+        scripts/{notify.mjs,notify-text.mjs,notify-failure.mjs,strip-maps.mjs,
+                 dev-session-plugin.mjs — кладёт токен dev-сессии в .dev-session.json}
 
 src/
 ├── App.jsx · main.jsx (Sentry PROD)
@@ -627,11 +630,14 @@ src/
 │                   media-cache (mp4/превью в Cache API — гифки играют офлайн) metrika
 │                   network-status notes notifications offline-queue persistent-cache
 │                   personal-data (пол + рост + дата рождения) prefs privacy profile-cache
-│                   program-place quick-workout (быстрая тренировка) records
+│                   lazy-route (экран переживает выкат новой сборки) program-place
+│                   quick-workout (быстрая тренировка) records
+│                   report-error (reportError/catchTo/setSentryUser — сбой в Sentry со следом)
 │                   session (страж сессии: canReadServer / canTrust) session-sync storage
 │                   supabase sync-engine telegram training-state use-network-badge
-│                   use-outside-close use-scroll-lock version-check weight-editing-state
-│                   workout-highlights
+│                   storage-keys (ЕДИНЫЙ список ключей localStorage, см. FE-006)
+│                   use-outside-close use-quick-workout use-scroll-lock use-workout-timer
+│                   version-check weight-editing-state workout-highlights
 ├── pages/          About AccountAccess (/account — способы входа) BodyMeasurements Category
 │                   ExerciseInfo FavoriteExercises Feedback Friends Gift Goal History Home
 │                   ModalDemo (/modal-demo — витрина модалки завершения, ТОЛЬКО в DEV)

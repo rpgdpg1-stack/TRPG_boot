@@ -1,35 +1,54 @@
-# RPG Training App
+# TRPG
 
-Telegram Mini App для тренировок в стиле RPG.
+Трекер тренировок: Telegram Mini App + версия для браузера.
+Силовые программы, плавание, рабочие веса, история и личные рекорды.
+
+Название историческое: приложение начиналось как игра с рангами и очками —
+игровые механики выпилены в июле 2026, осталась ставка на простоту.
+Подробный контекст продукта — в [TRPG_PORTFOLIO_CONTEXT.md](TRPG_PORTFOLIO_CONTEXT.md),
+текущее состояние работ — в [PLAN.md](PLAN.md).
 
 ## Технологии
 
-- **React 18 + Vite** — фронтенд
-- **React Router** — роутинг между страницами
-- **Telegram Web App SDK** — интеграция с Telegram (юзер, тема, кнопки, вибрация)
-- **Supabase** — база данных (Postgres) для пользователей, тренировок, упражнений и истории
-- **Selectel CDN** — медиа (картинки и видео упражнений)
-- **Vercel** — хостинг и автоматический деплой при пуше в `main`
+- **React 18 + Vite** — фронтенд, **React Router** — навигация
+- **Telegram Web App SDK** — юзер, тема, кнопки, вибрация, safe-area
+- **Supabase** (Postgres) — данные, RPC-функции, RLS, вход по Telegram и по коду из почты
+- **Selectel S3** — превью и видео упражнений
+- **Sentry** — ошибки, **Яндекс Метрика** — продуктовые цели
+- Стили — обычный CSS с переменными (**не** Tailwind)
+
+## Где что живёт
+
+| Куда | Что |
+|---|---|
+| Боевой хостинг | **Timeweb**, домен `trpg1.ru` — именно его открывает Mini App |
+| Запасной | Vercel (`*.vercel.app`), людей туда не водят |
+| Деплой фронта | сам, по push в `main` |
+| Миграции базы | вручную, через коннектор Supabase |
+| Edge Functions | **вручную**, автодеплоя нет |
 
 ## Структура
 
-- `src/lib/supabase.js` — клиент БД
-- `src/lib/auth.js` — авторизация через Telegram
-- `src/lib/storage.js` — обёртка над всеми операциями с данными
-- `src/lib/levels.js` — система рангов и формул мускулов
-- `src/lib/telegram.js` — обёртка над Telegram WebApp SDK
+- `src/pages/` — экраны, `src/components/` — компоненты, `src/features/` — программы и упражнения
+- `src/lib/` — данные, авторизация, кеш, офлайн-очередь, Telegram
+- `src/styles/` — токены дизайн-системы (`tokens.css`) и базовые стили
+- `supabase/` — схема, миграции, Edge Functions
+- `.claude/` — скилы и агенты проекта, см. [HOWTO.md](HOWTO.md)
 
 ## Команды
 
-- `npm install` — установить зависимости
-- `npm run dev` — запустить локально для разработки
-- `npm run build` — собрать для продакшна
+```bash
+npm install       # поставить зависимости
+npm run dev       # локальный запуск
+npm run lint      # проверка кода
+npm test          # тесты (Vitest)
+npm run build     # сборка
+```
+
+Перед коммитом должны быть зелёными все три: `lint`, `test`, `build`.
 
 ## Переменные окружения
 
-Нужны в `.env.local` (для локальной разработки) и в Vercel → Project Settings → Environment Variables:
-
-```
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_KEY=your-publishable-or-anon-key
-```
+Список и пояснения — в [.env.example](.env.example); для локальной разработки
+скопируй его в `.env.local`. Те же переменные задаются в панели хостинга.
+Публичный ключ Supabase не секретный — доступ к данным ограничивают политики RLS.
