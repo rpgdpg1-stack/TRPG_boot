@@ -1,4 +1,7 @@
 import { getProgramPlaces } from '../features/programs/registry'
+import { estimateMinutes } from '../features/programs/duration'
+import { formatDuration } from '../utils/history'
+import { pluralizeExercises } from '../utils/plural'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
@@ -13,10 +16,16 @@ import ShieldCheckIcon from './ShieldCheckIcon'
  * буква активного дня (крупнее/жирнее). Правый блок (время/прогресс/«последняя»)
  * и заливку-прогресс рисует вызывающий (`ProgramCard`).
  *
+ * `meta` — показывать ли строку «~1 ч 24 мин · 12 упражнений» под днями (главная).
+ * Она отвечает на вопрос «во что я ввязываюсь», который иначе виден только после
+ * захода в день. При ИДУЩЕЙ тренировке строка не нужна — её место занимают живой
+ * таймер и счётчик отжатых, то есть те же цифры, но уже настоящие. Заплыв её не
+ * показывает: у него ровно та же информация уже стоит строкой «45 мин · 750 м`.
+ *
  * `activeMin` — truthy, если идёт тренировка по этой программе (тогда показываем
  * ТОЛЬКО активный день, крупно).
  */
-export default function FavCardBody({ entry, activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null }) {
+export default function FavCardBody({ entry, activeMin = null, activeTimeColor = null, activeDone = 0, activeTotal = 0, footer = null, meta = false }) {
   const { prog, activeDay } = entry
   const available = prog.available !== false
   const allDays = prog.data?.days ? Object.keys(prog.data.days) : []
@@ -27,6 +36,13 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
         : prog.title.charAt(0).toUpperCase() + prog.title.slice(1).toLowerCase())
     : ''
   const places = getProgramPlaces(prog)
+  // Во что ввязываешься: примерное время и сколько упражнений в дне, который
+  // сейчас рекомендован. Берём набор «Зал» (`data.days`) — тем же способом, что
+  // и оценка времени; место выбирается уже внутри тренировки.
+  const metaDay = activeDay || allDays[0]
+  const metaCount = (prog.data?.days?.[metaDay] || []).length
+  const metaMin = meta ? estimateMinutes(prog, metaDay) : null
+  const showMeta = meta && !activeMin && prog.kind !== 'swim' && metaMin && metaCount > 0
   // Буква дня — фирменный акцент, а не цвет первой группы мышц: цвет здесь
   // значит «рекомендованный/запущенный день», а не «какие мышцы» (см. WorkoutDay).
   const dayColor = () => 'var(--color-primary)'
@@ -111,6 +127,12 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
           </>
         ))}
 
+        {showMeta && (
+          <div style={styles.metaLine}>
+            ~{formatDuration(metaMin)} · {metaCount} {pluralizeExercises(metaCount)}
+          </div>
+        )}
+
         {prog.source === 'shared' && prog.authorName && (
           <div style={styles.authorLine}>от {prog.authorName}</div>
         )}
@@ -161,9 +183,18 @@ const styles = {
     color: 'var(--color-text-secondary)',
     letterSpacing: '0.3px'
   },
+  // «~1 ч 24 мин · 12 упражнений» — тише названия и дней: это справка о масштабе,
+  // а не то, ради чего смотрят на карточку.
+  metaLine: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', lineHeight: 1, whiteSpace: 'nowrap'
+  },
+  // «Последняя тренировка / 2 дня назад» — двумя строками, поэтому нужен свой
+  // межстрочный интервал (при lineHeight 1 строки слипались) и отступ сверху:
+  // это отдельная мысль, а не продолжение справки о времени над ней.
   footerLine: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1
+    color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1.3, marginTop: 'var(--space-1)'
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',

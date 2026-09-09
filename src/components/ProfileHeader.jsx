@@ -38,7 +38,10 @@ export default function ProfileHeader({
   const displayName = user?.first_name || 'ATHLETE'
   const s = streak || 0
 
-  const lastWhen = lastWorkout ? formatRelative(lastWorkout.finished_at) : null
+  // Полной фразой: «2 дня назад» под именем не говорит, о чём этот срок. В
+  // СПИСКЕ друзей строка остаётся короткой — там она в ряду однотипных строк и
+  // читается из контекста; здесь же это отдельная карточка про одного человека.
+  const lastWhen = lastWorkout ? `Последняя тренировка ${formatRelative(lastWorkout.finished_at)}` : null
 
   const toggleStreak = () => {
     if (!interactiveStreak) return   // в профиле друга значок не тапается

@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
+import { backButton, lockVerticalSwipes } from '../lib/telegram'
 import { getPrivacy, savePrivacy } from '../lib/privacy'
 import { getCurrentUser } from '../lib/auth'
-import { dropCachedProfile } from '../lib/profile-cache'
+import { getUser } from '../lib/telegram'
+import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
+import { getRecords, getRecordsSync } from '../lib/records'
+import { resolveWeeklyStreak } from '../utils/dates'
+import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import ScreenTitle from '../components/ScreenTitle'
 import { FormCard, ToggleRow } from '../components/FormControls'
-import PlayerProfileModal from '../components/PlayerProfileModal'
+import ProfileHeader from '../components/ProfileHeader'
+import ProfileMetrics from '../components/ProfileMetrics'
+import { hasRecords } from '../components/PersonalRecords'
 
 /**
  * «Приватность» — что друзья видят в твоём профиле.
@@ -16,27 +22,41 @@ import PlayerProfileModal from '../components/PlayerProfileModal'
  * «Показывать веса» убраны — с тех пор как в карточке друга остались только
  * рекорды, они ничего не переключали, а обещали настройку, которой нет.
  * Колонки в базе (`show_stats`, `show_favorites`, `show_weights`) не тронуты:
- * сервер их по-прежнему принимает, и вернуть пункты — это правка одного экрана.
+ * сервер их по-прежнему принимает, и вернуть пункты — правка одного экрана.
  *
  * На СВОЙ профиль эти настройки не влияют вовсе: свои разделы всегда на месте.
  * Раньше выключенный тумблер прятал плитку и у себя — человек настраивал, что
  * видно друзьям, и терял вход к собственным цифрам.
  *
- * Внизу — превью: та же самая модалка, что открывается на странице «Друзья»,
- * с запросом СВОЕГО публичного профиля. Не нарисованная копия, а настоящая:
- * данные приходят через `api_get_user_public_profile`, то есть сервер применяет
- * к ним ровно те же правила, что и для друга. Что видно в превью — то видит друг.
+ * ПРЕВЬЮ стоит прямо под тумблерами и живёт от ЛОКАЛЬНОГО состояния, а не от
+ * ответа сервера: переключил — карточка перерисовалась в тот же кадр. Ходить за
+ * подтверждением на сервер здесь нельзя, иначе между тапом и результатом висела
+ * бы задержка ровно там, где человек проверяет причину и следствие. Собрана из
+ * тех же `ProfileHeader` + `ProfileMetrics`, что и настоящая карточка друга, и
+ * подчиняется тем же правилам: скрыл рекорды и последнюю тренировку — «Инфо
+ * скрыто», тап по «Рекордам» открывает ту же модалку.
  */
 export default function Privacy() {
   const navigate = useNavigate()
   const [privacy, setPrivacy] = useState(() => getPrivacy())
-  const [preview, setPreview] = useState(null)   // null | { нонс } — открыто превью
+  const [user, setUser] = useState(() => getCurrentUser() || getUser())
+  const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
+  const [records, setRecords] = useState(() => getRecordsSync())
 
   useEffect(() => {
     window.scrollTo(0, 0)
     backButton.setHandler(() => navigate(-1))
     lockVerticalSwipes()
   }, [navigate])
+
+  // Данные для превью: последняя тренировка и рекорды. Старт из кеша
+  // (мгновенно), сервер догоняет — карточка не должна мигать пустой.
+  useEffect(() => {
+    const tgUser = getUser()
+    if (tgUser) setUser(prev => ({ ...prev, ...tgUser }))
+    getRecords().then(setRecords)
+    getRecentWorkouts(HISTORY_FETCH_LIMIT).then(wk => setWorkouts(wk || []))
+  }, [])
 
   const toggle = (key) => {
     // Отклик даёт сам ToggleRow — второй вызов здесь бил бы дважды.
@@ -45,18 +65,17 @@ export default function Privacy() {
     savePrivacy(next)
   }
 
-  const user = getCurrentUser()
+  const streak = resolveWeeklyStreak(user?.weekly_streak, user?.weekly_streak_week)
+  const lastWorkout = workouts.length > 0 ? workouts[0] : null
+  const showRec = privacy.showRecords && hasRecords(records)
 
-  // Открываем превью с новым нонсом: модалка перемонтируется и сходит за
-  // свежим ответом. Без этого после смены тумблера показывался бы прежний
-  // кеш профиля, и превью врало бы ровно в тот момент, когда на него смотрят.
-  const openPreview = () => {
-    haptic.light()
-    // Кеш профиля снят ДО правки тумблеров — сбрасываем, иначе превью покажет
-    // старое состояние.
-    dropCachedProfile(user?.id)
-    setPreview({ nonce: Date.now() })
-  }
+  // Ровно та же сборка, что в карточке друга: есть что показать — плитка
+  // «Рекорды», нечего — опорная строка. Пустая карточка читалась бы как поломка,
+  // а причину (приватность) раскрывать нельзя даже в своём превью: пусть
+  // выглядит так же, как увидит друг.
+  const previewSections = showRec
+    ? [<ProfileMetrics key="metrics" stats={null} records={records} favorites={[]} />]
+    : [<div key="note" style={styles.hiddenNote}>Инфо скрыто</div>]
 
   return (
     <div className="page page-fade" style={styles.page}>
@@ -82,23 +101,17 @@ export default function Privacy() {
 
       <div style={styles.previewBlock}>
         <div style={styles.previewLabel}>Так твой профиль видят друзья</div>
-        <button style={styles.previewButton} className="press-tile" onClick={openPreview}>
-          Посмотреть
-        </button>
+        <div style={styles.previewCard}>
+          <ProfileHeader
+            user={user}
+            streak={streak}
+            lastWorkout={lastWorkout}
+            showLastWorkout={privacy.showLastWorkout}
+            interactiveStreak={false}
+            sections={previewSections}
+          />
+        </div>
       </div>
-
-      {preview && user && (
-        <PlayerProfileModal
-          key={preview.nonce}
-          row={{
-            user_id: user.id,
-            first_name: user.first_name,
-            username: user.username,
-            photo_url: user.photo_url
-          }}
-          onClose={() => setPreview(null)}
-        />
-      )}
     </div>
   )
 }
@@ -110,20 +123,24 @@ const styles = {
     color: 'var(--color-text-secondary)', textAlign: 'center', lineHeight: 1.45,
     margin: '0 auto var(--space-5)', maxWidth: '300px'
   },
-  // Превью — отдельным блоком под карточкой настроек, с крупным разрывом:
-  // это не ещё одна настройка, а проверка результата.
+  // Превью — отдельным блоком под настройками, с крупным разрывом: это не ещё
+  // одна настройка, а результат уже сделанных.
   previewBlock: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
     marginTop: 'var(--space-8)'
   },
   previewLabel: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', letterSpacing: '0.2px', textAlign: 'center'
   },
-  previewButton: {
-    minHeight: '46px', padding: '0 var(--space-6)',
-    background: 'var(--color-card)', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700,
-    color: 'var(--color-text)', cursor: 'pointer'
+  // Тот же вид, что у панели модалки друга: карточка на приподнятой поверхности.
+  previewCard: {
+    background: 'var(--surface-raised)',
+    borderRadius: 'var(--radius-card)',
+    overflow: 'hidden'
+  },
+  hiddenNote: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center', padding: 'var(--space-2) 0'
   }
 }

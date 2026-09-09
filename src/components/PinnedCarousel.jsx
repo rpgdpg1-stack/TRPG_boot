@@ -183,12 +183,18 @@ export default function PinnedCarousel() {
                     menu
                     isFav
                     cta
+                    meta
                     // Фон и press-эффект живут на рамке блока — карточка внутри
                     // только содержимое, иначе при листании ехал бы и фон.
                     bordered={false}
                     press={false}
                     background="transparent"
-                    footer={lastDate ? formatRelative(lastDate) : 'Ещё не начинали'}
+                    // Полной фразой, двумя строками: «80 дней назад» само по себе
+                    // не говорит, о чём этот срок. Так же подписано в профиле и в
+                    // карточке друга — одна формулировка на всё приложение.
+                    footer={lastDate
+                      ? <>Последняя тренировка<br />{formatRelative(lastDate)}</>
+                      : 'Ещё не начинали'}
                     onToggleFav={() => onUnpin(slug)}
                     onOpen={() => guardedOpen(prog, slug)}
                     onDeleted={() => setSlugs(getPinnedProgramsSync())}
