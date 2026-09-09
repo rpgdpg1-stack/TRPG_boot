@@ -226,20 +226,32 @@ export function getPinnedProgramsSync() {
 
 /**
  * Закрепы с догоном из аккаунта и разовым переносом со старого места.
+ *
+ * ПУСТОЙ СПИСОК — ТОЖЕ ОТВЕТ. Проверяем НАЛИЧИЕ настройки, а не её длину:
+ * «открепил всё» — такое же решение человека, как и «закрепил». Раньше здесь
+ * стояло `if (fromAccount.length > 0)`, и пустой список отправлял нас за
+ * старыми закрепами в CloudStorage Telegram — тот отдавал карту прошлых
+ * версий, и всё, что человек только что открепил, возвращалось на место при
+ * следующем заходе. В браузере CloudStorage нет, поэтому баг жил только
+ * внутри Telegram.
  */
 export async function getPinnedPrograms() {
   await loadPrefs()
-  const fromAccount = getPinnedProgramsSync()
-  if (fromAccount.length > 0) return fromAccount
+  const raw = getPrefSync(FAVORITES_KEY, null)
+  if (raw !== null && raw !== undefined) return toPinnedList(raw)
 
   // РАЗОВЫЙ ПЕРЕНОС. До появления браузерной версии закрепы жили в CloudStorage
-  // Telegram; у тех, кто пользовался приложением раньше, они лежат там.
+  // Telegram; у тех, кто пользовался приложением раньше, они лежат там. Сюда
+  // попадаем, только пока настройки аккаунта про закрепы не знают ВООБЩЕ.
   try {
     const legacyRaw = await cloudGet(FAVORITES_KEY)
     if (!legacyRaw) return []
     const legacy = toPinnedList(JSON.parse(legacyRaw))
     if (legacy.length > 0) {
       await setPref(FAVORITES_KEY, legacy)
+      // Старое место чистим сразу: пока ключ жив, он остаётся источником
+      // призраков — вернуть его может любая будущая правка этой ветки.
+      await cloudRemove(FAVORITES_KEY)
       debug('[storage] закрепы перенесены из CloudStorage в аккаунт')
       return legacy
     }
@@ -266,6 +278,10 @@ export async function togglePinnedProgram(programSlug, categoryId = null) {
     : [programSlug, ...list]
 
   await setPref(FAVORITES_KEY, next)
+  // Открепили последнюю — заодно стираем старую копию из облака Telegram.
+  // Она уже не источник правды, но пока лежит там, любое чтение «на всякий
+  // случай» способно воскресить откреплённое (см. getPinnedPrograms).
+  if (next.length === 0) await cloudRemove(FAVORITES_KEY).catch(() => {})
   // Считаем только закрепление. Открепление — это не действие «пользуюсь»,
   // а отказ, и в одной цели с закрепом оно бы обнулило смысл цифры.
   if (!wasPinned) goal(GOALS.PROGRAM_PIN, { category: categoryId, program: programSlug })

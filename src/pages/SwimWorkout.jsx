@@ -309,7 +309,9 @@ export default function SwimWorkout() {
     const fromHome = location.state?.fromHome === true
     backButton.setHandler(() => {
       if (fromHome) navigate('/')
-      else navigate('/programs')
+      // Заходили из каталога — возвращаемся в ЕГО раздел (плавание), а не на
+      // «Силовую»: «Назад» отменяет один шаг, а не всю навигацию.
+      else navigate('/programs', { state: { cat: program?.category } })
     })
     lockVerticalSwipes()
     window.scrollTo(0, 0)

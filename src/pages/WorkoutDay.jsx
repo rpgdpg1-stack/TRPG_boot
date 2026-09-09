@@ -386,7 +386,10 @@ export default function WorkoutDay() {
     backButton.setHandler(() => {
       if (workoutEntryFromHome.get(programId)) navigate('/')
       else if (workoutEntryFromFav.get(programId)) navigate(-1)  // шаг истории → на «Любимые»
-      else navigate('/programs')
+      // В каталог — И В ТОТ РАЗДЕЛ, из которого сюда зашли: «Назад» всегда
+      // отменяет ровно один шаг. Сам каталог раздел не запоминает и по любому
+      // другому входу открывается на «Силовой».
+      else navigate('/programs', { state: { cat: program?.category } })
     })
     lockVerticalSwipes()
   }, [navigate, program, location.state, programId])

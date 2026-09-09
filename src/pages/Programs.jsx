@@ -1,11 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms, getPinnedProgramsSync, togglePinnedProgram } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramsByCategory } from '../features/programs/registry'
-import { getPrefSync, setPref } from '../lib/prefs'
 import ProgramCard from '../components/ProgramCard'
 import ScreenTitle from '../components/ScreenTitle'
 import Toast from '../components/Toast'
@@ -20,16 +19,19 @@ import Toast from '../components/Toast'
  *
  * Устройство: горизонтальные табы сверху (текст + зелёная линия под активным),
  * под ними — вертикальный список программ активной категории. Категория
- * меняется тапом по табу ИЛИ горизонтальным свайпом по списку; таб и контент
- * связаны в обе стороны — свайпнул список, таб доехал сам.
+ * меняется тапом по табу ИЛИ горизонтальным свайпом ПО ВСЕМУ ЭКРАНУ (не только
+ * по списку: под коротким списком остаётся пустое место, и свайп там обязан
+ * работать так же). Разделы закольцованы: с «Растяжки» влево — снова «Силовая».
+ * Таб и контент связаны в обе стороны — свайпнул список, таб доехал сам.
+ *
+ * Раздел НЕ запоминается: вход в каталог всегда открывает «Силовую». Каталог —
+ * место выбора, и начинаться он должен из одной и той же точки. Исключение —
+ * возврат «Назад» из программы: экран программы передаёт свой раздел
+ * (`state.cat`), и человек возвращается ровно туда, откуда ушёл.
  *
  * Кнопки ▶ на карточках нет намеренно: в каталоге тап по карточке ведёт в
  * программу, а старт — уже оттуда или с главной.
  */
-
-// Раздел, открытый в прошлый раз. Ключ прежний — привычка человека переезжает
-// вместе с ним (раньше его помнила карусель разделов на главной).
-const LAST_CAT_KEY = 'category-swiper-last'
 
 const idxOfCat = (id) => { const i = CATEGORY_ORDER.indexOf(id); return i >= 0 ? i : 0 }
 
@@ -39,7 +41,6 @@ const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
 const SETTLE_MS = 380
-const RUBBER = 0.33
 // Сколько висит тост-подтверждение закрепа.
 const TOAST_MS = 1800
 
@@ -59,8 +60,12 @@ const PLACEHOLDER_PROGRAMS = {
 
 export default function Programs() {
   const navigate = useNavigate()
+  const location = useLocation()
 
-  const [idx, setIdx] = useState(() => idxOfCat(getPrefSync(LAST_CAT_KEY, null)))
+  // Раздел на входе: «Силовая», если не сказано иное. `state.cat` приходит
+  // только с кнопки «Назад» экрана программы — чтобы вернуться в тот раздел,
+  // из которого туда зашли.
+  const [idx, setIdx] = useState(() => idxOfCat(location.state?.cat))
   const [pinned, setPinned] = useState(() => getPinnedProgramsSync())
   const [toast, setToast] = useState(null)   // null | { text, nonce }
   const toastTimer = useRef(null)
@@ -99,12 +104,15 @@ export default function Programs() {
     if (toastTimer.current) clearTimeout(toastTimer.current)
   }, [])
 
+  // Переход к разделу ПО КРУГУ: за «Растяжкой» снова «Силовая», перед
+  // «Силовой» — «Растяжка». Список коротким кольцом читается лучше тупика:
+  // палец не упирается в невидимую стену на краю.
   const goTo = (next, withHaptic = true) => {
-    if (next < 0 || next > cats.length - 1 || next === idx) return
+    const target = ((next % cats.length) + cats.length) % cats.length
+    if (target === idx) return
     if (withHaptic) haptic.light()
     setSettling(true)
-    setIdx(next)
-    setPref(LAST_CAT_KEY, CATEGORY_ORDER[next])
+    setIdx(target)
     settleTimer.current = setTimeout(() => { settleTimer.current = null; setSettling(false) }, SETTLE_MS)
   }
 
@@ -124,8 +132,12 @@ export default function Programs() {
 
   const menuIsOpen = () => document.documentElement.classList.contains('menu-open')
 
+  // Жест ловим на ВСЁМ экране (см. описание сверху), кроме полоски табов:
+  // она листается сама по горизонтали, и один палец не может значить там два
+  // разных движения.
   const onTouchStart = (e) => {
-    if (settling || menuIsOpen()) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
+    const onTabs = e.target?.closest?.('[data-cat-tabs]')
+    if (settling || menuIsOpen() || onTabs) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
     const t = e.touches[0]
     drag.current = {
       x: t.clientX, y: t.clientY, axis: null,
@@ -145,9 +157,8 @@ export default function Programs() {
       d.axis = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
     }
     if (d.axis !== 'h') return
-    const atStart = idx === 0 && mx > 0
-    const atEnd = idx === cats.length - 1 && mx < 0
-    d.dx = (atStart || atEnd) ? mx * RUBBER : mx
+    // Резинки на краях больше нет: разделы закольцованы, края кончились.
+    d.dx = mx
     setDx(d.dx)
   }
 
@@ -208,13 +219,20 @@ export default function Programs() {
   }
 
   return (
-    <div className="page page-enter" style={styles.page}>
+    <div
+      className="page page-enter"
+      style={styles.page}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+    >
       <ScreenTitle>Программы</ScreenTitle>
 
       {/* Табы категорий: активный — белым текстом с зелёной линией снизу.
           Не чипы: выбран всегда ровно один раздел, а чип читается как фильтр,
           которых можно включить несколько. */}
-      <div ref={tabsRef} style={styles.tabs}>
+      <div ref={tabsRef} style={styles.tabs} data-cat-tabs>
         {cats.map((c, i) => {
           const on = c.id === cat.id
           return (
@@ -231,15 +249,8 @@ export default function Programs() {
         })}
       </div>
 
-      {/* Список программ активной категории. Свайп по нему меняет категорию. */}
-      <div
-        ref={viewportRef}
-        style={styles.viewport}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-      >
+      {/* Список программ активной категории. Едет он, а ловит жест вся страница. */}
+      <div ref={viewportRef} style={styles.viewport}>
         <div
           key={cat.id}
           style={{
@@ -289,7 +300,19 @@ export default function Programs() {
 }
 
 const styles = {
-  page: { paddingBottom: 'var(--space-6)' },
+  // pan-y на всей странице: вертикаль остаётся нативным скроллом, горизонталь
+  // ведём сами — иначе браузер (и жест «назад» в Telegram) перехватывал бы её.
+  // Колонка на всю свободную высоту .app: список внизу растягивается, и пустое
+  // место под коротким перечнем программ тоже ловит свайп разделов, а не
+  // остаётся мёртвой зоной. touch-action НЕ ставим на страницу целиком: он
+  // пересекается по всей ветке и заодно запретил бы полоске табов ездить
+  // горизонтально — держим его на самом списке.
+  page: {
+    paddingBottom: 'var(--space-6)',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 'calc(100dvh - var(--tabbar-height) - var(--tabbar-bottom) - 60px)'
+  },
   // Полоска табов: горизонтальный скролл без полосы прокрутки, края уходят под
   // поля экрана — видно, что список можно листать.
   tabs: {
@@ -317,7 +340,7 @@ const styles = {
     transition: 'background 0.22s var(--ease-ios)'
   },
   tabLineOn: { background: 'var(--color-primary)' },
-  viewport: { overflow: 'hidden', touchAction: 'pan-y' },
+  viewport: { overflow: 'hidden', touchAction: 'pan-y', flex: 1 },
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', willChange: 'transform' },
   createButton: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',

@@ -26,8 +26,11 @@ import ProgramCard from './ProgramCard'
  * показываем первые `PINNED_VISIBLE` — иначе главная превращается в библиотеку.
  * Свежее впереди: только что закреплённая программа идёт первой (см. storage).
  *
- * Отличие от прежней карусели разделов: список КОНЕЧНЫЙ, кольца нет. Поэтому на
- * краях лента пружинит (резинка), а не перескакивает по кругу.
+ * Лента ЗАКОЛЬЦОВАНА: с последней закреплённой свайп ведёт снова на первую.
+ * Технически в ленте всегда три слайда — предыдущий, текущий и следующий по
+ * кругу; после доводки указатель сдвигается, а лента молча возвращается в
+ * середину. Поэтому кольцо не «отматывает» весь список назад, как было бы при
+ * простом прыжке с последнего слайда на первый.
  */
 
 // Пейджинг: те же пороги, что были у карусели разделов, — жест уже привычен.
@@ -36,8 +39,10 @@ const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
 const SETTLE_MS = 380
-// Сопротивление за краем списка: палец идёт, лента отстаёт втрое.
-const RUBBER = 0.33
+// Сколько после исчезновения последней карточки не слушаем тап по заглушке:
+// её пилюля встаёт ровно туда, где был палец, и ловила случайный переход в
+// каталог сразу после «Открепить».
+const EMPTY_TAP_GUARD_MS = 600
 
 export default function PinnedCarousel() {
   const navigate = useNavigate()
@@ -68,8 +73,23 @@ export default function PinnedCarousel() {
     setIdx(i => Math.min(i, Math.max(items.length - 1, 0)))
   }, [items.length])
 
+  // Закрепов не осталось — на месте карточки появляется заглушка с кнопкой
+  // «Выбрать программу». Пару мгновений она тапы не принимает: палец ещё там,
+  // где был пункт «Открепить», и человека уносило в каталог само собой.
+  const emptyGuardUntil = useRef(0)
+  const prevCount = useRef(items.length)
+  useEffect(() => {
+    if (prevCount.current > 0 && items.length === 0) {
+      emptyGuardUntil.current = Date.now() + EMPTY_TAP_GUARD_MS
+    }
+    prevCount.current = items.length
+  }, [items.length])
+
   const viewportRef = useRef(null)
   const [dx, setDx] = useState(0)
+  // Куда лента уезжает на доводке: -1 — к следующей карточке, +1 — к предыдущей,
+  // 0 — стоит в середине кольца.
+  const [shift, setShift] = useState(0)
   const [settling, setSettling] = useState(false)
   const settleTimer = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
@@ -78,12 +98,26 @@ export default function PinnedCarousel() {
 
   useEffect(() => () => { if (settleTimer.current) clearTimeout(settleTimer.current) }, [])
 
-  const slideTo = (next) => {
-    if (next < 0 || next > items.length - 1 || next === idx) return
+  /**
+   * Шаг по кольцу: dir = +1 (следующая) или -1 (предыдущая).
+   *
+   * Сначала лента доезжает до соседнего слайда, и только потом — уже без
+   * анимации — указатель переставляется, а лента возвращается в середину.
+   * Для глаза это один непрерывный ход, и на стыке «последняя → первая»
+   * ничего не отматывается назад.
+   */
+  const slideBy = (dir) => {
+    const n = items.length
+    if (n < 2 || settling) return
     haptic.light()
     setSettling(true)
-    setIdx(next)
-    settleTimer.current = setTimeout(() => { settleTimer.current = null; setSettling(false) }, SETTLE_MS)
+    setShift(-dir)
+    settleTimer.current = setTimeout(() => {
+      settleTimer.current = null
+      setIdx(i => (((i + dir) % n) + n) % n)
+      setShift(0)
+      setSettling(false)
+    }, SETTLE_MS)
   }
 
   // Поверх открыто меню (долгое нажатие по карточке) — лента замирает.
@@ -114,10 +148,8 @@ export default function PinnedCarousel() {
       d.axis = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
     }
     if (d.axis !== 'h') return
-    // За краем списка — резинка: лента идёт, но втрое медленнее пальца.
-    const atStart = idx === 0 && mx > 0
-    const atEnd = idx === items.length - 1 && mx < 0
-    d.dx = (atStart || atEnd) ? mx * RUBBER : mx
+    // Резинки на краях нет: лента закольцована, упираться не во что.
+    d.dx = mx
     setDx(d.dx)
   }
 
@@ -134,7 +166,7 @@ export default function PinnedCarousel() {
     d.axis = null
     d.dx = 0
     setDx(0)
-    if (fast || far) slideTo(dist < 0 ? idx + 1 : idx - 1)
+    if (fast || far) slideBy(dist < 0 ? 1 : -1)
   }
 
   const openCatalog = () => { haptic.light(); navigate('/programs') }
@@ -143,6 +175,13 @@ export default function PinnedCarousel() {
     await togglePinnedProgram(slug)
     setSlugs(getPinnedProgramsSync())
   }
+
+  // Три слайда кольца: предыдущий — текущий — следующий. Лента стоит на
+  // среднем (-100%), поэтому оба соседа уже отрисованы и переход в любую
+  // сторону начинается сразу, без подгрузки.
+  const n = items.length
+  const ring = n > 1 ? [(idx - 1 + n) % n, idx, (idx + 1) % n].map(i => items[i]) : items
+  const basePct = (n > 1 ? -1 : 0) + shift
 
   // Тап по карточке — переход в тренировку; после свайпа тап игнорируем.
   const guardedOpen = (prog, slug) => {
@@ -170,14 +209,16 @@ export default function PinnedCarousel() {
           <div
             style={{
               ...styles.track,
-              transform: `translate3d(calc(${-idx * 100}% + ${dx}px), 0, 0)`,
+              transform: `translate3d(calc(${basePct * 100}% + ${dx}px), 0, 0)`,
               transition: settling ? `transform ${SETTLE_MS}ms var(--ease-ios)` : 'none'
             }}
           >
-            {items.map(({ slug, prog }) => {
+            {ring.map(({ slug, prog }, pos) => {
               const lastDate = getLastWorkoutDateBySlug(slug)
               return (
-                <div key={slug} style={styles.slide}>
+                // Ключ — место в кольце вместе со слагом: при двух закрепах одна
+                // и та же программа стоит и слева, и справа от текущей.
+                <div key={`${pos}:${slug}`} style={styles.slide}>
                   <ProgramCard
                     prog={prog}
                     menu
@@ -208,7 +249,10 @@ export default function PinnedCarousel() {
             <button
               className="press-tile"
               style={styles.pinEmptyPill}
-              onClick={() => { if (!swiped.current) openCatalog() }}
+              onClick={() => {
+                if (swiped.current || Date.now() < emptyGuardUntil.current) return
+                openCatalog()
+              }}
             >
               <span style={styles.pinEmptyPlus}>＋</span>
               <span style={styles.pinEmptyText}>Выбрать программу</span>
