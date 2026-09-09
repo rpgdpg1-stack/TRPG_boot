@@ -62,24 +62,20 @@ export default function ProfileHeader({
               {statsLoading ? (
                 <span style={styles.skeletonLine} />
               ) : (
-                <span style={{
-                  ...(isTraining ? styles.trainingNow : styles.lastWhen),
-                  // Рядом иконка — колонка узкая, и без запрета фраза рвётся по
-                  // словам («Последняя / тренировка / 9 дней назад»). Перенос там
-                  // задан явным <br/>, большего не нужно.
-                  ...(rightAction ? styles.lastWhenFixed : null)
-                }}>
-                  {isTraining
-                    ? 'Тренируется сейчас'
-                    : when
-                      // Рядом стоит иконка — переносим срок на вторую строку, иначе
-                      // длинная фраза («Последняя тренировка 10 дней назад») налезает
-                      // на неё. Свободна вся ширина — оставляем одной строкой.
-                      ? (rightAction
-                          ? <>Последняя тренировка<br />{when}</>
-                          : `Последняя тренировка ${when}`)
-                      : 'Ещё не тренировался'}
-                </span>
+                isTraining ? (
+                  <span style={styles.trainingNow}>Тренируется сейчас</span>
+                ) : when ? (
+                  // ВСЕГДА две строки, даже когда фраза помещается в одну: пара
+                  // «подпись / срок» так читается быстрее, а карточка не меняет
+                  // высоту от длины срока. Кегль у строк один, разделяет их
+                  // только цвет — «лестница важности» из trpg-ui.
+                  <span style={styles.lastBlock}>
+                    <span style={styles.lastLabel}>Последняя тренировка</span>
+                    <span style={styles.lastValue}>{when}</span>
+                  </span>
+                ) : (
+                  <span style={styles.lastWhen}>Ещё не тренировался</span>
+                )
               )}
             </div>
           )}
@@ -133,7 +129,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 700, color: 'var(--color-text)',
     lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0
   },
-  lastRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: '18px' },
+  lastRow: { display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minHeight: '18px', marginTop: '2px' },
   // Без nowrap: фраза стала длинной («Последняя тренировка 100 дней назад») и на
   // узком экране обязана переноситься сама, а не вылезать за карточку. Явный
   // перенос у друга (<br/>) от этого не зависит.
@@ -141,7 +137,17 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
     color: 'var(--color-text-secondary)', lineHeight: 1.35
   },
-  lastWhenFixed: { whiteSpace: 'nowrap' },
+  // Пара «подпись / срок»: один кегль, разный цвет. Срок заметнее подписи —
+  // он и есть ответ, подпись лишь объясняет, о чём он.
+  lastBlock: { display: 'flex', flexDirection: 'column', gap: '2px' },
+  lastLabel: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', lineHeight: 1.25
+  },
+  lastValue: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--text-info)', lineHeight: 1.25
+  },
   // Тот же кегль и место, что у «3 дня назад», но акцентным цветом: карточка
   // друга не должна противоречить списку, из которого её открыли.
   trainingNow: {

@@ -32,7 +32,7 @@ import ProfileMetrics from '../components/ProfileMetrics'
  * бы задержка ровно там, где человек проверяет причину и следствие. Собрана из
  * тех же `ProfileHeader` + `ProfileMetrics`, что и настоящая карточка друга, и
  * подчиняется тем же правилам: скрыл последнюю тренировку — строка ушла, скрыл
- * рекорды — исчез кубок. Никаких «Инфо скрыто»: пустота и есть ответ.
+ * рекорды — вместо плитки «Инфо скрыто».
  */
 export default function Privacy() {
   const navigate = useNavigate()
@@ -64,8 +64,8 @@ export default function Privacy() {
   }
 
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
-  // Ровно то же, что увидит друг: кубок в шапке, если рекорды открыты и есть.
-  // Закрыл — кубка просто нет, никаких «Инфо скрыто»: пустота и есть ответ.
+  // Ровно то же, что увидит друг: плитка «Рекорды» под разделителем, если они
+  // открыты и есть. Закрыл — на её месте «Инфо скрыто».
   const previewRecords = privacy.showRecords ? records : null
 
   return (
@@ -97,7 +97,7 @@ export default function Privacy() {
             user={user}
             lastWorkout={lastWorkout}
             showLastWorkout={privacy.showLastWorkout}
-            rightAction={<ProfileMetrics mode="icon" records={previewRecords} />}
+            sections={[<ProfileMetrics key="records" mode="icon" records={previewRecords} />]}
           />
         </div>
       </div>

@@ -126,12 +126,15 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
                 </div>
                 {showMeta && (
                   <>
-                    <span style={styles.metaStat}>~{formatDuration(metaMin)}</span>
-                    {/* «упр.», а не «упражнений»: замер на 390px — строке из
-                        дней, времени и полного слова не хватало 1px при двух днях
-                        и 14px при трёх (Сплит A/B/C), и слово срывалось на вторую
-                        строку. Сокращение общепринятое и не склоняется. */}
-                    <span style={styles.metaStat}>{metaCount} упр.</span>
+                    {/* 1:1 с пилюлей в шапке дня тренировки (`WorkoutDay.estimate`
+                        + `rowCount`): часы → «≈ N мин» → «N упр». Один и тот же
+                        показатель в двух местах обязан выглядеть одинаково,
+                        иначе читается как два разных. Точки после «упр» нет —
+                        как и там. */}
+                    <span style={styles.metaTime}>
+                      <ClockIcon size={13} /> ≈ {formatDuration(metaMin)}
+                    </span>
+                    <span style={styles.metaCount}>{metaCount} упр</span>
                   </>
                 )}
               </div>
@@ -204,26 +207,36 @@ const styles = {
   },
   // Метрики рядом с днями: тише букв дня — это справка о масштабе, а не то,
   // ради чего смотрят на карточку. Числа Manrope, как все числа проекта.
-  // Кегль caption, а не label: на 390px строка «A B ~1 ч 24 мин 12 упражнений»
-  // в 13px не помещалась рядом с эмблемой и круглым плеем — «12 упражнений»
-  // срывалось на вторую строку. Метрики второстепенны, мельче им не вредит.
-  metaStat: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', lineHeight: 1, whiteSpace: 'nowrap'
+  // Оценка времени — копия `estimate` из шапки дня: часы 13px, «≈», Manrope
+  // 700/13, secondary, трекинг 0.5. Меняешь там — меняй здесь.
+  metaTime: {
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    color: 'var(--color-text-secondary)', letterSpacing: '0.5px', whiteSpace: 'nowrap'
+  },
+  // Счётчик упражнений — копия `rowCount` оттуда же (в неактивном состоянии).
+  metaCount: {
+    fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-label-size)',
+    color: 'var(--color-text-secondary)', lineHeight: 1, whiteSpace: 'nowrap',
+    fontVariantNumeric: 'tabular-nums'
   },
   // Футер отдельной группой: свой отступ сверху, внутри строки вплотную.
   footerBlock: {
     display: 'flex', flexDirection: 'column', gap: '2px', marginTop: 'var(--space-1)'
   },
-  // Подпись — мельче и тише: она лишь объясняет, о чём срок под ней.
+  // Обе строки ОДНОГО кегля (13px) — разделяет их только цвет, по «лестнице
+  // важности» из trpg-ui: срок `--text-info` (68% белого) заметнее, подпись
+  // `--color-text-secondary` (#888) приглушённее. Мельчить подпись не нужно:
+  // пара читается как одна мысль, а не как заголовок с примечанием.
+  // (`--color-text-inactive` тут не подходит — 50% белого почти неотличимы
+  // от #888, и разницы между строками не видно.)
   footerLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 500,
-    color: 'var(--color-text-secondary)', lineHeight: 1.2
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', lineHeight: 1.25
   },
-  // Сам срок — заметнее подписи: это и есть ответ.
   footerValue: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.75)', lineHeight: 1.2
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--text-info)', lineHeight: 1.25
   },
   authorLine: {
     fontFamily: 'var(--font-manrope)',

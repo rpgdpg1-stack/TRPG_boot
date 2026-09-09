@@ -20,10 +20,10 @@ import MarqueeTag from './MarqueeTag'
  * Плитки-входы в карточке профиля (своей и друга): иконка сверху, подпись снизу,
  * фон `--surface`, radius-card. Цифр НЕТ — плитки только открывают детали.
  *
- * Режим `icon` — ОДИН кубок без подписи, без плиток: так рекорды показываются в
- * карточке друга. Подпись там не нужна — 🏆 в фитнесе читается как достижение
- * сам по себе, а место справа в шапке освободилось от бицепса (счётчик недели
- * остался только на главной, где он и отвечает на вопрос «я тренируюсь?»).
+ * Режим `icon` — ОДНА плитка «Рекорды» вместо трёх: так рекорды показываются в
+ * карточке друга и в превью приватности. Вид, размер иконки и подпись общие со
+ * своим профилем — один и тот же раздел обязан выглядеть одинаково всюду.
+ * Рекордов нет или друг их закрыл — вместо плитки строка «Инфо скрыто».
  *
  * КУДА ведёт тап, зависит от того, чей это профиль (проп `mode`):
  *  - `page` (СВОЙ профиль) — на полноценный экран: `/history`, `/records`,
@@ -89,14 +89,22 @@ export default function ProfileMetrics({
   ].filter(Boolean)
 
   if (iconOnly) {
-    // Рекордов нет или друг их закрыл — не рисуем ничего. Пустого места в шапке
-    // не остаётся: колонка с именем просто занимает всю ширину.
-    if (!hasRecords(records)) return null
+    // Рекордов нет или друг их закрыл — опорная строка вместо плитки: пустая
+    // полка под разделителем читалась бы как поломка карточки.
+    if (!hasRecords(records)) {
+      return <div style={styles.hiddenNote}>Инфо скрыто</div>
+    }
     return (
       <>
-        <button style={styles.iconBtn} className="press-tile" onClick={() => show('records')} aria-label="Рекорды">
-          <UiIcon name="trophy" size={26} color={RECORD_GOLD} />
-        </button>
+        {/* Тот же ряд плиток, что в своём профиле, но с одним пунктом: у друга
+            показываем только рекорды. Вид, размер иконки и подпись — общие,
+            чтобы «Рекорды» выглядели одинаково всюду. */}
+        <div style={styles.row}>
+          <button style={styles.tile} className="press-tile" onClick={() => show('records')}>
+            <span style={styles.tileIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
+            <span style={styles.tileTitle}>Рекорды</span>
+          </button>
+        </div>
         {open && createPortal(
           <MetricModal
             kind="records"
@@ -132,11 +140,12 @@ export default function ProfileMetrics({
         )}
         {hasRec && (
           <button style={styles.tile} className="press-tile" onClick={() => show('records')}>
-            {/* Кубок золотой, БЕЗ подписи: 🏆 в фитнесе читается как «достижения»
-                без слов, а золото среди двух зелёных иконок само притягивает
-                взгляд — из трёх входов этот и должен быть самым заметным.
-                Название «Рекорды» человек увидит на самой странице. */}
-            <span style={styles.tileIcon}><UiIcon name="trophy" size={26} color={RECORD_GOLD} /></span>
+            {/* Кубок золотой, а не зелёный: золото — язык рекордов во всём
+                приложении (блок рекордов, эмодзи в сводках бота). Размер тот же,
+                что у соседних иконок: выделять его ещё и величиной незачем —
+                цвет уже отличает. */}
+            <span style={styles.tileIcon}><UiIcon name="trophy" size={22} color={RECORD_GOLD} /></span>
+            <span style={styles.tileTitle}>Рекорды</span>
           </button>
         )}
         {hasFav && (
@@ -444,12 +453,10 @@ function FavoritesList({ items, showWeights }) {
 }
 
 const styles = {
-  // Кубок в шапке карточки друга: место бывшего бицепса, тач-зона 44px.
-  iconBtn: {
-    flexShrink: 0,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: '44px', height: '44px',
-    background: 'transparent', border: 'none', cursor: 'pointer'
+  // Друг закрыл рекорды (или их ещё нет) — нейтральная строка на месте плитки.
+  hiddenNote: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 500,
+    color: 'var(--color-text-secondary)', textAlign: 'center'
   },
   // Два входа по центру карточки. Фона у плиток НЕТ: тогда отступ «линия → иконка»
   // и «подпись → низ карточки» равны паддингам самой карточки профиля (16),

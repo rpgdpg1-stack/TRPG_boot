@@ -201,7 +201,10 @@ export default function ProgramCard({
   const showRight = available && (showCta || isActive || (lastTrained && lastDate))
   // Не начата — круглая кнопка с плеем (слово «Начать» лишнее, треугольник и так
   // читается); идёт тренировка — пилюля с текстом «Продолжить».
-  const padRight = showCta ? (isActive ? 128 : 72) : showRight ? 96 : 16
+  // 64 под круглый плей (48px кнопка + 16 отступ от края), а не 72: метрики в
+  // строке дней стали крупнее (кегль шапки дня), и лишние 8px решают, влезет ли
+  // «A B C  ≈ 49 мин  7 упр» одной строкой.
+  const padRight = showCta ? (isActive ? 128 : 64) : showRight ? 96 : 16
 
   // Прогресс активной тренировки — заливкой ВСЕЙ карточки (как в шапке дня).
   const fillPct = isActive && activeTotal > 0 ? Math.min(100, (activeDone / activeTotal) * 100) : 0
