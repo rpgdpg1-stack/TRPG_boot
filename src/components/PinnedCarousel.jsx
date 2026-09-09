@@ -273,12 +273,15 @@ const styles = {
     display: 'flex', justifyContent: 'center', alignItems: 'center',
     gap: 'var(--space-15)', marginTop: 'var(--space-3)'
   },
+  // Неактивная страница — точка, активная — короткая пилюля (ниже `dotOn`).
+  // Пять одинаковых кружков на тёмном фоне читаются тяжелее: пилюля сразу
+  // отвечает «где я», а точки — «сколько всего».
   dot: {
     width: '6px', height: '6px', borderRadius: 'var(--radius-pill)',
     background: 'var(--color-text-inactive)', opacity: 0.4,
-    transition: 'opacity 0.22s var(--ease-ios), background 0.22s var(--ease-ios)'
+    transition: 'width 0.28s var(--ease-ios), opacity 0.22s var(--ease-ios), background 0.22s var(--ease-ios)'
   },
-  dotOn: { background: 'var(--color-primary)', opacity: 1 },
+  dotOn: { width: '18px', background: 'var(--color-primary)', opacity: 1 },
   // Вход в каталог — по центру под блоком, тем же тихим весом, что заголовки секций.
   allLink: {
     alignSelf: 'center',

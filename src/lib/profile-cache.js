@@ -13,7 +13,7 @@
  * тренировка. Переживает перезапуск Telegram (persistent-cache).
  */
 
-import { pcacheGet, pcacheSet } from './persistent-cache'
+import { pcacheGet, pcacheSet, pcacheDrop } from './persistent-cache'
 
 const TTL_MS = 6 * 60 * 60 * 1000 // 6 часов — переживает обычные перезаходы за день
 
@@ -60,4 +60,16 @@ export function setCachedProfile(userId, data) {
     show_favorites: data.show_favorites ?? false,
     show_records: data.show_records ?? true
   }, TTL_MS)
+}
+
+/**
+ * Забыть кешированный профиль — чтобы следующее открытие сходило на сервер.
+ *
+ * Нужен превью приватности: человек переключил тумблер и тут же смотрит, что
+ * увидит друг. Из кеша приехал бы ответ, снятый ДО правки, и превью соврало бы
+ * ровно в тот момент, когда на него смотрят.
+ */
+export function dropCachedProfile(userId) {
+  if (!userId) return
+  pcacheDrop(keyFor(userId))
 }

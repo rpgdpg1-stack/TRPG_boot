@@ -55,13 +55,16 @@ export default function ProfileMetrics({
   const [open, setOpen] = useState(null)   // 'stats' | 'records' | 'favorites' | null
 
   const favCount = favorites?.length || 0
-  const hasFav = favCount > 0
-  // Статистика доступна всегда: пустой период честнее показать текстом, чем
-  // прятать вход (иначе непонятно, есть ли раздел вообще).
-  const hasStats = !!stats
-  // Рекорды — наоборот: пока рекордов нет, плитка молчит. Обещать раздел,
-  // внутри которого «пока пусто», незачем — он появится сам с первым рекордом.
-  const hasRec = hasRecords(records)
+  // В СВОЁМ профиле (`page`) три плитки стоят всегда — это постоянные разделы,
+  // а не витрина достижений. Пустой раздел объясняет себя внутри: убрать вход
+  // значит заставить человека гадать, есть ли он вообще и как его наполнить.
+  //
+  // У ДРУГА (`modal`) наоборот: показываем только то, где реально есть данные —
+  // чужие пустые полки не сообщают ничего.
+  const always = mode === 'page'
+  const hasFav = always || favCount > 0
+  const hasStats = always || !!stats
+  const hasRec = always || hasRecords(records)
 
   // Свой профиль уводит на отдельный экран, профиль друга — открывает модалку.
   const show = (key) => {

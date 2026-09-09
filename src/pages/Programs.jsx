@@ -172,7 +172,22 @@ export default function Programs() {
   const placeholders = realPrograms.length === 0
     ? (PLACEHOLDER_PROGRAMS[cat.id] || []).map(p => ({ ...p, category: cat.id }))
     : []
-  const programs = [...realPrograms, ...placeholders]
+  // Закреплённые — наверх списка, среди них позже закреплённая выше (порядок
+  // `pinned` = порядок закрепления, свежее первым). Открепил — программа
+  // возвращается на своё место в обычном порядке, ничего никуда не «уезжает».
+  // Ручного перетаскивания нет: чтобы поднять программу выше, её открепляют и
+  // закрепляют заново — правило одно и предсказуемое.
+  const all = [...realPrograms, ...placeholders]
+  const rank = (prog) => {
+    const i = pinned.indexOf(prog.slug)
+    return i === -1 ? Infinity : i
+  }
+  const programs = [...all].sort((a, b) => {
+    const ra = rank(a)
+    const rb = rank(b)
+    if (ra === rb) return all.indexOf(a) - all.indexOf(b)   // оба не закреплены — обычный порядок
+    return ra - rb
+  })
   const hasCustom = realPrograms.some(p => p.source === 'custom')
   const canCreate = cat.id === 'gym'
 

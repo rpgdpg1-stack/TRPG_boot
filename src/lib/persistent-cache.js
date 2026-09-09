@@ -57,6 +57,11 @@ export function pcacheSet(key, data, ttlMs = DEFAULT_TTL_MS) {
   localSet(PREFIX + key, JSON.stringify(entry))
 }
 
+/** Удалить ОДНУ запись кеша — чтобы следующее чтение сходило на сервер. */
+export function pcacheDrop(key) {
+  try { localRemove(PREFIX + key) } catch { /* хранилище недоступно */ }
+}
+
 /**
  * Удалить все ключи persistent-кеша (при сбросе прогресса).
  * localStorage не даёт перебор по префиксу напрямую — идём по всем ключам.

@@ -10,7 +10,6 @@ import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
 import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
 import { getRecords, getRecordsSync } from '../lib/records'
-import { hasRecords } from '../components/PersonalRecords'
 import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
@@ -157,29 +156,25 @@ export default function Profile() {
 
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
-  // Секция внутри карточки профиля (то же, что видят друзья по приватности):
-  // ряд метрик «N трен» / «N упр», тап → попап с детализацией.
-  const showFav = privacy.showFavorites && favorites.length > 0
-  // Скрыл и статистику, и любимые — показываем ту же опорную строку, что у друга:
-  // пустая карточка читалась бы как поломка.
-  const showRec = privacy.showRecords && hasRecords(records)
-  const nothingToShow = !privacy.showStats && !showFav && !showRec
+  // Три входа в свои разделы. Приватность на них НЕ влияет (сентябрь 2026):
+  // раньше выключенный тумблер прятал плитку и в СВОЁМ профиле — человек менял
+  // настройку «что видно друзьям» и терял вход к собственным цифрам. Приватность
+  // теперь управляет только тем, что показывается ДРУГУ.
+  //
+  // Плитки стоят всегда, даже когда данных ещё нет: пустой раздел честнее
+  // объяснить внутри, чем убирать вход и оставлять человека гадать, есть ли он.
   const sections = [
-    nothingToShow
-      ? <div key="hidden" style={styles.hiddenNote}>Инфо скрыто</div>
-      : (
-        <ProfileMetrics
-          key="metrics"
-          stats={privacy.showStats ? stats : null}
-          records={showRec ? records : null}
-          favorites={showFav ? favorites : []}
-          showWeights={privacy.showWeights}
-          // Свой профиль — полноценные экраны, а не модалки поверх: свои цифры
-          // разглядывают долго. Модалки остались там, где смотрят на друга.
-          mode="page"
-          onOpenPage={(key) => navigate(METRIC_PAGES[key], { state: { from: '/profile' } })}
-        />
-      )
+    <ProfileMetrics
+      key="metrics"
+      stats={stats}
+      records={records}
+      favorites={favorites}
+      showWeights
+      // Свой профиль — полноценные экраны, а не модалки поверх: свои цифры
+      // разглядывают долго. Модалки остались там, где смотрят на друга.
+      mode="page"
+      onOpenPage={(key) => navigate(METRIC_PAGES[key], { state: { from: '/profile' } })}
+    />
   ]
 
   return (
