@@ -119,9 +119,10 @@ export default function History() {
 }
 
 const styles = {
+  // Без обводки: блок и так отделён от фона своей подложкой, а тонкая рамка
+  // поверх неё давала второй контур на ровном месте.
   statsCard: {
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4)',
     marginBottom: 'var(--space-5)'

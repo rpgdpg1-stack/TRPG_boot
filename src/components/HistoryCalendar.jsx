@@ -440,9 +440,10 @@ const styles = {
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)',
     color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
   },
+  // Без обводки — заодно с блоком статистики над ним: два соседних блока на
+  // одном экране не могут быть обведены по-разному.
   card: {
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4)'
   },

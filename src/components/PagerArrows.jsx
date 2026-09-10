@@ -9,7 +9,8 @@ import { haptic } from '../lib/telegram'
  * переключатель, а разнесённые по краям заставляют искать вторую стрелку.
  *
  * Кружок 36px в общем стиле икон-кнопок проекта, хит-зона 44px (зал, потные
- * пальцы). Недоступное направление гаснет и не тапается — вместо него ничего
+ * пальцы). Доступное направление — акцентный зелёный, как у всех живых действий;
+ * недоступное гаснет до вторичного текста и не тапается — вместо него ничего
  * не подставляем, ряд не прыгает.
  *
  * <PagerArrows onPrev={} onNext={} canPrev={} canNext={} prevLabel="" nextLabel="" />
@@ -41,7 +42,12 @@ function Arrow({ dir, enabled, onTap, label }) {
       aria-label={label}
       onClick={() => { if (!enabled) return; haptic.selection(); onTap?.() }}
     >
-      <span style={{ ...styles.circle, opacity: enabled ? 1 : 0.35 }}>
+      {/* Доступное направление — акцентом: это действие, а не подпись. Недоступное
+          гаснет до вторичного текста и не тапается. */}
+      <span style={{
+        ...styles.circle,
+        color: enabled ? 'var(--color-primary)' : 'var(--color-text-secondary)'
+      }}>
         {/* Шеврон проекта смотрит ВНИЗ — доворачиваем влево/вправо. */}
         <span style={{ display: 'inline-flex', transform: `rotate(${prev ? 90 : -90}deg)` }}>
           <ChevronIcon size={18} width={2.4} />
@@ -63,7 +69,7 @@ const styles = {
   circle: {
     width: '36px', height: '36px', borderRadius: '50%',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    background: 'var(--layer-2)', color: 'var(--color-text)',
-    transition: 'opacity 0.18s ease'
+    background: 'var(--layer-2)',
+    transition: 'color 0.18s ease'
   }
 }

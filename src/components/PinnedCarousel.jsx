@@ -229,11 +229,11 @@ export default function PinnedCarousel() {
                     bordered={false}
                     press={false}
                     background="transparent"
-                    // Двумя строками: подпись объясняет, о чём срок, сам срок —
-                    // ответ. «80 дней назад» в одиночку не говорит ни о чём.
-                    footer={lastDate
-                      ? { label: 'Последняя тренировка', value: formatRelative(lastDate) }
-                      : { value: 'Ещё не начинали' }}
+                    // Одной строкой — только срок. Подпись «Последняя тренировка»
+                    // объясняла очевидное: на карточке программы срок и не может
+                    // значить ничего другого, а вторая строка забирала место и
+                    // внимание у самой цифры.
+                    footer={{ value: lastDate ? formatRelative(lastDate) : 'Ещё не начинали' }}
                     onToggleFav={() => onUnpin(slug)}
                     onOpen={() => guardedOpen(prog, slug)}
                     onDeleted={() => setSlugs(getPinnedProgramsSync())}

@@ -77,9 +77,9 @@ export default function Records() {
 }
 
 const styles = {
+  // Обводки нет — тот же вид, что у блока статистики на соседнем экране.
   card: {
     background: 'var(--surface)',
-    border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-4) var(--space-4) var(--space-2)'
   },

@@ -147,7 +147,9 @@ export default function BrowserMenuButton() {
                   background: pressed === it.key ? 'var(--layer-2)' : 'transparent'
                 }}
               >
-                <UiIcon name={it.icon.slice(3)} size={20} color="var(--color-text-secondary)" />
+                {/* Иконка того же цвета, что подпись рядом: серая при белом
+                    тексте читалась как выключенный пункт. */}
+                <UiIcon name={it.icon.slice(3)} size={20} color="var(--color-text)" />
                 <span style={styles.rowTitle}>{it.title}</span>
               </button>
             ))}
