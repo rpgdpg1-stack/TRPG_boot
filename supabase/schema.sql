@@ -2105,31 +2105,49 @@ AS $function$
     AND s.total_count > 0;
 $function$;
 
--- Кому слать пинок (понедельник днём). Условие «пустая прошлая неделя» строже,
--- чем «7 дней тишины»: отзанимавшийся в воскресенье укора не получит.
--- Никогда не тренировавшимся не пишем вовсе — новичку это упрёк на ровном месте.
+-- Кому слать пинок. Ступени тишины: неделя → месяц → три месяца, дальше молчим
+-- навсегда; каждая срабатывает ровно один раз, отсчёт от последней ТРЕНИРОВКИ,
+-- поэтому пропущенный запуск не сдвигает лестницу. Никогда не тренировавшимся
+-- не пишем вовсе — новичку это упрёк на ровном месте.
 --
 -- Закрепы хранятся по slug ('split', 'my', 'swim'), а программы в базе лежат
 -- под своими id ('prog_001', 'usr_2', 'swim_001') — slug сначала переводится
--- в id, иначе совпадений нет ни у кого. Возвращаем СПИСОК: силовая и плавание
--- закрепляются независимо, и выбирать за человека одну из них незачем.
+-- в id, иначе совпадений нет ни у кого. Возвращаем СПИСОК: закрепить можно
+-- сколько угодно программ, и выбирать за человека одну из них незачем.
 CREATE OR REPLACE FUNCTION public.srv_nudge_candidates()
 RETURNS TABLE (user_id bigint, telegram_id bigint, days_since integer,
-               nudge_ignored integer, programs jsonb)
+               nudge_ignored integer, programs jsonb,
+               best_count integer, best_minutes integer)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $$
-  WITH bounds AS (SELECT date_trunc('week', timezone('Europe/Moscow', now())) AS this_week),
-  last_w AS (
+  WITH last_w AS (
     SELECT w.user_id, max(w.finished_at) AS last_at FROM public.workouts w
     WHERE w.finished_at IS NOT NULL GROUP BY w.user_id
   ),
+  -- Вид настройки выбираем ВНУТРИ вызова, через CASE. Условие в WHERE тут не
+  -- спасает: оно применяется уже ПОСЛЕ раскрытия, и массив всё равно попадал бы
+  -- в jsonb_each — ровно так рассылка и падала.
   pinned AS (
-    SELECT p.user_id, e.key AS category, e.value #>> '{}' AS slug
-    FROM public.user_prefs p CROSS JOIN LATERAL jsonb_each(p.value) e
+    -- С 09.2026: список слагов, порядок = порядок закрепления (свежее впереди).
+    SELECT p.user_id, el.value #>> '{}' AS slug, el.ord::int AS ord
+    FROM public.user_prefs p
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(p.value) = 'array' THEN p.value ELSE '[]'::jsonb END
+    ) WITH ORDINALITY AS el(value, ord)
+    WHERE p.key = 'favorite_programs'
+    UNION ALL
+    -- До 09.2026: карта {категория: слаг}, по одной программе на раздел.
+    -- Порядок для неё оставляем прежний — по разделам.
+    SELECT p.user_id, e.value #>> '{}' AS slug,
+           CASE e.key WHEN 'gym' THEN 1 WHEN 'pool' THEN 2 WHEN 'cardio' THEN 3 ELSE 4 END
+    FROM public.user_prefs p
+    CROSS JOIN LATERAL jsonb_each(
+      CASE WHEN jsonb_typeof(p.value) = 'object' THEN p.value ELSE '{}'::jsonb END
+    ) e
     WHERE p.key = 'favorite_programs'
   ),
   resolved AS (
-    SELECT pn.user_id, pn.category, pn.slug,
+    SELECT pn.user_id, pn.slug, pn.ord,
            (SELECT pr.id FROM public.programs pr
              WHERE (pn.slug = 'split'    AND pr.id = 'prog_001')
                 OR (pn.slug = 'fullbody' AND pr.id = 'prog_002')
@@ -2139,18 +2157,20 @@ AS $$
              LIMIT 1) AS db_id
     FROM pinned pn
   ),
+  -- Раздел — у самой программы: в новом списке ключа с категорией нет, а
+  -- программа свой раздел знает всегда.
   detailed AS (
-    SELECT r.user_id, r.category, r.slug, pr.name,
+    SELECT r.user_id, pr.category, r.slug, r.ord, pr.name,
            (SELECT up.value #>> '{}' FROM public.user_prefs up
              WHERE up.user_id = r.user_id
-               AND up.key = 'program:' || r.slug || ':last_day') AS last_day
+               AND up.key = 'program:' || r.slug || ':last_day') AS last_day,
+           COALESCE((SELECT NULLIF(up.value #>> '{}', '')::int FROM public.user_prefs up
+                     WHERE up.user_id = r.user_id
+                       AND up.key = 'swim-reps:' || r.slug), 5) AS swim_reps
     FROM resolved r JOIN public.programs pr ON pr.id = r.db_id
   ),
-  -- У плавания метраж складывается из разминки, основы и заминки (формула
-  -- повторяет data/programs/swim.js), число кругов человек выставляет сам.
-  -- Время оценивается по метражу: заложенные 45 минут приходятся на 750 м.
   with_est AS (
-    SELECT d.user_id, d.category, d.slug, d.name, d.last_day,
+    SELECT d.user_id, d.category, d.slug, d.ord, d.name, d.last_day,
            CASE WHEN d.category = 'pool' THEN 250 + 100 * d.swim_reps END AS meters,
            CASE
              WHEN d.category = 'pool'
@@ -2163,36 +2183,44 @@ AS $$
            END AS est_minutes
     FROM detailed d
   ),
+  capped AS (
+    SELECT t.* FROM (
+      SELECT w.*, row_number() OVER (PARTITION BY w.user_id ORDER BY w.ord) AS rn
+      FROM with_est w
+    ) t WHERE t.rn <= 5
+  ),
   grouped AS (
     SELECT user_id, jsonb_agg(jsonb_build_object(
              'slug', slug, 'name', name, 'category', category,
              'lastDay', last_day, 'estMinutes', est_minutes, 'meters', meters
-           ) ORDER BY CASE category WHEN 'gym' THEN 1 WHEN 'pool' THEN 2
-                                    WHEN 'cardio' THEN 3 ELSE 4 END) AS programs
-    FROM with_est GROUP BY user_id
+           ) ORDER BY ord) AS programs
+    FROM capped GROUP BY user_id
+  ),
+  base AS (
+    SELECT u.id AS uid, u.telegram_id AS tg, u.nudge_ignored AS ignored,
+           u.last_nudge_at, lw.last_at,
+           EXTRACT(DAY FROM (now() - lw.last_at))::int AS days_since,
+           COALESCE(g.programs, '[]'::jsonb) AS programs,
+           bm.cnt AS best_count, bm.minutes AS best_minutes
+    FROM public.users u
+    JOIN last_w lw ON lw.user_id = u.id
+    LEFT JOIN grouped g ON g.user_id = u.id
+    LEFT JOIN LATERAL public.srv_best_month(u.id, NULL) bm ON true
+    WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
+  ),
+  stepped AS (
+    SELECT base.*,
+           CASE WHEN days_since >= 90 THEN 90
+                WHEN days_since >= 30 THEN 30
+                WHEN days_since >= 7  THEN 7
+           END AS step
+    FROM base
   )
-  SELECT u.id, u.telegram_id, EXTRACT(DAY FROM (now() - lw.last_at))::int,
-         u.nudge_ignored, COALESCE(g.programs, '[]'::jsonb)
-  FROM public.users u CROSS JOIN bounds b
-  JOIN last_w lw ON lw.user_id = u.id
-  LEFT JOIN grouped g ON g.user_id = u.id
-  WHERE u.telegram_id IS NOT NULL AND u.notify_nudge
-    -- Проверок про календарную неделю тут НЕТ намеренно: days_since >= 7 само
-    -- по себе означает, что тренировок не было ни вчера, ни на этой неделе.
-    -- Прежние две проверки имели смысл только в понедельник и в остальные дни
-    -- молча сужали выборку.
-    -- Ступени: неделя → месяц → три месяца, дальше тишина навсегда. Каждая
-    -- срабатывает ровно один раз: берём самый большой перешагнутый порог и
-    -- шлём, только если после него ещё не писали. Отсчёт от последней
-    -- ТРЕНИРОВКИ — тогда пропущенный запуск не сдвигает всю лестницу.
-    AND EXTRACT(DAY FROM (now() - lw.last_at))::int >= 7
-    AND (u.last_nudge_at IS NULL
-         OR u.last_nudge_at < lw.last_at + (
-              CASE
-                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int >= 90 THEN interval '90 days'
-                WHEN EXTRACT(DAY FROM (now() - lw.last_at))::int >= 30 THEN interval '30 days'
-                ELSE interval '7 days'
-              END));
+  SELECT uid, tg, days_since, ignored, programs, best_count, best_minutes
+  FROM stepped
+  WHERE step IS NOT NULL
+    AND (last_nudge_at IS NULL
+         OR last_nudge_at < last_at + (step || ' days')::interval);
 $$;
 
 -- Владельческий отчёт за месяц: про весь проект, а не про одного человека.
