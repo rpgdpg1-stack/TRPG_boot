@@ -47,10 +47,13 @@ const TOAST_MS = 1800
 // Насколько активный таб крупнее остальных. 1.15 — заметно с одного взгляда и
 // при этом не ломает ряд: значок с подписью растут внутри своей доли ширины.
 const TAB_ACTIVE_SCALE = 1.15
-// Зазор между панелями разделов на переходе = --space-3, шаг между карточками.
+// Зазор между панелями разделов на переходе — ДВА поля экрана (16 + 16 = 32).
+// У каждого раздела свой отступ от края, и на переходе их видно оба: один
+// отпускает уходящий список, второй встречает приходящий. Одно поле читалось бы
+// так, будто это один общий экран, который просто разъехался.
 // Лента доезжает ровно на ширину экрана ПЛЮС этот зазор, иначе соседний раздел
 // встал бы не на своё место и в конце перехода дёрнулся.
-const PANEL_GAP = 'var(--space-3)'
+const PANEL_GAP = 'var(--space-8)'
 const PANEL_STEP = `calc(100% + ${PANEL_GAP})`
 
 // Программы, которых ещё нет: место под раздел видно, но оно честно не обещает
@@ -107,6 +110,8 @@ export default function Programs() {
   const [commit, setCommit] = useState(0)
   const [settling, setSettling] = useState(false)
   const settleTimer = useRef(null)
+  // Куда едем прямо сейчас: null — доводки нет, 0 — возврат, ±1 — смена раздела.
+  const pendingDir = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0, peek: false })
   const swiped = useRef(false)
 
@@ -140,17 +145,34 @@ export default function Programs() {
     // движением. Сбрось мы его только по таймеру — она бы висела под пальцем
     // всю анимацию и прыгнула в конце.
     if (!dir) setDx(0)
-    settleTimer.current = setTimeout(() => {
-      settleTimer.current = null
-      if (dir) {
-        haptic.light()
-        setIdx(i => (((i + dir) % cats.length) + cats.length) % cats.length)
-      }
-      setCommit(0)
-      setDx(0)
-      setSettling(false)
-      setPeek(false)
-    }, SETTLE_MS)
+    pendingDir.current = dir
+    // Страховка: если transitionend не придёт (жест прервали, вкладка ушла в
+    // фон), доводку закрывает таймер. Чуть позже анимации, чтобы не обгонять её.
+    settleTimer.current = setTimeout(() => finishSettle(), SETTLE_MS + 60)
+  }
+
+  /**
+   * Закрыть доводку: переставить раздел, убрать соседей, отдать отклик.
+   *
+   * Зовётся ПО КОНЦУ АНИМАЦИИ ленты (onTransitionEnd), а не по таймеру.
+   * Таймер срабатывал на следующем тике после того, как список уже встал, —
+   * между «карточка доехала» и «таб переключился» получалась заметная пауза,
+   * хотя длительности совпадали. Теперь оба события в одном кадре: список
+   * встал, таб сменился, вибрация — одновременно.
+   */
+  const finishSettle = () => {
+    const dir = pendingDir.current
+    if (dir === null) return
+    pendingDir.current = null
+    if (settleTimer.current) { clearTimeout(settleTimer.current); settleTimer.current = null }
+    if (dir) {
+      haptic.light()
+      setIdx(i => (((i + dir) % cats.length) + cats.length) % cats.length)
+    }
+    setCommit(0)
+    setDx(0)
+    setSettling(false)
+    setPeek(false)
   }
 
   const menuIsOpen = () => document.documentElement.classList.contains('menu-open')
@@ -322,8 +344,14 @@ export default function Programs() {
               style={{
                 ...styles.tab,
                 color: on ? c.color : 'var(--color-text-inactive)',
-                // Масштабируем ВНУТРЕННОСТИ, не саму кнопку: её ширина — доля
-                // полоски, и растягивать её значило бы двигать соседей.
+                // Подложка — только под активным: она держит выбранный раздел
+                // как отдельный объект, а не как просто цветной текст в ряду.
+                background: on ? 'var(--layer-2)' : 'transparent',
+                // Неактивные ещё и приглушены: серого текста мало, когда рядом
+                // нет ничего белого для сравнения — все четыре казались живыми.
+                opacity: on ? 1 : 0.6,
+                // Масштаб на кнопке, а не на ряду: её ширина — доля полоски,
+                // и растягивать саму долю значило бы двигать соседей.
                 // Цвет иконки не задаём пропом: UiIcon наследует currentColor,
                 // и он переливается вместе с текстом, а не переключается рывком.
                 transform: on ? `scale(${TAB_ACTIVE_SCALE})` : 'scale(1)'
@@ -356,6 +384,8 @@ export default function Programs() {
               : `translate3d(${dx}px, 0, 0)`,
             transition: settling ? `transform ${SETTLE_MS}ms var(--ease-ios)` : 'none'
           }}
+          // Конец хода ленты и есть момент смены раздела — см. finishSettle.
+          onTransitionEnd={(e) => { if (e.propertyName === 'transform') finishSettle() }}
         >
           {peek && (
             <div style={{ ...styles.sidePanel, right: PANEL_STEP }} aria-hidden="true">
@@ -409,10 +439,11 @@ const styles = {
     position: 'relative', flex: 1, minWidth: 0,
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
     padding: 'var(--space-2) var(--space-1) var(--space-3)',
-    background: 'transparent', border: 'none', cursor: 'pointer',
+    border: 'none', cursor: 'pointer',
+    borderRadius: 'var(--radius-medium)',
     WebkitTapHighlightColor: 'transparent',
-    // Цвет и размер переливаются одним движением — без рывка на переключении.
-    transition: 'color 0.22s var(--ease-ios), transform 0.26s var(--ease-ios)'
+    // Цвет, подложка, прозрачность и размер переливаются одним движением.
+    transition: 'color 0.22s var(--ease-ios), transform 0.26s var(--ease-ios), background 0.22s var(--ease-ios), opacity 0.22s var(--ease-ios)'
   },
   tabTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
