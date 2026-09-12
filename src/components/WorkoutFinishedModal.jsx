@@ -186,7 +186,7 @@ export default function WorkoutFinishedModal({
                 {statsShown && (
                   <div style={{ ...styles.statsRow, animation: REVEAL_ANIM }}>
                     <span style={styles.stat}>
-                      <WeeklyMuscle count={streak} size={22} />
+                      <WeeklyMuscle lit={streak >= 1} size={22} />
                       {/* Число — акцентный зелёный, как рядом с бицепсом везде.
                           Оранжевый достался ему от огонька, которого больше нет. */}
                       <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>

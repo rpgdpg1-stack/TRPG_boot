@@ -1,10 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react'
 import { usePullToRefresh, PullIndicator } from '../components/PullToRefresh'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic, confirm as tgConfirm } from '../lib/telegram'
 import { getFriendsList, getFriendsListSync, togglePinFriend, removeFriend, invalidateFriendsListCache, PIN_LIMIT } from '../lib/friends-list'
 import { shareReferralLink } from '../lib/friends'
-import { periodRange } from '../utils/history'
 import { pluralizeFriends } from '../utils/plural'
 import { EVENTS, on } from '../lib/events'
 import FriendRow from '../components/FriendRow'
@@ -124,7 +123,6 @@ export default function Friends() {
 
   // Границы текущей недели — считаем ОДИН раз на экран и прокидываем в строки
   // (в FriendRow больше не пересчитывается на каждую строку).
-  const weekRange = useMemo(() => periodRange('week'), [])
 
   const handleInviteTap = async () => {
     haptic.medium()
@@ -250,7 +248,7 @@ export default function Friends() {
                   ref={el => { if (el) rowRefs.current.set(friend.user_id, el); else rowRefs.current.delete(friend.user_id) }}
                   style={idx === 0 ? undefined : styles.rowDivider}
                 >
-                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
                 </div>
               ))}
             </div>
@@ -268,7 +266,7 @@ export default function Friends() {
                   ref={el => { if (el) rowRefs.current.set(friend.user_id, el); else rowRefs.current.delete(friend.user_id) }}
                   style={idx === 0 ? undefined : styles.rowDivider}
                 >
-                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} weekRange={weekRange} />
+                  <FriendRow friend={friend} onTap={handleRowTap} onLongPress={handleLongPress} />
                 </div>
               ))}
             </div>

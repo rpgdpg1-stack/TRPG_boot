@@ -21,33 +21,26 @@
  */
 
 import { memo, useRef, useState } from 'react'
-import { formatRelative, periodRange } from '../utils/history'
+import { formatRelative } from '../utils/history'
 import WeeklyMuscle from './WeeklyMuscle'
 import Avatar from './Avatar'
 
 const LONG_PRESS_MS = 550
 const MOVE_TOLERANCE = 10 // px — сдвиг больше = это скролл, не лонг-пресс
 
-function FriendRow({ friend, onTap, onLongPress, weekRange }) {
+function FriendRow({ friend, onTap, onLongPress }) {
   const {
     first_name,
     is_training,
     photo_url,
     last_workout_at,
-    pinned_at,
-    week_workouts
+    pinned_at
   } = friend
 
   const displayName = first_name || 'Игрок'
   const isPinned = !!pinned_at
 
   const lastWorkoutText = last_workout_at ? formatRelative(last_workout_at) : null
-
-  // Тренировался ли на этой неделе (МСК, Пн–Вс). Границы недели считаются ОДИН раз
-  // в Friends и приходят пропсом (fallback — на случай прямого использования).
-  const [weekStart, weekEnd] = weekRange || periodRange('week')
-  const lastMs = last_workout_at ? new Date(last_workout_at).getTime() : 0
-  const trainedThisWeek = lastMs >= weekStart && lastMs < weekEnd
 
   const [pressed, setPressed] = useState(false)
   const rowRef = useRef(null)
@@ -139,14 +132,13 @@ function FriendRow({ friend, onTap, onLongPress, weekRange }) {
         </div>
       </div>
 
-      {/* Индикатор недели: бицепс в силе, набранной другом за эту неделю.
-          Не тренировался — не показываем вовсе: серый значок в списке читался
-          бы как укор, а строка под именем и так говорит, когда он был в зале.
-          Статистика у друга закрыта (week_workouts === null) — показываем
-          первую стадию: факт активности виден, точное число нет. */}
-      {trainedThisWeek && (
-        <div style={styles.weekFlame} aria-label="Тренировался на этой неделе">
-          <WeeklyMuscle count={week_workouts ?? 1} size={20} />
+      {/* Бицепс с искрами — ТОЛЬКО у того, кто тренируется прямо сейчас: значок
+          показывает живое действие, а не итог недели. Про итог и так написано
+          строкой под именем («3 дня назад»), и дублировать её значком значило
+          отвечать на один вопрос дважды. */}
+      {is_training && (
+        <div style={styles.weekFlame} aria-label="Тренируется сейчас">
+          <WeeklyMuscle lit sparks size={20} />
         </div>
       )}
     </div>

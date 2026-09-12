@@ -17,7 +17,6 @@ import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
 import PlayButton from './PlayButton'
-import PlayIcon from './PlayIcon'
 
 // Высота карточки с футером — фиксированная (см. minHeight ниже): контент в
 // двух состояниях разный, а прыгать карточка не должна.
@@ -192,8 +191,14 @@ export default function ProgramCard({
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
   const lastDate = lastTrained && available ? getLastWorkoutDateBySlug(prog.slug) : null
   // cta — залитая пилюля «Начать [день] ▶» / «Продолжить ▶» справа (карточка главной).
-  const showCta = cta && available
-  const showRight = available && (showCta || isActive || (lastTrained && lastDate))
+  //
+  // Идёт тренировка — пилюля «Продолжить» встаёт и БЕЗ cta: в каталоге кнопки
+  // старта на карточках нет намеренно (там выбирают программу, а не запускают),
+  // но запущенная тренировка — не старт, а возврат в неё, и выглядеть он обязан
+  // ровно так же, как на главной. Раньше каталог показывал вместо пилюли
+  // зелёный треугольник — другой элемент на то же действие.
+  const showCta = available && (cta || isActive)
+  const showRight = available && (showCta || (lastTrained && lastDate))
   // Не начата — круглая кнопка с плеем (слово «Начать» лишнее, треугольник и так
   // читается); идёт тренировка — пилюля с текстом «Продолжить».
   // 64 под круглый плей — ровно по геометрии: кнопка 48 + 16 отступ от края.
@@ -270,14 +275,8 @@ export default function ProgramCard({
         {/* Правый блок — по центру по высоте ряда, справа. */}
         {!showCta && showRight && (
           <div style={{ ...styles.rightBlock, right: 0 }}>
-            {isActive ? (
-              <span style={styles.continuePlay}><PlayIcon size={28} /></span>
-            ) : (
-              <>
-                <span style={styles.ltLabel}>Последняя</span>
-                <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
-              </>
-            )}
+            <span style={styles.ltLabel}>Последняя</span>
+            <span style={styles.ltValue}>{formatRelative(lastDate)}</span>
           </div>
         )}
       </div>
@@ -374,12 +373,6 @@ const styles = {
     textAlign: 'right',
     maxWidth: '84px',
     pointerEvents: 'none'
-  },
-  // «Продолжить» — просто зелёный плей-треугольник (что тренировка запущена).
-  continuePlay: {
-    display: 'inline-flex',
-    color: 'var(--color-primary)',
-    filter: 'drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 35%, transparent))'
   },
   ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', lineHeight: 1.25, color: 'var(--color-text-secondary)' }

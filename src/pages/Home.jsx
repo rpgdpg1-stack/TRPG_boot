@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getActiveWorkout, onActiveWorkoutChange } from '../lib/active-workout'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { EVENTS, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
@@ -20,6 +21,9 @@ function WeekStrip() {
   })
   const [info, setInfo] = useState(false)
   const stripRef = useRef(null)
+  // Идёт ли тренировка прямо сейчас — от этого и искры на бицепсе, и сама фраза.
+  const [training, setTraining] = useState(() => !!getActiveWorkout())
+  useEffect(() => onActiveWorkoutChange(() => setTraining(!!getActiveWorkout())), [])
   const openInfo = () => { haptic.light(); setInfo(v => !v) }
   useEffect(() => {
     const upd = () => {
@@ -31,7 +35,7 @@ function WeekStrip() {
     return () => { off(); off2() }
   }, [])
 
-  // Порядок читается как фраза: огонёк → число → «Тренировок на этой неделе».
+  // Порядок читается как фраза: бицепс → число → «Тренировок на этой неделе».
   const hasStreak = streak >= 1
 
   // Строка целиком — кнопка-пояснение. Именно здесь человек впервые видит
@@ -45,13 +49,19 @@ function WeekStrip() {
       <button style={stripStyles.strip} onClick={openInfo} aria-label="Тренировки на этой неделе">
         {/* Бицепс и число — одной группой, вплотную (счётчик принадлежит значку). */}
         <span style={stripStyles.flameGroup}>
-          <WeeklyMuscle count={streak} size={22} />
-          {hasStreak && <span style={stripStyles.count}>{streak}</span>}
+          {/* Тренировка идёт — бицепс залит и искрит, даже если завершённых на
+              этой неделе ещё нет: работа уже началась. */}
+          <WeeklyMuscle lit={hasStreak || training} sparks={training} size={22} />
+          {/* Пока тренировка идёт, числа НЕТ: итог ещё не сложился, и цифра
+              рядом с «Идёт тренировка» спорила бы сама с собой. */}
+          {hasStreak && !training && <span style={stripStyles.count}>{streak}</span>}
         </span>
         <span style={stripStyles.label}>
-          {hasStreak
-            ? `${capitalize(pluralizeWorkouts(streak))} на этой неделе`
-            : 'Тренировок на этой неделе ещё не было'}
+          {training
+            ? 'Идёт тренировка'
+            : hasStreak
+              ? `${capitalize(pluralizeWorkouts(streak))} на этой неделе`
+              : 'Тренировок на этой неделе ещё не было'}
         </span>
       </button>
 
