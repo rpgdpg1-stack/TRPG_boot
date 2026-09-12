@@ -615,9 +615,10 @@ const styles = {
     padding: 'var(--space-4)',
     gap: 'var(--space-4)',
     width: '100%',
-    // 104 вместо 132: в дне бывает 8–12 упражнений, и каждая лишняя сотня
-    // пикселей — это ещё один экран прокрутки посреди тренировки.
-    minHeight: '104px',
+    // 112 вместо 132: в дне бывает 8–12 упражнений, и каждая лишняя сотня
+    // пикселей — это ещё один экран прокрутки посреди тренировки. Ровно
+    // миниатюра (80) плюс поля карточки (16 сверху и снизу).
+    minHeight: '112px',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
@@ -625,13 +626,13 @@ const styles = {
   preview: {
     position: 'relative',
     flexShrink: 0,
-    // 72 вместо 100: картинка тут опознаёт упражнение, а не показывает технику —
+    // 80 вместо 100: картинка тут опознаёт упражнение, а не показывает технику —
     // для узнавания хватает и меньшего кадра. Смотреть движение идут в «Инфо».
-    width: '72px',
-    height: '72px',
-    // radius-card (33) на квадрате 72 превратил бы миниатюру почти в круг —
-    // берём ближайшую ступень шкалы.
-    borderRadius: 'var(--radius-medium)',
+    width: '80px',
+    height: '80px',
+    // Тот же радиус, что у самой карточки: миниатюра лежит в ней концентрично,
+    // и на уменьшенном квадрате он читается заметнее — чего и добивались.
+    borderRadius: 'var(--radius-card)',
     overflow: 'hidden',
     background: 'var(--color-text)',
     display: 'flex',
@@ -655,7 +656,7 @@ const styles = {
   content: {
     flex: 1,
     minWidth: 0,
-    minHeight: '72px',
+    minHeight: '80px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -663,9 +664,9 @@ const styles = {
   },
   exerciseName: {
     fontFamily: 'var(--font-display)',
-    fontSize: 'var(--text-label-size)',
+    fontSize: 'var(--text-button-size)',
     fontWeight: 700,
-    lineHeight: '16px',
+    lineHeight: '18px',
     color: 'var(--color-text)'
   },
   customMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
@@ -683,16 +684,17 @@ const styles = {
   // Форма пилюли живёт в MarqueeTag, здесь — размер под плотную карточку дня
   // и полная, НЕ приглушённая заливка.
   //
-  // Приглушение (opacity 0.7) убрано: цвет тега — единственное, что отличает
-  // группы с одного взгляда при беге глазами по списку, и гасить его значило
-  // гасить саму подсказку. 10px — меньше мелкой ступени шкалы: тег здесь
-  // подпись под названием, а не самостоятельный элемент, и в модалке
-  // упражнения он остаётся обычного размера.
-  tag: { fontSize: '10px', lineHeight: '13px', padding: '3px 9px' },
+  // Приглушение прежнее (0.7) — спокойный вид чипов сохраняется. 10px — меньше
+  // мелкой ступени шкалы: тег здесь подпись под названием, а не самостоятельный
+  // элемент, и в модалке упражнения он остаётся обычного размера.
+  tag: { fontSize: '10px', lineHeight: '13px', padding: '3px 9px', opacity: 0.7 },
   weightBlock: {
     flexShrink: 0,
-    width: '38px',
-    height: '72px',
+    // 46, а не 38: при кегле 20 дробный вес («62,5») шире 38px и вылезал из
+    // своей зоны на цифру соседа. Ширина считается по самому длинному
+    // реальному значению, а не по среднему.
+    width: '46px',
+    height: '80px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -706,8 +708,8 @@ const styles = {
   },
   weightInputWrap: {
     position: 'relative',
-    width: '38px',
-    height: '22px'
+    width: '46px',
+    height: '24px'
   },
   // Шрифт ТОТ ЖЕ, что у weightValue: иначе при тапе цифра подменялась
   // с Geist на Manrope — размер тот же, а начертание прыгало.
@@ -715,12 +717,14 @@ const styles = {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: '38px',
-    height: '22px',
+    width: '46px',
+    height: '24px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-title-size)',
+    // 20px: ступени между title (18) и heading (22) в шкале нет, а 18 для
+    // главной цифры карточки мелко — её читают, не приглядываясь.
+    fontSize: '20px',
     fontWeight: 800,
-    lineHeight: '22px',
+    lineHeight: '24px',
     background: 'transparent',
     border: 'none',
     outline: 'none',
@@ -736,21 +740,23 @@ const styles = {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: '38px',
-    height: '22px',
+    width: '46px',
+    height: '24px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-title-size)',
+    // 20px: ступени между title (18) и heading (22) в шкале нет, а 18 для
+    // главной цифры карточки мелко — её читают, не приглядываясь.
+    fontSize: '20px',
     fontWeight: 800,
-    lineHeight: '22px',
+    lineHeight: '24px',
     textAlign: 'center',
     pointerEvents: 'none'
   },
   weightUnit: {
-    width: '38px',
+    width: '46px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
+    fontSize: '12px',
     fontWeight: 800,
-    lineHeight: '13px',
+    lineHeight: '14px',
     letterSpacing: '0.05em',
     textAlign: 'center',
     color: 'var(--color-text-secondary)'
