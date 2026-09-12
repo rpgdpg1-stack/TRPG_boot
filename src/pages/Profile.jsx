@@ -7,11 +7,12 @@ import { getFriendsList } from '../lib/friends-list'
 import { getCurrentUser } from '../lib/auth'
 import { shareReferralLink } from '../lib/friends'
 import { getPrivacy } from '../lib/privacy'
-import { getFavoriteExercises, getFavoritesSync } from '../lib/favorite-exercises'
+import { FAVORITE_LIMIT } from '../lib/favorite-exercises'
 import { getRecords, getRecordsSync } from '../lib/records'
-import { summarizeWorkouts, HISTORY_FETCH_LIMIT } from '../utils/history'
+import { HISTORY_FETCH_LIMIT } from '../utils/history'
 import { EVENTS, on } from '../lib/events'
 import ProfileHeader from '../components/ProfileHeader'
+import HeartIcon from '../components/HeartIcon'
 import ProfileMetrics from '../components/ProfileMetrics'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
@@ -40,7 +41,6 @@ export default function Profile() {
   const [workouts, setWorkouts] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) || [])
   const [loaded, setLoaded] = useState(() => getRecentWorkoutsSync(HISTORY_FETCH_LIMIT) != null)
   const [privacy, setPrivacy] = useState(() => getPrivacy())
-  const [favorites, setFavorites] = useState(() => getFavoritesSync() || [])
   // Рекорды — тот же блок, что внизу экрана статистики. Старт из кеша
   // (мгновенно), сервер догоняет.
   const [records, setRecords] = useState(() => getRecordsSync())
@@ -64,7 +64,6 @@ export default function Profile() {
 
     const load = () => {
       setPrivacy(getPrivacy())
-      getFavoriteExercises().then(list => setFavorites(list))
       getRecords().then(setRecords)
       Promise.all([
         getRecentWorkouts(HISTORY_FETCH_LIMIT),
@@ -89,18 +88,29 @@ export default function Profile() {
   const lastWorkout = workouts.length > 0 ? workouts[0] : null
   // В карточке профиля статистика переключается Месяц/Год (по умолчанию — год),
   // поэтому считаем обе сводки сразу.
-  const stats = {
-    week: summarizeWorkouts(workouts, 'week', new Date()),
-    month: summarizeWorkouts(workouts, 'month', new Date()),
-    year: summarizeWorkouts(workouts, 'year', new Date()),
-    all: summarizeWorkouts(workouts, 'all', new Date())
-  }
-
-  // Меню профиля: активности и телесные разделы + системное. Статистика и
-  // любимые живут на главной.
+  // Меню профиля: тренировочные разделы, телесные и системное.
+  //
+  // «Любимые упражнения» — СТРОКОЙ, а не плиткой рядом с рекордами: это не
+  // показатель, а список, куда заходят пореже. Своей группой выше «Профиля»,
+  // потому что раздел про тренировки, а не про анкету (рост, возраст, цель).
   const insideTelegram = isTelegramEnv()
 
   const menuGroups = [
+    {
+      title: 'Тренировки',
+      items: [
+        {
+          id: 'favorites',
+          // Сердечко акцентным зелёным, а не серым, как у остальных строк:
+          // серых разделов-анкет ниже целый список, и в нём вход в живой
+          // тренировочный раздел терялся бы.
+          icon: <HeartIcon filled size={22} color="var(--color-primary)" />,
+          title: 'Любимые упражнения',
+          subtitle: `Топ-${FAVORITE_LIMIT} с рабочим весом`,
+          path: '/favorite-exercises'
+        }
+      ]
+    },
     {
       title: 'Профиль',
       items: [
@@ -149,19 +159,17 @@ export default function Profile() {
 
   const showInvite = friendsCount === null || friendsCount < FRIENDS_INVITE_LIMIT
 
-  // Три входа в свои разделы. Приватность на них НЕ влияет (сентябрь 2026):
-  // раньше выключенный тумблер прятал плитку и в СВОЁМ профиле — человек менял
+  // Вход в свои рекорды. Приватность на него НЕ влияет (сентябрь 2026): раньше
+  // выключенный тумблер прятал плитку и в СВОЁМ профиле — человек менял
   // настройку «что видно друзьям» и терял вход к собственным цифрам. Приватность
   // теперь управляет только тем, что показывается ДРУГУ.
   //
-  // Плитки стоят всегда, даже когда данных ещё нет: пустой раздел честнее
+  // Плитка стоит всегда, даже когда рекордов ещё нет: пустой раздел честнее
   // объяснить внутри, чем убирать вход и оставлять человека гадать, есть ли он.
   const sections = [
     <ProfileMetrics
       key="metrics"
-      stats={stats}
       records={records}
-      favorites={favorites}
       showWeights
       // Свой профиль — полноценные экраны, а не модалки поверх: свои цифры
       // разглядывают долго. Модалки остались там, где смотрят на друга.
@@ -215,7 +223,9 @@ export default function Profile() {
                   borderTop: idx === 0 ? 'none' : '1px solid var(--border-hairline)'
                 }}
               >
-                {item.icon.startsWith('ui:') ? (
+                {typeof item.icon !== 'string' ? (
+                  <span style={styles.rowIconNode}>{item.icon}</span>
+                ) : item.icon.startsWith('ui:') ? (
                   <UiIcon name={item.icon.slice(3)} size={22} color={item.iconColor || 'var(--color-text)'} style={{ width: '32px', height: '22px' }} />
                 ) : (
                   <span style={styles.rowIcon}>{item.icon}</span>
@@ -265,6 +275,9 @@ const styles = {
     width: '100%', minHeight: '64px', textAlign: 'left', background: 'transparent', border: 'none'
   },
   rowIcon: { fontSize: 'var(--text-heading-size)', width: '32px', textAlign: 'center', flexShrink: 0 },
+  // Готовая иконка-компонент (не из набора ui): тот же бокс 32×22, что у UiIcon,
+  // иначе строка с ней встала бы не по общей левой линии.
+  rowIconNode: { width: '32px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   rowContent: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700, color: 'var(--color-text)', marginBottom: 'var(--space-05)' },
   rowSubtitle: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', color: 'var(--color-text-secondary)' },
