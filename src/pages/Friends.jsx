@@ -92,16 +92,26 @@ export default function Friends() {
   const rowRefs = useRef(new Map())
   const flipPrev = useRef(null)
 
+  // Снимок годен только до ближайшей перестройки списка. Раньше срока жизни у
+  // него не было, и брошенный снимок (закреп не прошёл — лимит или ошибка сети)
+  // оставался лежать до следующего обновления друзей: список приходил с сервера
+  // сам по себе, FLIP срабатывал со старыми координатами, и строки прыгали
+  // «ниоткуда». Это и было то самое случайное моргание списка.
+  const SNAPSHOT_TTL_MS = 700
+
   const snapshotRows = () => {
     const snap = new Map()
     rowRefs.current.forEach((el, id) => { if (el) snap.set(id, el.getBoundingClientRect().top) })
-    flipPrev.current = snap
+    flipPrev.current = { at: Date.now(), rows: snap }
   }
 
   useLayoutEffect(() => {
-    const prev = flipPrev.current
-    if (!prev) return
+    const taken = flipPrev.current
     flipPrev.current = null
+    if (!taken) return
+    // Снимок протух — перестройка пришла не от того действия, что его снимало.
+    if (Date.now() - taken.at > SNAPSHOT_TTL_MS) return
+    const prev = taken.rows
     rowRefs.current.forEach((el, id) => {
       if (!el) return
       const oldTop = prev.get(id)
@@ -158,7 +168,6 @@ export default function Friends() {
 
   const handleTogglePin = async (friend) => {
     const wasPinned = !!friend.pinned_at
-    snapshotRows()
 
     // Если закрепляем (не открепляем) и уже лимит — не даём, показываем ошибку
     if (!wasPinned && pinnedCount >= PIN_LIMIT) {
@@ -170,6 +179,9 @@ export default function Friends() {
     const result = await togglePinFriend(friend.user_id)
     if (result.success) {
       haptic.success()
+      // Снимок снимаем ВПЛОТНУЮ к перестройке: между ним и load() не должно
+      // быть ни одной ветки, которая может уйти в return.
+      snapshotRows()
       load()
     } else if (result.error === 'limit') {
       haptic.error()

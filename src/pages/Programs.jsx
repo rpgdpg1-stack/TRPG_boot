@@ -44,6 +44,14 @@ const AXIS_LOCK_PX = 6
 const SETTLE_MS = 380
 // Сколько висит тост-подтверждение закрепа.
 const TOAST_MS = 1800
+// Насколько активный таб крупнее остальных. 1.15 — заметно с одного взгляда и
+// при этом не ломает ряд: значок с подписью растут внутри своей доли ширины.
+const TAB_ACTIVE_SCALE = 1.15
+// Зазор между панелями разделов на переходе = --space-3, шаг между карточками.
+// Лента доезжает ровно на ширину экрана ПЛЮС этот зазор, иначе соседний раздел
+// встал бы не на своё место и в конце перехода дёрнулся.
+const PANEL_GAP = 'var(--space-3)'
+const PANEL_STEP = `calc(100% + ${PANEL_GAP})`
 
 // Программы, которых ещё нет: место под раздел видно, но оно честно не обещает
 // работать. Переехали из прежнего экрана категории без изменений.
@@ -92,9 +100,14 @@ export default function Programs() {
   // ——— Свайп между категориями ———
   const viewportRef = useRef(null)
   const [dx, setDx] = useState(0)
+  // Соседние панели в дереве: только пока идёт жест и доводка.
+  const [peek, setPeek] = useState(false)
+  // Куда доводим ленту: +1 — к следующему разделу, -1 — к предыдущему,
+  // 0/null — возврат на место (жест не дотянули).
+  const [commit, setCommit] = useState(0)
   const [settling, setSettling] = useState(false)
   const settleTimer = useRef(null)
-  const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
+  const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0, peek: false })
   const swiped = useRef(false)
 
   useEffect(() => () => {
@@ -105,13 +118,39 @@ export default function Programs() {
   // Переход к разделу ПО КРУГУ: за «Растяжкой» снова «Силовая», перед
   // «Силовой» — «Растяжка». Список коротким кольцом читается лучше тупика:
   // палец не упирается в невидимую стену на краю.
+  // Тап по табу: меняем раздел сразу, лента не едет — жест тут не при чём.
   const goTo = (next, withHaptic = true) => {
     const target = ((next % cats.length) + cats.length) % cats.length
-    if (target === idx) return
+    if (target === idx || settling) return
     if (withHaptic) haptic.light()
-    setSettling(true)
     setIdx(target)
-    settleTimer.current = setTimeout(() => { settleTimer.current = null; setSettling(false) }, SETTLE_MS)
+  }
+
+  /**
+   * Довести ленту до соседнего раздела (dir = ±1) или вернуть на место (0).
+   *
+   * Панель уезжает под палец, соседняя доезжает до края экрана, и только когда
+   * движение закончилось, указатель переставляется, а лента возвращается в
+   * нулевую позицию уже без анимации. Для глаза это один непрерывный ход.
+   */
+  const settleTo = (dir) => {
+    setSettling(true)
+    setCommit(dir)
+    // Возврат: гасим сдвиг СРАЗУ, чтобы лента доехала до нуля этим же
+    // движением. Сбрось мы его только по таймеру — она бы висела под пальцем
+    // всю анимацию и прыгнула в конце.
+    if (!dir) setDx(0)
+    settleTimer.current = setTimeout(() => {
+      settleTimer.current = null
+      if (dir) {
+        haptic.light()
+        setIdx(i => (((i + dir) % cats.length) + cats.length) % cats.length)
+      }
+      setCommit(0)
+      setDx(0)
+      setSettling(false)
+      setPeek(false)
+    }, SETTLE_MS)
   }
 
   const menuIsOpen = () => document.documentElement.classList.contains('menu-open')
@@ -121,10 +160,10 @@ export default function Programs() {
   // разных движения.
   const onTouchStart = (e) => {
     const onTabs = e.target?.closest?.('[data-cat-tabs]')
-    if (settling || menuIsOpen() || onTabs) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 }; return }
+    if (settling || menuIsOpen() || onTabs) { drag.current = { x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0, peek: false }; return }
     const t = e.touches[0]
     drag.current = {
-      x: t.clientX, y: t.clientY, axis: null,
+      x: t.clientX, y: t.clientY, axis: null, peek: false,
       w: viewportRef.current?.offsetWidth || 1, t0: Date.now(), dx: 0
     }
   }
@@ -141,6 +180,8 @@ export default function Programs() {
       d.axis = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'
     }
     if (d.axis !== 'h') return
+    // Ось стала горизонтальной — достаём соседей, чтобы их было видно за краем.
+    if (!d.peek) { d.peek = true; setPeek(true) }
     // Резинки на краях больше нет: разделы закольцованы, края кончились.
     d.dx = mx
     setDx(d.dx)
@@ -157,33 +198,43 @@ export default function Programs() {
       setTimeout(() => { swiped.current = false }, 160)
     }
     d.axis = null
-    d.dx = 0
-    setDx(0)
-    if (fast || far) goTo(dist < 0 ? idx + 1 : idx - 1)
+    d.peek = false
+    // Дотянул — доводим до соседнего раздела, не дотянул — лента возвращается
+    // на место тем же движением. Резкого сброса нет ни в одном из случаев.
+    settleTo((fast || far) ? (dist < 0 ? 1 : -1) : 0)
   }
 
-  // ——— Данные активной категории ———
-  const realPrograms = getProgramsByCategory(cat.id)
-  const placeholders = realPrograms.length === 0
-    ? (PLACEHOLDER_PROGRAMS[cat.id] || []).map(p => ({ ...p, category: cat.id }))
-    : []
-  // Закреплённые — наверх списка, среди них позже закреплённая выше (порядок
-  // `pinned` = порядок закрепления, свежее первым). Открепил — программа
-  // возвращается на своё место в обычном порядке, ничего никуда не «уезжает».
-  // Ручного перетаскивания нет: чтобы поднять программу выше, её открепляют и
-  // закрепляют заново — правило одно и предсказуемое.
-  const all = [...realPrograms, ...placeholders]
-  const rank = (prog) => {
-    const i = pinned.indexOf(prog.slug)
-    return i === -1 ? Infinity : i
+  // ——— Данные категории ———
+  // Считаем для ЛЮБОЙ категории, а не только активной: во время свайпа соседние
+  // панели уже отрисованы и выглядывают из-за края.
+  const buildPanel = (catId) => {
+    const realPrograms = getProgramsByCategory(catId)
+    const placeholders = realPrograms.length === 0
+      ? (PLACEHOLDER_PROGRAMS[catId] || []).map(p => ({ ...p, category: catId }))
+      : []
+    // Закреплённые — наверх списка, среди них позже закреплённая выше (порядок
+    // `pinned` = порядок закрепления, свежее первым). Открепил — программа
+    // возвращается на своё место в обычном порядке, ничего никуда не «уезжает».
+    // Ручного перетаскивания нет: чтобы поднять программу выше, её открепляют и
+    // закрепляют заново — правило одно и предсказуемое.
+    const all = [...realPrograms, ...placeholders]
+    const rank = (prog) => {
+      const i = pinned.indexOf(prog.slug)
+      return i === -1 ? Infinity : i
+    }
+    const programs = [...all].sort((a, b) => {
+      const ra = rank(a)
+      const rb = rank(b)
+      if (ra === rb) return all.indexOf(a) - all.indexOf(b)   // оба не закреплены — обычный порядок
+      return ra - rb
+    })
+    return {
+      programs,
+      hasCustom: realPrograms.some(p => p.source === 'custom'),
+      canCreate: catId === 'gym'
+    }
   }
-  const programs = [...all].sort((a, b) => {
-    const ra = rank(a)
-    const rb = rank(b)
-    if (ra === rb) return all.indexOf(a) - all.indexOf(b)   // оба не закреплены — обычный порядок
-    return ra - rb
-  })
-  const hasCustom = realPrograms.some(p => p.source === 'custom')
+
   const canCreate = cat.id === 'gym'
 
   const handlePinTap = async (prog) => {
@@ -202,6 +253,42 @@ export default function Programs() {
     if (canCreate) navigate('/constructor')
   }
 
+  // Одна панель раздела: карточки + «Создать». Рисуется и для активной
+  // категории, и для соседних, которые выглядывают во время свайпа.
+  const renderPanel = (c) => {
+    const panel = buildPanel(c.id)
+    return (
+      <>
+        {panel.programs.map(prog => (
+          <ProgramCard
+            key={prog.slug}
+            prog={prog}
+            isFav={pinned.includes(prog.slug)}
+            onToggleFav={() => handlePinTap(prog)}
+            onDeleted={() => bump(n => n + 1)}
+            menu
+            bordered={false}
+            background={pinned.includes(prog.slug) ? 'var(--surface-pinned)' : 'var(--color-card)'}
+          />
+        ))}
+
+        {/* «Создать» работает только в силовой — конструктор пока умеет её одну.
+            В остальных разделах кнопка приглушена: место под функцию видно,
+            но она честно не обещает работать. */}
+        {(c.id !== 'gym' || !panel.hasCustom) && (
+          <button
+            onClick={panel.canCreate ? handleCreateTap : undefined}
+            disabled={!panel.canCreate}
+            style={{ ...styles.createButton, ...(panel.canCreate ? null : styles.createSoon) }}
+            className={panel.canCreate ? 'press-tile' : undefined}
+          >
+            <span style={styles.createPlus}>＋</span> Создать
+          </button>
+        )}
+      </>
+    )
+  }
+
   return (
     <div
       className="page page-enter"
@@ -213,71 +300,75 @@ export default function Programs() {
     >
       <ScreenTitle>Программы</ScreenTitle>
 
-      {/* Табы категорий: иконка над названием, активный — В ЦВЕТЕ СВОЕГО РАЗДЕЛА
-          (и значок, и текст, и линия снизу), остальные приглушены.
+      {/* Табы категорий: значок над названием. Активный — В ЦВЕТЕ СВОЕГО РАЗДЕЛА
+          и КРУПНЕЕ остальных; неактивные приглушены и мельче.
           Не чипы: выбран всегда ровно один раздел, а чип читается как фильтр,
           которых можно включить несколько.
 
-          Цвет раздела вместо белого — потому что он уже принят языком проекта:
-          им красится эмблема программы, теги и данные раздела. Зелёная линия
-          под синим «Плаванием» вводила бы третий цвет в один элемент.
+          Линии-подчёркивания под активным НЕТ. Цвет раздела уже принят языком
+          проекта (эмблема программы, теги, данные), и вместе с размером он
+          отвечает на вопрос «где я» дважды — черта была третьим ответом на тот
+          же вопрос и превращала полоску в лесенку из подсветок.
 
           Четыре таба делят ширину поровну и помещаются на экран целиком —
-          прокрутки у полоски больше нет, а с ней ушла и доводка активного
-          таба в видимую зону. */}
+          прокрутки у полоски нет, а с ней ушла и доводка активного таба
+          в видимую зону. */}
       <div style={styles.tabs} data-cat-tabs>
         {cats.map((c, i) => {
           const on = c.id === cat.id
-          const tint = on ? c.color : 'var(--color-text-inactive)'
           return (
             <button
               key={c.id}
-              style={{ ...styles.tab, color: tint }}
+              style={{
+                ...styles.tab,
+                color: on ? c.color : 'var(--color-text-inactive)',
+                // Масштабируем ВНУТРЕННОСТИ, не саму кнопку: её ширина — доля
+                // полоски, и растягивать её значило бы двигать соседей.
+                // Цвет иконки не задаём пропом: UiIcon наследует currentColor,
+                // и он переливается вместе с текстом, а не переключается рывком.
+                transform: on ? `scale(${TAB_ACTIVE_SCALE})` : 'scale(1)'
+              }}
               onClick={() => goTo(i)}
             >
-              <UiIcon name={c.iconName} size={22} color={tint} />
+              <UiIcon name={c.iconName} size={22} />
               <span style={styles.tabTitle}>{c.title}</span>
-              <span style={{ ...styles.tabLine, background: on ? c.color : 'transparent' }} />
             </button>
           )
         })}
       </div>
 
-      {/* Список программ активной категории. Едет он, а ловит жест вся страница. */}
+      {/* Списки программ. Едет лента, а жест ловит вся страница.
+
+          Соседние разделы висят ВПРИТЫК слева и справа и выглядывают из-за края,
+          пока палец ведёт ленту: видно, куда попадёшь, и недотянутый жест честно
+          возвращается назад. Они позиционированы абсолютно и поэтому НЕ влияют
+          на высоту — иначе страница всегда была бы ростом с самый длинный раздел
+          и под коротким «Кардио» болталась пустая прокрутка.
+
+          Рисуем их только на время жеста и доводки: в покое лишние две панели
+          держать в дереве незачем. */}
       <div ref={viewportRef} style={styles.viewport}>
         <div
-          key={cat.id}
           style={{
-            ...styles.list,
-            transform: `translate3d(${dx}px, 0, 0)`,
+            ...styles.track,
+            transform: commit
+              ? `translate3d(calc(${commit > 0 ? '-1 * ' : ''}${PANEL_STEP}), 0, 0)`
+              : `translate3d(${dx}px, 0, 0)`,
             transition: settling ? `transform ${SETTLE_MS}ms var(--ease-ios)` : 'none'
           }}
         >
-          {programs.map(prog => (
-            <ProgramCard
-              key={prog.slug}
-              prog={prog}
-              isFav={pinned.includes(prog.slug)}
-              onToggleFav={() => handlePinTap(prog)}
-              onDeleted={() => bump(n => n + 1)}
-              menu
-              bordered={false}
-              background={pinned.includes(prog.slug) ? 'var(--surface-pinned)' : 'var(--color-card)'}
-            />
-          ))}
+          {peek && (
+            <div style={{ ...styles.sidePanel, right: PANEL_STEP }} aria-hidden="true">
+              {renderPanel(cats[(idx - 1 + cats.length) % cats.length])}
+            </div>
+          )}
 
-          {/* «Создать» работает только в силовой — конструктор пока умеет её одну.
-              В остальных разделах кнопка приглушена: место под функцию видно,
-              но она честно не обещает работать. */}
-          {(cat.id !== 'gym' || !hasCustom) && (
-            <button
-              onClick={canCreate ? handleCreateTap : undefined}
-              disabled={!canCreate}
-              style={{ ...styles.createButton, ...(canCreate ? null : styles.createSoon) }}
-              className={canCreate ? 'press-tile' : undefined}
-            >
-              <span style={styles.createPlus}>＋</span> Создать
-            </button>
+          <div style={styles.list}>{renderPanel(cat)}</div>
+
+          {peek && (
+            <div style={{ ...styles.sidePanel, left: PANEL_STEP }} aria-hidden="true">
+              {renderPanel(cats[(idx + 1) % cats.length])}
+            </div>
           )}
         </div>
       </div>
@@ -319,20 +410,25 @@ const styles = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
     padding: 'var(--space-2) var(--space-1) var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    transition: 'color 0.22s var(--ease-ios)'
+    WebkitTapHighlightColor: 'transparent',
+    // Цвет и размер переливаются одним движением — без рывка на переключении.
+    transition: 'color 0.22s var(--ease-ios), transform 0.26s var(--ease-ios)'
   },
   tabTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'inherit'
   },
-  // Линия под активным табом — в цвет раздела, вместе со значком и названием.
-  tabLine: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, height: '2px',
-    borderRadius: 'var(--radius-pill)',
-    transition: 'background 0.22s var(--ease-ios)'
-  },
   viewport: { overflow: 'hidden', touchAction: 'pan-y', flex: 1 },
-  list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', willChange: 'transform' },
+  // Лента: едет она, высоту ей задаёт ТОЛЬКО активная панель.
+  track: { position: 'relative', willChange: 'transform' },
+  list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' },
+  // Соседний раздел — за краем активного, вне потока: высоту не меняет.
+  // Между панелями тот же зазор, что между карточками (PANEL_GAP): без него
+  // на переходе два раздела слипались бы в один список.
+  sidePanel: {
+    position: 'absolute', top: 0, width: '100%',
+    display: 'flex', flexDirection: 'column', gap: 'var(--space-3)'
+  },
   createButton: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
     width: '100%', minHeight: '55px', marginTop: 'var(--space-2)',
