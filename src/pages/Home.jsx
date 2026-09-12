@@ -5,6 +5,7 @@ import { EVENTS, on } from '../lib/events'
 import { getCurrentUser } from '../lib/auth'
 import { resolveWeeklyStreak } from '../utils/dates'
 import { pluralizeWorkouts } from '../utils/plural'
+import HomeCards from '../components/HomeCards'
 import PinnedCarousel from '../components/PinnedCarousel'
 import ScreenTitle from '../components/ScreenTitle'
 import WeeklyMuscle from '../components/WeeklyMuscle'
@@ -127,13 +128,18 @@ export default function Home() {
         <ScreenTitle>Тренировки</ScreenTitle>
       </div>
 
-      {/* Скроллящийся контент: инфо-плашка недели + карусель разделов + карточки. */}
+      {/* Скроллящийся контент: инфо-плашка недели + карусель закрепов + карточки. */}
       <div style={styles.scrollSection}>
         <WeekStrip />
 
-        {/* Закреплённые программы: свайп между ними, точки-индикаторы,
-            под блоком — вход в каталог. Заголовка секции нет. */}
+        {/* Закреплённые программы: свайп между ними по кругу. Заголовка секции нет. */}
         <PinnedCarousel />
+
+        {/* Второй план: карточки-входы — каталог и статистика. Заголовка-обёртки
+            нет, карточки подписаны сами. */}
+        <div style={{ marginTop: 'var(--space-5)' }}>
+          <HomeCards />
+        </div>
       </div>
     </div>
   )

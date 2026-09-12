@@ -14,7 +14,6 @@ import {
 } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
 import { formatRelative } from '../utils/history'
-import ChevronIcon from './ChevronIcon'
 import ProgramCard from './ProgramCard'
 
 /**
@@ -282,17 +281,10 @@ export default function PinnedCarousel() {
         )}
       </div>
 
-      {/* Индикатора-точек НЕТ (сентябрь 2026): под карточкой он читался отдельным
-          декоративным уровнем «карточка → точки → Все программы» и уводил взгляд
-          с главного объекта. О том, что список листается, говорит сам жест.
-
-          Вход в каталог — СЛЕВА, по краю карточки, тихой текстовой ссылкой: это
-          редкое действие рядом с частым, и по центру оно спорило бы с карточкой
-          за внимание (и ловило случайные тапы). */}
-      <button style={styles.allLink} className="press-tile" onClick={openCatalog}>
-        Все программы
-        <span style={styles.chevRight}><ChevronIcon size={14} color="var(--color-text-secondary)" /></span>
-      </button>
+      {/* Ни точек-индикаторов, ни ссылки «Все программы ›» тут нет. Точки читались
+          отдельным декоративным уровнем и уводили взгляд с карточки; ссылка
+          переехала в карточку-кнопку ниже (HomeCards) — два вида одного входа
+          рядом заставляли выбирать между ними. */}
     </div>
   )
 }
@@ -325,22 +317,5 @@ const styles = {
   pinEmptyText: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)',
     fontWeight: 700, color: 'var(--color-text-secondary)'
-  },
-  // Вход в каталог — слева, вровень с краем карточки. Горизонтальные паддинги
-  // съедены отрицательным margin: зона нажатия остаётся 44px, а текст стоит
-  // ровно по краю блока над ним.
-  allLink: {
-    alignSelf: 'flex-start',
-    display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)',
-    // Своего marginTop НЕТ: зазор до карточки задаёт padding самой кнопки — 12px,
-    // шаг «между связанными» по шкале. Раньше стояло ещё --space-4 сверху, и
-    // оптически между карточкой и ссылкой выходило 28px — пропасть. Паддинг
-    // при этом остаётся: он держит зону нажатия 44px.
-    marginLeft: 'calc(-1 * var(--space-3))',
-    padding: 'var(--space-3)',
-    background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.2px', whiteSpace: 'nowrap'
-  },
-  chevRight: { display: 'inline-flex', transform: 'rotate(-90deg)' }
+  }
 }
