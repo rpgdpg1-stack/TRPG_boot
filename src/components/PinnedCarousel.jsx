@@ -5,8 +5,10 @@ import { getProgramBySlug } from '../features/programs/registry'
 import {
   getActiveDaySync,
   getLastWorkoutDateBySlug,
+  getPinnedCursorSync,
   getPinnedPrograms,
   getPinnedProgramsSync,
+  setPinnedCursor,
   togglePinnedProgram,
   PINNED_VISIBLE
 } from '../lib/storage'
@@ -25,6 +27,12 @@ import ProgramCard from './ProgramCard'
  * Закрепить можно сколько угодно (лимит «одна на раздел» снят), но в карусели
  * показываем первые `PINNED_VISIBLE` — иначе главная превращается в библиотеку.
  * Свежее впереди: только что закреплённая программа идёт первой (см. storage).
+ *
+ * Лента ПОМНИТ, ГДЕ ОСТАНОВИЛИСЬ. Ушёл с главной, закрыл приложение, открыл в
+ * браузере — карусель показывает ту же программу, а не первую: главная отвечает
+ * «что я сейчас запускаю», и ответ не должен сбрасываться на чужой. Позиция
+ * хранится слагом в настройках аккаунта (см. storage), поэтому она одна и та же
+ * в Telegram и в браузере.
  *
  * Лента ЗАКОЛЬЦОВАНА: с последней закреплённой свайп ведёт снова на первую.
  * Технически в ленте всегда три слайда — предыдущий, текущий и следующий по
@@ -49,13 +57,21 @@ export default function PinnedCarousel() {
 
   // Первый кадр — синхронно из настроек аккаунта, чтобы карточка не мигала пустой.
   const [slugs, setSlugs] = useState(() => getPinnedProgramsSync())
-  const [idx, setIdx] = useState(0)
+  // Текущий слайд держим СЛАГОМ, а не номером: список может приехать из базы
+  // другим (закрепили с другого устройства, свежая встала первой), и номер
+  // показал бы тогда не ту программу, на которой человек остановился.
+  const [curSlug, setCurSlug] = useState(() => getPinnedCursorSync())
 
   // Догоняем из базы и слушаем смену настроек (другое устройство, закреп из
   // каталога). Отписку возвращаем как есть — она снимает слушатель при уходе.
   useEffect(() => {
     let cancelled = false
-    const apply = () => { if (!cancelled) setSlugs(getPinnedProgramsSync()) }
+    const apply = () => {
+      if (cancelled) return
+      setSlugs(getPinnedProgramsSync())
+      // Метку тоже перечитываем: её мог поставить другой вход (браузер/Telegram).
+      setCurSlug(getPinnedCursorSync())
+    }
     getPinnedPrograms().then(apply)
     const off = on(EVENTS.PREFS_CHANGED, apply)
     return () => { cancelled = true; off() }
@@ -68,10 +84,11 @@ export default function PinnedCarousel() {
     .filter(x => x.prog)
     .slice(0, PINNED_VISIBLE)
 
-  // Список стал короче (открепили последнюю) — не оставляем указатель за краем.
-  useEffect(() => {
-    setIdx(i => Math.min(i, Math.max(items.length - 1, 0)))
-  }, [items.length])
+  // Номер слайда выводится из слага. Запомненной программы в списке нет
+  // (открепили, удалили) — показываем первую, ничего не «чиня» в настройках:
+  // человек сам поставит новую метку, когда снова листнёт.
+  const foundIdx = items.findIndex(x => x.slug === curSlug)
+  const idx = foundIdx >= 0 ? foundIdx : 0
 
   // Закрепов не осталось — на месте карточки появляется заглушка с кнопкой
   // «Выбрать программу». Пару мгновений она тапы не принимает: палец ещё там,
@@ -112,11 +129,15 @@ export default function PinnedCarousel() {
     haptic.light()
     setSettling(true)
     setShift(-dir)
+    const nextSlug = items[(((idx + dir) % n) + n) % n].slug
     settleTimer.current = setTimeout(() => {
       settleTimer.current = null
-      setIdx(i => (((i + dir) % n) + n) % n)
+      setCurSlug(nextSlug)
       setShift(0)
       setSettling(false)
+      // Метку в аккаунт ставим ПОСЛЕ доводки: пока лента едет, писать рано —
+      // жест ещё может не досчитаться до конца.
+      setPinnedCursor(nextSlug).catch(() => { /* позиция не критична */ })
     }, SETTLE_MS)
   }
 

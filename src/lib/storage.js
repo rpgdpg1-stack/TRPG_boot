@@ -288,6 +288,32 @@ export async function togglePinnedProgram(programSlug, categoryId = null) {
   return !wasPinned
 }
 
+/* ============================================ */
+/* ГДЕ ОСТАНОВИЛИСЬ В КАРУСЕЛИ ГЛАВНОЙ           */
+/* ============================================ */
+
+const PINNED_CURSOR_KEY = 'pinned_cursor'
+
+/**
+ * Программа, на которой человек оставил карусель на главной.
+ *
+ * Хранится СЛАГОМ, а не номером слайда: список закрепов меняется (закрепил,
+ * открепил, свежая встала первой), и номер после этого показывал бы уже другую
+ * программу. Слаг пропал из списка — карусель просто открывается с начала.
+ *
+ * Живёт в настройках АККАУНТА, как и сами закрепы: остановился на «Заплыве» в
+ * Telegram — увидишь его же в браузере.
+ */
+export function getPinnedCursorSync() {
+  const v = getPrefSync(PINNED_CURSOR_KEY, null)
+  return typeof v === 'string' && v ? v : null
+}
+
+export async function setPinnedCursor(programSlug) {
+  if (getPinnedCursorSync() === programSlug) return
+  await setPref(PINNED_CURSOR_KEY, programSlug)
+}
+
 /**
  * Поднять программу наверх списка закреплённых — после того как по ней
  * действительно тренировались. Не закрепляет: программу, которой в списке нет,

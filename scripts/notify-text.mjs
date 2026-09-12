@@ -53,8 +53,14 @@ function categoryWord(key, count) {
  * или НАЗЫВАЕТ (рекорд, время). Украшать им уже понятную строку — шум.
  */
 const E = {
-  streak: '🔥',      // серия — она у нас недельная, отсюда и место: перед числом недели
-  workouts: '💪',    // тренировки за месяц и год
+  // Бицепс — ЕДИНСТВЕННЫЙ счётчик тренировок. Огонька-серии больше нет нигде:
+  // от серий отказались, копится просто число тренировок, и два разных значка
+  // на одну величину путали. Тон кожи задан явно (светлый, U+1F3FB): без него
+  // Telegram подставляет жёлтый вариант, а он спорит с остальной палитрой.
+  workouts: '💪🏻',   // тренировки за неделю, месяц и год
+  digest: '📈',      // заголовок итогов — тот же значок, что на кнопке статистики
+  year: '🎉',        // итоги года: раз в год и по поводу
+  pause: '❗',        // заголовок напоминания о паузе
   time: '🕓',        // оценка длительности
   strength: '🏋️',   // силовая
   pool: '🏊',        // плавание
@@ -140,7 +146,7 @@ export function breakdownLines(breakdown) {
 }
 
 /**
- * Главная строка сводки: «🔥 3 тренировки (2 ч 15 мин)».
+ * Главная строка сводки: «💪🏻 3 тренировки (2 ч 15 мин)».
  *
  * Время в скобках, а не через точку: скобки читаются как уточнение, точка —
  * как второй равноправный показатель. Число тренировок тут главное.
@@ -156,11 +162,11 @@ function headLine(emoji, count, minutes) {
 /**
  * Итоги недели.
  *
- * Огонёк перед числом — это серия: у нас она недельная, и «сколько раз
- * за неделю» и есть её значение. Отдельной строки про серию не нужно.
+ * Бицепс перед числом — тот же счётчик, что на главной в приложении: сколько
+ * тренировок за неделю. Отдельной строки про серию нет — серий у нас нет.
  */
 export function weeklyDigest({ totalCount, totalMinutes, breakdown }) {
-  const lines = ['<b>Итоги недели</b>', '', headLine(E.streak, totalCount, totalMinutes), '']
+  const lines = [`${E.digest} <b>Итоги недели</b>`, '', headLine(E.workouts, totalCount, totalMinutes), '']
   return lines.concat(breakdownLines(breakdown)).join('\n').trimEnd()
 }
 
@@ -197,7 +203,7 @@ export function comparisonLine(monthIndex, totalCount, prevCount) {
  * него идёт спокойный средний режим.
  */
 export function monthlyDigest({ monthIndex, totalCount, totalMinutes, breakdown, prevCount, daysInMonth, isRecord }) {
-  const lines = [`<b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '']
+  const lines = [`${E.digest} <b>Итоги ${MONTHS_GEN[monthIndex]}</b>`, '']
   // «Новый рекорд» — тем же словом, что раздел «Рекорды» в приложении: у
   // человека должно быть одно название для лучших результатов, а не два.
   // Числа не повторяем — они идут строкой ниже, в итоге месяца.
@@ -231,7 +237,7 @@ export function yearlyDigest({
 }) {
   const head = headLine(E.workouts, totalCount, totalMinutes)
 
-  const lines = [`<b>Итоги ${year} года</b>`, '', head, '']
+  const lines = [`${E.year} <b>Итоги ${year} года</b>`, '', head, '']
   lines.push(...breakdownLines(breakdown))
 
   // Один блок «Рекорды» вместо двух («Лучший месяц» + «Лучшие результаты»):
@@ -443,7 +449,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
   // время всё обнулилось. Поэтому перечисляем именно то, что цело.
   if (daysSince >= 90) {
     const lines = [
-      `<b>${title}</b>`, '',
+      `${E.pause} <b>${title}</b>`, '',
       'Программы, рабочие веса и вся история на месте —',
       'ничего не пропало. Возвращайся, когда захочешь.'
     ]
@@ -457,7 +463,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
   // дней нет, и «вернись с любого дня» для него бессмысленно.
   if (daysSince >= 30) {
     const lines = [
-      `<b>${title}</b>`, '',
+      `${E.pause} <b>${title}</b>`, '',
       'Программы тренировок на месте.',
       'Возвращайся и продолжи любую свою тренировку.'
     ]
@@ -469,7 +475,7 @@ export function nudge({ daysSince, programs = [], bestCount, bestMinutes }) {
   // Недели: две и три отличаются от одной только заголовком. Форма одна —
   // вопрос, программа, кнопка: человек, пропустивший две недели, знает свою
   // программу не хуже того, кто пропустил одну.
-  const lines = [`<b>${title}</b>`, '', '<b>Продолжим?</b>']
+  const lines = [`${E.pause} <b>${title}</b>`, '', '<b>Продолжим?</b>']
 
   if (programs.length === 0) {
     // Закреплённых программ нет — вести некуда. Выбирать за человека мы
