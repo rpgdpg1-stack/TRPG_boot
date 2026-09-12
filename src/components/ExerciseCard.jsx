@@ -65,7 +65,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     exercise_name,
     muscle_group,
     sub_group,
-    meta_info,
     preview_url,
     user_weight_kg,
     is_custom
@@ -466,7 +465,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       </div>
 
       <div style={styles.content}>
-        {/* 1. Название упражнения — сверху, крупно */}
+        {/* Название упражнения — сверху */}
         <div style={styles.exerciseName}>
           {exercise_name}
           {/* Карандаш — метка «это упражнение завёл ты». Правится оно только
@@ -474,7 +473,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           {is_custom && <span style={styles.customMark}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
         </div>
 
-        {/* 2. Один тег подгруппы в цвете основной группы. Длинный обрезается
+        {/* Один тег подгруппы в цвете основной группы. Длинный обрезается
             многоточием; прокатки тут НЕТ — карточка ловит долгое нажатие, и живой
             тег съедал бы эту зону. Прочитать целиком можно в меню упражнения. */}
         <div style={styles.tagsRow}>
@@ -483,10 +482,11 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
           )}
         </div>
 
-        {/* 3. Подходы — серой подписью под тегами */}
-        {meta_info && (
-          <div style={styles.meta}>{meta_info}</div>
-        )}
+        {/* Подходов («3 × 10-12») здесь НЕТ намеренно. Во время тренировки
+            смотрят на вес и на галочку, а строка с числами рядом с ними читалась
+            как ещё одна задачка и тянула взгляд на себя. Она никуда не делась:
+            открывается по долгому нажатию, вместе с остальным про упражнение
+            (см. ExerciseActionMenu). */}
       </div>
 
       <div
@@ -615,7 +615,9 @@ const styles = {
     padding: 'var(--space-4)',
     gap: 'var(--space-4)',
     width: '100%',
-    minHeight: '132px',
+    // 104 вместо 132: в дне бывает 8–12 упражнений, и каждая лишняя сотня
+    // пикселей — это ещё один экран прокрутки посреди тренировки.
+    minHeight: '104px',
     borderRadius: 'var(--radius-card)',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
@@ -623,9 +625,13 @@ const styles = {
   preview: {
     position: 'relative',
     flexShrink: 0,
-    width: '100px',
-    height: '100px',
-    borderRadius: 'var(--radius-card)',
+    // 72 вместо 100: картинка тут опознаёт упражнение, а не показывает технику —
+    // для узнавания хватает и меньшего кадра. Смотреть движение идут в «Инфо».
+    width: '72px',
+    height: '72px',
+    // radius-card (33) на квадрате 72 превратил бы миниатюру почти в круг —
+    // берём ближайшую ступень шкалы.
+    borderRadius: 'var(--radius-medium)',
     overflow: 'hidden',
     background: 'var(--color-text)',
     display: 'flex',
@@ -640,21 +646,26 @@ const styles = {
     height: '100%',
     objectFit: 'cover'
   },
-  // Текстовая колонка: название сверху, теги, подходы внизу
+  // Текстовая колонка: название сверху, тег под ним.
+  //
+  // minHeight, а НЕ height. С жёсткой высотой самые длинные названия каталога
+  // («Подъём гантелей на бицепс попеременно на наклонной скамье 45°») не
+  // помещались в колонку, вылезали за неё и обрезались нижним overflow:hidden
+  // карточки — вместе с тегом. Теперь длинное название растит карточку.
   content: {
     flex: 1,
     minWidth: 0,
-    height: '100px',
+    minHeight: '72px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    gap: 'var(--space-2)'
+    gap: 'var(--space-15)'
   },
   exerciseName: {
     fontFamily: 'var(--font-display)',
-    fontSize: 'var(--text-button-size)',
+    fontSize: 'var(--text-label-size)',
     fontWeight: 700,
-    lineHeight: '18px',
+    lineHeight: '16px',
     color: 'var(--color-text)'
   },
   customMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
@@ -669,21 +680,19 @@ const styles = {
     minWidth: 0,
     maxWidth: '100%'
   },
-  // Форма пилюли живёт в MarqueeTag — здесь только приглушение, как у чипов
-  // групп в шапке дня (единый спокойный вид).
-  tag: { opacity: 0.7 },
-  meta: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 500,
-    lineHeight: '14px',
-    letterSpacing: '0.03em',
-    color: 'var(--color-text-secondary)'
-  },
+  // Форма пилюли живёт в MarqueeTag, здесь — размер под плотную карточку дня
+  // и полная, НЕ приглушённая заливка.
+  //
+  // Приглушение (opacity 0.7) убрано: цвет тега — единственное, что отличает
+  // группы с одного взгляда при беге глазами по списку, и гасить его значило
+  // гасить саму подсказку. 10px — меньше мелкой ступени шкалы: тег здесь
+  // подпись под названием, а не самостоятельный элемент, и в модалке
+  // упражнения он остаётся обычного размера.
+  tag: { fontSize: '10px', lineHeight: '13px', padding: '3px 9px' },
   weightBlock: {
     flexShrink: 0,
     width: '38px',
-    height: '100px',
+    height: '72px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -698,7 +707,7 @@ const styles = {
   weightInputWrap: {
     position: 'relative',
     width: '38px',
-    height: '27px'
+    height: '22px'
   },
   // Шрифт ТОТ ЖЕ, что у weightValue: иначе при тапе цифра подменялась
   // с Geist на Manrope — размер тот же, а начертание прыгало.
@@ -707,11 +716,11 @@ const styles = {
     top: 0,
     left: 0,
     width: '38px',
-    height: '27px',
+    height: '22px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-heading-size)',
+    fontSize: 'var(--text-title-size)',
     fontWeight: 800,
-    lineHeight: '27px',
+    lineHeight: '22px',
     background: 'transparent',
     border: 'none',
     outline: 'none',
@@ -728,20 +737,20 @@ const styles = {
     top: 0,
     left: 0,
     width: '38px',
-    height: '27px',
+    height: '22px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-heading-size)',
+    fontSize: 'var(--text-title-size)',
     fontWeight: 800,
-    lineHeight: '27px',
+    lineHeight: '22px',
     textAlign: 'center',
     pointerEvents: 'none'
   },
   weightUnit: {
     width: '38px',
     fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-label-size)',
+    fontSize: 'var(--text-caption-size)',
     fontWeight: 800,
-    lineHeight: '15px',
+    lineHeight: '13px',
     letterSpacing: '0.05em',
     textAlign: 'center',
     color: 'var(--color-text-secondary)'
