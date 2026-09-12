@@ -568,7 +568,7 @@ const styles = {
   // Обёртка свайпа: клип по скруглению, панель действий под слайдером.
   swipeOuter: {
     position: 'relative',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-day-card)',
     overflow: 'hidden'
   },
   // Панель действий справа (под карточкой). Открывается свайпом влево.
@@ -619,7 +619,7 @@ const styles = {
     // пикселей — это ещё один экран прокрутки посреди тренировки. Ровно
     // миниатюра (85) плюс поля карточки (16 сверху и снизу).
     minHeight: '117px',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-day-card)',
     transition: 'background 0.3s ease',
     overflow: 'hidden'
   },
@@ -630,14 +630,10 @@ const styles = {
     // для узнавания хватает и меньшего кадра. Смотреть движение идут в «Инфо».
     width: '85px',
     height: '85px',
-    // КОНЦЕНТРИЧНОЕ СКРУГЛЕНИЕ, и поэтому число, а не токен шкалы.
-    //
-    // Внутренний радиус = внешний − отступ между ними: 33 (радиус карточки)
-    // − 16 (её поле) = 17. Только при этом дуга миниатюры идёт ПАРАЛЛЕЛЬНО
-    // дуге карточки и расстояние между ними одинаково по всему углу. Любая
-    // ступень шкалы (20 или 33) даёт непараллельные дуги: угол либо
-    // «распирает», либо поджимает. Меняешь поле карточки — пересчитай.
-    borderRadius: '17px',
+    // Концентрично карточке: 40 − 16 (её поле) = 24. Только при этом дуга
+    // миниатюры идёт ПАРАЛЛЕЛЬНО дуге карточки и зазор одинаков по всему углу
+    // (обоснование и пересчёт — в tokens.css у самой пары).
+    borderRadius: 'var(--radius-day-thumb)',
     overflow: 'hidden',
     background: 'var(--color-text)',
     display: 'flex',
@@ -772,7 +768,7 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.32)',
     backdropFilter: 'grayscale(0.8) blur(1.5px)',
     WebkitBackdropFilter: 'grayscale(0.8) blur(1.5px)',
-    borderRadius: 'var(--radius-card)',
+    borderRadius: 'var(--radius-day-card)',
     transition: 'opacity 0.35s ease',
     zIndex: 6
   },

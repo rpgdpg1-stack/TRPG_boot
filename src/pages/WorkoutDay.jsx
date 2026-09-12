@@ -1703,7 +1703,9 @@ const styles = {
     backdropFilter: 'var(--blur-glass)',
     WebkitBackdropFilter: 'var(--blur-glass)',
     border: '1px solid var(--layer-3)',
-    borderRadius: 'var(--radius-card)',
+    // Тот же угол, что у карточек упражнений под ней: шапка и список читаются
+    // одной колонкой, а не шапкой и отдельными плитками.
+    borderRadius: 'var(--radius-day-card)',
     boxShadow: 'var(--shadow-raised)'
   },
   // Заливка-прогресс: светло-серый фон растёт слева по мере отжатых упражнений
