@@ -6,27 +6,39 @@ import { useLayoutEffect, useRef, useState } from 'react'
  *
  * viewBox строится по РЕАЛЬНОМУ размеру карточки (замер перед отрисовкой).
  * Раньше стояла фикс-сетка 700×150 + `preserveAspectRatio="none"`: SVG тянуло
- * по осям неравномерно, и круглые углы радиуса 33 превращались в эллипсы —
- * линия шла по скруглениям не по форме карточки.
+ * по осям неравномерно, и круглые углы превращались в эллипсы — линия шла по
+ * скруглениям не по форме карточки.
  */
-const CARD_RADIUS = 33 // = --radius-card
+// Радиус берём У САМОГО ТОКЕНА, а не копией числа: змейка обязана идти ровно по
+// краю карточки, а копия однажды уже разошлась с ней (карточка стала 40, змейка
+// осталась на 33 и срезала углы).
+const FALLBACK_RADIUS = 40
+
+function cardRadius() {
+  if (typeof window === 'undefined') return FALLBACK_RADIUS
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--radius-day-card')
+  const n = parseFloat(v)
+  return Number.isFinite(n) && n > 0 ? n : FALLBACK_RADIUS
+}
 
 export default function SwapAnimationOverlay() {
   const wrapRef = useRef(null)
   const [box, setBox] = useState(null)
+  const [radius, setRadius] = useState(FALLBACK_RADIUS)
 
   useLayoutEffect(() => {
     const el = wrapRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
     if (r.width > 0 && r.height > 0) setBox({ w: r.width, h: r.height })
+    setRadius(cardRadius())
   }, [])
 
   if (!box) return <div ref={wrapRef} style={overlayStyles.wrap} aria-hidden="true" />
 
   const W = box.w
   const H = box.h
-  const R = Math.min(CARD_RADIUS, W / 2, H / 2)
+  const R = Math.min(radius, W / 2, H / 2)
 
   const path = `
     M ${W / 2} 0

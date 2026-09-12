@@ -14,7 +14,8 @@ const glowStyles = {
   wrap: {
     position: 'absolute',
     inset: 0,
-    borderRadius: 'var(--radius-card)',
+    // Тот же угол, что у карточки под ней, иначе заливка вылезает из её скруглений.
+    borderRadius: 'var(--radius-day-card)',
     background: 'var(--highlight-recent)',
     pointerEvents: 'none',
     animation: 'returnGlowFade 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',

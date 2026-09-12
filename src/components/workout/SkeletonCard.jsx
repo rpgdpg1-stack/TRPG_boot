@@ -5,10 +5,11 @@ export default function SkeletonCard() {
   return (
     <div style={skeletonStyles.card}>
       <div className="skel" style={skeletonStyles.thumb} />
+      {/* Две строки, а не три: подходы с карточки убраны, и лишняя полоска
+          обещала бы контент, которого после загрузки не появится. */}
       <div style={skeletonStyles.lines}>
         <div className="skel" style={{ ...skeletonStyles.line, width: '72%' }} />
         <div className="skel" style={{ ...skeletonStyles.line, width: '44%', height: '12px' }} />
-        <div className="skel" style={{ ...skeletonStyles.line, width: '32%', height: '10px' }} />
       </div>
       <div className="skel" style={skeletonStyles.weight} />
     </div>
@@ -22,15 +23,17 @@ const skeletonStyles = {
     alignItems: 'center',
     gap: 'var(--space-4)',
     padding: 'var(--space-4)',
-    minHeight: '132px',
-    borderRadius: 'var(--radius-card)',
+    // Размеры — ровно как у настоящей карточки (ExerciseCard), иначе при
+    // подгрузке список дёргается.
+    minHeight: '117px',
+    borderRadius: 'var(--radius-day-card)',
     background: 'var(--surface)'
   },
   thumb: {
     flexShrink: 0,
-    width: '100px',
-    height: '100px',
-    borderRadius: 'var(--radius-card)'
+    width: '85px',
+    height: '85px',
+    borderRadius: 'var(--radius-day-thumb)'
   },
   lines: {
     flex: 1,
