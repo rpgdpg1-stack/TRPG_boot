@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms, getPinnedProgramsSync, togglePinnedProgram } from '../lib/storage'
@@ -6,6 +6,7 @@ import { EVENTS, on } from '../lib/events'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramsByCategory } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
+import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
 import Toast from '../components/Toast'
 
@@ -95,9 +96,6 @@ export default function Programs() {
   const settleTimer = useRef(null)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0 })
   const swiped = useRef(false)
-  // Полоска табов: активный таб доезжает в видимую зону сам.
-  const tabsRef = useRef(null)
-  const tabRefs = useRef(new Map())
 
   useEffect(() => () => {
     if (settleTimer.current) clearTimeout(settleTimer.current)
@@ -115,20 +113,6 @@ export default function Programs() {
     setIdx(target)
     settleTimer.current = setTimeout(() => { settleTimer.current = null; setSettling(false) }, SETTLE_MS)
   }
-
-  // Активный таб — в видимую зону полоски. Свайпнул список до «Растяжки» —
-  // таб приехал сам, иначе непонятно, где ты находишься.
-  useLayoutEffect(() => {
-    const el = tabRefs.current.get(cat.id)
-    const box = tabsRef.current
-    if (!el || !box) return
-    const left = el.offsetLeft
-    const right = left + el.offsetWidth
-    const viewLeft = box.scrollLeft
-    const viewRight = viewLeft + box.offsetWidth
-    if (left < viewLeft + 16) box.scrollTo({ left: Math.max(left - 16, 0), behavior: 'smooth' })
-    else if (right > viewRight - 16) box.scrollTo({ left: right - box.offsetWidth + 16, behavior: 'smooth' })
-  }, [cat.id])
 
   const menuIsOpen = () => document.documentElement.classList.contains('menu-open')
 
@@ -229,21 +213,31 @@ export default function Programs() {
     >
       <ScreenTitle>Программы</ScreenTitle>
 
-      {/* Табы категорий: активный — белым текстом с зелёной линией снизу.
+      {/* Табы категорий: иконка над названием, активный — В ЦВЕТЕ СВОЕГО РАЗДЕЛА
+          (и значок, и текст, и линия снизу), остальные приглушены.
           Не чипы: выбран всегда ровно один раздел, а чип читается как фильтр,
-          которых можно включить несколько. */}
-      <div ref={tabsRef} style={styles.tabs} data-cat-tabs>
+          которых можно включить несколько.
+
+          Цвет раздела вместо белого — потому что он уже принят языком проекта:
+          им красится эмблема программы, теги и данные раздела. Зелёная линия
+          под синим «Плаванием» вводила бы третий цвет в один элемент.
+
+          Четыре таба делят ширину поровну и помещаются на экран целиком —
+          прокрутки у полоски больше нет, а с ней ушла и доводка активного
+          таба в видимую зону. */}
+      <div style={styles.tabs} data-cat-tabs>
         {cats.map((c, i) => {
           const on = c.id === cat.id
+          const tint = on ? c.color : 'var(--color-text-inactive)'
           return (
             <button
               key={c.id}
-              ref={el => { if (el) tabRefs.current.set(c.id, el); else tabRefs.current.delete(c.id) }}
-              style={{ ...styles.tab, ...(on ? styles.tabOn : null) }}
+              style={{ ...styles.tab, color: tint }}
               onClick={() => goTo(i)}
             >
-              {c.title}
-              <span style={{ ...styles.tabLine, ...(on ? styles.tabLineOn : null) }} />
+              <UiIcon name={c.iconName} size={22} color={tint} />
+              <span style={styles.tabTitle}>{c.title}</span>
+              <span style={{ ...styles.tabLine, background: on ? c.color : 'transparent' }} />
             </button>
           )
         })}
@@ -313,33 +307,30 @@ const styles = {
     flexDirection: 'column',
     minHeight: 'calc(100dvh - var(--tabbar-height) - var(--tabbar-bottom) - 60px)'
   },
-  // Полоска табов: горизонтальный скролл без полосы прокрутки, края уходят под
-  // поля экрана — видно, что список можно листать.
+  // Полоска табов: четыре равные доли ширины экрана, без прокрутки.
   tabs: {
-    display: 'flex', alignItems: 'stretch', gap: 'var(--space-5)',
-    overflowX: 'auto', overflowY: 'hidden',
-    marginBottom: 'var(--space-5)',
-    WebkitOverflowScrolling: 'touch',
-    // Полосу прокрутки прячем: край следующего таба и так подсказывает, что
-    // ряд листается, а серая линия под текстом спорила бы с зелёной у активного.
-    scrollbarWidth: 'none'
+    display: 'flex', alignItems: 'stretch',
+    marginBottom: 'var(--space-5)'
   },
+  // Таб — колонка «значок над названием». Ширину делят поровну: разделов ровно
+  // четыре, и разная ширина читалась бы как разная важность.
   tab: {
-    position: 'relative', flexShrink: 0,
-    padding: 'var(--space-2) 0 var(--space-3)',
+    position: 'relative', flex: 1, minWidth: 0,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
+    padding: 'var(--space-2) var(--space-1) var(--space-3)',
     background: 'transparent', border: 'none', cursor: 'pointer',
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-body-size)', fontWeight: 700,
-    color: 'var(--color-text-inactive)', letterSpacing: '0.2px', whiteSpace: 'nowrap',
     transition: 'color 0.22s var(--ease-ios)'
   },
-  tabOn: { color: 'var(--color-text)' },
-  // Линия под активным табом — та же зелёная, что у всех состояний выбора.
+  tabTitle: {
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    letterSpacing: '0.2px', whiteSpace: 'nowrap', color: 'inherit'
+  },
+  // Линия под активным табом — в цвет раздела, вместе со значком и названием.
   tabLine: {
     position: 'absolute', left: 0, right: 0, bottom: 0, height: '2px',
-    borderRadius: 'var(--radius-pill)', background: 'transparent',
+    borderRadius: 'var(--radius-pill)',
     transition: 'background 0.22s var(--ease-ios)'
   },
-  tabLineOn: { background: 'var(--color-primary)' },
   viewport: { overflow: 'hidden', touchAction: 'pan-y', flex: 1 },
   list: { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', willChange: 'transform' },
   createButton: {
