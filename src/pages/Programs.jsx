@@ -349,17 +349,25 @@ export default function Programs() {
                 background: on ? 'var(--layer-2)' : 'transparent',
                 // Неактивные ещё и приглушены: серого текста мало, когда рядом
                 // нет ничего белого для сравнения — все четыре казались живыми.
-                opacity: on ? 1 : 0.6,
-                // Масштаб на кнопке, а не на ряду: её ширина — доля полоски,
-                // и растягивать саму долю значило бы двигать соседей.
-                // Цвет иконки не задаём пропом: UiIcon наследует currentColor,
-                // и он переливается вместе с текстом, а не переключается рывком.
-                transform: on ? `scale(${TAB_ACTIVE_SCALE})` : 'scale(1)'
+                opacity: on ? 1 : 0.6
               }}
               onClick={() => goTo(i)}
             >
-              <UiIcon name={c.iconName} size={22} />
-              <span style={styles.tabTitle}>{c.title}</span>
+              {/* Увеличивается СОДЕРЖИМОЕ, а не кнопка. Кнопка — доля полоски,
+                  и её подложка обязана стоять в общей сетке экрана; при масштабе
+                  на самой кнопке крайние табы вылезали полем за 16px и подложка
+                  подходила к краю ближе, чем всё остальное на странице.
+                  Цвет иконки не задаём пропом: UiIcon наследует currentColor,
+                  и он переливается вместе с текстом, а не переключается рывком. */}
+              <span
+                style={{
+                  ...styles.tabInner,
+                  transform: on ? `scale(${TAB_ACTIVE_SCALE})` : 'scale(1)'
+                }}
+              >
+                <UiIcon name={c.iconName} size={22} />
+                <span style={styles.tabTitle}>{c.title}</span>
+              </span>
             </button>
           )
         })}
@@ -430,28 +438,32 @@ const styles = {
   },
   // Полоска табов: четыре равные доли ширины экрана, без прокрутки.
   //
-  // Свой отступ сверху — потому что активный таб УВЕЛИЧЕН, и его подложка
-  // вылезает за габарит кнопки вверх примерно на 5px. Без компенсации она
-  // прижималась к краю экрана плотнее, чем карточка в профиле, хотя поле
-  // страницы одинаковое.
+  // Отступ сверху свой не нужен: подложка активного таба больше не вылезает за
+  // габарит кнопки (растёт содержимое, а не она), и полоска встаёт ровно по
+  // полю страницы — как карточка в профиле.
   tabs: {
     display: 'flex', alignItems: 'stretch',
-    marginTop: 'var(--space-3)',
     marginBottom: 'var(--space-5)'
   },
   // Таб — колонка «значок над названием». Ширину делят поровну: разделов ровно
   // четыре, и разная ширина читалась бы как разная важность.
   tab: {
     position: 'relative', flex: 1, minWidth: 0,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     padding: 'var(--space-2) var(--space-1) var(--space-3)',
     border: 'none', cursor: 'pointer',
     // Тот же крупный радиус, что у карточек: подложка таба читается плашкой
     // одной семьи с ними, а не отдельной формой.
     borderRadius: 'var(--radius-card)',
     WebkitTapHighlightColor: 'transparent',
-    // Цвет, подложка, прозрачность и размер переливаются одним движением.
-    transition: 'color 0.22s var(--ease-ios), transform 0.26s var(--ease-ios), background 0.22s var(--ease-ios), opacity 0.22s var(--ease-ios)'
+    // Цвет, подложка и прозрачность переливаются одним движением; размер —
+    // на внутренней обёртке, той же длительностью.
+    transition: 'color 0.22s var(--ease-ios), background 0.22s var(--ease-ios), opacity 0.22s var(--ease-ios)'
+  },
+  // Значок над названием. Растёт он, кнопка под ним стоит на месте.
+  tabInner: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
+    transition: 'transform 0.26s var(--ease-ios)'
   },
   tabTitle: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
