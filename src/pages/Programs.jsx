@@ -429,8 +429,14 @@ const styles = {
     minHeight: 'calc(100dvh - var(--tabbar-height) - var(--tabbar-bottom) - 60px)'
   },
   // Полоска табов: четыре равные доли ширины экрана, без прокрутки.
+  //
+  // Свой отступ сверху — потому что активный таб УВЕЛИЧЕН, и его подложка
+  // вылезает за габарит кнопки вверх примерно на 5px. Без компенсации она
+  // прижималась к краю экрана плотнее, чем карточка в профиле, хотя поле
+  // страницы одинаковое.
   tabs: {
     display: 'flex', alignItems: 'stretch',
+    marginTop: 'var(--space-3)',
     marginBottom: 'var(--space-5)'
   },
   // Таб — колонка «значок над названием». Ширину делят поровну: разделов ровно
@@ -440,7 +446,9 @@ const styles = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-15)',
     padding: 'var(--space-2) var(--space-1) var(--space-3)',
     border: 'none', cursor: 'pointer',
-    borderRadius: 'var(--radius-medium)',
+    // Тот же крупный радиус, что у карточек: подложка таба читается плашкой
+    // одной семьи с ними, а не отдельной формой.
+    borderRadius: 'var(--radius-card)',
     WebkitTapHighlightColor: 'transparent',
     // Цвет, подложка, прозрачность и размер переливаются одним движением.
     transition: 'color 0.22s var(--ease-ios), transform 0.26s var(--ease-ios), background 0.22s var(--ease-ios), opacity 0.22s var(--ease-ios)'

@@ -6,7 +6,7 @@ import { summarizeWorkouts, periodShortLabel, HISTORY_FETCH_LIMIT } from '../uti
 import { EVENTS, on } from '../lib/events'
 import { WorkoutsTotal } from './HistoryStats'
 import ProgramsIcon from './ProgramsIcon'
-import TrendingUpIcon from './TrendingUpIcon'
+import StatsIcon from './StatsIcon'
 
 /**
  * Две карточки-входа под каруселью: **Все программы** (квадрат-кнопка в каталог)
@@ -49,7 +49,7 @@ export default function HomeCards() {
       {/* Все программы — квадрат-кнопка в каталог. Показателя у входа нет:
           число программ ничего не говорит о том, что человек будет делать. */}
       <Card
-        icon={<span style={styles.icon}><ProgramsIcon size={22} color="var(--color-primary)" /></span>}
+        icon={<span style={styles.icon}><ProgramsIcon size={22} /></span>}
         // Идеальный квадрат: ширина следует за высотой (aspect-ratio), а не
         // задана числом — высота карточек может измениться, квадрат останется.
         square
@@ -62,7 +62,7 @@ export default function HomeCards() {
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
       <Card
         flex="1 1 auto"
-        icon={<span style={styles.icon}><TrendingUpIcon size={22} color="var(--color-primary)" /></span>}
+        icon={<span style={styles.icon}><StatsIcon size={22} /></span>}
         title="Статистика"
         periodLabel={periodShortLabel('month', now)}
         periodRow={<span />}
