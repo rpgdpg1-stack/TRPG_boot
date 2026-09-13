@@ -452,9 +452,9 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     padding: 'var(--space-2) var(--space-1) var(--space-3)',
     border: 'none', cursor: 'pointer',
-    // Тот же крупный радиус, что у карточек: подложка таба читается плашкой
-    // одной семьи с ними, а не отдельной формой.
-    borderRadius: 'var(--radius-card)',
+    // Средняя ступень, как было: на невысокой плашке крупный карточный радиус
+    // почти сводил её к пилюле и съедал углы.
+    borderRadius: 'var(--radius-medium)',
     WebkitTapHighlightColor: 'transparent',
     // Цвет, подложка и прозрачность переливаются одним движением; размер —
     // на внутренней обёртке, той же длительностью.
