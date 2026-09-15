@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { haptic } from '../lib/telegram'
 import { getRecentWorkouts, getRecentWorkoutsSync } from '../lib/storage'
@@ -57,6 +57,10 @@ export default function HomeCards() {
         // серую строку «программы» пробовали — вторая половина вставала на
         // место периода и читалась подписью, а не частью названия.
         title="Все программы"
+        // Что внутри каталога: серая подпись «Разделы» тем же видом, что
+        // «Сентябрь» у статистики, и перечень чуть светлее — это уже содержимое.
+        caption="Разделы"
+        detail={<FitText full="Силовая и другие" short="Силовая и др." />}
         onClick={() => go('/programs')}
       />
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
@@ -76,7 +80,7 @@ export default function HomeCards() {
 // Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
 // селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
 // конфликтуют). Роль и tabIndex сохраняют доступность.
-function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', square = false, onClick, innerRef }) {
+function Card({ icon, title, caption, detail, periodRow, periodLabel, value, flex = '1 1 auto', square = false, onClick, innerRef }) {
   return (
     <div
       ref={innerRef}
@@ -95,6 +99,12 @@ function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', s
         {/* Отдельная строка периода МЕЖДУ заголовком и цифрами: какой отрезок
             показан («Сентябрь», «Топ»). Так цифры ниже — просто метрики,
             а «за что они» читается на своём уровне. */}
+        {caption && (
+          <span style={styles.captionCol}>
+            <span style={styles.periodMark}>{caption}</span>
+            <span style={styles.detail}>{detail}</span>
+          </span>
+        )}
         {periodRow && (
           <span style={styles.periodRow}>
             <span style={styles.periodMark}>{periodLabel}</span>
@@ -111,6 +121,32 @@ function Card({ icon, title, periodRow, periodLabel, value, flex = '1 1 auto', s
   )
 }
 
+// Полная подпись, а если не влезает в ширину — короткая. Меряем по факту, а не
+// по числу букв: ширина карточки зависит от экрана и шрифта.
+function FitText({ full, short }) {
+  const ref = useRef(null)
+  const [fits, setFits] = useState(true)
+  useLayoutEffect(() => {
+    const el = ref.current?.parentElement
+    if (!el) return
+    const check = () => {
+      const probe = ref.current
+      if (!probe) return
+      setFits(probe.scrollWidth <= el.clientWidth)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [full])
+  return (
+    <>
+      {/* Невидимый замер полной строки — по нему решаем, какую показать. */}
+      <span ref={ref} aria-hidden="true" style={{ position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', pointerEvents: 'none' }}>{full}</span>
+      {fits ? full : short}
+    </>
+  )
+}
 
 const styles = {
   // Зазор между карточками — тот же шаг (20), что вертикальный отступ от
@@ -147,6 +183,12 @@ const styles = {
   // Строка периода: подпись слева, селектор справа.
   periodRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   // Подпись периода — тем же тихим серым, что иконки.
+  captionCol: { display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' },
+  // Перечень разделов — на ступень светлее серой подписи над ним.
+  detail: {
+    position: 'relative', display: 'block', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--text-info)', whiteSpace: 'nowrap', overflow: 'hidden', minWidth: 0
+  },
   periodMark: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'

@@ -450,7 +450,10 @@ const styles = {
   tab: {
     position: 'relative', flex: 1, minWidth: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 'var(--space-2) var(--space-1) var(--space-3)',
+    // Сверху и снизу поровну. Раньше сверху было 8 при 12 снизу, а увеличенное
+    // содержимое активного таба (scale) съедало ещё по 3–4px с каждой стороны —
+    // иконка почти упиралась в край подложки, а под названием оставался воздух.
+    padding: 'var(--space-3) var(--space-1)',
     border: 'none', cursor: 'pointer',
     // Средняя ступень, как было: на невысокой плашке крупный карточный радиус
     // почти сводил её к пилюле и съедал углы.
