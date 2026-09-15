@@ -310,7 +310,7 @@ function Metric({ label }) {
 const styles = {
   overlay: {
     position: 'fixed', inset: 0,
-    background: 'var(--scrim-finish)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 9999, padding: 'var(--space-5)',

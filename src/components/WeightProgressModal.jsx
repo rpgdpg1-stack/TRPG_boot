@@ -21,7 +21,7 @@ import { useScrollLock } from '../lib/use-scroll-lock'
  */
 
 // Золотистый — только для личного рекорда (кубок и цифра).
-const RECORD_GOLD = 'var(--gold-record-chart)'
+const RECORD_GOLD = 'var(--gold-record)'
 
 // Сетка графика. Пропорцию держат ВСЕ состояния области (скелетон, пустой текст,
 // сам svg) — тогда блок не меняет высоту при загрузке.

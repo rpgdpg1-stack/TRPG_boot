@@ -60,7 +60,7 @@ const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'var(--scrim-confirm)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',

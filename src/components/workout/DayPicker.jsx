@@ -90,7 +90,7 @@ const pickerStyles = {
     display: 'flex',
     gap: 'var(--space-15)',
     padding: 'var(--space-2)',
-    background: 'var(--surface-glass-daypicker)',
+    background: 'var(--surface-glass)',
     backdropFilter: 'blur(22px) saturate(1.6)',
     WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
     border: '1px solid var(--layer-3)',

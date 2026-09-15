@@ -64,7 +64,7 @@ function countExercises(days) {
 const styles = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 200,
-    background: 'var(--scrim-sheet)', backdropFilter: 'blur(4px)',
+    background: 'var(--overlay-scrim)', backdropFilter: 'blur(4px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)'
   },
   modal: {

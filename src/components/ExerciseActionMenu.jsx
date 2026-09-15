@@ -456,7 +456,7 @@ const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'var(--scrim-menu)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     // Колонка: модалка сверху, крестик-пузырёк под ней по центру.
@@ -698,7 +698,7 @@ const styles = {
     width: '100%',
     height: '44px',
     borderRadius: 'var(--radius-small)',
-    background: 'var(--layer-subtle)'
+    background: 'var(--layer-faint)'
   },
   // Кнопка "Добавить заметку" (когда заметки ещё нет)
   noteAddButton: {
@@ -707,7 +707,7 @@ const styles = {
     gap: 'var(--space-2)',
     width: '100%',
     padding: 'var(--space-4) var(--space-4)',
-    background: 'var(--layer-subtle)',
+    background: 'var(--layer-faint)',
     border: '1px dashed var(--border-dashed)',
     borderRadius: 'var(--radius-medium)',
     cursor: 'pointer',

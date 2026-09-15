@@ -114,7 +114,7 @@ const styles = {
   overlay: {
     position: 'fixed',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'var(--scrim-profile)',
+    background: 'var(--overlay-scrim)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     display: 'flex',

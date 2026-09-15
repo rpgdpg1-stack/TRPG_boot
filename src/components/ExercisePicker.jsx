@@ -31,7 +31,7 @@ const MOVE_TOLERANCE_PX = 10
 // Плотность «стекла» в пикере. Общий --color-surface-dim (30%) годится таб-бару
 // над спокойным фоном, но здесь под шапкой едут карточки с картинками, и подписи
 // фильтров сквозь него не читались.
-const GLASS = 'var(--surface-glass-picker)'
+const GLASS = 'var(--surface-glass)'
 
 const TABS = [
   { key: 'all', label: 'Все' },
