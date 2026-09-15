@@ -477,7 +477,9 @@ export default function ProgramConstructor() {
       {/* Один заголовок на оба режима: человек и в первый раз, и при правке
           находится в одном и том же месте — своей программе. «Редактировать»
           называло действие, а заголовок должен называть экран. */}
-      {!pickerOpen && <ScreenTitle>Моя программа</ScreenTitle>}
+      {/* Поверх — пикер или замена со своим заголовком: у полосы нет фона, и два
+          заголовка легли бы друг на друга. */}
+      {!pickerOpen && !swapTarget && <ScreenTitle>Моя программа</ScreenTitle>}
 
       <div style={styles.section}>
         <SectionLabel caps>НАЗВАНИЕ</SectionLabel>
@@ -755,7 +757,8 @@ export default function ProgramConstructor() {
         document.body
       )}
 
-      {!kbOpen && createPortal(
+      {/* Пока открыта замена, дока нет вовсе: у замены своя кнопка на том же месте. */}
+      {!kbOpen && !swapTarget && createPortal(
         <div style={styles.dock}>
           <div className="dock-scrim" />
           <ActionButton

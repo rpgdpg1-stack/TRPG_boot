@@ -3,7 +3,6 @@ import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
 import PencilIcon from './PencilIcon'
-import ShieldCheckIcon from './ShieldCheckIcon'
 
 /**
  * Тело карточки программы — общее для главной, избранного и раздела.
@@ -42,13 +41,15 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
         <div style={styles.title}>
           {title}
           {/* Метка происхождения программы, серым, в одном и том же месте:
-              карандаш — «создана мной, редактируется», щит с галочкой — «готовая,
-              от приложения». У программы друга метки нет: она и не моя, и не наша. */}
+              карандаш — «создана мной, редактируется», «TRPG» — «готовая, от
+              приложения». Это метаданные, а не отдельный элемент: мелко, серым, без
+              пилюли. Не зелёным — зелёный в проекте значит действие/статус.
+              У программы друга метки нет: она и не моя, и не наша. */}
           {prog.source === 'custom' && (
             <span style={styles.titleMark}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>
           )}
           {!prog.source && (
-            <span style={styles.titleMark}><ShieldCheckIcon size={13} /></span>
+            <span style={styles.brandMark}>TRPG</span>
           )}
         </div>
 
@@ -149,6 +150,13 @@ const styles = {
   },
   // Карандаш-индикатор сразу после названия (по центру строки текста).
   titleMark: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-1)', marginTop: '-2px', opacity: 0.7 },
+  // Бренд-метка готовой программы: капс, мелкий кегль, серый — сразу за названием,
+  // по середине строки. Разрядка — чтобы капс не слипался в пятно.
+  brandMark: {
+    display: 'inline-block', verticalAlign: 'middle', marginLeft: 'var(--space-15)', marginTop: '-3px',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
+    letterSpacing: '0.8px', lineHeight: 1, color: 'var(--color-text-secondary)'
+  },
   // Дни + метрики в одну строку. Зазор 12 (между буквами внутри daysList — 8):
   // группы разделяет воздух, а не точка. wrap — страховка на узком экране:
   // лучше метрика уедет на вторую строку, чем сломает карточку.

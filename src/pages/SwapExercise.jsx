@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import ActionButton from '../components/ActionButton'
@@ -263,8 +264,22 @@ export function SwapExerciseView({
 
   // Поверх конструктора — свой прокручиваемый слой (как у пикера): страница под
   // ним стоит на месте, sticky-шапка липнет к верху этого слоя.
+  // Прокручивается ВНУТРЕННИЙ слой, а не сам оверлей: useScrollLock ищет
+  // прокручиваемого предка только внутри оверлея — сам оверлей он не проверяет и
+  // гасил бы любой жест. Отсюда же уезжавшая шапка «Текущее», которую не достать.
+  //
+  // Портал в body ОБЯЗАТЕЛЕН (как у пикера): страница конструктора живёт в
+  // анимированном контейнере с transform, и без портала z-index оверлея не
+  // выходил из него — док «Сохранить» (он в body) оказывался ПОВЕРХ замены.
+  // Тап по «Сменить» попадал в «Сохранить»: сохранялась старая программа и
+  // конструктор закрывался.
   if (!embedded) return screen
-  return <div ref={overlayRef} style={styles.overlay}>{screen}</div>
+  return createPortal(
+    <div ref={overlayRef} style={styles.overlay}>
+      <div style={styles.scroller}>{screen}</div>
+    </div>,
+    document.body
+  )
 }
 
 /**
@@ -377,9 +392,9 @@ const styles = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 100,
     background: 'var(--color-bg)',
-    overflowY: 'auto',
-    overscrollBehavior: 'contain'
+    overflow: 'hidden'
   },
+  scroller: { height: '100%', overflowY: 'auto', overscrollBehavior: 'contain' },
   // Единый sticky-блок. Растянут на всю ширину поверх горизонтального
   // padding'а страницы (margin -16px + padding 16px). Фон --color-bg
   // непрозрачный — карточки альтернатив при скролле уезжают под него.

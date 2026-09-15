@@ -614,7 +614,7 @@ src/
 │                   PullToRefresh QuickPickList RocketIcon RocketToggle SaveFriendProgramModal
 │                   PinnedCarousel (закреплённые программы на главной)
 │                   ScreenTitle ScrollTopButton SearchIcon SectionBadge
-│                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher) ShieldCheckIcon
+│                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher)
 │                   StreakInfoPopup SwipeReveal (свайп «Замена»: день + конструктор) TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
 │                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader

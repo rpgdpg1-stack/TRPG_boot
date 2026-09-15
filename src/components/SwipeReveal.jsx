@@ -73,6 +73,18 @@ export default function SwipeReveal({
     closeFns.add(fn)
     return () => closeFns.delete(fn)
   }, [])
+  // Открытая панель закрывается касанием В ЛЮБОМ другом месте экрана — шапка,
+  // кнопки, ручка перетаскивания той же строки. Слушаем на погружении, чтобы
+  // успеть раньше жестов, которые гасят всплытие.
+  const outerRef = useRef(null)
+  const shown = offset !== 0
+  useEffect(() => {
+    if (!shown) return
+    const onDown = (e) => { if (!outerRef.current?.contains(e.target)) closeRef.current?.() }
+    document.addEventListener('pointerdown', onDown, true)
+    return () => document.removeEventListener('pointerdown', onDown, true)
+  }, [shown])
+
   const closeOthers = () => { closeFns.forEach(fn => { if (fn !== myCloseFn.current) fn() }) }
 
   // ── Панель: drag-select ──
@@ -160,7 +172,7 @@ export default function SwipeReveal({
     // Клип по скруглению — только пока карточка сдвинута или едет. В покое
     // панель целиком под карточкой и резать нечего, а постоянный клип срезал бы
     // тень карточки (строка конструктора при перетаскивании приподнимается).
-    <div style={{ ...styles.outer, borderRadius: radius, overflow: offset !== 0 || dragging ? 'hidden' : 'visible' }}>
+    <div ref={outerRef} style={{ ...styles.outer, borderRadius: radius, overflow: offset !== 0 || dragging ? 'hidden' : 'visible' }}>
       {canSwipe && (
         <div
           ref={panelRef}
