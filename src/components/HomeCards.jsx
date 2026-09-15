@@ -50,11 +50,10 @@ export default function HomeCards() {
           число программ ничего не говорит о том, что человек будет делать. */}
       <Card
         icon={<span style={styles.icon}><ProgramsIcon size={22} /></span>}
-        // Почти квадрат фиксированной ширины (см. styles.cardSquare).
+        // Ширина по названию (см. styles.cardSquare).
         square
-        // Название переносится и читается целиком. Разбивать его на «Все» +
-        // серую строку «программы» пробовали — вторая половина вставала на
-        // место периода и читалась подписью, а не частью названия.
+        // Название в одну строку и целиком: перенос «Все / программы» ломал
+        // ритм с соседней «Статистикой», где заголовок в строку.
         title="Все программы"
         // Что внутри каталога — одной серой строкой тем же видом, что
         // «Сентябрь» у статистики. Отдельная подпись «Разделы» над ней была
@@ -93,7 +92,7 @@ function Card({ icon, title, caption, periodRow, periodLabel, value, flex = '1 1
       <span style={styles.icon}>{icon}</span>
       <div style={styles.textCol}>
         <span style={styles.titleRow}>
-          <span style={{ ...styles.title, ...(square ? styles.titleWrap : null) }}>{title}</span>
+          <span style={styles.title}>{title}</span>
         </span>
         {/* Отдельная строка периода МЕЖДУ заголовком и цифрами: какой отрезок
             показан («Сентябрь», «Топ»). Так цифры ниже — просто метрики,
@@ -149,8 +148,7 @@ const styles = {
   // карусели выше и поле страницы: одинаковый воздух по обеим осям.
   row: { display: 'flex', gap: 'var(--space-4)', alignItems: 'stretch' },
   card: {
-    // 110 — фактическая высота карточки с её содержимым. Задаём явно: под неё
-    // рассчитана ширина входа в каталог (114 = 110 + 4).
+    // 110 — фактическая высота карточки с её содержимым.
     minWidth: 0, minHeight: '110px',
     // Зазор от иконки до текста — ЯВНЫЙ, а не остаток от space-between.
     // При space-between он зависел от высоты содержимого: у статистики строка
@@ -164,18 +162,14 @@ const styles = {
   },
   // Квадратная карточка: ширина = высоте. Выравнивание и паддинги — как у
   // соседней карточки, чтобы содержимое стояло на одной левой линии.
-  // Почти квадрат: высота 110, ширина на 4px больше. Эти 4px освободились,
-  // когда зазор стал 16 вместо 20, — отдали их входу, чтобы подпись под
-  // названием помещалась свободнее. Ширина числом, а не aspect-ratio:
-  // «квадрат + 4px» пропорцией не записать.
-  cardSquare: { width: '114px' },
+  // Ширина входа — по названию: «Все программы» в одну строку, карточка ровно
+  // под него, остаток забирает «Статистика» (справа у неё и так был запас).
+  // Числом не задаём: название или шрифт поменяются — ширина пойдёт за ними.
+  cardSquare: {},
   icon: { display: 'inline-flex', height: '22px' },
   textCol: { display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', minWidth: 0 },
   titleRow: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  // В квадрате название длиннее его ширины — переносим вместо многоточия:
-  // «Все прогр…» не подпись, а обрубок.
-  titleWrap: { whiteSpace: 'normal', overflow: 'visible', lineHeight: 1.25 },
   // Строка значения: слева значение, справа подпись-контекст.
   valueRow: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-15)', minHeight: '20px', width: '100%' },
   valueMain: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-15)', minWidth: 0 },
