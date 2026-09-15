@@ -54,7 +54,7 @@ const styles = {
     top: 'calc(var(--tg-nav-top, 56px) + (var(--tg-nav-height, 44px) - 32px) / 2)',
     left: 'var(--space-4)',
     height: '32px',
-    zIndex: 'var(--z-nav, 60)',
+    zIndex: 'var(--z-browser-nav)',
     display: 'flex',
     alignItems: 'center',
     gap: '2px',

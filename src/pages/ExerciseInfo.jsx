@@ -15,7 +15,8 @@ import UiIcon from '../components/UiIcon'
  *
  * Структура:
  *  - Сверху ЗАКРЕПЛЁННАЯ (sticky) карточка-шапка упражнения (видео + название +
- *    теги + подходы) — тот же компонент ExerciseHeaderCard, что и в меню действий.
+ *    теги) — компонент ExerciseHeaderCard. Подходов тут нет: они живут только в
+ *    меню долгого нажатия (ExerciseActionMenu).
  *  - Ниже скроллится описание техники. Пока реального текста нет — placeholder.
  */
 export default function ExerciseInfo() {
@@ -100,7 +101,6 @@ export default function ExerciseInfo() {
           name={exercise.name}
           muscleGroup={exercise.muscle_group}
           subGroup={exercise.sub_group}
-          meta={exercise.meta_info}
           custom={isCustomExercise(exercise.id)}
         />
         <div style={styles.stickyFade} aria-hidden="true" />

@@ -179,8 +179,7 @@ export function SwapExerciseView({
     id: currentExerciseId,
     name: currentExerciseName || '—',
     sub_group: subGroup,
-    preview_url: null,
-    meta_info: null
+    preview_url: null
   } : null)
 
   // Менять есть на что только когда выбрана ДРУГАЯ альтернатива.
@@ -358,9 +357,6 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
           )}
         </div>
 
-        {exercise.meta_info && (
-          <div style={rowStyles.meta}>{exercise.meta_info}</div>
-        )}
       </div>
 
       <div style={rowStyles.radio}>
@@ -575,14 +571,6 @@ const rowStyles = {
     letterSpacing: '0.2px',
     lineHeight: '13px',
     whiteSpace: 'nowrap'
-  },
-  meta: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 500,
-    letterSpacing: '0.03em',
-    color: 'var(--color-text-secondary)',
-    lineHeight: '13px'
   },
   radio: {
     flexShrink: 0,

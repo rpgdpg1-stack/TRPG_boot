@@ -4,7 +4,10 @@ import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 
 /**
- * Карточка-шапка упражнения (видео-превью + название + теги + подходы).
+ * Карточка-шапка упражнения (видео-превью + название + тег).
+ *
+ * Подходов («3 × 10-12») здесь НЕТ: подходы показываем только в меню долгого
+ * нажатия (ExerciseActionMenu) — больше нигде, чтобы не дублировать.
  *
  * Презентационный компонент, переиспользуется в меню действий (ExerciseActionMenu)
  * и на странице техники (ExerciseInfo). Скругление 49px — как у карточек дня.
@@ -20,7 +23,6 @@ export default function ExerciseHeaderCard({
   name,
   muscleGroup,
   subGroup,
-  meta,
   custom = false,
   right = null,
   style
@@ -46,8 +48,6 @@ export default function ExerciseHeaderCard({
             <MarqueeTag label={tagLabel} background={colors.tag} style={styles.tag} />
           )}
         </div>
-
-        {meta && <div style={styles.meta}>{meta}</div>}
       </div>
 
       {right}
@@ -105,13 +105,5 @@ const styles = {
     maxWidth: '100%'
   },
   // Форма пилюли — в MarqueeTag; здесь только приглушение.
-  tag: { opacity: 0.7 },
-  meta: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-caption-size)',
-    fontWeight: 500,
-    lineHeight: '14px',
-    letterSpacing: '0.03em',
-    color: 'var(--color-text-secondary)'
-  }
+  tag: { opacity: 0.7 }
 }

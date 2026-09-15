@@ -355,7 +355,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               </span>
             )}
           </div>
-          {custom && ex.meta_info && <div style={styles.rowMeta}>{ex.meta_info}</div>}
         </div>
         <div style={styles.addBtnWrap}>
           {limitRowId === ex.id && (
@@ -796,10 +795,6 @@ const styles = {
     color: 'var(--color-text-secondary)', lineHeight: 1.5
   },
   pencil: { display: 'inline-flex', verticalAlign: 'middle', marginLeft: 'var(--space-15)' },
-  rowMeta: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)',
-    color: 'var(--color-text-secondary)'
-  },
   // Поле поиска — стеклянная пилюля того же семейства, что таб-бар и фильтры.
   searchWrap: {
     flex: 1, minWidth: 0, height: '44px',

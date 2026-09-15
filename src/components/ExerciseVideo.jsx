@@ -14,7 +14,10 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  * Поведение:
  *  - Если есть video_url → автоплей без звука, проигрывается MAX_PLAYS раза и
  *    ЗАМИРАЕТ на первом кадре (не крутится бесконечно, чтобы не отвлекать).
- *    Заново проигрывается при следующем открытии (компонент перемонтируется).
+ *    После остановки по центру появляется прозрачная стеклянная кнопка ▶ —
+ *    повтор ТОЛЬКО по ней (тап по всей миниатюре больше не перезапускает:
+ *    случайное касание картинки не должно гонять ролик). Нажатие «растёт» и
+ *    отменяется, если увести палец, — как крестик CloseCross.
  *  - Если только preview_url → показываем картинку
  *  - Если ничего → эмодзи-заглушка на белом фоне
  *
@@ -62,6 +65,8 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
   const playsRef = useRef(0)
   const videoRef = useRef(null)
   const [pressed, setPressed] = useState(false)
+  // Ролик доиграл и стоит — показываем кнопку повтора.
+  const [ended, setEnded] = useState(false)
 
   // Готовый к показу ролик (blob:-ссылка) и признак «не смогли достать».
   const [src, setSrc] = useState(null)
@@ -83,6 +88,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
       if (!blob) { setFailed(true); return }
       objectUrl = URL.createObjectURL(blob)
       playsRef.current = 0
+      setEnded(false)
       setSrc(objectUrl)
     })
 
@@ -114,6 +120,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
       restartPlay(v)
     } else {
       try { v.pause(); v.currentTime = 0 } catch { /* ignore */ }
+      setEnded(true)
     }
   }
 
@@ -126,21 +133,21 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
     if (started?.catch) started.catch(() => { /* запустится по тапу */ })
   }
 
-  // Тап по миниатюре с видео — проиграть ещё один цикл заново + лёгкая хаптика.
+  // Кнопка ▶ — проиграть ещё один цикл заново + лёгкая хаптика.
   const replay = () => {
     const v = videoRef.current
     if (!v) return
     haptic.light()
     playsRef.current = 0
+    setEnded(false)
     restartPlay(v)
   }
 
-  // Интерактивна миниатюра с видео (есть что переигрывать) и неудавшаяся
-  // загрузка (есть что повторить).
-  const interactive = !!videoUrl && (!!src || failed)
-  const onTap = failed ? retry : replay
+  // Вся миниатюра тапается только при неудавшейся загрузке (повторить загрузку).
+  // Повтор ролика — отдельной кнопкой ▶ (PlayAgainButton).
+  const interactive = !!videoUrl && failed
   const wrapHandlers = interactive ? {
-    onClick: (e) => { e.stopPropagation(); onTap() },
+    onClick: (e) => { e.stopPropagation(); retry() },
     onPointerDown: (e) => { e.stopPropagation(); setPressed(true) },
     onPointerUp: () => setPressed(false),
     onPointerLeave: () => setPressed(false),
@@ -183,6 +190,64 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
       ) : (
         <ExercisePlaceholder size={56} />
       )}
+
+      {videoUrl && src && !failed && ended && <PlayAgainButton onPlay={replay} />}
+    </div>
+  )
+}
+
+/**
+ * Прозрачная круглая кнопка ▶ поверх застывшего кадра — стекло как в iOS:
+ * тёмная полупрозрачная заливка + блюр + тонкий светлый хайрлайн. Тёмная, а не
+ * белая: фон роликов белый, белое стекло на нём просто исчезло бы.
+ *
+ * 44px — минимальная зона под палец, и при этом кнопка не закрывает кадр
+ * миниатюры 118px (занимает ~37% ширины, движение за ней видно).
+ *
+ * Нажатие: палец опустился — кружок растёт; увёл за пределы — вернулся, ничего
+ * не случилось; отпустил на кнопке — повтор. Следующий синтетический click
+ * гасим: без этого он долетал до оверлея модалки и мог её закрыть.
+ */
+function PlayAgainButton({ onPlay }) {
+  const ref = useRef(null)
+  const armed = useRef(false)
+  const [press, setPress] = useState(false)
+
+  const inside = (e) => {
+    const r = ref.current?.getBoundingClientRect()
+    return !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+  }
+  const down = (e) => { e.stopPropagation(); armed.current = true; setPress(true) }
+  const move = (e) => { if (armed.current && !inside(e)) { armed.current = false; setPress(false) } }
+  const up = (e) => {
+    e.stopPropagation()
+    const was = armed.current
+    armed.current = false
+    setPress(false)
+    if (was) onPlay()
+  }
+  const cancel = () => { armed.current = false; setPress(false) }
+
+  return (
+    <div style={styles.playLayer}>
+      <button
+        ref={ref}
+        type="button"
+        aria-label="Проиграть ещё раз"
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={cancel}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          ...styles.playBtn,
+          transform: press ? 'scale(1.14)' : 'scale(1)'
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', marginLeft: '2px' }}>
+          <path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z" fill="currentColor" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -211,6 +276,37 @@ const styles = {
     height: '100%',
     objectFit: 'cover',
     display: 'block'
+  },
+  // Слой по центру кадра: сам не ловит касаний, только кнопка.
+  playLayer: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) both'
+  },
+  playBtn: {
+    pointerEvents: 'auto',
+    width: '44px',
+    height: '44px',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '50%',
+    border: 'none',
+    background: 'var(--tint-dark-32)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: 'inset 0 0 0 1px var(--border-tonal)',
+    color: 'var(--color-text)',
+    opacity: 0.92,
+    cursor: 'pointer',
+    touchAction: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'transform 0.18s var(--ease-ios)'
   },
   // Подпись поверх превью — та же стеклянная пилюля, что у статуса сети.
   retryHint: {

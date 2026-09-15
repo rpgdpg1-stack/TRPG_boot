@@ -171,7 +171,7 @@ const styles = {
     width: '32px',
     height: '32px',
     padding: 0,
-    zIndex: 'var(--z-nav, 60)',
+    zIndex: 'var(--z-browser-nav)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'var(--surface-glass)',
     backdropFilter: 'var(--blur-glass)',
@@ -190,7 +190,7 @@ const styles = {
     background: 'var(--layer-2)'
   },
   backdrop: {
-    position: 'fixed', inset: 0, zIndex: 'var(--z-nav, 60)', background: 'transparent',
+    position: 'fixed', inset: 0, zIndex: 'var(--z-browser-nav)', background: 'transparent',
     // Гасим жесты фона: иначе движение пальца мимо панели прокручивало
     // страницу под открытым меню.
     touchAction: 'none',
@@ -201,7 +201,7 @@ const styles = {
     top: 'calc(var(--tg-nav-top, 56px) + var(--tg-nav-height, 44px) + var(--space-1))',
     right: 'var(--space-4)',
     minWidth: '220px',
-    zIndex: 'calc(var(--z-nav, 60) + 1)',
+    zIndex: 'calc(var(--z-browser-nav) + 1)',
     background: 'var(--surface-glass)',
     backdropFilter: 'var(--blur-glass)',
     WebkitBackdropFilter: 'var(--blur-glass)',
