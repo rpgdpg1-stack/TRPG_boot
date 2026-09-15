@@ -37,10 +37,11 @@ import MarqueeTag from './MarqueeTag'
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
 // Геометрия панели действий (открывается свайпом влево). Зазор ОДИН и тот же:
-// от края карточки до первой плитки, между плитками и до правого края — иначе
-// первое действие липнет к карточке, а между собой они разъезжаются.
+// от края карточки до плитки и от плитки до правого края.
+// Плитка шире прежних 50: действие теперь одно («Замена»), и в узкую зону палец
+// попадал не с первого раза. Свайп уезжает ровно на ширину панели — не дальше.
 const SWIPE_GAP = 8   // = --space-2
-const SWIPE_CELL = 50 // ширина плитки действия
+const SWIPE_CELL = 76 // ширина плитки действия
 
 // Реестр закрывашек: одновременно открыт свайп ТОЛЬКО у одной карточки. Начал свайп
 // на любой другой — остальные закрываются (той же анимацией 0.28с, что и пальцем).
@@ -59,7 +60,7 @@ if (typeof window !== 'undefined') {
   }, { passive: true })
 }
 
-export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onInfo, onSwap, onWeightSaved }) {
+export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onSwap, onWeightSaved }) {
   const {
     exercise_id,
     exercise_name,
@@ -103,7 +104,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
-  // Свайп влево → панель действий (техника / замена). offset: 0 закрыто,
+  // Свайп влево → панель действий (замена). offset: 0 закрыто,
   // -panelW открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -158,14 +159,14 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
   const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
   const runAction = (fn) => { closePanel(); fn?.(slot) }
-  // Заметка из свайпа убрана — она осталась в меню по долгому нажатию,
-  // где её можно сразу написать, а не открывать ещё один экран.
+  // В свайпе только «Замена». Заметка, техника, прогресс веса и любимые — в
+  // меню по долгому нажатию (там же «⋯»), чтобы не держать два входа в одно.
   // У своего упражнения «Замены» нет: подбирать не из чего — аналог личному
-  // упражнению взять неоткуда, экран открылся бы пустым.
-  const swipeActions = [
-    { key: 'info', icon: 'info', color: 'var(--cat-pool)', label: 'Техника', fn: onInfo },
-    ...(is_custom ? [] : [{ key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }])
+  // упражнению взять неоткуда, экран открылся бы пустым. Нет действий — нет и свайпа.
+  const swipeActions = is_custom ? [] : [
+    { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
   ]
+  const canSwipe = swipeActions.length > 0
   const panelW = SWIPE_GAP + swipeActions.length * (SWIPE_CELL + SWIPE_GAP)
 
   // Цвета группы мышц — тег + акцент для цифры веса
@@ -185,6 +186,10 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   useEffect(() => {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current)
+      // Карточка ушла, пока в её поле веса был фокус (сменили день, замена
+      // пересобрала список) — blur уже не придёт. Флаг «идёт ввод веса» общий
+      // на весь экран: не снять его — все карточки глушат касания до перезагрузки.
+      if (editingRef.current) markWeightEditingEnded()
     }
   }, [])
 
@@ -243,9 +248,12 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
     const dx = e.clientX - s.x
     const dy = e.clientY - s.y
     if (!s.decided) {
-      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
+      if (canSwipe && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
         // Горизонталь → свайп: гасим long-press, дальше ведём свою панель за пальцем.
         s.decided = true; s.swiping = true; setDragging(true); clearLongPress()
+        // Захват пальца: движения идут в карточку, даже если под пальцем уже
+        // другой элемент (оверлей подсветки, соседняя карточка после перестройки).
+        try { e.currentTarget.setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
       } else if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) {
         // Вертикаль/увод — не свайп (это скролл списка / отмена long-press).
         s.decided = true; s.swiping = false; clearLongPress()
@@ -422,7 +430,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       onPointerMove={handleCardPointerMove}
       onPointerUp={handleCardPointerUp}
       onPointerCancel={handleCardPointerUp}
-      onPointerLeave={handleCardPointerUp}
     >
     <div
       ref={cardRef}
@@ -589,15 +596,16 @@ const styles = {
     pointerEvents: 'none',
     position: 'relative', zIndex: 1
   },
-  // Плавающее серое выделение под пальцем — по высоте КОНТЕНТА (иконка+подпись) с
-  // небольшим отступом, по центру. Скруглённый прямоугольник, «плавает» по left.
+  // Серое выделение под пальцем — во ВСЮ высоту карточки: нажал и сразу видишь
+  // зону, куда попал (по высоте контента оно было мелким пятном вокруг иконки).
+  // Угол тот же, что у карточки: плитка стоит на 8px от края и в скругление
+  // обёртки не упирается.
   actionHighlight: {
     position: 'absolute',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    height: '54px',
+    top: 0,
+    bottom: 0,
     background: 'var(--layer-2)',
-    borderRadius: 'var(--radius-small)',
+    borderRadius: 'var(--radius-day-card)',
     pointerEvents: 'none',
     zIndex: 0,
     transition: 'left 0.16s var(--ease-ios)'

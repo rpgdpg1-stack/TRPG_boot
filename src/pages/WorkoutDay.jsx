@@ -1437,7 +1437,6 @@ export default function WorkoutDay() {
                           isActive={activeOrderNums.has(slot.order_num)}
                           onTap={handleCardTap}
                           onLongPress={handleCardLongPress}
-                          onInfo={goToInfo}
                           onSwap={goToSwap}
                           onWeightSaved={handleWeightSaved}
                         />
@@ -1511,6 +1510,7 @@ export default function WorkoutDay() {
         <ExerciseActionMenu
           slot={actionSlot}
           onWeightSaved={handleWeightSaved}
+          onInfo={(s) => { setActionSlot(null); goToInfo(s) }}
           onClose={() => {
             const orderNum = actionSlot.order_num
             actionClosedAtRef.current = Date.now() // гасим призрачный тап по карточке под крестиком

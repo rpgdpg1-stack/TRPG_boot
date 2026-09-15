@@ -642,8 +642,7 @@ postgres + service_role. Вызову из `api_*` это не мешает: SEC
 - Чтение: `api_get_weight_history(p_user_id bigint, p_exercise_id text)` → `(day, weight_kg)`
   по возрастанию дня. Клиент: `getWeightHistory(exerciseId)` в `features/exercises/api.js`
   (кеш `weight-history:{userId}:{exId}`, сбрасывается в `saveExerciseWeight`).
-- UI: иконка прогресса (Material trending_up) внизу карточки в `ExerciseActionMenu`
-  (симметрично сердечку) → модалка `WeightProgressModal`. График «как в Тинькофф»:
+- UI: пункт «Прогресс веса» в меню «⋯» модалки `ExerciseActionMenu` → модалка `WeightProgressModal`. График «как в Тинькофф»:
   чистая SVG-линия без точек/сетки, пунктир текущего веса через весь график,
   скраб пальцем (вес+дата вверху, хаптика), переключатель Месяц·Год·Всё время со
   стрелками листания. Всё на клиенте (фильтр/скраб), БД не трогает. Правка веса на

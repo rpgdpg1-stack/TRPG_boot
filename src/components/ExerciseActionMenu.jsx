@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { isCustomExercise } from '../features/programs/userExercises'
@@ -12,8 +13,9 @@ import { addFavorite, removeFavorite, isFavoriteCached, getFavoriteIdsCached, ge
 import { EVENTS, on } from '../lib/events'
 import ExerciseVideo from './ExerciseVideo'
 import MarqueeTag from './MarqueeTag'
-import HeartButton from './HeartButton'
+import HeartIcon from './HeartIcon'
 import UiIcon from './UiIcon'
+import AnchorMenu from './AnchorMenu'
 import WeightProgressModal from './WeightProgressModal'
 import CloseCross from './CloseCross'
 import { useScrollLock } from '../lib/use-scroll-lock'
@@ -39,8 +41,25 @@ import TrendingUpIcon from './TrendingUpIcon'
 // Тёплый янтарный — общепринятый цвет для заметок (жёлтый стикер).
 const NOTE_ICON_COLOR = 'var(--color-note)'
 
-export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
+export default function ExerciseActionMenu({ slot, onClose, onWeightSaved, onInfo }) {
+  const navigate = useNavigate()
   const noteInputRef = useRef(null)
+  // Меню «⋯» в углу карточки: техника / прогресс веса / любимые. Держим прямоугольник
+  // кнопки — от него AnchorMenu раскрывается из угла.
+  const moreBtnRef = useRef(null)
+  const [moreRect, setMoreRect] = useState(null)
+  const openMore = (e) => {
+    e.stopPropagation()
+    haptic.light()
+    setMoreRect(moreBtnRef.current?.getBoundingClientRect() || null)
+  }
+  // Техника: экран дня передаёт свой переход (с возвратом к карточке и скроллом);
+  // остальным хватает простого перехода — «Назад» с техники вернёт на место.
+  const openInfo = () => {
+    if (onInfo) { onInfo(slot); return }
+    onClose()
+    navigate(`/exercise/${slot.exercise_id}`)
+  }
   // Фон под модалкой не должен ехать пальцем — ни снаружи, ни внутри панели.
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
@@ -60,14 +79,13 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
     return on(EVENTS.FAVORITES_CHANGED, sync)
   }, [slot?.exercise_id])
 
+  // Хаптику даёт сам пункт меню (AnchorMenu) — здесь только логика.
   const toggleFav = async () => {
     if (!slot?.exercise_id) return
     if (isFav) {
-      haptic.light()
       setIsFav(false)
       await removeFavorite(slot.exercise_id)
     } else {
-      haptic.medium()
       const res = await addFavorite(slot.exercise_id)
       if (res.success) { setIsFav(true) }
       else if (res.error === 'limit') {
@@ -299,22 +317,20 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
 
         {/* Карточка-шапка: как карточка упражнения в днях тренировки, но
             вместо статичной миниатюры — зацикленное видео. Вес тут же
-            отображается и редактируется. Сердечко в углу — в любимые. */}
+            отображается и редактируется. «⋯» в углу — техника, прогресс, любимые:
+            три иконки по углам карточки читались как разрозненные значки. */}
         <div style={styles.card}>
-          <HeartButton
-            filled={isFav}
-            color={isFav ? 'var(--color-primary)' : 'var(--color-text-secondary)'}
-            onActivate={toggleFav}
-            ariaLabel={isFav ? 'Убрать из любимых' : 'В любимые'}
-            style={styles.heartBtn}
-          />
-          {/* Иконка графика прогресса — внизу справа, симметрично сердечку. */}
           <button
-            onClick={(e) => { e.stopPropagation(); haptic.light(); setShowProgress(true) }}
-            style={styles.progressBtn}
-            aria-label="График прогресса веса"
+            ref={moreBtnRef}
+            onClick={openMore}
+            style={styles.moreBtn}
+            aria-label="Действия с упражнением"
           >
-            <TrendingUpIcon size={19} />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
           </button>
           <div style={styles.preview}>
             <ExerciseVideo
@@ -431,6 +447,29 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved }) {
           )}
         </div>
 
+        {/* Меню «⋯». Рендерится ВНУТРИ панели: события из портала всплывают по
+            дереву React, и панель гасит их stopPropagation — иначе тап по пункту
+            долетал бы до оверлея и закрывал всю модалку. */}
+        {moreRect && (
+          <AnchorMenu
+            anchorRect={moreRect}
+            onClose={() => setMoreRect(null)}
+            align="right"
+            gap={4}
+            items={[
+              { key: 'info', icon: <UiIcon name="info" size={20} color="var(--cat-pool)" />, label: 'Техника выполнения', onClick: openInfo },
+              { key: 'progress', icon: <TrendingUpIcon size={20} color="var(--color-primary)" />, label: 'Прогресс веса', onClick: () => setShowProgress(true) },
+              {
+                key: 'fav',
+                icon: <HeartIcon filled={isFav} size={20} color={isFav ? 'var(--color-primary)' : 'var(--color-text-secondary)'} />,
+                label: isFav ? 'Убрать из любимых' : 'Добавить в любимые',
+                haptic: isFav ? 'light' : 'medium',
+                onClick: toggleFav
+              }
+            ]}
+          />
+        )}
+
       </div>
 
       {/* Крестик-закрытие ПОД модалкой, по центру — единый компонент (низ экрана
@@ -519,31 +558,14 @@ const styles = {
     textAlign: 'center',
     lineHeight: 1.4
   },
-  // Сердечко «в любимые» — в правом верхнем углу карточки, над весом.
-  heartBtn: {
+  // «⋯» — в правом верхнем углу карточки, над весом (место прежнего сердечка).
+  moreBtn: {
     position: 'absolute',
     top: '10px',
     right: '10px',
     zIndex: 6,
     width: '40px',
     height: '40px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    WebkitTapHighlightColor: 'transparent'
-  },
-  // Иконка графика прогресса — правый нижний угол, симметрично сердечку.
-  progressBtn: {
-    position: 'absolute',
-    bottom: '10px',
-    right: '12px',
-    zIndex: 6,
-    width: '34px',
-    height: '34px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

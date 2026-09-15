@@ -61,7 +61,15 @@ export function markWeightEditingEnded() {
  *  - ИЛИ редактирование закончилось менее 300мс назад
  */
 export function shouldIgnoreCardTap() {
-  if (editingState.isEditing) return true
+  if (editingState.isEditing) {
+    // Самолечение: флаг модульный и переживает уход с экрана. Если blur так и
+    // не пришёл (поле размонтировали прямо в фокусе), флаг застревал навсегда —
+    // карточки переставали реагировать и на тап, и на свайп до перезагрузки.
+    // Поля ввода в фокусе уже нет — значит, никто вес не вводит.
+    const el = typeof document !== 'undefined' ? document.activeElement : null
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return true
+    editingState.isEditing = false
+  }
   if (Date.now() - editingState.justClosedAt < COOLDOWN_MS) return true
   return false
 }

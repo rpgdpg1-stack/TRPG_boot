@@ -297,8 +297,8 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
 
   return (
     <button onClick={onTap} className="press-tile" style={{ ...rowStyles.row, background }}>
-      {/* Бейдж «от программы» — в правом верхнем углу строки, по 16px от краёв
-          (как отступ до кружка радио слева от него). */}
+      {/* Бейдж «от программы» — над кружком радио: правый край вровень с кружком,
+          по высоте посередине между верхом строки и верхом кружка. */}
       {isDefault && <span style={rowStyles.defaultBadge}>ОТ ПРОГРАММЫ</span>}
 
       <div style={rowStyles.preview}>
@@ -443,7 +443,7 @@ const styles = {
 
 // Полоса, которую название освобождает под угловой бейдж «ОТ ПРОГРАММЫ»
 // (ширина самой надписи + зазор). Токена под это нет — величину диктует текст.
-const BADGE_GUTTER = '108px'
+const BADGE_GUTTER = '88px'
 
 const rowStyles = {
   row: {
@@ -494,18 +494,27 @@ const rowStyles = {
   },
   // Полоса под угловой бейдж: он абсолютный и текста не расталкивает.
   nameWithBadge: { paddingRight: BADGE_GUTTER },
+  // Раньше бейдж стоял на 16px от верха и налезал на кружок радио. Теперь:
+  //  - справа — вровень с кружком: поле строки (12) + 2px, на которые кружок 20
+  //    уже своей 24-пиксельной ячейки;
+  //  - по высоте — центр посередине между верхом строки и верхом кружка. Кружок
+  //    стоит по центру строки, его верх = 50% − 10px, середина до него =
+  //    (50% − 10px) / 2. Проценты — от высоты строки, поэтому бейдж держит
+  //    середину и у высоких строк с длинным названием.
   defaultBadge: {
     position: 'absolute',
-    top: 'var(--space-4)',
-    right: 'var(--space-4)',
+    top: 'calc(25% - 5px)',
+    right: 'calc(var(--space-3) + 2px)',
+    transform: 'translateY(-50%)',
     fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    fontSize: 'var(--text-caption-size)',
+    fontSize: '9px',
+    lineHeight: '11px',
     color: 'var(--color-primary)',
     background: 'var(--accent-soft)',
-    padding: 'var(--space-05) var(--space-15)',
-    borderRadius: 'var(--radius-small)',
-    letterSpacing: '1px',
+    padding: '2px var(--space-15)',
+    borderRadius: 'var(--radius-pill)',
+    letterSpacing: '0.5px',
     whiteSpace: 'nowrap'
   },
   tagsRow: {
