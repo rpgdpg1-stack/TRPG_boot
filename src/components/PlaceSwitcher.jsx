@@ -1,16 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { getProgramPlaces, getPlaceMeta } from '../features/programs/registry'
 import { useProgramPlace } from '../lib/program-place'
 import { haptic } from '../lib/telegram'
 import UiIcon from './UiIcon'
+import AnchorMenu from './AnchorMenu'
 
 /**
  * Переключатель места тренировки (Зал/Дом/Улица) — общий для карточек программы
  * (главная, избранное, силовая).
  *
- * Показывает тег выбранного места (эмодзи + подпись, цвет по месту). Если у
- * программы заполнено несколько мест — тап по тегу раскрывает остальные в строку
- * (выдвигаются справа), выбор запоминается (CloudStorage, кросс-девайс) пока юзер
+ * Показывает тег выбранного места (иконка + подпись, цвет по месту). Если у
+ * программы заполнено несколько мест — тап по тегу раскрывает список остальных
+ * ВНИЗ (непрозрачное меню), выбор запоминается (prefs аккаунта) пока юзер
  * не сменит. Если место одно — тег статичный, не тапается.
  *
  * Выбор живёт по ключу `program-place:<slug>` (см. useProgramPlace) и используется
@@ -26,85 +27,99 @@ import UiIcon from './UiIcon'
 export default function PlaceSwitcher({ program, value: cValue, onChange, locked = false, tag = false }) {
   const places = useMemo(() => getProgramPlaces(program), [program])
   const [iValue, iSet] = useProgramPlace(program?.slug || '', places)
-  const [open, setOpen] = useState(false)
+  const [menuRect, setMenuRect] = useState(null)
+  const pillRef = useRef(null)
 
   const controlled = cValue != null
   const value = controlled ? cValue : iValue
 
   if (places.length === 0) return null
 
+  const meta = getPlaceMeta(value)
+
   // Статичный тег (карточки главной/избранного): только показываем выбранное место
-  // (его выбирают ВНУТРИ тренировки), без переключателя-контейнера/обводки и тапа.
+  // (его выбирают ВНУТРИ тренировки), без тапа.
   if (tag) {
-    const meta = getPlaceMeta(value)
     return (
-      <span style={{ ...styles.staticTag, color: meta.color }} onClick={(e) => e.stopPropagation()}>
+      <span style={{ ...styles.pill, color: meta.color }} onClick={(e) => e.stopPropagation()}>
         <UiIcon name={meta.icon} size={16} />
         {meta.label}
       </span>
     )
   }
 
-  const pick = (e, loc) => {
-    e.stopPropagation()
-    if (locked) { setOpen(false); return }
-    if (loc !== value) {
-      haptic.selection()
-      if (!controlled) iSet(loc)
-      onChange?.(loc)
-    }
-    setOpen(false)
+  const multi = places.length > 1 && !locked
+  const stop = (e) => e.stopPropagation()
+
+  const pick = (loc) => {
+    if (locked || loc === value) return
+    haptic.selection()
+    if (!controlled) iSet(loc)
+    onChange?.(loc)
   }
 
   const toggle = (e) => {
     e.stopPropagation()
     // locked (идёт тренировка) — место менять нельзя, тег статичный.
-    if (places.length <= 1 || locked) return
+    if (!multi) return
     haptic.light()
-    setOpen(o => !o)
+    setMenuRect(pillRef.current?.getBoundingClientRect() || null)
   }
 
-  // Свёрнуто — только выбранное; раскрыто — выбранное первым, затем остальные
-  // (выезжают справа). Одно место / locked — всегда статичная пилюля.
-  const ordered = open ? [value, ...places.filter(p => p !== value)] : [value]
-  const multi = places.length > 1 && !locked
+  // Список — только ДРУГИЕ места: текущее и так написано на пилюле над ним,
+  // повторять его пунктом было бы выбором «того же самого».
+  const items = places
+    .filter(loc => loc !== value)
+    .map(loc => {
+      const m = getPlaceMeta(loc)
+      return {
+        key: loc,
+        icon: <span style={{ color: m.color, display: 'inline-flex' }}><UiIcon name={m.icon} size={18} /></span>,
+        label: m.label,
+        onClick: () => pick(loc)
+      }
+    })
 
-  // Вид — как сегмент-контрол мест в конструкторе: контейнер-пилюля (фон/обводка
-  // таб-бара), активная позиция залита `surface-active` и покрашена цветом места,
-  // неактивные (раскрытые) — серым текстом. Нахлёст -5 + zIndex активного выше.
+  // Пилюля остаётся на месте и в том же виде; тап раскрывает список ВНИЗ под
+  // ней. Раньше варианты выезжали вправо второй пилюлей внутри контейнера с
+  // обводкой — налезали на таймер и читались как ещё один ряд тегов.
+  // Меню — общий AnchorMenu (портал поверх экрана: шапка дня обрезает всё, что
+  // выходит за её край), в непрозрачном варианте, чтобы текст под ним не мешал.
   return (
-    <div style={styles.wrap} onClick={(e) => e.stopPropagation()}>
-      <div style={styles.group}>
-        {ordered.map((loc, i) => {
-          const meta = getPlaceMeta(loc)
-          const active = loc === value
-          return (
-            <button
-              key={loc}
-              onClick={(e) => (i === 0 ? toggle(e) : pick(e, loc))}
-              className="press-tile"
-              style={{
-                ...styles.item,
-                ...(active ? styles.itemActive : {}),
-                marginLeft: i === 0 ? 0 : '-5px',
-                zIndex: active ? 2 : 1,
-                color: active ? meta.color : 'var(--color-text-inactive)',
-                cursor: multi ? 'pointer' : 'default'
-              }}
-            >
-              <UiIcon name={meta.icon} size={16} />
-              {meta.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <>
+      <button
+        ref={pillRef}
+        onClick={toggle}
+        className={multi ? 'press-tile' : undefined}
+        style={{ ...styles.pill, ...styles.pillButton, color: meta.color, cursor: multi ? 'pointer' : 'default' }}
+      >
+        <UiIcon name={meta.icon} size={16} />
+        {meta.label}
+      </button>
+      {menuRect && (
+        // Обёртка глушит всплытие: события из портала идут по дереву React
+        // к родителям, и тап мимо меню срабатывал бы как тап по шапке дня.
+        <span onClick={stop} onPointerDown={stop} onTouchStart={stop}>
+        <AnchorMenu
+          anchorRect={menuRect}
+          items={items}
+          onClose={() => setMenuRect(null)}
+          align="left"
+          motion="drop"
+          surface="solid"
+          gap={6}
+          minWidth={150}
+        />
+        </span>
+      )}
+    </>
   )
 }
 
 const styles = {
-  // Статичный тег места (карточки): вид активного сегмента, но БЕЗ контейнера/обводки.
-  staticTag: {
+  // Пилюля места — одна и та же в карточке и в шапке дня: заливка активного
+  // сегмента, цвет по месту, БЕЗ обводки и контейнера вокруг.
+  pill: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
     minHeight: '26px', padding: '0 var(--space-3)',
     borderRadius: 'var(--radius-pill)',
@@ -113,29 +128,5 @@ const styles = {
     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
     whiteSpace: 'nowrap'
   },
-  // Hug-обёртка: пилюля по содержимому, не растягивает карточку.
-  wrap: { display: 'inline-flex' },
-  // Контейнер-таб-бар (как нижний таб-бар / места в конструкторе).
-  group: {
-    display: 'flex', alignItems: 'center', gap: 0, padding: 'var(--space-1)', width: 'auto',
-    background: 'var(--color-surface-dim)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-pill)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)'
-  },
-  // Таб места: прозрачный (неактивный) / залитый (активный). Текст+иконка
-  // красятся через color (UiIcon наследует currentColor).
-  item: {
-    position: 'relative',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)',
-    minHeight: '26px', padding: '0 var(--space-3)',
-    background: 'transparent', border: 'none', borderRadius: 'var(--radius-pill)',
-    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
-    whiteSpace: 'nowrap',
-    transition: 'background 0.18s ease, color 0.18s ease'
-  },
-  itemActive: {
-    background: 'var(--color-surface-active)',
-    backdropFilter: 'blur(var(--blur-sm))', WebkitBackdropFilter: 'blur(var(--blur-sm))'
-  }
+  pillButton: { border: 'none', WebkitTapHighlightColor: 'transparent' }
 }
