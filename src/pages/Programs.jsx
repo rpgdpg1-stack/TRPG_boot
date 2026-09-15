@@ -42,6 +42,12 @@ const FLICK_PX = 40
 const FLICK_MS = 260
 const AXIS_LOCK_PX = 6
 const SETTLE_MS = 380
+// Когда таб и вибрация срабатывают на свайпе. Кривая --ease-ios почти всё
+// расстояние проходит в первой трети: к 140 мс лента прошла 90% пути и для
+// глаза уже стоит, а оставшиеся ~240 мс доползает последние пиксели.
+// Переключать таб по концу анимации (380 мс) + его собственные 220 мс
+// перехода — это и была «задержка»: список встал, а таб думает ещё полсекунды.
+const LAND_MS = 140
 // Сколько висит тост-подтверждение закрепа.
 const TOAST_MS = 1800
 // Насколько активный таб крупнее остальных. 1.15 — заметно с одного взгляда и
@@ -112,11 +118,17 @@ export default function Programs() {
   const settleTimer = useRef(null)
   // Куда едем прямо сейчас: null — доводки нет, 0 — возврат, ±1 — смена раздела.
   const pendingDir = useRef(null)
+  // Таб, подсвеченный заранее — в момент, когда лента для глаза встала.
+  // Сам раздел (idx) меняется позже, по концу анимации, без видимой разницы.
+  const [landIdx, setLandIdx] = useState(null)
+  const landTimer = useRef(null)
+  const landed = useRef(false)
   const drag = useRef({ x: 0, y: 0, axis: null, w: 0, t0: 0, dx: 0, peek: false })
   const swiped = useRef(false)
 
   useEffect(() => () => {
     if (settleTimer.current) clearTimeout(settleTimer.current)
+    if (landTimer.current) clearTimeout(landTimer.current)
     if (toastTimer.current) clearTimeout(toastTimer.current)
   }, [])
 
@@ -146,6 +158,15 @@ export default function Programs() {
     // всю анимацию и прыгнула в конце.
     if (!dir) setDx(0)
     pendingDir.current = dir
+    landed.current = false
+    if (dir) {
+      landTimer.current = setTimeout(() => {
+        landTimer.current = null
+        landed.current = true
+        haptic.light()
+        setLandIdx((((idx + dir) % cats.length) + cats.length) % cats.length)
+      }, LAND_MS)
+    }
     // Страховка: если transitionend не придёт (жест прервали, вкладка ушла в
     // фон), доводку закрывает таймер. Чуть позже анимации, чтобы не обгонять её.
     settleTimer.current = setTimeout(() => finishSettle(), SETTLE_MS + 60)
@@ -165,10 +186,14 @@ export default function Programs() {
     if (dir === null) return
     pendingDir.current = null
     if (settleTimer.current) { clearTimeout(settleTimer.current); settleTimer.current = null }
+    if (landTimer.current) { clearTimeout(landTimer.current); landTimer.current = null }
     if (dir) {
-      haptic.light()
+      // Если таб уже подсветили на «приземлении» — второй вибрации нет.
+      if (!landed.current) haptic.light()
       setIdx(i => (((i + dir) % cats.length) + cats.length) % cats.length)
     }
+    landed.current = false
+    setLandIdx(null)
     setCommit(0)
     setDx(0)
     setSettling(false)
@@ -337,7 +362,8 @@ export default function Programs() {
           в видимую зону. */}
       <div style={styles.tabs} data-cat-tabs>
         {cats.map((c, i) => {
-          const on = c.id === cat.id
+          // Во время доводки активен таб, куда лента приезжает, а не откуда.
+          const on = i === (landIdx ?? idx)
           return (
             <button
               key={c.id}

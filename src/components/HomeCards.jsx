@@ -57,10 +57,10 @@ export default function HomeCards() {
         // серую строку «программы» пробовали — вторая половина вставала на
         // место периода и читалась подписью, а не частью названия.
         title="Все программы"
-        // Что внутри каталога: серая подпись «Разделы» тем же видом, что
-        // «Сентябрь» у статистики, и перечень чуть светлее — это уже содержимое.
-        caption="Разделы"
-        detail={<FitText full="Силовая и другие" short="Силовая и др." />}
+        // Что внутри каталога — одной серой строкой тем же видом, что
+        // «Сентябрь» у статистики. Отдельная подпись «Разделы» над ней была
+        // лишним уровнем: перечень сам говорит, что это разделы.
+        caption={<FitText full="Силовая и другие" short="Силовая и др." />}
         onClick={() => go('/programs')}
       />
       {/* Статистика — шире (два показателя: тренировки и время за месяц). */}
@@ -80,7 +80,7 @@ export default function HomeCards() {
 // Карточка — div, а не button: внутри строки заголовка живёт настоящая кнопка
 // селектора, а вкладывать button в button нельзя (невалидная разметка, и клики
 // конфликтуют). Роль и tabIndex сохраняют доступность.
-function Card({ icon, title, caption, detail, periodRow, periodLabel, value, flex = '1 1 auto', square = false, onClick, innerRef }) {
+function Card({ icon, title, caption, periodRow, periodLabel, value, flex = '1 1 auto', square = false, onClick, innerRef }) {
   return (
     <div
       ref={innerRef}
@@ -100,10 +100,7 @@ function Card({ icon, title, caption, detail, periodRow, periodLabel, value, fle
             показан («Сентябрь», «Топ»). Так цифры ниже — просто метрики,
             а «за что они» читается на своём уровне. */}
         {caption && (
-          <span style={styles.captionCol}>
-            <span style={styles.periodMark}>{caption}</span>
-            <span style={styles.detail}>{detail}</span>
-          </span>
+          <span style={styles.caption}>{caption}</span>
         )}
         {periodRow && (
           <span style={styles.periodRow}>
@@ -183,11 +180,11 @@ const styles = {
   // Строка периода: подпись слева, селектор справа.
   periodRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   // Подпись периода — тем же тихим серым, что иконки.
-  captionCol: { display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' },
-  // Перечень разделов — на ступень светлее серой подписи над ним.
-  detail: {
-    position: 'relative', display: 'block', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
-    color: 'var(--text-info)', whiteSpace: 'nowrap', overflow: 'hidden', minWidth: 0
+  // Перечень разделов под названием — тем же серым, что подпись периода.
+  caption: {
+    position: 'relative', display: 'block', minWidth: 0, width: '100%', overflow: 'hidden',
+    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
+    color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
   periodMark: {
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
