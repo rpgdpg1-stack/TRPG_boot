@@ -10,21 +10,21 @@ import PlaceSegment from './PlaceSegment'
  * «Место тренировки: Зал». На самой карточке и в шапке дня места НЕТ: его
  * меняют редко, и каждый день видеть «Зал» незачем.
  *
- * Кнопки «Сохранить» нет: тап по месту и есть выбор — он сразу применяется,
- * окно закрывается. Вид — общий сегмент мест (как в конструкторе), без хайрлайна.
+ * Кнопки «Сохранить» нет: тап по месту и есть выбор — он сразу сохраняется,
+ * а окно остаётся открытым, чтобы было видно, как подсветка переехала на новое
+ * место. Закрывают крестиком или тапом мимо. Вид — общий сегмент мест, как в
+ * конструкторе, с хайрлайном: без него контейнер сливался с панелью.
  *
  * @param places  — доступные места программы (getProgramPlaces).
  * @param value   — выбранное сейчас.
  * @param onPick  — выбрать место (запись делает вызывающий).
- * @param onClose — закрыть без выбора.
+ * @param onClose — закрыть (крестик / тап мимо).
  */
 export default function PlacePickerModal({ places, value, onPick, onClose }) {
   const pick = (loc) => {
-    if (loc !== value) {
-      haptic.selection()
-      onPick(loc)
-    }
-    onClose()
+    if (loc === value) return
+    haptic.selection()
+    onPick(loc)
   }
 
   return (
@@ -40,7 +40,7 @@ export default function PlacePickerModal({ places, value, onPick, onClose }) {
         <div style={styles.title}>Место тренировки</div>
         <div style={styles.hint}>Упражнения дней подберутся под это место</div>
         <div style={styles.row}>
-          <PlaceSegment places={places} value={value} onPick={pick} bordered={false} stretch />
+          <PlaceSegment places={places} value={value} onPick={pick} stretch />
         </div>
       </div>
     </ModalShell>
