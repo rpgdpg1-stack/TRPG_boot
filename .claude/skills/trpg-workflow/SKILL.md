@@ -615,7 +615,7 @@ src/
 │                   PinnedCarousel (закреплённые программы на главной)
 │                   ScreenTitle ScrollTopButton SearchIcon SectionBadge
 │                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher) ShieldCheckIcon
-│                   SlotsCount StreakInfoPopup TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
+│                   StreakInfoPopup SwipeReveal (свайп «Замена»: день + конструктор) TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
 │                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── workout/    DayPicker · ReturnHighlight · SkeletonCard · SwapAnimationOverlay

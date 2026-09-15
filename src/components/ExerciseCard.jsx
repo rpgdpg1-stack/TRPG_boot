@@ -14,6 +14,7 @@ import UiIcon from './UiIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import PencilIcon from './PencilIcon'
 import MarqueeTag from './MarqueeTag'
+import SwipeReveal from './SwipeReveal'
 
 /**
  * Карточка упражнения.
@@ -36,30 +37,6 @@ import MarqueeTag from './MarqueeTag'
  *  - глобальная защита от ложных активаций при открытой клавиатуре
  *  - все рефы, таймеры, обработчики pointer-событий — не тронуты
  */
-// Геометрия панели действий (открывается свайпом влево). Зазор ОДИН и тот же:
-// от края карточки до плитки и от плитки до правого края.
-// Плитка шире прежних 50: действие теперь одно («Замена»), и в узкую зону палец
-// попадал не с первого раза. Свайп уезжает ровно на ширину панели — не дальше.
-const SWIPE_GAP = 8   // = --space-2
-const SWIPE_CELL = 76 // ширина плитки действия
-
-// Реестр закрывашек: одновременно открыт свайп ТОЛЬКО у одной карточки. Начал свайп
-// на любой другой — остальные закрываются (той же анимацией 0.28с, что и пальцем).
-const swipeCloseFns = new Set()
-
-// Открытую панель закрывает ЛЮБОЕ другое действие: скролл (с микро-защитой ~14px —
-// маленький скролл не закрывает) и касание любой карточки (тап/отметка/свайп другого).
-let openAtScrollY = null
-const scrollTopNow = () =>
-  (typeof window !== 'undefined' ? (window.scrollY || document.scrollingElement?.scrollTop || 0) : 0)
-function closeAllSwipes() { swipeCloseFns.forEach(fn => fn()); openAtScrollY = null }
-if (typeof window !== 'undefined') {
-  window.addEventListener('scroll', () => {
-    if (openAtScrollY == null) return
-    if (Math.abs(scrollTopNow() - openAtScrollY) > 14) closeAllSwipes()
-  }, { passive: true })
-}
-
 export default function ExerciseCard({ slot, isActive = false, onTap, onLongPress, onSwap, onWeightSaved }) {
   const {
     exercise_id,
@@ -104,70 +81,15 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   const LONG_PRESS_MS = 500
   const MOVE_THRESHOLD_PX = 10
 
-  // Свайп влево → панель действий (замена). offset: 0 закрыто,
-  // -panelW открыто. Порог решения ~8px по X (иначе вертикаль = скролл списка).
-  const [offset, setOffset] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const offsetRef = useRef(0)
-  const openRef = useRef(false)
-  const swipe = useRef({ x: 0, y: 0, start: 0, decided: false, swiping: false, suppressClick: false })
-  const setOff = (v) => { offsetRef.current = v; setOffset(v) }
-  const closePanel = () => { openRef.current = false; setDragging(false); setOff(0); openAtScrollY = null; setActiveAction(null) }
-  // Регистрируем свою закрывашку; при старте свайпа закрываем ВСЕ ОСТАЛЬНЫЕ.
-  const closePanelRef = useRef(closePanel)
-  closePanelRef.current = closePanel
-  const myCloseFnRef = useRef(null)
-  useEffect(() => {
-    const fn = () => closePanelRef.current?.()
-    myCloseFnRef.current = fn
-    swipeCloseFns.add(fn)
-    return () => swipeCloseFns.delete(fn)
-  }, [])
-  const closeOthers = () => { swipeCloseFns.forEach(fn => { if (fn !== myCloseFnRef.current) fn() }) }
-
-  // Drag-select по панели действий: нажал — серое выделение на действии под пальцем;
-  // ведёшь влево-вправо — выделение «плавает» между Техника/Замена (без вибро);
-  // отпустил на действии — вибро + выполнить; увёл вниз/мимо — закрыть без действия.
-  const panelRef = useRef(null)
-  const [activeAction, setActiveAction] = useState(null)
-  const actionDrag = useRef(false)
-  const actionIndexAt = (clientX, clientY) => {
-    const r = panelRef.current?.getBoundingClientRect()
-    if (!r) return null
-    if (clientY < r.top - 28 || clientY > r.bottom + 28) return null // увёл вниз/вверх — мимо
-    const i = Math.floor(((clientX - r.left) / r.width) * swipeActions.length)
-    return Math.max(0, Math.min(swipeActions.length - 1, i))
-  }
-  const onPanelPointerDown = (e) => {
-    e.stopPropagation()
-    actionDrag.current = true
-    setActiveAction(actionIndexAt(e.clientX, e.clientY))
-    try { panelRef.current?.setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
-  }
-  const onPanelPointerMove = (e) => {
-    if (!actionDrag.current) return
-    setActiveAction(actionIndexAt(e.clientX, e.clientY))
-  }
-  const onPanelPointerUp = (e) => {
-    if (!actionDrag.current) return
-    actionDrag.current = false
-    const i = actionIndexAt(e.clientX, e.clientY)
-    setActiveAction(null)
-    if (i == null) { closePanel(); return }
-    haptic.light()
-    runAction(swipeActions[i].fn)
-  }
-  const onPanelPointerCancel = () => { actionDrag.current = false; setActiveAction(null) }
-  const runAction = (fn) => { closePanel(); fn?.(slot) }
-  // В свайпе только «Замена». Заметка, техника, прогресс веса и любимые — в
-  // меню по долгому нажатию (там же «⋯»), чтобы не держать два входа в одно.
+  // Свайп влево → «Замена» (общий SwipeReveal). Пока панель открыта, долгое
+  // нажатие не заводим: касание открытой карточки её только закрывает.
+  const swipeOpenRef = useRef(false)
   // У своего упражнения «Замены» нет: подбирать не из чего — аналог личному
   // упражнению взять неоткуда, экран открылся бы пустым. Нет действий — нет и свайпа.
+  // Заметка, техника, прогресс веса и любимые — в меню по долгому нажатию («⋯»).
   const swipeActions = is_custom ? [] : [
-    { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: onSwap }
+    { key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: () => onSwap?.(slot) }
   ]
-  const canSwipe = swipeActions.length > 0
-  const panelW = SWIPE_GAP + swipeActions.length * (SWIPE_CELL + SWIPE_GAP)
 
   // Цвета группы мышц — тег + акцент для цифры веса
   const colors = getMuscleGroupColors(muscle_group, is_custom)
@@ -228,13 +150,9 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
 
     longPressFired.current = false
     pointerStartPos.current = { x: e.clientX, y: e.clientY }
-    swipe.current = { x: e.clientX, y: e.clientY, start: offsetRef.current, decided: false, swiping: false, suppressClick: false }
-
-    // Касание любой карточки закрывает чужую открытую панель (тап/отметка/свайп другого).
-    closeOthers()
     clearLongPress()
-    // Long-press (заметка) — только на закрытой карточке.
-    if (!openRef.current) {
+    // Long-press (меню упражнения) — только на закрытой карточке.
+    if (!swipeOpenRef.current) {
       longPressTimer.current = setTimeout(() => {
         longPressFired.current = true
         haptic.medium()
@@ -244,49 +162,17 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   const handleCardPointerMove = (e) => {
-    const s = swipe.current
-    const dx = e.clientX - s.x
-    const dy = e.clientY - s.y
-    if (!s.decided) {
-      if (canSwipe && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) + 2) {
-        // Горизонталь → свайп: гасим long-press, дальше ведём свою панель за пальцем.
-        s.decided = true; s.swiping = true; setDragging(true); clearLongPress()
-        // Захват пальца: движения идут в карточку, даже если под пальцем уже
-        // другой элемент (оверлей подсветки, соседняя карточка после перестройки).
-        try { e.currentTarget.setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
-      } else if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) {
-        // Вертикаль/увод — не свайп (это скролл списка / отмена long-press).
-        s.decided = true; s.swiping = false; clearLongPress()
-      }
-    }
-    if (s.swiping) {
-      setOff(Math.max(-panelW, Math.min(0, s.start + dx)))
-    }
+    const dx = e.clientX - pointerStartPos.current.x
+    const dy = e.clientY - pointerStartPos.current.y
+    // Увёл палец — это скролл или свайп, а не долгое нажатие.
+    if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) clearLongPress()
   }
 
-  const handleCardPointerUp = () => {
-    clearLongPress()
-    const s = swipe.current
-    if (s.swiping) {
-      setDragging(false)
-      const opened = offsetRef.current < -panelW / 2
-      openRef.current = opened
-      setOff(opened ? -panelW : 0)
-      openAtScrollY = opened ? scrollTopNow() : null // старт для микро-скролл защиты
-      if (opened) haptic.light()
-      s.suppressClick = true
-      setTimeout(() => { s.suppressClick = false }, 60)
-    }
-  }
-
+  // Клик после свайпа и по открытой карточке гасит SwipeReveal — сюда доходит
+  // только настоящий тап.
   const handleCardClick = () => {
     if (shouldIgnoreCardTap()) return
     if (editingRef.current) return
-
-    const s = swipe.current
-    if (s.suppressClick) { s.suppressClick = false; return }
-    // Открытая панель → тап по карточке её закрывает (не отмечает выполнение).
-    if (openRef.current) { closePanel(); return }
 
     if (longPressFired.current) {
       longPressFired.current = false
@@ -389,51 +275,21 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
   }
 
   return (
-   <div style={styles.swipeOuter}>
-    {/* Панель действий (справа, под карточкой) — открывается свайпом влево.
-        Drag-select: серое выделение под пальцем «плавает» между действиями. */}
-    <div
-      ref={panelRef}
-      style={{ ...styles.actionPanel, width: `${panelW}px` }}
-      aria-hidden={offset === 0}
-      onPointerDown={onPanelPointerDown}
-      onPointerMove={onPanelPointerMove}
-      onPointerUp={onPanelPointerUp}
-      onPointerCancel={onPanelPointerCancel}
-    >
-      {/* Плитка выделения встаёт по той же сетке, что и сами действия. */}
-      {activeAction != null && (
-        <div style={{
-          ...styles.actionHighlight,
-          left: `${SWIPE_GAP + activeAction * (SWIPE_CELL + SWIPE_GAP)}px`,
-          width: `${SWIPE_CELL}px`
-        }} />
-      )}
-      {swipeActions.map(a => (
-        <div key={a.key} style={styles.actionBtn}>
-          <UiIcon name={a.icon} size={22} color={a.color} />
-          <span style={styles.actionLabel}>{a.label}</span>
-        </div>
-      ))}
-    </div>
-
-    {/* Слайдер: двигается по свайпу, внутри — карточка (свой press-scale). */}
-    <div
-      style={{
-        ...styles.slider,
-        transform: `translateX(${offset}px)`,
-        transition: dragging ? 'none' : 'transform 0.28s var(--ease-ios)',
-        touchAction: 'pan-y'
-      }}
-      onClick={handleCardClick}
-      onPointerDown={handleCardPointerDown}
-      onPointerMove={handleCardPointerMove}
-      onPointerUp={handleCardPointerUp}
-      onPointerCancel={handleCardPointerUp}
-    >
+   <SwipeReveal
+     actions={swipeActions}
+     radius="var(--radius-day-card)"
+     shouldIgnore={() => editingRef.current || shouldIgnoreCardTap()}
+     onOpenChange={(open) => { swipeOpenRef.current = open }}
+     onSwipeStart={clearLongPress}
+   >
     <div
       ref={cardRef}
       className="press-exercise-card"
+      onClick={handleCardClick}
+      onPointerDown={handleCardPointerDown}
+      onPointerMove={handleCardPointerMove}
+      onPointerUp={clearLongPress}
+      onPointerCancel={clearLongPress}
       style={{
         ...styles.card,
         background: isActive ? 'var(--surface-card-active)' : 'var(--surface)',
@@ -562,8 +418,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
         </div>
       )}
     </div>
-    </div>
-   </div>
+   </SwipeReveal>
   )
 }
 
@@ -572,49 +427,6 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
  * Локальный хелпер — наружу выносить пока незачем.
  */
 const styles = {
-  // Обёртка свайпа: клип по скруглению, панель действий под слайдером.
-  swipeOuter: {
-    position: 'relative',
-    borderRadius: 'var(--radius-day-card)',
-    overflow: 'hidden'
-  },
-  // Панель действий справа (под карточкой). Открывается свайпом влево.
-  actionPanel: {
-    position: 'absolute',
-    top: 0, right: 0, bottom: 0,
-    // ширина приходит инлайном — считается от числа действий
-    display: 'flex',
-    alignItems: 'stretch',
-    padding: `0 ${SWIPE_GAP}px`,
-    gap: `${SWIPE_GAP}px`,
-    zIndex: 0
-  },
-  actionBtn: {
-    flex: 1,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
-    // Панель ловит все pointer-события (drag-select); сами кнопки — только визуал.
-    pointerEvents: 'none',
-    position: 'relative', zIndex: 1
-  },
-  // Серое выделение под пальцем — во ВСЮ высоту карточки: нажал и сразу видишь
-  // зону, куда попал (по высоте контента оно было мелким пятном вокруг иконки).
-  // Угол тот же, что у карточки: плитка стоит на 8px от края и в скругление
-  // обёртки не упирается.
-  actionHighlight: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    background: 'var(--layer-2)',
-    borderRadius: 'var(--radius-day-card)',
-    pointerEvents: 'none',
-    zIndex: 0,
-    transition: 'left 0.16s var(--ease-ios)'
-  },
-  actionLabel: {
-    fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700,
-    color: 'var(--color-text-secondary)'
-  },
-  slider: { position: 'relative', zIndex: 1 },
   card: {
     position: 'relative',
     display: 'flex',

@@ -9,11 +9,14 @@ import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { isCustomExercise, loadMyExercises, getMyExercisesSync } from '../features/programs/userExercises'
 import ExercisePicker from '../components/ExercisePicker'
+import SwipeReveal from '../components/SwipeReveal'
+import ReturnHighlight from '../components/workout/ReturnHighlight'
+import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
+import { SwapExerciseView } from './SwapExercise'
 import ActionButton from '../components/ActionButton'
 import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
-import SlotsCount from '../components/SlotsCount'
 import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import PencilIcon from '../components/PencilIcon'
@@ -95,6 +98,12 @@ export default function ProgramConstructor() {
   // что отмечено всё (в этом режиме удобнее снимать лишнее, чем набирать с нуля).
   const [quickIds, setQuickIds] = useState(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Замена упражнения прямо в конструкторе: { exId } — какое меняем. Экран замены
+  // открывается ПОВЕРХ (не маршрутом), иначе несохранённый черновик пропал бы.
+  const [swapTarget, setSwapTarget] = useState(null)
+  // После замены — те же эффекты, что в дне: серая подсветка и «змейка».
+  const [glowId, setGlowId] = useState(null)
+  const [snakeId, setSnakeId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
   const [confirmDrop, setConfirmDrop] = useState(null)   // { n, lost } — убавляем дни с данными
@@ -139,7 +148,7 @@ export default function ProgramConstructor() {
   useEffect(() => {
     // Пока открыт пикер, «Назад» принадлежит ему: у него внутри своя глубина
     // (форма своего упражнения), и он сам решает, на какой шаг возвращать.
-    if (pickerOpen) return
+    if (pickerOpen || swapTarget) return
     backButton.setHandler(() => {
       if (isDirty()) setConfirmExit(true)
       else goBack()
@@ -148,7 +157,7 @@ export default function ProgramConstructor() {
     // isDirty читает name/byLoc на момент тапа через замыкание эффекта —
     // поэтому держим их в зависимостях, чтобы handler был свежий.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, pickerOpen, name, byLoc])
+  }, [navigate, pickerOpen, swapTarget, name, byLoc])
 
   useEffect(() => {
     let cancelled = false
@@ -278,6 +287,24 @@ export default function ProgramConstructor() {
       else if (day.length < MAX_PER_DAY) day.push(ex.id) // добавить
       return next
     })
+  }
+
+  // Замена в черновике: на месте старого id встаёт новый, порядок дня тот же.
+  // В аккаунт факт замены не пишется — сохраняется только итоговый состав дня
+  // кнопкой «Сохранить», как любая другая правка конструктора.
+  const handleSwapped = (newId) => {
+    const oldId = swapTarget?.exId
+    setSwapTarget(null)
+    if (!oldId) return
+    setByLoc(prev => {
+      const next = { ...prev, [activeLoc]: prev[activeLoc].map(d => [...d]) }
+      next[activeLoc][activeIdx] = next[activeLoc][activeIdx].map(id => (id === oldId ? newId : id))
+      return next
+    })
+    setGlowId(newId)
+    setTimeout(() => setGlowId(null), 1600)
+    setSnakeId(newId)
+    setTimeout(() => setSnakeId(null), 2600)
   }
 
   const handleRemove = (exId) => {
@@ -625,6 +652,7 @@ export default function ProgramConstructor() {
           const c = getMuscleGroupColors(ex?.muscle_group, custom)
           const isDragging = drag?.startIndex === idx
           const tagLabel = exerciseTagLabel(ex?.muscle_group, ex?.sub_group)
+          const canSwap = !custom && !!ex?.sub_group && !!ex?.type
           return (
             <div
               key={exId}
@@ -641,33 +669,51 @@ export default function ProgramConstructor() {
               >
                 <GripIcon />
               </div>
-              <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
-                <div style={styles.exPreview}>
-                  {ex?.preview_url
-                    ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
-                    : <ExercisePlaceholder size={24} />}
-                </div>
-                <div style={styles.exContent}>
-                  <div style={styles.exName}>
-                    {ex?.name || exId}
-                    {custom && <span style={styles.exPencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
-                  </div>
-                  {ex && tagLabel && (
-                    <div style={styles.exTags}>
-                      {/* Многоточие без прокатки: справа крестик удаления, и тег
-                          не должен на него налезать. Прокатывать тут нечего —
-                          строка ещё и таскается за ручку, лишний тап-жест на ней
-                          спорил бы с перетаскиванием. */}
-                      <MarqueeTag
-                        label={tagLabel}
-                        background={c.tag}
-                        color="var(--color-text)"
-                        style={styles.exTag}
-                      />
+              {/* Свайп влево — «Замена» (тот же паттерн, что в дне). Своё
+                  упражнение менять не на что — у него свайпа нет. */}
+              <div style={{ ...styles.exSwipeWrap, ...(glowId === exId ? { animation: 'returnPress 0.36s var(--press-ease)' } : null) }}>
+                <SwipeReveal
+                  actions={canSwap ? [{ key: 'swap', icon: 'change', color: 'var(--color-text-secondary)', label: 'Замена', fn: () => setSwapTarget({ exId }) }] : []}
+                  radius="var(--radius-card)"
+                  cell={68}
+                >
+                  <div style={{ ...styles.exCard, ...(isDragging ? styles.exCardDragging : {}) }}>
+                    <div style={styles.exPreview}>
+                      {ex?.preview_url
+                        ? <img src={ex.preview_url} alt="" style={styles.exPreviewImg} draggable={false} />
+                        : <ExercisePlaceholder size={24} />}
                     </div>
-                  )}
-                </div>
-                <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">✕</button>
+                    <div style={styles.exContent}>
+                      <div style={styles.exName}>
+                        {ex?.name || exId}
+                        {custom && <span style={styles.exPencil}><PencilIcon size={13} color="var(--color-text-secondary)" /></span>}
+                      </div>
+                      {ex && tagLabel && (
+                        <div style={styles.exTags}>
+                          {/* Многоточие без прокатки: справа крестик удаления, и тег
+                              не должен на него налезать. Прокатывать тут нечего —
+                              строка ещё и таскается за ручку, лишний тап-жест на ней
+                              спорил бы с перетаскиванием. */}
+                          <MarqueeTag
+                            label={tagLabel}
+                            background={c.tag}
+                            color="var(--color-text)"
+                            style={styles.exTag}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">
+                      {/* Крестик линиями, а не символом «✕»: у шрифтового глифа свои
+                          поля, и он сидел ниже и левее центра круга. */}
+                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                        <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </SwipeReveal>
+                {glowId === exId && <ReturnHighlight radius="var(--radius-card)" />}
+                {snakeId === exId && <SwapAnimationOverlay radiusToken="--radius-card" />}
               </div>
             </div>
           )
@@ -686,14 +732,12 @@ export default function ProgramConstructor() {
             style={atLimit ? { color: 'var(--color-error)' } : null}
           >
             {/* Плюс — только у живого действия: при лимите добавлять нечего,
-                и знак «+» рядом со «стоп»-текстом противоречил бы сам себе. */}
-            {!atLimit && <UiIcon name="add" size={20} color="var(--color-primary)" />}
-            {/* Счётчик — отдельным узлом: набранное красится акцентом, лимит
-                остаётся серым (SlotsCount). При достигнутом лимите текст цельно
-                красный — это состояние «стоп», делить его цветами незачем. */}
+                и знак «+» рядом со «стоп»-текстом противоречил бы сам себе.
+                Счётчика нет: сколько упражнений в дне, видно по списку, а цифра на
+                кнопке читалась как «добавлю сразу столько». */}
             {atLimit
               ? `Достигнут лимит ${MAX_PER_DAY}/${MAX_PER_DAY}`
-              : <>Добавить <SlotsCount value={currentDay.length} max={MAX_PER_DAY} /></>}
+              : <><UiIcon name="add" size={20} color="var(--color-primary)" />Добавить</>}
           </ActionButton>
         </div>
         )}
@@ -733,6 +777,21 @@ export default function ProgramConstructor() {
           </div>
         </div>,
         document.body
+      )}
+
+      {swapTarget && exMap[swapTarget.exId] && (
+        <SwapExerciseView
+          embedded
+          subGroup={exMap[swapTarget.exId].sub_group}
+          type={exMap[swapTarget.exId].type}
+          muscleGroup={exMap[swapTarget.exId].muscle_group}
+          currentExerciseId={swapTarget.exId}
+          currentExerciseName={exMap[swapTarget.exId].name}
+          excludeIds={new Set(currentDay)}
+          onConfirm={() => true}
+          onSwapped={handleSwapped}
+          onBack={() => { haptic.light(); setSwapTarget(null) }}
+        />
       )}
 
       {pickerOpen && (
@@ -917,7 +976,9 @@ const styles = {
   exTags: { display: 'flex', gap: 'var(--space-15)', minWidth: 0, maxWidth: '100%' },
   // Форма пилюли — в MarqueeTag; здесь только приглушение и мелкий шрифт строки.
   exTag: { padding: 'var(--space-05) var(--space-2)', fontSize: 'var(--text-caption-size)', letterSpacing: '0.2px', lineHeight: '13px', opacity: 0.7 },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, paddingBottom: '1px', background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', fontSize: 'var(--text-title-size)', fontWeight: 700, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },
+  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },
+  // Обёртка свайпа строки: подсветка и «змейка» после замены лежат поверх неё.
+  exSwipeWrap: { position: 'relative', flex: 1, minWidth: 0 },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как
   // «Завершить» в дне тренировки: своей вёрстки у кнопки больше нет.
   // 20px сверху и снизу: текст стоит на таком же расстоянии от переключателя

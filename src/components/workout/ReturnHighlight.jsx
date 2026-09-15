@@ -4,8 +4,9 @@
  * Вынесено из WorkoutDay: файл разросся до 2300 строк и любая правка там
  * задевала соседнюю логику.
  */
-export default function ReturnHighlight() {
-  return <div style={glowStyles.wrap} aria-hidden="true" />
+// radius — угол карточки под подсветкой: у дня 40, у строки конструктора 33.
+export default function ReturnHighlight({ radius = 'var(--radius-day-card)' }) {
+  return <div style={{ ...glowStyles.wrap, borderRadius: radius }} aria-hidden="true" />
 }
 
 const glowStyles = {

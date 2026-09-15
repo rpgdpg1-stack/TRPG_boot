@@ -20,7 +20,6 @@ import ScreenTitle from './ScreenTitle'
 import SearchIcon from './SearchIcon'
 import ScrollTopButton from './ScrollTopButton'
 import UiIcon from './UiIcon'
-import SlotsCount from './SlotsCount'
 import CloseCross from './CloseCross'
 
 const LONG_PRESS_MS = 500
@@ -626,15 +625,13 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             variant="tonal"
             bordered
             hug
-            style={count >= max ? { color: 'var(--color-error)' } : null}
           >
-            {/* Плюс — только пока добавлять есть куда (см. конструктор). */}
-            {count < max && <UiIcon name="add" size={20} color="var(--color-primary)" />}
+            <UiIcon name="add" size={20} color="var(--color-primary)" />
             {/* Без слова «упражнения»: оно уже стоит заголовком экрана.
-                Счётчик — общий `SlotsCount`, тот же, что в конструкторе. */}
-            {count >= max
-              ? `Достигнут лимит ${count}/${max}`
-              : <>Добавить <SlotsCount value={count} max={max} /></>}
+                Цифра — сколько отмечено, серая и без «/12»: дробь читалась как
+                «добавлю сразу 10». Ноль не показываем. Лимит на кнопке не
+                повторяем — о нём говорят серые плюсики и пузырь на тапе по ним. */}
+            {count > 0 ? <>Добавить <span style={styles.doneCount}>{count}</span></> : 'Добавить'}
           </ActionButton>
         </div>
       )}
@@ -708,6 +705,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
 }
 
 const styles = {
+  doneCount: { color: 'var(--color-text-secondary)' },
   overlay: {
     position: 'fixed', inset: 0, zIndex: 100,
     height: '100dvh',

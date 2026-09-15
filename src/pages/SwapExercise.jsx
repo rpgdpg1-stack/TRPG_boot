@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import ActionButton from '../components/ActionButton'
@@ -10,12 +10,10 @@ import { SectionLabel } from '../components/GroupLabel'
 import ExercisePlaceholder from '../components/ExercisePlaceholder'
 import EmptyState from '../components/EmptyState'
 import { goal, GOALS } from '../lib/metrika'
+import { useScrollLock } from '../lib/use-scroll-lock'
 
 /**
- * Полноэкранная страница замены упражнения.
- *
- * URL: /swap/:programId/:day/:orderNum
- * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup }
+ * Экран замены упражнения.
  *
  * АРХИТЕКТУРА:
  *
@@ -34,22 +32,26 @@ import { goal, GOALS } from '../lib/metrika'
  *
  * Блок "ТЕКУЩЕЕ" рендерится мгновенно из state (currentForRender),
  * не ждёт ответа БД.
+ *
+ * Сам экран — без привязки к маршруту. Живёт в двух местах:
+ *  - страница `/swap/...` дня тренировки (обёртка `SwapExercise` ниже) — замена
+ *    сохраняется в аккаунт;
+ *  - поверх конструктора программы (`embedded`) — ничего не сохраняет, просто
+ *    отдаёт выбранный id: черновик конструктора при этом жив, на другой маршрут
+ *    мы не уходим.
+ *
+ * @param defaultExerciseId — «от программы»; в конструкторе не передаётся, бейджа нет.
+ * @param excludeIds — Set id, которых в альтернативах быть не должно (уже в дне).
+ * @param onConfirm — async (id) => bool: сохранить. false → ошибка на экране.
+ * @param onSwapped — (id) => void: после удачного сохранения.
+ * @param onBack — «Назад» Telegram.
  */
-export default function SwapExercise() {
-  const { programId, day, orderNum } = useParams()
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  const stateData = location.state || {}
-  const {
-    subGroup,
-    type,
-    currentExerciseId,
-    currentExerciseName,
-    defaultExerciseId,
-    muscleGroup,
-    place = 'gym'
-  } = stateData
+export function SwapExerciseView({
+  subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup,
+  excludeIds, onConfirm, onSwapped, onBack, embedded = false
+}) {
+  const overlayRef = useRef(null)
+  useScrollLock(overlayRef)
 
   const [allExercises, setAllExercises] = useState([])
   const [currentExercise, setCurrentExercise] = useState(null)
@@ -61,37 +63,27 @@ export default function SwapExercise() {
   // Без этого Telegram webview может восстановить позицию скролла из
   // прошлой сессии, и юзер увидит заголовок ушедшим наверх под кнопки.
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
+    if (!embedded) window.scrollTo(0, 0)
+  }, [embedded])
 
   // Таб-бара на /swap нет, а кнопка «Сменить» прибита к низу со своим
   // градиентом — глобальный нижний скрим (.app::after) тут лишний. Гасим.
+  // Поверх конструктора класс уже висит — его снимет сам конструктор. Снимать
+  // здесь нельзя: при закрытии замены скрим вернулся бы на конструктор.
   useEffect(() => {
+    if (embedded) return
     document.body.classList.add('hide-app-scrim')
     return () => document.body.classList.remove('hide-app-scrim')
-  }, [])
+  }, [embedded])
 
+  // «Назад» — решает хозяин экрана (страница дня или конструктор). Через ref:
+  // обработчик ставится один раз, а функция у хозяина новая на каждый рендер.
+  const onBackRef = useRef(onBack)
+  onBackRef.current = onBack
   useEffect(() => {
-    // При нажатии "Назад" — возвращаемся на день, передаём order_num карточки
-    // с которой пришли, но БЕЗ флага wasSwapped. Это нужно WorkoutDay чтобы
-    // проскроллить к нужной карточке и сделать лёгкий press-эффект — без
-    // зелёной анимации (она только при реальной смене).
-    backButton.setHandler(() => {
-      navigate(`/workout/${programId}/${day}`, {
-        state: {
-          returnedFromOrderNum: parseInt(orderNum, 10),
-          wasSwapped: false,
-          // Прокидываем scrollY обратно. WorkoutDay восстановит ровно ту
-          // позицию страницы, с которой юзер ушёл на смену упражнения.
-          scrollY: location.state?.scrollY
-        }
-      })
-    })
+    backButton.setHandler(() => onBackRef.current?.())
     lockVerticalSwipes()
-    // location.state?.scrollY намеренно вне зависимостей: обработчик ставится
-    // один раз при маунте, scrollY читается на этот момент и не меняется.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, programId, day, orderNum])
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -145,21 +137,10 @@ export default function SwapExercise() {
 
     setSaving(true)
     try {
-      const ok = await saveExerciseSwap(programId, day, parseInt(orderNum, 10), selectedId, place)
+      const ok = await onConfirm(selectedId)
       if (ok) {
         haptic.success()
-        goal(GOALS.EXERCISE_SWAP, { program: programId, place })
-        // Передаём в state информацию для WorkoutDay:
-        //   returnedFromOrderNum — к какой карточке проскроллить
-        //   wasSwapped: true — играть анимацию "стрелки змейкой" + press + glow
-        //   scrollY — восстановить позицию страницы откуда ушёл
-        navigate(`/workout/${programId}/${day}`, {
-          state: {
-            returnedFromOrderNum: parseInt(orderNum, 10),
-            wasSwapped: true,
-            scrollY: location.state?.scrollY
-          }
-        })
+        onSwapped?.(selectedId)
       } else {
         haptic.error()
         setSaving(false)
@@ -172,7 +153,7 @@ export default function SwapExercise() {
     }
   }
 
-  const alternatives = allExercises.filter(e => e.id !== currentExerciseId)
+  const alternatives = allExercises.filter(e => e.id !== currentExerciseId && !excludeIds?.has(e.id))
 
   const shouldHighlightDefault = !!(
     defaultExerciseId &&
@@ -204,14 +185,14 @@ export default function SwapExercise() {
   // Менять есть на что только когда выбрана ДРУГАЯ альтернатива.
   const canSwap = !!selectedId && selectedId !== currentExerciseId
 
-  return (
-    <div style={styles.page}>
+  const screen = (
+    <div style={{ ...styles.page, ...(embedded ? styles.pageEmbedded : null) }}>
 
       {/* Единый sticky-блок: шапка + ТЕКУЩЕЕ + заголовок АЛЬТЕРНАТИВЫ */}
       <div style={styles.stickyTop}>
 
         <header style={styles.header}>
-          <ScreenTitle>Сменить упражнение</ScreenTitle>
+          <ScreenTitle zIndex={embedded ? 101 : undefined}>Сменить упражнение</ScreenTitle>
           <div style={styles.subtitle}>Похожие на текущее</div>
         </header>
 
@@ -278,6 +259,43 @@ export default function SwapExercise() {
         </ActionButton>
       </div>
     </div>
+  )
+
+  // Поверх конструктора — свой прокручиваемый слой (как у пикера): страница под
+  // ним стоит на месте, sticky-шапка липнет к верху этого слоя.
+  if (!embedded) return screen
+  return <div ref={overlayRef} style={styles.overlay}>{screen}</div>
+}
+
+/**
+ * Страница замены в дне тренировки: `/swap/:programId/:day/:orderNum`.
+ * State: { subGroup, type, currentExerciseId, currentExerciseName, defaultExerciseId, muscleGroup, place, scrollY }
+ */
+export default function SwapExercise() {
+  const { programId, day, orderNum } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const st = location.state || {}
+  const place = st.place || 'gym'
+
+  // Назад в день: order_num карточки и позиция скролла — WorkoutDay проскроллит к
+  // ней и подсветит; wasSwapped включает «змейку» (только при реальной смене).
+  const backToDay = (wasSwapped) => navigate(`/workout/${programId}/${day}`, {
+    state: { returnedFromOrderNum: parseInt(orderNum, 10), wasSwapped, scrollY: st.scrollY }
+  })
+
+  return (
+    <SwapExerciseView
+      subGroup={st.subGroup}
+      type={st.type}
+      currentExerciseId={st.currentExerciseId}
+      currentExerciseName={st.currentExerciseName}
+      defaultExerciseId={st.defaultExerciseId}
+      muscleGroup={st.muscleGroup}
+      onBack={() => backToDay(false)}
+      onConfirm={(id) => saveExerciseSwap(programId, day, parseInt(orderNum, 10), id, place)}
+      onSwapped={() => { goal(GOALS.EXERCISE_SWAP, { program: programId, place }); backToDay(true) }}
+    />
   )
 }
 
@@ -353,6 +371,14 @@ const styles = {
     paddingRight: 'var(--space-4)',
     paddingBottom: '100px',
     marginBottom: 'calc(-1 * (var(--tabbar-height) + var(--tabbar-bottom) + 60px))'
+  },
+  // Поверх конструктора таб-бара нет и прятать нечего — отрицательный отступ не нужен.
+  pageEmbedded: { marginBottom: 0 },
+  overlay: {
+    position: 'fixed', inset: 0, zIndex: 100,
+    background: 'var(--color-bg)',
+    overflowY: 'auto',
+    overscrollBehavior: 'contain'
   },
   // Единый sticky-блок. Растянут на всю ширину поверх горизонтального
   // padding'а страницы (margin -16px + padding 16px). Фон --color-bg

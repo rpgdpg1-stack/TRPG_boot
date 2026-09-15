@@ -23,7 +23,7 @@ allowed-tools: Read, Grep, Glob
 
 | Файл | Что внутри | Когда открывать |
 |---|---|---|
-| `${CLAUDE_SKILL_DIR}/reference/components.md` | ActionButton, ModalButton, Avatar, формы, карточка упражнения, ScreenTitle, MarqueeTag, SlotsCount, жест «+1 мускул» и др. | правишь или зовёшь конкретный компонент |
+| `${CLAUDE_SKILL_DIR}/reference/components.md` | ActionButton, ModalButton, Avatar, формы, карточка упражнения, ScreenTitle, MarqueeTag, SwipeReveal, жест «+1 мускул» и др. | правишь или зовёшь конкретный компонент |
 | `${CLAUDE_SKILL_DIR}/reference/modals.md` | модалки, заморозка фона, закрытие, приоритет «назад», полноэкранные формы | что-либо всплывающее поверх экрана |
 | `${CLAUDE_SKILL_DIR}/reference/screens.md` | Главная, таб-бар, места тренировки, пикер упражнений, быстрая тренировка, скролл | правишь конкретный экран или навигацию |
 | `${CLAUDE_SKILL_DIR}/reference/rules.md` | Telegram Mini App, цвет метрик, свои упражнения, клавиатура, многоточие, «Скоро» | ловишь грабли или трогаешь эти темы |

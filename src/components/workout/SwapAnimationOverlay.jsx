@@ -14,14 +14,16 @@ import { useLayoutEffect, useRef, useState } from 'react'
 // осталась на 33 и срезала углы).
 const FALLBACK_RADIUS = 40
 
-function cardRadius() {
+function cardRadius(token) {
   if (typeof window === 'undefined') return FALLBACK_RADIUS
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--radius-day-card')
+  const v = getComputedStyle(document.documentElement).getPropertyValue(token)
   const n = parseFloat(v)
   return Number.isFinite(n) && n > 0 ? n : FALLBACK_RADIUS
 }
 
-export default function SwapAnimationOverlay() {
+// radiusToken — имя токена угла карточки: у дня `--radius-day-card`, у строки
+// конструктора `--radius-card`.
+export default function SwapAnimationOverlay({ radiusToken = '--radius-day-card' }) {
   const wrapRef = useRef(null)
   const [box, setBox] = useState(null)
   const [radius, setRadius] = useState(FALLBACK_RADIUS)
@@ -31,8 +33,8 @@ export default function SwapAnimationOverlay() {
     if (!el) return
     const r = el.getBoundingClientRect()
     if (r.width > 0 && r.height > 0) setBox({ w: r.width, h: r.height })
-    setRadius(cardRadius())
-  }, [])
+    setRadius(cardRadius(radiusToken))
+  }, [radiusToken])
 
   if (!box) return <div ref={wrapRef} style={overlayStyles.wrap} aria-hidden="true" />
 

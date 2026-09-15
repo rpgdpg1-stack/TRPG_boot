@@ -326,7 +326,7 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved, onInf
             style={styles.moreBtn}
             aria-label="Действия с упражнением"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <circle cx="5" cy="12" r="1.8" />
               <circle cx="12" cy="12" r="1.8" />
               <circle cx="19" cy="12" r="1.8" />
@@ -559,9 +559,13 @@ const styles = {
     lineHeight: 1.4
   },
   // «⋯» — в правом верхнем углу карточки, над весом (место прежнего сердечка).
+  // Точки стоят от верха модалки на том же расстоянии, что от правого края.
+  // Считаем по самим точкам, а не по кнопке (у 40px-кнопки вокруг глифа поля):
+  // иконка 23 в кнопке 40 → поле 8.5; крайняя точка до края иконки 3.1 по X и
+  // 9.8 по Y. Справа: 10 + 8.5 + 3.1 = 21.6. Сверху так же: top = 21.6 − 8.5 − 9.8 = 3.3.
   moreBtn: {
     position: 'absolute',
-    top: '10px',
+    top: '3.3px',
     right: '10px',
     zIndex: 6,
     width: '40px',
