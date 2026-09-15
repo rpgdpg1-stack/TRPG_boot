@@ -1116,7 +1116,11 @@ export default function WorkoutDay() {
   //    въезжают в строку, большой блок и место сворачиваются). Одинаково для
   //    активного и неактивного дня — разница только в содержимом строки.
   const letterShrink = Math.min(1, Math.max(0, collapse / 0.6))
-  const dayLetterSize = 45 - letterShrink * 21
+  // Буква в высокой шапке — 32 (было 45: на 30% меньше, крупная слишком
+  // перетягивала взгляд с упражнений). В пилюле — прежние 24.
+  const DAY_LETTER_FULL = 32
+  const DAY_LETTER_PILL = 24
+  const dayLetterSize = DAY_LETTER_FULL - letterShrink * (DAY_LETTER_FULL - DAY_LETTER_PILL)
   const rowCollapse = Math.min(1, Math.max(0, (collapse - 0.5) / 0.5))
 
   // Тап по пилюле (шапка полностью сжата, активная сессия, осталось 1–3 упражнения):
