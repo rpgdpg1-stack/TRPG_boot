@@ -181,8 +181,12 @@ const styles = {
   periodRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', width: '100%' },
   // Подпись периода — тем же тихим серым, что иконки.
   // Перечень разделов под названием — тем же серым, что подпись периода.
+  // width 0 + minWidth 100%: строка занимает ширину карточки, но НЕ задаёт её.
+  // С обычным width 100% длинная строка без переноса раздвигала квадрат, он
+  // рос и в высоту (aspect-ratio), а «Статистика» тянулась за ним — под её
+  // цифрами появлялся пустой низ.
   caption: {
-    position: 'relative', display: 'block', minWidth: 0, width: '100%', overflow: 'hidden',
+    position: 'relative', display: 'block', width: 0, minWidth: '100%', overflow: 'hidden',
     fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700,
     color: 'var(--color-text-secondary)', whiteSpace: 'nowrap'
   },
