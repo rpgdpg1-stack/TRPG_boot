@@ -79,7 +79,7 @@ when_to_use: "«нарисуй в Figma», «перенеси в Figma», «об
    • Universal:  Buttons · Icon Buttons · Inputs · Navigation(TabBar/Header) · Cards · Progress · Lists ·
                  Feedback(Toast/Empty) · Modals(Dialog/BottomSheet/Modal/ActionSheet)
    • Product (TRPG):  ExerciseCard · ProgramCard · MetricCard(HistoryStats) · HistoryRow/Calendar ·
-                      WeeklyProgress(Streak) · MuscleIcon · PlaceSwitcher · ProgramEmblem · WaterChrome
+                      WeeklyProgress(Streak) · MuscleIcon · PlacePickerModal · ProgramEmblem · WaterChrome
    (Ранги/лиги/XP/редкость/награды/рейтинг — ОТКАЗ, не переносим.)
 🏋️ Patterns:  композиции из компонентов (см. список выше).
 ```

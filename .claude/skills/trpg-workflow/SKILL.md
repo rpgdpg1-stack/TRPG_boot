@@ -608,7 +608,7 @@ src/
 │                   — общее правило «строки настроек», см. trpg-ui
 │                   FriendInviteModal FriendRow GroupLabel HeartButton HeartIcon HistoryCalendar
 │                   HistoryStats MarqueeTag ModalButton MuscleIcon OfflineBanner PagerArrows
-│                   PencilIcon PersonalRecords PinIcon PlaceSwitcher PlayButton PlayIcon
+│                   PencilIcon PersonalRecords PinIcon PlacePickerModal PlayButton PlayIcon
 │                   ModalShell (каркас окна: скрим + заморозка фона) PlayerProfileModal
 │                   ProfileHeader ProfileMetrics ProgramCard ProgramEmblem
 │                   PullToRefresh QuickPickList RocketIcon RocketToggle SaveFriendProgramModal

@@ -1,5 +1,4 @@
 import { getProgramPlaces } from '../features/programs/registry'
-import PlaceSwitcher from './PlaceSwitcher'
 import { swimTotalMeters } from '../data/programs/swim'
 import ClockIcon from './ClockIcon'
 import ProgramEmblem from './ProgramEmblem'
@@ -68,13 +67,12 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
             </span>
           </div>
         ) : (
-          // Иерархия: тег места (тап — выбор места) → дни. Идёт тренировка —
+          // Иерархия: дни. Идёт тренировка —
           // показываем ТОЛЬКО активный день, крупнее и жирнее; иначе — ряд A/B/C с
           // подсветкой рекомендованного. Цвет подсвеченного дня — по его первой группе.
           <>
-            {/* Место (Зал/Дом/Улица) выбирается ЗДЕСЬ, тегом перед буквами дней —
-                а не в шапке дня: решают «где тренируюсь» до того, как открыть
-                программу, и дни внутри сразу собраны под это место. */}
+            {/* Места (Зал/Дом/Улица) на карточке НЕТ: меняют его редко, и видеть
+                каждый день незачем. Узнать и сменить — в меню долгого нажатия. */}
             {places.length > 0 && prog.comingSoon && (
               <div style={styles.tags}>
                 <span style={styles.soonTag}>Скоро</span>
@@ -97,9 +95,6 @@ export default function FavCardBody({ entry, activeMin = null, activeTimeColor =
               </div>
             ) : (
               <div style={styles.daysRow}>
-                {places.length > 0 && !prog.comingSoon && (
-                  <span style={styles.placeTag}><PlaceSwitcher program={prog} /></span>
-                )}
                 <div style={styles.daysList}>
                   {allDays.map(d => {
                     const isToday = !!activeDay && d === activeDay
@@ -169,9 +164,6 @@ const styles = {
   // Активный (запущенный) день — крупнее и жирнее (свечение оставляем).
   dayLetterActive: { fontSize: 'var(--text-heading-size)', fontWeight: 800 },
   tags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
-  // Тег места в ряду дней: по центру строки, а не по базовой линии букв —
-  // у пилюли своя высота, и по baseline она вставала бы ниже букв.
-  placeTag: { display: 'inline-flex', alignSelf: 'center' },
   soonTag: {
     display: 'inline-block',
     padding: 'var(--space-1) var(--space-2)',

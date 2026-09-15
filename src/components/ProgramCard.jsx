@@ -5,7 +5,8 @@ import { haptic, confirm } from '../lib/telegram'
 import { getActiveDay, getActiveDaySync } from '../lib/storage'
 import { getActiveWorkout, onActiveWorkoutChange, elapsedSecFrom, formatWorkoutMin, workoutTimerColor } from '../lib/active-workout'
 import { loadWorkoutProgress } from '../utils/workout-progress'
-import { getProgramDaySlots } from '../features/programs/registry'
+import { getProgramDaySlots, getProgramPlaces, getPlaceMeta } from '../features/programs/registry'
+import { useProgramPlace } from '../lib/program-place'
 import { CATEGORY_META } from '../features/programs/categories'
 import { deleteMyProgram, shareProgramLink } from '../features/programs/customProgram'
 import { formatRelative } from '../utils/history'
@@ -17,6 +18,7 @@ import UiIcon from './UiIcon'
 import PinIcon from './PinIcon'
 import PencilIcon from './PencilIcon'
 import PlayButton from './PlayButton'
+import PlacePickerModal from './PlacePickerModal'
 
 // Высота карточки с футером — фиксированная (см. minHeight ниже): контент в
 // двух состояниях разный, а прыгать карточка не должна.
@@ -30,7 +32,7 @@ const MOVE_TOLERANCE_PX = 8
  * Единая карточка программы — Главная / Избранное / Раздел.
  * Различия пропсами:
  *  - menu        — долгое нажатие по карточке → меню программы по центру под ней
- *                  (закрепить / редактировать / поделиться / удалить).
+ *                  (закрепить / редактировать / место тренировки / поделиться / удалить).
  *  - lastTrained — серая надпись «последняя тренировка N дней назад» (Главная).
  *  - isFav/onToggleFav — состояние и переключение избранного (только из меню).
  *  - onOpen      — тап по карточке (переход на тренировку), задаёт вызывающий.
@@ -59,6 +61,13 @@ export default function ProgramCard({
   const [anchorRect, setAnchorRect] = useState(null) // null = меню закрыто
   const [adopt, setAdopt] = useState(false)            // модалка «скопировать упражнения автора»
   const cardRef = useRef(null)
+
+  // Место тренировки (Зал/Дом/Улица). На карточке его НЕ видно — меняют редко;
+  // узнать и сменить можно только в меню долгого нажатия. Выбор общий с экраном
+  // дня: тот же ключ, день грузит упражнения выбранного места.
+  const places = getProgramPlaces(prog)
+  const [place, setPlace] = useProgramPlace(prog.slug, places)
+  const [placeOpen, setPlaceOpen] = useState(false)
 
   const available = prog.available !== false
   const accent = CATEGORY_META[prog.category]?.color || 'var(--color-primary)'
@@ -110,7 +119,9 @@ export default function ProgramCard({
   }
 
   const handleTap = () => {
-    if (anchorRect || !available) return
+    // placeOpen — окно выбора места открыто: события из его портала всплывают
+    // сюда по дереву React и не должны открывать программу.
+    if (anchorRect || placeOpen || !available) return
     // Только что сработало долгое нажатие — это не тап, никуда не идём.
     if (longFired.current) { longFired.current = false; return }
     // Программа от друга с его личными упражнениями: пока они не скопированы
@@ -152,7 +163,7 @@ export default function ProgramCard({
   }
 
   const handlePointerDown = (e) => {
-    if (!menu || !available || anchorRect) return
+    if (!menu || !available || anchorRect || placeOpen) return
     longFired.current = false
     pressStart.current = { x: e.clientX, y: e.clientY }
     clearLong()
@@ -186,6 +197,16 @@ export default function ProgramCard({
     const success = await deleteMyProgram(prog.dbId)
     if (success && onDeleted) onDeleted()
   }
+
+  // Пункт меню «Место тренировки: Зал» — только когда выбирать есть из чего.
+  // Текст белый, без акцента: это сведение, а не действие-призыв.
+  const placeItem = places.length > 1 ? [{
+    key: 'place',
+    icon: <UiIcon name="location" size={20} color="var(--color-text)" />,
+    label: `Место тренировки: ${getPlaceMeta(place).label}`,
+    onClick: () => setPlaceOpen(true)
+  }] : []
+  const stopEvent = (e) => e.stopPropagation()
 
   // Правый блок (по центру по высоте, справа): активна → зелёный тег «▶ Продолжить»;
   // иначе на главной → «Последняя · N». Время/N/M — в строке с буквой (FavCardBody).
@@ -309,11 +330,31 @@ export default function ProgramCard({
             ...(prog.editable ? [
               { divider: true },
               { key: 'edit', icon: <PencilIcon size={20} color="var(--cat-cardio)" />, label: 'Редактировать', onClick: handleEdit },
+              ...placeItem,
               { key: 'share', icon: <UiIcon name="invite-friend" size={20} color="var(--color-primary)" />, label: 'Поделиться', onClick: handleShare },
               { key: 'delete', icon: <TrashIcon />, label: 'Удалить', labelColor: 'var(--color-error)', onClick: handleDelete }
-            ] : [])
+            ] : (placeItem.length ? [{ divider: true }, ...placeItem] : []))
           ]}
         />
+      )}
+
+      {placeOpen && (
+        // Обёртка глушит всплытие из портала: без неё тап и свайп в окне доходили
+        // бы до карточки и карусели под ним.
+        <span
+          onClick={stopEvent}
+          onPointerDown={stopEvent}
+          onTouchStart={stopEvent}
+          onTouchMove={stopEvent}
+          onTouchEnd={stopEvent}
+        >
+          <PlacePickerModal
+            places={places}
+            value={place}
+            onPick={setPlace}
+            onClose={() => setPlaceOpen(false)}
+          />
+        </span>
       )}
     </div>
   )
