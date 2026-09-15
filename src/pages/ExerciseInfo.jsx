@@ -14,9 +14,9 @@ import UiIcon from '../components/UiIcon'
  * на день тренировки с восстановлением позиции скролла.
  *
  * Структура:
- *  - Сверху ЗАКРЕПЛЁННАЯ (sticky) карточка-шапка упражнения (видео + название +
- *    теги) — компонент ExerciseHeaderCard. Подходов тут нет: они живут только в
- *    меню долгого нажатия (ExerciseActionMenu).
+ *  - Сверху карточка-шапка упражнения (ExerciseHeaderCard): ролик во всю ширину,
+ *    под ним название, тег и подходы. НЕ закреплена: с крупным роликом она
+ *    заняла бы почти весь экран, и описание под ней было бы не прочитать.
  *  - Ниже скроллится описание техники. Пока реального текста нет — placeholder.
  */
 export default function ExerciseInfo() {
@@ -93,17 +93,16 @@ export default function ExerciseInfo() {
   return (
     <div className="page-fade" style={styles.page}>
 
-      {/* Закреплённая карточка-шапка — как блок-шапка в дне тренировки. */}
-      <div style={styles.stickyHeader}>
+      <div style={styles.header}>
         <ExerciseHeaderCard
           videoUrl={exercise.video_url}
           previewUrl={exercise.preview_url}
           name={exercise.name}
           muscleGroup={exercise.muscle_group}
           subGroup={exercise.sub_group}
+          meta={exercise.meta_info}
           custom={isCustomExercise(exercise.id)}
         />
-        <div style={styles.stickyFade} aria-hidden="true" />
       </div>
 
       {/* Скроллящееся описание техники. */}
@@ -135,33 +134,9 @@ const styles = {
     paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
     minHeight: '100dvh'
   },
-  // Карточка-шапка закреплена сверху (как в дне тренировки): сплошной фон зоны,
-  // отступ под кнопки Telegram, full-width через отрицательные боковые margin.
-  stickyHeader: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 30,
-    background: 'var(--color-bg)',
-    paddingTop: 'var(--tg-safe-top)',
-    paddingBottom: 0,
-    marginLeft: '-16px',
-    marginRight: '-16px',
-    paddingLeft: 'var(--space-4)',
-    paddingRight: 'var(--space-4)'
-  },
-  stickyFade: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    height: '28px',
-    pointerEvents: 'none',
-    zIndex: 29,
-    background: 'var(--scrim-top-fade)',
-    backdropFilter: 'blur(3px)',
-    WebkitBackdropFilter: 'blur(3px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)'
+  // Шапка в потоке страницы, верх — ровно 16px ниже кнопок Telegram.
+  header: {
+    paddingTop: 'var(--tg-safe-top)'
   },
   body: {
     paddingTop: 'var(--space-5)'

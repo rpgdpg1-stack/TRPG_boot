@@ -58,7 +58,8 @@ function restartPlay(v) {
   } catch { /* ignore */ }
 }
 
-export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
+// playSize — диаметр кнопки ▶: 44 в миниатюре модалки, крупнее на большом кадре техники.
+export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', playSize = 44 }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),
   // 14px для compact (если когда-то понадобится в маленькой карточке).
   const borderRadius = size === 'compact' ? '14px' : '33px'
@@ -191,7 +192,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
         <ExercisePlaceholder size={56} />
       )}
 
-      {videoUrl && src && !failed && ended && <PlayAgainButton onPlay={replay} />}
+      {videoUrl && src && !failed && ended && <PlayAgainButton onPlay={replay} size={playSize} />}
     </div>
   )
 }
@@ -208,7 +209,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full' }) {
  * не случилось; отпустил на кнопке — повтор. Следующий синтетический click
  * гасим: без этого он долетал до оверлея модалки и мог её закрыть.
  */
-function PlayAgainButton({ onPlay }) {
+function PlayAgainButton({ onPlay, size = 44 }) {
   const ref = useRef(null)
   const armed = useRef(false)
   const [press, setPress] = useState(false)
@@ -241,10 +242,13 @@ function PlayAgainButton({ onPlay }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           ...styles.playBtn,
+          width: `${size}px`,
+          height: `${size}px`,
           transform: press ? 'scale(1.14)' : 'scale(1)'
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', marginLeft: '2px' }}>
+        {/* Значок ~0.41 диаметра — пропорция та же при любом размере кнопки. */}
+        <svg width={Math.round(size * 0.41)} height={Math.round(size * 0.41)} viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', marginLeft: '2px' }}>
           <path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z" fill="currentColor" />
         </svg>
       </button>
