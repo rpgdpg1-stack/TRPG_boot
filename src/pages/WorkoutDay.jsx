@@ -516,8 +516,14 @@ export default function WorkoutDay() {
   // (load-эффект выше сначала подставит правильный набор).
   useEffect(() => {
     if (!isThisActive) return
-    saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums))
-  }, [programId, day, activeOrderNums, isThisActive])
+    // Вместе с номерами отправляем и сами упражнения: по ним бот завершит
+    // забытую тренировку из сообщения, не открывая приложение.
+    const doneIds = allSlots
+      .filter(s => activeOrderNums.has(s.order_num))
+      .map(s => s.exercise_id)
+      .filter(Boolean)
+    saveWorkoutProgress(programId, day, placeRef.current, Array.from(activeOrderNums), doneIds)
+  }, [programId, day, activeOrderNums, isThisActive, allSlots])
 
   // Префетч заметок упражнений дня — греем кэш, чтобы меню «⋯» и модалка заметки
   // открывались без мигания «Добавить»→«Открыть».

@@ -3,8 +3,9 @@
 //
 // Кого звать — решает база (srv_stale_session_candidates: 90 мин после последней
 // галочки, 3 ч после старта без галочек). Здесь только текст и отправка.
-// Кнопка ведёт в приложение (startapp=open-stale) — там модалка
-// «Тренировка не завершена» с «Засчитать / Не засчитывать».
+// Кнопки: «Засчитать» и «Не засчитывать» решают всё прямо в переписке (нажатие
+// принимает telegram-bot-webhook), третья открывает приложение — там та же
+// модалка «Тренировка не завершена».
 //
 // Вызов: POST {} — разослать; POST {"dry_run": true} — только показать, кому и что
 // ушло бы (ничего не шлёт и не отмечает).
@@ -49,9 +50,9 @@ function messageFor(c: Candidate): string {
     `${emoji} ${what} — начата ${formatWhen(c.started_at)}.`,
   ];
   if (swim || c.done_count > 0) {
-    lines.push("Открой приложение: засчитаем её по времени последней отметки или уберём.");
+    lines.push("Засчитать её по времени последней отметки или убрать — кнопки ниже.");
   } else {
-    lines.push("Ни одно упражнение не отмечено — открой приложение, чтобы её закрыть.");
+    lines.push("Ни одно упражнение не отмечено — засчитывать нечего, её можно только убрать.");
   }
   return lines.join("\n");
 }
@@ -93,26 +94,30 @@ Deno.serve(async (req) => {
 
   for (const c of candidates) {
     const text = messageFor(c);
-    const button = {
-      text: "▶️ Открыть тренировку",
-      url: `https://t.me/${bot}?startapp=open-stale`,
-      style: "success",
-    };
+    // Время старта в кнопке: нажатие на старом сообщении не тронет новую
+    // тренировку — сервер сверяет его с сессией.
+    const epoch = Math.floor(new Date(c.started_at).getTime() / 1000);
+    const decide = [
+      { text: "✅ Засчитать", callback_data: `sw:c:${epoch}`, style: "success" },
+      { text: "🗑 Не засчитывать", callback_data: `sw:d:${epoch}` },
+    ];
+    const open = { text: "▶️ Открыть тренировку", url: `https://t.me/${bot}?startapp=open-stale` };
+    const keyboard = [decide, [open]];
 
     if (dryRun) {
-      report.push({ user_id: c.user_id, text, button: button.text });
+      report.push({ user_id: c.user_id, text, buttons: [...decide.map((b) => b.text), open.text] });
       continue;
     }
 
     const body = {
       chat_id: c.telegram_id, text, parse_mode: "HTML", disable_web_page_preview: true,
-      reply_markup: { inline_keyboard: [[button]] },
+      reply_markup: { inline_keyboard: keyboard },
     };
     let res = await tg("sendMessage", body);
     // Цвет кнопок — Bot API 9.4. Не приняли — то же без цвета.
     if (!res.ok && JSON.stringify(res).includes("style")) {
-      const { style: _style, ...plain } = button;
-      res = await tg("sendMessage", { ...body, reply_markup: { inline_keyboard: [[plain]] } });
+      const plain = keyboard.map((row) => row.map(({ style: _style, ...b }) => b));
+      res = await tg("sendMessage", { ...body, reply_markup: { inline_keyboard: plain } });
     }
 
     // Заблокировал бота / чата нет — отмечаем так же: писать туда повторно

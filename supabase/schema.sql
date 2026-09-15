@@ -274,7 +274,18 @@ CREATE TABLE IF NOT EXISTS public.active_sessions (
   -- Время последней ГАЛОЧКИ (не любого сохранения) — порог забытой тренировки.
   last_tick_at timestamp with time zone,
   -- Бот напомнил о забытой тренировке; сбрасывается новой сессией или галочкой.
-  reminded_at timestamp with time zone
+  reminded_at timestamp with time zone,
+  -- id отмеченных упражнений (параллельно done): по ним бот завершает тренировку
+  -- без приложения — у встроенных программ состав дня лежит в коде клиента.
+  done_exercise_ids text[] DEFAULT '{}'::text[] NOT NULL
+);
+
+-- Секрет вебхука бота (его выпускает сама функция telegram-bot-webhook).
+-- Только сервер: RLS включён, политик нет, прав у anon/authenticated нет.
+CREATE TABLE IF NOT EXISTS public.bot_config (
+  key text PRIMARY KEY,
+  value text NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.heartbeat (
@@ -796,7 +807,7 @@ $function$;
 -- результаты» доезжал в уже открытую модалку завершения. Логика не продублирована —
 -- зовём ту же api_workout_highlights, а вызов обёрнут в EXCEPTION-блок: сохранение
 -- тренировки важнее украшений и не должно падать из-за них.
-CREATE OR REPLACE FUNCTION public.api_finish_workout(
+CREATE OR REPLACE FUNCTION public.srv_finish_workout(
   p_user_id bigint, p_program_id text, p_day text, p_exercise_ids text[],
   p_finished_at timestamp with time zone DEFAULT now(),
   p_started_at timestamp with time zone DEFAULT NULL::timestamp with time zone,
@@ -821,8 +832,6 @@ DECLARE
   v_empty_highlights jsonb := jsonb_build_object('comebackDays', NULL, 'records', '[]'::jsonb);
   v_highlights jsonb;
 BEGIN
-  -- SEC-001: личность берём ИЗ СЕССИИ, параметру от клиента не верим.
-  p_user_id := public.current_user_id();
   IF p_user_id IS NULL THEN
     RAISE EXCEPTION 'not authenticated' USING ERRCODE = '28000';
   END IF;
@@ -905,6 +914,27 @@ BEGIN
   END;
 
   RETURN QUERY SELECT v_workout_id, v_new_weekly_streak, false, COALESCE(v_highlights, v_empty_highlights);
+END;
+$function$;
+
+-- Обёртка для приложения: личность ТОЛЬКО из сессии (SEC-001), тело — общее с ботом.
+CREATE OR REPLACE FUNCTION public.api_finish_workout(
+  p_user_id bigint, p_program_id text, p_day text, p_exercise_ids text[],
+  p_finished_at timestamp with time zone DEFAULT now(),
+  p_started_at timestamp with time zone DEFAULT NULL,
+  p_distance_m integer DEFAULT NULL)
+RETURNS TABLE(workout_id bigint, new_weekly_streak integer, already_completed_today boolean, highlights jsonb)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+  p_user_id := public.current_user_id();
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = '28000';
+  END IF;
+  RETURN QUERY SELECT * FROM public.srv_finish_workout(
+    p_user_id, p_program_id, p_day, p_exercise_ids, p_finished_at, p_started_at, p_distance_m);
 END;
 $function$;
 
@@ -2122,27 +2152,29 @@ $function$;
 -- сколько угодно программ, и выбирать за человека одну из них незачем.
 -- Сессия и напоминание о забытой тренировке (миграция 20260916_0200_stale_workout_reminder).
 create or replace function public.api_set_active_session(
-  p_program_id text, p_day text, p_place text, p_started_at timestamp with time zone, p_done integer[])
+  p_program_id text, p_day text, p_place text, p_started_at timestamp with time zone,
+  p_done integer[], p_done_ids text[] default '{}')
 returns void
 language sql
 security definer
 set search_path to 'public'
 as $function$
   insert into public.active_sessions as s
-    (user_id, program_id, day, place, started_at, done, active, updated_at, last_tick_at, reminded_at)
+    (user_id, program_id, day, place, started_at, done, done_exercise_ids,
+     active, updated_at, last_tick_at, reminded_at)
   values (public.current_user_id(), p_program_id, p_day,
-          coalesce(p_place, 'gym'), p_started_at, coalesce(p_done, '{}'), true, now(),
+          coalesce(p_place, 'gym'), p_started_at, coalesce(p_done, '{}'), coalesce(p_done_ids, '{}'),
+          true, now(),
           case when cardinality(coalesce(p_done, '{}')) > 0 then now() end, null)
   on conflict (user_id) do update
     set program_id = excluded.program_id, day = excluded.day, place = excluded.place,
         started_at = excluded.started_at, done = excluded.done,
+        done_exercise_ids = excluded.done_exercise_ids,
         active = true, updated_at = now(),
         last_tick_at = case
-          -- другая тренировка — отсчёт с нуля
           when not (s.active and s.program_id = excluded.program_id and s.day = excluded.day
                     and s.started_at = excluded.started_at)
             then case when cardinality(excluded.done) > 0 then now() end
-          -- та же, набор галочек поменялся
           when not (s.done @> excluded.done and s.done <@ excluded.done) then now()
           else s.last_tick_at
         end,
@@ -2153,6 +2185,76 @@ as $function$
           when not (s.done @> excluded.done and s.done <@ excluded.done) then null
           else s.reminded_at
         end;
+$function$;
+
+-- Чтение сессии — с составом отмеченного.
+create or replace function public.api_get_active_session()
+returns table (program_id text, day text, place text, started_at timestamptz,
+               done integer[], done_exercise_ids text[], updated_at timestamptz, active boolean)
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select s.program_id, s.day, s.place, s.started_at, s.done, s.done_exercise_ids, s.updated_at, s.active
+  from public.active_sessions s
+  where s.user_id = public.current_user_id();
+$function$;
+
+-- Снять сессию от имени сервера (надгробие) — для бота.
+create or replace function public.srv_clear_active_session(p_user_id bigint)
+returns void
+language sql
+security definer
+set search_path to 'public'
+as $function$
+  insert into public.active_sessions as s
+    (user_id, program_id, day, place, started_at, done, active, updated_at)
+  values (p_user_id, '', '', 'gym', now(), '{}', false, now())
+  on conflict (user_id) do update
+    set active = false, done = '{}', done_exercise_ids = '{}', updated_at = now();
+$function$;
+
+-- Сессия по нажатию кнопки в сообщении: человек — по telegram_id, тренировка —
+-- по времени старта из кнопки (нажатие на старом сообщении не тронет новую).
+create or replace function public.srv_session_for_callback(
+  p_telegram_id bigint, p_started_at timestamp with time zone)
+returns table (user_id bigint, program_id text, day text, place text,
+               started_at timestamptz, last_tick_at timestamptz,
+               done_count integer, done_exercise_ids text[])
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select s.user_id, s.program_id, s.day, s.place, s.started_at,
+         coalesce(s.last_tick_at, s.updated_at), cardinality(s.done), s.done_exercise_ids
+  from public.active_sessions s
+  join public.users u on u.id = s.user_id
+  where u.telegram_id = p_telegram_id
+    and s.active
+    and abs(extract(epoch from (s.started_at - p_started_at))) < 1.5;
+$function$;
+
+-- Секрет вебхука: читает и пишет только сервер.
+create or replace function public.srv_bot_config_get(p_key text)
+returns text
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select value from public.bot_config where key = p_key;
+$function$;
+
+create or replace function public.srv_bot_config_set(p_key text, p_value text)
+returns void
+language sql
+security definer
+set search_path to 'public'
+as $function$
+  insert into public.bot_config (key, value, updated_at) values (p_key, p_value, now())
+  on conflict (key) do update set value = excluded.value, updated_at = now();
 $function$;
 
 -- Кому напомнить. Только живые сессии с Telegram, у кого не выключены пинки,
@@ -2832,6 +2934,17 @@ REVOKE ALL ON FUNCTION public.srv_stale_session_candidates() FROM PUBLIC, anon, 
 REVOKE ALL ON FUNCTION public.srv_mark_session_reminded(bigint, timestamptz) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.srv_stale_session_candidates() TO service_role;
 GRANT EXECUTE ON FUNCTION public.srv_mark_session_reminded(bigint, timestamptz) TO service_role;
+REVOKE ALL ON FUNCTION public.srv_finish_workout(bigint, text, text, text[], timestamptz, timestamptz, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_clear_active_session(bigint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_session_for_callback(bigint, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_bot_config_get(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_bot_config_set(text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.srv_finish_workout(bigint, text, text, text[], timestamptz, timestamptz, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.srv_clear_active_session(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.srv_session_for_callback(bigint, timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.srv_bot_config_get(text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.srv_bot_config_set(text, text) TO service_role;
+REVOKE ALL ON TABLE public.bot_config FROM anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_mark_nudge_sent(bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_owner_report() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;

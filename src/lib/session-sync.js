@@ -21,7 +21,7 @@ const PUSH_DEBOUNCE_MS = 1500
 let pushTimer = null
 
 /** Отправить состояние сессии на сервер. */
-export function pushSession({ programId, day, place, startedAt, done }) {
+export function pushSession({ programId, day, place, startedAt, done, doneIds }) {
   if (!getCurrentUser() || !canReadServer()) return
   clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
@@ -30,7 +30,11 @@ export function pushSession({ programId, day, place, startedAt, done }) {
       p_day: day,
       p_place: place || 'gym',
       p_started_at: startedAt,
-      p_done: done || []
+      p_done: done || [],
+      // Состав отмеченного. Сервер знает только order_num, а какие это
+      // упражнения — знает лишь приложение (у встроенных программ состав дня
+      // лежит в коде). Без этого бот записал бы тренировку без упражнений.
+      p_done_ids: doneIds || []
     }).then(({ error }) => {
       // Сессия не доехала — на другом устройстве тренировка не подхватится.
       if (error) reportError(error, 'session-sync.push')
@@ -66,6 +70,7 @@ export async function fetchSession() {
     place: row.place,
     startedAt: row.started_at,
     done: row.done || [],
+    doneIds: row.done_exercise_ids || [],
     updatedAt: row.updated_at,
     // false — надгробие: тренировку отменили или завершили на другом
     // устройстве. Строка остаётся именно ради этого признака.
@@ -100,13 +105,13 @@ export function mergeSessions(local, remote) {
     // Новую начали уже после отмены — она главнее надгробия.
     const localTime = local.updatedAt || local.startedAt
     if (localTime > remote.updatedAt) {
-      return { session: local, done: local.done, from: 'local' }
+      return { session: local, done: local.done, doneIds: local.doneIds, from: 'local' }
     }
     return { from: 'cleared' }
   }
 
-  if (!local) return { session: remote, done: remote.done, from: 'remote' }
-  if (!remote) return { session: local, done: local.done, from: 'local' }
+  if (!local) return { session: remote, done: remote.done, doneIds: remote.doneIds, from: 'remote' }
+  if (!remote) return { session: local, done: local.done, doneIds: local.doneIds, from: 'local' }
 
   const same = local.programId === remote.programId
     && local.day === remote.day
@@ -114,16 +119,17 @@ export function mergeSessions(local, remote) {
 
   if (same) {
     const done = [...new Set([...(local.done || []), ...(remote.done || [])])].sort((a, b) => a - b)
+    const doneIds = [...new Set([...(local.doneIds || []), ...(remote.doneIds || [])])]
     // Начало берём раннее: тренировка началась тогда, когда её начали,
     // а не когда о ней узнало второе устройство.
     const startedAt = local.startedAt < remote.startedAt ? local.startedAt : remote.startedAt
-    return { session: { ...local, startedAt }, done, from: 'merged' }
+    return { session: { ...local, startedAt }, done, doneIds, from: 'merged' }
   }
 
   const localTime = local.updatedAt || local.startedAt
   const remoteWins = remote.updatedAt > localTime
   debug('[session-sync] разные тренировки, побеждает', remoteWins ? 'сервер' : 'устройство')
   return remoteWins
-    ? { session: remote, done: remote.done, from: 'remote' }
-    : { session: local, done: local.done, from: 'local' }
+    ? { session: remote, done: remote.done, doneIds: remote.doneIds, from: 'remote' }
+    : { session: local, done: local.done, doneIds: local.doneIds, from: 'local' }
 }

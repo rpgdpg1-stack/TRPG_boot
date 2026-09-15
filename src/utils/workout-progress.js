@@ -50,7 +50,7 @@ export function loadWorkoutProgress(programSlug, day, place) {
  * Сохранить текущий прогресс. activeOrderNums — массив order_num.
  * Если массив пустой — удаляем ключ, чтобы не засорять localStorage.
  */
-export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
+export function saveWorkoutProgress(programSlug, day, place, activeOrderNums, exerciseIds = []) {
   const key = getKey(programSlug, day, place)
   // Набор реально поменялся? Экран дня сохраняет прогресс и при простом открытии
   // (подставил сохранённое → эффект записал то же самое) — это не галочка, и
@@ -76,7 +76,9 @@ export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
       day,
       place: place || 'gym',
       startedAt: active.startedAt,
-      done: activeOrderNums || []
+      done: activeOrderNums || [],
+      // Состав отмеченного — для бота: он завершает тренировку без приложения.
+      doneIds: exerciseIds || []
     })
   }
 }

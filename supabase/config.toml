@@ -17,3 +17,11 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/stale-workout-remind/deno.json"
 entrypoint = "./functions/stale-workout-remind/index.ts"
+
+# Приём нажатий кнопок под сообщениями бота. Telegram зовёт её сам и шлёт
+# секрет заголовком (проверка внутри) — JWT тут не при чём.
+[functions.telegram-bot-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/telegram-bot-webhook/deno.json"
+entrypoint = "./functions/telegram-bot-webhook/index.ts"

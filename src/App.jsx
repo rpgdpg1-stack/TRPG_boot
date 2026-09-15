@@ -383,12 +383,12 @@ async function syncActiveSession() {
     }
     if (from !== 'local') {
       adoptActiveWorkout(session)
-      saveWorkoutProgress(session.programId, session.day, session.place, done)
+      saveWorkoutProgress(session.programId, session.day, session.place, done, merged.doneIds || [])
     }
     // Своё и объединённое отдаём обратно: сервер должен знать итог сведения,
     // иначе второе устройство при следующем заходе увидит устаревшее.
     if (from !== 'remote') {
-      pushSession({ ...session, done })
+      pushSession({ ...session, done, doneIds: merged.doneIds || [] })
     }
   } catch (e) {
     // Сессия — не то, ради чего стоит ронять запуск приложения.

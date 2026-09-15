@@ -669,6 +669,7 @@ supabase/
 └── functions/      _shared/ · telegram-auth/ (index.ts · deno.json · .npmrc)
                     email-request-code/ · email-verify-code/ (вход по почте)
                     stale-workout-remind/ (бот: «Кажется, ты забыл завершить тренировку»)
+                    telegram-bot-webhook/ (нажатия кнопок под сообщениями бота)
 ```
 
 ## Коммуникация
