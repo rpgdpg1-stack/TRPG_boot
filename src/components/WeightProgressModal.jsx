@@ -21,7 +21,7 @@ import { useScrollLock } from '../lib/use-scroll-lock'
  */
 
 // Золотистый — только для личного рекорда (кубок и цифра).
-const RECORD_GOLD = '#E8B84B'
+const RECORD_GOLD = 'var(--gold-record-chart)'
 
 // Сетка графика. Пропорцию держат ВСЕ состояния области (скелетон, пустой текст,
 // сам svg) — тогда блок не меняет высоту при загрузке.
@@ -412,7 +412,7 @@ const styles = {
   },
   panel: {
     position: 'relative', width: '100%', maxWidth: '380px',
-    background: 'rgba(34, 34, 34, 0.98)',
+    background: 'var(--surface-panel)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-5) var(--space-4) var(--space-4)',
@@ -467,7 +467,7 @@ const styles = {
   // против svg 190 — и на подгрузке коробка подрастала с промаргиванием).
   chartWrap: {
     width: '100%',
-    background: 'rgba(0, 0, 0, 0.22)',
+    background: 'var(--tint-dark)',
     border: '1px solid var(--border-hairline)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-2)',

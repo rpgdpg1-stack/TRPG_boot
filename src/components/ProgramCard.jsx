@@ -374,6 +374,6 @@ const styles = {
     maxWidth: '84px',
     pointerEvents: 'none'
   },
-  ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.32)' },
+  ltLabel: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-caption-size)', letterSpacing: '1.5px', color: 'var(--text-faint-strong)' },
   ltValue: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', lineHeight: 1.25, color: 'var(--color-text-secondary)' }
 }

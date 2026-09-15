@@ -850,7 +850,7 @@ function initByLoc(existing, dayCount) {
 function GripIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      <g fill="rgba(255,255,255,0.4)">
+      <g fill="var(--text-dim)">
         <rect x="3" y="4"  width="12" height="2" />
         <rect x="3" y="8"  width="12" height="2" />
         <rect x="3" y="12" width="12" height="2" />
@@ -921,7 +921,7 @@ const styles = {
     display: 'flex', alignItems: 'center', gap: 'var(--space-15)', padding: '0 var(--space-3)', minHeight: '44px',
     background: 'transparent', border: 'none',
     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-label-size)', letterSpacing: '0.5px',
-    color: 'rgba(255, 255, 255, 0.3)', whiteSpace: 'nowrap',
+    color: 'var(--text-ghost)', whiteSpace: 'nowrap',
     transition: 'color 0.18s ease'
   },
   dayPillCount: { fontFamily: 'var(--font-manrope)', fontWeight: 700, opacity: 0.8, transition: 'color 0.18s ease, font-size 0.18s ease' },
@@ -933,7 +933,7 @@ const styles = {
   exRowWrap: { display: 'flex', alignItems: 'center', gap: 'var(--space-15)' },
   exCard: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-card)', borderRadius: 'var(--radius-card)', padding: 'var(--space-3)', minHeight: '90px' },
   // Отметка «входит в быструю» — круглая, как икон-кнопки проекта (36px).
-  exCardDragging: { background: '#2A2A2A', boxShadow: 'var(--shadow-raised)' },
+  exCardDragging: { background: 'var(--surface-card-dragging)', boxShadow: 'var(--shadow-raised)' },
   // Переключатель режима — по содержимому, а не во всю ширину.
   modeRow: { display: 'flex', marginBottom: 'var(--space-3)' },
   dragHandle: { width: '28px', flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' },

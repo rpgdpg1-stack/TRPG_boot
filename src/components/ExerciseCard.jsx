@@ -429,7 +429,7 @@ export default function ExerciseCard({ slot, isActive = false, onTap, onLongPres
       className="press-exercise-card"
       style={{
         ...styles.card,
-        background: isActive ? '#222222' : 'var(--surface)',
+        background: isActive ? 'var(--surface-card-active)' : 'var(--surface)',
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
@@ -765,7 +765,7 @@ const styles = {
   activeOverlay: {
     position: 'absolute',
     inset: 0,
-    background: 'rgba(0, 0, 0, 0.32)',
+    background: 'var(--tint-dark-32)',
     backdropFilter: 'grayscale(0.8) blur(1.5px)',
     WebkitBackdropFilter: 'grayscale(0.8) blur(1.5px)',
     borderRadius: 'var(--radius-day-card)',
@@ -781,7 +781,7 @@ const styles = {
     transform: 'translate(-50%, -50%)',
     zIndex: 7,
     pointerEvents: 'none',
-    filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55))',
+    filter: 'var(--shadow-icon-drop)',
     animation: 'checkPop 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
   }
 }

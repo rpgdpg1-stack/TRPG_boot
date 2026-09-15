@@ -29,7 +29,7 @@ import ExercisePlaceholder from './ExercisePlaceholder'
  * считает их один и тот же `srv_user_records`.
  * `bare` — внутри модалки: без карточки и без своей шапки (они уже есть у модалки).
  */
-export const RECORD_GOLD = '#FFC83D'
+export const RECORD_GOLD = 'var(--gold-record)'
 
 /**
  * Месяц называем рекордом, только если он и правда выделяется. Когда всё

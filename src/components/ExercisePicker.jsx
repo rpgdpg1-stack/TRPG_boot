@@ -31,7 +31,7 @@ const MOVE_TOLERANCE_PX = 10
 // Плотность «стекла» в пикере. Общий --color-surface-dim (30%) годится таб-бару
 // над спокойным фоном, но здесь под шапкой едут карточки с картинками, и подписи
 // фильтров сквозь него не читались.
-const GLASS = 'rgba(28, 28, 28, 0.78)'
+const GLASS = 'var(--surface-glass-picker)'
 
 const TABS = [
   { key: 'all', label: 'Все' },
@@ -719,7 +719,7 @@ const styles = {
     height: 'calc(var(--tg-safe-top) + 14px)',
     zIndex: 7, pointerEvents: 'none',
     backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)',
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    background: 'var(--scrim-top-fade)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%)',
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 65%, transparent 100%)'
   },

@@ -177,7 +177,7 @@ const styles = {
     padding: 'var(--space-3) var(--space-5)',
     background: 'transparent',
     // Заметнее обычной подписи — это действие, а не текст.
-    color: 'rgba(255, 255, 255, 0.75)',
+    color: 'var(--text-body-soft)',
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,

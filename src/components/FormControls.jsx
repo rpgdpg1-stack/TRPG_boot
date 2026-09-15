@@ -200,7 +200,7 @@ const s = {
   rowButton: { cursor: 'pointer', WebkitTapHighlightColor: 'transparent' },
   // Вложенный под-тумблер (например, «веса» под «Любимыми упражнениями»):
   // сдвиг вправо и чуть приглушённый фон показывают подчинённость.
-  rowNested: { paddingLeft: '34px', background: 'rgba(255, 255, 255, 0.02)' },
+  rowNested: { paddingLeft: '34px', background: 'var(--layer-faint)' },
   rowTitleNested: { fontSize: 'var(--text-button-size)' },
   // Разделитель рисуем волоском ВНУТРИ строки, а не рамкой по её краю: он
   // должен начинаться от текста заголовка (левый паддинг карточки) и доходить
@@ -240,7 +240,7 @@ const s = {
   knob: {
     position: 'absolute', top: '2px', left: '2px', width: '20px', height: '20px',
     borderRadius: '50%', background: 'var(--color-text)',
-    transition: 'transform 0.2s var(--ease-ios)', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+    transition: 'transform 0.2s var(--ease-ios)', boxShadow: 'var(--shadow-knob)'
   },
 
   fieldWrap: { display: 'inline-flex', alignItems: 'baseline', gap: 'var(--space-15)', flexShrink: 0 },

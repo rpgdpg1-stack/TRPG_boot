@@ -263,7 +263,7 @@ const styles = {
   },
   cardEmpty: {
     justifyContent: 'center', gap: 'var(--space-2)', background: 'var(--surface)',
-    border: '1px dashed rgba(255, 255, 255, 0.18)'
+    border: '1px dashed var(--border-dashed-strong)'
   },
   plus: { color: 'var(--color-primary)', fontSize: 'var(--text-heading-size)', lineHeight: 1 },
   emptyText: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-button-size)', fontWeight: 700, color: 'var(--color-text-secondary)' },

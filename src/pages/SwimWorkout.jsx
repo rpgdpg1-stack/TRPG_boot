@@ -904,11 +904,11 @@ const styles = {
     minHeight: '132px',
     paddingLeft: 'var(--space-4)',
     paddingRight: 'var(--space-4)',
-    background: 'linear-gradient(180deg, rgba(46,127,196,0.38) 0%, rgba(28,92,151,0.46) 100%)',
+    background: 'var(--water-fill)',
     backdropFilter: 'blur(14px) saturate(180%)',
     WebkitBackdropFilter: 'blur(14px) saturate(180%)',
-    border: '1px solid rgba(63, 162, 247, 0.45)',
-    boxShadow: 'inset 0 0 22px rgba(0, 0, 0, 0.22), 0 6px 24px rgba(28, 92, 151, 0.25)',
+    border: '1px solid var(--water-border)',
+    boxShadow: 'var(--water-shadow)',
     transition: 'min-height 0.42s var(--ease-ios), padding 0.42s var(--ease-ios)'
   },
   // Ровно та же высота, что у пилюли в дне силовой (54px).
@@ -936,7 +936,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',
-    color: 'rgba(255, 255, 255, 0.72)',
+    color: 'var(--text-on-water)',
     whiteSpace: 'nowrap'
   },
   // Крупный метраж — центр карточки (сквозь пунктир), белым.
@@ -954,7 +954,7 @@ const styles = {
     color: 'var(--color-text)',
     letterSpacing: '0.5px',
     whiteSpace: 'nowrap',
-    textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)',
+    textShadow: 'var(--shadow-text-water)',
     transition: 'opacity 0.3s var(--ease-ios), transform 0.42s var(--ease-ios)'
   },
   // Бассейны — под метражом, шрифтом как часы.
@@ -968,7 +968,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontWeight: 700,
     fontSize: 'var(--text-label-size)',
-    color: 'rgba(255, 255, 255, 0.72)',
+    color: 'var(--text-on-water)',
     whiteSpace: 'nowrap',
     transition: 'opacity 0.3s var(--ease-ios)'
   },
@@ -984,17 +984,17 @@ const styles = {
   pillMeters: {
     fontFamily: 'var(--font-manrope)', fontWeight: 800, fontSize: 'var(--text-title-size)',
     color: 'var(--color-text)', whiteSpace: 'nowrap',
-    textShadow: '0 1px 6px rgba(0, 0, 0, 0.45)'
+    textShadow: 'var(--shadow-text-water)'
   },
   pillTime: {
     display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)',
-    color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap',
+    color: 'var(--text-on-water)', whiteSpace: 'nowrap',
     fontVariantNumeric: 'tabular-nums'
   },
   pillPools: {
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-button-size)',
-    color: 'rgba(255, 255, 255, 0.72)', whiteSpace: 'nowrap'
+    color: 'var(--text-on-water)', whiteSpace: 'nowrap'
   },
   // Крестик — тот же компонент и те же размеры, что в дне силовой.
   pillCross: { position: 'absolute', right: 'var(--space-2)', display: 'inline-flex' },
@@ -1020,7 +1020,7 @@ const styles = {
     alignItems: 'center',
     gap: 'var(--space-2)',
     padding: 'var(--space-3) var(--space-4)',
-    background: 'rgba(0, 0, 0, 0.22)',
+    background: 'var(--tint-dark)',
     cursor: 'pointer'
   },
   blockTitle: {
@@ -1144,8 +1144,8 @@ const styles = {
     gap: 'var(--space-2)',
     height: '48px',
     padding: '0 var(--space-2)',
-    background: 'rgba(63, 162, 247, 0.12)',
-    border: '1px solid rgba(63, 162, 247, 0.3)',
+    background: 'var(--water-chip-bg)',
+    border: '1px solid var(--water-chip-border)',
     borderRadius: 'var(--radius-pill)'
   },
   stepBtn: {
@@ -1154,7 +1154,7 @@ const styles = {
     flexShrink: 0,
     borderRadius: '50%',
     border: 'none',
-    background: 'rgba(63, 162, 247, 0.22)',
+    background: 'var(--water-chip-active)',
     color: 'var(--cat-pool)',
     fontSize: 'var(--text-heading-size)',
     fontWeight: 700,

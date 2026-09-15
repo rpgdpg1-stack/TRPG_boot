@@ -189,7 +189,7 @@ export default function WorkoutFinishedModal({
                       <WeeklyMuscle lit={streak >= 1} size={22} />
                       {/* Число — акцентный зелёный, как рядом с бицепсом везде.
                           Оранжевый достался ему от огонька, которого больше нет. */}
-                      <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)' }}>{streak}</span>
+                      <span style={{ ...styles.statNum, color: streak >= 1 ? 'var(--color-primary)' : 'var(--text-dim)' }}>{streak}</span>
                     </span>
                     {/* Дистанция — только у плавания. Обычная метрика: число
                         акцентом, единица серым. Иконки вида тут НЕТ — строка и так
@@ -267,7 +267,7 @@ export default function WorkoutFinishedModal({
               variant="primary"
               onClick={handleClick}
               disabled={isSaving}
-              style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: '#C46A28', color: 'var(--accent-on)' } : {}) }}
+              style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: 'var(--color-offline-border)', color: 'var(--accent-on)' } : {}) }}
             >
               {buttonText}
             </ActionButton>
@@ -310,7 +310,7 @@ function Metric({ label }) {
 const styles = {
   overlay: {
     position: 'fixed', inset: 0,
-    background: 'rgba(13, 12, 12, 0.9)',
+    background: 'var(--scrim-finish)',
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 9999, padding: 'var(--space-5)',
@@ -326,7 +326,7 @@ const styles = {
   // Обводки и зелёного свечения нет — акцент несут цифры и текст.
   panel: {
     width: '100%', maxWidth: '320px',
-    background: 'rgba(34, 34, 34, 0.98)',
+    background: 'var(--surface-panel)',
     borderRadius: 'var(--radius-card)',
     boxShadow: 'var(--shadow-modal)',
     // «+1» жеста улетает вверх и обрезается краями панели, не вылезая наружу.
@@ -334,7 +334,7 @@ const styles = {
     animation: `wfPanelIn 0.32s var(--ease-ios) forwards`,
     transition: `opacity ${CLOSE_MS}ms ease, transform ${CLOSE_MS}ms var(--ease-ios)`
   },
-  panelError: { border: '1px solid rgba(255, 140, 66, 0.3)' },
+  panelError: { border: '1px solid var(--color-offline-border-soft)' },
   panelClosing: { opacity: 0, transform: 'scale(0.94) translateY(6px)', animation: 'none' },
   content: {
     // Сверху воздуха больше: «+1» улетает вверх и не должен упираться в кромку.
@@ -344,7 +344,7 @@ const styles = {
   },
   // Жест опущен ниже и придвинут к заголовку.
   gestureWrap: { marginTop: '0', marginBottom: '-16px' },
-  flame: { fontSize: '58px', lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(255, 140, 66, 0.7))' },
+  flame: { fontSize: '58px', lineHeight: 1, filter: 'drop-shadow(0 0 14px var(--color-streak-glow))' },
   body: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', width: '100%',
     transition: `opacity ${CLOSE_MS}ms ease`

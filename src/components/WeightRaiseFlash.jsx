@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from 'react'
 // Транзишен цвета цифры — мягкий переход к/от цвета группы.
 export const WEIGHT_COLOR_TRANSITION = 'color 0.4s ease'
 // Понижение: фиксированный серый — ярче приглушённого текста, но не белый.
-export const WEIGHT_DOWN_COLOR = '#B0B0B0'
+export const WEIGHT_DOWN_COLOR = 'var(--color-weight-down)'
 
 const FLASH_MS = 2000 // стрелка + цвет держатся ~2с
 

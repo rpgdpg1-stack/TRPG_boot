@@ -6,7 +6,15 @@ import { debug } from './debug'
 
 const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null
 
-const APP_BG = '#0A0A0B'
+// Telegram принимает только hex, var() ему не передать — поэтому цвет читаем
+// у токена фона в момент покраски. Запасное значение = текущий --bg-base.
+const APP_BG_FALLBACK = '#0A0A0B'
+function appBg() {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim()
+    return /^#[0-9A-Fa-f]{6}$/.test(v) ? v : APP_BG_FALLBACK
+  } catch { return APP_BG_FALLBACK }
+}
 
 // Текущие обработчики кнопок — нужны чтобы корректно их удалять при смене.
 // offClick() без аргумента в новых версиях Telegram может не работать —
@@ -94,20 +102,20 @@ export function paintTelegramChrome() {
 
   try {
     if (typeof tg.setHeaderColor === 'function') {
-      tg.setHeaderColor(APP_BG)
+      tg.setHeaderColor(appBg())
     }
   } catch (e) { /* ignore */ }
 
   try {
     if (typeof tg.setBackgroundColor === 'function') {
-      // Нативный фон вебвью — всегда тёмный APP_BG (зону резинки акцентом не красим).
-      tg.setBackgroundColor(APP_BG)
+      // Нативный фон вебвью — всегда цвет фона приложения (--bg-base) (зону резинки акцентом не красим).
+      tg.setBackgroundColor(appBg())
     }
   } catch (e) { /* ignore */ }
 
   try {
     if (typeof tg.setBottomBarColor === 'function') {
-      tg.setBottomBarColor(APP_BG)
+      tg.setBottomBarColor(appBg())
     }
   } catch (e) { /* ignore */ }
 }

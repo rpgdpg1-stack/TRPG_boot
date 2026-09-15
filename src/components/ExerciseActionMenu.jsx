@@ -456,7 +456,7 @@ const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(13, 12, 12, 0.75)',
+    background: 'var(--scrim-menu)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     // Колонка: модалка сверху, крестик-пузырёк под ней по центру.
@@ -698,7 +698,7 @@ const styles = {
     width: '100%',
     height: '44px',
     borderRadius: 'var(--radius-small)',
-    background: 'rgba(255, 255, 255, 0.03)'
+    background: 'var(--layer-subtle)'
   },
   // Кнопка "Добавить заметку" (когда заметки ещё нет)
   noteAddButton: {
@@ -707,8 +707,8 @@ const styles = {
     gap: 'var(--space-2)',
     width: '100%',
     padding: 'var(--space-4) var(--space-4)',
-    background: 'rgba(255, 255, 255, 0.03)',
-    border: '1px dashed rgba(255, 255, 255, 0.15)',
+    background: 'var(--layer-subtle)',
+    border: '1px dashed var(--border-dashed)',
     borderRadius: 'var(--radius-medium)',
     cursor: 'pointer',
     textAlign: 'left'
@@ -766,7 +766,7 @@ const styles = {
     minHeight: '46px',       // ~1 строка; дальше растёт по контенту (autoGrowNote) —
                              //  совпадает по высоте с блоком просмотра, модалка не прыгает
     padding: 'var(--space-3) var(--space-4)',
-    background: 'rgba(0, 0, 0, 0.3)',
+    background: 'var(--tint-dark-30)',
     border: '1px solid var(--layer-3)',
     borderRadius: 'var(--radius-medium)',
     fontFamily: 'var(--font-manrope)',

@@ -211,7 +211,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
       >
         <span style={{
           ...styles.cellNum,
-          color: has ? 'var(--color-text)' : 'rgba(255,255,255,0.4)',
+          color: has ? 'var(--color-text)' : 'var(--text-dim)',
           fontWeight: isToday ? 800 : (has ? 700 : 500)
         }}>{dayNum}</span>
         {has && (
@@ -307,7 +307,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
                 >
                   <span style={{
                     ...styles.monthTileLabel,
-                    color: has ? 'var(--color-text)' : 'rgba(255,255,255,0.4)',
+                    color: has ? 'var(--color-text)' : 'var(--text-dim)',
                     fontWeight: isCur ? 800 : (has ? 700 : 500)
                   }}>{label}</span>
                   {has && <span style={styles.monthTileCount}>{cnt}</span>}
@@ -320,7 +320,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
           <div key="week" className="page-fade">
             <div style={styles.weekRow}>
               {WEEKDAYS_RU.map((w, i) => (
-                <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'rgba(255,255,255,0.35)' }}>{w}</div>
+                <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'var(--text-faint)' }}>{w}</div>
               ))}
             </div>
             <div style={styles.weekDivider} aria-hidden="true" />
@@ -335,7 +335,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
         <div>
           <div style={styles.weekRow}>
             {WEEKDAYS_RU.map((w, i) => (
-              <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'rgba(255,255,255,0.35)' }}>{w}</div>
+              <div key={w} style={{ ...styles.weekLabel, color: i >= 5 ? 'var(--color-text-secondary)' : 'var(--text-faint)' }}>{w}</div>
             ))}
           </div>
           <div style={styles.weekDivider} aria-hidden="true" />
@@ -438,7 +438,7 @@ const styles = {
   },
   heading: {
     fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: 'var(--text-body-size)',
-    color: 'rgba(255,255,255,0.6)', letterSpacing: '0.2px'
+    color: 'var(--text-soft)', letterSpacing: '0.2px'
   },
   // Без обводки — заодно с блоком статистики над ним: два соседних блока на
   // одном экране не могут быть обведены по-разному.

@@ -15,20 +15,21 @@
  */
 
 export const MUSCLE_GROUP_COLORS = {
-  back:      { tag: '#914633', accent: '#C6624A' },
-  chest:     { tag: '#9B6D45', accent: '#DA9439' },
-  arms:      { tag: '#4B90C9', accent: '#4B90C9' },
-  biceps:    { tag: '#3D6FA3', accent: '#4B90C9' },
-  triceps:   { tag: '#3D6FA3', accent: '#4B90C9' },
-  shoulders: { tag: '#31ABB7', accent: '#31ABB7' },
-  legs:      { tag: '#34A04D', accent: '#34A04D' },
-  glutes:    { tag: '#607345', accent: '#9ED153' },
-  abs:       { tag: '#58436B', accent: '#8F67B4' },
-  forearms:  { tag: '#835B76', accent: '#B07EA0' },
-  neck:      { tag: '#4F443B', accent: '#A79586' }
+  back:      { tag: 'var(--muscle-back-tag)', accent: 'var(--muscle-back-accent)' },
+  chest:     { tag: 'var(--muscle-chest-tag)', accent: 'var(--muscle-chest-accent)' },
+  arms:      { tag: 'var(--muscle-arms-tag)', accent: 'var(--muscle-arms-accent)' },
+  biceps:    { tag: 'var(--muscle-biceps-tag)', accent: 'var(--muscle-biceps-accent)' },
+  triceps:   { tag: 'var(--muscle-triceps-tag)', accent: 'var(--muscle-triceps-accent)' },
+  shoulders: { tag: 'var(--muscle-shoulders-tag)', accent: 'var(--muscle-shoulders-accent)' },
+  legs:      { tag: 'var(--muscle-legs-tag)', accent: 'var(--muscle-legs-accent)' },
+  glutes:    { tag: 'var(--muscle-glutes-tag)', accent: 'var(--muscle-glutes-accent)' },
+  abs:       { tag: 'var(--muscle-abs-tag)', accent: 'var(--muscle-abs-accent)' },
+  forearms:  { tag: 'var(--muscle-forearms-tag)', accent: 'var(--muscle-forearms-accent)' },
+  neck:      { tag: 'var(--muscle-neck-tag)', accent: 'var(--muscle-neck-accent)' }
 }
 
-const FALLBACK = { tag: '#3A3A3A', accent: '#888888' }
+// Сами цвета — в styles/tokens.css (--muscle-*): одно место на все цвета проекта.
+const FALLBACK = { tag: 'var(--muscle-fallback-tag)', accent: 'var(--muscle-fallback-accent)' }
 
 /**
  * Своё упражнение с придуманной группой («Кроссфит», «Растяжка») — цвета этой

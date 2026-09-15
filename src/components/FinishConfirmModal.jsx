@@ -60,7 +60,7 @@ const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(13, 12, 12, 0.8)',
+    background: 'var(--scrim-confirm)',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
@@ -77,7 +77,7 @@ const styles = {
   modal: {
     width: '100%',
     maxWidth: '300px',
-    background: 'rgba(34, 34, 34, 0.98)',
+    background: 'var(--surface-panel)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-card)',
     padding: 'var(--space-6) var(--space-5) var(--space-5)',

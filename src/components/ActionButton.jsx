@@ -125,7 +125,7 @@ const styles = {
   // без залитого фона. Цвет текста при необходимости перебивается через `style`
   // (напр. красный на достигнутом лимите).
   neutral: {
-    background: 'rgba(34, 34, 34, 0.55)',
+    background: 'var(--surface-button-glass)',
     backdropFilter: 'blur(var(--blur-md))',
     WebkitBackdropFilter: 'blur(var(--blur-md))',
     color: 'var(--color-primary)'

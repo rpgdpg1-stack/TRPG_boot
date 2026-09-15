@@ -52,7 +52,7 @@ const styles = {
     position: 'absolute',
     top: 0, bottom: 0, left: 0,
     width: '40%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent)',
+    background: 'linear-gradient(90deg, transparent, var(--water-shine), transparent)',
     // Блик появляется вместе с движением: застывшая светлая полоса слева
     // читалась как артефакт, а не как вода.
     transition: 'opacity 0.4s ease',
@@ -69,7 +69,7 @@ const styles = {
   },
   stringVert: {
     position: 'absolute', top: 0, bottom: 0, width: '1px',
-    background: 'rgba(255, 255, 255, 0.45)'
+    background: 'var(--water-flag)'
   },
   // Флажки прижаты к ниточке справа, идут СВЕРХУ ВНИЗ с ФИКС-зазором (gap).
   col: {

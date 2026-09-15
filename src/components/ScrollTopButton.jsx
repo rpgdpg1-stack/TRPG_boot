@@ -89,7 +89,7 @@ export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIn
       <span
         style={{
           ...styles.bubble,
-          background: press ? 'rgba(255, 255, 255, 0.18)' : 'var(--color-surface-dim)',
+          background: press ? 'var(--overlay-pressed-strong)' : 'var(--color-surface-dim)',
           color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
           transform: press ? 'scale(1.12)' : 'scale(1)'
         }}

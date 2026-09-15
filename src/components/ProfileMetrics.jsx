@@ -504,7 +504,7 @@ const m = {
     // растягивать все разделы под один рост незачем. Предел 85% экрана, дальше
     // прокрутка внутри панели, а не «модалка во весь экран».
     maxHeight: 'min(100%, 85vh)', overflowY: 'auto', touchAction: 'pan-y', overscrollBehavior: 'contain',
-    background: 'rgba(34, 34, 34, 0.98)',
+    background: 'var(--surface-panel)',
     border: '1px solid var(--layer-2)',
     borderRadius: 'var(--radius-medium)',
     padding: 'var(--space-4)',
@@ -528,7 +528,7 @@ const m = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)',
     margin: 'calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0',
     padding: 'var(--space-4) var(--space-4) var(--space-2)',
-    background: 'rgba(34, 34, 34, 0.94)',
+    background: 'var(--surface-popover)',
     backdropFilter: 'var(--blur-glass)', WebkitBackdropFilter: 'var(--blur-glass)'
   },
   tabs: { display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' },

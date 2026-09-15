@@ -157,7 +157,7 @@ const styles = {
     height: '28px',
     pointerEvents: 'none',
     zIndex: 29,
-    background: 'linear-gradient(to bottom, var(--color-bg) 0%, rgba(13, 12, 12, 0.7) 35%, rgba(13, 12, 12, 0) 100%)',
+    background: 'var(--scrim-top-fade)',
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%)',

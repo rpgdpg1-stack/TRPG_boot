@@ -63,7 +63,7 @@ export const SWIM_PROGRAM = {
  */
 export const SWIM_STROKES = {
   crawl:  { label: 'Кроль', color: 'var(--cat-pool)' },
-  breast: { label: 'Брасс', color: '#2DD4A7' },
+  breast: { label: 'Брасс', color: 'var(--stroke-breast)' },
   back:   { label: 'Спина', color: 'var(--purple-500)' }
 }
 

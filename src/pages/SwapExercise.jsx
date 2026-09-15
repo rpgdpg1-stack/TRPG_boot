@@ -333,7 +333,7 @@ function ExerciseRow({ exercise, muscleGroup, isSelected, isDefault, onTap }) {
       <div style={rowStyles.radio}>
         <div style={{
           ...rowStyles.radioOuter,
-          borderColor: isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.25)'
+          borderColor: isSelected ? 'var(--color-primary)' : 'var(--border-control)'
         }}>
           {isSelected && <div style={rowStyles.radioInner} />}
         </div>
@@ -415,7 +415,7 @@ const styles = {
     fontFamily: 'var(--font-manrope)',
     fontSize: 'var(--text-label-size)',
     color: 'var(--color-text-secondary)',
-    background: 'rgba(255, 255, 255, 0.02)',
+    background: 'var(--layer-faint)',
     borderRadius: 'var(--radius-card)'
   },
   errorBlock: {

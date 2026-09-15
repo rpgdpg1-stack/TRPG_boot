@@ -123,7 +123,7 @@ export const WORKOUT_TIMER_COLORS = {
   // НЕ --color-primary: им теперь красится буква дня, и в одной шапке два
   // одинаковых зелёных сливались бы. Свой мятный оттенок — см. --color-timer.
   green: 'var(--color-timer)',
-  orange: '#F0883E',
+  orange: 'var(--color-timer-warn)',
   red: 'var(--color-error)'
 }
 

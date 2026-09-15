@@ -64,7 +64,7 @@ function countExercises(days) {
 const styles = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 200,
-    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+    background: 'var(--scrim-sheet)', backdropFilter: 'blur(4px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)'
   },
   modal: {
@@ -77,6 +77,6 @@ const styles = {
   title: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-heading-size)', fontWeight: 800, color: 'var(--color-text)', marginBottom: 'var(--space-1)' },
   author: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' },
   meta: { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-button-size)', color: 'var(--color-primary)', letterSpacing: '1px', marginBottom: 'var(--space-5)' },
-  warn: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: '#E0A23C', background: 'rgba(224,162,60,0.1)', borderRadius: 'var(--radius-small)', padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-4)' },
+  warn: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-caution)', background: 'var(--color-caution-surface)', borderRadius: 'var(--radius-small)', padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-4)' },
   error: { fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-label-size)', color: 'var(--color-error)', marginBottom: 'var(--space-3)' },
 }
