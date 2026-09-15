@@ -189,10 +189,12 @@ Mini App в Telegram. Vercel (`*.vercel.app`) — запасной аэродр�
 | Фронт (`src/`, `index.html`) | сам, по push в `main` |
 | Миграции базы | через MCP-коннектор Supabase, вручную |
 | **Edge Functions** (`supabase/functions/`) | **вручную**, автодеплоя НЕТ |
+| Напоминание о забытой тренировке | `pg_cron` в Supabase раз в 15 мин → Edge Function `stale-workout-remind` (не GitHub Actions) |
 | GitHub Actions | сами, по push |
 
 Про Edge Functions помнить отдельно: правка в репозитории НЕ означает правку
-в бою. Их три, и все три про вход — сломается деплой, никто не войдёт.
+в бою. Их четыре: три про вход — сломается деплой, никто не войдёт; четвёртая
+(`stale-workout-remind`) шлёт напоминания и проверяется вызовом с `dry_run`.
 Деплоить только тогда, когда сразу после можно проверить вход в Telegram.
 
 ## Чеклист перед коммитом
@@ -666,6 +668,7 @@ supabase/
 │                   public_profile_stats_week.sql
 └── functions/      _shared/ · telegram-auth/ (index.ts · deno.json · .npmrc)
                     email-request-code/ · email-verify-code/ (вход по почте)
+                    stale-workout-remind/ (бот: «Кажется, ты забыл завершить тренировку»)
 ```
 
 ## Коммуникация

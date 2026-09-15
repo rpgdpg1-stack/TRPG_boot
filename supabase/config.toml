@@ -9,3 +9,11 @@ entrypoint = "./functions/telegram-auth/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/telegram-auth/*.html" ]
+
+# Напоминание о забытой тренировке. Зовёт pg_cron раз в 15 минут; от вызывающего
+# ничего не берёт, повтор безвреден (reminded_at) — поэтому без проверки JWT.
+[functions.stale-workout-remind]
+enabled = true
+verify_jwt = false
+import_map = "./functions/stale-workout-remind/deno.json"
+entrypoint = "./functions/stale-workout-remind/index.ts"

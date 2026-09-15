@@ -16,6 +16,8 @@
  *   stats           → статистика как есть
  *   open-w2 / open-m / open-np → главная; хвост говорит, какое именно
  *                     напоминание сработало (две недели, месяц, нет закрепов)
+ *   open-stale      → главная; напоминание о забытой тренировке — модалку
+ *                     «Тренировка не завершена» покажет само приложение
  *   open            → просто главная
  *
  * Экран только ОТКРЫВАЕТСЯ. Тренировка не стартует: решение начать человек
@@ -89,7 +91,8 @@ export function notificationTypeFromStartParam(param) {
     'stats-year': 'yearly',
     'open-w2': 'nudge_2w',
     'open-m': 'nudge_month',
-    'open-np': 'nudge_nopin'
+    'open-np': 'nudge_nopin',
+    'open-stale': 'stale_workout'
   }
   if (MAP[param]) return MAP[param]
 

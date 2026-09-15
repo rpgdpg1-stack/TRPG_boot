@@ -31,6 +31,8 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA extensions;
+-- HTTP из базы: pg_cron зовёт Edge Function stale-workout-remind.
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA extensions;
 
 
 -- ── ПОСЛЕДОВАТЕЛЬНОСТИ ─────────────────────────────────────────────────────
@@ -268,7 +270,11 @@ CREATE TABLE IF NOT EXISTS public.active_sessions (
   -- пустота на сервере неотличима от «тут никогда ничего не было», и второе
   -- устройство заливало свою локальную копию обратно, воскрешая отменённое.
   active boolean DEFAULT true NOT NULL,
-  updated_at timestamp with time zone DEFAULT now() NOT NULL
+  updated_at timestamp with time zone DEFAULT now() NOT NULL,
+  -- Время последней ГАЛОЧКИ (не любого сохранения) — порог забытой тренировки.
+  last_tick_at timestamp with time zone,
+  -- Бот напомнил о забытой тренировке; сбрасывается новой сессией или галочкой.
+  reminded_at timestamp with time zone
 );
 
 CREATE TABLE IF NOT EXISTS public.heartbeat (
@@ -2114,6 +2120,86 @@ $function$;
 -- под своими id ('prog_001', 'usr_2', 'swim_001') — slug сначала переводится
 -- в id, иначе совпадений нет ни у кого. Возвращаем СПИСОК: закрепить можно
 -- сколько угодно программ, и выбирать за человека одну из них незачем.
+-- Сессия и напоминание о забытой тренировке (миграция 20260916_0200_stale_workout_reminder).
+create or replace function public.api_set_active_session(
+  p_program_id text, p_day text, p_place text, p_started_at timestamp with time zone, p_done integer[])
+returns void
+language sql
+security definer
+set search_path to 'public'
+as $function$
+  insert into public.active_sessions as s
+    (user_id, program_id, day, place, started_at, done, active, updated_at, last_tick_at, reminded_at)
+  values (public.current_user_id(), p_program_id, p_day,
+          coalesce(p_place, 'gym'), p_started_at, coalesce(p_done, '{}'), true, now(),
+          case when cardinality(coalesce(p_done, '{}')) > 0 then now() end, null)
+  on conflict (user_id) do update
+    set program_id = excluded.program_id, day = excluded.day, place = excluded.place,
+        started_at = excluded.started_at, done = excluded.done,
+        active = true, updated_at = now(),
+        last_tick_at = case
+          -- другая тренировка — отсчёт с нуля
+          when not (s.active and s.program_id = excluded.program_id and s.day = excluded.day
+                    and s.started_at = excluded.started_at)
+            then case when cardinality(excluded.done) > 0 then now() end
+          -- та же, набор галочек поменялся
+          when not (s.done @> excluded.done and s.done <@ excluded.done) then now()
+          else s.last_tick_at
+        end,
+        reminded_at = case
+          when not (s.active and s.program_id = excluded.program_id and s.day = excluded.day
+                    and s.started_at = excluded.started_at)
+            then null
+          when not (s.done @> excluded.done and s.done <@ excluded.done) then null
+          else s.reminded_at
+        end;
+$function$;
+
+-- Кому напомнить. Только живые сессии с Telegram, у кого не выключены пинки,
+-- ещё не напомненные и не древнее 30 дней (дальше напоминание уже бессмысленно,
+-- а модалка в приложении снимет такую сессию при первом запуске).
+create or replace function public.srv_stale_session_candidates()
+returns table (user_id bigint, telegram_id bigint, program_id text, day text, place text,
+               started_at timestamptz, last_tick_at timestamptz, done_count integer)
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select s.user_id, u.telegram_id, s.program_id, s.day, s.place, s.started_at,
+         coalesce(s.last_tick_at, s.updated_at) as last_tick_at,
+         cardinality(s.done) as done_count
+  from public.active_sessions s
+  join public.users u on u.id = s.user_id
+  where s.active
+    and s.reminded_at is null
+    and s.program_id <> ''
+    and u.telegram_id is not null
+    and u.notify_nudge
+    and s.started_at > now() - interval '30 days'
+    and (
+      (cardinality(s.done) > 0 and coalesce(s.last_tick_at, s.updated_at) <= now() - interval '90 minutes')
+      or (cardinality(s.done) = 0 and s.started_at <= now() - interval '3 hours')
+    )
+  order by s.started_at;
+$function$;
+
+-- Отметить «напомнили». Привязка к started_at: пока бот собирал сообщение,
+-- человек мог начать новую тренировку — её отметка не касается.
+create or replace function public.srv_mark_session_reminded(p_user_id bigint, p_started_at timestamptz)
+returns void
+language sql
+security definer
+set search_path to 'public'
+as $function$
+  update public.active_sessions
+     set reminded_at = now()
+   where user_id = p_user_id and started_at = p_started_at and active;
+$function$;
+
+-- srv_* — только сервер. REVOKE FROM PUBLIC не снимает права у anon и
+-- authenticated (их выдаёт default privileges Supabase) — перечисляем явно.
+
 CREATE OR REPLACE FUNCTION public.srv_nudge_candidates()
 RETURNS TABLE (user_id bigint, telegram_id bigint, days_since integer,
                nudge_ignored integer, programs jsonb,
@@ -2742,6 +2828,10 @@ REVOKE ALL ON FUNCTION public.srv_weekly_digest() FROM PUBLIC, anon, authenticat
 REVOKE ALL ON FUNCTION public.srv_monthly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_yearly_digest() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_nudge_candidates() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_stale_session_candidates() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.srv_mark_session_reminded(bigint, timestamptz) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.srv_stale_session_candidates() TO service_role;
+GRANT EXECUTE ON FUNCTION public.srv_mark_session_reminded(bigint, timestamptz) TO service_role;
 REVOKE ALL ON FUNCTION public.srv_mark_nudge_sent(bigint) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_owner_report() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.srv_email_verify_code(text, text, text) FROM PUBLIC, anon, authenticated;
