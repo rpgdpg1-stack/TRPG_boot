@@ -26,12 +26,10 @@ import { useScrollLock } from '../lib/use-scroll-lock'
  *   (к левому краю якоря — так открываются меню долгого нажатия).
  * @param gap — зазор между якорем и меню, px.
  * @param motion — 'scale' (раскрытие из угла) | 'drop' (выезд сверху вниз, 200мс).
- * @param surface — 'glass' (по умолчанию) | 'solid': непрозрачная поверхность без
- *   обводки — когда под меню текст и сквозь стекло он мешает читать пункты.
  * @param minWidth — минимальная ширина, px (по умолчанию 234; короткому списку —
  *   по содержимому).
  */
-export default function AnchorMenu({ anchorRect, items, onClose, align = 'right', gap = 10, motion = 'scale', surface = 'glass', minWidth }) {
+export default function AnchorMenu({ anchorRect, items, onClose, align = 'right', gap = 10, motion = 'scale', minWidth }) {
   const overlayRef = useRef(null)
   useScrollLock(overlayRef)
   const menuRef = useRef(null)
@@ -203,7 +201,6 @@ export default function AnchorMenu({ anchorRect, items, onClose, align = 'right'
         ref={menuRef}
         style={{
           ...styles.menu,
-          ...(surface === 'solid' ? styles.menuSolid : null),
           ...(minWidth != null ? { minWidth: `${minWidth}px` } : null),
           top: pos?.top ?? 0,
           left: pos?.left ?? 0,
@@ -269,14 +266,6 @@ const styles = {
     gap: 'var(--space-05)',
     boxShadow: 'var(--shadow-raised)',
     transition: 'opacity 0.16s ease, transform 0.17s cubic-bezier(0.2, 0.7, 0.3, 1)'
-  },
-  // Непрозрачный вариант: текст под меню не просвечивает, обводка не нужна —
-  // край и так читается по разнице с фоном.
-  menuSolid: {
-    background: 'var(--surface-raised)',
-    backdropFilter: 'none',
-    WebkitBackdropFilter: 'none',
-    border: 'none'
   },
   row: {
     display: 'flex',

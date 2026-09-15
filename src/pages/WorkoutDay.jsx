@@ -9,7 +9,6 @@ import { runWhenIdle } from '../lib/cache'
 import { getProgramBySlug, getProgramDaySlots, getProgramPlaces } from '../features/programs/registry'
 import { EST_MIN_PER_EXERCISE } from '../features/programs/duration'
 import { useProgramPlace } from '../lib/program-place'
-import PlaceSwitcher from '../components/PlaceSwitcher'
 import RocketToggle from '../components/RocketToggle'
 import RocketIcon from '../components/RocketIcon'
 import { setQuickOn, applyQuickSet } from '../lib/quick-workout'
@@ -147,7 +146,8 @@ export default function WorkoutDay() {
   // «Cannot access before initialization» — const не поднимается.
   const program = useMemo(() => getProgramBySlug(programId), [programId])
   const places = useMemo(() => getProgramPlaces(program), [program])
-  const [place, setPlace] = useProgramPlace(programId, places)
+  // Место выбирают на карточке программы (тег перед днями) — здесь только читаем.
+  const [place] = useProgramPlace(programId, places)
 
   const [allSlots, setAllSlots] = useState([])
   // «Быстрая тренировка»: набор — что входит в короткую версию (настраивается
@@ -750,15 +750,6 @@ export default function WorkoutDay() {
     })
   }
 
-  // Открыть день/набор места с самого верха. Зовём при намеренной смене дня
-  // (свайп/стрелки) и места — чтобы новый список начинался сверху, а не оставался
-  // на прежней позиции скролла. Возврат с Инфо/Смены сюда не попадает (там своя
-  // логика восстановления позиции).
-  const scrollToTop = () => {
-    window.scrollTo(0, 0)
-    document.scrollingElement?.scrollTo(0, 0)
-  }
-
   const goToDay = (targetDay, direction) => {
     if (targetDay === day) return
     haptic.light()
@@ -774,7 +765,7 @@ export default function WorkoutDay() {
       firePulse(setCrossPulse, 'cross')
     }
     // Активный целевой день — восстановить сохранённую позицию; прочие — сверху.
-    // Ставит restore-эффект по слотам целевого дня (не гоним scrollToTop сразу).
+    // Ставит restore-эффект по слотам целевого дня (скролл не сбрасываем сразу).
     pendingScrollRef.current = {
       day: targetDay,
       y: targetIsActive ? (loadActiveScroll(programId, targetDay, placeRef.current) ?? 'top') : 'top'
@@ -1222,13 +1213,8 @@ export default function WorkoutDay() {
           <div style={styles.headerCardInner}>
 
           <div style={styles.topMetaRow}>
-            {/* Место тренировки (Зал/Дом/Улица) — переключатель; смена места
-                подгружает упражнения этого места из конструктора. Тап открывает
-                список остальных мест вниз, поверх экрана. */}
-            <div style={{ ...styles.placeSlot, opacity: 1 - rowCollapse, pointerEvents: rowCollapse > 0.5 ? 'none' : 'auto' }}>
-              {/* Место можно менять даже во время активной сессии (по просьбе). */}
-              <PlaceSwitcher program={program} value={place} onChange={(loc) => { setPlace(loc); scrollToTop() }} />
-            </div>
+            {/* Переключателя места здесь нет: место выбирают тегом на карточке
+                программы, день грузит упражнения уже под него. */}
             {/* Центр строки: активна — таймер (зелёный→оранжевый→красный, пульс на
                 смене цвета); до старта — часы + примерная длительность (баланс
                 строки + подсказка «сколько займёт»). */}
@@ -1743,13 +1729,7 @@ const styles = {
     minHeight: '32px',
     padding: 0
   },
-  // Слой переключателя места: выше таймера. Список мест открывается меню
-  // поверх экрана (портал), но сама пилюля должна перекрывать соседние цифры.
-  placeSlot: {
-    position: 'relative',
-    zIndex: 2
-  },
-  // Ракета — левый нижний угол карточки-шапки (место остаётся сверху слева).
+  // Ракета — левый нижний угол карточки-шапки.
   // Поп-ап режима: по центру экрана, сквозной для тапов (pointerEvents:none) —
   // он информирует, а не спрашивает.
   quickPopup: {
