@@ -52,6 +52,12 @@ export function loadWorkoutProgress(programSlug, day, place) {
  */
 export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
   const key = getKey(programSlug, day, place)
+  // Набор реально поменялся? Экран дня сохраняет прогресс и при простом открытии
+  // (подставил сохранённое → эффект записал то же самое) — это не галочка, и
+  // отсчёт «забытой тренировки» от неё сдвигаться не должен.
+  const before = loadWorkoutProgress(programSlug, day, place)
+  const next = activeOrderNums || []
+  const changed = before.length !== next.length || before.some(n => !next.includes(n))
 
   if (!activeOrderNums || activeOrderNums.length === 0) {
     localRemove(key)
@@ -64,7 +70,7 @@ export function saveWorkoutProgress(programSlug, day, place, activeOrderNums) {
   // общую сессию нельзя. Отправка придержана внутри pushSession.
   const active = getActiveWorkout()
   if (active && active.programId === programSlug && active.day === day) {
-    touchActiveWorkout()
+    touchActiveWorkout({ tick: changed })
     pushSession({
       programId: programSlug,
       day,

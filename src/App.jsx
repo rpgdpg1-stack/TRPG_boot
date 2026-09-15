@@ -70,6 +70,7 @@ import { cacheInvalidate } from './lib/cache'
 import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
+import StaleWorkoutModal from './components/StaleWorkoutModal'
 import { debug } from './lib/debug'
 import { pcacheDropOldCatalogs } from './lib/persistent-cache'
 import { repairEmptyCaches } from './lib/cache-repair'
@@ -284,6 +285,8 @@ export default function App() {
         <SettingsButtonController />
         <ShareImportController />
         <StartRouteController />
+        {/* Забытая тренировка («Засчитать / Не засчитывать») — на любом экране. */}
+        <StaleWorkoutModal />
         <MetrikaRouteTracker />
 
         <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>

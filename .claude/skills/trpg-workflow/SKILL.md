@@ -282,6 +282,13 @@ camelCase — утилиты (`getTodayKey`).
   (карточки `ProgramCard`/`FavCardBody` показывают статус-строку `N/M · полоска · время` + бейдж
   «▶ Продолжить» и ведут в активный день). Время форматируем `formatWorkoutMin`. Заплыв (`SwimWorkout`)
   в эту модель НЕ входит — там мгновенное «Завершить» без таймера/сессии.
+- **Забытая тренировка** (`utils/workout-stale.js` + `StaleWorkoutModal` в App). Порог — от ПОСЛЕДНЕЙ
+  ГАЛОЧКИ: 90 мин; без галочек — 3 ч от старта. `updatedAt` сессии для этого НЕ годится — он сдвигается и
+  от простого открытия дня (экран дня пересохраняет прогресс на входе); время галочки — отдельное поле
+  `lastTickAt`, `saveWorkoutProgress` ставит его только когда набор реально поменялся. «Засчитать» —
+  `finishWorkout(..., finishedAtOverride)` = момент последней галочки: день и длительность честные,
+  сегодняшний лимит свободен (оффлайн — `finished_at` кладётся в саму операцию очереди). Сервер принимает
+  задним числом максимум 7 дней, длительность режет до 6 ч. Модалка тапом мимо НЕ закрывается.
 - Подсветка дня едина на карточках и в шапке дня: «фокусный» день = активная сессия программы, иначе
   рекомендованный по циклу (`getActiveDaySync`/`nextDayInCycle`). См. trpg-ui «Шапка дня» (буква/DayPicker).
 - **Пустой ответ сервера — НЕ данные.** Пользовательские RPC узнают человека по
@@ -615,11 +622,13 @@ src/
 │                   PinnedCarousel (закреплённые программы на главной)
 │                   ScreenTitle ScrollTopButton SearchIcon SectionBadge
 │                   SegmentedControl (пилюля-переключатель, бывш. PeriodSwitcher)
-│                   StreakInfoPopup SwipeReveal (свайп «Замена»: день + конструктор) TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
+│                   StreakInfoPopup SwipeReveal (свайп «Замена»: день + конструктор)
+│                   StaleWorkoutModal («Тренировка не завершена» — забытая сессия) TabBar Toast TrashIcon TrendingUpIcon UiIcon WaterChrome
 │                   WeeklyMuscle WeightProgressModal WeightRaiseFlash WorkoutFinishedModal
 │   ├── layout/     ErrorBoundary · Loader
 │   └── workout/    DayPicker · ReturnHighlight · SkeletonCard · SwapAnimationOverlay
 ├── utils/          dates.js · history.js · day-limit.js (подпись правила суток)
+│                   workout-stale.js (порог «забытой» тренировки, чистые функции)
 │                   workout-progress.js · __tests__/ (Vitest: dates, history)
 ├── data/programs/  split.js · fullbody.js · swim.js
 ├── features/exercises/  api.js · weight-format.js · use-weight-editor.js (общий ввод рабочего веса)

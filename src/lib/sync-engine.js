@@ -236,8 +236,10 @@ async function sendSwap(op, userId) {
  * already_completed_today=true — НЕ ошибка, операцию убираем (return true).
  */
 async function sendFinish(op, userId) {
-  const { program_id, day, exercise_ids, started_at, distance_m } = op.payload
-  const finishedAt = op.createdAt // ISO-строка момента завершения оффлайн
+  const { program_id, day, exercise_ids, started_at, distance_m, finished_at } = op.payload
+  // Момент завершения: задним числом (забытая тренировка) — из операции,
+  // иначе createdAt = когда нажали «Завершить» оффлайн.
+  const finishedAt = finished_at || op.createdAt
 
   const { data, error } = await supabase.rpc('api_finish_workout', {
     p_user_id: userId,

@@ -64,10 +64,11 @@ export function startActiveWorkout(programId, day, place = 'gym') {
  * отменили там». Без обновления на каждой галочке отметка застывала в момент
  * старта, и свежая работа проигрывала старому надгробию.
  */
-export function touchActiveWorkout() {
+export function touchActiveWorkout({ tick = false } = {}) {
   const cur = getActiveWorkout()
   if (!cur) return
-  localSet(KEY, JSON.stringify({ ...cur, updatedAt: new Date().toISOString() }))
+  const now = new Date().toISOString()
+  localSet(KEY, JSON.stringify({ ...cur, updatedAt: now, ...(tick ? { lastTickAt: now } : null) }))
 }
 
 /**
@@ -76,7 +77,14 @@ export function touchActiveWorkout() {
  */
 export function adoptActiveWorkout(session) {
   if (!session?.programId) return
-  localSet(KEY, JSON.stringify({ ...session, updatedAt: new Date().toISOString() }))
+  // Время галочки принесённой сессии сохраняем как есть: иначе перенос с другого
+  // устройства «оживлял» забытую тренировку и порог отсчитывался заново.
+  // У серверной сессии отдельного поля нет — её updated_at и есть последнее изменение.
+  localSet(KEY, JSON.stringify({
+    ...session,
+    lastTickAt: session.lastTickAt || session.updatedAt || undefined,
+    updatedAt: new Date().toISOString()
+  }))
   emitChange()
 }
 

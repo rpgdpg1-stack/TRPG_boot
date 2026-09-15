@@ -335,7 +335,9 @@ export function invalidateWorkoutDayCache(programSlug = null) {
  *
  * ОНЛАЙН: атомарная RPC.
  */
-export async function finishWorkout(programSlug, day, exerciseIds, distanceM = null, startedAtOverride = null) {
+// finishedAtOverride — завершение задним числом (забытая тренировка: момент последней
+// галочки). Без него — «сейчас».
+export async function finishWorkout(programSlug, day, exerciseIds, distanceM = null, startedAtOverride = null, finishedAtOverride = null) {
   debug('[programs] finishWorkout:', { programSlug, day, exerciseIds })
 
   const user = getCurrentUser()
@@ -364,13 +366,15 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
   // лимиту «1 тренировка в день в этом разделе» (already_completed_today),
   // повтора начислений нет.
   const queueOfflineFinish = () => {
-    const finishedAt = new Date().toISOString()
+    const finishedAt = finishedAtOverride || new Date().toISOString()
     enqueue('finish', {
       program_id: dbId,
       day,
       exercise_ids: exerciseIds,
       started_at: startedAt,
-      distance_m: distanceM
+      distance_m: distanceM,
+      // Задним числом — время в самой операции: createdAt очереди = «сейчас».
+      ...(finishedAtOverride ? { finished_at: finishedAtOverride } : null)
     }, finishDedupKey(dbId, day, finishedAt))
     return {
       offline: true,
@@ -398,7 +402,8 @@ export async function finishWorkout(programSlug, day, exerciseIds, distanceM = n
       p_day: day,
       p_exercise_ids: exerciseIds,
       p_started_at: startedAt,
-      p_distance_m: distanceM
+      p_distance_m: distanceM,
+      ...(finishedAtOverride ? { p_finished_at: finishedAtOverride } : null)
     })
     const timeoutPromise = new Promise(resolve => {
       timer = setTimeout(() => resolve(TIMEOUT), FINISH_TIMEOUT_MS)
