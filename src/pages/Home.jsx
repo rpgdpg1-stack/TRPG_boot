@@ -137,7 +137,7 @@ export default function Home() {
 
         {/* Второй план: карточки-входы — каталог и статистика. Заголовка-обёртки
             нет, карточки подписаны сами. */}
-        <div style={{ marginTop: 'var(--space-5)' }}>
+        <div style={{ marginTop: 'var(--space-4)' }}>
           <HomeCards />
         </div>
       </div>
