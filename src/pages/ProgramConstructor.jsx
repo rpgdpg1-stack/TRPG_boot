@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { backButton, lockVerticalSwipes, haptic } from '../lib/telegram'
 import { getProgramBySlug, PLACES, getPlaceMeta } from '../features/programs/registry'
+import PlaceSegment from '../components/PlaceSegment'
 import { loadExerciseCatalog, saveMyProgram } from '../features/programs/customProgram'
 import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
@@ -508,43 +509,14 @@ export default function ProgramConstructor() {
         </div>
       </div>
 
-      {/* Место (Зал/Дом/Улица) — «таб-бар на одну активную позицию»: заполненные
-          места + активное собраны в контейнер-таб-бар (фон/обводка из таб-бара),
-          активная позиция залита (surface-active). Пустые неактивные места — голым
-          текстом снаружи (как невыбранные табы). Контейнера нет, пока не тапнули. */}
+      {/* Место (Зал/Дом/Улица) — общий сегмент PlaceSegment: заполненные места +
+          активное в контейнере, активное залито и покрашено акцентом. Пустые
+          неактивные места — голым текстом снаружи (как невыбранные табы). */}
       <div style={styles.section}>
         <SectionLabel caps>МЕСТО</SectionLabel>
         <div style={styles.placeRow}>
           {inContainerPlaces.length > 0 && (
-            <div style={{ ...styles.segGroup, width: 'auto' }}>
-              {inContainerPlaces.map((loc, i) => {
-                const meta = getPlaceMeta(loc)
-                const active = activeLoc === loc
-                return (
-                  <button
-                    key={loc}
-                    onClick={() => changeLoc(loc)}
-                    className="press-tile"
-                    style={{
-                      ...styles.segItem,
-                      ...(active ? styles.segItemActive : {}),
-                      flex: '0 0 auto',
-                      padding: '0 var(--space-4)',
-                      marginLeft: i === 0 ? 0 : '-5px',
-                      zIndex: active ? 2 : 1,
-                      // Активное место — цвет самого места (зал — оранжевый,
-                      // дом — синий, улица — зелёный); красятся текст и иконка
-                      // (UiIcon наследует currentColor). Неактивные — как были.
-                      color: active ? meta.color : 'var(--color-text-inactive)',
-                      fontSize: active ? '15px' : '13px'
-                    }}
-                  >
-                    <UiIcon name={meta.icon} size={21} />
-                    {meta.label}
-                  </button>
-                )
-              })}
-            </div>
+            <PlaceSegment places={inContainerPlaces} value={activeLoc} onPick={changeLoc} />
           )}
           {outsidePlaces.map(loc => {
             const meta = getPlaceMeta(loc)

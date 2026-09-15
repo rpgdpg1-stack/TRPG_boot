@@ -199,11 +199,12 @@ export default function ProgramCard({
   }
 
   // Пункт меню «Место тренировки: Зал» — только когда выбирать есть из чего.
-  // Текст белый, без акцента: это сведение, а не действие-призыв.
+  // Выбранное место и иконка — акцентом: тот же язык «выбрано», что в окне
+  // выбора и в конструкторе; подпись «Место тренировки:» — белая.
   const placeItem = places.length > 1 ? [{
     key: 'place',
-    icon: <UiIcon name="location" size={20} color="var(--color-text)" />,
-    label: `Место тренировки: ${getPlaceMeta(place).label}`,
+    icon: <UiIcon name="location" size={20} color="var(--color-primary)" />,
+    label: <>Место тренировки: <span style={{ color: 'var(--color-primary)' }}>{getPlaceMeta(place).label}</span></>,
     onClick: () => setPlaceOpen(true)
   }] : []
   const stopEvent = (e) => e.stopPropagation()
