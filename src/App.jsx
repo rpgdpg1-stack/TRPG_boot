@@ -71,6 +71,7 @@ import { startVersionWatch } from './lib/version-check'
 import { syncQueue } from './lib/sync-engine'
 import OfflineBanner from './components/OfflineBanner'
 import StaleWorkoutModal from './components/StaleWorkoutModal'
+import ToastHost from './components/ToastHost'
 import { debug } from './lib/debug'
 import { pcacheDropOldCatalogs } from './lib/persistent-cache'
 import { repairEmptyCaches } from './lib/cache-repair'
@@ -287,6 +288,8 @@ export default function App() {
         <StartRouteController />
         {/* Забытая тренировка («Засчитать / Не засчитывать») — на любом экране. */}
         <StaleWorkoutModal />
+        {/* Подтверждения «Сохранено» — один держатель на приложение. */}
+        <ToastHost />
         <MetrikaRouteTracker />
 
         <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--color-bg)' }} />}>

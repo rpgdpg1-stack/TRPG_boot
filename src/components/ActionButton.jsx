@@ -26,7 +26,22 @@
  * (в Figma это Boolean-свойство «Border»).
  *
  * disabled всегда перебивает variant и даёт вид 'dim'.
+ *
+ * ЗАГРУЗКА И ГОТОВО (`loading`, `done`). Вместо надписи «Сохранение…» — кружок
+ * по центру кнопки, а следом (где это уместно) галочка. Заливка и размеры НЕ
+ * меняются: текст остаётся на месте, но становится невидимым, и кнопка не
+ * прыгает по ширине. Нажатия в это время не проходят, но вид у кнопки живой —
+ * действие принято, а не заблокировано.
+ *
+ * `done` ставить только там, где кнопка ОСТАЁТСЯ на экране (сохранение заметки,
+ * своего упражнения). Если кнопка сразу превращается в другую («Начать» →
+ * «Завершить») или экран уходит — галочка не нужна, её никто не успеет прочесть.
+ *
+ * Мгновенные действия (меньше ~300 мс, всё локально) вообще не показывают
+ * загрузку: мигание кружка читается как сбой, а не как работа.
  */
+import Spinner from './Spinner'
+
 export default function ActionButton({
   variant = 'neutral',
   size = 'md',
@@ -34,6 +49,8 @@ export default function ActionButton({
   hug = false,
   bordered = false,
   onClick,
+  loading = false,
+  done = false,
   children,
   style,
   className = '',
@@ -41,6 +58,9 @@ export default function ActionButton({
   ...rest
 }) {
   const look = disabled ? styles.dim : (styles[variant] || styles.neutral)
+  // Пока идёт сохранение, кнопка не принимает нажатий, но остаётся «живой»:
+  // вид берём обычный, а не disabled.
+  const busy = loading || done
   const sizing = styles[size] || styles.md
   // Прогресс-заливка за текстом (например, «Завершить»: фон светло-серым
   // растёт по мере отметки упражнений). Только для активной кнопки.
@@ -50,18 +70,36 @@ export default function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || busy}
       className={`press-tile ${className}`.trim()}
-      style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(bordered ? styles.bordered : null), ...(showFill ? styles.clip : null), ...style }}
+      style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(bordered ? styles.bordered : null), ...(showFill || busy ? styles.clip : null), ...style }}
       {...rest}
     >
-      {showFill ? (
+      {busy ? (
+        <>
+          {/* Содержимое остаётся в потоке — только невидимое: так кнопка
+              сохраняет свою ширину и высоту. */}
+          <span style={styles.hiddenLabel} aria-hidden="true">{children}</span>
+          <span style={styles.busyLayer}>
+            {done ? <CheckMark /> : <Spinner size={22} />}
+          </span>
+        </>
+      ) : showFill ? (
         <>
           <span style={{ ...styles.fill, width: `${pct}%` }} aria-hidden="true" />
           <span style={styles.label}>{children}</span>
         </>
       ) : children}
     </button>
+  )
+}
+
+function CheckMark() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.4"
+            strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -179,5 +217,12 @@ const styles = {
     transition: 'width 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
     pointerEvents: 'none'
   },
-  label: { position: 'relative', zIndex: 1 }
+  label: { position: 'relative', zIndex: 1 },
+  // Невидимое, но занимающее место содержимое: ширина кнопки не скачет.
+  hiddenLabel: { visibility: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' },
+  busyLayer: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    pointerEvents: 'none'
+  }
 }

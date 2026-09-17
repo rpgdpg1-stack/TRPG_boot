@@ -143,7 +143,9 @@ export default function WorkoutFinishedModal({
   }, [statsShown])
 
   const titleText = isError ? 'Не удалось сохранить' : offline ? 'Сохранено локально' : 'Тренировка завершена'
-  const buttonText = isSaving ? 'Сохранение…' : isError ? 'Повторить' : 'Готово'
+  // Пока идёт сохранение — кружок внутри кнопки (ActionButton loading), текст
+  // остаётся прежним и невидимым: кнопка не меняет ширину.
+  const buttonText = isError ? 'Повторить' : 'Готово'
 
   const handleClick = () => {
     if (isSaving || closing) return
@@ -266,7 +268,7 @@ export default function WorkoutFinishedModal({
             <ActionButton
               variant="primary"
               onClick={handleClick}
-              disabled={isSaving}
+              loading={isSaving}
               style={{ marginTop: 'var(--space-1)', width: '100%', ...(isError ? { background: 'var(--color-offline)', borderColor: 'var(--color-offline-border)', color: 'var(--accent-on)' } : {}) }}
             >
               {buttonText}

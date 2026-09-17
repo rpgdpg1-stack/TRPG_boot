@@ -18,6 +18,7 @@ import UiIcon from './UiIcon'
 import AnchorMenu from './AnchorMenu'
 import WeightProgressModal from './WeightProgressModal'
 import CloseCross from './CloseCross'
+import Spinner from './Spinner'
 import { useScrollLock } from '../lib/use-scroll-lock'
 import TrendingUpIcon from './TrendingUpIcon'
 
@@ -102,6 +103,9 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved, onInf
   const [editingNote, setEditingNote] = useState(false)
   const [draft, setDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  // Короткая галочка после сохранения: кнопка остаётся на экране, и подтвердить
+  // ей самой честнее, чем тостом внизу — глаз человека уже здесь.
+  const [noteSaved, setNoteSaved] = useState(false)
   const [noteError, setNoteError] = useState(false)
 
   // Вес — отображаем и редактируем прямо в модалке (как на карточке в днях
@@ -269,8 +273,12 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved, onInf
 
     if (ok) {
       haptic.success()
-      setNote(draft.trim().slice(0, NOTE_MAX_LENGTH))
-      setEditingNote(false)
+      setNoteSaved(true)
+      setTimeout(() => {
+        setNoteSaved(false)
+        setNote(draft.trim().slice(0, NOTE_MAX_LENGTH))
+        setEditingNote(false)
+      }, 550)
     } else {
       haptic.error()
       setNoteError(true)
@@ -416,8 +424,23 @@ export default function ExerciseActionMenu({ slot, onClose, onWeightSaved, onInf
                   <button onClick={cancelEditNote} style={styles.noteCancelBtn} disabled={savingNote}>
                     Отмена
                   </button>
-                  <button onClick={handleSaveNote} style={styles.noteSaveBtn} disabled={savingNote}>
-                    {savingNote ? 'Сохранение…' : 'Сохранить'}
+                  <button
+                    onClick={handleSaveNote}
+                    style={styles.noteSaveBtn}
+                    disabled={savingNote || noteSaved}
+                  >
+                    {/* Текст остаётся в потоке невидимым — кнопка не меняет ширину. */}
+                    <span style={{ visibility: savingNote || noteSaved ? 'hidden' : 'visible' }}>Сохранить</span>
+                    {(savingNote || noteSaved) && (
+                      <span style={styles.noteBtnBusy}>
+                        {noteSaved ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6"
+                                  strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : <Spinner size={18} />}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -837,8 +860,14 @@ const styles = {
     color: 'var(--color-text-secondary)',
     cursor: 'pointer'
   },
+  noteBtnBusy: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    pointerEvents: 'none'
+  },
   // Small-кнопка (30/пилюля/текст 14) — как ActionButton size=xs, primary.
   noteSaveBtn: {
+    position: 'relative',
     height: 'var(--btn-height-xs)',
     display: 'inline-flex',
     alignItems: 'center',

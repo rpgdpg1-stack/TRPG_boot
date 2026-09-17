@@ -5,6 +5,7 @@ import { getMuscleGroupColors } from '../features/programs/colors'
 import { buildMetaInfo, parseMetaInfo } from '../features/programs/userExercises'
 import { haptic } from '../lib/telegram'
 import ActionButton from './ActionButton'
+import { showToast } from '../lib/toast'
 import ChevronIcon from './ChevronIcon'
 import ExercisePlaceholder from './ExercisePlaceholder'
 import ScreenTitle from './ScreenTitle'
@@ -84,6 +85,7 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
         countsReps
       })
       haptic.success()
+      showToast(isEdit ? 'Упражнение сохранено' : 'Упражнение создано')
     } catch (e) {
       haptic.error()
       setError(e?.message || 'Не удалось сохранить')
@@ -242,8 +244,8 @@ export default function CustomExerciseForm({ groups = [], initial = null, onSave
         {error && <div style={styles.error}>{error}</div>}
 
         <div style={styles.actions}>
-          <ActionButton onClick={submit} variant="primary" hug disabled={!canSave}>
-            {saving ? 'Сохранение…' : 'Сохранить'}
+          <ActionButton onClick={submit} variant="primary" hug disabled={!canSave} loading={saving}>
+            Сохранить
           </ActionButton>
         </div>
       </div>

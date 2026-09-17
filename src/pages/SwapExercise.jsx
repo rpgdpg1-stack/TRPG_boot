@@ -249,13 +249,14 @@ export function SwapExerciseView({
             выбрал — кнопка заливается акцентом (готова к действию). */}
         <ActionButton
           onClick={handleConfirm}
-          disabled={!canSwap || saving || loading}
+          disabled={!canSwap || loading}
+          loading={saving}
           variant={canSwap ? 'accent' : 'neutral'}
           bordered={!canSwap || saving || loading}
           hug
           style={{ fontSize: 'var(--text-body-size)' }}
         >
-          {saving ? 'Сохранение…' : 'Сменить'}
+          Сменить
         </ActionButton>
       </div>
     </div>

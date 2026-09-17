@@ -9,6 +9,7 @@ import { exerciseTagLabel } from '../features/programs/labels'
 import { getMuscleGroupColors } from '../features/programs/colors'
 import { isCustomExercise, loadMyExercises, getMyExercisesSync } from '../features/programs/userExercises'
 import ExercisePicker from '../components/ExercisePicker'
+import { showToast } from '../lib/toast'
 import SwipeReveal from '../components/SwipeReveal'
 import ReturnHighlight from '../components/workout/ReturnHighlight'
 import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
@@ -338,6 +339,9 @@ export default function ProgramConstructor() {
       goal(GOALS.PROGRAM_CREATE, { days: dayCount })
       initialSnapshot.current = JSON.stringify({ name, dayCount, byLoc }) // зафиксировали как сохранённое
       haptic.success()
+      // Галочки на кнопке тут не будет — экран уходит. Подтверждение догоняет
+      // человека тостом уже в каталоге (держатель общий, живёт в App).
+      showToast('Программа сохранена')
       goBack()
     } catch (e) {
       console.error('[constructor] save error:', e)
@@ -764,10 +768,11 @@ export default function ProgramConstructor() {
           <ActionButton
             onClick={handleSave}
             disabled={!canSave}
+            loading={saving}
             variant="primary"
             hug
           >
-            {saving ? 'Сохраняю…' : 'Сохранить'}
+            Сохранить
           </ActionButton>
         </div>,
         document.body

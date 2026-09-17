@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { backButton, haptic, lockVerticalSwipes } from '../lib/telegram'
 import { getPinnedPrograms, getPinnedProgramsSync, togglePinnedProgram } from '../lib/storage'
 import { EVENTS, on } from '../lib/events'
+import { showToast } from '../lib/toast'
 import { CATEGORY_META, CATEGORY_ORDER } from '../features/programs/categories'
 import { getProgramsByCategory } from '../features/programs/registry'
 import ProgramCard from '../components/ProgramCard'
 import UiIcon from '../components/UiIcon'
 import ScreenTitle from '../components/ScreenTitle'
-import Toast from '../components/Toast'
 
 /**
  * Каталог программ — единственный вход из главной («Все программы ›»).
@@ -48,8 +48,6 @@ const SETTLE_MS = 380
 // Переключать таб по концу анимации (380 мс) + его собственные 220 мс
 // перехода — это и была «задержка»: список встал, а таб думает ещё полсекунды.
 const LAND_MS = 140
-// Сколько висит тост-подтверждение закрепа.
-const TOAST_MS = 1800
 // Насколько активный таб крупнее остальных. 1.15 — заметно с одного взгляда и
 // при этом не ломает ряд: значок с подписью растут внутри своей доли ширины.
 const TAB_ACTIVE_SCALE = 1.15
@@ -85,8 +83,6 @@ export default function Programs() {
   // из которого туда зашли.
   const [idx, setIdx] = useState(() => idxOfCat(location.state?.cat))
   const [pinned, setPinned] = useState(() => getPinnedProgramsSync())
-  const [toast, setToast] = useState(null)   // null | { text, nonce }
-  const toastTimer = useRef(null)
   const [, bump] = useState(0)
 
   const cats = CATEGORY_ORDER.map(id => ({ id, ...CATEGORY_META[id] }))
@@ -129,7 +125,6 @@ export default function Programs() {
   useEffect(() => () => {
     if (settleTimer.current) clearTimeout(settleTimer.current)
     if (landTimer.current) clearTimeout(landTimer.current)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
   }, [])
 
   // Переход к разделу ПО КРУГУ: за «Растяжкой» снова «Силовая», перед
@@ -289,10 +284,8 @@ export default function Programs() {
     const nowPinned = await togglePinnedProgram(prog.slug, prog.category || cat.id)
     setPinned(getPinnedProgramsSync())
     // Короткий тост вместо модалки: это подтверждение действия, а не сообщение.
-    // Нонс — чтобы повторный тап перезапускал показ, а не игнорировался.
-    setToast({ text: nowPinned ? `${prog.title} закреплена` : `${prog.title} откреплена`, nonce: Date.now() })
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast(null), TOAST_MS)
+    // Держатель общий (ToastHost в App) — своей копии на экране больше нет.
+    showToast(`${prog.title} ${nowPinned ? 'закреплена' : 'откреплена'}`, 'neutral')
   }
 
   const handleCreateTap = () => {
@@ -437,13 +430,6 @@ export default function Programs() {
         </div>
       </div>
 
-      {/* Тост держится над таб-баром по центру — как подтверждение действия,
-          а не как блок в потоке списка. */}
-      {toast && (
-        <div style={styles.toastWrap}>
-          <Toast key={toast.nonce} tone="neutral">{toast.text}</Toast>
-        </div>
-      )}
     </div>
   )
 }
@@ -517,11 +503,5 @@ const styles = {
     color: 'var(--color-text-secondary)', cursor: 'pointer'
   },
   createSoon: { opacity: 0.5, cursor: 'default' },
-  toastWrap: {
-    position: 'fixed', left: 0, right: 0,
-    bottom: 'calc(var(--tabbar-height) + var(--tabbar-bottom) + var(--space-4))',
-    display: 'flex', justifyContent: 'center',
-    zIndex: 60, pointerEvents: 'none'
-  },
   createPlus: { fontSize: 'var(--text-title-size)', lineHeight: 1 }
 }
