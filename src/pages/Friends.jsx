@@ -333,15 +333,7 @@ export default function Friends() {
 
 // Иконка пункта «Убрать из друзей» — человечек с минусом, в красном цвете пункта.
 function RemoveFriendIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="var(--color-error)" strokeWidth="1.6" strokeLinecap="round" fill="none">
-        <circle cx="8.5" cy="6.5" r="3" />
-        <path d="M3 16c0-2.8 2.5-4.5 5.5-4.5 1.2 0 2.3.27 3.2.76" />
-        <path d="M13 14.5H18" />
-      </g>
-    </svg>
-  )
+  return <UiIcon name="remove-friend" size={20} color="var(--color-error)" />
 }
 
 const styles = {

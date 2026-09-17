@@ -70,20 +70,12 @@ const oneRoundMeters = (block) => block.swims.reduce((s, w) => s + w.meters, 0)
 
 /** Флажок-финиш (Material-стиль) — для кнопки «Завершить» (как в дне силовой). */
 function SwimFinishIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.2a.7.7 0 0 1 .57 1.11L15.6 7l2.17 2.89A.7.7 0 0 1 17.2 11H7v9a1 1 0 0 1-1 1z" />
-    </svg>
-  )
+  return <UiIcon name="finish" size={size} />
 }
 
 /** Пауза (Material Symbols) — подсказка об отдыхе между кругами. */
 function PauseIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 19q-.825 0-1.412-.587T6 17V7q0-.825.588-1.412T8 5t1.413.588T10 7v10q0 .825-.587 1.413T8 19m8 0q-.825 0-1.412-.587T14 17V7q0-.825.588-1.412T16 5t1.413.588T18 7v10q0 .825-.587 1.413T16 19" />
-    </svg>
-  )
+  return <UiIcon name="pause" size={size} />
 }
 
 /**
@@ -91,15 +83,7 @@ function PauseIcon({ size = 20 }) {
  * всё / скрыть лишнее». `off` = сейчас всё показано, тап спрячет.
  */
 function EyeIcon({ off = false, size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      {off ? (
-        <path d="M12 19q-3.35 0-6.1-1.87T1.66 12.2q-.1-.2-.14-.42T1.47 12t.05-.42.14-.43q.6-1.3 1.5-2.42T5.15 6.7L2.775 4.3q-.275-.275-.288-.687T2.775 2.9t.7-.288.7.288l16.95 16.95q.275.275.288.687t-.288.713-.712.287-.713-.287L16.2 18.1q-1 .45-2.037.675T12 19m0-2q.575 0 1.113-.075t1.062-.25L9.325 11.85q-.15.5-.238 1.038T9 14q0 1.25.875 2.125T12 17m6.9-.5-3.35-3.35q.2-.475.325-1.037T16 11q0-1.65-1.175-2.825T12 7q-.575 0-1.112.125T9.85 7.45L7.2 4.8Q8.35 4.4 9.55 4.2T12 4q3.35 0 6.1 1.87t4.24 4.93q.1.2.138.425t.037.475-.05.437-.135.413q-.5 1.075-1.213 2.037T18.9 16.5" />
-      ) : (
-        <path d="M12 16q1.875 0 3.188-1.312T16.5 11.5t-1.312-3.187T12 7 8.813 8.313 7.5 11.5t1.313 3.188T12 16m0-1.8q-1.125 0-1.912-.788T9.3 11.5t.788-1.912T12 8.8t1.913.788T14.7 11.5t-.787 1.913T12 14.2m0 4.8q-3.65 0-6.65-2.037T1 11.5q1.35-3.425 4.35-5.462T12 4t6.65 2.038T23 11.5q-1.35 3.425-4.35 5.463T12 19" />
-      )}
-    </svg>
-  )
+  return <UiIcon name={off ? 'eye-off' : 'eye'} size={size} />
 }
 
 /**

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import UiIcon from './UiIcon'
 
 /**
  * Универсальный крестик-закрытие. Единое поведение во всех модалках/оверлеях:
@@ -24,11 +25,7 @@ function swallowNextClick() {
   setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400)
 }
 function CrossIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ display: 'block' }}>
-      <path d="M4 4 L12 12 M12 4 L4 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-    </svg>
-  )
+  return <UiIcon name="close" size={size} style={{ display: 'block' }} />
 }
 
 export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, style, bubbleStyle }) {

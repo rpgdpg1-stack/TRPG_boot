@@ -128,11 +128,7 @@ const workoutEntryFromFav = new Map()
 
 /** Флажок-финиш (Material-стиль) — для кнопки «Завершить». */
 function FinishIcon({ size = 17 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h11.2a.7.7 0 0 1 .57 1.11L15.6 7l2.17 2.89A.7.7 0 0 1 17.2 11H7v9a1 1 0 0 1-1 1z" />
-    </svg>
-  )
+  return <UiIcon name="finish" size={size} />
 }
 
 export default function WorkoutDay() {

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import UiIcon from './UiIcon'
 
 // Порог «это уже свайп, а не тап» — тот же, что у долгого нажатия по карточкам.
 const MOVE_TOLERANCE_PX = 8
@@ -132,15 +133,5 @@ export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabe
  * любом размере, без пересчёта кривых.
  */
 export function PlayGlyph({ size = 21 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path
-        d="M8 5.6 L18 12 L8 18.4 Z"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
+  return <UiIcon name="play" size={size} />
 }

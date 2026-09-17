@@ -887,15 +887,7 @@ function initByLoc(existing, dayCount) {
 }
 
 function GripIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" shapeRendering="crispEdges">
-      <g fill="var(--text-dim)">
-        <rect x="3" y="4"  width="12" height="2" />
-        <rect x="3" y="8"  width="12" height="2" />
-        <rect x="3" y="12" width="12" height="2" />
-      </g>
-    </svg>
-  )
+  return <UiIcon name="grip" size={18} color="var(--text-dim)" />
 }
 
 const styles = {
