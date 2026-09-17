@@ -200,7 +200,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
     return (
       <button
         key={key}
-        className={has ? 'press-tile' : undefined}
+        className={has ? 'press-up press-glass' : undefined}
         onClick={() => openDay(key)}
         style={{
           ...styles.cell,
@@ -270,7 +270,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
                 return (
                   <button
                     key={year}
-                    className="press-tile"
+                    className="press-up press-glass"
                     onClick={() => pickYear(year)}
                     style={{
                       ...styles.monthTile,
@@ -295,7 +295,7 @@ export default function HistoryCalendar({ heading, mode = 'month', onViewChange,
               return (
                 <button
                   key={m}
-                  className={has ? 'press-tile' : undefined}
+                  className={has ? 'press-up press-glass' : undefined}
                   onClick={() => pickMonth(m)}
                   disabled={!has}
                   style={{

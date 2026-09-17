@@ -197,7 +197,7 @@ export default function Profile() {
 
       {/* Пригласить друга */}
       {showInvite && (
-        <button onClick={handleInviteTap} style={styles.inviteButton} className="press-tile">
+        <button onClick={handleInviteTap} style={styles.inviteButton} className="press-tile press-glass">
           <UiIcon name="invite-friend" size={22} color="var(--color-primary)" style={styles.inviteIcon} />
           <div style={styles.inviteContent}>
             <div style={styles.inviteTitle}>Пригласить друга</div>

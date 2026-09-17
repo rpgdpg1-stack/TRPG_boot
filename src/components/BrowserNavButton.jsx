@@ -76,7 +76,7 @@ const styles = {
   // Тот же отклик, что у кнопки «⋯»: обе — одна пара, и вести себя должны
   // одинаково, иначе одна кажется живой, а вторая сломанной.
   buttonPressed: {
-    transform: 'scale(var(--press-scale-up-lg))',
+    transform: 'scale(var(--press-scale-up))',
     background: 'var(--layer-2)'
   },
   label: { lineHeight: 1 }

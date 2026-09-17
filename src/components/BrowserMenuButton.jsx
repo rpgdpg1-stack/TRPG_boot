@@ -186,7 +186,7 @@ const styles = {
   // в меню упражнения. Без него кнопка кажется неживой: она маленькая,
   // и подсветки текста, как у строк списка, тут нет.
   buttonPressed: {
-    transform: 'scale(var(--press-scale-up-lg))',
+    transform: 'scale(var(--press-scale-up))',
     background: 'var(--layer-2)'
   },
   backdrop: {
