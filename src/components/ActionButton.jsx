@@ -27,6 +27,12 @@
  *
  * disabled всегда перебивает variant и даёт вид 'dim'.
  *
+ * НАЖАТИЕ (17.09.2026) — общий паттерн «наверх»: кнопка растёт на 3%
+ * (`press-up-lg`) и светлеет. Залитые виды (primary, accent, tonal, gray, dim)
+ * светлеют заливкой на 8% — белым поверх зелёного выходила грязь; прозрачные
+ * (neutral-стекло, ghost) — фоном на 25%. Отключённая кнопка не отвечает ничем.
+ * Вжима (press-tile) у кнопок больше нет: он остался у плиток и строк.
+ *
  * ЗАГРУЗКА И ГОТОВО (`loading`, `done`). Вместо надписи «Сохранение…» — кружок
  * по центру кнопки, а следом (где это уместно) галочка. Заливка и размеры НЕ
  * меняются: текст остаётся на месте, но становится невидимым, и кнопка не
@@ -58,6 +64,9 @@ export default function ActionButton({
   ...rest
 }) {
   const look = disabled ? styles.dim : (styles[variant] || styles.neutral)
+  // Заливка есть → светлеет она сама; стекло и прозрачная → светлеет фон.
+  const filled = ['primary', 'accent', 'tonal', 'gray', 'dim'].includes(variant) || disabled
+  const pressClass = `press-up-lg ${filled ? 'press-fill' : 'press-glass'}`
   // Пока идёт сохранение, кнопка не принимает нажатий, но остаётся «живой»:
   // вид берём обычный, а не disabled.
   const busy = loading || done
@@ -71,7 +80,7 @@ export default function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled || busy}
-      className={`press-tile ${className}`.trim()}
+      className={`${pressClass} ${className}`.trim()}
       style={{ ...styles.base, ...sizing, ...(hug ? styles.hug : styles.full), ...look, ...(bordered ? styles.bordered : null), ...(showFill || busy ? styles.clip : null), ...style }}
       {...rest}
     >

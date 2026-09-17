@@ -244,7 +244,7 @@ function PlayAgainButton({ onPlay, size = 44 }) {
           ...styles.playBtn,
           width: `${size}px`,
           height: `${size}px`,
-          transform: press ? 'scale(1.14)' : 'scale(1)'
+          transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)'
         }}
       >
         {/* Значок ~0.41 диаметра — пропорция та же при любом размере кнопки. */}
@@ -310,7 +310,7 @@ const styles = {
     cursor: 'pointer',
     touchAction: 'none',
     WebkitTapHighlightColor: 'transparent',
-    transition: 'transform 0.18s var(--ease-ios)'
+    transition: 'transform var(--press-out) var(--ease-ios)'
   },
   // Подпись поверх превью — та же стеклянная пилюля, что у статуса сети.
   retryHint: {

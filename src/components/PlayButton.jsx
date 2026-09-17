@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
 import UiIcon from './UiIcon'
+import { usePress } from '../lib/use-press'
 
-// Порог «это уже свайп, а не тап» — тот же, что у долгого нажатия по карточкам.
-const MOVE_TOLERANCE_PX = 8
+// Вниз быстро, вверх мягко — общий ритм нажатия (токены --press-in/--press-out).
+const PRESS_IN = 'transform var(--press-in) var(--ease-ios), filter var(--press-in) ease'
+const PRESS_OUT = 'transform var(--press-out) var(--ease-ios), filter var(--press-out) ease'
 
 /**
  * Круглая кнопка запуска на карточке программы — ГЛАВНОЕ действие экрана.
@@ -12,11 +13,9 @@ const MOVE_TOLERANCE_PX = 8
  * Поэтому у неё свой жест и своё нажатое состояние, а всплытие в карточку
  * заглушено.
  *
- * ЭФФЕКТ — только увеличение (scale), БЕЗ подсветки цветом. У CloseCross пузырь
- * тёмно-серый, и высветление до rgba(255,255,255,0.18) — единственный способ
- * показать нажатие. Здесь наоборот: кнопка уже залита --color-primary и есть
- * самый яркий объект карточки, осветлять её некуда — следующая ступень уходит
- * в кислотный и на тёмном фоне читается как пересвет, а не как отклик.
+ * ЭФФЕКТ — общий паттерн «наверх»: кнопка растёт (--press-scale-up) и её
+ * ЗАЛИВКА светлеет на 8% (--press-brightness). Белым поверх зелёного мазать
+ * нельзя — выходит грязь, а вот сам зелёный светлеет чисто.
  *
  * ВАЖНО: scale живёт на САМОЙ кнопке, а позиционирование (translateY(-50%) и
  * т.п.) — на внешней обёртке. Держать оба transform на одном узле нельзя:
@@ -26,50 +25,13 @@ const MOVE_TOLERANCE_PX = 8
  * происходит: случайный запуск тренировки дороже пропущенного тапа.
  */
 export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabel = 'Начать тренировку', label = null, height = 36 }) {
-  const ref = useRef(null)
-  const armedRef = useRef(false)
-  const startRef = useRef({ x: 0, y: 0 })
-  const [press, setPress] = useState(false)
-
-  const down = (e) => {
-    e.stopPropagation()
-    armedRef.current = true
-    startRef.current = { x: e.clientX, y: e.clientY }
-    setPress(true)
-  }
-  const move = (e) => {
-    if (!armedRef.current) return
-    // Сместился больше порога — это уже листание карусели, а не тап. Снимаем
-    // жест сразу, не дожидаясь выхода за границы: кнопка 48px, и при свайпе
-    // палец успевает увести ленту, ни разу не покинув её пределов.
-    const dx = e.clientX - startRef.current.x
-    const dy = e.clientY - startRef.current.y
-    if (Math.abs(dx) > MOVE_TOLERANCE_PX || Math.abs(dy) > MOVE_TOLERANCE_PX) {
-      armedRef.current = false
-      setPress(false)
-      return
-    }
-    const r = ref.current?.getBoundingClientRect()
-    if (!r) return
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-    if (!inside) { armedRef.current = false; setPress(false) }
-  }
-  const up = (e) => {
-    e.stopPropagation()
-    const armed = armedRef.current
-    armedRef.current = false
-    setPress(false)
-    if (armed) onStart?.()
-  }
-  const cancel = () => { armedRef.current = false; setPress(false) }
+  // Жест общий (usePress): палец уехал больше чем на 8px — запуск снимается.
+  // Случайный старт тренировки дороже пропущенного тапа.
+  const { pressed: press, handlers } = usePress(() => onStart?.(), { stopPropagation: true })
 
   return (
     <button
-      ref={ref}
-      onPointerDown={down}
-      onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={cancel}
+      {...handlers}
       // Клик глушим: действие уже отработано на pointerUp, а всплытие открыло бы
       // программу вторым обработчиком (карточки).
       onClick={(e) => { e.stopPropagation(); e.preventDefault() }}
@@ -93,8 +55,9 @@ export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabe
         whiteSpace: 'nowrap',
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
-        transform: press ? 'scale(1.04)' : 'scale(1)',
-        transition: 'transform 0.18s var(--ease-ios)'
+        transform: press ? 'scale(var(--press-scale-up-lg))' : 'scale(1)',
+        filter: press ? 'brightness(var(--press-brightness))' : 'none',
+        transition: press ? PRESS_IN : PRESS_OUT
       } : {
         flexShrink: 0,
         width: `${size}px`,
@@ -108,8 +71,9 @@ export default function PlayButton({ onStart, size = 52, iconSize = 24, ariaLabe
         background: 'var(--color-primary)',
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
-        transform: press ? 'scale(1.12)' : 'scale(1)',
-        transition: 'transform 0.18s var(--ease-ios)'
+        transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)',
+        filter: press ? 'brightness(var(--press-brightness))' : 'none',
+        transition: press ? PRESS_IN : PRESS_OUT
       }}
     >
       {label ? (

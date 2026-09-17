@@ -364,7 +364,7 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           )}
           <button
             onClick={() => handleToggle(ex)}
-            className="press-tile"
+            className="press-up press-glass"
             style={{
               ...styles.addBtn,
               background: added ? 'var(--accent-soft)' : 'var(--highlight-recent)',

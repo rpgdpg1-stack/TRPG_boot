@@ -15,6 +15,34 @@
 /* PRESS-эффект (универсальный) */
 /* ============================================ */
 
+/* ЕДИНЫЙ ПАТТЕРН НАЖАТИЯ «НАВЕРХ» (17.09.2026).
+   Кнопка под пальцем РАСТЁТ и светлеет — так отклик виден даже когда палец
+   закрывает саму кнопку. Раньше величины расходились: 1.04 у пилюли
+   «Продолжить», 1.08 у браузерных кнопок, 1.12 у крестика, 1.14 у ▶ поверх
+   ролика, 1.18 у ракеты — и три разных способа ответить цветом.
+
+   Закон один: вниз быстро (--press-in), вверх мягко (--press-out), рост —
+   по размеру (--press-scale-up для круглых значков, -lg для широких кнопок).
+   Цвет: залитая кнопка светлеет на 8% (press-fill), стеклянная и прозрачная —
+   на 25% (press-glass), значок без подложки — на 30% (press-icon).
+
+   Отключённая кнопка не отвечает ВООБЩЕ: ни роста, ни яркости. «Нажал, а оно
+   шевельнулось, но ничего не произошло» хуже честной неподвижности. */
+.press-up, .press-up-lg {
+  transition:
+    transform var(--press-out) var(--ease-ios),
+    filter var(--press-out) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.press-up:active:not(:disabled) { transform: scale(var(--press-scale-up)); }
+.press-up-lg:active:not(:disabled) { transform: scale(var(--press-scale-up-lg)); }
+.press-up:active:not(:disabled),
+.press-up-lg:active:not(:disabled) { transition-duration: var(--press-in); }
+
+.press-fill:active:not(:disabled) { filter: brightness(var(--press-brightness)); }
+.press-glass:active:not(:disabled) { filter: brightness(var(--press-glass-brightness)); }
+.press-icon:active:not(:disabled) { filter: brightness(var(--press-brightness-icon)); }
+
 .press-tile {
   transition:
     transform var(--press-duration) var(--press-ease),

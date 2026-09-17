@@ -71,12 +71,12 @@ const styles = {
     fontSize: 'var(--text-label-size)',
     fontWeight: 700,
     WebkitTapHighlightColor: 'transparent',
-    transition: 'transform var(--press-duration) var(--press-ease), background 0.12s ease'
+    transition: 'transform var(--press-out) var(--ease-ios), background var(--press-out) ease'
   },
   // Тот же отклик, что у кнопки «⋯»: обе — одна пара, и вести себя должны
   // одинаково, иначе одна кажется живой, а вторая сломанной.
   buttonPressed: {
-    transform: 'scale(1.08)',
+    transform: 'scale(var(--press-scale-up-lg))',
     background: 'var(--layer-2)'
   },
   label: { lineHeight: 1 }

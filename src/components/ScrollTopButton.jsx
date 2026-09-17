@@ -91,7 +91,10 @@ export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIn
           ...styles.bubble,
           background: press ? 'var(--overlay-pressed-strong)' : 'var(--color-surface-dim)',
           color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
-          transform: press ? 'scale(1.12)' : 'scale(1)'
+          transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)',
+          transition: press
+            ? 'transform var(--press-in) var(--ease-ios), background var(--press-in) ease, color var(--press-in) ease'
+            : 'transform var(--press-out) var(--ease-ios), background var(--press-out) ease, color var(--press-out) ease'
         }}
       >
         <ArrowUp />

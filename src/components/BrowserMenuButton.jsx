@@ -180,13 +180,13 @@ const styles = {
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',
     WebkitTapHighlightColor: 'transparent',
-    transition: 'transform var(--press-duration) var(--press-ease), background 0.12s ease'
+    transition: 'transform var(--press-out) var(--ease-ios), background var(--press-out) ease'
   },
   // Отклик на касание: пилюля чуть подрастает и светлеет — как крестик
   // в меню упражнения. Без него кнопка кажется неживой: она маленькая,
   // и подсветки текста, как у строк списка, тут нет.
   buttonPressed: {
-    transform: 'scale(1.08)',
+    transform: 'scale(var(--press-scale-up-lg))',
     background: 'var(--layer-2)'
   },
   backdrop: {

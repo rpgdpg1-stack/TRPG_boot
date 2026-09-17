@@ -709,7 +709,7 @@ export default function ProgramConstructor() {
                         </div>
                       )}
                     </div>
-                    <button onClick={() => handleRemove(exId)} className="press-tile press-danger" style={styles.removeBtn} aria-label="Удалить">
+                    <button onClick={() => handleRemove(exId)} className="press-up press-danger" style={styles.removeBtn} aria-label="Удалить">
                       {/* Крестик линиями, а не символом «✕»: у шрифтового глифа свои
                           поля, и он сидел ниже и левее центра круга. */}
                       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">

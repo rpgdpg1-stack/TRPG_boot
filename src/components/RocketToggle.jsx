@@ -100,9 +100,11 @@ export default function RocketToggle({ on, onToggle, onLongPress, active = false
         style={{
           display: 'inline-flex',
           lineHeight: 0,
-          transform: press ? 'scale(1.18)' : 'scale(1)',
-          filter: press ? 'brightness(1.4)' : 'none',
-          transition: 'transform 0.18s var(--ease-ios), filter 0.18s ease',
+          transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)',
+          filter: press ? 'brightness(var(--press-brightness-icon))' : 'none',
+          transition: press
+            ? 'transform var(--press-in) var(--ease-ios), filter var(--press-in) ease'
+            : 'transform var(--press-out) var(--ease-ios), filter var(--press-out) ease',
           animation: anim ? `${anim} 0.42s var(--ease-ios)` : 'none'
         }}
       >

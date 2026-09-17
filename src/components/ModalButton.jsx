@@ -15,7 +15,7 @@ export default function ModalButton({ onClick, children, style, className = '', 
     <button
       type="button"
       onClick={onClick}
-      className={`modal-btn ${className}`.trim()}
+      className={`modal-btn press-up-lg ${className}`.trim()}
       style={{ ...styles.btn, ...style }}
       {...rest}
     >
