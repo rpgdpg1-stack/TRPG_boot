@@ -90,7 +90,7 @@ export default function ActionButton({
               сохраняет свою ширину и высоту. */}
           <span style={styles.hiddenLabel} aria-hidden="true">{children}</span>
           <span style={styles.busyLayer}>
-            {done ? <CheckMark /> : <Spinner size={22} />}
+            {done ? <CheckMark /> : <Spinner size={size === 'md' ? 24 : 18} />}
           </span>
         </>
       ) : showFill ? (
