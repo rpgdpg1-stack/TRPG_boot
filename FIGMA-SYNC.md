@@ -128,6 +128,10 @@ _(пусто)_
   - **Select Toggle → ☑️ Row Action (253:7406) — 27**: Type = **Select** (добавить/добавлено) | **Remove** (крестик
     удаления конструктора `removeBtn`: подложка 6% + серый close; нажатие — `error/soft-pressed` = 18%
     (= `--color-error-pressed`, press-danger) + красный). Крестик: Medium 24 (глиф ≈14, как в проде), Large 32, Small 20.
+  - **add и check перерисованы в стиле close**: линия 2.85 (на сетке 24) с круглыми концами, размах как у крестика
+    (add: M6 12H18 M12 6V18; check: M5 12.5 L9.5 17 L19 7.5). Цвета 402 экземпляров сохранены
+    (`tools/icon_swap_keep_color.ts`). В Row Action иконки Select = размеру крестика (32/24/20).
+    ⚠️ **В коде `src/assets/ui/add.svg` и `check.svg` ещё старые (Material)** — обновить при переносе.
   - Прототип While pressing → Pressed во всех 6 сетах. Секции: Button → Button·Glass → Icon Button → Icon Button·Glass
     → Select Toggle → Close Button → Input…
 
