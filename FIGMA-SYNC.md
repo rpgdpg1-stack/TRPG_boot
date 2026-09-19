@@ -113,6 +113,20 @@ _(пусто)_
   - Все ссылки свойств перепривязаны (Pressed/Glass/Loading теряли Label и выбор иконки).
   - Секции переложены: Button → Icon Button → Input…; ширина/описания под новые сеты.
   - Для кода: новые токены `--color-error-soft-pressed` 22%, `--surface-glass-pressed`, `--accent-soft-pressed` 22%.
+- **2026-09-19 — Кнопки v3: один чистый вариант + отдельные стеклянные копии и спец-компоненты.**
+  - **Button (194:1117) — 108**: Variant 4 × Size 3 × Tone × State (Default · Pressed · Disabled · Loading · Done;
+    у Destructive без Done). **Icon Button (214:1764) — 96**. Focus, Glass-вариант, Selected — убраны. Hover не делаем
+    (продукт под телефон). Destructive — снова серая заливка, красные только текст/иконка. Hairline в основных нет.
+  - **🫧 Button · Glass (252:6152) — 108** и **🫧 Icon Button · Glass (252:5692) — 96**: копии с рецептом ScrollTopButton —
+    `surface/dim` 30% · blur 8 · тень 0/8/24 black 45%; Primary — `accent/glass` 72%, Destructive — `error/glass`;
+    нажатие `state/pressed-strong` (белый 18%) / `*-glass-pressed`; Tertiary без фона, контент 85%; Hairline — тумблер.
+  - **☑️ Select Toggle** — Size 3 × Selected × State (Default/Pressed/Disabled): выкл — `surface/highlight` 6% + серый
+    плюс, вкл — `accent/soft` + зелёная check; Disabled — 45% (как в пикере прода; в пикере — Medium 36).
+  - **✖️ Close Button** — Size (Large 52 / Medium 36) × Glass × State: подложка белая 8% + серый крестик, нажатие —
+    белая 18% + белый, scale 1.12 (как CloseCross). Удаление — это Icon Button Tone=Destructive + trash.
+  - Новые токены: `state/pressed-strong`, `accent/glass(-pressed)`, `error/glass(-pressed)`, `surface/highlight`.
+  - Прототип While pressing → Pressed во всех 6 сетах. Секции: Button → Button·Glass → Icon Button → Icon Button·Glass
+    → Select Toggle → Close Button → Input…
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
