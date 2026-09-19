@@ -46,6 +46,16 @@ _(пусто)_
 - **Плагин доработан:** `filterFigmaNode` отдаёт layout/padding/vectors; добавлены
   `delete_component_property`/`edit_component_property`; `set_text_properties` + `leadingTrim`
   (cap-height центрирование текста в кнопках).
+- **Button: +2 состояния (State), итого 60 вариантов** = Variant(4) × Size(3) × State(5).
+  Существующие Default/Disabled/Destructive не трогали.
+  - **Loading:** спиннер-дуга по центру (компонент `spinner`, 28% дуга, currentColor → тон варианта),
+    без лейбла/иконки, ширина ФИКС = ширине Default. В коде — `Spinner.jsx` (класс `ptr-spin`, вращение).
+  - **Pressed:** заливка ярче на 8% — новые переменные `accent/base-pressed` #ABE25A,
+    `surface/tonal-pressed` #27272A, `status/error-pressed` #FA4B4B, `state/pressed` (белый 8%, Tertiary).
+    Scale (прототип): широкие `--press-scale-up-lg` 1.03, круглые `--press-scale-up` 1.12; яркость
+    `--press-brightness` 1.08. Success в матрицу НЕ добавляли (feedback на уровне сценария).
+  - **В код:** состояние `loading` в ActionButton уже есть (Spinner/CheckMark); pressed — press-токены
+    уже есть. Figma теперь источник правды для этих состояний.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
