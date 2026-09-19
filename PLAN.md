@@ -16,6 +16,7 @@
 
 | Дата | Что |
 |---|---|
+| 19.09 | **Figma, кнопки v2:** Glass, Focus, Done; Loading держит ширину; Hairline только у стекла; мягкий красный на Destructive; Selected как в пикере прода; прототип нажатия; починены свойства в Pressed/Glass. Button 180, Icon Button 195. Прогнано тестом на экземплярах. **Дальше — перенос в код** |
 | 19.09 | **Figma, кнопки: ось Tone (Default/Destructive) отдельно от State** — появились Destructive+Pressed/Loading; Secondary·Destructive с мягким красным фоном; Icon Button — серая иконка у Secondary и переключатель **Selected** (зелёный + галочка) |
 | 19.09 | **Figma: свап иконки в кнопке держит цвет варианта.** Моды переменных недоступны на тарифе (1 мод) — вместо них все 57 моно-иконок приведены к одному залитому слою «Vector». Проверено свапом на 4 видах кнопок |
 | 19.09 | **Figma, Duotone-группа:** StatsIcon, ProgramsIcon, RocketIcon (Off/On/Flying), celebration — слои по ролям accent/muted/flame на токенах |

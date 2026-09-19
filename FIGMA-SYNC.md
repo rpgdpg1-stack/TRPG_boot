@@ -98,6 +98,21 @@ _(пусто)_
   (нажатие `accent/base-pressed`) + фиксированная check на `accent/on`; Disabled — серый. +36 → 132 варианта.
   ⚠️ В Selected иконка НЕ связана со свойством Icon (привязка тянет дефолт «add» вместо check).
   В коде: токен `--color-error-soft-pressed` (22%) ещё завести при переносе.
+- **2026-09-19 — Кнопки v2** (`tools/buttons_v2.ts` + `tools/relink_props.ts`):
+  - **Button — 180**: Variant (+**Glass**) × Size × Tone × State (Default · Pressed · **Focus** · Disabled · Loading · **Done**).
+  - **Icon Button — 195**: то же без Done + Selected (Default/Pressed/Disabled). Удалены лишние Label / Show icon.
+  - **Loading/Done**: Label и иконка остаются (opacity 0), спиннер/галочка абсолютно по центру — ширина живая, как в коде.
+  - **Glass**: `surface/glass` + background blur 12, нажатие `surface/glass-pressed` (новая, +25%); Destructive — `error/soft`.
+  - **Hairline** — только у Glass (у остальных слой удалён; панель Figma прячет свойство, если слоя нет). Icon Button
+    получил своё свойство Hairline.
+  - **Focus**: кольцо 2px снаружи (зазор 1px) — `accent/strong`, у Destructive `error/strong`.
+  - **Destructive-заливка**: Primary-tonal и Secondary (и Glass) — `error/soft`, нажатие `error/soft-pressed`.
+  - **Icon Button Secondary** — снова белая иконка. **Selected** — как в пикере прода: `accent/soft` + зелёная check
+    (`accent/base`), нажатие `accent/soft-pressed` (новая).
+  - **Прототип**: у всех Default — While pressing → Pressed, Smart Animate 90 мс.
+  - Все ссылки свойств перепривязаны (Pressed/Glass/Loading теряли Label и выбор иконки).
+  - Секции переложены: Button → Icon Button → Input…; ширина/описания под новые сеты.
+  - Для кода: новые токены `--color-error-soft-pressed` 22%, `--surface-glass-pressed`, `--accent-soft-pressed` 22%.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
