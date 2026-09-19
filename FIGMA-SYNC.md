@@ -56,6 +56,12 @@ _(пусто)_
     `--press-brightness` 1.08. Success в матрицу НЕ добавляли (feedback на уровне сценария).
   - **В код:** состояние `loading` в ActionButton уже есть (Spinner/CheckMark); pressed — press-токены
     уже есть. Figma теперь источник правды для этих состояний.
+- **2026-09-19 — Button: свойство `Hairline` (Boolean, по умолчанию выкл) = `bordered` в ActionButton.**
+  Слой «Hairline» поверх во всех 60 вариантах: абсолютный, STRETCH×STRETCH, без заливки, обводка 1px
+  Inside → `border/tonal` (белый 8%, как `--border-tonal` в коде), скругление → `radius/pill`.
+  **Pressed-масштаб 1.03 в вариантах НЕ рисуем** — `rescale` рвёт токены (высота 53.56, шрифт 16.48
+  вне стиля, радиус без переменной). Движение описано аннотацией на сете Button (194:1117).
+  Primary·Large·Pressed пересобран из Default после теста → новый id **239:2370**.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
