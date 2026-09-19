@@ -119,7 +119,7 @@ export default function EmailLogin({ onSuccess }) {
               style={styles.field}
             />
             <ActionButton
-              variant="accent"
+              variant="primary"
               disabled={!emailLooksValid || busy}
               onClick={handleSendCode}
               style={styles.button}
@@ -145,7 +145,7 @@ export default function EmailLogin({ onSuccess }) {
               style={{ ...styles.field, ...styles.codeField }}
             />
             <ActionButton
-              variant="accent"
+              variant="primary"
               disabled={code.length !== 6 || busy}
               onClick={handleVerify}
               style={styles.button}

@@ -94,7 +94,7 @@ export default function Support() {
       </FormCard>
 
       <div style={styles.cta}>
-        <ActionButton onClick={write} variant="primary" size="sm" hug>
+        <ActionButton onClick={write} variant="primary" size="medium" hug>
           <UiIcon name="support" size={20} color="var(--accent-on)" />
           Написать в поддержку
         </ActionButton>

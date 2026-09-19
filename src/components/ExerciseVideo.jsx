@@ -59,7 +59,7 @@ function restartPlay(v) {
 }
 
 // playSize — диаметр кнопки ▶: 44 в миниатюре модалки, крупнее на большом кадре техники.
-export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', playSize = 44 }) {
+export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', playSize = 52 }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),
   // 14px для compact (если когда-то понадобится в маленькой карточке).
   const borderRadius = size === 'compact' ? '14px' : '33px'
@@ -209,7 +209,7 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', pla
  * не случилось; отпустил на кнопке — повтор. Следующий синтетический click
  * гасим: без этого он долетал до оверлея модалки и мог её закрыть.
  */
-function PlayAgainButton({ onPlay, size = 44 }) {
+function PlayAgainButton({ onPlay, size = 52 }) {
   const ref = useRef(null)
   const armed = useRef(false)
   const [press, setPress] = useState(false)
@@ -293,18 +293,19 @@ const styles = {
   },
   playBtn: {
     pointerEvents: 'auto',
-    width: '44px',
-    height: '44px',
+    width: '52px',
+    height: '52px',
     padding: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '50%',
     border: 'none',
-    background: 'var(--tint-dark-32)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    boxShadow: 'inset 0 0 0 1px var(--border-tonal)',
+    // Icon Button · Glass + волосок — общий рецепт стекла (над движущимся видео).
+    background: 'var(--glass-bg)',
+    backdropFilter: 'var(--glass-filter)',
+    WebkitBackdropFilter: 'var(--glass-filter)',
+    boxShadow: 'var(--glass-hairline), var(--glass-shadow)',
     color: 'var(--color-text)',
     opacity: 0.92,
     cursor: 'pointer',

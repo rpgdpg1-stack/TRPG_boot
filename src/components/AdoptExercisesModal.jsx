@@ -97,7 +97,7 @@ export default function AdoptExercisesModal({ program, onClose, onAdopted }) {
               {busy ? 'Копирование…' : 'Скопировать себе'}
             </ActionButton>
           ) : (
-            <ActionButton onClick={toConstructor} variant="neutral" hug>
+            <ActionButton onClick={toConstructor} variant="secondary" hug>
               Открыть конструктор
             </ActionButton>
           )}

@@ -16,7 +16,7 @@ import { haptic } from '../lib/telegram'
  *   и окно там неподвижно — без этого кнопка не появлялась бы никогда.
  * @param zIndex — поднять над полноэкранным оверлеем (пикер).
  */
-function ArrowUp({ size = 22 }) {
+function ArrowUp({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 19V6M6 12l6-6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -124,16 +124,16 @@ const styles = {
     transition: 'opacity 0.22s ease, transform 0.22s var(--ease-ios)'
   },
   bubble: {
-    width: '46px',
-    height: '46px',
+    // Icon Button · Glass · Large: 52, иконка 28 (круглая кнопка без текста).
+    width: '52px',
+    height: '52px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '50%',
-    border: '1px solid var(--color-border)',
-    backdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    WebkitBackdropFilter: 'blur(var(--blur-sm)) saturate(180%)',
-    boxShadow: 'var(--shadow-raised)',
+    backdropFilter: 'var(--glass-filter)',
+    WebkitBackdropFilter: 'var(--glass-filter)',
+    boxShadow: 'var(--glass-hairline), var(--glass-shadow)',
     transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
   }
 }

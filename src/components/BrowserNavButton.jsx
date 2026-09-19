@@ -61,9 +61,10 @@ const styles = {
     padding: '0 var(--space-3) 0 var(--space-2)',
     // То же стекло, что у всплывающих меню: кнопки навигации и панели —
     // один слой интерфейса, и разной плотности у них быть не должно.
-    background: 'var(--surface-glass)',
-    backdropFilter: 'var(--blur-glass)',
-    WebkitBackdropFilter: 'var(--blur-glass)',
+    background: 'var(--glass-bg)',
+    backdropFilter: 'var(--glass-filter)',
+    WebkitBackdropFilter: 'var(--glass-filter)',
+    boxShadow: 'var(--glass-hairline), var(--glass-shadow)',
     border: 'none',
     borderRadius: 'var(--radius-pill)',
     color: 'var(--color-text)',

@@ -24,7 +24,7 @@ export default function FriendInviteModal({ name, already, onClose }) {
             ? <>С <b style={styles.name}>{name}</b> — теперь видно тренировки друг друга.</>
             : 'Друг добавлен — теперь видно тренировки друг друга.'}
         </div>
-        <ActionButton variant="accent" size="sm" onClick={onClose} style={styles.button}>
+        <ActionButton variant="primary" onClick={onClose} style={styles.button}>
           Отлично
         </ActionButton>
       </ModalShell>

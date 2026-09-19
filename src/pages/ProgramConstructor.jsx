@@ -733,7 +733,6 @@ export default function ProgramConstructor() {
           <ActionButton
             onClick={handleAddTap}
             variant="tonal"
-            bordered
             hug
             style={atLimit ? { color: 'var(--color-error)' } : null}
           >

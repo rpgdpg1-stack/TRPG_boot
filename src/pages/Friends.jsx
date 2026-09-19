@@ -229,7 +229,7 @@ export default function Friends() {
             Пригласи друга через Telegram<br />
             и следите за прогрессом друг друга
           </div>
-          <ActionButton onClick={handleInviteTap} variant="primary" size="sm" hug>
+          <ActionButton onClick={handleInviteTap} variant="primary" size="medium" hug>
             <UiIcon name="invite-friend" size={20} color="var(--accent-on)" />
             Пригласить друга
           </ActionButton>
@@ -285,7 +285,7 @@ export default function Friends() {
           )}
 
           <div style={styles.bottomInvite}>
-            <ActionButton onClick={handleInviteTap} variant="primary" size="sm" hug>
+            <ActionButton onClick={handleInviteTap} variant="primary" size="medium" hug>
               <UiIcon name="invite-friend" size={22} color="var(--accent-on)" />
               Пригласить друга
             </ActionButton>

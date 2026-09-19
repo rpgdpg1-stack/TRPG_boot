@@ -251,8 +251,7 @@ export function SwapExerciseView({
           onClick={handleConfirm}
           disabled={!canSwap || loading}
           loading={saving}
-          variant={canSwap ? 'accent' : 'neutral'}
-          bordered={!canSwap || saving || loading}
+          variant="primary"
           hug
           style={{ fontSize: 'var(--text-body-size)' }}
         >

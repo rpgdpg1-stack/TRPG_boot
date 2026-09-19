@@ -131,6 +131,13 @@ _(пусто)_
   - **add, close, check — одна линия 2 px (как Material) с круглыми концами** на сетке 24
     (add: M6 12H18 M12 6V18; close: M6.5 6.5L17.5 17.5 и зеркально; check: M5 12.5 L9.5 17 L19 7.5). Цвета 402 экземпляров сохранены
     (`tools/icon_swap_keep_color.ts`). В Row Action иконки Select = размеру крестика (32/24/20).
+- **2026-09-19 — КОД: кнопки v3 перенесены в прод.** `ActionButton` = Variant (primary/tonal/secondary/tertiary) ×
+  size (large/medium/small) × tone + glass/hairline; все вызовы переведены (старые имена — псевдонимы). Стекло по
+  решению со страницы localhost/glass: над контентом — стекло + волосок, главное действие и всё внутри поверхностей —
+  сплошное. Токены `--glass-*` в tokens.css. ScrollTop 52 / иконка 28, ▶ на видео 52, «Назад» браузера и крестик в
+  шапке дня — стекло + волосок. SVG add/close/check/grip/trending-up/logout — новые (круглые концы). Dialog и
+  Icon Button как компонент в код ещё НЕ перенесены (ConfirmModal пока на ModalButton).
+  **Figma дальше:** стеклянные сеты → тумблер Glass внутри Button/Icon Button только у Primary-tonal и Secondary.
 - **2026-09-19 — 💬 Dialog (258:9390)** — один каркас всех модалок. Layout = Column | Row; свойства Title, Text (TEXT),
   Show icon, Show text, Second action (BOOLEAN), Icon (INSTANCE_SWAP, 57 моно). Окно 340, радиус card, фон
   **`surface/default`** (НЕ raised: Secondary-кнопка = surface/tonal = raised и на нём растворяется), волосок

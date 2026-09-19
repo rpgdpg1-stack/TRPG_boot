@@ -45,7 +45,7 @@ export default function WheelSheet({ title, hint, children, onDone, onClose, don
           {children}
         </div>
 
-        <ActionButton variant="accent" size="sm" onClick={onDone}>{doneLabel}</ActionButton>
+        <ActionButton variant="primary" onClick={onDone}>{doneLabel}</ActionButton>
       </div>
     </div>,
     document.body

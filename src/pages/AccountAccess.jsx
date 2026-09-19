@@ -191,7 +191,7 @@ export default function AccountAccess() {
                 style={styles.field}
               />
               <ActionButton
-                variant="accent" size="sm"
+                variant="primary"
                 disabled={!emailLooksValid || busy}
                 onClick={handleSend}
                 style={styles.formBtn}
@@ -215,7 +215,7 @@ export default function AccountAccess() {
                 style={{ ...styles.field, ...styles.codeField }}
               />
               <ActionButton
-                variant="accent" size="sm"
+                variant="primary"
                 disabled={code.length !== 6 || busy}
                 onClick={handleVerify}
                 style={styles.formBtn}

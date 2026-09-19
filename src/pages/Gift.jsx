@@ -89,7 +89,7 @@ export default function Gift() {
       <div style={styles.cta}>
         <ActionButton
           onClick={() => { haptic.medium(); navigate(-1) }}
-          variant="neutral" size="sm" hug
+          variant="secondary" size="medium" hug
         >
           Напомнить, когда заработает
         </ActionButton>

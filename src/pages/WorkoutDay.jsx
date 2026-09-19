@@ -1273,6 +1273,7 @@ export default function WorkoutDay() {
                 <CloseCross
                   onClose={handleCancelTap}
                   pulse={crossPulse}
+                  glass
                   hitSize={44}
                   bubbleSize={32}
                   iconSize={16}
@@ -1403,7 +1404,7 @@ export default function WorkoutDay() {
               ? 'Все упражнения из него удалены. Собери день заново в конструкторе.'
               : 'Упражнения для этого дня не настроены.'}
             action={program?.editable ? (
-              <ActionButton onClick={() => { haptic.light(); navigate('/constructor') }} variant="neutral" hug>
+              <ActionButton onClick={() => { haptic.light(); navigate('/constructor') }} variant="tonal" hug>
                 Открыть конструктор
               </ActionButton>
             ) : null}
@@ -1483,7 +1484,8 @@ export default function WorkoutDay() {
             <ActionButton
               onClick={handleFinishButtonTap}
               variant={canFinish ? 'tonal' : 'dim'}
-              bordered
+              glass
+              hairline
               hug
               className={btnMorph ? 'btn-morph' : ''}
             >

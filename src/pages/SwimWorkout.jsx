@@ -517,6 +517,7 @@ export default function SwimWorkout() {
               <span style={styles.pillCross}>
                 <CloseCross
                   onClose={() => setShowCancelConfirm(true)}
+                  glass
                   hitSize={44}
                   bubbleSize={32}
                   iconSize={16}
@@ -689,7 +690,7 @@ export default function SwimWorkout() {
             (primary), «Завершить» с флажком (neutral). Заблокированный старт —
             вариант dim, как там же. */}
         {isThisActive ? (
-          <ActionButton onClick={handleFinishTap} variant="neutral" hug>
+          <ActionButton onClick={handleFinishTap} variant="tonal" glass hairline hug>
             <SwimFinishIcon size={20} /> Завершить
           </ActionButton>
         ) : (

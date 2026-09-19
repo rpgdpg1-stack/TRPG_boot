@@ -28,7 +28,7 @@ function CrossIcon({ size = 20 }) {
   return <UiIcon name="close" size={size} style={{ display: 'block' }} />
 }
 
-export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, style, bubbleStyle }) {
+export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, iconSize = 20, pulse = false, glass = false, style, bubbleStyle }) {
   const ref = useRef(null)
   const armedRef = useRef(false)
   const [press, setPress] = useState(false)
@@ -84,7 +84,9 @@ export default function CloseCross({ onClose, hitSize = 56, bubbleSize = 46, ico
           justifyContent: 'center',
           borderRadius: '50%',
           color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
-          background: press ? 'var(--overlay-pressed-strong)' : 'var(--layer-2)',
+          background: press ? 'var(--overlay-pressed-strong)' : (glass ? 'var(--glass-bg)' : 'var(--layer-2)'),
+          // glass — крестик висит НАД контентом (шапка дня/заплыва): общий рецепт стекла + волосок.
+          ...(glass ? { backdropFilter: 'var(--glass-filter)', WebkitBackdropFilter: 'var(--glass-filter)', boxShadow: 'var(--glass-hairline), var(--glass-shadow)' } : null),
           transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)',
           transition: press
             ? 'transform var(--press-in) var(--ease-ios), background var(--press-in) ease, color var(--press-in) ease'

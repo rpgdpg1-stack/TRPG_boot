@@ -622,7 +622,8 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
           <ActionButton
             onClick={onDone}
             variant="tonal"
-            bordered
+            glass
+            hairline
             hug
           >
             <UiIcon name="add" size={20} color="var(--color-primary)" />

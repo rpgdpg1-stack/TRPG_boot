@@ -61,7 +61,7 @@ export default function Feedback() {
           <div style={styles.doneText}>
             Мы читаем всё, что приходит. Если понадобятся детали — напишем в Telegram.
           </div>
-          <ActionButton onClick={() => navigate(-1)} variant="neutral" size="sm" hug>
+          <ActionButton onClick={() => navigate(-1)} variant="secondary" size="medium" hug>
             Готово
           </ActionButton>
         </div>
@@ -107,7 +107,7 @@ export default function Feedback() {
       </FormCard>
 
       <div style={styles.cta}>
-        <ActionButton onClick={send} variant="primary" size="sm" hug disabled={!canSend}>
+        <ActionButton onClick={send} variant="primary" size="medium" hug disabled={!canSend}>
           Отправить
         </ActionButton>
       </div>

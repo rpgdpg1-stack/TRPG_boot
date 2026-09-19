@@ -47,10 +47,10 @@ export default function SaveFriendProgramModal({ snapshot, replacing, onSaved, o
         )}
         {error && <div style={styles.error}>{error}</div>}
 
-        <ActionButton variant="gray" size="sm" onClick={handleSave} loading={saving} style={{ width: '100%', marginBottom: 'var(--space-3)' }}>
-          {replacing ? 'ЗАМЕНИТЬ ПРОГРАММУ ДРУГА' : 'СОХРАНИТЬ ПРОГРАММУ'}
+        <ActionButton variant="primary" onClick={handleSave} loading={saving} style={{ width: '100%', marginBottom: 'var(--space-3)' }}>
+          {replacing ? 'Заменить программу друга' : 'Сохранить программу'}
         </ActionButton>
-        <ActionButton variant="ghost" size="sm" onClick={onClose} disabled={saving} style={{ width: '100%', border: 'none' }}>Отмена</ActionButton>
+        <ActionButton variant="tertiary" onClick={onClose} disabled={saving} style={{ width: '100%' }}>Отмена</ActionButton>
       </div>
     </div>
   )

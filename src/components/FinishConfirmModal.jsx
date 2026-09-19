@@ -36,10 +36,10 @@ export default function FinishConfirmModal({ done, total, closing = false, onCon
         <div style={styles.subtitle}>Завершить тренировку?</div>
 
         <div style={styles.row}>
-          <ActionButton variant="ghost" size="sm" onClick={onCancel} style={{ flex: 1 }}>
+          <ActionButton variant="secondary" onClick={onCancel} style={{ flex: 1 }}>
             Назад
           </ActionButton>
-          <ActionButton variant="accent" size="sm" onClick={onConfirm} style={{ flex: 1 }}>
+          <ActionButton variant="primary" onClick={onConfirm} style={{ flex: 1 }}>
             Завершить
           </ActionButton>
         </div>
