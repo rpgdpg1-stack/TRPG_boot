@@ -90,6 +90,14 @@ _(пусто)_
   вектор «Vector»** (12 приведены: outline обводок + flatten; 8 пересобраны из src/assets/ui). Figma переносит
   override цвета при instance-swap по имени/типу слоя → любая из 57 иконок в Button/Icon Button красится
   токеном варианта. Проверено свапом на Primary / tonal / Tertiary / Destructive.
+- **2026-09-19 — Ось Tone отдельно от State** (Button и Icon Button): Variant × Size × **Tone (Default/Destructive)**
+  × **State (Default/Pressed/Disabled/Loading)** → 96 вариантов в каждом сете. Теперь есть Destructive+Pressed/
+  Loading. Secondary·Destructive — фон `error/soft` (нажатие — новая `error/soft-pressed`, красный 22%).
+  Icon Button Secondary — иконка `text/secondary` (серая, как «добавить» в пикере).
+- **Icon Button: ось Selected (false/true)** — переключатель «добавить ↔ добавлено»: зелёный `accent/base`
+  (нажатие `accent/base-pressed`) + фиксированная check на `accent/on`; Disabled — серый. +36 → 132 варианта.
+  ⚠️ В Selected иконка НЕ связана со свойством Icon (привязка тянет дефолт «add» вместо check).
+  В коде: токен `--color-error-soft-pressed` (22%) ещё завести при переносе.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
