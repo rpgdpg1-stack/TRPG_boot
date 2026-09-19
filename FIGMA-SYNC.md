@@ -81,6 +81,10 @@ _(пусто)_
   - Пикер `Icon` у Button и Icon Button: preferredValues = 57 моно-иконок (раньше пусто → весь файл, 347 шт.).
   - Сетка вариантов Button выровнена (`tools/align_sets.ts`).
   - Карта имя→id: `figma-mcp-bridge/scratch_icon_map.json`.
+- **2026-09-19 — Duotone-группа** в 🔣 Icons: **StatsIcon** (242:2822), **ProgramsIcon** (242:2827),
+  **RocketIcon** — сет `State=Off/On/Flying` (242:2838), **celebration**. Слои названы по ролям и на токенах:
+  `muted` → text/secondary, `accent` → accent/base, `flame` → streak (= пропсы accent/muted/flame в коде).
+  Имя = React-компонент. MuscleIcon в коде моно (muscles-line/-fill + icon/muscle) — в Duotone не входит.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
