@@ -125,6 +125,9 @@ _(пусто)_
   - **✖️ Close Button** — Size (Large 52 / Medium 36) × Glass × State: подложка белая 8% + серый крестик, нажатие —
     белая 18% + белый, scale 1.12 (как CloseCross). Удаление — это Icon Button Tone=Destructive + trash.
   - Новые токены: `state/pressed-strong`, `accent/glass(-pressed)`, `error/glass(-pressed)`, `surface/highlight`.
+  - **Select Toggle → ☑️ Row Action (253:7406) — 27**: Type = **Select** (добавить/добавлено) | **Remove** (крестик
+    удаления конструктора `removeBtn`: подложка 6% + серый close; нажатие — `error/soft-pressed` = 18%
+    (= `--color-error-pressed`, press-danger) + красный). Крестик: Medium 24 (глиф ≈14, как в проде), Large 32, Small 20.
   - Прототип While pressing → Pressed во всех 6 сетах. Секции: Button → Button·Glass → Icon Button → Icon Button·Glass
     → Select Toggle → Close Button → Input…
 
