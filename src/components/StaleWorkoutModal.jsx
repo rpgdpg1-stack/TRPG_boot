@@ -129,7 +129,7 @@ export default function StaleWorkoutModal() {
         title={notice.title}
         text={notice.text}
         onClose={() => setNotice(null)}
-        actions={[{ label: 'Понятно', onClick: () => setNotice(null) }]}
+        actions={[{ label: 'Понятно', role: 'primary', onClick: () => setNotice(null) }]}
       />
     )
   }
@@ -194,19 +194,21 @@ export default function StaleWorkoutModal() {
   const oldNote = tooOld ? ' Она старше недели — задним числом её уже не записать.' : ''
 
   const actions = nothing
-    ? [{ label: 'Понятно', onClick: discard }]
+    ? [{ label: 'Понятно', role: 'primary', onClick: discard }]
     : tooOld
-      ? [{ label: 'Не засчитывать', onClick: discard }]
+      ? [{ label: 'Не засчитывать', role: 'destructive', onClick: discard }]
       : [
-          { label: 'Не засчитывать', onClick: discard },
-          { label: 'Засчитать', onClick: count }
+          { label: 'Не засчитывать', role: 'destructive', onClick: discard },
+          { label: 'Засчитать', role: 'primary', onClick: count }
         ]
 
   return (
     <ConfirmModal
       title="Тренировка не завершена"
+      icon="clock"
       text={`${head} ${detail}${oldNote}${error ? ` ${error}` : ''}`}
       // Тап мимо не закрывает: решение нужно, иначе тренировка так и висит.
+      required
       onClose={() => {}}
       actions={actions}
     />

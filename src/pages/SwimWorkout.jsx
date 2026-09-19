@@ -715,8 +715,8 @@ export default function SwimWorkout() {
           text={`Лимит — ${categoryMetaByKey('pool').limitUnit}. Второй заплыв не попадёт в статистику и серию.`}
           onClose={() => setShowLimitWarn(false)}
           actions={[
-            { label: 'Отмена', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
-            { label: 'Всё равно начать', onClick: () => { setShowLimitWarn(false); beginSession() } }
+            { label: 'Понятно', role: 'primary', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
+            { label: 'Всё равно начать', role: 'tertiary', onClick: () => { setShowLimitWarn(false); beginSession() } }
           ]}
         />
       )}
@@ -728,10 +728,10 @@ export default function SwimWorkout() {
           text="Время не сохранится и в историю не попадёт."
           onClose={() => setShowCancelConfirm(false)}
           actions={[
-            { label: 'Нет', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
+            { label: 'Продолжить', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
             {
-              label: 'Да, отменить',
-              danger: true,
+              label: 'Отменить',
+              role: 'destructive',
               onClick: () => {
                 haptic.medium()
                 goal(GOALS.WORKOUT_ABANDON, { program: programId })

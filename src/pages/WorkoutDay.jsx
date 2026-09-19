@@ -1547,7 +1547,7 @@ export default function WorkoutDay() {
           onClose={() => setQuickIntro(false)}
           actions={[
             { label: 'Отмена', onClick: () => { haptic.light(); setQuickIntro(false) } },
-            { label: 'Настроить', onClick: () => { setQuickIntro(false); openQuickSetup() } }
+            { label: 'Настроить', role: 'primary', onClick: () => { setQuickIntro(false); openQuickSetup() } }
           ]}
         />
       )}
@@ -1578,8 +1578,8 @@ export default function WorkoutDay() {
           text="Прогресс не сохранится и в историю не попадёт."
           onClose={() => setShowCancelConfirm(false)}
           actions={[
-            { label: 'Нет', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
-            { label: 'Да, отменить', onClick: handleCancelConfirm, danger: true }
+            { label: 'Продолжить', onClick: () => { haptic.light(); setShowCancelConfirm(false) } },
+            { label: 'Отменить', onClick: handleCancelConfirm, role: 'destructive' }
           ]}
         />
       )}
@@ -1591,8 +1591,8 @@ export default function WorkoutDay() {
           text={`Лимит — ${catMeta.limitUnit}. Вторая тренировка не попадёт в статистику и серию.`}
           onClose={() => setShowLimitWarn(false)}
           actions={[
-            { label: 'Отмена', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
-            { label: 'Всё равно начать', onClick: () => { setShowLimitWarn(false); handleStart() } }
+            { label: 'Понятно', role: 'primary', onClick: () => { haptic.light(); setShowLimitWarn(false) } },
+            { label: 'Всё равно начать', role: 'tertiary', onClick: () => { setShowLimitWarn(false); handleStart() } }
           ]}
         />
       )}

@@ -121,8 +121,8 @@ export default function QuickWorkout() {
           text="Набор быстрого режима изменён."
           onClose={() => setConfirmExit(false)}
           actions={[
-            { label: 'Не сохранять', onClick: () => { setConfirmExit(false); haptic.light(); goBack() } },
-            { label: 'Сохранить', onClick: () => { setConfirmExit(false); save() } }
+            { label: 'Не сохранять', role: 'destructive', onClick: () => { setConfirmExit(false); haptic.light(); goBack() } },
+            { label: 'Сохранить', role: 'primary', onClick: () => { setConfirmExit(false); save() } }
           ]}
         />
       )}

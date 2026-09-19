@@ -346,8 +346,6 @@
   /* Нажатие / подсветка поверх любого фона */
   --overlay-pressed: rgba(255, 255, 255, 0.06);        /* .press-dim, .tg-row */
   --overlay-pressed-strong: rgba(255, 255, 255, 0.18); /* круглые кнопки: вверх, закрыть */
-  --modal-btn-bg: rgba(255, 255, 255, 0.13);
-  --modal-btn-bg-pressed: rgba(255, 255, 255, 0.22);
   --color-error-pressed: rgba(232, 69, 69, 0.18);      /* .press-danger */
 
   /* Еле заметные подложки и пунктиры */

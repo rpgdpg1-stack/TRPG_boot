@@ -4,7 +4,8 @@ import { useRef } from 'react'
  *
  * Защита от случайного раннего завершения: текст зависит от прогресса —
  * «Все упражнения выполнены» либо «Выполнено X из Y». Две кнопки: Назад /
- * Завершить. Тап по фону = Назад.
+ * Завершить. Тап по фону = Назад. Вид — DialogCard (общий Dialog), своё здесь
+ * только затемнение и анимация перехода.
  *
  * @param done    - сколько упражнений отмечено
  * @param total   - всего упражнений
@@ -14,7 +15,7 @@ import { useRef } from 'react'
  * @param onConfirm - тап «Завершить»
  * @param onCancel  - тап «Назад» / по фону
  */
-import ActionButton from './ActionButton'
+import { DialogCard } from './Dialog'
 import { useScrollLock } from '../lib/use-scroll-lock'
 
 export const CONFIRM_EXIT_MS = 180
@@ -30,19 +31,16 @@ export default function FinishConfirmModal({ done, total, closing = false, onCon
         style={{ ...styles.modal, ...(closing ? styles.modalClosing : null) }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={styles.title}>
-          {allDone ? 'Все упражнения выполнены' : `Выполнено ${done} из ${total}`}
-        </div>
-        <div style={styles.subtitle}>Завершить тренировку?</div>
-
-        <div style={styles.row}>
-          <ActionButton variant="secondary" onClick={onCancel} style={{ flex: 1 }}>
-            Назад
-          </ActionButton>
-          <ActionButton variant="primary" onClick={onConfirm} style={{ flex: 1 }}>
-            Завершить
-          </ActionButton>
-        </div>
+        {/* Вид — общий Dialog: вопрос заголовком, счётчик пояснением, кнопки Large. */}
+        <DialogCard
+          title="Завершить тренировку?"
+          text={allDone ? 'Все упражнения выполнены.' : `Выполнено ${done} из ${total} упражнений.`}
+          layout="row"
+          actions={[
+            { label: 'Назад', role: 'secondary', onClick: onCancel },
+            { label: 'Завершить', role: 'primary', onClick: onConfirm }
+          ]}
+        />
       </div>
 
       <style>{`
@@ -76,39 +74,10 @@ const styles = {
   },
   modal: {
     width: '100%',
-    maxWidth: '300px',
-    background: 'var(--surface-panel)',
-    border: '1px solid var(--layer-2)',
-    borderRadius: 'var(--radius-card)',
-    padding: 'var(--space-6) var(--space-5) var(--space-5)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 'var(--space-15)',
-    boxShadow: 'var(--shadow-modal)',
+    maxWidth: '340px',
     animation: 'finishConfirmIn 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards',
     transition: `opacity ${CONFIRM_EXIT_MS}ms ease, transform ${CONFIRM_EXIT_MS}ms var(--ease-ios)`
   },
   // Уход панели перед появлением модалки завершения (фон при этом не мигает).
-  modalClosing: { opacity: 0, transform: 'scale(0.96)', animation: 'none' },
-  title: {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    fontSize: 'var(--text-body-size)',
-    letterSpacing: '0.5px',
-    color: 'var(--color-text)',
-    textAlign: 'center'
-  },
-  subtitle: {
-    fontFamily: 'var(--font-manrope)',
-    fontSize: 'var(--text-button-size)',
-    color: 'var(--color-text-secondary)',
-    textAlign: 'center'
-  },
-  row: {
-    display: 'flex',
-    gap: 'var(--space-3)',
-    width: '100%',
-    marginTop: 'var(--space-4)'
-  }
+  modalClosing: { opacity: 0, transform: 'scale(0.96)', animation: 'none' }
 }
