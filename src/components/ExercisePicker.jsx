@@ -21,6 +21,7 @@ import SearchIcon from './SearchIcon'
 import ScrollTopButton from './ScrollTopButton'
 import UiIcon from './UiIcon'
 import CloseCross from './CloseCross'
+import RowAction from './RowAction'
 
 const LONG_PRESS_MS = 500
 const MOVE_TOLERANCE_PX = 10
@@ -362,19 +363,12 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
               Лимит {max}/{max}
             </div>
           )}
-          <button
-            onClick={() => handleToggle(ex)}
-            className="press-up press-glass"
-            style={{
-              ...styles.addBtn,
-              background: added ? 'var(--accent-soft)' : 'var(--highlight-recent)',
-              color: added ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              opacity: disabled ? 0.45 : 1
-            }}
-            aria-label={added ? 'Убрать' : 'Добавить'}
-          >
-            {added ? '✓' : '+'}
-          </button>
+          <RowAction
+            type="select"
+            selected={added}
+            dim={disabled}
+            onPress={() => handleToggle(ex)}
+          />
         </div>
       </div>
     )
@@ -468,7 +462,6 @@ export default function ExercisePicker({ excludeIds, atLimit, count, max, onTogg
             onClose={handleClearSearch}
             hitSize={44}
             bubbleSize={40}
-            iconSize={17}
             // Тот же стеклянный фон и хайрлайн, что у поля поиска рядом:
             // два контрола одной строки должны быть из одного материала.
             bubbleStyle={{
@@ -888,7 +881,6 @@ const styles = {
   rowName: { fontFamily: 'var(--font-display)', fontSize: 'var(--text-label-size)', fontWeight: 700, lineHeight: '16px', color: 'var(--color-text)' },
   rowTags: { display: 'flex', gap: 'var(--space-15)', flexWrap: 'wrap' },
   rowTag: { display: 'inline-block', padding: 'var(--space-05) var(--space-2)', borderRadius: 'var(--radius-pill)', fontFamily: 'var(--font-manrope)', fontSize: 'var(--text-caption-size)', fontWeight: 700, letterSpacing: '0.2px', lineHeight: '13px', whiteSpace: 'nowrap' },
-  addBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, border: 'none', borderRadius: '50%', fontSize: 'var(--text-title-size)', fontWeight: 700 },
   // Футер поверх списка: лёгкое затемнение к низу, список уезжает под него.
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

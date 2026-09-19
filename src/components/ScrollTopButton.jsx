@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { haptic } from '../lib/telegram'
+import IconButton from './IconButton'
 
 /**
  * Плавающая кнопка «наверх» (нижний правый угол, над кнопкой дока). Появляется при
  * прокрутке вниз > порога, уводит на верх плавным скроллом, у кромки прячется.
  *
- * Нажатие — как у крестика закрытия (CloseCross): кружок увеличивается и светлеет,
- * увёл палец — вернулся без действия. Отличие: здесь ЕСТЬ контур (обводка) — он
- * помогает читаемости кнопки над контентом.
+ * Кнопка — общий IconButton (Secondary · Large 52 · Glass: стекло + волосок, висит над
+ * контентом). Жест с отменой — общий usePress.
  *
  * Для длинных прокручиваемых экранов (день тренировки, заплыв). В профиле НЕ нужен.
  *
@@ -19,16 +19,13 @@ import { haptic } from '../lib/telegram'
 function ArrowUp({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 19V6M6 12l6-6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 19V6M6 12l6-6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
 export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIndex }) {
   const [show, setShow] = useState(false)
-  const [press, setPress] = useState(false)
-  const ref = useRef(null)
-  const armed = useRef(false)
 
   useEffect(() => {
     const box = scrollRef?.current || null
@@ -57,27 +54,15 @@ export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIn
     document.scrollingElement?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // «Растущее» нажатие с отменой при уводе пальца (как крестик закрытия).
-  const down = () => { armed.current = true; setPress(true) }
-  const move = (e) => {
-    if (!armed.current) return
-    const r = ref.current?.getBoundingClientRect()
-    if (!r) return
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-    if (!inside) { armed.current = false; setPress(false) }
-  }
-  const up = () => { const a = armed.current; armed.current = false; setPress(false); if (a) toTop() }
-  const cancel = () => { armed.current = false; setPress(false) }
-
   return (
-    <button
-      ref={ref}
-      onPointerDown={down}
-      onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={cancel}
-      onClick={(e) => e.stopPropagation()}
-      aria-label="Наверх"
+    <IconButton
+      icon={<ArrowUp />}
+      variant="secondary"
+      size="large"
+      glass
+      hitSize={56}
+      onPress={toTop}
+      ariaLabel="Наверх"
       style={{
         ...styles.hit,
         ...(zIndex ? { zIndex } : null),
@@ -85,55 +70,18 @@ export default function ScrollTopButton({ threshold = 180, scrollRef = null, zIn
         transform: show ? 'translateY(0)' : 'translateY(8px)',
         pointerEvents: show ? 'auto' : 'none'
       }}
-    >
-      <span
-        style={{
-          ...styles.bubble,
-          background: press ? 'var(--overlay-pressed-strong)' : 'var(--color-surface-dim)',
-          color: press ? 'var(--color-text)' : 'var(--color-text-secondary)',
-          transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)',
-          transition: press
-            ? 'transform var(--press-in) var(--ease-ios), background var(--press-in) ease, color var(--press-in) ease'
-            : 'transform var(--press-out) var(--ease-ios), background var(--press-out) ease, color var(--press-out) ease'
-        }}
-      >
-        <ArrowUp />
-      </span>
-    </button>
+    />
   )
 }
 
 const styles = {
+  // Место и появление; сама кнопка — IconButton · Secondary · Large · Glass.
   hit: {
     position: 'fixed',
     right: '16px',
-    // ~6px выше верхней кромки кнопки дока (--btn-height 55 над --tabbar-bottom).
+    // ~6px выше верхней кромки кнопки дока (--btn-height над --tabbar-bottom).
     bottom: 'calc(var(--tabbar-bottom) + 62px)',
     zIndex: 45,
-    width: '56px',
-    height: '56px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    touchAction: 'none',
-    WebkitTapHighlightColor: 'transparent',
     transition: 'opacity 0.22s ease, transform 0.22s var(--ease-ios)'
-  },
-  bubble: {
-    // Icon Button · Glass · Large: 52, иконка 28 (круглая кнопка без текста).
-    width: '52px',
-    height: '52px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    backdropFilter: 'var(--glass-filter)',
-    WebkitBackdropFilter: 'var(--glass-filter)',
-    boxShadow: 'var(--glass-hairline), var(--glass-shadow)',
-    transition: 'transform 0.18s var(--ease-ios), background 0.18s ease, color 0.18s ease'
   }
 }

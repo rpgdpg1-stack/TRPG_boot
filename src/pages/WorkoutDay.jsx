@@ -1276,7 +1276,6 @@ export default function WorkoutDay() {
                   glass
                   hitSize={44}
                   bubbleSize={32}
-                  iconSize={16}
                 />
               </div>
             )}

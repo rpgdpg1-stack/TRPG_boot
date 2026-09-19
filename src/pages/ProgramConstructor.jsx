@@ -15,6 +15,7 @@ import ReturnHighlight from '../components/workout/ReturnHighlight'
 import SwapAnimationOverlay from '../components/workout/SwapAnimationOverlay'
 import { SwapExerciseView } from './SwapExercise'
 import ActionButton from '../components/ActionButton'
+import RowAction from '../components/RowAction'
 import ConfirmModal from '../components/ConfirmModal'
 import ScreenTitle from '../components/ScreenTitle'
 import UiIcon from '../components/UiIcon'
@@ -709,13 +710,7 @@ export default function ProgramConstructor() {
                         </div>
                       )}
                     </div>
-                    <button onClick={() => handleRemove(exId)} className="press-up press-danger" style={styles.removeBtn} aria-label="Удалить">
-                      {/* Крестик линиями, а не символом «✕»: у шрифтового глифа свои
-                          поля, и он сидел ниже и левее центра круга. */}
-                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                        <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                      </svg>
-                    </button>
+                    <RowAction type="remove" onPress={() => handleRemove(exId)} />
                   </div>
                 </SwipeReveal>
                 {glowId === exId && <ReturnHighlight radius="var(--radius-card)" />}
@@ -975,7 +970,6 @@ const styles = {
   exTags: { display: 'flex', gap: 'var(--space-15)', minWidth: 0, maxWidth: '100%' },
   // Форма пилюли — в MarqueeTag; здесь только приглушение и мелкий шрифт строки.
   exTag: { padding: 'var(--space-05) var(--space-2)', fontSize: 'var(--text-caption-size)', letterSpacing: '0.2px', lineHeight: '13px', opacity: 0.7 },
-  removeBtn: { width: '36px', height: '36px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, background: 'var(--highlight-recent)', border: 'none', borderRadius: '50%', color: 'var(--color-text-secondary)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' },
   // Обёртка свайпа строки: подсветка и «змейка» после замены лежат поверх неё.
   exSwipeWrap: { position: 'relative', flex: 1, minWidth: 0 },
   // «Добавить упражнения» — общий ActionButton (variant neutral, hug), как

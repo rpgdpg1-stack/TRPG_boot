@@ -520,7 +520,6 @@ export default function SwimWorkout() {
                   glass
                   hitSize={44}
                   bubbleSize={32}
-                  iconSize={16}
                 />
               </span>
             )}

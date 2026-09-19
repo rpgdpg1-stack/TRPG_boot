@@ -3,6 +3,8 @@ import { haptic } from '../lib/telegram'
 import { getMediaBlob } from '../lib/media-cache'
 import { onNetworkChange } from '../lib/network-status'
 import ExercisePlaceholder from './ExercisePlaceholder'
+import IconButton from './IconButton'
+import UiIcon from './UiIcon'
 
 /**
  * Видео-превью упражнения.
@@ -59,7 +61,7 @@ function restartPlay(v) {
 }
 
 // playSize — диаметр кнопки ▶: 44 в миниатюре модалки, крупнее на большом кадре техники.
-export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', playSize = 52 }) {
+export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', playSize = 44 }) {
   // Размеры скругления: 33px для full (на всю ширину модалки/страницы),
   // 14px для compact (если когда-то понадобится в маленькой карточке).
   const borderRadius = size === 'compact' ? '14px' : '33px'
@@ -198,60 +200,26 @@ export default function ExerciseVideo({ videoUrl, previewUrl, size = 'full', pla
 }
 
 /**
- * Прозрачная круглая кнопка ▶ поверх застывшего кадра — стекло как в iOS:
- * тёмная полупрозрачная заливка + блюр + тонкий светлый хайрлайн. Тёмная, а не
- * белая: фон роликов белый, белое стекло на нём просто исчезло бы.
- *
- * 44px — минимальная зона под палец, и при этом кнопка не закрывает кадр
- * миниатюры 118px (занимает ~37% ширины, движение за ней видно).
- *
- * Нажатие: палец опустился — кружок растёт; увёл за пределы — вернулся, ничего
- * не случилось; отпустил на кнопке — повтор. Следующий синтетический click
- * гасим: без этого он долетал до оверлея модалки и мог её закрыть.
+ * Кнопка ▶ повтора поверх застывшего кадра — общий IconButton (Secondary · Glass): стекло
+ * + волосок, тёмное (фон роликов белый — белое стекло на нём исчезло бы).
+ * Размер по месту: на миниатюре (118 px) — Medium 36, чтобы не закрывать кадр; на большом
+ * кадре техники — Large 52. Зона нажатия всё равно ≥ 44.
+ * Касания не всплывают (stopPropagation): иначе тап долетал до оверлея модалки и закрывал её.
  */
-function PlayAgainButton({ onPlay, size = 52 }) {
-  const ref = useRef(null)
-  const armed = useRef(false)
-  const [press, setPress] = useState(false)
-
-  const inside = (e) => {
-    const r = ref.current?.getBoundingClientRect()
-    return !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-  }
-  const down = (e) => { e.stopPropagation(); armed.current = true; setPress(true) }
-  const move = (e) => { if (armed.current && !inside(e)) { armed.current = false; setPress(false) } }
-  const up = (e) => {
-    e.stopPropagation()
-    const was = armed.current
-    armed.current = false
-    setPress(false)
-    if (was) onPlay()
-  }
-  const cancel = () => { armed.current = false; setPress(false) }
-
+function PlayAgainButton({ onPlay, size = 44 }) {
+  const large = size >= 52
   return (
     <div style={styles.playLayer}>
-      <button
-        ref={ref}
-        type="button"
-        aria-label="Проиграть ещё раз"
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={cancel}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          ...styles.playBtn,
-          width: `${size}px`,
-          height: `${size}px`,
-          transform: press ? 'scale(var(--press-scale-up))' : 'scale(1)'
-        }}
-      >
-        {/* Значок ~0.41 диаметра — пропорция та же при любом размере кнопки. */}
-        <svg width={Math.round(size * 0.41)} height={Math.round(size * 0.41)} viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', marginLeft: '2px' }}>
-          <path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z" fill="currentColor" />
-        </svg>
-      </button>
+      <IconButton
+        icon={<UiIcon name="play" size={large ? 28 : 24} style={{ display: 'block', marginLeft: 2 }} />}
+        variant="secondary"
+        size={large ? 'large' : 'medium'}
+        glass
+        stopPropagation
+        onPress={onPlay}
+        ariaLabel="Проиграть ещё раз"
+        style={{ pointerEvents: 'auto' }}
+      />
     </div>
   )
 }
@@ -291,28 +259,7 @@ const styles = {
     pointerEvents: 'none',
     animation: 'menuPanelScaleIn 0.22s cubic-bezier(0.32, 0.72, 0, 1) both'
   },
-  playBtn: {
-    pointerEvents: 'auto',
-    width: '52px',
-    height: '52px',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    border: 'none',
-    // Icon Button · Glass + волосок — общий рецепт стекла (над движущимся видео).
-    background: 'var(--glass-bg)',
-    backdropFilter: 'var(--glass-filter)',
-    WebkitBackdropFilter: 'var(--glass-filter)',
-    boxShadow: 'var(--glass-hairline), var(--glass-shadow)',
-    color: 'var(--color-text)',
-    opacity: 0.92,
-    cursor: 'pointer',
-    touchAction: 'none',
-    WebkitTapHighlightColor: 'transparent',
-    transition: 'transform var(--press-out) var(--ease-ios)'
-  },
+
   // Подпись поверх превью — та же стеклянная пилюля, что у статуса сети.
   retryHint: {
     position: 'absolute',

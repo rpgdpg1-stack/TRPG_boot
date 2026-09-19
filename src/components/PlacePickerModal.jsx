@@ -34,7 +34,6 @@ export default function PlacePickerModal({ places, value, onPick, onClose }) {
           onClose={onClose}
           hitSize={44}
           bubbleSize={32}
-          iconSize={16}
           style={{ position: 'absolute', top: '6px', right: '6px', zIndex: 5 }}
         />
         <div style={styles.title}>Место тренировки</div>

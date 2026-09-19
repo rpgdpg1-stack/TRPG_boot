@@ -216,6 +216,24 @@ rgba(13,12,12,0.85) 40%, var(--color-bg) 85%)`), отступ от края `cal
 Прятать кнопку при открытой клавиатуре (visualViewport, порог 150px), чтобы не липла к клавишам.
 
 
+## IconButton — круглая кнопка-значок (`components/IconButton.jsx`) — 19.09.2026
+
+Зеркало Icon Button + Close Button в Figma. `<IconButton icon variant size tone glass disabled pulse hitSize onPress
+ariaLabel swallowClick stopPropagation style bubbleStyle>`.
+- size `large` 52 · `medium` 36 · `small` 30; иконка 28 / 24 / 20. Зона нажатия ≥ 44 (невидимая).
+- variant `primary` · `tonal` · `secondary` · `tertiary` · `close` (подложка 8% + серая иконка → при нажатии 18% + белая).
+- `glass` — над контентом: `--glass-*` + волосок. Жест — `usePress` (увёл палец > 8 px — не сработало), рост 1.12.
+- На нём: `CloseCross` (обёртка, variant close; размер по bubbleSize → L/M/S), «наверх» (Secondary · Large · Glass),
+  ▶ повтора на видео (Secondary · Glass; миниатюра — Medium, большой кадр — Large).
+
+## RowAction — круглое действие в строке списка (`components/RowAction.jsx`) — 19.09.2026
+
+Зеркало Row Action в Figma. Medium 36 (иконка 24), зона 44 без сдвига вёрстки.
+- `type="select"` — пикер: выкл — подложка 6% + серый плюс; `selected` — accent-soft + зелёная галочка. `dim` — 45%,
+  но тап проходит (лимит показывает подсказку).
+- `type="remove"` — конструктор: подложка 6% + серый крестик; нажатие — `--color-error-pressed` + красный.
+- `touchAction: manipulation` — стоит в прокручиваемом списке. Класс `.press-danger` удалён.
+
 ## Dialog — один каркас модалок-решений (`components/Dialog.jsx`) — 19.09.2026
 
 Зеркало Figma 💬 Dialog. `<Dialog icon title text actions layout required onClose>{доп. блоки}</Dialog>`.

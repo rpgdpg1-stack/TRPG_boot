@@ -140,7 +140,7 @@ _(пусто)_
   решению со страницы localhost/glass: над контентом — стекло + волосок, главное действие и всё внутри поверхностей —
   сплошное. Токены `--glass-*` в tokens.css. ScrollTop 52 / иконка 28, ▶ на видео 52, «Назад» браузера и крестик в
   шапке дня — стекло + волосок. SVG add/close/check/grip/trending-up/logout — новые (круглые концы). Dialog и
-  Icon Button как компонент в код ещё НЕ перенесён. **Dialog перенесён** (19.09): все модалки-решения на `Dialog`, `ModalButton` удалён.
+  **IconButton и RowAction перенесены** (19.09): CloseCross, «наверх», ▶ на видео — на IconButton; галочка пикера и крестик конструктора — RowAction. **Dialog перенесён** (19.09): все модалки-решения на `Dialog`, `ModalButton` удалён.
   **Figma дальше:** стеклянные сеты → тумблер Glass внутри Button/Icon Button только у Primary-tonal и Secondary.
 - **2026-09-19 — 💬 Dialog (258:9390)** — один каркас всех модалок. Layout = Column | Row; свойства Title, Text (TEXT),
   Show icon, Show text, Second action (BOOLEAN), Icon (INSTANCE_SWAP, 57 моно). Окно 340, радиус card, фон
