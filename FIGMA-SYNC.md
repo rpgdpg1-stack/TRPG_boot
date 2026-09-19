@@ -85,6 +85,11 @@ _(пусто)_
   **RocketIcon** — сет `State=Off/On/Flying` (242:2838), **celebration**. Слои названы по ролям и на токенах:
   `muted` → text/secondary, `accent` → accent/base, `flame` → streak (= пропсы accent/muted/flame в коде).
   Имя = React-компонент. MuscleIcon в коде моно (muscles-line/-fill + icon/muscle) — в Duotone не входит.
+- **2026-09-19 — Свап иконки держит цвет варианта.** Моды переменных НЕДОСТУПНЫ (тариф Figma: «Limited to
+  1 modes only») — попытка откачена, коллекция удалена. Сделано иначе: **каждая моно-иконка = ОДИН залитый
+  вектор «Vector»** (12 приведены: outline обводок + flatten; 8 пересобраны из src/assets/ui). Figma переносит
+  override цвета при instance-swap по имени/типу слоя → любая из 57 иконок в Button/Icon Button красится
+  токеном варианта. Проверено свапом на Primary / tonal / Tertiary / Destructive.
 
 ## ✋ Ручные действия Дмитрия в Figma (мост не умеет)
 
