@@ -276,6 +276,10 @@ when_to_use: "«нарисуй в Figma», «перенеси в Figma», «об
 - Раскладка секций — только `tools/order_sections.ts` (сначала всех в сторону, потом по местам) + `tools/fit_sections.ts`.
 - **Перерисовать мастер-иконку, не потеряв цвета экземпляров** — только через `tools/icon_swap_keep_color.ts`
   (снимок привязок → пересборка → возврат на новый вектор `I<inst>;<vec>`).
+- **`get_local_components` на большом файле (400+) отдаёт огромный ответ и сбивает очередь моста** — ключи для
+  preferredValues брать из уже настроенного свойства (напр. Icon у Button: componentPropertyDefinitions[…].preferredValues).
+- **Мост не ставит TEXT-узлу layoutSizing** («does not support layout sizing») → ширину текста задавать resize + textAutoResize HEIGHT.
+- **Secondary (surface/tonal) на surface/raised не видна** — контейнеры с серыми кнопками (модалки) держать на surface/default.
 - **zsh не делит `$VAR` по пробелам** — список id в аргументы передавать `${=VAR}` или прямо текстом.
 - **Ширину даёт строук:** фреймы кнопок сейчас НЕ auto-layout (`layoutMode=None`, фикс-ширина). Лишний
   `stroke` (даже тонкий) расширяет absoluteBoundingBox на ~2px/сторону → рассинхрон ширин (был у старого
