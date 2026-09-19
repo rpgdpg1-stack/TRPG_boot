@@ -131,6 +131,10 @@ _(пусто)_
   - **add, close, check — одна линия 2 px (как Material) с круглыми концами** на сетке 24
     (add: M6 12H18 M12 6V18; close: M6.5 6.5L17.5 17.5 и зеркально; check: M5 12.5 L9.5 17 L19 7.5). Цвета 402 экземпляров сохранены
     (`tools/icon_swap_keep_color.ts`). В Row Action иконки Select = размеру крестика (32/24/20).
+- **2026-09-19 — Figma: стекло — тумблер `Glass` внутри основных сетов** (отдельные Button·Glass / Icon Button·Glass
+  УДАЛЕНЫ). Glass=true только там, где стекло есть в продукте: Button — Primary-tonal и Secondary, Icon Button —
+  Secondary; Tone=Default; State Default/Pressed/Disabled. Рецепт = `--glass-*` в коде: surface/dim 30% · blur 8 ·
+  тень 0/8/24 · волосок border/hairline 7% встроен (у стекла всегда). Button 126, Icon Button 105 (`tools/glass_toggle.ts`).
 - **2026-09-19 — КОД: кнопки v3 перенесены в прод.** `ActionButton` = Variant (primary/tonal/secondary/tertiary) ×
   size (large/medium/small) × tone + glass/hairline; все вызовы переведены (старые имена — псевдонимы). Стекло по
   решению со страницы localhost/glass: над контентом — стекло + волосок, главное действие и всё внутри поверхностей —
